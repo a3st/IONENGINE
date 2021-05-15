@@ -1,5 +1,7 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
+#pragma once
+
 namespace ionengine::platform {
 
 enum class WindowStyle : uint32 {
@@ -87,8 +89,8 @@ public:
 		m_cursor = enable;
 	}
 
-	void set_label(const std::wstring& label) {
-		//::SetWindowText(m_wnd, label.c_str());
+	void set_label(const std::wstring_view& label) {
+		::SetWindowText(m_wnd, label.data());
 	}
 
 	void set_window_size(const uint32_t width, const uint32_t height) {
@@ -134,6 +136,70 @@ private:
 				event_handler.event_type = WindowEvent::Moved;
 				event_handler.event = MouseMoved(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), false);
 				window->m_event_loop.m_events.emplace(event_handler);
+				break;
+			}
+			case WM_INPUT: {
+				byte buffer[48];
+				uint32 size = 0;
+
+				::GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
+				if (size <= 48) {
+					::GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, buffer, &size, sizeof(RAWINPUTHEADER));
+				}
+
+				RAWINPUT* raw_input = reinterpret_cast<RAWINPUT*>(buffer);
+				DWORD device_type = raw_input->header.dwType;
+
+				if (device_type == RIM_TYPEKEYBOARD) {
+					event_handler.event_type = WindowEvent::KeyboardInput;
+
+					USHORT key = raw_input->data.keyboard.VKey;
+					USHORT flags = raw_input->data.keyboard.Flags;
+					UINT msg = raw_input->data.keyboard.Message;
+
+					switch (msg) {
+						case WM_KEYDOWN:
+						case WM_SYSKEYDOWN: event_handler.event = KeyboardInput(static_cast<uint32>(key), ElementState::Pressed); break;
+						case WM_KEYUP:
+						case WM_SYSKEYUP: event_handler.event = KeyboardInput(static_cast<uint32>(key), ElementState::Released); break;
+					}
+					
+					window->m_event_loop.m_events.emplace(event_handler);
+				} else if (device_type == RIM_TYPEMOUSE) {
+					event_handler.event_type = WindowEvent::MouseInput;
+
+					LONG x = raw_input->data.mouse.lLastX;
+					LONG y = raw_input->data.mouse.lLastY;
+					ULONG buttons = raw_input->data.mouse.ulButtons;
+					USHORT flags = raw_input->data.mouse.usFlags;
+					USHORT button_flags = raw_input->data.mouse.usButtonFlags;
+					USHORT button_data = raw_input->data.mouse.usButtonData;
+
+					switch (buttons) {
+						case RI_MOUSE_LEFT_BUTTON_DOWN: event_handler.event = MouseInput(MouseButton::Left, ElementState::Pressed); break;
+						case RI_MOUSE_RIGHT_BUTTON_DOWN: event_handler.event = MouseInput(MouseButton::Right, ElementState::Pressed); break;
+						case RI_MOUSE_MIDDLE_BUTTON_DOWN: event_handler.event = MouseInput(MouseButton::Middle, ElementState::Pressed); break;
+						case RI_MOUSE_BUTTON_4_DOWN: event_handler.event = MouseInput(MouseButton::Four, ElementState::Pressed); break;
+						case RI_MOUSE_BUTTON_5_DOWN: event_handler.event = MouseInput(MouseButton::Five, ElementState::Pressed); break;
+						case RI_MOUSE_LEFT_BUTTON_UP: event_handler.event = MouseInput(MouseButton::Left, ElementState::Released); break;
+						case RI_MOUSE_RIGHT_BUTTON_UP: event_handler.event = MouseInput(MouseButton::Right, ElementState::Released); break;
+						case RI_MOUSE_MIDDLE_BUTTON_UP: event_handler.event = MouseInput(MouseButton::Middle, ElementState::Released); break;
+						case RI_MOUSE_BUTTON_4_UP: event_handler.event = MouseInput(MouseButton::Four, ElementState::Released); break;
+						case RI_MOUSE_BUTTON_5_UP: event_handler.event = MouseInput(MouseButton::Five, ElementState::Released); break;
+					}
+
+					window->m_event_loop.m_events.emplace(event_handler);
+
+					if (button_flags & RI_MOUSE_WHEEL) {
+						event_handler.event_type = WindowEvent::MouseWheel;
+						event_handler.event = MouseWheel(static_cast<float>(button_data / WHEEL_DELTA));
+						window->m_event_loop.m_events.emplace(event_handler);
+					}
+
+					event_handler.event_type = WindowEvent::MouseMoved;
+					event_handler.event = MouseMoved(x, y, true);
+					window->m_event_loop.m_events.emplace(event_handler);
+				}
 				break;
 			}
 		}
