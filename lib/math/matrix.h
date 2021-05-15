@@ -135,7 +135,7 @@ struct Matrix {
 		return mat;
 	}
 
-	Matrix operator*(const Vector4& rhs) const {
+	Matrix operator*(const Vector4<T>& rhs) const {
 		Matrix mat;
 		mat.m00 = m00 * rhs.x;
 		mat.m01 = m01 * rhs.y;
@@ -228,7 +228,7 @@ struct Matrix {
 		return mat;
 	}
 
-	static Matrix translate(const Vector3& rhs) {
+	static Matrix translate(const Vector3<T>& rhs) {
 		Matrix mat = Matrix::identity();
 		mat.m30 = rhs.x;
 		mat.m31 = rhs.y;
@@ -270,14 +270,14 @@ struct Matrix {
 		return mat;
 	}
 
-	static Matrix look_at(const Vector3& eye, const Vector3& target, const Vector3& up) {
-		Vector3 z(eye - target);
+	static Matrix look_at(const Vector3<T>& eye, const Vector3<T>& target, const Vector3<T>& up) {
+		Vector3<T> z(eye - target);
 		z.normalize();
 
-		Vector3 x = Vector3::cross_product(up, z);
+		Vector3<T> x = Vector3<T>::cross_product(up, z);
 		x.normalize();
 
-		Vector3 y = Vector3::cross_product(z, x);
+		Vector3<T> y = Vector3<T>::cross_product(z, x);
 
 		Matrix mat = Matrix::identity();
 		mat.m00 = x.x;
@@ -289,9 +289,9 @@ struct Matrix {
 		mat.m20 = x.z;
 		mat.m21 = y.z;
 		mat.m22 = z.z;
-		mat.m30 = Vector3::dot_product(-x, eye);
-		mat.m31 = Vector3::dot_product(-y, eye);
-		mat.m32 = Vector3::dot_product(-z, eye);
+		mat.m30 = Vector3<T>::dot_product(-x, eye);
+		mat.m31 = Vector3<T>::dot_product(-y, eye);
+		mat.m32 = Vector3<T>::dot_product(-z, eye);
 		return mat;
 	}
 

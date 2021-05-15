@@ -44,14 +44,14 @@ struct Quaternion {
         w = w * inverse;
     }
 
-	Matrix to_matrix() const {
+	Matrix<T> to_matrix() const {
         T sqw = w * w;
         T sqx = x * x;
         T sqy = y * y;
         T sqz = z * z;
         T inverse = 1 / (sqx + sqy + sqz + sqw);
 
-        Matrix mat = Matrix::identity();
+        Matrix<T> mat = Matrix<T>::identity();
         mat.m00 = (sqx - sqy - sqz + sqw) * inverse;
         mat.m11 = (-sqx + sqy - sqz + sqw) * inverse;
         mat.m22 = (-sqx - sqy + sqz + sqw) * inverse;
@@ -68,7 +68,7 @@ struct Quaternion {
 		return math::sqrt(x * x + y * y + z * z + w * w);
 	}
 
-	void to_angle_axis(T* angle, Vector3* axis) const {
+	void to_angle_axis(T* angle, Vector3<T>* axis) const {
         Quaternion quat;
         quat = *this;
 
@@ -99,7 +99,7 @@ struct Quaternion {
 	    return quat;
     }
 
-	Quaternion operator*(const value_type rhs) const {
+	Quaternion operator*(const T rhs) const {
 		return Quaternion(x * rhs, y * rhs, z * rhs, w * rhs);
 	}
 
@@ -141,10 +141,10 @@ struct Quaternion {
         return quat;
     }
 
-	static Quaternion angle_axis(const T angle, const Vector3& axis) {
+	static Quaternion angle_axis(const T angle, const Vector3<T>& axis) {
         T rot_angle = static_cast<T>(angle * math::deg2rad);
 	    T rot_sin = math::sin(rot_angle / 2);
-        Vector3 norm_axis = axis.normalize();
+        Vector3<T> norm_axis = axis.normalize();
 	    return Quaternion(norm_axis.x * rot_sin, norm_axis.y * rot_sin, norm_axis.z * rot_sin, math::cos(rot_angle / 2));
     }
 };

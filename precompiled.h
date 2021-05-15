@@ -12,6 +12,11 @@
 #include <array>
 #include <type_traits>
 #include <numeric>
+#include <variant>
+#include <queue>
+#include <functional>
+
+#include "platform.h"
 
 typedef std::uint64_t   uint64;
 typedef std::uint32_t   uint32;

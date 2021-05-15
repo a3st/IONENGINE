@@ -4,11 +4,15 @@
 #include "lib/fmt.h"
 #include "lib/math.h"
 
+#include "platform/window.h"
+
 using namespace ionengine;
 
 int32 main(int32, char**) {
-    
-    std::cout << "Hello, world!\n";
-    std::cout << ionengine::format<std::string>("123 {}", 1.0) << std::endl;
-    std::wcout << ionengine::format<std::wstring>(L"123 {}", 1.0) << std::endl;
+
+    platform::WindowEventLoop window_event_loop;
+    window_event_loop.run([&](const platform::WindowEvent& event) -> void { 
+
+
+    });
 }
