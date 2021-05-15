@@ -63,6 +63,10 @@ struct Fcolor {
 		return &r;
 	}
 
+	usize size() const {
+		return 2;
+	}
+
 	Fvector4 to_vector4() const {
 		return Fvector4(r, g, b, a);
 	}
