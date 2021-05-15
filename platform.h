@@ -4,6 +4,7 @@
 
 #ifdef _WIN32
 #define NOMINMAX
+#define UNICODE
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <windowsx.h>

@@ -24,7 +24,8 @@ enum class WindowEvent {
 	KeyboardInput,
 	MouseInput,
 	MouseWheel,
-	MouseMoved
+	MouseMoved,
+	Updated
 };
 
 template<typename T>
