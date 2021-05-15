@@ -2,8 +2,13 @@
 
 #include "precompiled.h"
 #include "lib/fmt.h"
+#include "lib/math.h"
 
-int main(int, char**) {
+using namespace ionengine;
+
+int32 main(int32, char**) {
+    
     std::cout << "Hello, world!\n";
     std::cout << ionengine::format<std::string>("123 {}", 1.0) << std::endl;
+    std::wcout << ionengine::format<std::wstring>(L"123 {}", 1.0) << std::endl;
 }

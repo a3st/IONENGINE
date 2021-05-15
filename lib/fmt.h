@@ -21,7 +21,7 @@ T format(const T& fmt, const I& arg, A&&... args) {
         return format(fmt);
     }
 
-    using char_type_t = std::string::value_type; 
+    using char_type_t = typename T::value_type; 
     std::basic_stringstream<char_type_t, std::char_traits<char_type_t>, std::allocator<char_type_t>> ss;
     ss << T(fmt.begin(), it_arg);
 
@@ -31,7 +31,7 @@ T format(const T& fmt, const I& arg, A&&... args) {
             break;
         }
         case 'x': {
-            if constexpr (std::is_integral<T>::value) {
+            if constexpr (std::is_integral<I>::value) {
                 auto it_optional = std::next(it_type);
                 if (*it_optional == ':') {
                     ++it_optional;

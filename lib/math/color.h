@@ -1,8 +1,8 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#include "../fmt.h"
+#pragma once
 
-namespace ionengine {
+namespace ionengine::math {
 
 struct Fcolor {
 	float r, g, b, a;
@@ -35,26 +35,26 @@ struct Fcolor {
 		return *this;
 	}
 
-	void rgb_to_srgb() {
+	void rgb2srgb() {
 		for (int i = 0; i < 3; i++) {
 			float color = (&r)[i];
 			if (color < 0.0031308f) {
 				color = 12.92f * color;
 			}
 			else {
-				color = 1.055f * std::powf(color, 1.0f / 2.4f) - 0.05499995f;
+				color = 1.055f * math::pow(color, 1.0f / 2.4f) - 0.05499995f;
 			}
 		}
 	}
 
-	void srgb_to_rgb() {
+	void srgb2rgb() {
 		for (int i = 0; i < 3; i++) {
 			float color = (&r)[i];
 			if (color <= 0.040448643f) {
 				color = color / 12.92f;
 			}
 			else {
-				color = std::powf((color + 0.055f) / 1.055f, 2.4f);
+				color = math::pow((color + 0.055f) / 1.055f, 2.4f);
 			}
 		}
 	}
@@ -63,13 +63,13 @@ struct Fcolor {
 		return &r;
 	}
 
-	//Fvector4 to_vector4() const {
-		//return Fvector4(r, g, b, a);
-	//}
+	Fvector4 to_vector4() const {
+		return Fvector4(r, g, b, a);
+	}
 
-	//Fvector3 to_vector3() const {
-		//return Fvector3(r, g, b);
-	//}
+	Fvector3 to_vector3() const {
+		return Fvector3(r, g, b);
+	}
     
 	bool operator==(const Fcolor& rhs) const {
 		return (r == rhs.r) && (g == rhs.g) && (b == rhs.b) && (a == rhs.a);
