@@ -14,7 +14,7 @@ WindowStyle operator|(const WindowStyle lhs, const WindowStyle rhs) {
 	return static_cast<WindowStyle>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
 }
 
-class Window {
+class Window final {
 public:
 
     Window(const std::wstring_view& label, const uint32 width, const uint32 height, const WindowStyle window_style, WindowEventLoop& event_loop) : 

@@ -15,6 +15,7 @@
 #include <variant>
 #include <queue>
 #include <functional>
+#include <memory>
 
 #include "platform.h"
 
