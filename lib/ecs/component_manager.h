@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../singleton.h"
+#include "../sparse_set.h"
 
 namespace ionengine::ecs {
 
@@ -10,9 +11,7 @@ class ComponentManager final : public Singleton<ComponentManager> {
 DECLARE_SINGLETON(ComponentManager)
 public:
 
-    void test() const {
-        std::cout << 123 << std::endl;
-    }
+    
 
 protected:
 
@@ -21,7 +20,10 @@ protected:
 
 private:
 
-    
+    std::unordered_map<
+        uint32,
+        sparse_set<uint32>
+    > m_components;
 
 };
 

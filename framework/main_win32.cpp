@@ -7,14 +7,17 @@
 #include "lib/fmt.h"
 #include "lib/math.h"
 #include "lib/ecs.h"
+#include "lib/sparse_set.h"
 
 using namespace ionengine;
 using namespace ionengine::platform;
 
 int32 main(int32, char**) {
 
-    ecs::ComponentManager::get_instance().test();
-    ecs::EntityManager::get_instance().create_layer();
+    ecs::Engine ecs_engine;
+
+    ecs::EntityManager::get_instance().create_entity("Logger");
+    ecs::ComponentManager::get_instance();
      
 
     WindowEventLoop window_event_loop;

@@ -16,6 +16,7 @@
 #include <queue>
 #include <functional>
 #include <memory>
+#include <unordered_map>
 
 #include "platform.h"
 
