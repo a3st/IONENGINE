@@ -25,8 +25,10 @@ int32 main(int32, char**) {
     window_event_loop.run([&](const WindowEventHandler& event) -> void { 
         switch(event.event_type) {
             case WindowEvent::Closed: window_event_loop.exit(); break;
+            case WindowEvent::KeyboardInput:
+            case WindowEvent::MouseInput: InputSystem::get_instance().on_key_update(event); break;
             case WindowEvent::Updated: {
-                InputSystem::get_instance().
+               
                 break;
             }
             default: break;

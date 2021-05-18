@@ -13,8 +13,8 @@ enum class MouseButton {
 };
 
 enum class ElementState {
-	Pressed,
-	Released
+	Released,
+	Pressed
 };
 
 enum class WindowEvent {

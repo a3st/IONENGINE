@@ -4,7 +4,7 @@
 
 namespace ionengine {
 
-enum class KeyCode {
+enum class KeyCode : uint32 {
 	Q = 81,
 	W = 87,
 	E = 69,
