@@ -57,31 +57,31 @@ struct Vector4 {
 	}
 
 	Vector4 operator*(const T rhs) const {
-		return Vector4(x * rhs, y * rhs, z * rhs, w * rhs);
+		return { x * rhs, y * rhs, z * rhs, w * rhs };
 	}
 
 	Vector4 operator-(const Vector4& rhs) const {
-		return Vector4(x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w);
+		return { x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w };
 	}
 
 	Vector4 operator-(const T rhs) const {
-		return Vector4(x - rhs, y - rhs, z - rhs, w - rhs);
+		return { x - rhs, y - rhs, z - rhs, w - rhs };
 	}
 
 	Vector4 operator-() const {
-		return Vector4(-x, -y, -z, -w);
+		return { -x, -y, -z, -w };
 	}
 
 	Vector4 operator+(const Vector4& rhs) const {
-		return Vector4(x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w);
+		return { x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w };
 	}
 
 	Vector4 operator+(const T rhs) const {
-		return Vector4(x + rhs, y + rhs, z + rhs, w + rhs);
+		return { x + rhs, y + rhs, z + rhs, w + rhs };
 	}
 
 	Vector4 operator/(const T rhs) const {
-		return Vector4(x / rhs, y / rhs, z / rhs, w / rhs);
+		return { x / rhs, y / rhs, z / rhs, w / rhs };
 	}
 
 	bool operator==(const Vector4& rhs) const {

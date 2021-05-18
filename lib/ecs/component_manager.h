@@ -4,6 +4,7 @@
 
 #include "../singleton.h"
 #include "../sparse_set.h"
+#include "../utils.h"
 
 namespace ionengine::ecs {
 
@@ -11,7 +12,12 @@ class ComponentManager final : public Singleton<ComponentManager> {
 DECLARE_SINGLETON(ComponentManager)
 public:
 
-    
+    template<typename T>
+    void register_component() {
+        component_id id = static_cast<component_id>(type_id<T>());
+        assert(m_component_arrays.find(id) == m_component_arrays.end() && "error during registering components");
+        m_component_arrays[id] = component_array<T>();
+    }
 
 protected:
 
@@ -21,9 +27,9 @@ protected:
 private:
 
     std::unordered_map<
-        uint32,
-        sparse_set<uint32>
-    > m_components;
+        component_id,
+        basic_component_array
+    > m_component_arrays;
 
 };
 

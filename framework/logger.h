@@ -6,13 +6,13 @@
 
 namespace ionengine {
 
-class RenderSystem final : public Singleton<RenderSystem> {
-DECLARE_SINGLETON(RenderSystem)
+class Logger final : public Singleton<Logger> {
+DECLARE_SINGLETON(Logger)
 public:
 
 protected:
 
-    RenderSystem() {
+    Logger() {
         
     }
 

@@ -51,31 +51,31 @@ struct Vector2 {
 	}
 
 	Vector2 operator*(const T rhs) const {
-		return Vector2(x * rhs, y * rhs);
+		return { x * rhs, y * rhs };
 	}
 
 	Vector2 operator-(const Vector2& rhs) const {
-		return Vector2(x - rhs.x, y - rhs.y);
+		return { x - rhs.x, y - rhs.y };
 	}
 
 	Vector2 operator-(const T rhs) const {
-		return Vector2(x - rhs, y - rhs);
+		return { x - rhs, y - rhs };
 	}
 
 	Vector2 operator-() const {
-		return Vector2(-x, -y);
+		return {-x, -y };
 	}
 
 	Vector2 operator+(const Vector2& rhs) const {
-		return vector2<value_type>(x + rhs.x, y + rhs.y);
+		return { x + rhs.x, y + rhs.y };
 	}
 
 	Vector2 operator+(const T rhs) const {
-		return Vector2(x + rhs, y + rhs);
+		return { x + rhs, y + rhs };
 	}
 
 	Vector2 operator/(const T rhs) const {
-		return Vector2(x / rhs, y / rhs);
+		return { x / rhs, y / rhs };
 	}
 
 	bool operator==(const Vector2& rhs) const {

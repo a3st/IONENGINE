@@ -100,15 +100,15 @@ struct Quaternion {
     }
 
 	Quaternion operator*(const T rhs) const {
-		return Quaternion(x * rhs, y * rhs, z * rhs, w * rhs);
+		return { x * rhs, y * rhs, z * rhs, w * rhs };
 	}
 
 	Quaternion operator+(const Quaternion& rhs) const {
-		return Quaternion(x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w);
+		return { x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w };
 	}
 
 	Quaternion operator-(const Quaternion& rhs) const {
-		return Quaternion(x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w);
+		return { x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w };
 	}
 
 	bool operator!=(const Quaternion& rhs) const {
@@ -141,11 +141,11 @@ struct Quaternion {
         return quat;
     }
 
-	static Quaternion angle_axis(const T angle, const Vector3<T>& axis) {
+    static Quaternion angle_axis(const T angle, const Vector3<T>& axis) {
         T rot_angle = static_cast<T>(angle * math::deg2rad);
 	    T rot_sin = math::sin(rot_angle / 2);
         Vector3<T> norm_axis = axis.normalize();
-	    return Quaternion(norm_axis.x * rot_sin, norm_axis.y * rot_sin, norm_axis.z * rot_sin, math::cos(rot_angle / 2));
+	    return { norm_axis.x * rot_sin, norm_axis.y * rot_sin, norm_axis.z * rot_sin, math::cos(rot_angle / 2) };
     }
 };
 

@@ -9,16 +9,15 @@
 #include "lib/ecs.h"
 #include "lib/sparse_set.h"
 
+#include "logger.h"
+#include "input_system.h"
+
 using namespace ionengine;
 using namespace ionengine::platform;
 
 int32 main(int32, char**) {
 
     ecs::Engine ecs_engine;
-
-    ecs::EntityManager::get_instance().create_entity("Logger");
-    ecs::ComponentManager::get_instance();
-     
 
     WindowEventLoop window_event_loop;
     Window window(L"Window", 800, 600, WindowStyle::Normal | WindowStyle::Minimize | WindowStyle::Maximaze, window_event_loop);
@@ -27,6 +26,7 @@ int32 main(int32, char**) {
         switch(event.event_type) {
             case WindowEvent::Closed: window_event_loop.exit(); break;
             case WindowEvent::Updated: {
+                InputSystem::get_instance().
                 break;
             }
             default: break;

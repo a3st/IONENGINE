@@ -11,23 +11,19 @@ class EntityManager final : public Singleton<EntityManager> {
 DECLARE_SINGLETON(EntityManager)
 public:
 
-    uint64 create_entity(const std::string& name) {
+    entity_id create_entity(const std::string& name) {
         
-        uint64 entity_id = m_entities.size();
-        m_proxy_names[name] = entity_id;
-        m_entities.insert(static_cast<uint64>(entity_id));
-        return entity_id;
     }
 
 protected:
 
-    EntityManager() {
+    EntityManager() : m_size(0) {
     }
 
 private:
 
-    sparse_set<uint64> m_entities;
-    std::unordered_map<std::string, uint32> m_proxy_names;
+   
+    usize m_size;
 
 };
 

@@ -68,11 +68,11 @@ struct Fcolor {
 	}
 
 	Fvector4 to_vector4() const {
-		return Fvector4(r, g, b, a);
+		return { r, g, b, a };
 	}
 
 	Fvector3 to_vector3() const {
-		return Fvector3(r, g, b);
+		return { r, g, b };
 	}
     
 	bool operator==(const Fcolor& rhs) const {
