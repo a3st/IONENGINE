@@ -11,6 +11,7 @@
 
 #include "logger.h"
 #include "input_system.h"
+#include "renderer_system.h"
 
 using namespace ionengine;
 using namespace ionengine::platform;
@@ -22,13 +23,25 @@ int32 main(int32, char**) {
     WindowEventLoop window_event_loop;
     Window window(L"Window", 800, 600, WindowStyle::Normal | WindowStyle::Minimize | WindowStyle::Maximaze, window_event_loop);
 
+    renderer::RenderSystem::get_instance().create_renderer_for<Renderer>(window);
+
     window_event_loop.run([&](const WindowEventHandler& event) -> void { 
         switch(event.event_type) {
             case WindowEvent::Closed: window_event_loop.exit(); break;
             case WindowEvent::KeyboardInput:
-            case WindowEvent::MouseInput: InputSystem::get_instance().on_key_update(event); break;
+            case WindowEvent::MouseInput:
+            case WindowEvent::MouseMoved: InputSystem::get_instance().on_event_handle(event); break;
             case WindowEvent::Updated: {
-               
+                
+                auto input_sys = InputSystem::get_instance();
+                if(input_sys.get_key_down(KeyCode::A)) {
+                    std::cout << 1 << std::endl;
+                }
+                if(input_sys.get_key_up(KeyCode::A)) {
+                    std::cout << 2 << std::endl;
+                }
+
+                InputSystem::get_instance().get_instance().tick();
                 break;
             }
             default: break;

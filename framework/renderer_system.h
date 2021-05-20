@@ -3,12 +3,19 @@
 #pragma once
 
 #include "lib/singleton.h"
+#include "renderer/renderer.h"
+#include "platform/window.h"
 
-namespace ionengine {
+namespace ionengine::renderer {
 
 class RenderSystem final : public Singleton<RenderSystem> {
 DECLARE_SINGLETON(RenderSystem)
 public:
+
+    template<typename T = Renderer>
+    void create_renderer_for(platform::Window& window) {
+
+    }
 
 protected:
 

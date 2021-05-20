@@ -104,19 +104,19 @@ enum class KeyCode : uint32 {
 	ShoulderRight = 314
 };
 
-enum AXIS_CODE
-{
-	AXIS_CODE_INVALID = 0,
-
-	AXIS_CODE_MOUSEX = 1,
-	AXIS_CODE_MOUSEY = 2,
-	AXIS_CODE_MOUSEWHEEL = 3,
-	AXIS_CODE_THUMBLEFTX = 4,
-	AXIS_CODE_THUMBLEFTY = 5,
-	AXIS_CODE_THUMBRIGHTX = 6,
-	AXIS_CODE_THUMBRIGHTY = 7,
-	AXIS_CODE_TRIGGERLEFT = 8,
-	AXIS_CODE_TRIGGERRIGHT = 9
+enum class AxisCode : uint32 {
+	MouseX,
+	MouseY,
+	MouseWheel,
+	ThumbLeftX,
+	ThumbLeftY,
+	ThumbRightX,
+	ThumbRightY,
+	TriggerLeft,
+	TriggerRight
 };
+
+constexpr uint32 key_codes_max = 500;
+constexpr uint32 axis_codes_max = 10;
 
 }
