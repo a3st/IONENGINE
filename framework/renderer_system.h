@@ -13,8 +13,8 @@ DECLARE_SINGLETON(RenderSystem)
 public:
 
     template<typename T = Renderer>
-    void create_renderer_for(platform::Window& window) {
-
+    void create_renderer(platform::Window& window) {
+        
     }
 
 protected:

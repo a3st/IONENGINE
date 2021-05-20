@@ -116,7 +116,7 @@ enum class AxisCode : uint32 {
 	TriggerRight
 };
 
-constexpr uint32 key_codes_max = 500;
+constexpr uint32 key_codes_max = 400;
 constexpr uint32 axis_codes_max = 10;
 
 }

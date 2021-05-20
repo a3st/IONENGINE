@@ -2,14 +2,13 @@
 
 #pragma once
 
+#include "api.h"
+
 namespace ionengine::renderer {
 
-class Device final {
+class BaseRenderer {
 public:
-
-    Device();
-
-private:
-}
+    virtual ~BaseRenderer() = default;
+};
 
 }

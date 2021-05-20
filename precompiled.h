@@ -20,6 +20,8 @@
 
 #include "platform.h"
 
+namespace ionengine {
+
 typedef std::uint64_t   uint64;
 typedef std::uint32_t   uint32;
 typedef std::uint16_t   uint16;
@@ -29,3 +31,5 @@ typedef std::int32_t    int32;
 typedef std::int8_t     int8;
 typedef std::byte       byte;
 typedef std::size_t     usize;
+
+}

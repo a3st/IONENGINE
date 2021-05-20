@@ -21,7 +21,7 @@ int32 main(int32, char**) {
     ecs::Engine ecs_engine;
 
     WindowEventLoop window_event_loop;
-    Window window(L"Window", 800, 600, WindowStyle::Normal | WindowStyle::Minimize | WindowStyle::Maximaze, window_event_loop);
+    Window window(L"Runtime", 800, 600, WindowStyle::Normal | WindowStyle::Minimize | WindowStyle::Maximaze, window_event_loop);
 
     renderer::RenderSystem::get_instance().create_renderer_for<Renderer>(window);
 
