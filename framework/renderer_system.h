@@ -3,7 +3,7 @@
 #pragma once
 
 #include "lib/singleton.h"
-#include "renderer/renderer.h"
+#include "renderer/base_renderer.h"
 #include "platform/window.h"
 
 namespace ionengine::renderer {
@@ -12,7 +12,7 @@ class RenderSystem final : public Singleton<RenderSystem> {
 DECLARE_SINGLETON(RenderSystem)
 public:
 
-    template<typename T = Renderer>
+    template<typename T = BaseRenderer>
     void create_renderer(platform::Window& window) {
         
     }
@@ -24,6 +24,8 @@ protected:
     }
 
 private:
+
+
 };
 
 }

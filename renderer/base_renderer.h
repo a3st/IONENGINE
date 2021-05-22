@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "api.h"
-
 namespace ionengine::renderer {
 
 class BaseRenderer {

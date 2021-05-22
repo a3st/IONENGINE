@@ -7,9 +7,13 @@ namespace ionengine::renderer {
 class Device final {
 public:
 
-    Device();
+    Device() {
+
+    }
 
 private:
-}
+
+    ComPtr<ID3D12Device4> m_device;
+};
 
 }
