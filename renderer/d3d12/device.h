@@ -8,7 +8,7 @@ class Device final {
 public:
 
     Device() {
-
+        
     }
 
 private:

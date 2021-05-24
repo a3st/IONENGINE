@@ -5,7 +5,7 @@
 #include "api.h"
 #include "base_renderer.h"
 
-namespace ionengine {
+namespace ionengine::renderer {
 
 class Renderer : public BaseRenderer {
 public:
