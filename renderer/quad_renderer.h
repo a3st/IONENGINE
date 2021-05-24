@@ -4,14 +4,20 @@
 
 #include "api.h"
 #include "base_renderer.h"
+#include "frame_graph.h"
 
 namespace ionengine::renderer {
 
-class Renderer : public BaseRenderer {
+class QuadRenderer : public BaseRenderer {
 public:
 
+    QuadRenderer() {
+
+    }
 
 private:
+
+    FrameGraph m_frame_graph;
 };
 
 }

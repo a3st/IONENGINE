@@ -4,6 +4,7 @@
 
 #include "lib/singleton.h"
 #include "renderer/base_renderer.h"
+#include "renderer/api.h"
 #include "platform/window.h"
 
 namespace ionengine::renderer {
@@ -19,13 +20,21 @@ public:
 
 protected:
 
-    RenderSystem() {
+    RenderSystem() : m_adapter(m_instance), m_device(m_adapter) {
         
+        std::wcout << 
+            "device_id: " << m_adapter.get_device_id() <<
+            "\ndevice_name: " << m_adapter.get_device_name() << 
+            "\nmemory_device: " << m_adapter.get_video_memory() << 
+            "\nmemory_system: " << m_adapter.get_system_memory() << 
+        std::endl;
     }
 
 private:
 
-
+    Instance m_instance;
+    Adapter m_adapter;
+    Device m_device;
 };
 
 }

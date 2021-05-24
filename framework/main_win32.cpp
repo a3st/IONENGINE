@@ -12,7 +12,7 @@
 #include "logger.h"
 #include "input_system.h"
 #include "renderer_system.h"
-#include "renderer/renderer.h"
+#include "renderer/quad_renderer.h"
 
 using namespace ionengine;
 using namespace ionengine::platform;
@@ -24,7 +24,7 @@ int32 main(int32, char**) {
     WindowEventLoop window_event_loop;
     Window window(L"Runtime", 800, 600, WindowStyle::Normal | WindowStyle::Minimize | WindowStyle::Maximaze, window_event_loop);
 
-    renderer::RenderSystem::get_instance().create_renderer<renderer::Renderer>(window);
+    renderer::RenderSystem::get_instance().create_renderer<renderer::QuadRenderer>(window);
 
     window_event_loop.run([&](const WindowEventHandler& event) -> void { 
         switch(event.event_type) {
