@@ -5,6 +5,7 @@
 namespace ionengine::renderer {
 
 class Device final {
+friend class Swapchain;
 public:
 
     Device(const Adapter& adapter) : m_adapter(adapter) {

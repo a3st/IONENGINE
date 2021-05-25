@@ -7,6 +7,7 @@ namespace ionengine::renderer {
 class Instance final {
 friend class Adapter;
 friend class Device;
+friend class Swapchain;
 public:
 
     Instance() {
