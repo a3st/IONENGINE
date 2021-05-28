@@ -2,25 +2,17 @@
 
 #pragma once
 
-#include "lib/singleton.h"
 #include "renderer/base_renderer.h"
 #include "renderer/api.h"
 #include "platform/window.h"
 
-namespace ionengine::renderer {
+namespace ionengine {
 
-class RenderSystem final : public Singleton<RenderSystem> {
-DECLARE_SINGLETON(RenderSystem)
+class RenderSystem final {
 public:
 
-    template<typename T = BaseRenderer>
-    void create_renderer(platform::Window& window) {
-        
-    }
-
-protected:
-
-    RenderSystem() : m_adapter(m_instance), m_device(m_adapter) {
+    RenderSystem(const platform::Window& window) : m_adapter(m_instance), m_device(m_adapter), m_window(window), 
+        m_swapchain(m_instance, m_device, window.get_handle(), DXGI_FORMAT_R8G8B8A8_UNORM, 2) {
         
         std::wcout << 
             "device_id: " << m_adapter.get_device_id() <<
@@ -32,9 +24,12 @@ protected:
 
 private:
 
-    Instance m_instance;
-    Adapter m_adapter;
-    Device m_device;
+    renderer::Instance m_instance;
+    renderer::Adapter m_adapter;
+    renderer::Device m_device;
+    renderer::Swapchain m_swapchain;
+
+    const platform::Window& m_window;
 };
 
 }
