@@ -2,7 +2,10 @@
 
 #pragma once
 
-#ifdef _WIN32
+//#define IONENGINE_PLATFORM_ANDROID
+//#define IONENGINE_PLATFORM_WIN32
+
+#ifdef IONENGINE_PLATFORM_WIN32
 #define NOMINMAX
 #define UNICODE
 #define WIN32_LEAN_AND_MEAN
@@ -10,4 +13,10 @@
 #include <windowsx.h>
 #include <shellapi.h>
 #include <xinput.h>
+#endif
+
+#ifdef IONENGINE_PLATFORM_ANDROID
+#include <jni.h>
+#include <android/log.h>
+#include "platform/android/android_native_app_glue.h"
 #endif

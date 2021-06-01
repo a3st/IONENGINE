@@ -12,7 +12,7 @@ DECLARE_SINGLETON(EntityManager)
 public:
 
     entity_id create_entity(const std::string& name) {
-        
+        return 0;
     }
 
 protected:

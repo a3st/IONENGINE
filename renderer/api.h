@@ -2,7 +2,7 @@
 
 #pragma once
 
-#define RENDERER_API_D3D12
+//#define RENDERER_API_D3D12
 
 #ifdef RENDERER_API_D3D12
 

@@ -5,6 +5,10 @@
 #include "window_event_handler.h"
 #include "window_event_loop.h"
 
-#ifdef _WIN32
+#ifdef IONENGINE_PLATFORM_WIN32
 #include "win32/window_win32.h"
+#endif
+
+#ifdef IONENGINE_PLATFORM_ANDROID
+#include "android/window_android.h"
 #endif
