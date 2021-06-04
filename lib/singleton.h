@@ -2,7 +2,7 @@
 
 #pragma once
 
-#ifndef DECLARE_SINGLETON(Class)
+#ifndef DECLARE_SINGLETON
 #define DECLARE_SINGLETON(Class) friend class Singleton<Class>;
 #endif
 

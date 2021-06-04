@@ -15,13 +15,9 @@ public:
         m_running = true;
 
         while (m_running) {
-            MSG msg = {};
-            while (::PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
-                ::TranslateMessage(&msg);
-                ::DispatchMessage(&msg);
-            }
+            uint64 window_id = peek_message_window();
 
-            if (!m_events.empty()) {
+            while(!m_events.empty()) {
                 WindowEventHandler event_handler = std::move(m_events.back());
                 m_events.pop();
                 function_loop(event_handler);
@@ -30,9 +26,9 @@ public:
             // WindowEvent::Updated
             {
                 WindowEventHandler event_handler = {};
-                event_handler.window_id = ::GetWindowLong(msg.hwnd, GWL_ID);
+                event_handler.window_id = window_id;
                 event_handler.event_type = WindowEvent::Updated;
-                m_events.emplace(event_handler);
+                function_loop(event_handler);
             }
 	    }
     }

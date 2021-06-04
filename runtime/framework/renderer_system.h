@@ -11,8 +11,11 @@ namespace ionengine {
 class RenderSystem final {
 public:
 
-    RenderSystem(const platform::Window& window) : m_adapter(m_instance), m_device(m_adapter), m_window(window), 
-        m_swapchain(m_instance, m_device, window.get_handle(), DXGI_FORMAT_R8G8B8A8_UNORM, 2) {
+    RenderSystem(const platform::Window& window) : 
+        m_adapter(m_instance), 
+        m_device(m_adapter), 
+        m_window(window),
+        m_swapchain(m_instance, m_device, window.get_handle(), renderer::ImageFormat::R8G8B8A8, 2) {
         
         std::wcout << 
             "device_id: " << m_adapter.get_device_id() <<
@@ -20,6 +23,15 @@ public:
             "\nmemory_device: " << m_adapter.get_video_memory() << 
             "\nmemory_system: " << m_adapter.get_system_memory() << 
         std::endl;
+    }
+
+    void resize(const uint32 width, const uint32 height) {
+        // std::wcout << "RenderSystem::resize triggered" << std::endl;
+        m_swapchain.resize(width, height);
+    }
+
+    void tick() {
+        
     }
 
 private:

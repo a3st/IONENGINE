@@ -128,7 +128,7 @@ private:
 			}
 			case WM_SIZE: {
 				event_handler.event_type = WindowEvent::Sized;
-				event_handler.event = PhysicalSize<uint32_t>(LOWORD(lParam), HIWORD(lParam));
+				event_handler.event = PhysicalSize<uint32>(LOWORD(lParam), HIWORD(lParam));
 				window->m_event_loop.m_events.emplace(event_handler);
 				break;
 			}

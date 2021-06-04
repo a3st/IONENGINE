@@ -5,31 +5,103 @@ project(IONENGINE VERSION 0.1.0)
 # Shared includes
 include_directories(${PROJECT_SOURCE_DIR})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17 -stdlib=libc++ -arch x86_x64")
-
+# Global sets
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 #[[
 
-    Windows Runtime Build Target
+    Runtime-Win32 Build Target
 
 #]]
 
-add_executable(Runtime framework/main_win32.cpp)
-target_precompile_headers(Runtime PRIVATE precompiled.h)
+add_executable(Runtime-Win32 runtime/framework/main_win32.cpp)
+target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
 
 # Build Output
-set_target_properties(Runtime PROPERTIES 
+set_target_properties(Runtime-Win32 PROPERTIES 
     OUTPUT_NAME "IONENGINE-Runtime"
+    COMPILE_FLAGS "${COMPILE_FLAGS}"
 )
 
-target_include_directories(Runtime PRIVATE 
+# Include dirs
+target_include_directories(Runtime-Win32 PRIVATE
+    ${PROJECT_SOURCE_DIR}/runtime
     "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/um"
     "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/winrt"
     "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/"
 )
 
+# Link Libs
+target_link_libraries(Runtime-Win32
+    ${Runtime-Win32}
+)
+
 # Preprocessor
-target_compile_definitions(Runtime PRIVATE 
+target_compile_definitions(Runtime-Win32 PRIVATE 
     IONENGINE_PLATFORM_WIN32
     RENDERER_API_D3D12
+)
+
+#[[
+
+    Runtime-Android Build Target
+
+#]]
+
+add_library(Runtime-Android SHARED platform/android/android_native_app_glue.cpp runtime/framework/main_android.cpp)
+
+# Build Output
+set_target_properties(Runtime-Android PROPERTIES 
+    OUTPUT_NAME "IONENGINE-Android"
+)
+
+# Include dirs
+#target_include_directories(Runtime-Android PRIVATE
+#    ${Runtime-Android}
+#)
+
+#find_library(Runtime-Android
+#    log
+#)
+
+# Link Libs
+#target_link_libraries(Runtime-Android
+#    ${Runtime-Android}
+#)
+
+# Preprocessor
+target_compile_definitions(Runtime-Android PRIVATE 
+    IONENGINE_PLATFORM_ANDROID
+)
+
+#[[
+
+    Server-Win32 Build Target
+
+#]]
+
+add_executable(Server-Win32 Server/main_win32.cpp)
+target_precompile_headers(Server-Win32 PRIVATE precompiled.h)
+
+# Build Output
+set_target_properties(Server-Win32 PROPERTIES 
+    OUTPUT_NAME "IONENGINE-Server"
+    COMPILE_FLAGS "${COMPILE_FLAGS}"
+)
+
+# Include dirs
+target_include_directories(Server-Win32 PRIVATE
+    ${PROJECT_SOURCE_DIR}/server
+)
+
+# Link Libs
+target_link_libraries(Server-Win32
+    ${Server-Win32}
+)
+
+# Preprocessor
+target_compile_definitions(Server-Win32 PRIVATE 
+    IONENGINE_PLATFORM_WIN32
 )

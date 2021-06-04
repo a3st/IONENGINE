@@ -2,6 +2,10 @@
 
 #pragma once
 
+#ifdef IONENGINE_PLATFORM_WIN32
+#include "win32/utils_win32.h"
+#endif
+
 #include "window_event_handler.h"
 #include "window_event_loop.h"
 

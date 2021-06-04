@@ -95,7 +95,7 @@ struct MouseMoved {
 };
 
 struct WindowEventHandler {
-	uint64_t window_id;
+	uint64 window_id;
 	WindowEvent event_type;
 
 	std::variant<

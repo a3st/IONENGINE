@@ -7,12 +7,12 @@ namespace ionengine::renderer {
 class Swapchain {
 public:
 
-    Swapchain(const Instance& instance, const Device& device, void* hwnd, const DXGI_FORMAT buffer_format, const uint32 buffer_count) : 
+    Swapchain(const Instance& instance, const Device& device, void* hwnd, const ImageFormat buffer_format, const uint32 buffer_count) : 
         m_buffer_count(buffer_count) {
         
         DXGI_SWAP_CHAIN_DESC1 swapchain_desc = {};
         swapchain_desc.BufferCount = m_buffer_count;
-        swapchain_desc.Format = buffer_format;
+        swapchain_desc.Format = static_cast<DXGI_FORMAT>(buffer_format);
         swapchain_desc.Width = 1;
         swapchain_desc.Height = 1;
         swapchain_desc.SampleDesc.Count = 1;

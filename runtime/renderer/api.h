@@ -15,12 +15,15 @@
 
 using Microsoft::WRL::ComPtr;
 
+#include "d3d12/types.h"
 #include "d3d12/utils.h"
 #include "d3d12/image_view.h"
 #include "d3d12/instance.h"
 #include "d3d12/adapter.h"
 #include "d3d12/device.h"
 #include "d3d12/swapchain.h"
+#include "d3d12/descriptor_pool.h"
+#include "d3d12/memory_pool.h"
 
 #endif
 

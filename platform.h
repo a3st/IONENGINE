@@ -3,7 +3,7 @@
 #pragma once
 
 //#define IONENGINE_PLATFORM_ANDROID
-//#define IONENGINE_PLATFORM_WIN32
+#define IONENGINE_PLATFORM_WIN32
 
 #ifdef IONENGINE_PLATFORM_WIN32
 #define NOMINMAX
@@ -13,6 +13,10 @@
 #include <windowsx.h>
 #include <shellapi.h>
 #include <xinput.h>
+#include <WinSock2.h>
+
+#pragma comment(lib, "Ws2_32.lib")
+
 #endif
 
 #ifdef IONENGINE_PLATFORM_ANDROID

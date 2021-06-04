@@ -8,9 +8,14 @@
 
 namespace ionengine {
 
-class InputSystem final : public Singleton<InputSystem> {
-DECLARE_SINGLETON(InputSystem)
+class InputSystem final {
 public:
+
+    InputSystem() {
+        m_previous_keys.fill(false);
+        m_current_keys.fill(false);
+        m_current_axis.fill(0.0f);
+    }
 
     void tick() {
         m_previous_keys = m_current_keys;
@@ -57,12 +62,6 @@ public:
 
     bool get_key(const KeyCode key_code) const {
         return m_current_keys[static_cast<uint32>(key_code)];
-    }
-
-protected:
-
-    InputSystem() {
-        
     }
 
 private:
