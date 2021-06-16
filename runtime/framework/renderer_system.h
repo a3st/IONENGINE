@@ -41,6 +41,13 @@ private:
     renderer::Device m_device;
     renderer::Swapchain m_swapchain;
 
+    struct {
+        renderer::DescriptorPool<renderer::DesctiptorType::UnorderedAccess> ua;
+        renderer::DescriptorPool<renderer::DesctiptorType::Sampler> sampler;
+        renderer::DescriptorPool<renderer::DesctiptorType::Resource> resource;
+        renderer::DescriptorPool<renderer::DesctiptorType::Buffer> buffer;
+    } m_descriptors;
+
     const platform::Window& m_window;
 };
 

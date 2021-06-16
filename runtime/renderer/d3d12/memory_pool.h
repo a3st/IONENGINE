@@ -4,6 +4,13 @@
 
 namespace ionengine::renderer {
 
+class MemoryPool final {
+public:
 
+
+
+private:
+
+};
     
 }
