@@ -24,10 +24,10 @@ public:
         instance.m_factory->CreateSwapChainForHwnd(device.m_queues.direct.Get(), reinterpret_cast<HWND>(hwnd), &swapchain_desc, nullptr, nullptr, temp_swapchain.GetAddressOf());
         temp_swapchain.As(&m_swapchain);
 
-        m_image_views.resize(m_buffer_count);
+        m_render_targets.resize(m_buffer_count);
 
-        for(uint32 i = 0; i < m_image_views.size(); ++i) {
-            m_swapchain->GetBuffer(i, IID_PPV_ARGS(&m_image_views[i].m_resource));
+        for(uint32 i = 0; i < m_render_targets.size(); ++i) {
+            m_swapchain->GetBuffer(i, IID_PPV_ARGS(&m_render_targets[i].m_resource));
         }
     }
 
@@ -35,22 +35,22 @@ public:
         DXGI_SWAP_CHAIN_DESC1 prev_swapchain_desc = {};
         m_swapchain->GetDesc1(&prev_swapchain_desc);
 
-        m_image_views.clear();
+        m_render_targets.clear();
         m_swapchain->ResizeBuffers(m_buffer_count, width, height, prev_swapchain_desc.Format, prev_swapchain_desc.Flags);
 
-        for(uint32 i = 0; i < m_image_views.size(); ++i) {
-            m_swapchain->GetBuffer(i, IID_PPV_ARGS(&m_image_views[i].m_resource));
+        for(uint32 i = 0; i < m_render_targets.size(); ++i) {
+            m_swapchain->GetBuffer(i, IID_PPV_ARGS(&m_render_targets[i].m_resource));
         }
     }
 
-    const std::vector<ImageView>& get_image_views() const {
-        return m_image_views;
+    const std::vector<RenderTarget>& get_render_targets() const {
+        return m_render_targets;
     }
 
 private:
 
     ComPtr<IDXGISwapChain4> m_swapchain;
-    std::vector<ImageView> m_image_views;
+    std::vector<RenderTarget> m_render_targets;
 
     uint32 m_buffer_count;
 };

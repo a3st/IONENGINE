@@ -17,20 +17,21 @@ public:
             throw_if_failed(adapter->GetDesc1(&adapter_desc));
 
             if(adapter_desc.Flags != DXGI_ADAPTER_FLAG_SOFTWARE) {
-                if(SUCCEEDED(::D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device4), nullptr))) {
-                    adapter.As(&m_adapter);
+                if(SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device4), nullptr))) {
+                    
+                    m_device_memory = adapter_desc.DedicatedVideoMemory;
 
                     m_device_id = adapter_desc.DeviceId;
-                    m_device_name = adapter_desc.Description;
-                    m_device_memory.system = adapter_desc.DedicatedSystemMemory;
-                    m_device_memory.video = adapter_desc.DedicatedVideoMemory;
+                    m_device_name = wsts(adapter_desc.Description);
+
+                    adapter.As(&m_adapter);
                     break;
                 }
             }
         }
     }
 
-    std::wstring_view get_device_name() const {
+    const std::string& get_device_name() const {
         return m_device_name;
     }
 
@@ -38,12 +39,8 @@ public:
         return m_device_id; 
     }
 
-    usize get_system_memory() const {
-        return m_device_memory.system;
-    }
-
-    usize get_video_memory() const {
-        return m_device_memory.video;
+    usize get_device_memory() const {
+        return m_device_memory;
     }
 
 private:
@@ -52,11 +49,8 @@ private:
     ComPtr<IDXGIAdapter4> m_adapter;
 
     uint64 m_device_id;
-    std::wstring m_device_name;
-    struct {
-        usize system;
-        usize video;
-    } m_device_memory;
+    std::string m_device_name;
+    usize m_device_memory;
 };
 
 }

@@ -17,7 +17,7 @@ using Microsoft::WRL::ComPtr;
 
 #include "d3d12/types.h"
 #include "d3d12/utils.h"
-#include "d3d12/image_view.h"
+#include "d3d12/render_target.h"
 #include "d3d12/instance.h"
 #include "d3d12/adapter.h"
 #include "d3d12/device.h"
@@ -29,10 +29,17 @@ using Microsoft::WRL::ComPtr;
 
 #ifdef RENDERER_API_VK
 
-#include <vulkan.h>
+#define VK_USE_PLATFORM_WIN32_KHR
+
+#include <vulkan/vulkan.h>
 
 #pragma comment(lib, "vulkan-1.lib")
 
-#include "vk/..."
+#include "vk/types.h"
+#include "vk/utils.h"
+#include "vk/instance.h"
+#include "vk/adapter.h"
+#include "vk/device.h"
+#include "vk/swapchain.h"
 
 #endif

@@ -2,9 +2,6 @@
 
 #pragma once
 
-//#define IONENGINE_PLATFORM_ANDROID
-#define IONENGINE_PLATFORM_WIN32
-
 #ifdef IONENGINE_PLATFORM_WIN32
 #define NOMINMAX
 #define UNICODE

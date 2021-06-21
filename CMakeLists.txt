@@ -46,6 +46,46 @@ target_compile_definitions(Runtime-Win32 PRIVATE
 
 #[[
 
+    Runtime-Win32-VK Build Target
+
+#]]
+
+add_executable(Runtime-Win32VK runtime/framework/main_win32.cpp)
+target_precompile_headers(Runtime-Win32VK PRIVATE precompiled.h)
+
+# Build Output
+set_target_properties(Runtime-Win32VK PROPERTIES 
+    OUTPUT_NAME "IONENGINE-Runtime-VK"
+    COMPILE_FLAGS "${COMPILE_FLAGS}"
+)
+
+# Include dirs
+target_include_directories(Runtime-Win32VK PRIVATE
+    ${PROJECT_SOURCE_DIR}/runtime
+    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/um"
+    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/winrt"
+    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/"
+    "C:/VulkanSDK/1.2.170.0/Include"
+)
+
+# Link Libs
+target_link_directories(Runtime-Win32VK PRIVATE
+    "C:/VulkanSDK/1.2.170.0/Lib"
+)
+
+# Link Libs
+target_link_libraries(Runtime-Win32VK
+    ${Runtime-Win32VK}
+)
+
+# Preprocessor
+target_compile_definitions(Runtime-Win32VK PRIVATE 
+    IONENGINE_PLATFORM_WIN32
+    RENDERER_API_VK
+)
+
+#[[
+
     Runtime-Android Build Target
 
 #]]

@@ -4,11 +4,11 @@
 
 namespace ionengine::renderer {
 
-class ImageView {
+class RenderTarget {
 friend class Swapchain;
 public:
 
-    ImageView() {
+    RenderTarget() {
 
     }
 

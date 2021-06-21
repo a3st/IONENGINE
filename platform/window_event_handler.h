@@ -84,13 +84,13 @@ struct MouseWheel {
 };
 
 struct MouseMoved {
-	PhysicalPosition<float> position;
+	PhysicalPosition<int32> position;
 	bool relative;
 
-	MouseMoved() : position(0.0f, 0.0f), relative(false) {
+	MouseMoved() : position(0, 0), relative(false) {
     }
 
-	MouseMoved(const float x, const float y, const bool relative_) : position(x, y), relative(relative_) {
+	MouseMoved(const int32 x, const int32 y, const bool relative_) : position(x, y), relative(relative_) {
     }
 };
 

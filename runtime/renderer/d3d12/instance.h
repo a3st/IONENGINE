@@ -12,9 +12,9 @@ public:
 
     Instance() {
         
-        throw_if_failed(::CreateDXGIFactory2(0, IID_PPV_ARGS(&m_factory)));
+        throw_if_failed(CreateDXGIFactory2(0, IID_PPV_ARGS(&m_factory)));
         
-        throw_if_failed(::D3D12GetDebugInterface(IID_PPV_ARGS(&m_debug)));
+        throw_if_failed(D3D12GetDebugInterface(IID_PPV_ARGS(&m_debug)));
         m_debug->EnableDebugLayer();
     }
 

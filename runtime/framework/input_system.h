@@ -43,8 +43,8 @@ public:
             case platform::WindowEvent::MouseMoved: {
                 auto input = std::get<platform::MouseMoved>(event.event);
                 if(input.relative) {
-                    m_current_axis[static_cast<uint32>(AxisCode::MouseX)] = input.position.x;
-                    m_current_axis[static_cast<uint32>(AxisCode::MouseY)] = input.position.y;
+                    m_current_axis[static_cast<uint32>(AxisCode::MouseX)] = static_cast<float>(input.position.x);
+                    m_current_axis[static_cast<uint32>(AxisCode::MouseY)] = static_cast<float>(input.position.y);
                 }
                 break;
             }

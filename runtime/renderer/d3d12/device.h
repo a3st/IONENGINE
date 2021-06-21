@@ -4,13 +4,24 @@
 
 namespace ionengine::renderer {
 
+enum class DeviceLimits : uint32 {
+    Sampler = 16,
+    Buffer = 12,
+    Resource = 128,
+    UnorderedAccess = 12
+};
+
 class Device final {
 friend class Swapchain;
+friend class DescriptorPool<DesctiptorType::Sampler>;
+friend class DescriptorPool<DesctiptorType::RenderTarget>;
+friend class DescriptorPool<DesctiptorType::DepthStencil>;
+friend class DescriptorPool<DesctiptorType::Buffer>;
 public:
 
     Device(const Adapter& adapter) : m_adapter(adapter) {
         
-        throw_if_failed(::D3D12CreateDevice(m_adapter.m_adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device)));
+        throw_if_failed(D3D12CreateDevice(m_adapter.m_adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device)));
 
         D3D12_COMMAND_QUEUE_DESC direct_desc = UTILS_COMMAND_QUEUE_DESC::as_direct_queue(D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
         D3D12_COMMAND_QUEUE_DESC copy_desc = UTILS_COMMAND_QUEUE_DESC::as_copy_queue(D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);

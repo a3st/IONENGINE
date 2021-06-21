@@ -14,10 +14,19 @@ WindowStyle operator|(const WindowStyle lhs, const WindowStyle rhs) {
 	return static_cast<WindowStyle>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
 }
 
+uint64 peek_message_window() {
+    MSG msg = {};
+    while (::PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        ::TranslateMessage(&msg);
+        ::DispatchMessage(&msg);
+    }
+    return ::GetWindowLong(msg.hwnd, GWL_ID);
+}
+
 class Window final {
 public:
 
-    Window(const std::wstring_view& label, const uint32 width, const uint32 height, const WindowStyle window_style, WindowEventLoop& event_loop) : 
+    Window(const std::wstring& label, const uint32 width, const uint32 height, const WindowStyle window_style, WindowEventLoop& event_loop) : 
 		m_event_loop(event_loop) {
 		
 		WNDCLASS wnd_class = {};

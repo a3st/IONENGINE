@@ -17,6 +17,9 @@
 #include <functional>
 #include <memory>
 #include <unordered_map>
+#include <map>
+#include <bitset>
+#include <optional>
 
 #include "platform.h"
 
