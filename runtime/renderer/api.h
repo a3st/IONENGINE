@@ -29,14 +29,16 @@ using Microsoft::WRL::ComPtr;
 
 #ifdef RENDERER_API_VK
 
+#ifdef IONENGINE_PLATFORM_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
+#endif
 
 #include <vulkan/vulkan.h>
 
 #pragma comment(lib, "vulkan-1.lib")
 
-#include "vk/types.h"
 #include "vk/utils.h"
+#include "vk/types.h"
 #include "vk/instance.h"
 #include "vk/adapter.h"
 #include "vk/device.h"

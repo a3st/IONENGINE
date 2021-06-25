@@ -11,17 +11,24 @@ friend class Swapchain;
 public:
 
     Instance() {
+        uint32 factory_flags = 0;
         
-        throw_if_failed(CreateDXGIFactory2(0, IID_PPV_ARGS(&m_factory)));
-        
-        throw_if_failed(D3D12GetDebugInterface(IID_PPV_ARGS(&m_debug)));
-        m_debug->EnableDebugLayer();
+#ifdef NDEBUG
+        factory_flags = DXGI_CREATE_FACTORY_DEBUG;
+#endif
+
+        throw_if_failed(CreateDXGIFactory2(factory_flags, IID_PPV_ARGS(&m_factory_ptr)));
+
+#ifdef NDEBUG
+        throw_if_failed(D3D12GetDebugInterface(IID_PPV_ARGS(&m_debug_ptr)));
+        m_debug_ptr->EnableDebugLayer();
+#endif
     }
 
 private:
 
-    ComPtr<IDXGIFactory4> m_factory;
-    ComPtr<ID3D12Debug> m_debug;
+    ComPtr<IDXGIFactory4> m_factory_ptr;
+    ComPtr<ID3D12Debug> m_debug_ptr;
 };
 
 }

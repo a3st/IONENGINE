@@ -2,29 +2,28 @@
 
 #pragma once
 
-#include "lib/fmt.h"
-
 namespace ionengine::renderer {
 
-void throw_if_failed(const HRESULT hr) {
-	if (FAILED(hr)) {
-		throw std::runtime_error(format<std::string>("An error has occurred {x:8}", hr));
+std::string result_to_string(const HRESULT result) {
+	switch(result) {
+		case E_FAIL: return "Attempted to create a device with the debug layer enabled and the layer is not installed";
+		case E_INVALIDARG: return "An invalid parameter was passed to the returning function";
+		case E_OUTOFMEMORY: return "Direct3D could not allocate sufficient memory to complete the call";
+		case E_NOTIMPL: return "The method call isn't implemented with the passed parameter combination";
+		case S_FALSE: return "Alternate success value, indicating a successful but nonstandard completion";
+		case S_OK: return "No error occurred";
+		case D3D12_ERROR_ADAPTER_NOT_FOUND: return "The specified cached PSO was created on a different adapter and cannot be reused on the current adapter";
+		case D3D12_ERROR_DRIVER_VERSION_MISMATCH: return "The specified cached PSO was created on a different driver version and cannot be reused on the current adapter";
+		case DXGI_ERROR_INVALID_CALL: return "The method call is invalid. For example, a method's parameter may not be a valid pointer";
+		case DXGI_ERROR_WAS_STILL_DRAWING: return "The previous blit operation that is transferring information to or from this surface is incomplete";
+		default: return "An unknown error has occurred";
 	}
 }
 
-struct UTILS_COMMAND_QUEUE_DESC : public D3D12_COMMAND_QUEUE_DESC {
-
-	static D3D12_COMMAND_QUEUE_DESC as_direct_queue(const int32 priority, const D3D12_COMMAND_QUEUE_FLAGS flags) {
-		return { D3D12_COMMAND_LIST_TYPE_DIRECT, priority, flags, 0 };
+void throw_if_failed(const HRESULT result) {
+	if (FAILED(hr)) {
+		throw std::runtime_error(result_to_string(result));
 	}
-
-	static D3D12_COMMAND_QUEUE_DESC as_copy_queue(const int32 priority, const D3D12_COMMAND_QUEUE_FLAGS flags) {
-		return { D3D12_COMMAND_LIST_TYPE_COPY, priority, flags, 0 };
-	}
-
-	static D3D12_COMMAND_QUEUE_DESC as_compute_queue(const int32 priority, const D3D12_COMMAND_QUEUE_FLAGS flags) {
-		return { D3D12_COMMAND_LIST_TYPE_DIRECT, priority, flags, 0 };
-	}
-};
+}
 
 }

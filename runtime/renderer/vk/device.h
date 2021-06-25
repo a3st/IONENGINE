@@ -10,11 +10,11 @@ public:
 
     Device(const Adapter& adapter) : m_adapter(adapter) {
 
-        uint32_t family_count = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.m_phys_device, &family_count, nullptr);
+        uint32 family_count = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.m_handle, &family_count, nullptr);
 
         std::vector<VkQueueFamilyProperties> families(family_count);
-        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.m_phys_device, &family_count, families.data());
+        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.m_handle, &family_count, families.data());
 
         std::vector<std::reference_wrapper<VkQueueFamilyProperties>> families_ref(families.begin(), families.end());
         std::sort(families_ref.begin(), families_ref.end(), [](const auto& a, const auto& b) {
@@ -23,14 +23,14 @@ public:
 
         std::optional<std::tuple<uint32, uint32>> graphics_index, transfer_index, compute_index;
 
-        for(uint32 i = 0; i < families_ref.size(); i++) {
-            for(uint32 j = 0; j < families_ref[i].get().queueCount; j++) {
+        for(uint32 i = 0; i < families_ref.size(); ++i) {
+            for(uint32 j = 0; j < families_ref[i].get().queueCount; ++j) {
                 if(families_ref[i].get().queueFlags & VK_QUEUE_GRAPHICS_BIT && !graphics_index.has_value()) {
-                    graphics_index = {&families_ref[i].get() - families.data(), j};
+                    graphics_index = {static_cast<uint32>(&families_ref[i].get() - families.data()), j};
                 } else if(families_ref[i].get().queueFlags & VK_QUEUE_TRANSFER_BIT && !transfer_index.has_value()) {
-                    transfer_index = {&families_ref[i].get() - families.data(), j};
+                    transfer_index = {static_cast<uint32>(&families_ref[i].get() - families.data()), j};
                 } else if(families_ref[i].get().queueFlags & VK_QUEUE_COMPUTE_BIT && !compute_index.has_value()) {
-                    compute_index = {&families_ref[i].get() - families.data(), j};
+                    compute_index = {static_cast<uint32>(&families_ref[i].get() - families.data()), j};
                 }
             }
         }
@@ -38,7 +38,7 @@ public:
         std::vector<VkDeviceQueueCreateInfo> queue_infos(families.size());
         std::vector<std::vector<float>> queue_priorities(families.size());
 
-        for(uint32 i = 0; i < families.size(); i++) {
+        for(uint32 i = 0; i < families.size(); ++i) {
             queue_priorities[i].resize(families[i].queueCount);
             std::fill(queue_priorities[i].begin(), queue_priorities[i].end(), 1.0f);
 
@@ -50,10 +50,8 @@ public:
             queue_infos[i] = queue_info;
         }
 
-
-        const std::array<const char*, 1> device_extensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
-        };
+        std::vector<const char*> device_extensions;
+        device_extensions.emplace_back("VK_KHR_swapchain");
 
         VkDeviceCreateInfo device_info = {};
         device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -62,32 +60,36 @@ public:
         device_info.ppEnabledExtensionNames = device_extensions.data();
         device_info.enabledExtensionCount = static_cast<uint32>(device_extensions.size());
         
-        throw_if_failed(vkCreateDevice(m_adapter.m_phys_device, &device_info, nullptr, &m_device));
+        throw_if_failed(vkCreateDevice(m_adapter.m_handle, &device_info, nullptr, &m_handle));
 
         if(!graphics_index.has_value()) {
-            throw std::runtime_error("VkDevice Error (Your GPU not supported by application)");
+            throw std::runtime_error("Your GPU not supported by application");
+        } else {
+            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queues.graphics);
         }
 
-        vkGetDeviceQueue(m_device, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queues.graphics);
         if(!transfer_index.has_value()) {
-            vkGetDeviceQueue(m_device, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queues.transfer);
+            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queues.transfer);
+        } else {
+            vkGetDeviceQueue(m_handle, std::get<0>(transfer_index.value()), std::get<1>(transfer_index.value()), &m_queues.transfer);
         }
+
         if(!compute_index.has_value()) {
-            vkGetDeviceQueue(m_device, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queues.compute);
+            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queues.compute);
+        } else {
+            vkGetDeviceQueue(m_handle, std::get<0>(compute_index.value()), std::get<1>(compute_index.value()), &m_queues.compute);
         }
-        vkGetDeviceQueue(m_device, std::get<0>(transfer_index.value()), std::get<1>(transfer_index.value()), &m_queues.transfer);
-        vkGetDeviceQueue(m_device, std::get<0>(compute_index.value()), std::get<1>(compute_index.value()), &m_queues.compute);
     }
 
     ~Device() {
-        vkDestroyDevice(m_device, nullptr);
+        vkDestroyDevice(m_handle, nullptr);
     }
 
 private:
 
     const Adapter& m_adapter;
-    VkDevice m_device;
 
+    VkDevice m_handle;
     struct {
         VkQueue graphics;
         VkQueue transfer;

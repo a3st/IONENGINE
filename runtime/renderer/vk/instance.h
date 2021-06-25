@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "platform/types.h"
-
 namespace ionengine::renderer {
 
 class Instance final {
@@ -13,10 +11,19 @@ friend class Swapchain;
 public:
 
     Instance() {
+        std::vector<const char*> instance_layers;
+        std::vector<const char*> instance_extensions;
 
-        std::array<const char*, 1> vk_layers = {
-            "VK_LAYER_LUNARG_standard_validation"
-        };
+        instance_extensions.emplace_back("VK_KHR_surface");
+
+#ifdef NDEBUG
+        instance_layers.emplace_back("VK_LAYER_LUNARG_standard_validation");
+        instance_extensions.emplace_back("VK_EXT_debug_utils");
+#endif
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+        instance_extensions.emplace_back("VK_KHR_win32_surface");
+#endif
 
         VkApplicationInfo app_info = {};
         app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -29,21 +36,21 @@ public:
         VkInstanceCreateInfo instance_info = {};
         instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         instance_info.pApplicationInfo = &app_info;
-        instance_info.ppEnabledExtensionNames = platform::vk_extensions.data();
-        instance_info.enabledExtensionCount = static_cast<uint32>(platform::vk_extensions.size());
-        instance_info.ppEnabledLayerNames = vk_layers.data();
-        instance_info.enabledLayerCount = static_cast<uint32>(vk_layers.size());
+        instance_info.ppEnabledExtensionNames = instance_extensions.data();
+        instance_info.enabledExtensionCount = static_cast<uint32>(instance_extensions.size());
+        instance_info.ppEnabledLayerNames = instance_layers.data();
+        instance_info.enabledLayerCount = static_cast<uint32>(instance_layers.size());
 
-        throw_if_failed(vkCreateInstance(&instance_info, nullptr, &m_instance));
+        throw_if_failed(vkCreateInstance(&instance_info, nullptr, &m_handle));
     }
 
     ~Instance() {
-        vkDestroyInstance(m_instance, nullptr);
+        vkDestroyInstance(m_handle, nullptr);
     }
 
 private:
 
-    VkInstance m_instance;
+    VkInstance m_handle;
 };
 
 }

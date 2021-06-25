@@ -23,9 +23,7 @@ public:
         
         throw_if_failed(D3D12CreateDevice(m_adapter.m_adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device)));
 
-        D3D12_COMMAND_QUEUE_DESC direct_desc = UTILS_COMMAND_QUEUE_DESC::as_direct_queue(D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
-        D3D12_COMMAND_QUEUE_DESC copy_desc = UTILS_COMMAND_QUEUE_DESC::as_copy_queue(D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
-        D3D12_COMMAND_QUEUE_DESC compute_desc = UTILS_COMMAND_QUEUE_DESC::as_compute_queue(D3D12_COMMAND_QUEUE_PRIORITY_NORMAL, D3D12_COMMAND_QUEUE_FLAG_NONE);
+        D3D12_COMMAND_QUEUE_DESC queue_desc = {};
 
         throw_if_failed(m_device->CreateCommandQueue(&direct_desc, IID_PPV_ARGS(&m_queues.direct)));
         throw_if_failed(m_device->CreateCommandQueue(&copy_desc, IID_PPV_ARGS(&m_queues.copy)));
