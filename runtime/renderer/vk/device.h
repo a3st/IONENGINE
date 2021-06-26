@@ -5,16 +5,15 @@
 namespace ionengine::renderer {
 
 class Device final {
-friend class Swapchain;
 public:
 
     Device(const Adapter& adapter) : m_adapter(adapter) {
 
         uint32 family_count = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.m_handle, &family_count, nullptr);
+        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.get_handle(), &family_count, nullptr);
 
         std::vector<VkQueueFamilyProperties> families(family_count);
-        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.m_handle, &family_count, families.data());
+        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.get_handle(), &family_count, families.data());
 
         std::vector<std::reference_wrapper<VkQueueFamilyProperties>> families_ref(families.begin(), families.end());
         std::sort(families_ref.begin(), families_ref.end(), [](const auto& a, const auto& b) {
@@ -60,30 +59,33 @@ public:
         device_info.ppEnabledExtensionNames = device_extensions.data();
         device_info.enabledExtensionCount = static_cast<uint32>(device_extensions.size());
         
-        throw_if_failed(vkCreateDevice(m_adapter.m_handle, &device_info, nullptr, &m_handle));
+        throw_if_failed(vkCreateDevice(m_adapter.get_handle(), &device_info, nullptr, &m_handle));
 
         if(!graphics_index.has_value()) {
             throw std::runtime_error("Your GPU not supported by application");
         } else {
-            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queues.graphics);
+            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queue_handles.graphics);
         }
 
         if(!transfer_index.has_value()) {
-            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queues.transfer);
+            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queue_handles.transfer);
         } else {
-            vkGetDeviceQueue(m_handle, std::get<0>(transfer_index.value()), std::get<1>(transfer_index.value()), &m_queues.transfer);
+            vkGetDeviceQueue(m_handle, std::get<0>(transfer_index.value()), std::get<1>(transfer_index.value()), &m_queue_handles.transfer);
         }
 
         if(!compute_index.has_value()) {
-            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queues.compute);
+            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queue_handles.compute);
         } else {
-            vkGetDeviceQueue(m_handle, std::get<0>(compute_index.value()), std::get<1>(compute_index.value()), &m_queues.compute);
+            vkGetDeviceQueue(m_handle, std::get<0>(compute_index.value()), std::get<1>(compute_index.value()), &m_queue_handles.compute);
         }
     }
 
     ~Device() {
         vkDestroyDevice(m_handle, nullptr);
     }
+
+    const VkDevice& get_handle() const { return m_handle; }
+    const VkPhysicalDevice& get_adapter_handle() const { return m_adapter.get_handle(); }
 
 private:
 
@@ -94,7 +96,7 @@ private:
         VkQueue graphics;
         VkQueue transfer;
         VkQueue compute;
-    } m_queues;
+    } m_queue_handles;
 };
 
 }

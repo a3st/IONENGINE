@@ -5,9 +5,6 @@
 namespace ionengine::renderer {
 
 class Instance final {
-friend class Adapter;
-friend class Device;
-friend class Swapchain;
 public:
 
     Instance() {
@@ -24,6 +21,9 @@ public:
         m_debug_ptr->EnableDebugLayer();
 #endif
     }
+
+    const ComPtr<IDXGIFactory4>& get_factory_ptr() const { return m_factory_ptr; }
+    const ComPtr<ID3D12Debug>& get_debug_ptr() const { return m_debug_ptr; }
 
 private:
 

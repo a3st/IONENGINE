@@ -5,9 +5,6 @@
 namespace ionengine::renderer {
 
 class Instance final {
-friend class Adapter;
-friend class Device;
-friend class Swapchain;
 public:
 
     Instance() {
@@ -47,6 +44,8 @@ public:
     ~Instance() {
         vkDestroyInstance(m_handle, nullptr);
     }
+
+    const VkInstance& get_handle() const { return m_handle; }
 
 private:
 

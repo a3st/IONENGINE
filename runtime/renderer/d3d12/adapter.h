@@ -7,7 +7,6 @@
 namespace ionengine::renderer {
 
 class Adapter final {
-friend class Device;
 public:
 
     Adapter(const Instance& instance) : 
@@ -15,7 +14,7 @@ public:
         m_id(0), m_name("Unknown device"), m_memory(0) {
         
         ComPtr<IDXGIAdapter1> temp_adapter;
-        for(uint32 i = 0; m_instance.m_factory->EnumAdapters1(i, temp_adapter.GetAddressOf()) != DXGI_ERROR_NOT_FOUND; ++i) {
+        for(uint32 i = 0; m_instance.get_factory_ptr()->EnumAdapters1(i, temp_adapter.GetAddressOf()) != DXGI_ERROR_NOT_FOUND; ++i) {
 
             DXGI_ADAPTER_DESC1 adapter_desc = {};
             throw_if_failed(temp_adapter->GetDesc1(&adapter_desc));
@@ -35,6 +34,7 @@ public:
     const std::string& get_name() const { return m_name; }
     uint64 get_id() const { return m_id; }
     usize get_memory() const { return m_memory; }
+    const ComPtr<IDXGIAdapter4>& get_adapter_ptr() const { return m_adapter_ptr; }
 
 private:
 

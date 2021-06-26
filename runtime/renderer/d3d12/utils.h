@@ -21,7 +21,7 @@ std::string result_to_string(const HRESULT result) {
 }
 
 void throw_if_failed(const HRESULT result) {
-	if (FAILED(hr)) {
+	if (FAILED(result)) {
 		throw std::runtime_error(result_to_string(result));
 	}
 }

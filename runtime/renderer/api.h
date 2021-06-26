@@ -22,8 +22,8 @@ using Microsoft::WRL::ComPtr;
 #include "d3d12/adapter.h"
 #include "d3d12/device.h"
 #include "d3d12/swapchain.h"
-#include "d3d12/descriptor_pool.h"
-#include "d3d12/memory_pool.h"
+//#include "d3d12/descriptor_pool.h"
+//#include "d3d12/memory_pool.h"
 
 #endif
 
@@ -31,6 +31,10 @@ using Microsoft::WRL::ComPtr;
 
 #ifdef IONENGINE_PLATFORM_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
+#endif
+
+#ifdef IONENGINE_PLATFORM_ANDROID
+#define VK_USE_PLATFORM_ANDROID_KHR
 #endif
 
 #include <vulkan/vulkan.h>
