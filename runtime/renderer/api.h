@@ -44,7 +44,10 @@ using Microsoft::WRL::ComPtr;
 #include "vk/instance.h"
 #include "vk/adapter.h"
 #include "vk/device.h"
+#include "vk/image.h"
 #include "vk/image_view.h"
 #include "vk/swapchain.h"
+#include "vk/shader.h"
+#include "vk/pipeline.h"
 
 #endif

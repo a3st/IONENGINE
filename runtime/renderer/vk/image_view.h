@@ -3,7 +3,7 @@
 #pragma once
 
 namespace ionengine::renderer {
-
+    
 enum class ImageViewType {
     Single1D = VK_IMAGE_VIEW_TYPE_1D,
     Single2D = VK_IMAGE_VIEW_TYPE_2D,
@@ -17,10 +17,11 @@ enum class ImageViewType {
 class ImageView final {
 public:
 
-    ImageView(const Device& device, const ImageViewType view_type, const ImageFormat image_format) : m_device(device) {
+    ImageView(const Device& device, const Image& image, const ImageViewType view_type, const ImageFormat image_format) : m_device(device) {
 
         VkImageViewCreateInfo view_info = {};
         view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        view_info.image = image.get_handle();
         view_info.viewType = static_cast<VkImageViewType>(view_type);
         view_info.format = static_cast<VkFormat>(image_format);
         view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;

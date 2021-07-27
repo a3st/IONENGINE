@@ -57,20 +57,24 @@ public:
 
         std::vector<VkImage> images;
         uint32 images_count = 0;
+
         vkGetSwapchainImagesKHR(m_device.get_handle(), m_swapchain_handle, &images_count, nullptr);
+        
         if(images_count > 0) {
             images.resize(images_count);
             vkGetSwapchainImagesKHR(m_device.get_handle(), m_swapchain_handle, &images_count, images.data());
         } else {
             throw std::runtime_error("Images in swapchain not found");
         }
-        
+
         for(uint32_t i = 0; i < images_count; ++i) {
-            m_image_views.emplace_back(m_device, ImageViewType::Single2D, static_cast<ImageFormat>(surface_formats[0].format));
+            //m_images.emplace_back(m_device, images[i]);
+            //m_image_views.emplace_back(m_device, m_images.back(), ImageViewType::Single2D, static_cast<ImageFormat>(surface_formats[0].format));
         }
     }
 
     ~Swapchain() {
+
         vkDestroySwapchainKHR(m_device.get_handle(), m_swapchain_handle, nullptr);
         vkDestroySurfaceKHR(m_instance.get_handle(), m_surface_handle, nullptr);
     }
@@ -78,6 +82,8 @@ public:
     void resize(const uint32 width, const uint32 height) {
         
     }
+
+    const std::vector<ImageView>& get_image_views() const { return m_image_views; }
 
 private:
 
@@ -88,6 +94,7 @@ private:
     VkSwapchainKHR m_swapchain_handle;
     uint32 m_buffer_count;
 
+    std::vector<Image> m_images;
     std::vector<ImageView> m_image_views;
 };
 

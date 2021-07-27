@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <cmath>
 #include <vector>
+#include <fstream>
 #include <array>
 #include <type_traits>
 #include <numeric>
@@ -19,6 +20,7 @@
 #include <unordered_map>
 #include <map>
 #include <bitset>
+#include <filesystem>
 #include <optional>
 
 #include "platform.h"
