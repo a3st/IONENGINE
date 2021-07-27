@@ -54,6 +54,20 @@ public:
         swapchain_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
         swapchain_info.clipped = VK_TRUE;
         throw_if_failed(vkCreateSwapchainKHR(m_device.get_handle(), &swapchain_info, nullptr, &m_swapchain_handle));
+
+        std::vector<VkImage> images;
+        uint32 images_count = 0;
+        vkGetSwapchainImagesKHR(m_device.get_handle(), m_swapchain_handle, &images_count, nullptr);
+        if(images_count > 0) {
+            images.resize(images_count);
+            vkGetSwapchainImagesKHR(m_device.get_handle(), m_swapchain_handle, &images_count, images.data());
+        } else {
+            throw std::runtime_error("Images in swapchain not found");
+        }
+        
+        for(uint32_t i = 0; i < images_count; ++i) {
+            m_image_views.emplace_back(m_device, ImageViewType::Single2D, static_cast<ImageFormat>(surface_formats[0].format));
+        }
     }
 
     ~Swapchain() {
@@ -73,6 +87,8 @@ private:
     VkSurfaceKHR m_surface_handle;
     VkSwapchainKHR m_swapchain_handle;
     uint32 m_buffer_count;
+
+    std::vector<ImageView> m_image_views;
 };
 
 }

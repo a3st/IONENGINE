@@ -2,8 +2,6 @@
 
 #pragma once
 
-//#define RENDERER_API_D3D12
-
 #ifdef RENDERER_API_D3D12
 
 #include <d3d12.h>
@@ -46,6 +44,7 @@ using Microsoft::WRL::ComPtr;
 #include "vk/instance.h"
 #include "vk/adapter.h"
 #include "vk/device.h"
+#include "vk/image_view.h"
 #include "vk/swapchain.h"
 
 #endif

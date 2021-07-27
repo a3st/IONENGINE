@@ -115,33 +115,3 @@ set_target_properties(Runtime-Android PROPERTIES
 target_compile_definitions(Runtime-Android PRIVATE 
     IONENGINE_PLATFORM_ANDROID
 )
-
-#[[
-
-    Server-Win32 Build Target
-
-#]]
-
-add_executable(Server-Win32 Server/main_win32.cpp)
-target_precompile_headers(Server-Win32 PRIVATE precompiled.h)
-
-# Build Output
-set_target_properties(Server-Win32 PROPERTIES 
-    OUTPUT_NAME "IONENGINE-Server"
-    COMPILE_FLAGS "${COMPILE_FLAGS}"
-)
-
-# Include dirs
-target_include_directories(Server-Win32 PRIVATE
-    ${PROJECT_SOURCE_DIR}/server
-)
-
-# Link Libs
-target_link_libraries(Server-Win32
-    ${Server-Win32}
-)
-
-# Preprocessor
-target_compile_definitions(Server-Win32 PRIVATE 
-    IONENGINE_PLATFORM_WIN32
-)

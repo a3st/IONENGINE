@@ -65,7 +65,5 @@ int32 main(int32, char**) {
     catch(std::exception& e) {
         show_message_box(nullptr, format<std::wstring>(L"Exception: {}", stws(e.what())), L"IONENGINE Crash", MessageBoxStyle::ButtonOK | MessageBoxStyle::IconError);
     }
-
-    std::wcout << "main exit func" << std::endl;
     return 0;
 }
