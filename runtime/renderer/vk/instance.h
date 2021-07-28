@@ -22,34 +22,45 @@ public:
         instance_extensions.emplace_back("VK_KHR_win32_surface");
 #endif
 
-        VkApplicationInfo app_info = {};
-        app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        app_info.pApplicationName = "IONENGINE";
-        app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-        app_info.pEngineName = "IONENGINE";
-        app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        app_info.apiVersion = VK_API_VERSION_1_0;
+        vk::ApplicationInfo app_info{};
+        
+        app_info
+            .setPApplicationName("IONENGINE")
+            .setApplicationVersion(VK_MAKE_VERSION(1, 0, 0))
+            .setPEngineName("IONENGINE")
+            .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
+            .setApiVersion(VK_API_VERSION_1_0);
 
-        VkInstanceCreateInfo instance_info = {};
-        instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        instance_info.pApplicationInfo = &app_info;
-        instance_info.ppEnabledExtensionNames = instance_extensions.data();
-        instance_info.enabledExtensionCount = static_cast<uint32>(instance_extensions.size());
-        instance_info.ppEnabledLayerNames = instance_layers.data();
-        instance_info.enabledLayerCount = static_cast<uint32>(instance_layers.size());
+        vk::InstanceCreateInfo instance_info{};
 
-        throw_if_failed(vkCreateInstance(&instance_info, nullptr, &m_handle));
+        instance_info
+            .setPApplicationInfo(&app_info)
+            .setPpEnabledExtensionNames(instance_extensions.data())
+            .setEnabledExtensionCount(static_cast<uint32>(instance_extensions.size()))
+            .setPpEnabledLayerNames(instance_layers.data())
+            .setEnabledLayerCount(static_cast<uint32>(instance_layers.size()));
+
+        m_handle = vk::createInstanceUnique(instance_info);
     }
 
-    ~Instance() {
-        vkDestroyInstance(m_handle, nullptr);
+    Instance(const Instance&) = delete;
+
+    Instance(Instance&& rhs) noexcept {
+        m_handle.swap(rhs.m_handle);
     }
 
-    const VkInstance& get_handle() const { return m_handle; }
+    Instance& operator=(const Instance&) = delete;
+    
+    Instance& operator=(Instance&& rhs) {
+        m_handle.swap(rhs.m_handle);
+        return *this;
+    }
+
+    const vk::UniqueInstance& get_handle() const { return m_handle; }
 
 private:
 
-    VkInstance m_handle;
+    vk::UniqueInstance m_handle;
 };
 
 }

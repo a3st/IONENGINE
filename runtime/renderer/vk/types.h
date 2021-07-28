@@ -48,15 +48,4 @@ enum class ImageFormat {
     R32G32B32A32SInt = VK_FORMAT_R32G32B32A32_SINT
 };
 
-enum class DesctiptorType {
-    Sampler,
-    RenderTarget,
-    DepthStencil,
-    Buffer
-};
-
-template<DesctiptorType T>
-class DescriptorPool {
-};
-
 }

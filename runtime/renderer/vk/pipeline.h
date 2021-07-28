@@ -16,40 +16,36 @@ struct PipelineConfig final {
 class Pipeline final {
 public:
 
-    Pipeline(const PipelineConfig& pipeline_config) {
+    Pipeline(const Device& device, const PipelineConfig& pipeline_config) : m_device(device) {
 
         VkGraphicsPipelineCreateInfo pipeline_info = {};
-        pipeline_info.pInputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        pipeline_info.pInputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        pipeline_config.pInputAssemblyState.primitiveRestartEnable = false;
         
 
         std::vector<VkPipelineShaderStageCreateInfo> stage_infos;
         stage_infos.resize(pipeline_config.shaders.size());
         
-        pipeline_info.stageCount = stage_infos.size();
+        pipeline_info.stageCount = static_cast<uint32>(stage_infos.size());
         pipeline_info.pStages = stage_infos.data();
 
         for(uint32 i = 0; i < pipeline_config.shaders.size(); ++i) {
             stage_infos[i].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             stage_infos[i].module = pipeline_config.shaders[i].get_handle();
-            switch(pipeline_config.shaders[i].get_type()) {
-                case ShaderType::Vertex: stage_infos[i].stage = VK_SHADER_STAGE_VERTEX_BIT; break;
-                case ShaderType::Fragment: stage_infos[i].stage = VK_SHADER_STAGE_FRAGMENT_BIT; break;
-                default: break;
-            }
+            stage_infos[i].stage = static_cast<VkShaderStageFlagBits>(pipeline_config.shaders[i].get_type());
+            stage_infos[i].pName = "main";
         }
     }
 
     ~Pipeline() {
-        
+        //vkDestroyPipelineLayout(m_device.get_handle(), m_pipeline_layout_handle, nullptr);
+        //vkDestroyPipeline(m_device.get_handle(), m_pipeline_handle, nullptr);
     }
 
 private:
 
+    const Device& m_device;
+
     VkPipelineLayout m_pipeline_layout_handle;
     VkPipeline m_pipeline_handle;
 };
-
 
 }

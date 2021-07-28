@@ -22,22 +22,24 @@ public:
             { m_device, 1, false }
         }*/ {
 
-        std::cout << 
-            ">> Device Id: " << m_adapter.get_id() <<
-            "\n>> Device Name: " << m_adapter.get_name() << 
-            "\n>> Memory Device: " << m_adapter.get_memory() <<
+        std::cout <<
+            format<std::string>("Device Id: {}\nDevice Name: {}\nMemory Device: {}", 
+                m_adapter.get_id(), 
+                m_adapter.get_name(), 
+                m_adapter.get_memory()) <<
         std::endl;
 
+        std::vector<renderer::Shader> shaders;
         shaders.emplace_back(m_device, renderer::ShaderType::Vertex, "triangle_01.vert.spv");
         shaders.emplace_back(m_device, renderer::ShaderType::Fragment, "triangle_01.frag.spv");
 
-        renderer::PipelineConfig pipeline_config = { shaders };
+        /*renderer::PipelineConfig pipeline_config = { shaders };
 
-        renderer::Pipeline pipeline(pipeline_config);
+        renderer::Pipeline pipeline(m_device, pipeline_config);*/
     }
 
     void resize(const uint32 width, const uint32 height) {
-        m_swapchain.resize(width, height);
+        //m_swapchain.resize(width, height);
     }
 
     void tick() {
@@ -45,14 +47,11 @@ public:
     }
 
 private:
+
     renderer::Instance m_instance;
     renderer::Adapter m_adapter;
     renderer::Device m_device;
     renderer::Swapchain m_swapchain;
-
-    std::vector<renderer::Shader> shaders;
-    
-
 /*
     struct {
         renderer::DescriptorPool<renderer::DesctiptorType::Sampler> sampler;

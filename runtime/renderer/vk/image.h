@@ -13,8 +13,7 @@ enum class ImageType {
 class Image final {
 public:
 
-    Image(const Device& device, const ImageType image_type, const uint32 width, const uint32 height, const ImageFormat image_format) :
-        m_device(device) {
+    Image(const Device& device, const ImageType image_type, const uint32 width, const uint32 height, const ImageFormat image_format) : m_device(device) {
 
         VkImageCreateInfo image_info = {};
         image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -32,24 +31,20 @@ public:
         image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         image_info.imageType = static_cast<VkImageType>(image_type);
         
-        throw_if_failed(vkCreateImage(device.get_handle(), &image_info, nullptr, &m_image_handle));
-    }
-    
-    Image(const Device& device, VkImage rhs) : m_device(device), m_image_handle(rhs) {
-        
+        throw_if_failed(vkCreateImage(device.get_handle(), &image_info, nullptr, &m_handle));
     }
 
     ~Image() {
-       // vkDestroyImage(m_device.get_handle(), m_image_handle, nullptr);
+        vkDestroyImage(m_device.get_handle(), m_handle, nullptr);
     }
 
-    const VkImage& get_handle() const { return m_image_handle; }
+    const VkImage& get_handle() const { return m_handle; }
 
 private:
 
     const Device& m_device;
 
-    VkImage m_image_handle;
+    VkImage m_handle;
 };
 
 }

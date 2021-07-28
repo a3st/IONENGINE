@@ -7,96 +7,117 @@ namespace ionengine::renderer {
 class Device final {
 public:
 
-    Device(const Adapter& adapter) : m_adapter(adapter) {
+    Device(Adapter& adapter) : m_adapter(adapter), m_family_ids { -1, -1, -1 } {
 
-        uint32 family_count = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.get_handle(), &family_count, nullptr);
+        auto family_props = adapter.get_handle().getQueueFamilyProperties();
+        int32 graphics_family_idx = -1, compute_family_idx = -1, transfer_family_idx = -1;
 
-        std::vector<VkQueueFamilyProperties> families(family_count);
-        vkGetPhysicalDeviceQueueFamilyProperties(m_adapter.get_handle(), &family_count, families.data());
+        for(uint32 i = 0; i < family_props.size(); ++i) {
+            
+            // if supports graphics queue
+            if(family_props[i].queueFlags & vk::QueueFlagBits::eGraphics) {
+                graphics_family_idx = i;
+            }
 
-        std::vector<std::reference_wrapper<VkQueueFamilyProperties>> families_ref(families.begin(), families.end());
-        std::sort(families_ref.begin(), families_ref.end(), [](const auto& a, const auto& b) {
-            return std::bitset<8>(a.get().queueFlags).count() < std::bitset<8>(b.get().queueFlags).count();
-        });
+            // if supports compute queue
+            if(family_props[i].queueFlags & vk::QueueFlagBits::eCompute) {
+                compute_family_idx = i;
+            }
 
-        std::optional<std::tuple<uint32, uint32>> graphics_index, transfer_index, compute_index;
-
-        for(uint32 i = 0; i < families_ref.size(); ++i) {
-            for(uint32 j = 0; j < families_ref[i].get().queueCount; ++j) {
-                if(families_ref[i].get().queueFlags & VK_QUEUE_GRAPHICS_BIT && !graphics_index.has_value()) {
-                    graphics_index = {static_cast<uint32>(&families_ref[i].get() - families.data()), j};
-                } else if(families_ref[i].get().queueFlags & VK_QUEUE_TRANSFER_BIT && !transfer_index.has_value()) {
-                    transfer_index = {static_cast<uint32>(&families_ref[i].get() - families.data()), j};
-                } else if(families_ref[i].get().queueFlags & VK_QUEUE_COMPUTE_BIT && !compute_index.has_value()) {
-                    compute_index = {static_cast<uint32>(&families_ref[i].get() - families.data()), j};
-                }
+            // if supports transfer queue
+            if(family_props[i].queueFlags & vk::QueueFlagBits::eTransfer) {
+                transfer_family_idx = i;
             }
         }
 
-        std::vector<VkDeviceQueueCreateInfo> queue_infos(families.size());
-        std::vector<std::vector<float>> queue_priorities(families.size());
+        if(graphics_family_idx == -1 || compute_family_idx == -1 || transfer_family_idx == -1) {
+            throw std::runtime_error("Your GPU not supported by application");
+        }
 
-        for(uint32 i = 0; i < families.size(); ++i) {
-            queue_priorities[i].resize(families[i].queueCount);
+        m_family_ids.graphics = graphics_family_idx;
+        m_family_ids.compute = compute_family_idx;
+        m_family_ids.transfer = transfer_family_idx;
+
+        std::vector<vk::DeviceQueueCreateInfo> queue_infos;
+        std::vector<std::vector<float>> queue_priorities;
+        queue_infos.resize(family_props.size());
+        queue_priorities.resize(family_props.size());
+
+        for(uint32 i = 0; i < queue_infos.size(); ++i) {
+            queue_priorities[i].resize(family_props[i].queueCount);
             std::fill(queue_priorities[i].begin(), queue_priorities[i].end(), 1.0f);
 
-            VkDeviceQueueCreateInfo queue_info = {};
-            queue_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queue_info.queueFamilyIndex = i;
-            queue_info.queueCount = families[i].queueCount;
-            queue_info.pQueuePriorities = queue_priorities[i].data();
-            queue_infos[i] = queue_info;
+            queue_infos[i]
+                .setQueueCount(family_props[i].queueCount)
+                .setPQueuePriorities(queue_priorities[i].data())
+                .setQueueFamilyIndex(i);
         }
 
         std::vector<const char*> device_extensions;
         device_extensions.emplace_back("VK_KHR_swapchain");
 
-        VkDeviceCreateInfo device_info = {};
-        device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        device_info.pQueueCreateInfos = queue_infos.data();
-        device_info.queueCreateInfoCount = static_cast<uint32>(queue_infos.size());
-        device_info.ppEnabledExtensionNames = device_extensions.data();
-        device_info.enabledExtensionCount = static_cast<uint32>(device_extensions.size());
+        vk::DeviceCreateInfo device_info{};
+
+        device_info
+            .setPQueueCreateInfos(queue_infos.data())
+            .setQueueCreateInfoCount(static_cast<uint32>(queue_infos.size()))
+            .setPpEnabledExtensionNames(device_extensions.data())
+            .setEnabledExtensionCount(static_cast<uint32>(device_extensions.size()));
+
+        m_handle = m_adapter.get().get_handle().createDeviceUnique(device_info);
+
+        m_queue_handles.graphics = m_handle->getQueue(m_family_ids.graphics, 0);
+        m_queue_handles.compute = m_handle->getQueue(m_family_ids.compute, 0);
+        m_queue_handles.transfer = m_handle->getQueue(m_family_ids.transfer, 0);
+    }
+
+    Device(const Device&) = delete;
+
+    Device(Device&& rhs) noexcept : m_adapter(rhs.m_adapter) {
+
+        m_handle.swap(rhs.m_handle);
         
-        throw_if_failed(vkCreateDevice(m_adapter.get_handle(), &device_info, nullptr, &m_handle));
-
-        if(!graphics_index.has_value()) {
-            throw std::runtime_error("Your GPU not supported by application");
-        } else {
-            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queue_handles.graphics);
-        }
-
-        if(!transfer_index.has_value()) {
-            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queue_handles.transfer);
-        } else {
-            vkGetDeviceQueue(m_handle, std::get<0>(transfer_index.value()), std::get<1>(transfer_index.value()), &m_queue_handles.transfer);
-        }
-
-        if(!compute_index.has_value()) {
-            vkGetDeviceQueue(m_handle, std::get<0>(graphics_index.value()), std::get<1>(graphics_index.value()), &m_queue_handles.compute);
-        } else {
-            vkGetDeviceQueue(m_handle, std::get<0>(compute_index.value()), std::get<1>(compute_index.value()), &m_queue_handles.compute);
-        }
+        std::swap(m_queue_handles, rhs.m_queue_handles);
+        std::swap(m_family_ids, rhs.m_family_ids);
     }
 
-    ~Device() {
-        vkDestroyDevice(m_handle, nullptr);
+    Device& operator=(const Device&) = delete;
+
+    Device& operator=(Device&& rhs) {
+
+        std::swap(m_adapter, rhs.m_adapter);
+
+        m_handle.swap(rhs.m_handle);
+        
+        std::swap(m_queue_handles, rhs.m_queue_handles);
+        std::swap(m_family_ids, rhs.m_family_ids);
+        return *this;
     }
 
-    const VkDevice& get_handle() const { return m_handle; }
-    const VkPhysicalDevice& get_adapter_handle() const { return m_adapter.get_handle(); }
+    const vk::UniqueDevice& get_handle() const { return m_handle; }
+    const vk::PhysicalDevice& get_adapter_handle() const { return m_adapter.get().get_handle(); }
+
+    int32 get_graphics_family_index() const { return m_family_ids.graphics; };
+    int32 get_compute_family_index() const { return m_family_ids.compute; };
+    int32 get_transfer_family_index() const { return m_family_ids.transfer; };
 
 private:
 
-    const Adapter& m_adapter;
+    std::reference_wrapper<Adapter> m_adapter;
 
-    VkDevice m_handle;
+    vk::UniqueDevice m_handle;
+
     struct {
-        VkQueue graphics;
-        VkQueue transfer;
-        VkQueue compute;
+        vk::Queue graphics;
+        vk::Queue compute;
+        vk::Queue transfer;
     } m_queue_handles;
+
+    struct {
+        int32 graphics;
+        int32 compute;
+        int32 transfer;
+    } m_family_ids;
 };
 
 }

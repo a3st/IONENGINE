@@ -1,56 +1,81 @@
+// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
+#pragma once
 
 namespace ionengine::renderer
 {
 
 enum class ShaderType {
-    Vertex = 0,
-    Fragment = 1
+    Vertex = VK_SHADER_STAGE_VERTEX_BIT,
+    Fragment = VK_SHADER_STAGE_FRAGMENT_BIT,
+    Geometry = VK_SHADER_STAGE_GEOMETRY_BIT,
+    TessellationControl = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+    TessellationEvalution = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+    Compute = VK_SHADER_STAGE_COMPUTE_BIT
 };
 
 class Shader final {
 public:
 
-    Shader(const Device& device, const ShaderType shader_type, const std::filesystem::path& file_path) : m_device(device), m_type(shader_type)  {
+    Shader(Device& device, const ShaderType shader_type, const std::filesystem::path& file_path) : m_device(device), m_type(shader_type)  {
 
+        // read a file
         {
             std::ifstream file(file_path, std::ios::ate | std::ios::binary);
             if (!file.is_open()) {
-                std::runtime_error("Cannot open the file!");
+                throw std::runtime_error(format<std::string>("File cannot be opened '{}'", file_path));
             }
 
-            size_t fileSize = static_cast<size_t>(file.tellg());
-            m_bytes_data.resize(fileSize);
+            usize file_size = static_cast<usize>(file.tellg());
+            m_data.resize(file_size);
 
             file.seekg(std::ios::beg);
-            file.read(m_bytes_data.data(), fileSize);
-            
+            file.read(m_data.data(), file_size);
         }
 
-        VkShaderModuleCreateInfo shader_info = {};
-        shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        shader_info.pCode = reinterpret_cast<const uint32*>(m_bytes_data.data());
-        shader_info.codeSize = m_bytes_data.size();
+        vk::ShaderModuleCreateInfo shader_info{};
 
-        throw_if_failed(vkCreateShaderModule(m_device.get_handle(), &shader_info, nullptr, &m_handle));
-    } 
+        shader_info
+            .setPCode(reinterpret_cast<const uint32*>(m_data.data()))
+            .setCodeSize(m_data.size());
 
-    ~Shader() {
+        m_handle = m_device.get().get_handle()->createShaderModuleUnique(shader_info);
+    }
 
-        vkDestroyShaderModule(m_device.get_handle(), m_handle, nullptr);
+    Shader(const Shader&) = delete;
+
+    Shader(Shader&& rhs) noexcept : m_device(rhs.m_device) {
+
+        m_handle.swap(rhs.m_handle);
+
+        m_type = rhs.m_type;
+        std::swap(m_data, rhs.m_data);
+    }
+
+    Shader& operator=(const Shader&) = delete;
+
+    Shader& operator=(Shader&& rhs) {
+
+        std::swap(m_device, rhs.m_device);
+
+        m_handle.swap(rhs.m_handle);
+
+        m_type = rhs.m_type;
+        std::swap(m_data, rhs.m_data);
+        return *this;
     }
 
     ShaderType get_type() const { return m_type; }
-    const VkShaderModule& get_handle() const { return m_handle; }
+    const vk::UniqueShaderModule& get_handle() const { return m_handle; }
 
 private:
 
-    const Device& m_device;
-    const ShaderType m_type;
+    std::reference_wrapper<Device> m_device;
 
-    VkShaderModule m_handle;
+    vk::UniqueShaderModule m_handle;
 
-    std::vector<char> m_bytes_data;
+    ShaderType m_type;
+    std::vector<char> m_data;
 };
 
 }

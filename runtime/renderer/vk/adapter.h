@@ -7,15 +7,9 @@ namespace ionengine::renderer {
 class Adapter final {
 public:
 
-    Adapter(const Instance& instance) : 
-        m_instance(instance), 
-        m_id(0), m_name("Unknown device"), m_memory(0) {
-        
-        uint32_t device_count = 0;
-        throw_if_failed(vkEnumeratePhysicalDevices(m_instance.get_handle(), &device_count, nullptr));
+    Adapter(Instance& instance) : m_instance(instance), m_id(0), m_name("Invalid Device"), m_memory(0) {
 
-        std::vector<VkPhysicalDevice> devices(device_count);
-        throw_if_failed(vkEnumeratePhysicalDevices(m_instance.get_handle(), &device_count, devices.data()));
+        auto devices = instance.get_handle()->enumeratePhysicalDevices();
 
         for(const auto& device : devices) {
 
@@ -41,16 +35,42 @@ public:
         }
     }
 
+    Adapter(const Adapter&) = delete;
+
+    Adapter(Adapter&& rhs) noexcept : m_instance(rhs.m_instance) {
+
+        m_handle = rhs.m_handle;
+
+        std::swap(m_id, rhs.m_id);
+        std::swap(m_name, rhs.m_name);
+        std::swap(m_memory, rhs.m_memory);
+    }
+
+    Adapter& operator=(const Adapter&) = delete;
+
+    Adapter& operator=(Adapter&& rhs) noexcept {
+
+        std::swap(m_instance, rhs.m_instance);
+
+        m_handle = rhs.m_handle;
+
+        std::swap(m_id, rhs.m_id);
+        std::swap(m_name, rhs.m_name);
+        std::swap(m_memory, rhs.m_memory);
+        return *this;
+    }
+
     const std::string& get_name() const { return m_name; }
     uint64 get_id() const { return m_id; }
     usize get_memory() const { return m_memory; }
-    const VkPhysicalDevice& get_handle() const { return m_handle; }
+    const vk::PhysicalDevice& get_handle() const { return m_handle; }
 
 private:
 
-    const Instance& m_instance;
+    std::reference_wrapper<Instance> m_instance;
 
-    VkPhysicalDevice m_handle;
+    vk::PhysicalDevice m_handle;
+
     uint64 m_id;
     std::string m_name;
     usize m_memory;

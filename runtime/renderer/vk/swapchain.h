@@ -7,57 +7,51 @@ namespace ionengine::renderer {
 class Swapchain final {
 public:
 
-    Swapchain(const Instance& instance, const Device& device, void* hwnd, const uint32 buffer_count) : 
-        m_instance(instance), m_device(device), m_buffer_count(buffer_count) {
+    Swapchain(Instance& instance, Device& device, void* hwnd, const uint32 buffer_count) : m_instance(instance), m_device(device), m_buffer_count(buffer_count) {
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-        VkWin32SurfaceCreateInfoKHR surface_info = {};
-        surface_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        surface_info.hwnd = reinterpret_cast<HWND>(hwnd);
-        surface_info.hinstance = GetModuleHandle(nullptr);
-        throw_if_failed(vkCreateWin32SurfaceKHR(m_instance.get_handle(), &surface_info, nullptr, &m_surface_handle));
+
+        vk::Win32SurfaceCreateInfoKHR surface_info{};
+
+        surface_info
+            .setHwnd(reinterpret_cast<HWND>(hwnd))
+            .setHinstance(GetModuleHandle(nullptr));
+
+        m_surface_handle = m_instance.get().get_handle()->createWin32SurfaceKHRUnique(surface_info);
+
 #endif
 
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
-#endif
-
-        VkSurfaceCapabilitiesKHR surface_capabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_device.get_adapter_handle(), m_surface_handle, &surface_capabilities);
-
-        std::vector<VkSurfaceFormatKHR> surface_formats;
-        uint32 formats_count = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(m_device.get_adapter_handle(), m_surface_handle, &formats_count, nullptr);
-        if(formats_count > 0) {
-            surface_formats.resize(formats_count);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(m_device.get_adapter_handle(), m_surface_handle, &formats_count, surface_formats.data());
+        // Checks if graphics queue supports present
+        vk::Bool32 result = m_device.get().get_adapter_handle().getSurfaceSupportKHR(m_device.get().get_graphics_family_index(), m_surface_handle.get());
+        if(!result) {
+            throw std::runtime_error("Graphics queue not supported a present");
         }
 
-        std::vector<VkPresentModeKHR> present_modes;
-        uint32 presents_count = 0;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(m_device.get_adapter_handle(), m_surface_handle, &presents_count, nullptr);
-        if(presents_count > 0) {
-            present_modes.resize(presents_count);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(m_device.get_adapter_handle(), m_surface_handle, &presents_count, present_modes.data());
-        }
+        vk::SurfaceCapabilitiesKHR surface_capabilities = m_device.get().get_adapter_handle().getSurfaceCapabilitiesKHR(m_surface_handle.get());
+        auto surface_formats = m_device.get().get_adapter_handle().getSurfaceFormatsKHR(m_surface_handle.get());
+        auto present_modes = m_device.get().get_adapter_handle().getSurfacePresentModesKHR(m_surface_handle.get());
 
-        VkSwapchainCreateInfoKHR swapchain_info = {};
-        swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        swapchain_info.surface = m_surface_handle;
-        swapchain_info.minImageCount = m_buffer_count;
-        swapchain_info.imageFormat = surface_formats[0].format;
-        swapchain_info.imageColorSpace = surface_formats[0].colorSpace;
-        swapchain_info.imageExtent = VkExtent2D { 1, 1 };
-        swapchain_info.imageArrayLayers = 1;
-        swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        swapchain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        swapchain_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        swapchain_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-        swapchain_info.clipped = VK_TRUE;
-        throw_if_failed(vkCreateSwapchainKHR(m_device.get_handle(), &swapchain_info, nullptr, &m_swapchain_handle));
+        vk::SwapchainCreateInfoKHR swapchain_info{};
 
-        std::vector<VkImage> images;
+        swapchain_info
+            .setSurface(m_surface_handle.get())
+            .setMinImageCount(m_buffer_count)
+            .setImageFormat(surface_formats[0].format)
+            .setImageColorSpace(surface_formats[0].colorSpace)
+            .setImageExtent(surface_capabilities.currentExtent)
+            .setImageArrayLayers(1)
+            .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+            .setImageSharingMode(vk::SharingMode::eExclusive)
+            .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+            .setPresentMode(vk::PresentModeKHR::eFifo)
+            .setPreTransform(surface_capabilities.currentTransform)
+            .setOldSwapchain(nullptr)
+            .setClipped(VK_TRUE);
+
+        m_handle = m_device.get().get_handle()->createSwapchainKHRUnique(swapchain_info);
+
+        /*std::vector<VkImage> images;
         uint32 images_count = 0;
-
         vkGetSwapchainImagesKHR(m_device.get_handle(), m_swapchain_handle, &images_count, nullptr);
         
         if(images_count > 0) {
@@ -67,35 +61,29 @@ public:
             throw std::runtime_error("Images in swapchain not found");
         }
 
-        for(uint32_t i = 0; i < images_count; ++i) {
-            //m_images.emplace_back(m_device, images[i]);
-            //m_image_views.emplace_back(m_device, m_images.back(), ImageViewType::Single2D, static_cast<ImageFormat>(surface_formats[0].format));
-        }
-    }
-
-    ~Swapchain() {
-
-        vkDestroySwapchainKHR(m_device.get_handle(), m_swapchain_handle, nullptr);
-        vkDestroySurfaceKHR(m_instance.get_handle(), m_surface_handle, nullptr);
+        for(uint32 i = 0; i < images_count; ++i) {
+            //m_image_views.emplace_back(m_device, images[i], ImageViewType::Single2D, static_cast<ImageFormat>(surface_formats[0].format));
+        }*/
     }
 
     void resize(const uint32 width, const uint32 height) {
         
     }
 
-    const std::vector<ImageView>& get_image_views() const { return m_image_views; }
+    //const std::vector<ImageView>& get_image_views() const { return m_image_views; }
+    const vk::UniqueSurfaceKHR& get_surface_handle() const { return m_surface_handle; }
+    const vk::UniqueSwapchainKHR& get_handle() const { return m_handle; }
 
 private:
 
-    const Device& m_device;
-    const Instance& m_instance;
+    std::reference_wrapper<Device> m_device;
+    std::reference_wrapper<Instance> m_instance;
 
-    VkSurfaceKHR m_surface_handle;
-    VkSwapchainKHR m_swapchain_handle;
+    vk::UniqueSurfaceKHR m_surface_handle;
+    vk::UniqueSwapchainKHR m_handle;
+
     uint32 m_buffer_count;
-
-    std::vector<Image> m_images;
-    std::vector<ImageView> m_image_views;
+    //std::vector<ImageView> m_image_views;
 };
 
 }

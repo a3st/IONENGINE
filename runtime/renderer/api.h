@@ -35,7 +35,7 @@ using Microsoft::WRL::ComPtr;
 #define VK_USE_PLATFORM_ANDROID_KHR
 #endif
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 #pragma comment(lib, "vulkan-1.lib")
 
@@ -44,10 +44,10 @@ using Microsoft::WRL::ComPtr;
 #include "vk/instance.h"
 #include "vk/adapter.h"
 #include "vk/device.h"
-#include "vk/image.h"
-#include "vk/image_view.h"
+//#include "vk/image.h"
+//#include "vk/image_view.h"
 #include "vk/swapchain.h"
 #include "vk/shader.h"
-#include "vk/pipeline.h"
+//#include "vk/pipeline.h"
 
 #endif
