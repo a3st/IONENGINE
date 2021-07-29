@@ -3,71 +3,48 @@
 #pragma once
 
 namespace ionengine::renderer {
-    
-enum class ImageViewType {
-    Single1D = VK_IMAGE_VIEW_TYPE_1D,
-    Single2D = VK_IMAGE_VIEW_TYPE_2D,
-    Single3D = VK_IMAGE_VIEW_TYPE_3D,
-    SingleCube = VK_IMAGE_VIEW_TYPE_CUBE,
-    Array1D = VK_IMAGE_VIEW_TYPE_1D_ARRAY,
-    Array2D = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
-    ArrayCube = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
-};
 
 class ImageView final {
 public:
 
-    ImageView(const Device& device, const Image& image, const ImageViewType view_type, const ImageFormat image_format) : m_device(device) {
+    ImageView(Device& device, Image& image, const ImageViewType view_type, const ImageFormat image_format) : m_device(device) {
 
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        view_info.image = image.get_handle();
-        view_info.viewType = static_cast<VkImageViewType>(view_type);
-        view_info.format = static_cast<VkFormat>(image_format);
-        view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = 1;
-        view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
+        vk::ImageViewCreateInfo view_info{};
 
-        throw_if_failed(vkCreateImageView(m_device.get_handle(), &view_info, nullptr, &m_handle));
+        view_info
+            .setImage(image.get_handle().get())
+            .setViewType(static_cast<vk::ImageViewType>(view_type))
+            .setFormat(static_cast<vk::Format>(image_format))
+            .setComponents({vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity, vk::ComponentSwizzle::eIdentity})
+            .setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
+
+        m_handle = m_device.get().get_handle()->createImageViewUnique(view_info);
     }
 
-    ImageView(const Device& device, const VkImage& image, const ImageViewType view_type, const ImageFormat image_format) : m_device(device) {
+    ImageView(const ImageView&) = delete;
 
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        view_info.image = image;
-        view_info.viewType = static_cast<VkImageViewType>(view_type);
-        view_info.format = static_cast<VkFormat>(image_format);
-        view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        view_info.subresourceRange.baseMipLevel = 0;
-        view_info.subresourceRange.levelCount = 1;
-        view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
+    ImageView(ImageView&& rhs) noexcept : m_device(rhs.m_device) {
 
-        //throw_if_failed(vkCreateImageView(m_device.get_handle(), &view_info, nullptr, &m_handle));
+        m_handle.swap(rhs.m_handle);
     }
 
-    ~ImageView() {
-        //vkDestroyImageView(m_device.get_handle(), m_handle, nullptr);
+    ImageView& operator=(const ImageView&) = delete;
+
+    ImageView& operator=(ImageView&& rhs) noexcept {
+
+        std::swap(m_device, rhs.m_device);
+
+        m_handle.swap(rhs.m_handle);
+        return *this;
     }
 
-    const VkImageView& get_handle() { return m_handle; }
+    const vk::UniqueImageView& get_handle() { return m_handle; }
 
 private:
 
-    const Device& m_device;
+    std::reference_wrapper<Device> m_device;
 
-    VkImageView m_handle;
+    vk::UniqueImageView m_handle;
 };
 
 }

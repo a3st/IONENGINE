@@ -13,15 +13,11 @@
 
 using Microsoft::WRL::ComPtr;
 
-#include "d3d12/types.h"
 #include "d3d12/utils.h"
-#include "d3d12/render_target.h"
-#include "d3d12/instance.h"
-#include "d3d12/adapter.h"
+#include "d3d12/types.h"
 #include "d3d12/device.h"
+#include "d3d12/image.h"
 #include "d3d12/swapchain.h"
-//#include "d3d12/descriptor_pool.h"
-//#include "d3d12/memory_pool.h"
 
 #endif
 
@@ -44,8 +40,8 @@ using Microsoft::WRL::ComPtr;
 #include "vk/instance.h"
 #include "vk/adapter.h"
 #include "vk/device.h"
-//#include "vk/image.h"
-//#include "vk/image_view.h"
+#include "vk/image.h"
+#include "vk/image_view.h"
 #include "vk/swapchain.h"
 #include "vk/shader.h"
 //#include "vk/pipeline.h"

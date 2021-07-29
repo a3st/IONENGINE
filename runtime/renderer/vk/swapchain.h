@@ -50,20 +50,31 @@ public:
 
         m_handle = m_device.get().get_handle()->createSwapchainKHRUnique(swapchain_info);
 
-        /*std::vector<VkImage> images;
-        uint32 images_count = 0;
-        vkGetSwapchainImagesKHR(m_device.get_handle(), m_swapchain_handle, &images_count, nullptr);
-        
-        if(images_count > 0) {
-            images.resize(images_count);
-            vkGetSwapchainImagesKHR(m_device.get_handle(), m_swapchain_handle, &images_count, images.data());
-        } else {
-            throw std::runtime_error("Images in swapchain not found");
-        }
+        auto images = m_device.get().get_handle()->getSwapchainImagesKHR(m_handle.get());
 
-        for(uint32 i = 0; i < images_count; ++i) {
+        for(uint32 i = 0; i < images.size(); ++i) {
             //m_image_views.emplace_back(m_device, images[i], ImageViewType::Single2D, static_cast<ImageFormat>(surface_formats[0].format));
-        }*/
+        }
+    }
+
+    Swapchain(const Swapchain&) = delete;
+
+    Swapchain(Swapchain&& rhs) noexcept : m_instance(rhs.m_instance), m_device(rhs.m_device) {
+
+        m_surface_handle.swap(rhs.m_surface_handle);
+        m_handle.swap(rhs.m_handle);
+    }
+
+    Swapchain& operator=(const Swapchain&) = delete;
+
+    Swapchain& operator=(Swapchain&& rhs) noexcept {
+
+        std::swap(m_device, rhs.m_device);
+        std::swap(m_instance, rhs.m_instance);
+
+        m_surface_handle.swap(rhs.m_surface_handle);
+        m_handle.swap(rhs.m_handle);
+        return *this;
     }
 
     void resize(const uint32 width, const uint32 height) {
@@ -83,7 +94,7 @@ private:
     vk::UniqueSwapchainKHR m_handle;
 
     uint32 m_buffer_count;
-    //std::vector<ImageView> m_image_views;
+    std::vector<ImageView> m_image_views;
 };
 
 }

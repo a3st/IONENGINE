@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "renderer/base_renderer.h"
 #include "renderer/api.h"
 #include "platform/window.h"
 
@@ -11,27 +10,23 @@ namespace ionengine {
 class RenderSystem final {
 public:
 
-    RenderSystem(const platform::Window& window) : 
-        m_adapter(m_instance), 
-        m_device(m_adapter), 
-        m_window(window),
-        m_swapchain(m_instance, m_device, window.get_handle(), 2)
-        /*m_descriptors {
-            { m_device, 16, false },
-            { m_device, 1, false },
-            { m_device, 1, false }
-        }*/ {
+    RenderSystem(platform::Window& window) : 
+        m_window(window), m_swapchain(m_device, m_window.get().get_handle(), 800, 600, 2)  {
+
+        auto config = m_device.get_adapter_config();
 
         std::cout <<
             format<std::string>("Device Id: {}\nDevice Name: {}\nMemory Device: {}", 
-                m_adapter.get_id(), 
-                m_adapter.get_name(), 
-                m_adapter.get_memory()) <<
+                config.device_id, 
+                config.device_name, 
+                config.dedicated_memory) <<
         std::endl;
 
-        std::vector<renderer::Shader> shaders;
-        shaders.emplace_back(m_device, renderer::ShaderType::Vertex, "triangle_01.vert.spv");
-        shaders.emplace_back(m_device, renderer::ShaderType::Fragment, "triangle_01.frag.spv");
+        std::cout << m_swapchain.get_framebuffer_attachments().size() << std::endl;
+
+        //std::vector<renderer::Shader> shaders;
+        //shaders.emplace_back(m_device, renderer::ShaderType::Vertex, "triangle_01.vert.spv");
+        //shaders.emplace_back(m_device, renderer::ShaderType::Fragment, "triangle_01.frag.spv");
 
         /*renderer::PipelineConfig pipeline_config = { shaders };
 
@@ -39,7 +34,7 @@ public:
     }
 
     void resize(const uint32 width, const uint32 height) {
-        //m_swapchain.resize(width, height);
+        
     }
 
     void tick() {
@@ -48,18 +43,10 @@ public:
 
 private:
 
-    renderer::Instance m_instance;
-    renderer::Adapter m_adapter;
+    std::reference_wrapper<platform::Window> m_window;
+
     renderer::Device m_device;
     renderer::Swapchain m_swapchain;
-/*
-    struct {
-        renderer::DescriptorPool<renderer::DesctiptorType::Sampler> sampler;
-        renderer::DescriptorPool<renderer::DesctiptorType::RenderTarget> rt;
-        renderer::DescriptorPool<renderer::DesctiptorType::Buffer> buffer;
-    } m_descriptors;*/
-
-    const platform::Window& m_window;
 };
 
 }

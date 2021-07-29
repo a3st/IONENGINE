@@ -5,15 +5,6 @@
 namespace ionengine::renderer
 {
 
-enum class ShaderType {
-    Vertex = VK_SHADER_STAGE_VERTEX_BIT,
-    Fragment = VK_SHADER_STAGE_FRAGMENT_BIT,
-    Geometry = VK_SHADER_STAGE_GEOMETRY_BIT,
-    TessellationControl = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-    TessellationEvalution = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-    Compute = VK_SHADER_STAGE_COMPUTE_BIT
-};
-
 class Shader final {
 public:
 

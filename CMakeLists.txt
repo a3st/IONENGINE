@@ -16,7 +16,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 #]]
 
-add_executable(Runtime-Win32 runtime/framework/main_win32.cpp)
+add_executable(Runtime-Win32 runtime/framework/main.cpp)
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
 
 # Build Output
@@ -50,7 +50,7 @@ target_compile_definitions(Runtime-Win32 PRIVATE
 
 #]]
 
-add_executable(Runtime-Win32VK runtime/framework/main_win32.cpp)
+add_executable(Runtime-Win32VK runtime/framework/main.cpp)
 target_precompile_headers(Runtime-Win32VK PRIVATE precompiled.h)
 
 # Build Output
@@ -90,7 +90,7 @@ target_compile_definitions(Runtime-Win32VK PRIVATE
 
 #]]
 
-add_library(Runtime-Android SHARED platform/android/android_native_app_glue.cpp runtime/framework/main_android.cpp)
+add_library(Runtime-Android SHARED platform/android/android_native_app_glue.cpp runtime/framework/main.cpp)
 
 # Build Output
 set_target_properties(Runtime-Android PROPERTIES 

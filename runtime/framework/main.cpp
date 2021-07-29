@@ -7,7 +7,6 @@
 // test lib
 #include "lib/fmt.h"
 #include "lib/math.h"
-#include "lib/ecs.h"
 
 #include "logger.h"
 #include "input_system.h"
@@ -19,8 +18,6 @@ using namespace ionengine::platform;
 int32 main(int32, char**) {
 
     try {
-
-        ecs::Engine ecs_engine;
 
         WindowEventLoop window_event_loop;
         Window window(L"Runtime", 800, 600, WindowStyle::Normal | WindowStyle::Minimize | WindowStyle::Maximaze, window_event_loop);

@@ -4,47 +4,51 @@
 
 namespace ionengine::renderer {
 
-enum class ImageType {
-    Single1D = VK_IMAGE_TYPE_1D,
-    Single2D = VK_IMAGE_TYPE_2D, 
-    Single3D = VK_IMAGE_TYPE_3D
-};
-
 class Image final {
 public:
 
-    Image(const Device& device, const ImageType image_type, const uint32 width, const uint32 height, const ImageFormat image_format) : m_device(device) {
+    Image(Device& device, const ImageType image_type, const uint32 width, const uint32 height, const ImageFormat image_format) : m_device(device) {
 
-        VkImageCreateInfo image_info = {};
-        image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        
-        image_info.extent.width = width;
-        image_info.extent.height = height;
-        image_info.extent.depth = 1;
-        
-        image_info.mipLevels = 1;
-        image_info.arrayLayers = 1;
-        image_info.format = static_cast<VkFormat>(image_format);
-        image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-        image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-        image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        image_info.imageType = static_cast<VkImageType>(image_type);
-        
-        throw_if_failed(vkCreateImage(device.get_handle(), &image_info, nullptr, &m_handle));
+        vk::ImageCreateInfo image_info{};
+
+        image_info
+            .setFormat(static_cast<vk::Format>(image_format))
+            .setImageType(static_cast<vk::ImageType>(image_type))
+            .setExtent({ width, height, 1 })
+            .setMipLevels(1)
+            .setArrayLayers(1)
+            .setTiling(vk::ImageTiling::eOptimal)
+            .setInitialLayout(vk::ImageLayout::eUndefined)
+            .setSamples(vk::SampleCountFlagBits::e1)
+            .setSharingMode(vk::SharingMode::eExclusive);
+
+        m_handle = m_device.get().get_handle()->createImageUnique(image_info);
     }
 
-    ~Image() {
-        vkDestroyImage(m_device.get_handle(), m_handle, nullptr);
+    Image(const Image&) = delete;
+
+    Image(Image&& rhs) noexcept : m_device(rhs.m_device) {
+
+        m_handle.swap(rhs.m_handle);
     }
 
-    const VkImage& get_handle() const { return m_handle; }
+    Image& operator=(const Image&) = delete;
+
+    Image& operator=(Image&& rhs) noexcept {
+
+        std::swap(m_device, rhs.m_device);
+
+        m_handle.swap(rhs.m_handle);
+        return *this;
+    }
+
+    const vk::UniqueImage& get_handle() const { return m_handle; }
 
 private:
 
-    const Device& m_device;
+    std::reference_wrapper<Device> m_device;
 
-    VkImage m_handle;
+    vk::UniqueImage m_handle;
 };
 
 }

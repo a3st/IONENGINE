@@ -4,6 +4,31 @@
 
 namespace ionengine::renderer {
 
+enum class ShaderType {
+    Vertex = VK_SHADER_STAGE_VERTEX_BIT,
+    Fragment = VK_SHADER_STAGE_FRAGMENT_BIT,
+    Geometry = VK_SHADER_STAGE_GEOMETRY_BIT,
+    TessellationControl = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+    TessellationEvalution = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+    Compute = VK_SHADER_STAGE_COMPUTE_BIT
+};
+
+enum class ImageViewType {
+    Single1D = VK_IMAGE_VIEW_TYPE_1D,
+    Single2D = VK_IMAGE_VIEW_TYPE_2D,
+    Single3D = VK_IMAGE_VIEW_TYPE_3D,
+    SingleCube = VK_IMAGE_VIEW_TYPE_CUBE,
+    Array1D = VK_IMAGE_VIEW_TYPE_1D_ARRAY,
+    Array2D = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+    ArrayCube = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
+};
+
+enum class ImageType {
+    Single1D = VK_IMAGE_TYPE_1D,
+    Single2D = VK_IMAGE_TYPE_2D, 
+    Single3D = VK_IMAGE_TYPE_3D
+};
+
 enum class ImageFormat {
     Undefined = VK_FORMAT_UNDEFINED,
     R8UNorm = VK_FORMAT_R8_UNORM,

@@ -4,6 +4,46 @@
 
 namespace ionengine::renderer {
 
+enum class QueueType {
+    General = D3D12_COMMAND_LIST_TYPE_DIRECT,
+    Transfer = D3D12_COMMAND_LIST_TYPE_COPY,
+    Compute = D3D12_COMMAND_LIST_TYPE_COMPUTE,
+    Graphics = D3D12_COMMAND_LIST_TYPE_DIRECT
+};
+
+enum class ComponentSwizzleType {
+    R = D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0,
+    G = D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_1, 
+    B = D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_2,
+    A = D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3,
+    Identity = 6,
+    Zero = D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+    One = D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_1
+};
+
+enum class ImageAspectType {
+    Color = 0,
+    Depth = 1,
+    Stencil = 2,
+    MetaData = 3
+};
+
+enum class ImageViewType {
+    Single1D = D3D12_SRV_DIMENSION_TEXTURE1D,
+    Single2D = D3D12_SRV_DIMENSION_TEXTURE2D,
+    Single3D = D3D12_SRV_DIMENSION_TEXTURE3D,
+    SingleCube = D3D12_SRV_DIMENSION_TEXTURECUBE,
+    Array1D = D3D12_SRV_DIMENSION_TEXTURE1DARRAY,
+    Array2D = D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
+    ArrayCube = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY
+};
+
+enum class ImageType {
+    Single1D = D3D12_RESOURCE_DIMENSION_TEXTURE1D,
+    Single2D = D3D12_RESOURCE_DIMENSION_TEXTURE2D, 
+    Single3D = D3D12_RESOURCE_DIMENSION_TEXTURE3D
+};
+
 enum class ImageFormat {
     Undefined = DXGI_FORMAT_UNKNOWN,
     R8UNorm = DXGI_FORMAT_R8_UNORM,
@@ -38,17 +78,6 @@ enum class ImageFormat {
     R32G32B32SInt = DXGI_FORMAT_R32G32B32_SINT,
     R32G32B32A32UInt = DXGI_FORMAT_R32G32B32A32_UINT,
     R32G32B32A32SInt = DXGI_FORMAT_R32G32B32A32_SINT
-};
-
-enum class DesctiptorType {
-    Sampler,
-    RenderTarget,
-    DepthStencil,
-    Buffer
-};
-
-template<DesctiptorType T>
-class DescriptorPool {
 };
 
 }
