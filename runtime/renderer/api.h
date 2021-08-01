@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "shared.h"
+
 #ifdef RENDERER_API_D3D12
 
 #include <d3d12.h>
@@ -18,6 +20,8 @@ using Microsoft::WRL::ComPtr;
 #include "d3d12/device.h"
 #include "d3d12/image.h"
 #include "d3d12/swapchain.h"
+#include "d3d12/shader.h"
+#include "d3d12/pipeline.h"
 
 #endif
 
@@ -37,13 +41,9 @@ using Microsoft::WRL::ComPtr;
 
 #include "vk/utils.h"
 #include "vk/types.h"
-#include "vk/instance.h"
-#include "vk/adapter.h"
 #include "vk/device.h"
-#include "vk/image.h"
-#include "vk/image_view.h"
 #include "vk/swapchain.h"
 #include "vk/shader.h"
-//#include "vk/pipeline.h"
+#include "vk/pipeline.h"
 
 #endif

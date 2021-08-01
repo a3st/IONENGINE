@@ -4,7 +4,7 @@
 
 namespace ionengine::renderer {
 
-class Swapchain final {
+class Swapchain {
 public:
 
     Swapchain(Device& device, void* hwnd, const uint32 width, const uint32 height, const uint32 buffer_count) :

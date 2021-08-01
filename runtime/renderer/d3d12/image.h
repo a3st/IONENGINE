@@ -15,7 +15,7 @@ struct ComponentMapping final {
     ComponentSwizzleType a;
 };
 
-class Image final {
+class Image {
 friend class ImageView;
 friend class FramebufferAttachment;
 public:
@@ -46,7 +46,7 @@ private:
     D3D12_RESOURCE_DESC m_desc;
 };
 
-class ImageView final {
+class ImageView {
 public:
 
     ImageView(Device& device, Image& image, const ImageViewType view_type, const ImageFormat view_format, const ComponentMapping& components, const SubresourceRange& subresources) :
@@ -101,7 +101,7 @@ private:
     ComPtr<ID3D12DescriptorHeap> m_ptr;
 };
 
-class FramebufferAttachment final {
+class FramebufferAttachment {
 public:
 
     FramebufferAttachment(Device& device, Image& image) : m_device(device), m_image(image) {

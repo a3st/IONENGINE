@@ -4,12 +4,112 @@
 
 namespace ionengine::renderer {
 
-class Device final {
+class Device {
+friend class Swapchain;
+friend class Shader;
 public:
 
-    Device(Adapter& adapter) : m_adapter(adapter), m_family_ids { -1, -1, -1 } {
+    Device() {
+        
+        initialize_instance();
+        initialize_adapter();
+        initialize_device();
+    }
 
-        auto family_props = adapter.get_handle().getQueueFamilyProperties();
+    Device(const Device&) = delete;
+    Device(Device&& rhs) noexcept = delete;
+    Device& operator=(const Device&) = delete;
+    Device& operator=(Device&& rhs) noexcept = delete;
+
+    const AdapterConfig get_adapter_config() const { return m_adapter_config; }
+
+private:
+
+    vk::UniqueInstance m_instance;
+    vk::PhysicalDevice m_adapter;
+    vk::UniqueDevice m_device;
+
+    AdapterConfig m_adapter_config;
+
+    struct {
+        int32 family_graphics;
+        vk::Queue graphics;
+
+        int32 family_compute;
+        vk::Queue compute;
+
+        int32 family_transfer;
+        vk::Queue transfer;
+    } m_queues;
+
+    void initialize_instance() {
+
+        std::vector<const char*> instance_layers;
+        std::vector<const char*> instance_extensions;
+
+        instance_extensions.emplace_back("VK_KHR_surface");
+
+#ifdef NDEBUG
+        instance_layers.emplace_back("VK_LAYER_LUNARG_standard_validation");
+        instance_extensions.emplace_back("VK_EXT_debug_utils");
+#endif
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+        instance_extensions.emplace_back("VK_KHR_win32_surface");
+#endif
+
+        vk::ApplicationInfo app_info{};
+        
+        app_info
+            .setPApplicationName("gfxcpp")
+            .setApplicationVersion(VK_MAKE_VERSION(1, 0, 0))
+            .setPEngineName("gfxcpp")
+            .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
+            .setApiVersion(VK_API_VERSION_1_0);
+
+        vk::InstanceCreateInfo instance_info{};
+
+        instance_info
+            .setPApplicationInfo(&app_info)
+            .setPpEnabledExtensionNames(instance_extensions.data())
+            .setEnabledExtensionCount(static_cast<uint32>(instance_extensions.size()))
+            .setPpEnabledLayerNames(instance_layers.data())
+            .setEnabledLayerCount(static_cast<uint32>(instance_layers.size()));
+
+        m_instance = vk::createInstanceUnique(instance_info);
+    }
+
+    void initialize_adapter() {
+
+        auto devices = m_instance->enumeratePhysicalDevices();
+        for(const auto& device : devices) {
+
+            vk::PhysicalDeviceProperties device_props{};
+            device.getProperties(&device_props);
+
+            if(device_props.deviceType != vk::PhysicalDeviceType::eVirtualGpu) {
+                vk::PhysicalDeviceMemoryProperties device_memory_props{};
+                device.getMemoryProperties(&device_memory_props);
+
+                for(uint32 i = 0; i < device_memory_props.memoryHeapCount; ++i) {
+                    if(device_memory_props.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal) {
+                        m_adapter_config.dedicated_memory += device_memory_props.memoryHeaps[i].size;
+                        break;
+                    }
+                }
+
+                m_adapter_config.vendor_id = device_props.vendorID;
+                m_adapter_config.device_id = device_props.deviceID;
+                m_adapter_config.device_name = std::string(device_props.deviceName.data(), device_props.deviceName.size());
+                m_adapter = device;
+                break;
+            }
+        }
+    }
+
+    void initialize_device() {
+
+        auto family_props = m_adapter.getQueueFamilyProperties();
         int32 graphics_family_idx = -1, compute_family_idx = -1, transfer_family_idx = -1;
 
         for(uint32 i = 0; i < family_props.size(); ++i) {
@@ -34,9 +134,9 @@ public:
             throw std::runtime_error("Your GPU not supported by application");
         }
 
-        m_family_ids.graphics = graphics_family_idx;
-        m_family_ids.compute = compute_family_idx;
-        m_family_ids.transfer = transfer_family_idx;
+        m_queues.family_graphics = graphics_family_idx;
+        m_queues.family_compute = compute_family_idx;
+        m_queues.family_transfer = transfer_family_idx;
 
         std::vector<vk::DeviceQueueCreateInfo> queue_infos;
         std::vector<std::vector<float>> queue_priorities;
@@ -64,60 +164,12 @@ public:
             .setPpEnabledExtensionNames(device_extensions.data())
             .setEnabledExtensionCount(static_cast<uint32>(device_extensions.size()));
 
-        m_handle = m_adapter.get().get_handle().createDeviceUnique(device_info);
+        m_device = m_adapter.createDeviceUnique(device_info);
 
-        m_queue_handles.graphics = m_handle->getQueue(m_family_ids.graphics, 0);
-        m_queue_handles.compute = m_handle->getQueue(m_family_ids.compute, 0);
-        m_queue_handles.transfer = m_handle->getQueue(m_family_ids.transfer, 0);
+        m_queues.graphics = m_device->getQueue(m_queues.family_graphics, 0);
+        m_queues.compute = m_device->getQueue(m_queues.family_compute, 0);
+        m_queues.transfer = m_device->getQueue(m_queues.family_transfer, 0);
     }
-
-    Device(const Device&) = delete;
-
-    Device(Device&& rhs) noexcept : m_adapter(rhs.m_adapter) {
-
-        m_handle.swap(rhs.m_handle);
-        
-        std::swap(m_queue_handles, rhs.m_queue_handles);
-        std::swap(m_family_ids, rhs.m_family_ids);
-    }
-
-    Device& operator=(const Device&) = delete;
-
-    Device& operator=(Device&& rhs) {
-
-        std::swap(m_adapter, rhs.m_adapter);
-
-        m_handle.swap(rhs.m_handle);
-        
-        std::swap(m_queue_handles, rhs.m_queue_handles);
-        std::swap(m_family_ids, rhs.m_family_ids);
-        return *this;
-    }
-
-    const vk::UniqueDevice& get_handle() const { return m_handle; }
-    const vk::PhysicalDevice& get_adapter_handle() const { return m_adapter.get().get_handle(); }
-
-    int32 get_graphics_family_index() const { return m_family_ids.graphics; };
-    int32 get_compute_family_index() const { return m_family_ids.compute; };
-    int32 get_transfer_family_index() const { return m_family_ids.transfer; };
-
-private:
-
-    std::reference_wrapper<Adapter> m_adapter;
-
-    vk::UniqueDevice m_handle;
-
-    struct {
-        vk::Queue graphics;
-        vk::Queue compute;
-        vk::Queue transfer;
-    } m_queue_handles;
-
-    struct {
-        int32 graphics;
-        int32 compute;
-        int32 transfer;
-    } m_family_ids;
 };
 
 }

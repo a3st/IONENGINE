@@ -4,19 +4,12 @@
 
 namespace ionengine::renderer {
 
-struct AdapterConfig {
-
-    uint64 device_id;
-    uint64 vendor_id;
-    std::string device_name;
-    usize dedicated_memory;
-};
-
 class Device {
 friend class Swapchain;
 friend class ImageView;
 friend class Image;
 friend class FramebufferAttachment;
+friend class Shader;
 public:
 
     Device() {
@@ -97,7 +90,6 @@ private:
         queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
         throw_if_failed(m_device->CreateCommandQueue(&queue_desc, IID_PPV_ARGS(&m_queues.compute)));
     }
-
 };
 
 }
