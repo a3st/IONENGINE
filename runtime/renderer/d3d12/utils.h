@@ -20,10 +20,8 @@ std::string result_to_string(const HRESULT result) {
 	}
 }
 
-void throw_if_failed(const HRESULT result) {
-	if (FAILED(result)) {
-		throw std::runtime_error(result_to_string(result));
-	}
 }
 
-}
+#ifndef ASSERT_SUCCEEDED
+#define ASSERT_SUCCEEDED(result) if(FAILED(result)) { auto result_str = format<std::string>("HRESULT: {}", result_to_string(result)); printf("%s", result_str.data()); exit(1); }
+#endif

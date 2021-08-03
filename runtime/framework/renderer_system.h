@@ -10,43 +10,43 @@ namespace ionengine {
 class RenderSystem {
 public:
 
-    RenderSystem(platform::Window& window) : 
-        m_window(window),
-        m_swapchain(m_device, m_window.get().get_handle(), 800, 600, 2)  {
+    RenderSystem(platform::Window& window) :
+        m_window(window) {
 
-        auto config = m_device.get_adapter_config();
+        m_instance = renderer::create_unique_instance();
+        auto adapters = m_instance->enumerate_adapters();
 
-        std::cout <<
-            format<std::string>("Vendor Id: {}\nDevice Id: {}\nDevice Name: {}\nDedicated Memory: {}",
-                config.vendor_id, 
-                config.device_id, 
-                config.device_name, 
-                config.dedicated_memory
-            ) <<
-        std::endl;
+        for(uint32 i = 0; i < adapters.size(); ++i) {
+            std::cout <<
+                format<std::string>("Vendor Id: {}\nDevice Id: {}\nDevice Name: {}\nDedicated Memory: {}\n",
+                    adapters[i]->get_vendor_id(), 
+                    adapters[i]->get_device_id(), 
+                    adapters[i]->get_name(), 
+                    adapters[i]->get_memory()
+                ) <<
+            std::endl;
+        }
 
-        std::vector<renderer::Shader> shaders;
+        auto adapter = std::move(adapters[0]);
+        auto device = adapter->create_device();
+        auto queue = device->get_command_queue(renderer::CommandListType::Graphics);
+
+        m_swapchain = device->create_swapchain(m_window.get().get_handle(), 800, 600, 2);
+
+        std::vector<std::unique_ptr<renderer::Shader>> shaders;
 #ifdef RENDERER_API_D3D12
-        shaders.emplace_back(m_device, renderer::shader::read_shader_code("shaders/pc/basic_vert.bin"));
-        shaders.emplace_back(m_device, renderer::shader::read_shader_code("shaders/pc/basic_frag.bin"));
+        shaders.emplace_back(device->create_shader(renderer::utils::read_shader_code("shaders/pc/basic_vert.bin")));
+        shaders.emplace_back(device->create_shader(renderer::utils::read_shader_code("shaders/pc/basic_frag.bin")));
 #else
-        shaders.emplace_back(m_device, renderer::shader::read_shader_code("shaders/vk/basic_vert.bin"));
-        shaders.emplace_back(m_device, renderer::shader::read_shader_code("shaders/vk/basic_frag.bin"));
+        shaders.emplace_back(device->create_shader(renderer::utils::read_shader_code("shaders/vk/basic_vert.bin")));
+        shaders.emplace_back(device->create_shader(renderer::utils::read_shader_code("shaders/vk/basic_frag.bin")));
 #endif
 
-        std::vector<renderer::VertexInputDesc> input_descs = {
-            renderer::VertexInputDesc { 0, 0, renderer::FormatType::R32G32B32Float, 8, renderer::VertexInputRateType::Vertex }
+        std::vector<renderer::DescriptorSetLayoutBinding> bindings = {
+            { renderer::ShaderType::Vertex, renderer::ViewType::ConstantBuffer, 0, 0, 1 }
         };
 
-        renderer::PipelineConfig pipeline_config{};
-
-        pipeline_config
-            .set_primitive_topology(renderer::PrimitiveTopologyType::Triangle)
-            .set_vertex_input_desc(input_descs)
-            .set_vertex_shader(shaders[0])
-            .set_frag_shader(shaders[1]);
-
-        renderer::Pipeline pipeline(m_device, pipeline_config);
+        auto layout = device->create_descriptor_set_layout(bindings);
     }
 
     void resize(const uint32 width, const uint32 height) {
@@ -61,8 +61,8 @@ private:
 
     std::reference_wrapper<platform::Window> m_window;
 
-    renderer::Device m_device;
-    renderer::Swapchain m_swapchain;
+    std::unique_ptr<renderer::Instance> m_instance;
+    std::unique_ptr<renderer::Swapchain> m_swapchain;
 };
 
 }

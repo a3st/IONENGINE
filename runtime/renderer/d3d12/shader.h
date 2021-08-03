@@ -4,46 +4,21 @@
 
 namespace ionengine::renderer {
 
-enum class ShaderType {
-    Vertex = 0,
-    Fragment = 1,
-    Geometry = 2,
-    Hull = 3,
-    Domain = 4,
-    Compute = 5
-};
-
-
-class Shader {
+class D3DShader : public Shader {
 public:
 
-    Shader(Device& device, const std::vector<byte>& shader_code) : m_shader_code(shader_code) {
-
-        m_shader.pShaderBytecode = m_shader_code.data();
-        m_shader.BytecodeLength = m_shader_code.size();
+    D3DShader(const ComPtr<ID3D12Device4>& device, const std::vector<byte>& blob) : m_blob(blob) {
+        
+        m_d3d12_shader.pShaderBytecode = m_blob.data();
+        m_d3d12_shader.BytecodeLength = m_blob.size();
     }
 
-    Shader(const Shader&) = delete;
-
-    Shader(Shader&& rhs) noexcept {
-
-        std::swap(m_shader, rhs.m_shader);
-        std::swap(m_shader_code, rhs.m_shader_code);
-    }
-
-    Shader& operator=(const Shader&) = delete;
-
-    Shader& operator=(Shader&& rhs) noexcept {
-
-        std::swap(m_shader, rhs.m_shader);
-        std::swap(m_shader_code, rhs.m_shader_code);
-        return *this;
-    }
+    const D3D12_SHADER_BYTECODE& get_shader() { return m_d3d12_shader; }
 
 private:
 
-    D3D12_SHADER_BYTECODE m_shader;
-    std::vector<byte> m_shader_code;
+    D3D12_SHADER_BYTECODE m_d3d12_shader;
+    std::vector<byte> m_blob;
 };
 
 }

@@ -4,92 +4,44 @@
 
 namespace ionengine::renderer {
 
-class Device {
-friend class Swapchain;
-friend class ImageView;
-friend class Image;
-friend class FramebufferAttachment;
-friend class Shader;
+class D3DDevice : public Device {
 public:
 
-    Device() {
-        
-        initialize_instance();
-        initialize_adapter();
-        initialize_device();
+    D3DDevice(const ComPtr<IDXGIFactory4>& factory, const ComPtr<IDXGIAdapter1>& adapter) : m_dxgi_factory(factory), m_dxgi_adapter(adapter) {
+
+        ASSERT_SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_d3d12_device)));
+
+        m_command_queues[CommandListType::Graphics] = std::make_shared<D3DCommandQueue>(m_d3d12_device, CommandListType::Graphics);
+        m_command_queues[CommandListType::Copy] = std::make_shared<D3DCommandQueue>(m_d3d12_device, CommandListType::Copy);
+        m_command_queues[CommandListType::Compute] = std::make_shared<D3DCommandQueue>(m_d3d12_device, CommandListType::Compute);
     }
 
-    Device(const Device&) = delete;
-    Device(Device&&) noexcept = delete;
+    const ComPtr<ID3D12Device4>& get_device() const { return m_d3d12_device; }
+    
+    std::shared_ptr<CommandQueue> get_command_queue(const CommandListType type) override {
+        return m_command_queues[type];
+    }
 
-    Device& operator=(const Device&) = delete;
-    Device& operator=(Device&&) noexcept = delete;
+    std::unique_ptr<Swapchain> create_swapchain(void* hwnd, const uint32 width, const uint32 height, const uint32 buffer_count) override {
+        return std::make_unique<D3DSwapchain>(m_dxgi_factory, m_command_queues[CommandListType::Graphics]->get_command_queue(), reinterpret_cast<HWND>(hwnd), width, height, buffer_count);
+    }
 
-    const AdapterConfig get_adapter_config() const { return m_adapter_config; }
+    std::unique_ptr<Shader> create_shader(const std::vector<byte>& blob) override {
+        return std::make_unique<D3DShader>(m_d3d12_device, blob);
+    }
+
+    std::unique_ptr<DescriptorSetLayout> create_descriptor_set_layout(const std::vector<DescriptorSetLayoutBinding>& bindings) override {
+        return std::make_unique<D3DDescriptorSetLayout>(m_d3d12_device, bindings);
+    }
 
 private:
 
-    ComPtr<IDXGIFactory4> m_factory;
-    ComPtr<ID3D12Debug> m_debug;
-    ComPtr<IDXGIAdapter4> m_adapter;
-    ComPtr<ID3D12Device4> m_device;
+    const ComPtr<IDXGIAdapter1>& m_dxgi_adapter;
+    const ComPtr<IDXGIFactory4>& m_dxgi_factory;
 
-    AdapterConfig m_adapter_config;
-
-    struct {
-        ComPtr<ID3D12CommandQueue> direct;
-        ComPtr<ID3D12CommandQueue> compute;
-        ComPtr<ID3D12CommandQueue> transfer;
-    } m_queues;
-
-    void initialize_instance() {
-
-        uint32 factory_flags = 0;
-        factory_flags = DXGI_CREATE_FACTORY_DEBUG;
-
-        throw_if_failed(CreateDXGIFactory2(factory_flags, IID_PPV_ARGS(&m_factory)));
-        throw_if_failed(D3D12GetDebugInterface(IID_PPV_ARGS(&m_debug)));
-        m_debug->EnableDebugLayer();
-    }
-
-    void initialize_adapter() {
-
-        ComPtr<IDXGIAdapter1> temp_adapter;
-        for(uint32 i = 0; m_factory->EnumAdapters1(i, temp_adapter.GetAddressOf()) != DXGI_ERROR_NOT_FOUND; ++i) {
-
-            DXGI_ADAPTER_DESC1 adapter_desc{};
-            throw_if_failed(temp_adapter->GetDesc1(&adapter_desc));
-
-            if(adapter_desc.Flags != DXGI_ADAPTER_FLAG_SOFTWARE) {
-
-                if(SUCCEEDED(D3D12CreateDevice(temp_adapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device4), nullptr))) {
-                    m_adapter_config.vendor_id = adapter_desc.VendorId;
-                    m_adapter_config.device_id = adapter_desc.DeviceId;
-                    m_adapter_config.dedicated_memory = adapter_desc.DedicatedVideoMemory;
-                    m_adapter_config.device_name = wsts(adapter_desc.Description);
-                    temp_adapter.As(&m_adapter);
-                    break;
-                }
-            }
-        }
-    }
-
-    void initialize_device() {
-
-        throw_if_failed(D3D12CreateDevice(m_adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_device)));
-
-        D3D12_COMMAND_QUEUE_DESC queue_desc{};
-        queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-
-        queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        throw_if_failed(m_device->CreateCommandQueue(&queue_desc, IID_PPV_ARGS(&m_queues.direct)));
-
-        queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-        throw_if_failed(m_device->CreateCommandQueue(&queue_desc, IID_PPV_ARGS(&m_queues.transfer)));
-
-        queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        throw_if_failed(m_device->CreateCommandQueue(&queue_desc, IID_PPV_ARGS(&m_queues.compute)));
-    }
+    ComPtr<ID3D12Device4> m_d3d12_device;
+    
+    std::map<CommandListType, std::shared_ptr<D3DCommandQueue>> m_command_queues;
 };
 
 }
