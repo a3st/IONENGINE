@@ -12,28 +12,9 @@ class Swapchain;
 class Shader;
 class Pipeline;
 class DescriptorSetLayout;
+class RenderPass;
 
 enum class Format;
-
-namespace utils {
-
-    std::vector<byte> read_shader_code(const std::filesystem::path& shader_path) {
-
-        std::vector<byte> shader_code;
-
-        std::ifstream file(shader_path, std::ios::ate | std::ios::binary);
-        if (!file.is_open()) {
-            throw std::runtime_error(format<std::string>("Shader cannot be opened '{}'", shader_path));
-        }
-
-        usize file_size = static_cast<usize>(file.tellg());
-        shader_code.resize(file_size);
-
-        file.seekg(std::ios::beg);
-        file.read(reinterpret_cast<char*>(shader_code.data()), file_size);
-        return std::move(shader_code);
-    }
-}
 
 enum class ShaderType {
     Vertex,
@@ -92,11 +73,83 @@ enum class CullMode {
     Back
 };
 
+enum ComparisonFunc {
+    Never,
+    Less,
+    Equal,
+    LessEqual,
+    Greater,
+    NotEqual,
+    GreaterEqual,
+    Always
+};
+
+enum class StencilOp {
+    Keep,
+    Zero,
+    Replace,
+    IncrSat,
+    DecrSat,
+    Invert,
+    Incr,
+    Decr
+};
+
+enum class Blend {
+    Zero,
+    SrcAlpha,
+    InvSrcAlpha
+};
+
+enum class BlendOp {
+    Add,
+    Subtract,
+    RevSubtract,
+    Min,
+    Max
+};
+
+enum class RenderPassLoadOp {
+    Load,
+    Clear,
+    DontCare
+};
+
+enum class RenderPassStoreOp {
+    Store,
+    DontCare
+};
+
+struct RenderPassColorDesc {
+    Format format;
+    RenderPassLoadOp load_op;
+    RenderPassStoreOp store_op;
+};
+
+struct RenderPassDepthStencilDesc {
+    Format format;
+    RenderPassLoadOp depth_load_op;
+    RenderPassStoreOp depth_store_op;
+    RenderPassLoadOp stencil_load_op;
+    RenderPassStoreOp stencil_store_op;
+};
+
+struct RenderPassDesc {
+    std::vector<RenderPassColorDesc> colors;
+    RenderPassDepthStencilDesc depth_stencil;
+    uint32 sample_count;
+};
+
 struct InputLayoutDesc {
     uint32 slot;
     std::string semantic_name;
     Format format;
     uint32 stride;
+};
+
+struct ShaderStageDesc {
+    std::shared_ptr<Shader> shader;
+    ShaderType shader_type;
 };
 
 struct DescriptorSetLayoutBinding {
@@ -107,10 +160,50 @@ struct DescriptorSetLayoutBinding {
     uint32 count;
 };
 
+struct RasterizerDesc {
+    FillMode fill_mode;
+    CullMode cull_mode;
+    int32 depth_bias;
+};
+
+struct StencilOpDesc {
+    StencilOp fail_op;
+    StencilOp depth_fail_op;
+    StencilOp pass_op;
+    ComparisonFunc func;
+};
+
+struct DepthStencilDesc {
+    bool depth_test_enable;
+    ComparisonFunc depth_func;
+    bool depth_write_enable;
+    bool depth_bounds_test_enable;
+    bool stencil_enable;
+    uint8 stencil_read_mask;
+    uint8 stencil_write_mask;
+    StencilOpDesc front_face;
+    StencilOpDesc back_face;
+};
+
+struct BlendDesc {
+    bool blend_enable;
+    Blend blend_src;
+    Blend blend_dest;
+    BlendOp blend_op;
+    Blend blend_src_alpha;
+    Blend blend_dest_alpha;
+    BlendOp blend_op_alpha;
+};
+
 struct GraphicsPipelineDesc {
 
-
-    std::vector<InputLayoutDesc> input;
+    std::vector<ShaderStageDesc> stages;
+    std::shared_ptr<DescriptorSetLayout> layout;
+    std::vector<InputLayoutDesc> inputs;
+    std::shared_ptr<RenderPass> render_pass;
+    RasterizerDesc rasterizer;
+    DepthStencilDesc depth_stencil;
+    BlendDesc blend;
 };
 
 }

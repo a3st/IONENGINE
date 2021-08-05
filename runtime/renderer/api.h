@@ -3,10 +3,12 @@
 #pragma once
 
 #include "base/types.h"
+#include "base/utils.h"
 #include "base/swapchain.h"
 #include "base/queue.h"
 #include "base/shader.h"
 #include "base/descriptors.h"
+#include "base/pass.h"
 #include "base/pipeline.h"
 #include "base/device.h"
 #include "base/adapter.h"
@@ -29,6 +31,7 @@ using Microsoft::WRL::ComPtr;
 #include "d3d12/queue.h"
 #include "d3d12/shader.h"
 #include "d3d12/descriptors.h"
+#include "d3d12/pass.h"
 #include "d3d12/pipeline.h"
 #include "d3d12/device.h"
 #include "d3d12/adapter.h"

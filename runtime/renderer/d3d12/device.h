@@ -26,12 +26,16 @@ public:
         return std::make_unique<D3DSwapchain>(m_dxgi_factory, m_command_queues[CommandListType::Graphics]->get_command_queue(), reinterpret_cast<HWND>(hwnd), width, height, buffer_count);
     }
 
-    std::unique_ptr<Shader> create_shader(const std::vector<byte>& blob) override {
-        return std::make_unique<D3DShader>(m_d3d12_device, blob);
+    std::shared_ptr<Shader> create_shader(const std::vector<byte>& blob) override {
+        return std::make_shared<D3DShader>(m_d3d12_device, blob);
     }
 
-    std::unique_ptr<DescriptorSetLayout> create_descriptor_set_layout(const std::vector<DescriptorSetLayoutBinding>& bindings) override {
-        return std::make_unique<D3DDescriptorSetLayout>(m_d3d12_device, bindings);
+    std::shared_ptr<DescriptorSetLayout> create_descriptor_set_layout(const std::vector<DescriptorSetLayoutBinding>& bindings) override {
+        return std::make_shared<D3DDescriptorSetLayout>(m_d3d12_device, bindings);
+    }
+
+    std::shared_ptr<RenderPass> create_render_pass(const RenderPassDesc& desc) override {
+        return std::make_shared<D3DRenderPass>(m_d3d12_device, desc);
     }
 
 private:

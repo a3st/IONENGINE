@@ -14,16 +14,7 @@ public:
 		for(auto& binding : bindings) {
 			
 			D3D12_DESCRIPTOR_RANGE range{};
-			switch(binding.view_type) {
-				case ViewType::Texture:
-				case ViewType::StructuredBuffer:
-				case ViewType::Buffer: range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; break;
-				case ViewType::RWTexture:
-				case ViewType::RWBuffer:
-				case ViewType::RWStructuredBuffer: range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV; break;
-				case ViewType::ConstantBuffer: range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV; break;
-				case ViewType::Sampler: range.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER; break;
-			}
+			range.RangeType = convert_enum(binding.view_type);
 			range.NumDescriptors = binding.count;
 			range.BaseShaderRegister = binding.slot;
 			range.RegisterSpace = binding.space;
@@ -40,15 +31,7 @@ public:
 			parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 			parameter.DescriptorTable.NumDescriptorRanges = static_cast<uint32>(range.second.size());
 			parameter.DescriptorTable.pDescriptorRanges = range.second.data();
-			switch(range.first) {
-				case ShaderType::Vertex: parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; break;
-				case ShaderType::Pixel: parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; break;
-				case ShaderType::Geometry: parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_GEOMETRY; break;
-				case ShaderType::Hull: parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_HULL; break;
-				case ShaderType::Domain: parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_DOMAIN; break;
-				case ShaderType::All: parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; break;
-				case ShaderType::Compute: parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; break;
-			}
+			parameter.ShaderVisibility = convert_enum(range.first);
 
 			parameters.emplace_back(parameter);
 		}

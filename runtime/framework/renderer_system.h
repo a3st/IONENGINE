@@ -33,13 +33,13 @@ public:
 
         m_swapchain = device->create_swapchain(m_window.get().get_handle(), 800, 600, 2);
 
-        std::vector<std::unique_ptr<renderer::Shader>> shaders;
+        std::vector<std::shared_ptr<renderer::Shader>> shaders;
 #ifdef RENDERER_API_D3D12
-        shaders.emplace_back(device->create_shader(renderer::utils::read_shader_code("shaders/pc/basic_vert.bin")));
-        shaders.emplace_back(device->create_shader(renderer::utils::read_shader_code("shaders/pc/basic_frag.bin")));
+        shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/pc/basic_vert.bin")));
+        shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/pc/basic_frag.bin")));
 #else
-        shaders.emplace_back(device->create_shader(renderer::utils::read_shader_code("shaders/vk/basic_vert.bin")));
-        shaders.emplace_back(device->create_shader(renderer::utils::read_shader_code("shaders/vk/basic_frag.bin")));
+        shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/vk/basic_vert.bin")));
+        shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/vk/basic_frag.bin")));
 #endif
 
         std::vector<renderer::DescriptorSetLayoutBinding> bindings = {
@@ -47,6 +47,16 @@ public:
         };
 
         auto layout = device->create_descriptor_set_layout(bindings);
+
+        renderer::GraphicsPipelineDesc pipeline_desc{};
+        pipeline_desc.stages = {
+            { shaders[0], renderer::ShaderType::Vertex },
+            { shaders[1], renderer::ShaderType::Pixel }
+        };
+        pipeline_desc.layout = layout;
+        pipeline_desc.inputs = {
+            { 0, "POSITION", renderer::Format::Undefined, sizeof(math::Fvector3) }
+        };
     }
 
     void resize(const uint32 width, const uint32 height) {

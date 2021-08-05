@@ -4,6 +4,98 @@
 
 namespace ionengine::renderer {
 
+D3D12_FILL_MODE convert_enum(const FillMode fill_mode) {
+	switch(fill_mode) {
+		case FillMode::Solid: return D3D12_FILL_MODE_SOLID;
+		case FillMode::Wireframe: return D3D12_FILL_MODE_WIREFRAME;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
+D3D12_CULL_MODE convert_enum(const CullMode cull_mode) {
+	switch(cull_mode) {
+		case CullMode::None: return D3D12_CULL_MODE_NONE;
+		case CullMode::Back: return D3D12_CULL_MODE_BACK;
+		case CullMode::Front: return D3D12_CULL_MODE_FRONT;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
+D3D12_COMPARISON_FUNC convert_enum(const ComparisonFunc func) {
+	switch(func) {
+		case ComparisonFunc::Always: return D3D12_COMPARISON_FUNC_ALWAYS;
+		case ComparisonFunc::Equal: return D3D12_COMPARISON_FUNC_EQUAL;
+		case ComparisonFunc::Greater: return D3D12_COMPARISON_FUNC_GREATER;
+		case ComparisonFunc::GreaterEqual: return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+		case ComparisonFunc::Less: return D3D12_COMPARISON_FUNC_LESS;
+		case ComparisonFunc::LessEqual: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+		case ComparisonFunc::Never: return D3D12_COMPARISON_FUNC_NEVER;
+		case ComparisonFunc::NotEqual: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
+D3D12_STENCIL_OP convert_enum(const StencilOp op) {
+	switch(op) {
+		case StencilOp::Zero: return D3D12_STENCIL_OP_ZERO;
+		case StencilOp::Replace: return D3D12_STENCIL_OP_REPLACE;
+		case StencilOp::Keep: return D3D12_STENCIL_OP_KEEP;
+		case StencilOp::Invert: return D3D12_STENCIL_OP_INVERT;
+		case StencilOp::IncrSat: return D3D12_STENCIL_OP_INCR_SAT;
+		case StencilOp::Incr: return D3D12_STENCIL_OP_INCR;
+		case StencilOp::DecrSat: return D3D12_STENCIL_OP_DECR_SAT;
+		case StencilOp::Decr: return D3D12_STENCIL_OP_DECR;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
+D3D12_BLEND convert_enum(const Blend blend) {
+	switch(blend) {
+		case Blend::Zero: return D3D12_BLEND_ZERO;
+		case Blend::InvSrcAlpha: return D3D12_BLEND_INV_SRC_ALPHA;
+		case Blend::SrcAlpha: return D3D12_BLEND_SRC_ALPHA;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
+D3D12_BLEND_OP convert_enum(const BlendOp op) {
+	switch(op) {
+		case BlendOp::Add: return D3D12_BLEND_OP_ADD;
+		case BlendOp::Min: return D3D12_BLEND_OP_MIN;
+		case BlendOp::Max: return D3D12_BLEND_OP_MAX;
+		case BlendOp::RevSubtract: return D3D12_BLEND_OP_REV_SUBTRACT;
+		case BlendOp::Subtract: return D3D12_BLEND_OP_SUBTRACT;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
+D3D12_SHADER_VISIBILITY convert_enum(const ShaderType type) {
+	switch(type) {
+		case ShaderType::Vertex: return D3D12_SHADER_VISIBILITY_VERTEX;
+		case ShaderType::Pixel: return D3D12_SHADER_VISIBILITY_PIXEL;
+		case ShaderType::Geometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
+		case ShaderType::Hull: return D3D12_SHADER_VISIBILITY_HULL;
+		case ShaderType::Domain: return D3D12_SHADER_VISIBILITY_DOMAIN;
+		case ShaderType::All: return D3D12_SHADER_VISIBILITY_ALL;
+		case ShaderType::Compute: return D3D12_SHADER_VISIBILITY_ALL;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
+D3D12_DESCRIPTOR_RANGE_TYPE convert_enum(const ViewType type) {
+	switch(type) {
+		case ViewType::Texture:
+		case ViewType::StructuredBuffer:
+		case ViewType::Buffer: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+		case ViewType::RWTexture:
+		case ViewType::RWBuffer:
+		case ViewType::RWStructuredBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+		case ViewType::ConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		case ViewType::Sampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
 std::string result_to_string(const HRESULT result) {
 	switch(result) {
 		case E_FAIL: return "Attempted to create a device with the debug layer enabled and the layer is not installed";
