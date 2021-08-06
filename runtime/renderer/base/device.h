@@ -16,6 +16,7 @@ public:
     virtual std::shared_ptr<Shader> create_shader(const std::vector<byte>& blob) = 0;
     virtual std::shared_ptr<DescriptorSetLayout> create_descriptor_set_layout(const std::vector<DescriptorSetLayoutBinding>& bindings) = 0;
     virtual std::shared_ptr<RenderPass> create_render_pass(const RenderPassDesc& desc) = 0;
+    virtual std::shared_ptr<Pipeline> create_graphics_pipeline(const GraphicsPipelineDesc& desc) = 0;
 };
 
 }

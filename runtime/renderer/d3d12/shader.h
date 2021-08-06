@@ -7,7 +7,7 @@ namespace ionengine::renderer {
 class D3DShader : public Shader {
 public:
 
-    D3DShader(const ComPtr<ID3D12Device4>& device, const std::vector<byte>& blob) : m_blob(blob) {
+    D3DShader(const winrt::com_ptr<ID3D12Device4>& device, const std::vector<byte>& blob) : m_blob(blob) {
         
         m_d3d12_shader.pShaderBytecode = m_blob.data();
         m_d3d12_shader.BytecodeLength = m_blob.size();

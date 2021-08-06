@@ -23,8 +23,6 @@
 #include <filesystem>
 #include <optional>
 
-#include "platform.h"
-
 namespace ionengine {
 
 typedef std::uint64_t   uint64;

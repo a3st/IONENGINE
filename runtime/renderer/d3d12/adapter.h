@@ -7,7 +7,7 @@ namespace ionengine::renderer {
 class D3DAdapter : public Adapter {
 public:
 
-    D3DAdapter(const ComPtr<IDXGIFactory4>& instance, const ComPtr<IDXGIAdapter1>& adapter) : m_dxgi_factory(instance), m_dxgi_adapter(adapter) {
+    D3DAdapter(const winrt::com_ptr<IDXGIFactory4>& instance, const winrt::com_ptr<IDXGIAdapter1>& adapter) : m_dxgi_factory(instance), m_dxgi_adapter(adapter) {
 
         DXGI_ADAPTER_DESC adapter_desc{};
         adapter->GetDesc(&adapter_desc);
@@ -27,14 +27,14 @@ public:
     uint32 get_device_id() const override { return m_device_id; }
     uint32 get_vendor_id() const override { return m_vendor_id; }
 
-    const ComPtr<IDXGIAdapter1>& get_adapter() const { return m_dxgi_adapter; }
-    const ComPtr<IDXGIFactory4>& get_factory() const { return m_dxgi_factory; }
+    const winrt::com_ptr<IDXGIAdapter1>& get_adapter() const { return m_dxgi_adapter; }
+    const winrt::com_ptr<IDXGIFactory4>& get_factory() const { return m_dxgi_factory; }
     
 private:
 
-    const ComPtr<IDXGIFactory4>& m_dxgi_factory;
+    const winrt::com_ptr<IDXGIFactory4>& m_dxgi_factory;
 
-    ComPtr<IDXGIAdapter1> m_dxgi_adapter;
+    winrt::com_ptr<IDXGIAdapter1> m_dxgi_adapter;
 
     std::string m_name;
     usize m_memory;

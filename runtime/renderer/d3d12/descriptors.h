@@ -7,7 +7,7 @@ namespace ionengine::renderer {
 class D3DDescriptorSetLayout : public DescriptorSetLayout {
 public:
 
-    D3DDescriptorSetLayout(const ComPtr<ID3D12Device4>& device, const std::vector<DescriptorSetLayoutBinding>& bindings) : m_device(device) {
+    D3DDescriptorSetLayout(const winrt::com_ptr<ID3D12Device4>& device, const std::vector<DescriptorSetLayoutBinding>& bindings) : m_device(device) {
 
 		std::map<ShaderType, std::vector<D3D12_DESCRIPTOR_RANGE>> ranges_by_shader;
 
@@ -41,18 +41,18 @@ public:
 	    root_desc.pParameters = parameters.data();
 	    root_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-	    ComPtr<ID3DBlob> blob;
-	    ASSERT_SUCCEEDED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, blob.GetAddressOf(), nullptr));
-	    ASSERT_SUCCEEDED(m_device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), IID_PPV_ARGS(&m_d3d12_root_signature)));
+	    winrt::com_ptr<ID3DBlob> blob;
+	    ASSERT_SUCCEEDED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, blob.put(), nullptr));
+	    ASSERT_SUCCEEDED(m_device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), __uuidof(ID3D12RootSignature), m_d3d12_root_signature.put_void()));
     }
 
-	const ComPtr<ID3D12RootSignature>& get_root_signature() const { return m_d3d12_root_signature; }
+	const winrt::com_ptr<ID3D12RootSignature>& get_root_signature() const { return m_d3d12_root_signature; }
 
 private:
 
-    const ComPtr<ID3D12Device4> m_device;
+    const winrt::com_ptr<ID3D12Device4> m_device;
 
-    ComPtr<ID3D12RootSignature> m_d3d12_root_signature;
+    winrt::com_ptr<ID3D12RootSignature> m_d3d12_root_signature;
 };
 
 }

@@ -4,20 +4,22 @@
 
 #include "lib/singleton.h"
 #include "input_types.h"
-#include "platform/window_event_handler.h"
+#include "platform/base/types.h"
 
 namespace ionengine {
 
-class InputSystem final {
+class InputSystem {
 public:
 
     InputSystem() {
+
         m_previous_keys.fill(false);
         m_current_keys.fill(false);
         m_current_axis.fill(0.0f);
     }
 
     void tick() {
+
         m_previous_keys = m_current_keys;
         m_current_axis.fill(0.0f);
     }
@@ -52,17 +54,9 @@ public:
         }
     }
 
-    bool get_key_down(const KeyCode key_code) const {
-        return m_current_keys[static_cast<uint32>(key_code)] && !m_previous_keys[static_cast<uint32>(key_code)];
-    }
-
-    bool get_key_up(const KeyCode key_code) const {
-        return !m_current_keys[static_cast<uint32>(key_code)] && m_previous_keys[static_cast<uint32>(key_code)];
-    }
-
-    bool get_key(const KeyCode key_code) const {
-        return m_current_keys[static_cast<uint32>(key_code)];
-    }
+    bool get_key_down(const KeyCode key_code) const { return m_current_keys[static_cast<uint32>(key_code)] && !m_previous_keys[static_cast<uint32>(key_code)]; }
+    bool get_key_up(const KeyCode key_code) const { return !m_current_keys[static_cast<uint32>(key_code)] && m_previous_keys[static_cast<uint32>(key_code)]; }
+    bool get_key(const KeyCode key_code) const { return m_current_keys[static_cast<uint32>(key_code)]; }
 
 private:
 

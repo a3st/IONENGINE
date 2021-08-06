@@ -3,15 +3,14 @@
 #pragma once
 
 #include "renderer/api.h"
-#include "platform/window.h"
+#include "platform/base/window.h"
 
 namespace ionengine {
 
 class RenderSystem {
 public:
 
-    RenderSystem(platform::Window& window) :
-        m_window(window) {
+    RenderSystem(platform::Window& window) : m_window(window) {
 
         m_instance = renderer::create_unique_instance();
         auto adapters = m_instance->enumerate_adapters();
@@ -31,7 +30,7 @@ public:
         auto device = adapter->create_device();
         auto queue = device->get_command_queue(renderer::CommandListType::Graphics);
 
-        m_swapchain = device->create_swapchain(m_window.get().get_handle(), 800, 600, 2);
+        m_swapchain = device->create_swapchain(m_window.get().get_native_handle(), 800, 600, 2);
 
         std::vector<std::shared_ptr<renderer::Shader>> shaders;
 #ifdef RENDERER_API_D3D12
@@ -48,15 +47,23 @@ public:
 
         auto layout = device->create_descriptor_set_layout(bindings);
 
+        renderer::RenderPassDesc render_pass_desc = { { { renderer::Format::Test, renderer::RenderPassLoadOp::Load, renderer::RenderPassStoreOp::Store } } };
+        auto render_pass = device->create_render_pass(render_pass_desc);
+
         renderer::GraphicsPipelineDesc pipeline_desc{};
-        pipeline_desc.stages = {
-            { shaders[0], renderer::ShaderType::Vertex },
-            { shaders[1], renderer::ShaderType::Pixel }
-        };
-        pipeline_desc.layout = layout;
-        pipeline_desc.inputs = {
-            { 0, "POSITION", renderer::Format::Undefined, sizeof(math::Fvector3) }
-        };
+
+        pipeline_desc
+            .set_stages( {
+                { shaders[0], renderer::ShaderType::Vertex },
+                { shaders[1], renderer::ShaderType::Pixel }
+            })
+            .set_layout(layout)
+            .set_inputs({
+                { 0, "POSITION", renderer::Format::Test, sizeof(math::Fvector3) }
+            })
+            .set_render_pass(render_pass);
+
+        auto pipeline = device->create_graphics_pipeline(pipeline_desc);
     }
 
     void resize(const uint32 width, const uint32 height) {

@@ -7,7 +7,7 @@ namespace ionengine::renderer {
 class D3DRenderPass : public RenderPass {
 public:
 
-    D3DRenderPass(const ComPtr<ID3D12Device4>& device, const RenderPassDesc& desc) : m_device(device), m_render_pass_desc(desc) {
+    D3DRenderPass(const winrt::com_ptr<ID3D12Device4>& device, const RenderPassDesc& desc) : m_device(device), m_render_pass_desc(desc) {
 
     }
 
@@ -15,7 +15,7 @@ public:
     
 private:
 
-    const ComPtr<ID3D12Device4>& m_device;
+    const winrt::com_ptr<ID3D12Device4>& m_device;
 
     RenderPassDesc m_render_pass_desc;
 };

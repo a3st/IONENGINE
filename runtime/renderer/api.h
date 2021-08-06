@@ -18,12 +18,13 @@
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
-#include <wrl.h>
+#include <winrt/base.h>
+#include <dxgidebug.h>
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
-
-using Microsoft::WRL::ComPtr;
+#pragma comment(lib, "DXGUID.LIB")
+#pragma comment(lib, "windowsapp.lib")
 
 #include "d3d12/types.h"
 #include "d3d12/utils.h"

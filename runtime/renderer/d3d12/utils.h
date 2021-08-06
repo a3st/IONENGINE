@@ -115,5 +115,5 @@ std::string result_to_string(const HRESULT result) {
 }
 
 #ifndef ASSERT_SUCCEEDED
-#define ASSERT_SUCCEEDED(result) if(FAILED(result)) { auto result_str = format<std::string>("HRESULT: {}", result_to_string(result)); printf("%s", result_str.data()); exit(1); }
+#define ASSERT_SUCCEEDED(result) if(FAILED(result)) { assert(false); }
 #endif

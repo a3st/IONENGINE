@@ -7,7 +7,7 @@ namespace ionengine::renderer {
 class D3DGraphicsPipeline : public Pipeline {
 public:
 
-    D3DGraphicsPipeline(const ComPtr<ID3D12Device4>& device, const GraphicsPipelineDesc& desc) : m_device(device)  {
+    D3DGraphicsPipeline(const winrt::com_ptr<ID3D12Device4>& device, const GraphicsPipelineDesc& desc) : m_device(device)  {
 
         // Input Element Description
         // Description of the input data in the pipeline
@@ -16,6 +16,7 @@ public:
             D3D12_INPUT_ELEMENT_DESC input_desc{};
             input_desc.SemanticName = input.semantic_name.c_str();
             input_desc.SemanticIndex = input.slot;
+            input_desc.Format = static_cast<DXGI_FORMAT>(input.format);
             input_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
             input_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
             input_desc.InstanceDataStepRate = 0;
@@ -106,8 +107,9 @@ public:
         // Graphics Pipeline State Description
         // Description of the pipeline
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline_desc{};
-        pipeline_desc.pRootSignature = std::static_pointer_cast<D3DDescriptorSetLayout>(desc.layout)->get_root_signature().Get();
+        pipeline_desc.pRootSignature = std::static_pointer_cast<D3DDescriptorSetLayout>(desc.layout)->get_root_signature().get();
         pipeline_desc.InputLayout = input_layout_desc;
+        pipeline_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         pipeline_desc.RasterizerState = rasterizer_desc;
         pipeline_desc.DepthStencilState = depth_stencil_desc;
         pipeline_desc.BlendState = blend_desc;
@@ -125,14 +127,14 @@ public:
         pipeline_desc.DSVFormat = static_cast<DXGI_FORMAT>(render_pass_desc.depth_stencil.format);
         pipeline_desc.SampleDesc = sample_desc;
         
-        ASSERT_SUCCEEDED(m_device->CreateGraphicsPipelineState(&pipeline_desc, IID_PPV_ARGS(&m_d3d12_pipeline_state)));
+        ASSERT_SUCCEEDED(m_device->CreateGraphicsPipelineState(&pipeline_desc, __uuidof(ID3D12PipelineState), m_d3d12_pipeline_state.put_void()));
     }
 
 private:
 
-    const ComPtr<ID3D12Device4>& m_device;
+    const winrt::com_ptr<ID3D12Device4>& m_device;
     
-    ComPtr<ID3D12PipelineState> m_d3d12_pipeline_state;
+    winrt::com_ptr<ID3D12PipelineState> m_d3d12_pipeline_state;
 };
 
 class D3DComputePipeline : public Pipeline {
@@ -144,7 +146,7 @@ public:
 
 private:
     
-    ComPtr<ID3D12PipelineState> m_d3d12_pipeline_state;
+    winrt::com_ptr<ID3D12PipelineState> m_d3d12_pipeline_state;
 };
 
 }

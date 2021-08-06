@@ -12,7 +12,8 @@ class D3DShader;
 class D3DRenderPass;
 
 enum class Format {
-    Undefined = DXGI_FORMAT_UNKNOWN
+    Undefined = DXGI_FORMAT_UNKNOWN,
+    Test = DXGI_FORMAT_R8G8B8A8_UNORM
 };
 
 }

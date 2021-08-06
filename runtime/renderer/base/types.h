@@ -122,22 +122,22 @@ enum class RenderPassStoreOp {
 
 struct RenderPassColorDesc {
     Format format;
-    RenderPassLoadOp load_op;
-    RenderPassStoreOp store_op;
+    RenderPassLoadOp load_op = RenderPassLoadOp::Load;
+    RenderPassStoreOp store_op  = RenderPassStoreOp::Store;
 };
 
 struct RenderPassDepthStencilDesc {
     Format format;
-    RenderPassLoadOp depth_load_op;
-    RenderPassStoreOp depth_store_op;
-    RenderPassLoadOp stencil_load_op;
-    RenderPassStoreOp stencil_store_op;
+    RenderPassLoadOp depth_load_op = RenderPassLoadOp::Load;
+    RenderPassStoreOp depth_store_op = RenderPassStoreOp::Store;
+    RenderPassLoadOp stencil_load_op = RenderPassLoadOp::Load;
+    RenderPassStoreOp stencil_store_op = RenderPassStoreOp::Store;
 };
 
 struct RenderPassDesc {
     std::vector<RenderPassColorDesc> colors;
     RenderPassDepthStencilDesc depth_stencil;
-    uint32 sample_count;
+    uint32 sample_count = 1;
 };
 
 struct InputLayoutDesc {
@@ -161,32 +161,32 @@ struct DescriptorSetLayoutBinding {
 };
 
 struct RasterizerDesc {
-    FillMode fill_mode;
-    CullMode cull_mode;
-    int32 depth_bias;
+    FillMode fill_mode = FillMode::Solid;
+    CullMode cull_mode = CullMode::Back;
+    int32 depth_bias = 0;
 };
 
 struct StencilOpDesc {
-    StencilOp fail_op;
-    StencilOp depth_fail_op;
-    StencilOp pass_op;
-    ComparisonFunc func;
+    StencilOp fail_op = StencilOp::Keep;
+    StencilOp depth_fail_op = StencilOp::Keep;
+    StencilOp pass_op = StencilOp::Keep;
+    ComparisonFunc func = ComparisonFunc::Always;
 };
 
 struct DepthStencilDesc {
-    bool depth_test_enable;
-    ComparisonFunc depth_func;
-    bool depth_write_enable;
-    bool depth_bounds_test_enable;
-    bool stencil_enable;
-    uint8 stencil_read_mask;
-    uint8 stencil_write_mask;
+    bool depth_test_enable = false;
+    ComparisonFunc depth_func = ComparisonFunc::Less;
+    bool depth_write_enable = true;
+    bool depth_bounds_test_enable = false;
+    bool stencil_enable = false;
+    uint8 stencil_read_mask = 0xff;
+    uint8 stencil_write_mask = 0xff;
     StencilOpDesc front_face;
     StencilOpDesc back_face;
 };
 
 struct BlendDesc {
-    bool blend_enable;
+    bool blend_enable = false;
     Blend blend_src;
     Blend blend_dest;
     BlendOp blend_op;
@@ -204,6 +204,41 @@ struct GraphicsPipelineDesc {
     RasterizerDesc rasterizer;
     DepthStencilDesc depth_stencil;
     BlendDesc blend;
+
+    GraphicsPipelineDesc& set_stages(const std::vector<ShaderStageDesc>& descs) {
+        stages = descs;
+        return *this;
+    }
+
+    GraphicsPipelineDesc& set_layout(const std::shared_ptr<DescriptorSetLayout>& layout_) {
+        layout = layout_;
+        return *this;
+    }
+
+    GraphicsPipelineDesc& set_inputs(const std::vector<InputLayoutDesc>& descs) {
+        inputs = descs;
+        return *this;
+    }
+
+    GraphicsPipelineDesc& set_render_pass(const std::shared_ptr<RenderPass>& render_pass_) {
+        render_pass = render_pass_;
+        return *this;
+    }
+
+    GraphicsPipelineDesc& set_rasterizer(const RasterizerDesc& desc) {
+        rasterizer = desc;
+        return *this;
+    }
+
+    GraphicsPipelineDesc& set_depth_stencil(const DepthStencilDesc& desc) {
+        depth_stencil = desc;
+        return *this;
+    }
+
+    GraphicsPipelineDesc& set_blend(const BlendDesc& desc) {
+        blend = desc;
+        return *this;
+    }
 };
 
 }

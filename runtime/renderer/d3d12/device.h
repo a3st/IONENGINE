@@ -7,16 +7,16 @@ namespace ionengine::renderer {
 class D3DDevice : public Device {
 public:
 
-    D3DDevice(const ComPtr<IDXGIFactory4>& factory, const ComPtr<IDXGIAdapter1>& adapter) : m_dxgi_factory(factory), m_dxgi_adapter(adapter) {
+    D3DDevice(const winrt::com_ptr<IDXGIFactory4>& factory, const winrt::com_ptr<IDXGIAdapter1>& adapter) : m_dxgi_factory(factory), m_dxgi_adapter(adapter) {
 
-        ASSERT_SUCCEEDED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_d3d12_device)));
+        ASSERT_SUCCEEDED(D3D12CreateDevice(adapter.get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device4), m_d3d12_device.put_void()));
 
         m_command_queues[CommandListType::Graphics] = std::make_shared<D3DCommandQueue>(m_d3d12_device, CommandListType::Graphics);
         m_command_queues[CommandListType::Copy] = std::make_shared<D3DCommandQueue>(m_d3d12_device, CommandListType::Copy);
         m_command_queues[CommandListType::Compute] = std::make_shared<D3DCommandQueue>(m_d3d12_device, CommandListType::Compute);
     }
 
-    const ComPtr<ID3D12Device4>& get_device() const { return m_d3d12_device; }
+    const winrt::com_ptr<ID3D12Device4>& get_device() const { return m_d3d12_device; }
     
     std::shared_ptr<CommandQueue> get_command_queue(const CommandListType type) override {
         return m_command_queues[type];
@@ -38,12 +38,16 @@ public:
         return std::make_shared<D3DRenderPass>(m_d3d12_device, desc);
     }
 
+    std::shared_ptr<Pipeline> create_graphics_pipeline(const GraphicsPipelineDesc& desc) override {
+        return std::make_shared<D3DGraphicsPipeline>(m_d3d12_device, desc);
+    }
+
 private:
 
-    const ComPtr<IDXGIAdapter1>& m_dxgi_adapter;
-    const ComPtr<IDXGIFactory4>& m_dxgi_factory;
+    const winrt::com_ptr<IDXGIAdapter1>& m_dxgi_adapter;
+    const winrt::com_ptr<IDXGIFactory4>& m_dxgi_factory;
 
-    ComPtr<ID3D12Device4> m_d3d12_device;
+    winrt::com_ptr<ID3D12Device4> m_d3d12_device;
     
     std::map<CommandListType, std::shared_ptr<D3DCommandQueue>> m_command_queues;
 };
