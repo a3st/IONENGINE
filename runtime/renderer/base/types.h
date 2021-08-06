@@ -13,6 +13,8 @@ class Shader;
 class Pipeline;
 class DescriptorSetLayout;
 class RenderPass;
+class Resource;
+class Memory;
 
 enum class Format;
 
@@ -84,6 +86,12 @@ enum ComparisonFunc {
     Always
 };
 
+enum class MemoryType {
+    Default,
+    Upload,
+    Readback
+};
+
 enum class StencilOp {
     Keep,
     Zero,
@@ -120,6 +128,29 @@ enum class RenderPassStoreOp {
     DontCare
 };
 
+enum class ResourceType {
+    Unknown,
+    Buffer,
+    Texture,
+    Sampler
+};
+
+enum class ResourceFlags : uint32 {
+    RenderTarget = 1 << 1,
+    DepthStencil = 1 << 2,
+    ShaderResource = 1 << 3,
+    UnorderedAccess = 1 << 4,
+    ConstantBuffer = 1 << 5,
+    IndexBuffer = 1 << 6,
+    VertexBuffer = 1 << 7,
+    CopyDest = 1 << 8,
+    CopySource = 1 << 9
+};
+
+ResourceFlags operator|(const ResourceFlags lhs, const ResourceFlags rhs) {
+	return static_cast<ResourceFlags>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
+}
+
 struct RenderPassColorDesc {
     Format format;
     RenderPassLoadOp load_op = RenderPassLoadOp::Load;
@@ -148,7 +179,7 @@ struct InputLayoutDesc {
 };
 
 struct ShaderStageDesc {
-    std::shared_ptr<Shader> shader;
+    std::reference_wrapper<Shader> shader;
     ShaderType shader_type;
 };
 
@@ -196,49 +227,13 @@ struct BlendDesc {
 };
 
 struct GraphicsPipelineDesc {
-
     std::vector<ShaderStageDesc> stages;
-    std::shared_ptr<DescriptorSetLayout> layout;
+    std::reference_wrapper<DescriptorSetLayout> layout;
     std::vector<InputLayoutDesc> inputs;
-    std::shared_ptr<RenderPass> render_pass;
+    std::reference_wrapper<RenderPass> render_pass;
     RasterizerDesc rasterizer;
     DepthStencilDesc depth_stencil;
     BlendDesc blend;
-
-    GraphicsPipelineDesc& set_stages(const std::vector<ShaderStageDesc>& descs) {
-        stages = descs;
-        return *this;
-    }
-
-    GraphicsPipelineDesc& set_layout(const std::shared_ptr<DescriptorSetLayout>& layout_) {
-        layout = layout_;
-        return *this;
-    }
-
-    GraphicsPipelineDesc& set_inputs(const std::vector<InputLayoutDesc>& descs) {
-        inputs = descs;
-        return *this;
-    }
-
-    GraphicsPipelineDesc& set_render_pass(const std::shared_ptr<RenderPass>& render_pass_) {
-        render_pass = render_pass_;
-        return *this;
-    }
-
-    GraphicsPipelineDesc& set_rasterizer(const RasterizerDesc& desc) {
-        rasterizer = desc;
-        return *this;
-    }
-
-    GraphicsPipelineDesc& set_depth_stencil(const DepthStencilDesc& desc) {
-        depth_stencil = desc;
-        return *this;
-    }
-
-    GraphicsPipelineDesc& set_blend(const BlendDesc& desc) {
-        blend = desc;
-        return *this;
-    }
 };
 
 }

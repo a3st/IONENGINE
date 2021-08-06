@@ -96,6 +96,24 @@ D3D12_DESCRIPTOR_RANGE_TYPE convert_enum(const ViewType type) {
 	}
 }
 
+D3D12_COMMAND_LIST_TYPE convert_enum(const CommandListType type) {
+	switch(type) {
+        case CommandListType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
+        case CommandListType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
+        case CommandListType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+    }
+}
+
+D3D12_HEAP_TYPE convert_enum(const MemoryType type) {
+	switch(type) {
+        case MemoryType::Default: return D3D12_HEAP_TYPE_DEFAULT;
+        case MemoryType::Upload: return D3D12_HEAP_TYPE_UPLOAD;
+        case MemoryType::Readback: return D3D12_HEAP_TYPE_READBACK;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+    }
+}
+
 std::string result_to_string(const HRESULT result) {
 	switch(result) {
 		case E_FAIL: return "Attempted to create a device with the debug layer enabled and the layer is not installed";

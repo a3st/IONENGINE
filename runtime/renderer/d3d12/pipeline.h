@@ -7,7 +7,7 @@ namespace ionengine::renderer {
 class D3DGraphicsPipeline : public Pipeline {
 public:
 
-    D3DGraphicsPipeline(const winrt::com_ptr<ID3D12Device4>& device, const GraphicsPipelineDesc& desc) : m_device(device)  {
+    D3DGraphicsPipeline(winrt::com_ptr<ID3D12Device4>& device, const GraphicsPipelineDesc& desc) : m_device(device)  {
 
         // Input Element Description
         // Description of the input data in the pipeline
@@ -69,7 +69,7 @@ public:
         depth_stencil_desc.BackFace = back_face_desc;
 
         // Get Render Pass Description
-        auto& render_pass_desc = desc.render_pass->get_desc();
+        auto& render_pass_desc = desc.render_pass.get().get_desc();
 
         // Blend Description
         // Description of pipeline blend
@@ -107,7 +107,7 @@ public:
         // Graphics Pipeline State Description
         // Description of the pipeline
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline_desc{};
-        pipeline_desc.pRootSignature = std::static_pointer_cast<D3DDescriptorSetLayout>(desc.layout)->get_root_signature().get();
+        pipeline_desc.pRootSignature = static_cast<D3DDescriptorSetLayout&>(desc.layout.get()).get_root_signature().get();
         pipeline_desc.InputLayout = input_layout_desc;
         pipeline_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         pipeline_desc.RasterizerState = rasterizer_desc;
@@ -115,11 +115,11 @@ public:
         pipeline_desc.BlendState = blend_desc;
         for(auto& stage : desc.stages) {
             switch(stage.shader_type) {
-                case ShaderType::Vertex: pipeline_desc.VS = std::static_pointer_cast<D3DShader>(stage.shader)->get_shader(); break;
-                case ShaderType::Pixel: pipeline_desc.PS = std::static_pointer_cast<D3DShader>(stage.shader)->get_shader(); break;
-                case ShaderType::Geometry: pipeline_desc.GS = std::static_pointer_cast<D3DShader>(stage.shader)->get_shader(); break;
-                case ShaderType::Domain: pipeline_desc.DS = std::static_pointer_cast<D3DShader>(stage.shader)->get_shader(); break;
-                case ShaderType::Hull: pipeline_desc.HS = std::static_pointer_cast<D3DShader>(stage.shader)->get_shader(); break;
+                case ShaderType::Vertex: pipeline_desc.VS = static_cast<D3DShader&>(stage.shader.get()).get_shader(); break;
+                case ShaderType::Pixel: pipeline_desc.PS = static_cast<D3DShader&>(stage.shader.get()).get_shader(); break;
+                case ShaderType::Geometry: pipeline_desc.GS = static_cast<D3DShader&>(stage.shader.get()).get_shader(); break;
+                case ShaderType::Domain: pipeline_desc.DS = static_cast<D3DShader&>(stage.shader.get()).get_shader(); break;
+                case ShaderType::Hull: pipeline_desc.HS = static_cast<D3DShader&>(stage.shader.get()).get_shader(); break;
             }
         }
         std::memcpy(pipeline_desc.RTVFormats, rtv_formats.data(), rtv_formats.size() * sizeof(DXGI_FORMAT));
@@ -127,12 +127,12 @@ public:
         pipeline_desc.DSVFormat = static_cast<DXGI_FORMAT>(render_pass_desc.depth_stencil.format);
         pipeline_desc.SampleDesc = sample_desc;
         
-        ASSERT_SUCCEEDED(m_device->CreateGraphicsPipelineState(&pipeline_desc, __uuidof(ID3D12PipelineState), m_d3d12_pipeline_state.put_void()));
+        ASSERT_SUCCEEDED(m_device.get()->CreateGraphicsPipelineState(&pipeline_desc, __uuidof(ID3D12PipelineState), m_d3d12_pipeline_state.put_void()));
     }
 
 private:
 
-    const winrt::com_ptr<ID3D12Device4>& m_device;
+    std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
     
     winrt::com_ptr<ID3D12PipelineState> m_d3d12_pipeline_state;
 };

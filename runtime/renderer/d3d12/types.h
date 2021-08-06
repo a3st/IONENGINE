@@ -10,6 +10,9 @@ class D3DDevice;
 class D3DCommandQueue;
 class D3DShader;
 class D3DRenderPass;
+class D3DResource;
+class D3DDescriptorSetLayout;
+class D3DMemory;
 
 enum class Format {
     Undefined = DXGI_FORMAT_UNKNOWN,

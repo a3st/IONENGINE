@@ -4,6 +4,8 @@
 
 #include "base/types.h"
 #include "base/utils.h"
+#include "base/memory.h"
+#include "base/resource.h"
 #include "base/swapchain.h"
 #include "base/queue.h"
 #include "base/shader.h"
@@ -28,6 +30,8 @@
 
 #include "d3d12/types.h"
 #include "d3d12/utils.h"
+#include "d3d12/memory.h"
+#include "d3d12/resource.h"
 #include "d3d12/swapchain.h"
 #include "d3d12/queue.h"
 #include "d3d12/shader.h"

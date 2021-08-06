@@ -28,11 +28,11 @@ public:
 
         auto adapter = std::move(adapters[0]);
         auto device = adapter->create_device();
-        auto queue = device->get_command_queue(renderer::CommandListType::Graphics);
+        auto& queue = device->get_command_queue(renderer::CommandListType::Graphics);
 
-        m_swapchain = device->create_swapchain(m_window.get().get_native_handle(), 800, 600, 2);
+        m_swapchain = device->create_swapchain(m_window.get().get_native_handle(), m_window.get().get_window_size().width, m_window.get().get_window_size().height, 2);
 
-        std::vector<std::shared_ptr<renderer::Shader>> shaders;
+        std::vector<std::unique_ptr<renderer::Shader>> shaders;
 #ifdef RENDERER_API_D3D12
         shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/pc/basic_vert.bin")));
         shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/pc/basic_frag.bin")));
@@ -50,18 +50,17 @@ public:
         renderer::RenderPassDesc render_pass_desc = { { { renderer::Format::Test, renderer::RenderPassLoadOp::Load, renderer::RenderPassStoreOp::Store } } };
         auto render_pass = device->create_render_pass(render_pass_desc);
 
-        renderer::GraphicsPipelineDesc pipeline_desc{};
-
-        pipeline_desc
-            .set_stages( {
-                { shaders[0], renderer::ShaderType::Vertex },
-                { shaders[1], renderer::ShaderType::Pixel }
-            })
-            .set_layout(layout)
-            .set_inputs({
+        renderer::GraphicsPipelineDesc pipeline_desc = {
+            {
+                { *shaders[0], renderer::ShaderType::Vertex },
+                { *shaders[1], renderer::ShaderType::Pixel }
+            },
+            *layout,
+            {
                 { 0, "POSITION", renderer::Format::Test, sizeof(math::Fvector3) }
-            })
-            .set_render_pass(render_pass);
+            },
+            *render_pass
+        };
 
         auto pipeline = device->create_graphics_pipeline(pipeline_desc);
     }
