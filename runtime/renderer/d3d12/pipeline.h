@@ -75,7 +75,7 @@ public:
         // Description of pipeline blend
         D3D12_BLEND_DESC blend_desc{};
         for(uint32 i = 0; i < render_pass_desc.colors.size(); ++i) {
-            if(render_pass_desc.colors[i].format == Format::Undefined) {
+            if(render_pass_desc.colors[i].format == Format::Unknown) {
                 continue;
             }
             auto& render_target = blend_desc.RenderTarget[i];
@@ -94,7 +94,7 @@ public:
         std::vector<DXGI_FORMAT> rtv_formats;
         rtv_formats.resize(render_pass_desc.colors.size());
         for(uint32 i = 0; i < render_pass_desc.colors.size(); ++i) {
-            if(render_pass_desc.colors[i].format == Format::Undefined) {
+            if(render_pass_desc.colors[i].format == Format::Unknown) {
                 continue;
             }
             rtv_formats[i] = static_cast<DXGI_FORMAT>(render_pass_desc.colors[i].format);

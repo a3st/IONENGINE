@@ -12,6 +12,8 @@ class Swapchain;
 class Shader;
 class Pipeline;
 class DescriptorSetLayout;
+class DescriptorSet;
+class DescriptorPool;
 class RenderPass;
 class Resource;
 class Memory;
@@ -49,7 +51,9 @@ enum class ViewType {
     Buffer,
     RWBuffer,
     StructuredBuffer,
-    RWStructuredBuffer
+    RWStructuredBuffer,
+    RenderTarget,
+    DepthStencil
 };
 
 enum class CommandListType {
@@ -128,6 +132,37 @@ enum class RenderPassStoreOp {
     DontCare
 };
 
+enum class ResourceState {
+    Common = 1 << 0,
+    VertexAndConstantBuffer = 1 << 1,
+    IndexBuffer = 1 << 2,
+    RenderTarget = 1 << 3,
+    UnorderedAccess = 1 << 4,
+    DepthStencilWrite = 1 << 5,
+    DepthStencilRead = 1 << 6,
+    NonPixelShaderResource = 1 << 7,
+    PixelShaderResource = 1 << 8,
+    IndirectArgument = 1 << 9,
+    CopyDest = 1 << 10,
+    CopySource = 1 << 11,
+    Present = 1 << 14,
+    GenericRead =
+            ResourceState::VertexAndConstantBuffer |
+            ResourceState::IndexBuffer |
+            ResourceState::CopySource |
+            ResourceState::NonPixelShaderResource |
+            ResourceState::PixelShaderResource |
+            ResourceState::IndirectArgument
+};
+
+ResourceState operator|(const ResourceState lhs, const ResourceState rhs) {
+	return static_cast<ResourceState>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
+}
+
+bool operator&(const ResourceState lhs, const ResourceState rhs) {
+	return static_cast<uint32>(lhs) & static_cast<uint32>(rhs);
+}
+
 enum class ResourceType {
     Unknown,
     Buffer,
@@ -149,6 +184,10 @@ enum class ResourceFlags : uint32 {
 
 ResourceFlags operator|(const ResourceFlags lhs, const ResourceFlags rhs) {
 	return static_cast<ResourceFlags>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
+}
+
+bool operator&(const ResourceFlags lhs, const ResourceFlags rhs) {
+	return static_cast<uint32>(lhs) & static_cast<uint32>(rhs);
 }
 
 struct RenderPassColorDesc {
@@ -234,6 +273,11 @@ struct GraphicsPipelineDesc {
     RasterizerDesc rasterizer;
     DepthStencilDesc depth_stencil;
     BlendDesc blend;
+};
+
+struct DescriptorPoolSize {
+    ViewType type;
+    uint32 count;
 };
 
 }

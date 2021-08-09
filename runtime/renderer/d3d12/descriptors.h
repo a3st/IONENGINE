@@ -55,4 +55,60 @@ private:
     winrt::com_ptr<ID3D12RootSignature> m_d3d12_root_signature;
 };
 
+class D3DDescriptorPool : public DescriptorPool {
+public:
+
+	D3DDescriptorPool(winrt::com_ptr<ID3D12Device4>& device, const std::vector<DescriptorPoolSize>& sizes) : m_device(device) {
+		
+		std::map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32> descriptor_counts;
+		for(auto& size : sizes) {
+
+			descriptor_counts[convert_descriptor_heap_type(size.type)] += size.count;
+		}
+
+		m_d3d12_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = nullptr;
+		m_d3d12_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = nullptr;
+		m_d3d12_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = nullptr;
+		m_d3d12_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = nullptr;
+
+		for(auto& descriptor : descriptor_counts) {
+
+			D3D12_DESCRIPTOR_HEAP_DESC heap_desc{};
+			heap_desc.Type = descriptor.first;
+			heap_desc.NumDescriptors = descriptor.second;
+			heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+			if(heap_desc.Type == D3D12_DESCRIPTOR_HEAP_TYPE_RTV || heap_desc.Type == D3D12_DESCRIPTOR_HEAP_TYPE_DSV) {
+				heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+			}
+
+			m_device.get()->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), m_d3d12_descriptor_heaps[descriptor.first].put_void());
+		}
+	}
+
+private:
+
+	std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
+
+	std::map<D3D12_DESCRIPTOR_HEAP_TYPE, winrt::com_ptr<ID3D12DescriptorHeap>> m_d3d12_descriptor_heaps;
+
+};
+
+class D3DDescriptorSet : public DescriptorSet {
+public:
+
+	D3DDescriptorSet(winrt::com_ptr<ID3D12Device4>& device, DescriptorSetLayoutBinding& layout) : m_device(device), m_layout(layout) {
+		
+	}
+
+	winrt::com_ptr<ID3D12DescriptorHeap>& get_descriptor_heap() { return m_d3d12_descriptor_heap; }
+
+private:
+
+	std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
+	std::reference_wrapper<DescriptorSetLayoutBinding> m_layout;
+
+	winrt::com_ptr<ID3D12DescriptorHeap> m_d3d12_descriptor_heap;
+
+};
+
 }

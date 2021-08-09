@@ -8,7 +8,7 @@ class Resource {
 public:
 
     virtual ~Resource() = default;
-    
+    virtual void bind_memory(const std::shared_ptr<Memory>& memory, const uint64 offset) = 0; 
 };
 
 }

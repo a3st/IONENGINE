@@ -6,6 +6,7 @@
 // test lib
 #include "lib/fmt.h"
 #include "lib/math.h"
+#include "lib/memory.h"
 
 #include "logger.h"
 #include "input_system.h"

@@ -4,8 +4,12 @@
 
 #include "renderer/api.h"
 #include "platform/base/window.h"
+#include "lib/memory.h"
 
 namespace ionengine {
+
+using namespace renderer;
+using namespace memory;
 
 class RenderSystem {
 public:
@@ -47,7 +51,7 @@ public:
 
         auto layout = device->create_descriptor_set_layout(bindings);
 
-        renderer::RenderPassDesc render_pass_desc = { { { renderer::Format::Test, renderer::RenderPassLoadOp::Load, renderer::RenderPassStoreOp::Store } } };
+        renderer::RenderPassDesc render_pass_desc = { { { renderer::Format::R8G8B8A8unorm, renderer::RenderPassLoadOp::Load, renderer::RenderPassStoreOp::Store } } };
         auto render_pass = device->create_render_pass(render_pass_desc);
 
         renderer::GraphicsPipelineDesc pipeline_desc = {
@@ -57,12 +61,24 @@ public:
             },
             *layout,
             {
-                { 0, "POSITION", renderer::Format::Test, sizeof(math::Fvector3) }
+                { 0, "POSITION", renderer::Format::R32G32B32float, sizeof(math::Fvector3) }
             },
             *render_pass
         };
 
         auto pipeline = device->create_graphics_pipeline(pipeline_desc);
+
+        auto memory_block = device->allocate_memory(MemoryType::Default, 512_mb, 0, ResourceFlags::IndexBuffer);
+
+        auto index_buffer = device->create_buffer(ResourceFlags::IndexBuffer, 24_mb);
+        index_buffer->bind_memory(memory_block, 0);
+
+        std::vector<DescriptorPoolSize> pool_sizes = { 
+            { ViewType::ConstantBuffer, 2 }
+        };
+
+        auto descriptor_pool = device->create_descriptor_pool(pool_sizes);
+
     }
 
     void resize(const uint32 width, const uint32 height) {

@@ -114,6 +114,42 @@ D3D12_HEAP_TYPE convert_enum(const MemoryType type) {
     }
 }
 
+D3D12_RESOURCE_STATES convert_enum(const ResourceState state) {
+	switch(state) {
+		case ResourceState::Common: return D3D12_RESOURCE_STATE_COMMON;
+		case ResourceState::VertexAndConstantBuffer: return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+		case ResourceState::IndexBuffer: return D3D12_RESOURCE_STATE_INDEX_BUFFER;
+		case ResourceState::RenderTarget: return D3D12_RESOURCE_STATE_RENDER_TARGET;
+		case ResourceState::UnorderedAccess: return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+		case ResourceState::DepthStencilWrite: return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+		case ResourceState::DepthStencilRead: return D3D12_RESOURCE_STATE_DEPTH_READ;
+		case ResourceState::NonPixelShaderResource: return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+		case ResourceState::PixelShaderResource: return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		case ResourceState::IndirectArgument: return D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+		case ResourceState::CopyDest: return D3D12_RESOURCE_STATE_COPY_DEST;
+		case ResourceState::CopySource: return D3D12_RESOURCE_STATE_COPY_SOURCE;
+		case ResourceState::Present: return D3D12_RESOURCE_STATE_PRESENT;
+		case ResourceState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
+D3D12_DESCRIPTOR_HEAP_TYPE convert_descriptor_heap_type(const ViewType type) {
+	switch(type) {
+		case ViewType::Texture:
+		case ViewType::StructuredBuffer:
+		case ViewType::Buffer: 
+		case ViewType::RWTexture:
+		case ViewType::RWBuffer:
+		case ViewType::RWStructuredBuffer:
+		case ViewType::ConstantBuffer: return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		case ViewType::Sampler: return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+		case ViewType::RenderTarget: return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		case ViewType::DepthStencil: return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+	}
+}
+
 std::string result_to_string(const HRESULT result) {
 	switch(result) {
 		case E_FAIL: return "Attempted to create a device with the debug layer enabled and the layer is not installed";

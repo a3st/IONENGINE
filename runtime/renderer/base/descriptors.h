@@ -10,4 +10,18 @@ public:
     virtual ~DescriptorSetLayout() = default;
 };
 
+class DescriptorPool  {
+public:
+
+    virtual ~DescriptorPool() = default;
+
+};
+
+class DescriptorSet {
+public:
+
+    virtual ~DescriptorSet() = default;
+    
+};
+
 }
