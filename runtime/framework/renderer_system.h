@@ -71,14 +71,19 @@ public:
         auto memory_block = device->allocate_memory(MemoryType::Default, 512_mb, 0, ResourceFlags::IndexBuffer);
 
         auto index_buffer = device->create_buffer(ResourceFlags::IndexBuffer, 24_mb);
-        index_buffer->bind_memory(memory_block, 0);
+        index_buffer->bind_memory(*memory_block, 0);
 
-        std::vector<DescriptorPoolSize> pool_sizes = { 
+        std::vector<DescriptorPoolSize> pool_sizes = {
             { ViewType::ConstantBuffer, 2 }
         };
 
         auto descriptor_pool = device->create_descriptor_pool(pool_sizes);
 
+        auto fence = device->create_fence(0);
+
+        auto command_list = device->create_command_list(CommandListType::Graphics);
+        command_list->bind_pipeline(*pipeline);
+        command_list->close();
     }
 
     void resize(const uint32 width, const uint32 height) {

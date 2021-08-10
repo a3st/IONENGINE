@@ -102,16 +102,20 @@ public:
 				heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			}
 
-			m_device.get()->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), m_d3d12_descriptor_heaps[descriptor.first].put_void());
+			ASSERT_SUCCEEDED(m_device.get()->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), m_d3d12_descriptor_heaps[descriptor.first].put_void()));
 		}
 	}
 
 	D3D12_GPU_DESCRIPTOR_HANDLE get_gpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, uint64 offset) {
-		return { m_d3d12_descriptor_heaps[heap_type]->GetGPUDescriptorHandleForHeapStart() + offset; }
+		return { m_d3d12_descriptor_heaps[heap_type]->GetGPUDescriptorHandleForHeapStart().ptr + offset };
 	}
 
 	D3D12_CPU_DESCRIPTOR_HANDLE get_cpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, uint64 offset) {
-		return { m_d3d12_descriptor_heaps[heap_type]->GetCPUDescriptorHandleForHeapStart() + offset; }
+		return { m_d3d12_descriptor_heaps[heap_type]->GetCPUDescriptorHandleForHeapStart().ptr + offset };
+	}
+
+	winrt::com_ptr<ID3D12DescriptorHeap>& get_descriptor_heap(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type) {
+		return m_d3d12_descriptor_heaps[heap_type];
 	}
 
 private:
@@ -126,25 +130,28 @@ public:
 
 	D3DDescriptorSet(winrt::com_ptr<ID3D12Device4>& device, D3DDescriptorPool& descriptor_pool, D3DDescriptorSetLayout& layout) : 
 		m_device(device), m_descriptor_pool(descriptor_pool), m_layout(layout) {
-		
-
+			
 	}
 
 	void bind(winrt::com_ptr<ID3D12GraphicsCommandList>& command_list) {
 
-		for(uint32 i = 0; i < m_layout.get().get_descriptor_tables().size(); ++i) {
-			// set descriptors heaps
+		auto& descriptor_tables = m_layout.get().get_descriptor_tables();
+
+		std::vector<ID3D12DescriptorHeap*> descriptor_heaps;
+		for(uint32 i = 0; i < descriptor_tables.size(); ++i) {
+			descriptor_heaps.emplace_back(m_descriptor_pool.get().get_descriptor_heap(descriptor_tables[i].type).get());
 		}
 
-		command_list->SetDescriptorHeaps()
+		if(!descriptor_heaps.empty()) {
+			command_list->SetDescriptorHeaps(static_cast<uint32>(descriptor_heaps.size()), descriptor_heaps.data());
+		}
 
-		for(uint32 i = 0; i < m_layout.get().get_descriptor_tables().size(); ++i) {
+		for(uint32 i = 0; i < descriptor_tables.size(); ++i) {
 			
-			auto& descriptor_table = m_layout.get().get_descriptor_tables()[i];
-			if(descriptor_table.compute) {
-				command_list->SetComputeRootDescriptorTable(i, m_descriptor_pool.get().get_gpu_descriptor_handle(descriptor_table.offset));
+			if(descriptor_tables[i].compute) {
+				command_list->SetComputeRootDescriptorTable(i, m_descriptor_pool.get().get_gpu_descriptor_handle(descriptor_tables[i].type, descriptor_tables[i].offset));
 			} else {
-				command_list->SetGraphicsRootDescriptorTable(i, m_descriptor_pool.get().get_gpu_descriptor_handle(descriptor_table.offset));
+				command_list->SetGraphicsRootDescriptorTable(i, m_descriptor_pool.get().get_gpu_descriptor_handle(descriptor_tables[i].type, descriptor_tables[i].offset));
 			}	
 		}
 	}

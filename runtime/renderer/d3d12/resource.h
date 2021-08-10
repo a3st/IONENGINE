@@ -11,23 +11,28 @@ public:
 
     }
 
-    void bind_memory(const std::shared_ptr<Memory>& memory, const uint64 offset) override {
+    D3DResource(winrt::com_ptr<ID3D12Device4>& device, const winrt::com_ptr<ID3D12Resource>& resource) : m_device(device), m_d3d12_resource(resource) {
+
+        m_resource_desc = m_d3d12_resource->GetDesc();
+    }
+
+    void bind_memory(Memory& memory, const uint64 offset) override {
         
-        m_memory = std::static_pointer_cast<D3DMemory>(memory);
+        m_memory = static_cast<D3DMemory&>(memory);
 
         ResourceState resource_state = ResourceState::Common;
-        if(m_memory->get_type() == MemoryType::Upload) {
+        if(m_memory.value().get().get_type() == MemoryType::Upload) {
             resource_state = ResourceState::GenericRead;
         }
 
-        m_device.get()->CreatePlacedResource(
-            m_memory->get_heap().get(),
+        ASSERT_SUCCEEDED(m_device.get()->CreatePlacedResource(
+            m_memory.value().get().get_heap().get(),
             offset,
             &std::get<D3D12_RESOURCE_DESC>(m_resource_desc),
             convert_enum(resource_state),
             nullptr,
             __uuidof(ID3D12Resource), m_d3d12_resource.put_void()
-        );
+        ));
     }
 
 private:
@@ -41,7 +46,7 @@ private:
         D3D12_SAMPLER_DESC
     > m_resource_desc;
 
-    std::shared_ptr<D3DMemory> m_memory;
+    std::optional<std::reference_wrapper<D3DMemory>> m_memory;
 };
 
 }

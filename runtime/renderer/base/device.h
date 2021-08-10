@@ -18,8 +18,9 @@ public:
     virtual std::unique_ptr<Pipeline> create_graphics_pipeline(const GraphicsPipelineDesc& desc) = 0;
     virtual std::unique_ptr<Resource> create_buffer(const ResourceFlags flags, const usize buffer_size) = 0;
     virtual std::unique_ptr<DescriptorPool> create_descriptor_pool(const std::vector<DescriptorPoolSize>& sizes) = 0;
-
-    virtual std::shared_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 align, const ResourceFlags memory_flags) = 0;
+    virtual std::unique_ptr<Fence> create_fence(const uint64 initial_value) = 0;
+    virtual std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 align, const ResourceFlags memory_flags) = 0;
+    virtual std::unique_ptr<CommandList> create_command_list(const CommandListType list_type) = 0;
 };
 
 }

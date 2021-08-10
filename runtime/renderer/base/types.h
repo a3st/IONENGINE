@@ -17,6 +17,7 @@ class DescriptorPool;
 class RenderPass;
 class Resource;
 class Memory;
+class Fence;
 
 enum class Format;
 
@@ -180,6 +181,11 @@ enum class ResourceFlags : uint32 {
     VertexBuffer = 1 << 7,
     CopyDest = 1 << 8,
     CopySource = 1 << 9
+};
+
+enum class PipelineType {
+    Graphics,
+    Compute
 };
 
 ResourceFlags operator|(const ResourceFlags lhs, const ResourceFlags rhs) {

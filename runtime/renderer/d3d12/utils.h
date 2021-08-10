@@ -78,7 +78,7 @@ D3D12_SHADER_VISIBILITY convert_shader_visibility(const ShaderType type) {
 		case ShaderType::Domain: return D3D12_SHADER_VISIBILITY_DOMAIN;
 		case ShaderType::All: return D3D12_SHADER_VISIBILITY_ALL;
 		case ShaderType::Compute: return D3D12_SHADER_VISIBILITY_ALL;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: throw std::invalid_argument("passed invalid argument to convert_shader_visibility");
 	}
 }
 
@@ -92,16 +92,16 @@ D3D12_DESCRIPTOR_RANGE_TYPE convert_descriptor_range_type(const ViewType type) {
 		case ViewType::RWStructuredBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
 		case ViewType::ConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 		case ViewType::Sampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: throw std::invalid_argument("passed invalid argument to convert_descriptor_range_type");
 	}
 }
 
-D3D12_COMMAND_LIST_TYPE convert_enum(const CommandListType type) {
+D3D12_COMMAND_LIST_TYPE convert_command_list_type(const CommandListType type) {
 	switch(type) {
         case CommandListType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
         case CommandListType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
         case CommandListType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: throw std::invalid_argument("passed invalid argument to convert_command_list_type");
     }
 }
 
@@ -146,7 +146,7 @@ D3D12_DESCRIPTOR_HEAP_TYPE convert_descriptor_heap_type(const ViewType type) {
 		case ViewType::Sampler: return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
 		case ViewType::RenderTarget: return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		case ViewType::DepthStencil: return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: throw std::invalid_argument("passed invalid argument to convert_descriptor_heap_type");
 	}
 }
 

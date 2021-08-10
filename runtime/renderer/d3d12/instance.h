@@ -32,13 +32,13 @@ public:
 
         for(uint32 i = 0; ; ++i) {
 
-            winrt::com_ptr<IDXGIAdapter1> temp_adapter;
-            if(DXGI_ERROR_NOT_FOUND == m_dxgi_factory->EnumAdapters1(i, temp_adapter.put())) {
+            winrt::com_ptr<IDXGIAdapter1> dxgi_adapter;
+            if(DXGI_ERROR_NOT_FOUND == m_dxgi_factory->EnumAdapters1(i, dxgi_adapter.put())) {
                 break;
             }
 
-            if(SUCCEEDED(D3D12CreateDevice(temp_adapter.get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr))) {
-                out_adapters.emplace_back(std::make_unique<D3DAdapter>(m_dxgi_factory, temp_adapter));
+            if(SUCCEEDED(D3D12CreateDevice(dxgi_adapter.get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr))) {
+                out_adapters.emplace_back(std::make_unique<D3DAdapter>(m_dxgi_factory, dxgi_adapter));
             }
         }
         return out_adapters;

@@ -13,6 +13,7 @@ class D3DRenderPass;
 class D3DResource;
 class D3DDescriptorSetLayout;
 class D3DMemory;
+class D3DFence;
 
 enum class Format {
     Unknown = DXGI_FORMAT_UNKNOWN,

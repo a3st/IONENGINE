@@ -23,7 +23,7 @@ public:
     }
 
     std::unique_ptr<Swapchain> create_swapchain(void* hwnd, const uint32 width, const uint32 height, const uint32 buffer_count) override {
-        return std::make_unique<D3DSwapchain>(m_dxgi_factory, m_command_queues[CommandListType::Graphics]->get_command_queue(), reinterpret_cast<HWND>(hwnd), width, height, buffer_count);
+        return std::make_unique<D3DSwapchain>(m_dxgi_factory, m_d3d12_device, m_command_queues[CommandListType::Graphics]->get_command_queue(), reinterpret_cast<HWND>(hwnd), width, height, buffer_count);
     }
 
     std::unique_ptr<Shader> create_shader(const std::vector<byte>& blob) override {
@@ -39,7 +39,7 @@ public:
     }
 
     std::unique_ptr<Pipeline> create_graphics_pipeline(const GraphicsPipelineDesc& desc) override {
-        return std::make_unique<D3DGraphicsPipeline>(m_d3d12_device, desc);
+        return std::make_unique<D3DPipeline>(m_d3d12_device, desc);
     }
 
     std::unique_ptr<Resource> create_buffer(const ResourceFlags flags, const usize buffer_size) override {
@@ -71,13 +71,21 @@ public:
         return std::make_unique<D3DResource>(m_d3d12_device, resource_desc);
     }
 
-    std::shared_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 align, const ResourceFlags memory_flags) override {
-        return std::make_shared<D3DMemory>(m_d3d12_device, memory_type, size, align, memory_flags);
+    std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 align, const ResourceFlags memory_flags) override {
+        return std::make_unique<D3DMemory>(m_d3d12_device, memory_type, size, align, memory_flags);
     }
 
     std::unique_ptr<DescriptorPool> create_descriptor_pool(const std::vector<DescriptorPoolSize>& sizes) override {
         return std::make_unique<D3DDescriptorPool>(m_d3d12_device, sizes);
-    } 
+    }
+
+    std::unique_ptr<Fence> create_fence(const uint64 initial_value) override {
+        return std::make_unique<D3DFence>(m_d3d12_device, initial_value);
+    }
+
+    std::unique_ptr<CommandList> create_command_list(const CommandListType list_type) override {
+        return std::make_unique<D3DCommandList>(m_d3d12_device, list_type);
+    }
 
 private:
 

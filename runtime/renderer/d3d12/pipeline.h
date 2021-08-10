@@ -4,10 +4,13 @@
 
 namespace ionengine::renderer {
 
-class D3DGraphicsPipeline : public Pipeline {
+class D3DPipeline : public Pipeline {
 public:
 
-    D3DGraphicsPipeline(winrt::com_ptr<ID3D12Device4>& device, const GraphicsPipelineDesc& desc) : m_device(device)  {
+    D3DPipeline(winrt::com_ptr<ID3D12Device4>& device, const GraphicsPipelineDesc& desc) : 
+        m_device(device), 
+        m_pipeline_type(PipelineType::Graphics), 
+        m_d3d12_root_signature(static_cast<D3DDescriptorSetLayout&>(desc.layout.get()).get_root_signature()) {
 
         // Input Element Description
         // Description of the input data in the pipeline
@@ -107,7 +110,7 @@ public:
         // Graphics Pipeline State Description
         // Description of the pipeline
         D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline_desc{};
-        pipeline_desc.pRootSignature = static_cast<D3DDescriptorSetLayout&>(desc.layout.get()).get_root_signature().get();
+        pipeline_desc.pRootSignature = m_d3d12_root_signature.get().get();
         pipeline_desc.InputLayout = input_layout_desc;
         pipeline_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         pipeline_desc.RasterizerState = rasterizer_desc;
@@ -130,23 +133,19 @@ public:
         ASSERT_SUCCEEDED(m_device.get()->CreateGraphicsPipelineState(&pipeline_desc, __uuidof(ID3D12PipelineState), m_d3d12_pipeline_state.put_void()));
     }
 
+    PipelineType get_type() const override { return m_pipeline_type; }
+
+    winrt::com_ptr<ID3D12RootSignature>& get_root_signature() { return m_d3d12_root_signature; }
+    winrt::com_ptr<ID3D12PipelineState>& get_pipeline_state() { return m_d3d12_pipeline_state; }
+
 private:
 
     std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
-    
+    std::reference_wrapper<winrt::com_ptr<ID3D12RootSignature>> m_d3d12_root_signature;
+
     winrt::com_ptr<ID3D12PipelineState> m_d3d12_pipeline_state;
-};
 
-class D3DComputePipeline : public Pipeline {
-public:
-
-    D3DComputePipeline() {
-
-    }
-
-private:
-    
-    winrt::com_ptr<ID3D12PipelineState> m_d3d12_pipeline_state;
+    PipelineType m_pipeline_type;
 };
 
 }

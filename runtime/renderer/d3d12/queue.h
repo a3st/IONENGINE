@@ -11,12 +11,21 @@ public:
 
         D3D12_COMMAND_QUEUE_DESC queue_desc{};
         queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
-        queue_desc.Type = convert_enum(type);
+        queue_desc.Type = convert_command_list_type(type);
 
-        m_device.get()->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), m_d3d12_command_queue.put_void());
+        ASSERT_SUCCEEDED(m_device.get()->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), m_d3d12_command_queue.put_void()));
     }
 
     winrt::com_ptr<ID3D12CommandQueue>& get_command_queue() { return m_d3d12_command_queue; }
+    winrt::com_ptr<ID3D12Device4>& get_device() { return m_device; }
+
+    void wait(Fence& fence, const uint64 value) override {
+        ASSERT_SUCCEEDED(m_d3d12_command_queue->Wait(static_cast<D3DFence&>(fence).get_fence().get(), value));
+    }
+
+    void signal(Fence& fence, const uint64 value) override {
+        ASSERT_SUCCEEDED(m_d3d12_command_queue->Signal(static_cast<D3DFence&>(fence).get_fence().get(), value));
+    }
 
 private:
 
