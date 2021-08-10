@@ -69,7 +69,7 @@ D3D12_BLEND_OP convert_enum(const BlendOp op) {
 	}
 }
 
-D3D12_SHADER_VISIBILITY convert_enum(const ShaderType type) {
+D3D12_SHADER_VISIBILITY convert_shader_visibility(const ShaderType type) {
 	switch(type) {
 		case ShaderType::Vertex: return D3D12_SHADER_VISIBILITY_VERTEX;
 		case ShaderType::Pixel: return D3D12_SHADER_VISIBILITY_PIXEL;
@@ -82,7 +82,7 @@ D3D12_SHADER_VISIBILITY convert_enum(const ShaderType type) {
 	}
 }
 
-D3D12_DESCRIPTOR_RANGE_TYPE convert_enum(const ViewType type) {
+D3D12_DESCRIPTOR_RANGE_TYPE convert_descriptor_range_type(const ViewType type) {
 	switch(type) {
 		case ViewType::Texture:
 		case ViewType::StructuredBuffer:
