@@ -133,6 +133,8 @@ public:
 			
 	}
 
+	
+
 	void bind(winrt::com_ptr<ID3D12GraphicsCommandList>& command_list) {
 
 		auto& descriptor_tables = m_layout.get().get_descriptor_tables();

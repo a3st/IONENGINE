@@ -32,18 +32,14 @@ public:
 
         auto adapter = std::move(adapters[0]);
         auto device = adapter->create_device();
-        auto& queue = device->get_command_queue(renderer::CommandListType::Graphics);
-
+        auto& graphics_queue = device->get_command_queue(renderer::CommandListType::Graphics);
         m_swapchain = device->create_swapchain(m_window.get().get_native_handle(), m_window.get().get_window_size().width, m_window.get().get_window_size().height, 2);
+        auto fence = device->create_fence(0);
 
-        std::vector<std::unique_ptr<renderer::Shader>> shaders;
-#ifdef RENDERER_API_D3D12
-        shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/pc/basic_vert.bin")));
-        shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/pc/basic_frag.bin")));
-#else
-        shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/vk/basic_vert.bin")));
-        shaders.emplace_back(device->create_shader(renderer::read_shader_code("shaders/vk/basic_frag.bin")));
-#endif
+        std::vector<std::unique_ptr<renderer::Shader>> shaders = {
+            device->create_shader(renderer::read_shader_code("shaders/pc/basic_vert.bin")),
+            device->create_shader(renderer::read_shader_code("shaders/pc/basic_frag.bin"))
+        };
 
         std::vector<renderer::DescriptorSetLayoutBinding> bindings = {
             { renderer::ShaderType::Vertex, renderer::ViewType::ConstantBuffer, 0, 0, 1 }
@@ -79,11 +75,12 @@ public:
 
         auto descriptor_pool = device->create_descriptor_pool(pool_sizes);
 
-        auto fence = device->create_fence(0);
-
         auto command_list = device->create_command_list(CommandListType::Graphics);
+        
         command_list->bind_pipeline(*pipeline);
         command_list->close();
+
+
     }
 
     void resize(const uint32 width, const uint32 height) {

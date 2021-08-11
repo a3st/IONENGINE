@@ -261,6 +261,11 @@ struct DepthStencilDesc {
     StencilOpDesc back_face;
 };
 
+struct ViewDesc {
+    ViewType view_type;
+    ViewDimension dimension;
+};
+
 struct BlendDesc {
     bool blend_enable = false;
     Blend blend_src;
