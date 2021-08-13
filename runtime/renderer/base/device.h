@@ -21,6 +21,8 @@ public:
     virtual std::unique_ptr<Fence> create_fence(const uint64 initial_value) = 0;
     virtual std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 align, const ResourceFlags memory_flags) = 0;
     virtual std::unique_ptr<CommandList> create_command_list(const CommandListType list_type) = 0;
+    virtual std::unique_ptr<View> create_view(DescriptorPool& descriptor_pool, Resource& resource, const ViewDesc& view_desc) = 0;
+    virtual std::unique_ptr<FrameBuffer> create_frame_buffer(const FrameBufferDesc& frame_buffer_desc) = 0;
 };
 
 }

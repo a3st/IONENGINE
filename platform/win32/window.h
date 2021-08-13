@@ -81,8 +81,18 @@ public:
 	void set_label(const std::string& label) override { SetWindowText(m_wnd, stws(label).c_str()); }
 
 	void set_window_size(const uint32_t width, const uint32_t height) override { SetWindowPos(m_wnd, HWND_TOPMOST, 0, 0, width, height, 0); }
-	PhysicalSize get_window_size() const override { return { 0, 0 }; }
-	PhysicalSize get_client_size() const override { return { 0, 0 }; }
+	
+	PhysicalSize get_window_size() const override {
+		RECT rect{};
+		GetWindowRect(m_wnd, &rect);
+		return { static_cast<uint32>(rect.right), static_cast<uint32>(rect.bottom) };
+	}
+
+	PhysicalSize get_client_size() const override { 
+		RECT rect{};
+		GetClientRect(m_wnd, &rect);
+		return { static_cast<uint32>(rect.right), static_cast<uint32>(rect.bottom) }; 
+	}
 
 private:
 

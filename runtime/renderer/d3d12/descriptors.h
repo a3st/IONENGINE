@@ -79,7 +79,7 @@ private:
 class D3DDescriptorPool : public DescriptorPool {
 public:
 
-	D3DDescriptorPool(winrt::com_ptr<ID3D12Device4>& device, const std::vector<DescriptorPoolSize>& sizes) : m_device(device) {
+	D3DDescriptorPool(winrt::com_ptr<ID3D12Device4>& device, const std::vector<DescriptorPoolSize>& sizes) : m_d3d12_device(device) {
 		
 		std::map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32> descriptor_counts;
 		for(auto& size : sizes) {
@@ -92,6 +92,11 @@ public:
 		m_d3d12_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = nullptr;
 		m_d3d12_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = nullptr;
 
+		m_descriptor_offsets[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = 0;
+		m_descriptor_offsets[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = 0;
+		m_descriptor_offsets[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = 0;
+		m_descriptor_offsets[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = 0;
+
 		for(auto& descriptor : descriptor_counts) {
 
 			D3D12_DESCRIPTOR_HEAP_DESC heap_desc{};
@@ -102,15 +107,15 @@ public:
 				heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 			}
 
-			ASSERT_SUCCEEDED(m_device.get()->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), m_d3d12_descriptor_heaps[descriptor.first].put_void()));
+			ASSERT_SUCCEEDED(m_d3d12_device.get()->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), m_d3d12_descriptor_heaps[descriptor.first].put_void()));
 		}
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE get_gpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, uint64 offset) {
+	D3D12_GPU_DESCRIPTOR_HANDLE get_gpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, const uint64 offset) {
 		return { m_d3d12_descriptor_heaps[heap_type]->GetGPUDescriptorHandleForHeapStart().ptr + offset };
 	}
 
-	D3D12_CPU_DESCRIPTOR_HANDLE get_cpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, uint64 offset) {
+	D3D12_CPU_DESCRIPTOR_HANDLE get_cpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, const uint64 offset) {
 		return { m_d3d12_descriptor_heaps[heap_type]->GetCPUDescriptorHandleForHeapStart().ptr + offset };
 	}
 
@@ -118,24 +123,34 @@ public:
 		return m_d3d12_descriptor_heaps[heap_type];
 	}
 
+	uint64 allocate(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type) {
+		m_descriptor_offsets[heap_type] += static_cast<uint64>(m_d3d12_device.get()->GetDescriptorHandleIncrementSize(heap_type));
+		return m_descriptor_offsets[heap_type];
+	}
+
+	void deallocate(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type) {
+		m_descriptor_offsets[heap_type] -= static_cast<uint64>(m_d3d12_device.get()->GetDescriptorHandleIncrementSize(heap_type));
+	}
+
 private:
 
-	std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
+	std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_d3d12_device;
 
 	std::map<D3D12_DESCRIPTOR_HEAP_TYPE, winrt::com_ptr<ID3D12DescriptorHeap>> m_d3d12_descriptor_heaps;
+	std::map<D3D12_DESCRIPTOR_HEAP_TYPE, uint64> m_descriptor_offsets;
 };
 
 class D3DDescriptorSet : public DescriptorSet {
 public:
 
 	D3DDescriptorSet(winrt::com_ptr<ID3D12Device4>& device, D3DDescriptorPool& descriptor_pool, D3DDescriptorSetLayout& layout) : 
-		m_device(device), m_descriptor_pool(descriptor_pool), m_layout(layout) {
+		m_d3d12_device(device), m_descriptor_pool(descriptor_pool), m_layout(layout) {
 			
 	}
 
 	
 
-	void bind(winrt::com_ptr<ID3D12GraphicsCommandList>& command_list) {
+	void bind(winrt::com_ptr<ID3D12GraphicsCommandList4>& command_list) {
 
 		auto& descriptor_tables = m_layout.get().get_descriptor_tables();
 
@@ -160,7 +175,7 @@ public:
 
 private:
 
-	std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
+	std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_d3d12_device;
 	std::reference_wrapper<D3DDescriptorSetLayout> m_layout;
 
 	std::reference_wrapper<D3DDescriptorPool> m_descriptor_pool;

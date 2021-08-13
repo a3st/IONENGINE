@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::memory {
+namespace ionengine::memory_literals {
 
 usize operator ""_kb(const usize size) {
     return size * 1024;

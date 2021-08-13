@@ -114,7 +114,7 @@ D3D12_HEAP_TYPE convert_enum(const MemoryType type) {
     }
 }
 
-D3D12_RESOURCE_STATES convert_enum(const ResourceState state) {
+D3D12_RESOURCE_STATES convert_resource_state(const ResourceState state) {
 	switch(state) {
 		case ResourceState::Common: return D3D12_RESOURCE_STATE_COMMON;
 		case ResourceState::VertexAndConstantBuffer: return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
@@ -148,6 +148,23 @@ D3D12_DESCRIPTOR_HEAP_TYPE convert_descriptor_heap_type(const ViewType type) {
 		case ViewType::DepthStencil: return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 		default: throw std::invalid_argument("passed invalid argument to convert_descriptor_heap_type");
 	}
+}
+
+D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE convert_render_pass_type(const RenderPassLoadOp op) {
+	switch (op) {
+    	case RenderPassLoadOp::Load: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
+    	case RenderPassLoadOp::Clear: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+		case RenderPassLoadOp::DontCare: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+		default: throw std::invalid_argument("passed invalid argument to convert_render_pass_type");
+    }
+}
+
+D3D12_RENDER_PASS_ENDING_ACCESS_TYPE convert_render_pass_type(const RenderPassStoreOp op) {
+    switch (op) {
+    	case RenderPassStoreOp::Store: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
+    	case RenderPassStoreOp::DontCare: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
+		default: throw std::invalid_argument("passed invalid argument to convert_render_pass_type");
+    }
 }
 
 std::string result_to_string(const HRESULT result) {

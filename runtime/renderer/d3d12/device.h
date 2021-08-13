@@ -87,6 +87,14 @@ public:
         return std::make_unique<D3DCommandList>(m_d3d12_device, list_type);
     }
 
+    std::unique_ptr<View> create_view(DescriptorPool& descriptor_pool, Resource& resource, const ViewDesc& view_desc) override {
+        return std::make_unique<D3DView>(m_d3d12_device, static_cast<D3DDescriptorPool&>(descriptor_pool), static_cast<D3DResource&>(resource), view_desc);
+    }
+
+    std::unique_ptr<FrameBuffer> create_frame_buffer(const FrameBufferDesc& frame_buffer_desc) override {
+        return std::make_unique<D3DFrameBuffer>(m_d3d12_device, frame_buffer_desc);
+    }
+
 private:
 
     std::reference_wrapper<winrt::com_ptr<IDXGIAdapter1>> m_dxgi_adapter;

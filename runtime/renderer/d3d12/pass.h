@@ -20,4 +20,18 @@ private:
     RenderPassDesc m_render_pass_desc;
 };
 
+class D3DFrameBuffer : public FrameBuffer {
+public:
+
+    D3DFrameBuffer(winrt::com_ptr<ID3D12Device4>& device, const FrameBufferDesc& desc) : m_frame_buffer_desc(desc) {
+
+    }
+
+    const FrameBufferDesc& get_desc() const override { return m_frame_buffer_desc; }
+
+private:
+
+    FrameBufferDesc m_frame_buffer_desc;
+};
+
 }

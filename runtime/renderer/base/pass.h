@@ -10,4 +10,10 @@ public:
     virtual const RenderPassDesc& get_desc() const = 0;
 };
 
+class FrameBuffer {
+public:
+    virtual ~FrameBuffer() = default;
+    virtual const FrameBufferDesc& get_desc() const = 0;
+};
+
 }

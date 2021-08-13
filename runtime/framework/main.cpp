@@ -10,7 +10,7 @@
 
 #include "logger.h"
 #include "input_system.h"
-#include "renderer_system.h"
+#include "render_system.h"
 
 using namespace ionengine;
 using namespace ionengine::platform;
@@ -50,7 +50,7 @@ int32 main(int32, char**) {
                         std::cout << 2 << std::endl;
                     }
 
-                    //render_system->tick();
+                    render_system->tick();
                     input_system->tick();
                     break;
                 }

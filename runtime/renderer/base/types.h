@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "lib/math/color.h"
+
 namespace ionengine::renderer {
 
 class Instance;
@@ -18,6 +20,7 @@ class RenderPass;
 class Resource;
 class Memory;
 class Fence;
+class View;
 
 enum class Format;
 
@@ -210,10 +213,30 @@ struct RenderPassDepthStencilDesc {
     RenderPassStoreOp stencil_store_op = RenderPassStoreOp::Store;
 };
 
+struct FrameBufferDesc {
+    std::reference_wrapper<RenderPass> render_pass;
+    uint32 width;
+    uint32 height;
+    std::vector<std::reference_wrapper<View>> colors;
+    std::optional<std::reference_wrapper<View>> depth_stencil;
+};
+
 struct RenderPassDesc {
     std::vector<RenderPassColorDesc> colors;
     RenderPassDepthStencilDesc depth_stencil;
     uint32 sample_count = 1;
+};
+
+struct ResourceBarrierDesc {
+    std::reference_wrapper<Resource> resource;
+    ResourceState state_before;
+    ResourceState state_after;
+};
+
+struct ClearValueDesc {
+    std::vector<math::Fcolor> colors;
+    float depth = 0.0f;
+    uint8 stencil = 0;
 };
 
 struct InputLayoutDesc {

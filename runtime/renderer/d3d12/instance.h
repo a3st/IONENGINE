@@ -59,4 +59,8 @@ std::unique_ptr<Instance> create_unique_instance() {
     return std::make_unique<D3DInstance>();
 }
 
+std::string get_api_name() {
+    return "D3D12";
+}
+
 }
