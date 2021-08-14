@@ -4,10 +4,25 @@
 
 namespace ionengine::renderer {
 
+using ViewProxyId = uint64;
+
+struct FrameInfo {
+    uint32 frame_index;
+    ViewProxyId frame_view;
+};
+
 class FrameGraph {
 public:
 
-    FrameGraph() {
+    FrameGraph(const uint32 frame_count) {
+
+    }
+
+    void add_pass() {
+
+    }
+
+    void execute() {
 
     }
 
