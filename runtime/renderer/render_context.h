@@ -7,8 +7,14 @@ namespace ionengine::renderer {
 class RenderContext {
 public:
 
+    RenderContext() {
+
+    }
+
 
 private:
+
+    
 
 };
 

@@ -11,6 +11,16 @@ struct FrameInfo {
     ViewProxyId frame_view;
 };
 
+class FrameGraphResource {
+public:
+
+    
+
+private:
+
+
+}
+
 class FrameGraph {
 public:
 
@@ -27,8 +37,6 @@ public:
     }
 
 private:
-
-
 
 };
 

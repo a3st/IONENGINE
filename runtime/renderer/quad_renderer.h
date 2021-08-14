@@ -9,14 +9,13 @@ namespace ionengine::renderer {
 class QuadRenderer : public BaseRenderer {
 public:
 
-    QuadRenderer(RenderBackend& render_backend, FrameGraph& frame_graph) : m_render_backend(render_backend), m_frame_graph(frame_graph) {
+    QuadRenderer(RenderContext& render_context, FrameGraph& frame_graph) : m_frame_graph(frame_graph) {
 
         
     }
 
 private:
 
-    std::reference_wrapper<RenderBackend> m_render_backend;
     std::reference_wrapper<FrameGraph> m_frame_graph;
 
 
