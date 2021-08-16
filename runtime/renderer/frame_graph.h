@@ -16,19 +16,6 @@ private:
 
 };
 
-class RenderPassBuilder {
-public:
-
-    RenderPassBuilder() {
-        
-
-    }
-
-    //FrameGraphResource read_
-
-private:
-
-};
 
 class RenderPassResources {
 public:
@@ -37,8 +24,31 @@ public:
         
     }
 
+    FrameGraphResource create_render_target(Resource& resource, const ViewDesc& view_desc) {
+
+    }
+
 private:
 
+    std::vector<std::unique_ptr<DescriptorPool>> m_descriptor_pools;
+    std::vector<std::unique_ptr<View>> m_views;
+};
+
+class RenderPassBuilder {
+public:
+
+    RenderPassBuilder(RenderPassResources& resources) : m_pass_resources(resources) {
+        
+
+    }
+
+    FrameGraphResource create_render_target(Resource& resource) {
+    
+    }
+
+private:
+
+    std::reference_wrapper<RenderPassResources> m_pass_resources;
 
 };
 
@@ -54,15 +64,20 @@ private:
 
 };
 
+struct FrameGraphDesc {
+    std::vector<std::reference_wrapper<Resource>> frames;
+};
+
 class FrameGraph {
 public:
 
-    FrameGraph(Device& device) : m_device(device)  {
+    FrameGraph(Device& device, const FrameGraphDesc& desc) : m_device(device), m_frame_index(0)  {
+        
+        m_frame_count = static_cast<uint32>(desc.frames.size());
 
-    }
-
-    void set_static(const uint32 slot, Resource& resource) {
-
+        for(uint32 i = 0; i < m_frame_count; ++i) {
+            
+        }
     }
 
     template<typename T>
@@ -74,17 +89,27 @@ public:
 
     }
 
-    void execute() {
+    void build() {
 
+    }
+
+    void execute() {
+        m_frame_index = (m_frame_index + 1) % m_frame_count;
+
+        // std::cout << "frame_index: " << m_frame_index << std::endl;
     }
 
 private:
 
     std::reference_wrapper<Device> m_device;
 
-    std::unique_ptr<RenderPassBuilder> m_pass_builder;
-    std::unique_ptr<RenderPassResources> m_pass_resources;
-    std::unique_ptr<RenderPassContext> m_pass_context;
+    std::unique_ptr<RenderPassBuilder> m_builder;
+    
+    std::vector<std::unique_ptr<RenderPassResources>> m_resources;
+    std::vector<std::unique_ptr<RenderPassContext>> m_contexts;
+
+    uint32 m_frame_index;
+    uint32 m_frame_count;
 
 };
 

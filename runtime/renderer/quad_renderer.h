@@ -18,12 +18,21 @@ public:
 
         m_frame_graph.get().add_pass<DepthPassData>("DepthPass",
             [&](RenderPassBuilder& builder, const DepthPassData& data) {
-                input = builder.read_static()
+                
             },
             [=](RenderPassResources& resources, const DepthPassData& data, RenderPassContext& context) {
                 // execute pass
             }
         );
+
+        m_frame_graph.get().build();
+
+        std::cout << "Frame Graph was builded" << std::endl;
+    }
+
+    void tick() override {
+
+        m_frame_graph.get().execute();
     }
 
 private:

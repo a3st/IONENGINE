@@ -8,6 +8,7 @@ class BaseRenderer {
 public:
 
     virtual ~BaseRenderer() = default;
+    virtual void tick() = 0;
 };
 
 }

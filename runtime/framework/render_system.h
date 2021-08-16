@@ -41,11 +41,13 @@ public:
         auto client_size = m_window.get().get_client_size();
         m_swapchain = m_device->create_swapchain(m_window.get().get_native_handle(), client_size.width, client_size.height, m_swap_buffer_count);
 
-        m_frame_graph = std::make_unique<renderer::FrameGraph>(*m_device);
-
+        std::vector<std::reference_wrapper<renderer::Resource>> m_frame_resources;
         for(uint32 i = 0; i < m_swap_buffer_count; ++i) {
-            m_frame_graph->set_static(i, m_swapchain.get()->get_back_buffer(i));
+            m_frame_resources.emplace_back(m_swapchain.get()->get_back_buffer(i));
         }
+
+        renderer::FrameGraphDesc frame_graph_desc = { m_frame_resources };
+        m_frame_graph = std::make_unique<renderer::FrameGraph>(*m_device, frame_graph_desc);
 
         // Renderer class
         m_renderer = std::make_unique<renderer::QuadRenderer>(*m_frame_graph);
@@ -57,6 +59,7 @@ public:
 
     void tick() {
         
+        m_renderer.get()->tick();
     }
 
 private:
