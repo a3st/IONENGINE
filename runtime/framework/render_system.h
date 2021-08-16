@@ -17,7 +17,7 @@ using namespace memory_literals;
 class RenderSystem {
 public:
 
-    RenderSystem(platform::Window& window) : m_window(window) {
+    RenderSystem(platform::Window& window) : m_window(window), m_buffer_count(2) {
 
         std::cout << format<std::string>("RenderSystem ({} API) initialized", renderer::get_api_name()) << std::endl;
         m_instance = renderer::create_unique_instance();
@@ -39,18 +39,10 @@ public:
         m_device = m_adapter->create_device();
 
         auto client_size = m_window.get().get_client_size();
-        m_swapchain = m_device->create_swapchain(m_window.get().get_native_handle(), client_size.width, client_size.height, m_swap_buffer_count);
-
-        std::vector<std::reference_wrapper<renderer::Resource>> m_frame_resources;
-        for(uint32 i = 0; i < m_swap_buffer_count; ++i) {
-            m_frame_resources.emplace_back(m_swapchain.get()->get_back_buffer(i));
-        }
-
-        renderer::FrameGraphDesc frame_graph_desc = { m_frame_resources };
-        m_frame_graph = std::make_unique<renderer::FrameGraph>(*m_device, frame_graph_desc);
+        m_swapchain = m_device->create_swapchain(m_window.get().get_native_handle(), client_size.width, client_size.height, m_buffer_count);
 
         // Renderer class
-        m_renderer = std::make_unique<renderer::QuadRenderer>(*m_frame_graph);
+        m_renderer = std::make_unique<renderer::QuadRenderer>(*m_device, *m_swapchain, m_buffer_count);
     }
 
     void resize(const uint32 width, const uint32 height) {
@@ -71,10 +63,7 @@ private:
     std::unique_ptr<renderer::Device> m_device;
     std::unique_ptr<renderer::Swapchain> m_swapchain;
 
-    uint32 m_swap_buffer_count = 2;
-    uint32 m_frame_index = 0;
-    
-    std::unique_ptr<renderer::FrameGraph> m_frame_graph;
+    uint32 m_buffer_count;
 
     std::unique_ptr<renderer::BaseRenderer> m_renderer;
 };

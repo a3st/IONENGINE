@@ -9,35 +9,55 @@ namespace ionengine::renderer {
 class QuadRenderer : public BaseRenderer {
 public:
 
-    QuadRenderer(FrameGraph& frame_graph) : m_frame_graph(frame_graph) {
+    QuadRenderer(Device& device, Swapchain& swapchain, const uint32 buffer_count) : m_device(device), m_swapchain(swapchain) {
+
+        m_frame_graph = std::make_unique<FrameGraph>(device);
+
+        std::vector<DescriptorPoolSize> pool_sizes = { 
+            { ViewType::ConstantBuffer, 10 },
+            { ViewType::RenderTarget, 10 }
+        };
+
+        m_descriptor_pools.emplace_back(m_device.get().create_descriptor_pool(pool_sizes));
+
+        for(uint32 i = 0; i < buffer_count; ++i) {
+            ViewDesc view_desc = { ViewType::RenderTarget, ViewDimension::Texture2D };
+            m_swapchain_views.emplace_back(m_device.get().create_view(*m_descriptor_pools.back(), m_swapchain.get().get_back_buffer(i), view_desc));
+        }
+    }
+
+    void tick() override {
+
+        m_frame_graph->bind_attachment("swapchain", *m_swapchain_views[m_swapchain.get().get_back_buffer_index()]);
 
         struct DepthPassData {
             FrameGraphResource input;
             FrameGraphResource output;
         };
 
-        m_frame_graph.get().add_pass<DepthPassData>("DepthPass",
+        m_frame_graph->add_pass<DepthPassData>("DepthPass",
             [&](RenderPassBuilder& builder, const DepthPassData& data) {
-                
+                // setup pass
             },
             [=](RenderPassResources& resources, const DepthPassData& data, RenderPassContext& context) {
                 // execute pass
             }
         );
 
-        m_frame_graph.get().build();
-
-        std::cout << "Frame Graph was builded" << std::endl;
-    }
-
-    void tick() override {
-
-        m_frame_graph.get().execute();
+        m_frame_graph->build();
+        m_frame_graph->execute();
     }
 
 private:
 
-    std::reference_wrapper<FrameGraph> m_frame_graph;
+    std::reference_wrapper<Device> m_device;
+    std::reference_wrapper<Swapchain> m_swapchain;
+
+    std::unique_ptr<FrameGraph> m_frame_graph;
+
+    std::vector<std::unique_ptr<DescriptorPool>> m_descriptor_pools;
+    std::vector<std::unique_ptr<View>> m_swapchain_views;
+
 };
 
 }

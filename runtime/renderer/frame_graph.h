@@ -7,31 +7,29 @@ namespace ionengine::renderer {
 class FrameGraphResource {
 public:
 
-    FrameGraphResource() {
+    FrameGraphResource(View& view) : m_view(view) {
 
     }
 
+    View& get_view() const { return m_view; }
+
 private:
 
-
+    std::reference_wrapper<View> m_view;
 };
 
 
 class RenderPassResources {
 public:
 
-    RenderPassResources() {
+    RenderPassResources(Device& device) : m_device(device) {
         
-    }
-
-    FrameGraphResource create_render_target(Resource& resource, const ViewDesc& view_desc) {
-
+    
     }
 
 private:
 
-    std::vector<std::unique_ptr<DescriptorPool>> m_descriptor_pools;
-    std::vector<std::unique_ptr<View>> m_views;
+    std::reference_wrapper<Device> m_device;
 };
 
 class RenderPassBuilder {
@@ -42,9 +40,9 @@ public:
 
     }
 
-    FrameGraphResource create_render_target(Resource& resource) {
+    // add_output
+    // add_input
     
-    }
 
 private:
 
@@ -55,7 +53,7 @@ private:
 class RenderPassContext {
 public:
 
-    RenderPassContext() {
+    RenderPassContext(Device& device) {
 
     }
 
@@ -71,13 +69,12 @@ struct FrameGraphDesc {
 class FrameGraph {
 public:
 
-    FrameGraph(Device& device, const FrameGraphDesc& desc) : m_device(device), m_frame_index(0)  {
+    FrameGraph(Device& device) : m_device(device)  {
         
-        m_frame_count = static_cast<uint32>(desc.frames.size());
+    }
 
-        for(uint32 i = 0; i < m_frame_count; ++i) {
-            
-        }
+    void bind_attachment(const std::string& name, View& view) {
+
     }
 
     template<typename T>

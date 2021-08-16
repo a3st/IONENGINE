@@ -46,6 +46,8 @@ public:
         ASSERT_SUCCEEDED(m_dxgi_swapchain->Present(0, 0));
     }
     
+    uint32 get_back_buffer_index() const { return m_dxgi_swapchain->GetCurrentBackBufferIndex(); }
+
     winrt::com_ptr<IDXGISwapChain4>& get_swapchain() { return m_dxgi_swapchain; }
 
 private:
