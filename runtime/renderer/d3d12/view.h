@@ -35,6 +35,8 @@ public:
         }
     }
 
+    Resource& get_resource() const override { return m_resource; }
+
     D3D12_CPU_DESCRIPTOR_HANDLE get_cpu_descriptor() const { return m_cpu_descriptor; }
 
 private:

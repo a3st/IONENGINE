@@ -96,7 +96,10 @@ public:
             begin.Type = convert_render_pass_type(render_pass_desc.colors[i].load_op);
 
             if(!clear_value_desc.colors.empty()) {
-                std::memcpy(begin.Clear.ClearValue.Color, &clear_value_desc.colors[i], sizeof(math::Fcolor));
+                begin.Clear.ClearValue.Color[0] = static_cast<float>(clear_value_desc.colors[i].r) / 255.0f;
+                begin.Clear.ClearValue.Color[1] = static_cast<float>(clear_value_desc.colors[i].g) / 255.0f;
+                begin.Clear.ClearValue.Color[2] = static_cast<float>(clear_value_desc.colors[i].b) / 255.0f;
+                begin.Clear.ClearValue.Color[3] = static_cast<float>(clear_value_desc.colors[i].a) / 255.0f; 
             }
 
             D3D12_RENDER_PASS_ENDING_ACCESS end{};
@@ -141,6 +144,10 @@ public:
 
     void end_render_pass() override {
         m_d3d12_command_list->EndRenderPass();
+    }
+
+    void draw() override {
+
     }
 
     void close() override {

@@ -31,16 +31,16 @@ public:
         m_frame_graph->bind_attachment("swapchain", *m_swapchain_views[m_swapchain.get().get_back_buffer_index()]);
 
         struct DepthPassData {
-            FrameGraphResource input;
             FrameGraphResource output;
         };
 
         m_frame_graph->add_pass<DepthPassData>("DepthPass",
-            [&](RenderPassBuilder& builder, const DepthPassData& data) {
-                // setup pass
+            [&](RenderPassBuilder& builder, DepthPassData& data) {
+                data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, { 0, 0, 0, 255 });
             },
             [=](RenderPassResources& resources, const DepthPassData& data, RenderPassContext& context) {
-                // execute pass
+                // context.get_command_list().bind_pipeline(*m_test_pipeline);
+                // context.get_command_list().draw();
             }
         );
 
@@ -57,6 +57,8 @@ private:
 
     std::vector<std::unique_ptr<DescriptorPool>> m_descriptor_pools;
     std::vector<std::unique_ptr<View>> m_swapchain_views;
+
+    std::unique_ptr<Pipeline> m_test_pipeline;
 
 };
 

@@ -9,11 +9,13 @@ public:
 
     D3DResource(winrt::com_ptr<ID3D12Device4>& device, const D3D12_RESOURCE_DESC& desc) : m_device(device), m_resource_desc(desc) {
 
+        m_resource_format = static_cast<Format>(desc.Format);
     }
 
     D3DResource(winrt::com_ptr<ID3D12Device4>& device, const winrt::com_ptr<ID3D12Resource>& resource) : m_device(device), m_d3d12_resource(resource) {
 
         m_resource_desc = m_d3d12_resource->GetDesc();
+        m_resource_format = static_cast<Format>(m_d3d12_resource->GetDesc().Format);
     }
 
     void bind_memory(Memory& memory, const uint64 offset) override {
@@ -35,6 +37,8 @@ public:
         ));
     }
 
+    Format get_format() const override { return m_resource_format; }
+
     std::variant<
         D3D12_RESOURCE_DESC,
         D3D12_SAMPLER_DESC
@@ -52,6 +56,8 @@ private:
         D3D12_RESOURCE_DESC,
         D3D12_SAMPLER_DESC
     > m_resource_desc;
+
+    Format m_resource_format;
 
     std::optional<std::reference_wrapper<D3DMemory>> m_memory;
 };

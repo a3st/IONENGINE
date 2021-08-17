@@ -52,6 +52,8 @@ public:
     void tick() {
         
         m_renderer.get()->tick();
+
+        //m_swapchain->present();
     }
 
 private:

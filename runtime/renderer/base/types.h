@@ -233,8 +233,15 @@ struct ResourceBarrierDesc {
     ResourceState state_after;
 };
 
+struct ClearValueColor {
+    uint32 r;
+    uint32 g;
+    uint32 b;
+    uint32 a;
+};
+
 struct ClearValueDesc {
-    std::vector<math::Fcolor> colors;
+    std::vector<ClearValueColor> colors;
     float depth = 0.0f;
     uint8 stencil = 0;
 };

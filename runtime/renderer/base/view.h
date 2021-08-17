@@ -7,6 +7,8 @@ namespace ionengine::renderer {
 class View {
 public:
     virtual ~View() = default;
+
+    virtual Resource& get_resource() const = 0;
 };
 
 }

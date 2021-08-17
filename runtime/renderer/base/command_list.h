@@ -17,6 +17,7 @@ public:
     virtual void resource_barriers(const std::vector<ResourceBarrierDesc>& barrier_descs) = 0;
     virtual void begin_render_pass(RenderPass& render_pass, FrameBuffer& frame_buffer, const ClearValueDesc& clear_value_desc) = 0;
     virtual void end_render_pass() = 0;
+    virtual void draw() = 0;
 };
 
 }
