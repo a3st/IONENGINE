@@ -41,6 +41,9 @@ public:
         auto client_size = m_window.get().get_client_size();
         m_swapchain = m_device->create_swapchain(m_window.get().get_native_handle(), client_size.width, client_size.height, m_buffer_count);
 
+        m_fence_values.resize(m_buffer_count);
+        m_fence = m_device->create_fence(0);
+
         // Renderer class
         m_renderer = std::make_unique<renderer::QuadRenderer>(*m_device, *m_swapchain, m_buffer_count);
     }
@@ -51,9 +54,18 @@ public:
 
     void tick() {
         
+        if(!is_presented) {
+        uint32 frame_index = m_swapchain->next_buffer(*m_fence, ++m_fence_values[0]);
+        m_device->get_command_queue(renderer::CommandListType::Graphics).wait(*m_fence, m_fence_values[0]);
+        m_fence->wait(m_fence_values[0]);
+
         m_renderer.get()->tick();
 
-        //m_swapchain->present();
+        m_fence->signal(m_fence_values[0]);
+        
+        m_swapchain->present(*m_fence, m_fence_values[0]);
+        is_presented = true;
+        }
     }
 
 private:
@@ -64,10 +76,15 @@ private:
     std::unique_ptr<renderer::Adapter> m_adapter;
     std::unique_ptr<renderer::Device> m_device;
     std::unique_ptr<renderer::Swapchain> m_swapchain;
+    std::unique_ptr<renderer::Fence> m_fence;
+
+    std::vector<uint64> m_fence_values;
 
     uint32 m_buffer_count;
 
     std::unique_ptr<renderer::BaseRenderer> m_renderer;
+
+    bool is_presented = false;
 };
 
 }

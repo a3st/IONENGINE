@@ -29,6 +29,7 @@ public:
         for(auto command : command_lists) {
 			command_list_ptrs.emplace_back(static_cast<D3DCommandList&>(command.get()).get_command_list().get());
         }
+        m_d3d12_command_queue->ExecuteCommandLists(static_cast<uint32>(command_list_ptrs.size()), command_list_ptrs.data());
     }
 
     winrt::com_ptr<ID3D12CommandQueue>& get_command_queue() { return m_d3d12_command_queue; }

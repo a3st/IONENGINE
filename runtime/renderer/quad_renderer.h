@@ -36,7 +36,7 @@ public:
 
         m_frame_graph->add_pass<DepthPassData>("DepthPass",
             [&](RenderPassBuilder& builder, DepthPassData& data) {
-                data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, { 0, 0, 0, 255 });
+                data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, { 200, 105, 150, 255 });
             },
             [=](RenderPassResources& resources, const DepthPassData& data, RenderPassContext& context) {
                 // context.get_command_list().bind_pipeline(*m_test_pipeline);

@@ -95,12 +95,12 @@ public:
             D3D12_RENDER_PASS_BEGINNING_ACCESS begin{};
             begin.Type = convert_render_pass_type(render_pass_desc.colors[i].load_op);
 
-            if(!clear_value_desc.colors.empty()) {
-                begin.Clear.ClearValue.Color[0] = static_cast<float>(clear_value_desc.colors[i].r) / 255.0f;
-                begin.Clear.ClearValue.Color[1] = static_cast<float>(clear_value_desc.colors[i].g) / 255.0f;
-                begin.Clear.ClearValue.Color[2] = static_cast<float>(clear_value_desc.colors[i].b) / 255.0f;
-                begin.Clear.ClearValue.Color[3] = static_cast<float>(clear_value_desc.colors[i].a) / 255.0f; 
-            }
+            begin.Clear.ClearValue.Format = static_cast<DXGI_FORMAT>(render_pass_desc.colors[i].format);
+
+            begin.Clear.ClearValue.Color[0] = static_cast<float>(clear_value_desc.colors[i].r) / 255.0f;
+            begin.Clear.ClearValue.Color[1] = static_cast<float>(clear_value_desc.colors[i].g) / 255.0f;
+            begin.Clear.ClearValue.Color[2] = static_cast<float>(clear_value_desc.colors[i].b) / 255.0f;
+            begin.Clear.ClearValue.Color[3] = static_cast<float>(clear_value_desc.colors[i].a) / 255.0f;
 
             D3D12_RENDER_PASS_ENDING_ACCESS end{};
             end.Type = convert_render_pass_type(render_pass_desc.colors[i].store_op);
@@ -118,17 +118,19 @@ public:
 
             D3D12_RENDER_PASS_BEGINNING_ACCESS depth_begin{};
             depth_begin.Type = convert_render_pass_type(render_pass_desc.depth_stencil.depth_load_op);
+            depth_begin.Clear.ClearValue.Format = static_cast<DXGI_FORMAT>(render_pass_desc.depth_stencil.format);
             depth_begin.Clear.ClearValue.DepthStencil.Depth = clear_value_desc.depth;
 
             D3D12_RENDER_PASS_ENDING_ACCESS depth_end{};
             depth_end.Type = convert_render_pass_type(render_pass_desc.depth_stencil.depth_store_op);
 
             D3D12_RENDER_PASS_BEGINNING_ACCESS stencil_begin{};
-            depth_begin.Type = convert_render_pass_type(render_pass_desc.depth_stencil.stencil_load_op);
-            depth_begin.Clear.ClearValue.DepthStencil.Stencil = clear_value_desc.stencil;
+            stencil_begin.Type = convert_render_pass_type(render_pass_desc.depth_stencil.stencil_load_op);
+            stencil_begin.Clear.ClearValue.Format = static_cast<DXGI_FORMAT>(render_pass_desc.depth_stencil.format);
+            stencil_begin.Clear.ClearValue.DepthStencil.Stencil = clear_value_desc.stencil;
 
             D3D12_RENDER_PASS_ENDING_ACCESS stencil_end{};
-            depth_end.Type = convert_render_pass_type(render_pass_desc.depth_stencil.stencil_store_op);
+            stencil_end.Type = convert_render_pass_type(render_pass_desc.depth_stencil.stencil_store_op);
 
             render_pass_ds_desc.cpuDescriptor = static_cast<D3DView&>(depth_stencil.value().get()).get_cpu_descriptor();
             render_pass_ds_desc.DepthBeginningAccess = depth_begin;

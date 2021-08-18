@@ -166,7 +166,7 @@ public:
 
         m_device.get().get_command_queue(CommandListType::Graphics).execute_command_lists({ { m_render_pass_context->get_command_list() } });
 
-        m_render_pass_context->get_command_list().reset();
+        //m_render_pass_context->get_command_list().reset();
     }
 
 private:
