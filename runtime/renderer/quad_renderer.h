@@ -9,7 +9,7 @@ namespace ionengine::renderer {
 class QuadRenderer : public BaseRenderer {
 public:
 
-    QuadRenderer(Device& device, Swapchain& swapchain, const uint32 buffer_count) : m_device(device), m_swapchain(swapchain) {
+    QuadRenderer(Device& device, Swapchain& swapchain, const uint32 buffer_count) : m_device(device), m_swapchain(swapchain), m_buffer_count(buffer_count) {
 
         m_frame_graph = std::make_unique<FrameGraph>(device);
 
@@ -24,6 +24,10 @@ public:
             ViewDesc view_desc = { ViewType::RenderTarget, ViewDimension::Texture2D };
             m_swapchain_views.emplace_back(m_device.get().create_view(*m_descriptor_pools.back(), m_swapchain.get().get_back_buffer(i), view_desc));
         }
+
+        for(uint32 i = 0; i < buffer_count; ++i) {
+            m_command_lists.emplace_back(m_device.get().create_command_list(CommandListType::Graphics));
+        }
     }
 
     void tick() override {
@@ -35,17 +39,19 @@ public:
         };
 
         m_frame_graph->add_pass<DepthPassData>("DepthPass",
-            [&](RenderPassBuilder& builder, DepthPassData& data) {
+            [&](FrameGraphBuilder& builder, DepthPassData& data) {
                 data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, { 200, 105, 150, 255 });
             },
-            [=](RenderPassResources& resources, const DepthPassData& data, RenderPassContext& context) {
+            [=](RenderPassContext& context, const DepthPassData& data) {
                 // context.get_command_list().bind_pipeline(*m_test_pipeline);
                 // context.get_command_list().draw();
+            
             }
         );
 
-        m_frame_graph->build();
-        m_frame_graph->execute();
+        m_frame_graph->execute(*m_command_lists[m_frame_index]);
+
+        m_frame_index = (m_frame_index + 1) % m_buffer_count;
     }
 
 private:
@@ -59,6 +65,11 @@ private:
     std::vector<std::unique_ptr<View>> m_swapchain_views;
 
     std::unique_ptr<Pipeline> m_test_pipeline;
+
+    std::vector<std::unique_ptr<CommandList>> m_command_lists;
+
+    uint32 m_frame_index;
+    uint32 m_buffer_count;
 
 };
 

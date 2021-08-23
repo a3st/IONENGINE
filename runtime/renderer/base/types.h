@@ -238,6 +238,10 @@ struct ClearValueColor {
     uint32 g;
     uint32 b;
     uint32 a;
+
+    bool operator<(const ClearValueColor& rhs) const {
+        return std::tie(r, g, b, a) < std::tie(rhs.r, rhs.g, rhs.b, rhs.a);
+    }
 };
 
 struct ClearValueDesc {
