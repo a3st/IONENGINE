@@ -15,20 +15,21 @@ struct AttachmentDesc {
 };
 
 class FrameGraphResource {
+friend class RenderPassResources;
 public:
 
     FrameGraphResource() {
 
     }
 
-    FrameGraphResource(const FrameGraphResourceType type, const uint64 id) : m_resource_type(type), m_resource_id(id) {
+    FrameGraphResource(const FrameGraphResourceType type, const uint64 offset) : m_resource_type(type), m_resource_offset(offset) {
 
     }
 
 private:
 
     FrameGraphResourceType m_resource_type;
-    uint64 m_resource_id;
+    uint64 m_resource_offset;
 };
 
 class RenderPassResources {
@@ -38,6 +39,10 @@ public:
 
     RenderPassResources() : m_attachments_offset(0) {
         
+    }
+
+    View& get_view(const FrameGraphResource& resource) { 
+        return m_render_pass_attachments.at(resource.m_resource_offset).view;
     }
 
 private:
