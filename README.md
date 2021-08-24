@@ -1,5 +1,8 @@
+[![Windows](https://github.com/a3st/ionengine_ops/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/a3st/ionengine_ops/actions/workflows/windows.yml)
+
 # IONENGINE
 ## Realtime Renderer Project
+This project is still development.
 
 ## Features
 
