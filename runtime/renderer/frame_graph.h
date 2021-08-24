@@ -8,15 +8,6 @@ enum class FrameGraphResourceType {
     RenderTarget
 };
 
-enum class FrameGraphTaskType {
-    RenderPass,
-    ComputePass
-};
-
-struct FrameGraphTaskDesc {
-
-};
-
 struct AttachmentDesc {
     Format format;
     RenderPassLoadOp load_op;
@@ -57,9 +48,8 @@ class FrameGraphBuilder {
 friend class FrameGraph;
 public:
 
-    FrameGraphBuilder() : m_frame_graph_resources_offset(0) {
+    FrameGraphBuilder() {
         
-
     }
 
     FrameGraphResource add_input(const std::string& name) {
@@ -67,23 +57,16 @@ public:
     }
 
     FrameGraphResource add_output(const std::string& name, const RenderPassLoadOp load_op, const ClearValueColor& clear_value) {
-    
-        auto it = m_frame_graph_attachments.find(name);
-        if(it == m_frame_graph_attachments.end()) {
-            throw std::runtime_error("resource cannot be finded");
-        }
-        m_frame_graph_resources.emplace_back(it->second, AttachmentDesc { it->second.get().get_resource().get_format(), load_op, clear_value });
-
-        FrameGraphResource resource = { FrameGraphResourceType::RenderTarget, m_frame_graph_resources_offset };
-        m_frame_graph_resources_offset++;
-        return resource;
+        return { };
     }
 
 private:
 
-    std::map<std::string, std::reference_wrapper<View>> m_frame_graph_attachments;
-    std::vector<std::pair<std::reference_wrapper<View>, AttachmentDesc>> m_frame_graph_resources;
-    uint64 m_frame_graph_resources_offset;
+    std::vector<AttachmentDesc> color_attachments;
+
+    const std::vector<AttachmentDesc>& get_color_attachments() const {
+        return color_attachments;
+    }
 };
 
 class RenderPassContext {
@@ -103,14 +86,37 @@ private:
 class FrameGraph {
 public:
 
+    struct RenderPassDesc {
+        
+        std::vector<AttachmentDesc> color_attachments;
+        AttachmentDesc depth_attachment;
+
+        std::vector<FrameGraphResource> color_resources;
+
+        std::function<void(RenderPassContext&)> exec_func;
+    };
+
+    struct ComputePassDesc {
+        
+    };
+
+    enum class TaskType {
+        RenderPass,
+        ComputePass
+    };
+
+    struct TaskDesc {
+        TaskType type;
+        uint32 index;
+    };
+
     FrameGraph(Device& device) : m_device(device)  {
         
-        m_frame_graph_builder = std::make_unique<FrameGraphBuilder>();
     }
 
     void bind_attachment(const std::string& name, View& view) {
 
-        m_frame_graph_builder->m_frame_graph_attachments.emplace(name, view);
+        m_bind_attachments.emplace(name, view);
     }
 
     template<typename T>
@@ -121,10 +127,20 @@ public:
     ) {
         T pass_data{};
 
-        setup_pass_func(*m_frame_graph_builder, pass_data);
+        FrameGraphBuilder builder;
+        setup_pass_func(builder, pass_data);
+        
+        FrameGraph::RenderPassDesc render_pass_desc{};
+        render_pass_desc.color_attachments = builder.get_color_attachments();
+        render_pass_desc.exec_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
 
-        auto arg_less_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
-        m_render_pass_execs.emplace_back(name, arg_less_func);
+        m_render_passes.emplace_back(render_pass_desc);
+
+        FrameGraph::TaskDesc task_desc{};
+        task_desc.type = FrameGraph::TaskType::RenderPass;
+        task_desc.index = static_cast<uint32>(m_render_passes.size());
+
+        m_tasks.emplace_back(task_desc);
     }
 
     /*void build() {
@@ -160,7 +176,7 @@ public:
 
     void execute(CommandList& command_list) {
 
-        
+
 
         /*ClearValueDesc clear_value_desc = {
             { { m_render_pass_resources->m_render_pass_attachments.begin()->second.clear_value } }
@@ -184,9 +200,14 @@ private:
 
     std::unique_ptr<FrameGraphBuilder> m_frame_graph_builder;
 
-    std::vector<std::pair<std::string, std::function<void(RenderPassContext&)>>> m_render_pass_execs;
+    //std::map<RenderPassKey, std::unique_ptr<RenderPass>> m_render_passes;
 
-    std::map<RenderPassKey, std::unique_ptr<RenderPass>> m_render_passes;
+    std::map<std::string, std::reference_wrapper<View>> m_bind_attachments;
+
+    std::vector<FrameGraph::TaskDesc> m_tasks;
+
+    std::vector<FrameGraph::RenderPassDesc> m_render_passes;
+    std::vector<FrameGraph::ComputePassDesc> m_compute_passes;
 };
 
 }
