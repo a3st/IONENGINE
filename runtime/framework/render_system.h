@@ -54,18 +54,16 @@ public:
 
     void tick() {
         
-        if(!is_presented) {
-        uint32 frame_index = m_swapchain->next_buffer(*m_fence, ++m_fence_values[0]);
-        m_device->get_command_queue(renderer::CommandListType::Graphics).wait(*m_fence, m_fence_values[0]);
-        m_fence->wait(m_fence_values[0]);
+        //uint32 frame_index = m_swapchain->next_buffer(*m_fence, ++m_fence_values[0]);
+        //m_device->get_command_queue(renderer::CommandListType::Graphics).wait(*m_fence, m_fence_values[0]);
+        //m_fence->wait(m_fence_values[0]);
 
         m_renderer.get()->tick();
 
-        m_fence->signal(m_fence_values[0]);
+        //m_fence->signal(m_fence_values[0]);
         
-        m_swapchain->present(*m_fence, m_fence_values[0]);
-        is_presented = true;
-        }
+        //m_swapchain->present(*m_fence, m_fence_values[0]);
+        //is_presented = true;
     }
 
 private:
@@ -83,8 +81,6 @@ private:
     uint32 m_buffer_count;
 
     std::unique_ptr<renderer::BaseRenderer> m_renderer;
-
-    bool is_presented = false;
 };
 
 }

@@ -9,7 +9,8 @@ namespace ionengine::renderer {
 class QuadRenderer : public BaseRenderer {
 public:
 
-    QuadRenderer(Device& device, Swapchain& swapchain, const uint32 buffer_count) : m_device(device), m_swapchain(swapchain), m_buffer_count(buffer_count) {
+    QuadRenderer(Device& device, Swapchain& swapchain, const uint32 buffer_count) : m_device(device), m_swapchain(swapchain), 
+        m_buffer_count(buffer_count), m_frame_index(0) {
 
         m_frame_graph = std::make_unique<FrameGraph>(device);
 
@@ -39,13 +40,11 @@ public:
         };
 
         m_frame_graph->add_pass<DepthPassData>("DepthPass",
-            [&](FrameGraphBuilder& builder, DepthPassData& data) {
+            [&](RenderPassBuilder& builder, DepthPassData& data) {
                 data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, { 200, 105, 150, 255 });
             },
             [=](RenderPassContext& context, const DepthPassData& data) {
-                // context.get_command_list().bind_pipeline(*m_test_pipeline);
-                // context.get_command_list().draw();
-            
+               
             }
         );
 

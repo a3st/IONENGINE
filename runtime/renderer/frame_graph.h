@@ -44,11 +44,11 @@ private:
     uint64 m_resource_offset;
 };
 
-class FrameGraphBuilder {
+class RenderPassBuilder {
 friend class FrameGraph;
 public:
 
-    FrameGraphBuilder() {
+    RenderPassBuilder() {
         
     }
 
@@ -122,61 +122,66 @@ public:
     template<typename T>
     void add_pass(
         const std::string& name, 
-        const std::function<void(FrameGraphBuilder&, T&)>& setup_pass_func, 
+        const std::function<void(RenderPassBuilder&, T&)>& setup_pass_func, 
         const std::function<void(RenderPassContext&, const T&)>& exec_pass_func
     ) {
         T pass_data{};
 
-        FrameGraphBuilder builder;
+        RenderPassBuilder builder;
         setup_pass_func(builder, pass_data);
-        
-        FrameGraph::RenderPassDesc render_pass_desc{};
-        render_pass_desc.color_attachments = builder.get_color_attachments();
-        render_pass_desc.exec_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
-
-        m_render_passes.emplace_back(render_pass_desc);
 
         FrameGraph::TaskDesc task_desc{};
         task_desc.type = FrameGraph::TaskType::RenderPass;
         task_desc.index = static_cast<uint32>(m_render_passes.size());
 
         m_tasks.emplace_back(task_desc);
+
+        FrameGraph::RenderPassDesc render_pass_desc{};
+        render_pass_desc.color_attachments = builder.get_color_attachments();
+        render_pass_desc.exec_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
+
+        m_render_passes.emplace_back(render_pass_desc);
     }
-
-    /*void build() {
-
-        for(auto& resource : m_frame_graph_builder.get()->m_frame_graph_resources) {
-
-        }
-            
-        auto& resource = m_render_pass_resources->m_render_pass_attachments.begin()->second.view.get().get_resource();
-
-        RenderPassColorDesc render_pass_color_desc = {
-            resource.get_format(),
-            m_render_pass_resources->m_render_pass_attachments.begin()->second.load_op
-        };
-
-        RenderPassDesc render_pass_desc = {
-            { { render_pass_color_desc } }
-        };
-
-        m_render_passes.emplace_back(m_device.get().create_render_pass(render_pass_desc));
-            
-        FrameBufferDesc frame_buffer_desc = {
-            *m_render_passes.back(),
-            800,
-            600,
-            { { m_render_pass_resources->m_render_pass_attachments.begin()->second.view } }
-        };
-
-        m_frame_buffers.emplace_back(m_device.get().create_frame_buffer(frame_buffer_desc));
-
-        std::cout << "Render pass created" << std::endl;
-    }*/
 
     void execute(CommandList& command_list) {
 
+        for(auto& task : m_tasks) {
 
+            switch(task.type) {
+
+                case FrameGraph::TaskType::RenderPass: {
+
+                    auto& render_pass_desc = m_render_passes[task.index];
+
+
+                    RenderPassContext render_pass_context(command_list);
+                    
+                    for(auto& color_resource : render_pass_desc.color_resources) {
+
+                        // If last render pass then present to swapchain
+                        if(task.index == static_cast<uint32>(m_render_passes.size()) - 1) { 
+
+                        } else {
+                            
+                        }
+
+
+                    }
+
+                    render_pass_desc.exec_func(render_pass_context);
+                    break;
+                }
+
+                case FrameGraph::TaskType::ComputePass: {
+
+                    break;
+                }
+            }
+        }
+
+        m_tasks.clear();
+        m_render_passes.clear();
+        m_compute_passes.clear();
 
         /*ClearValueDesc clear_value_desc = {
             { { m_render_pass_resources->m_render_pass_attachments.begin()->second.clear_value } }
@@ -198,14 +203,11 @@ private:
 
     std::reference_wrapper<Device> m_device;
 
-    std::unique_ptr<FrameGraphBuilder> m_frame_graph_builder;
-
     //std::map<RenderPassKey, std::unique_ptr<RenderPass>> m_render_passes;
 
     std::map<std::string, std::reference_wrapper<View>> m_bind_attachments;
 
     std::vector<FrameGraph::TaskDesc> m_tasks;
-
     std::vector<FrameGraph::RenderPassDesc> m_render_passes;
     std::vector<FrameGraph::ComputePassDesc> m_compute_passes;
 };

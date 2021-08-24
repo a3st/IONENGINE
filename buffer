@@ -58,3 +58,34 @@
         command_list->end_render_pass();
         command_list->resource_barriers({ { m_swapchain.get()->get_back_buffer(m_frame_index), ResourceState::RenderTarget, ResourceState::Present } });
         command_list->close();*/
+
+
+
+
+        for(auto& resource : m_frame_graph_builder.get()->m_frame_graph_resources) {
+
+        }
+            
+        auto& resource = m_render_pass_resources->m_render_pass_attachments.begin()->second.view.get().get_resource();
+
+        RenderPassColorDesc render_pass_color_desc = {
+            resource.get_format(),
+            m_render_pass_resources->m_render_pass_attachments.begin()->second.load_op
+        };
+
+        RenderPassDesc render_pass_desc = {
+            { { render_pass_color_desc } }
+        };
+
+        m_render_passes.emplace_back(m_device.get().create_render_pass(render_pass_desc));
+            
+        FrameBufferDesc frame_buffer_desc = {
+            *m_render_passes.back(),
+            800,
+            600,
+            { { m_render_pass_resources->m_render_pass_attachments.begin()->second.view } }
+        };
+
+        m_frame_buffers.emplace_back(m_device.get().create_frame_buffer(frame_buffer_desc));
+
+        std::cout << "Render pass created" << std::endl;
