@@ -5,7 +5,8 @@
 namespace ionengine::renderer {
 
 enum class FrameGraphResourceType {
-    RenderTarget
+    RenderTarget,
+    Buffer
 };
 
 struct AttachmentDesc {
@@ -16,6 +17,10 @@ struct AttachmentDesc {
     bool operator<(const AttachmentDesc& rhs) const {
         return std::tie(format, load_op, clear_value) < std::tie(rhs.format, rhs.load_op, rhs.clear_value);
     }
+};
+
+struct BufferDesc {
+
 };
 
 struct RenderPassKey {
@@ -34,25 +39,41 @@ public:
 
     }
 
-    FrameGraphResource(const FrameGraphResourceType type, const uint64 offset) : m_resource_type(type), m_resource_offset(offset) {
+    FrameGraphResource(const FrameGraphResourceType type, const uint64 id) : m_type(type), m_id(id) {
+
+    }
+
+protected:
+
+    uint64 get_id() const { return m_id; }
+    FrameGraphResourceType get_type() const { return m_type; }
+
+private:
+
+    FrameGraphResourceType m_type;
+    uint64 m_id;
+};
+
+class FrameGraphResourceCache {
+public:
+
+    FrameGraphResourceCache() {
 
     }
 
 private:
 
-    FrameGraphResourceType m_resource_type;
-    uint64 m_resource_offset;
 };
 
 class RenderPassBuilder {
 friend class FrameGraph;
 public:
 
-    RenderPassBuilder() {
+    RenderPassBuilder(FrameGraphResourceCache& resource_cache) : m_resource_cache(resource_cache) {
         
     }
 
-    FrameGraphResource add_input(const std::string& name) {
+    FrameGraphResource add_input(const std::string& name, const RenderPassLoadOp load_op, const ClearValueColor& clear_value) {
         return {  };
     }
 
@@ -60,13 +81,13 @@ public:
         return { };
     }
 
+protected:
+
+    
+
 private:
 
-    std::vector<AttachmentDesc> color_attachments;
-
-    const std::vector<AttachmentDesc>& get_color_attachments() const {
-        return color_attachments;
-    }
+    std::reference_wrapper<FrameGraphResourceCache> m_resource_cache;
 };
 
 class RenderPassContext {
@@ -89,9 +110,9 @@ public:
     struct RenderPassDesc {
         
         std::vector<AttachmentDesc> color_attachments;
-        AttachmentDesc depth_attachment;
 
-        std::vector<FrameGraphResource> color_resources;
+        std::vector<FrameGraphResource> input_resources;
+        std::vector<FrameGraphResource> output_resources;
 
         std::function<void(RenderPassContext&)> exec_func;
     };
@@ -114,9 +135,14 @@ public:
         
     }
 
-    void bind_attachment(const std::string& name, View& view) {
+    void bind_resource(const std::string& name, View& view) {
 
-        m_bind_attachments.emplace(name, view);
+        m_bind_resources.emplace(name, view);
+    }
+
+    template<enum class FrameGraphResourceType T>
+    View& get_resource(const FrameGraphResource& resource) { 
+        return m_bind_resources.at("123");
     }
 
     template<typename T>
@@ -127,20 +153,19 @@ public:
     ) {
         T pass_data{};
 
-        RenderPassBuilder builder;
+        RenderPassBuilder builder(m_resource_cache);
         setup_pass_func(builder, pass_data);
 
-        FrameGraph::TaskDesc task_desc{};
-        task_desc.type = FrameGraph::TaskType::RenderPass;
-        task_desc.index = static_cast<uint32>(m_render_passes.size());
-
-        m_tasks.emplace_back(task_desc);
-
         FrameGraph::RenderPassDesc render_pass_desc{};
-        render_pass_desc.color_attachments = builder.get_color_attachments();
+        
         render_pass_desc.exec_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
 
         m_render_passes.emplace_back(render_pass_desc);
+    }
+
+    void build() {
+
+
     }
 
     void execute(CommandList& command_list) {
@@ -156,17 +181,7 @@ public:
 
                     RenderPassContext render_pass_context(command_list);
                     
-                    for(auto& color_resource : render_pass_desc.color_resources) {
-
-                        // If last render pass then present to swapchain
-                        if(task.index == static_cast<uint32>(m_render_passes.size()) - 1) { 
-
-                        } else {
-                            
-                        }
-
-
-                    }
+                    
 
                     render_pass_desc.exec_func(render_pass_context);
                     break;
@@ -182,34 +197,20 @@ public:
         m_tasks.clear();
         m_render_passes.clear();
         m_compute_passes.clear();
-
-        /*ClearValueDesc clear_value_desc = {
-            { { m_render_pass_resources->m_render_pass_attachments.begin()->second.clear_value } }
-        };
-
-        m_render_pass_context->get_command_list().resource_barriers({ { m_render_pass_resources->m_render_pass_attachments.begin()->second.view.get().get_resource(), ResourceState::Present, ResourceState::RenderTarget } });
-        m_render_pass_context->get_command_list().begin_render_pass(*m_render_passes.back(), *m_frame_buffers.back(), clear_value_desc);
-        m_render_pass_execs.back().second();
-        m_render_pass_context->get_command_list().end_render_pass();
-        m_render_pass_context->get_command_list().resource_barriers({ { m_render_pass_resources->m_render_pass_attachments.begin()->second.view.get().get_resource(), ResourceState::RenderTarget, ResourceState::Present } });
-        m_render_pass_context->get_command_list().close();
-
-        m_device.get().get_command_queue(CommandListType::Graphics).execute_command_lists({ { m_render_pass_context->get_command_list() } });
-
-        m_render_pass_context->get_command_list().reset();*/
+        m_bind_resources.clear();
     }
 
 private:
 
     std::reference_wrapper<Device> m_device;
 
-    //std::map<RenderPassKey, std::unique_ptr<RenderPass>> m_render_passes;
-
-    std::map<std::string, std::reference_wrapper<View>> m_bind_attachments;
-
     std::vector<FrameGraph::TaskDesc> m_tasks;
+
+    FrameGraphResourceCache m_resource_cache;
+
     std::vector<FrameGraph::RenderPassDesc> m_render_passes;
     std::vector<FrameGraph::ComputePassDesc> m_compute_passes;
+    std::map<std::string, std::reference_wrapper<View>> m_bind_resources;
 };
 
 }

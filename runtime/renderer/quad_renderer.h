@@ -33,18 +33,19 @@ public:
 
     void tick() override {
 
-        m_frame_graph->bind_attachment("swapchain", *m_swapchain_views[m_swapchain.get().get_back_buffer_index()]);
+        m_frame_graph->bind_resource("swapchain", *m_swapchain_views[m_swapchain.get().get_back_buffer_index()]);
 
         struct DepthPassData {
             FrameGraphResource output;
         };
 
-        m_frame_graph->add_pass<DepthPassData>("DepthPass",
+        m_frame_graph->add_pass<DepthPassData>("BasicPass",
             [&](RenderPassBuilder& builder, DepthPassData& data) {
                 data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, { 200, 105, 150, 255 });
             },
             [=](RenderPassContext& context, const DepthPassData& data) {
-               
+                //auto& view = m_frame_graph->get_resource<FrameGraphResourceType::RenderTarget>(data.output);
+                
             }
         );
 
