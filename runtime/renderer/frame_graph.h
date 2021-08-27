@@ -54,6 +54,11 @@ private:
     uint64 m_id;
 };
 
+struct FrameGraphResourceDesc {
+
+
+};
+
 class FrameGraphResourceCache {
 public:
 
@@ -61,7 +66,17 @@ public:
 
     }
 
+    struct Key {
+
+    };
+
+    FrameGraphResource get_resource(const FrameGraphResourceCache::Key key) {
+        
+    }
+
 private:
+
+    std::map<FrameGraphResourceCache::Key, FrameGraphResourceDesc> m_resources;
 
 };
 
@@ -123,7 +138,8 @@ public:
 
     enum class TaskType {
         RenderPass,
-        ComputePass
+        ComputePass,
+        Present
     };
 
     struct TaskDesc {
@@ -165,7 +181,7 @@ public:
 
     void build() {
 
-
+        
     }
 
     void execute(CommandList& command_list) {
