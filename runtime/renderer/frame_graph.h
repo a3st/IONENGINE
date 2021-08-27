@@ -123,6 +123,8 @@ class FrameGraph {
 public:
 
     struct RenderPassDesc {
+
+        std::string name;
         
         std::vector<AttachmentDesc> color_attachments;
 
@@ -181,7 +183,10 @@ public:
 
     void build() {
 
-        
+        for(auto& render_pass : m_render_passes) {
+
+            std::cout << render_pass
+        }
     }
 
     void execute(CommandList& command_list) {

@@ -39,15 +39,27 @@ public:
             FrameGraphResource output;
         };
 
-        m_frame_graph->add_pass<DepthPassData>("BasicPass",
+        m_frame_graph->add_pass<DepthPassData>("DepthPass",
             [&](RenderPassBuilder& builder, DepthPassData& data) {
                 data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, { 200, 105, 150, 255 });
             },
             [=](RenderPassContext& context, const DepthPassData& data) {
-                //auto& view = m_frame_graph->get_resource<FrameGraphResourceType::RenderTarget>(data.output);
-                
             }
         );
+
+        struct BasicPassData {
+            FrameGraphResource output;
+        };
+
+        m_frame_graph->add_pass<BasicPassData>("BasicPass",
+            [&](RenderPassBuilder& builder, BasicPassData& data) {
+                data.output = builder.add_output("swapchain", RenderPassLoadOp::Load, { 200, 105, 150, 255 });
+            },
+            [=](RenderPassContext& context, const BasicPassData& data) {
+            }
+        );
+
+        m_frame_graph->build();
 
         m_frame_graph->execute(*m_command_lists[m_frame_index]);
 
