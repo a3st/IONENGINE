@@ -96,6 +96,10 @@ public:
         return { };
     }
 
+    FrameGraphResource add_output(const std::string& name, const RenderPassLoadOp load_op) {
+        return { };
+    }
+
 protected:
 
     
@@ -123,11 +127,8 @@ class FrameGraph {
 public:
 
     struct RenderPassDesc {
-
         std::string name;
         
-        std::vector<AttachmentDesc> color_attachments;
-
         std::vector<FrameGraphResource> input_resources;
         std::vector<FrameGraphResource> output_resources;
 
@@ -135,7 +136,7 @@ public:
     };
 
     struct ComputePassDesc {
-        
+        std::string name;
     };
 
     enum class TaskType {
@@ -166,16 +167,16 @@ public:
     template<typename T>
     void add_pass(
         const std::string& name, 
-        const std::function<void(RenderPassBuilder&, T&)>& setup_pass_func, 
+        const std::function<void(RenderPassBuilder&, T&)>& build_pass_func, 
         const std::function<void(RenderPassContext&, const T&)>& exec_pass_func
     ) {
         T pass_data{};
 
         RenderPassBuilder builder(m_resource_cache);
-        setup_pass_func(builder, pass_data);
+        build_pass_func(builder, pass_data);
 
         FrameGraph::RenderPassDesc render_pass_desc{};
-        
+        render_pass_desc.name = name;
         render_pass_desc.exec_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
 
         m_render_passes.emplace_back(render_pass_desc);
@@ -185,7 +186,7 @@ public:
 
         for(auto& render_pass : m_render_passes) {
 
-            std::cout << render_pass
+            std::cout << render_pass.name << std::endl;
         }
     }
 

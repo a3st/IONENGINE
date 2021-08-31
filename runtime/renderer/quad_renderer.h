@@ -39,7 +39,8 @@ public:
             FrameGraphResource output;
         };
 
-        m_frame_graph->add_pass<DepthPassData>("DepthPass",
+        m_frame_graph->add_pass<DepthPassData>(
+            "DepthPass",
             [&](RenderPassBuilder& builder, DepthPassData& data) {
                 data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, { 200, 105, 150, 255 });
             },
@@ -51,16 +52,16 @@ public:
             FrameGraphResource output;
         };
 
-        m_frame_graph->add_pass<BasicPassData>("BasicPass",
+        m_frame_graph->add_pass<BasicPassData>(
+            "BasicPass",
             [&](RenderPassBuilder& builder, BasicPassData& data) {
-                data.output = builder.add_output("swapchain", RenderPassLoadOp::Load, { 200, 105, 150, 255 });
+                data.output = builder.add_output("swapchain", RenderPassLoadOp::Load);
             },
             [=](RenderPassContext& context, const BasicPassData& data) {
             }
         );
 
         m_frame_graph->build();
-
         m_frame_graph->execute(*m_command_lists[m_frame_index]);
 
         m_frame_index = (m_frame_index + 1) % m_buffer_count;
@@ -82,6 +83,8 @@ private:
 
     uint32 m_frame_index;
     uint32 m_buffer_count;
+
+    bool is_builded = false;
 
 };
 
