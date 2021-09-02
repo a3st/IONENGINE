@@ -5,7 +5,7 @@
 #include "platform/base/window.h"
 
 #include "renderer/api.h"
-#include "renderer/frame_graph.h"
+#include "renderer/frame_graph/frame_graph.h"
 #include "renderer/quad_renderer.h"
 
 #include "lib/memory.h"

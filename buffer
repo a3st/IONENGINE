@@ -89,3 +89,27 @@
         m_frame_buffers.emplace_back(m_device.get().create_frame_buffer(frame_buffer_desc));
 
         std::cout << "Render pass created" << std::endl;
+
+
+        struct AttachmentDesc {
+    RenderPassLoadOp load_op;
+    RenderPassStoreOp store_op;
+    ClearValueColor clear_value;
+
+    bool operator<(const AttachmentDesc& rhs) const {
+        return std::tie(load_op, store_op, clear_value) < std::tie(rhs.load_op, rhs.store_op, rhs.clear_value);
+    }
+};
+
+struct BufferDesc {
+
+};
+
+struct RenderPassKey {
+    std::vector<AttachmentDesc> color_attachments;
+    AttachmentDesc depth_stencil_attachment;
+
+    bool operator<(const RenderPassKey& rhs) {
+        return std::tie(color_attachments, depth_stencil_attachment) < std::tie(rhs.color_attachments, rhs.depth_stencil_attachment);
+    }
+};

@@ -2,107 +2,11 @@
 
 #pragma once
 
+#include "resource.h"
+#include "builder.h"
+#include "context.h"
+
 namespace ionengine::renderer {
-
-enum class FrameGraphResourceType {
-    RenderTarget,
-    Buffer
-};
-
-struct AttachmentDesc {
-    RenderPassLoadOp load_op;
-    ClearValueColor clear_value;
-
-    bool operator<(const AttachmentDesc& rhs) const {
-        return std::tie(load_op, clear_value) < std::tie(rhs.load_op, rhs.clear_value);
-    }
-};
-
-struct BufferDesc {
-
-};
-
-struct RenderPassKey {
-    std::vector<AttachmentDesc> color_attachments;
-    AttachmentDesc depth_stencil_attachment;
-
-    bool operator<(const RenderPassKey& rhs) {
-        return std::tie(color_attachments, depth_stencil_attachment) < std::tie(rhs.color_attachments, rhs.depth_stencil_attachment);
-    }
-};
-
-class FrameGraphResource {
-public:
-
-    FrameGraphResource() {
-
-    }
-
-    FrameGraphResource(const FrameGraphResourceType type, const RenderPassLoadOp load_op, const ClearValueColor& clear_value) : m_type(type) {
-
-        m_type = type;
-        
-    }
-
-protected:
-
-    FrameGraphResourceType get_type() const { return m_type; }
-
-private:
-
-    FrameGraphResourceType m_type;
-
-    std::variant<
-        AttachmentDesc,
-        BufferDesc
-    > m_resource_desc;
-};
-
-class RenderPassBuilder {
-friend class FrameGraph;
-public:
-
-    RenderPassBuilder() {
-        
-    }
-
-    FrameGraphResource add_input(const std::string& name, const RenderPassLoadOp load_op, const ClearValueColor& clear_value) {
-        return {  };
-    }
-
-    FrameGraphResource add_output(const std::string& name, const RenderPassLoadOp load_op, const ClearValueColor& clear_value) {
-        return { };
-    }
-
-    FrameGraphResource add_output(const std::string& name, const RenderPassLoadOp load_op) {
-        return { };
-    }
-
-protected:
-
-    const std::vector<FrameGraphResource>& get_input_resources() const { return m_input_resources; }
-    const std::vector<FrameGraphResource>& get_output_resources() const { return m_output_resources; }
-
-private:
-
-    std::vector<FrameGraphResource> m_input_resources;
-    std::vector<FrameGraphResource> m_output_resources;
-
-};
-
-class RenderPassContext {
-public:
-
-    RenderPassContext(CommandList& command_list) : m_command_list(command_list) {
-
-    }
-
-    CommandList& get_command_list() { return m_command_list; }
-
-private:
-
-    std::reference_wrapper<CommandList> m_command_list;
-};
 
 class FrameGraph {
 public:
@@ -210,8 +114,6 @@ private:
     std::reference_wrapper<Device> m_device;
 
     std::vector<FrameGraph::TaskDesc> m_tasks;
-
-    FrameGraphResourceCache m_resource_cache;
 
     std::vector<FrameGraph::RenderPassDesc> m_render_passes;
     std::vector<FrameGraph::ComputePassDesc> m_compute_passes;
