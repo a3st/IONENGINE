@@ -10,12 +10,11 @@ enum class FrameGraphResourceType {
 };
 
 struct AttachmentDesc {
-    Format format;
     RenderPassLoadOp load_op;
     ClearValueColor clear_value;
 
     bool operator<(const AttachmentDesc& rhs) const {
-        return std::tie(format, load_op, clear_value) < std::tie(rhs.format, rhs.load_op, rhs.clear_value);
+        return std::tie(load_op, clear_value) < std::tie(rhs.load_op, rhs.clear_value);
     }
 };
 
@@ -39,52 +38,31 @@ public:
 
     }
 
-    FrameGraphResource(const FrameGraphResourceType type, const uint64 id) : m_type(type), m_id(id) {
+    FrameGraphResource(const FrameGraphResourceType type, const RenderPassLoadOp load_op, const ClearValueColor& clear_value) : m_type(type) {
 
+        m_type = type;
+        
     }
 
 protected:
 
-    uint64 get_id() const { return m_id; }
     FrameGraphResourceType get_type() const { return m_type; }
 
 private:
 
     FrameGraphResourceType m_type;
-    uint64 m_id;
-};
 
-struct FrameGraphResourceDesc {
-
-
-};
-
-class FrameGraphResourceCache {
-public:
-
-    FrameGraphResourceCache() {
-
-    }
-
-    struct Key {
-
-    };
-
-    FrameGraphResource get_resource(const FrameGraphResourceCache::Key key) {
-        
-    }
-
-private:
-
-    std::map<FrameGraphResourceCache::Key, FrameGraphResourceDesc> m_resources;
-
+    std::variant<
+        AttachmentDesc,
+        BufferDesc
+    > m_resource_desc;
 };
 
 class RenderPassBuilder {
 friend class FrameGraph;
 public:
 
-    RenderPassBuilder(FrameGraphResourceCache& resource_cache) : m_resource_cache(resource_cache) {
+    RenderPassBuilder() {
         
     }
 
@@ -102,11 +80,14 @@ public:
 
 protected:
 
-    
+    const std::vector<FrameGraphResource>& get_input_resources() const { return m_input_resources; }
+    const std::vector<FrameGraphResource>& get_output_resources() const { return m_output_resources; }
 
 private:
 
-    std::reference_wrapper<FrameGraphResourceCache> m_resource_cache;
+    std::vector<FrameGraphResource> m_input_resources;
+    std::vector<FrameGraphResource> m_output_resources;
+
 };
 
 class RenderPassContext {
@@ -172,11 +153,13 @@ public:
     ) {
         T pass_data{};
 
-        RenderPassBuilder builder(m_resource_cache);
+        RenderPassBuilder builder;
         build_pass_func(builder, pass_data);
 
         FrameGraph::RenderPassDesc render_pass_desc{};
         render_pass_desc.name = name;
+        render_pass_desc.input_resources = builder.get_input_resources();
+        render_pass_desc.output_resources = builder.get_output_resources();
         render_pass_desc.exec_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
 
         m_render_passes.emplace_back(render_pass_desc);
