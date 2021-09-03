@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine {
+namespace ionengine::renderer {
 
 class RenderPassBuilder {
 friend class FrameGraph;
@@ -12,15 +12,11 @@ public:
         
     }
 
-    FrameGraphResourceHandle add_input(const std::string& name, const RenderPassLoadOp load_op, const ClearValueColor& clear_value) {
+    FrameGraphResourceHandle add_input(const std::string& name, const AttachmentDesc& desc) {
         return { };
     }
 
-    FrameGraphResourceHandle add_output(const std::string& name, const RenderPassLoadOp load_op, const ClearValueColor& clear_value) {
-        return { };
-    }
-
-    FrameGraphResourceHandle add_output(const std::string& name, const RenderPassLoadOp load_op) {
+    FrameGraphResourceHandle add_output(const std::string& name, const AttachmentDesc& desc) {
         return { };
     }
 

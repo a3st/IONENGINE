@@ -4,12 +4,32 @@
 
 namespace ionengine::renderer {
 
+struct AttachmentDesc {
+    RenderPassLoadOp load_op;
+    RenderPassStoreOp store_op;
+    ClearValueColor clear_value;
+
+    bool operator<(const AttachmentDesc& rhs) const {
+        return std::tie(load_op, store_op, clear_value) < std::tie(rhs.load_op, rhs.store_op, rhs.clear_value);
+    }
+};
+
 class FrameGraphResource {
 public:
+
+    FrameGraphResource() {
+
+    }
+
+    void bind_view(View& view) {
+        m_view = view;
+    }
 
 private:
 
     uint64 m_id;
+
+    std::optional<std::reference_wrapper<View>> m_view;
 };
 
 class FrameGraphResourceManager {
@@ -17,6 +37,10 @@ public:
 
     FrameGraphResourceManager() {
 
+    }
+
+    FrameGraphResourceHandle create() {
+        
     }
 
 private:

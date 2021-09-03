@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine {
+namespace ionengine::renderer {
 
 class RenderPassContext {
 public:
