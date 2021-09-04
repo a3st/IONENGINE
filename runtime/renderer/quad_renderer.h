@@ -30,7 +30,7 @@ public:
             m_command_lists.emplace_back(m_device.get().create_command_list(CommandListType::Graphics));
         }
 
-        m_frame_graph->create_resource("swapchain", std::nullopt);
+        m_frame_graph->create_resource("swapchain", { Format::RGBA8unorm, 800, 600 }, *m_swapchain_views[0]);
 
         struct DepthPassData {
             FrameGraphResourceHandle output;
@@ -39,7 +39,7 @@ public:
         m_frame_graph->add_pass<DepthPassData>(
             "DepthPass",
             [&](RenderPassBuilder& builder, DepthPassData& data) {
-                data.output = builder.add_output("swapchain", { RenderPassLoadOp::Clear, RenderPassStoreOp::Store, { 200, 105, 150, 255 } });
+                data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, RenderPassStoreOp::Store, { 200, 105, 150, 255 } );
             },
             [=](RenderPassContext& context, const DepthPassData& data) {
             }
@@ -52,18 +52,18 @@ public:
         m_frame_graph->add_pass<BasicPassData>(
             "BasicPass",
             [&](RenderPassBuilder& builder, BasicPassData& data) {
-                data.output = builder.add_output("swapchain", { RenderPassLoadOp::Load, RenderPassStoreOp::Store });
+                data.output = builder.add_output("swapchain", RenderPassLoadOp::Load, RenderPassStoreOp::Store);
             },
             [=](RenderPassContext& context, const BasicPassData& data) {
             }
         );
 
-        m_frame_graph->build();
+        m_frame_graph->compile();
     }
 
     void tick() override {
 
-        m_frame_graph->update_resource("swapchain", *m_swapchain_views[m_swapchain.get().get_back_buffer_index()]);
+        m_frame_graph->update_resource("swapchain", { Format::RGBA8unorm, 800, 600 }, *m_swapchain_views[m_swapchain.get().get_back_buffer_index()]);
 
         m_frame_graph->execute(*m_command_lists[m_frame_index]);
 

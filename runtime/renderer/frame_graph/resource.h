@@ -4,48 +4,37 @@
 
 namespace ionengine::renderer {
 
+enum class FrameGraphResourceType {
+    Attachment,
+    Buffer
+};
+
 struct AttachmentDesc {
-    RenderPassLoadOp load_op;
-    RenderPassStoreOp store_op;
-    ClearValueColor clear_value;
+    Format format;
+    uint32 width;
+    uint32 height;
 
     bool operator<(const AttachmentDesc& rhs) const {
-        return std::tie(load_op, store_op, clear_value) < std::tie(rhs.load_op, rhs.store_op, rhs.clear_value);
+        return std::tie(format, width, height) < std::tie(rhs.format, rhs.width, rhs.height);
     }
 };
 
 class FrameGraphResource {
+friend class FrameGraphResourceManager;
 public:
 
-    FrameGraphResource() {
+    FrameGraphResource(const uint64 id, const std::string& name, const FrameGraphResourceType type, View& view) : m_id(id), m_name(name), m_type(type), m_view(view) {
 
-    }
-
-    void bind_view(View& view) {
-        m_view = view;
     }
 
 private:
+
+    FrameGraphResourceType m_type;
 
     uint64 m_id;
+    std::string m_name;
 
-    std::optional<std::reference_wrapper<View>> m_view;
-};
-
-class FrameGraphResourceManager {
-public:
-
-    FrameGraphResourceManager() {
-
-    }
-
-    FrameGraphResourceHandle create() {
-        
-    }
-
-private:
-
-
+    std::reference_wrapper<View> m_view;
 };
 
 class FrameGraphResourceHandle {
@@ -67,6 +56,43 @@ protected:
 private:
 
     uint64 m_id;
+};
+
+class FrameGraphResourceManager {
+public:
+
+    FrameGraphResourceManager() : m_offset(0) {
+
+    }
+
+    FrameGraphResourceHandle create(const std::string& name, const AttachmentDesc& desc, View& view) {
+
+        m_resources.emplace_back(m_offset, name, FrameGraphResourceType::Attachment, view);
+        m_resource_handles[m_offset] = std::prev(m_resources.end());
+
+        FrameGraphResourceHandle handle(m_offset);
+        m_offset++;
+        return handle;
+    }
+
+    FrameGraphResourceHandle get_by_name(const std::string& name) {
+
+        auto it = std::find_if(
+            m_resources.begin(), m_resources.end(),
+            [&name](const FrameGraphResource& element) {
+                return name == element.m_name;
+            }
+        );
+
+        return it != m_resources.end() ? FrameGraphResourceHandle { it->m_id } : FrameGraphResourceHandle { 9999 };
+    }
+
+private:
+
+    uint64 m_offset;
+
+    std::list<FrameGraphResource> m_resources;
+    std::map<uint64, std::list<FrameGraphResource>::iterator> m_resource_handles;
 };
 
 }

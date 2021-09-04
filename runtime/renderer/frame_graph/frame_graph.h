@@ -2,9 +2,10 @@
 
 #pragma once
 
+#include "context.h"
+#include "pass.h"
 #include "resource.h"
 #include "builder.h"
-#include "context.h"
 
 namespace ionengine::renderer {
 
@@ -15,11 +16,11 @@ public:
         
     }
 
-    void create_resource(const std::string& name, const std::optional<std::reference_wrapper<View>>& view) {
-
+    void create_resource(const std::string& name, const AttachmentDesc& desc, View& view) {
+        m_resource_manager.create(name, desc, view);
     }
 
-    void update_resource(const std::string& name, const std::optional<std::reference_wrapper<View>>& view) {
+    void update_resource(const std::string& name, const AttachmentDesc& desc, View& view) {
 
     }
 
@@ -31,17 +32,17 @@ public:
     ) {
         T pass_data{};
 
-        RenderPassBuilder builder;
+        RenderPassBuilder builder(m_resource_manager);
         build_pass_func(builder, pass_data);
 
-        /*FrameGraph::RenderPassDesc render_pass_desc{};
-        render_pass_desc.name = name;
-        render_pass_desc.exec_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
+        //FrameGraphRenderPass render_pass;
+        //render_pass_desc.name = name;
+        //render_pass_desc.exec_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
 
-        m_render_passes.emplace_back(render_pass_desc);*/
+        //m_render_passes.emplace_back(render_pass_desc);
     }
 
-    void build() {
+    void compile() {
 
        
     }
