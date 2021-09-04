@@ -27,7 +27,7 @@ jobs:
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -G "Visual Studio 2019"
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target Runtime-Win32
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target Runtime-Win32 
 
     - name: Test
       working-directory: ${{github.workspace}}/build
