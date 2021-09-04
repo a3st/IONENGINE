@@ -10,7 +10,7 @@ std::vector<byte> read_shader_code(const std::filesystem::path& shader_path) {
 
     std::ifstream file(shader_path, std::ios::ate | std::ios::binary);
     if (!file.is_open()) {
-        throw std::runtime_error(format<std::string>("Shader cannot be opened '{}'", shader_path));
+        throw std::runtime_error(format<char>("Shader cannot be opened '{}'", shader_path));
     }
 
     usize file_size = static_cast<usize>(file.tellg());

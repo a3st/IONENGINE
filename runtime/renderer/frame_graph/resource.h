@@ -49,7 +49,11 @@ public:
 
     }
 
-protected:
+    bool operator==(const FrameGraphResourceHandle& rhs) const { return m_id == rhs.m_id; }
+    
+    static FrameGraphResourceHandle null() {
+        return { std::numeric_limits<uint64>::max() };
+    }
 
     uint64 get_id() const { return m_id; }
 
@@ -84,7 +88,7 @@ public:
             }
         );
 
-        return it != m_resources.end() ? FrameGraphResourceHandle { it->m_id } : FrameGraphResourceHandle { 9999 };
+        return it != m_resources.end() ? FrameGraphResourceHandle { it->m_id } : FrameGraphResourceHandle { std::numeric_limits<uint64>::max() };
     }
 
 private:

@@ -17,6 +17,10 @@ public:
     }
 
     FrameGraphResourceHandle add_output(const std::string& name, const RenderPassLoadOp load_op, const RenderPassStoreOp store_op, const ClearValueColor& clear_value = { 0, 0, 0, 0 }) {
+        
+        FrameGraphResourceHandle handle = m_resource_manager.get().get_by_name(name);
+
+        std::cout << format<char>("handle {}", handle.get_id()) << std::endl;
         return { };
     }
 

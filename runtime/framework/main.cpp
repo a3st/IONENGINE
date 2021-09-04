@@ -58,7 +58,7 @@ int32 main(int32, char**) {
         });
     }
     catch(std::exception& e) {
-        show_message_box(nullptr, format<std::string>("Exception: {}", e.what()), "IONENGINE Crash", MessageBoxStyle::ButtonOK | MessageBoxStyle::IconError);
+        show_message_box(nullptr, format<char>("Exception: {}", e.what()), "IONENGINE Crash", MessageBoxStyle::ButtonOK | MessageBoxStyle::IconError);
     }
     return 0;
 }

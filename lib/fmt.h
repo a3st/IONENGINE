@@ -23,7 +23,7 @@ std::string wsts(const std::wstring& src) {
 }
 
 template<class T, typename... A>
-T format(const T& fmt, A&&... args) {
+std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::basic_string<T, std::char_traits<T>, std::allocator<T>>& fmt, A&&... args) {
     assert(fmt.length() > 0 && "fmt source length is less than 0 or equal 0");
     return internal::format(fmt, std::forward<A>(args)...);
 }
@@ -31,7 +31,7 @@ T format(const T& fmt, A&&... args) {
 namespace internal {
 
 template<class T, typename I, typename... A>
-T format(const T& fmt, const I& arg, A&&... args) {
+std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::basic_string<T, std::char_traits<T>, std::allocator<T>>& fmt, const I& arg, A&&... args) {
     auto it_arg = std::find(fmt.begin(), fmt.end(), '{');
     auto it_type = std::next(it_arg);
 
@@ -39,13 +39,12 @@ T format(const T& fmt, const I& arg, A&&... args) {
         return format(fmt);
     }
 
-    using char_type_t = typename T::value_type; 
-    std::basic_stringstream<char_type_t, std::char_traits<char_type_t>, std::allocator<char_type_t>> ss;
-    ss << T(fmt.begin(), it_arg);
+    std::basic_stringstream<T, std::char_traits<T>, std::allocator<T>> ss;
+    ss << std::basic_string<T, std::char_traits<T>, std::allocator<T>>(fmt.begin(), it_arg);
 
     switch (*it_type) {
         case '}': {
-            ss << arg << T(it_type + 1, fmt.end());
+            ss << arg << std::basic_string<T, std::char_traits<T>, std::allocator<T>>(it_type + 1, fmt.end());
             break;
         }
         case 'x': {
@@ -61,14 +60,14 @@ T format(const T& fmt, const I& arg, A&&... args) {
                             std::dec;
 
                         if (*std::next(it_optional) != '}') {
-                            ss << T(it_optional + 3, fmt.end());
+                            ss << std::basic_string<T, std::char_traits<T>, std::allocator<T>>(it_optional + 3, fmt.end());
                         } else {
-                            ss << T(it_optional + 2, fmt.end());
+                            ss << std::basic_string<T, std::char_traits<T>, std::allocator<T>>(it_optional + 2, fmt.end());
                         }
                     }
                 }
             } else {
-                ss << arg << T(it_type + 1, fmt.end());
+                ss << arg << std::basic_string<T, std::char_traits<T>, std::allocator<T>>(it_type + 1, fmt.end());
             }
             break;
         }
@@ -77,7 +76,7 @@ T format(const T& fmt, const I& arg, A&&... args) {
 }
 
 template<class T>
-T format(const T& fmt) {
+std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::basic_string<T, std::char_traits<T>, std::allocator<T>>& fmt) {
     return fmt;
 }
 

@@ -19,15 +19,15 @@ public:
 
     RenderSystem(platform::Window& window) : m_window(window), m_buffer_count(2) {
 
-        std::cout << format<std::string>("RenderSystem ({} API) initialized", renderer::get_api_name()) << std::endl;
+        std::cout << format<char>("RenderSystem ({} API) initialized", renderer::get_api_name()) << std::endl;
         m_instance = renderer::create_unique_instance();
 
         auto adapters = m_instance->enumerate_adapters();
         m_adapter = std::move(adapters[0]);
-        std::cout << format<std::string>("Selecting default 0 adapter") << std::endl;
+        std::cout << format<char>("Selecting default 0 adapter") << std::endl;
         
         std::cout <<
-                format<std::string>(
+                format<char>(
                     "Vendor Id: {}\nDevice Id: {}\nDevice Name: {}\nDedicated Memory: {}",
                     m_adapter->get_vendor_id(), 
                     m_adapter->get_device_id(), 

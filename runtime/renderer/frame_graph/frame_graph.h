@@ -40,6 +40,8 @@ public:
         //render_pass_desc.exec_func = std::bind(exec_pass_func, std::placeholders::_1, pass_data);
 
         //m_render_passes.emplace_back(render_pass_desc);
+
+        std::cout << format<char>("{} pass created", name) << std::endl;
     }
 
     void compile() {
