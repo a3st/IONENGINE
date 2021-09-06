@@ -4,16 +4,16 @@
 
 namespace ionengine::renderer {
 
-class FrameGraphRenderPass {
-public:
+struct FrameGraphResourceDesc;
 
-    FrameGraphRenderPass() {
-
-    }
-
-private:
+struct FrameGraphRenderPassDesc {
+    std::string m_name;
+    bool m_async;
 
     std::function<void(RenderPassContext&)> m_exec_func;
+
+    std::vector<std::reference_wrapper<FrameGraphResourceDesc>> m_input_resources;
+    std::vector<std::reference_wrapper<FrameGraphResourceDesc>> m_output_resources; 
 };
 
 }

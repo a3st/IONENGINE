@@ -19,22 +19,16 @@ struct AttachmentDesc {
     }
 };
 
-class FrameGraphResource {
-friend class FrameGraphResourceManager;
-public:
+struct FrameGraphResourceDesc {
+    FrameGraphResourceType type;
 
-    FrameGraphResource(const uint64 id, const std::string& name, const FrameGraphResourceType type, View& view) : m_id(id), m_name(name), m_type(type), m_view(view) {
+    uint64 id;
+    std::string name;
 
-    }
+    std::reference_wrapper<View> view;
 
-private:
-
-    FrameGraphResourceType m_type;
-
-    uint64 m_id;
-    std::string m_name;
-
-    std::reference_wrapper<View> m_view;
+    std::vector<std::reference_wrapper<FrameGraphRenderPassDesc>> inputs;
+    std::vector<std::reference_wrapper<FrameGraphRenderPassDesc>> outputs;
 };
 
 class FrameGraphResourceHandle {
@@ -51,9 +45,11 @@ public:
 
     bool operator==(const FrameGraphResourceHandle& rhs) const { return m_id == rhs.m_id; }
     
-    static FrameGraphResourceHandle null() {
+    static FrameGraphResourceHandle invalid() {
         return { std::numeric_limits<uint64>::max() };
     }
+
+protected:
 
     uint64 get_id() const { return m_id; }
 
@@ -71,32 +67,37 @@ public:
 
     FrameGraphResourceHandle create(const std::string& name, const AttachmentDesc& desc, View& view) {
 
-        m_resources.emplace_back(m_offset, name, FrameGraphResourceType::Attachment, view);
-        m_resource_handles[m_offset] = std::prev(m_resources.end());
+        m_resource_descs.emplace_back( FrameGraphResourceDesc { FrameGraphResourceType::Attachment, m_offset, name, view } );
+        m_resource_desc_offsets[m_offset] = std::prev(m_resource_descs.end());
 
         FrameGraphResourceHandle handle(m_offset);
         m_offset++;
         return handle;
     }
 
-    FrameGraphResourceHandle get_by_name(const std::string& name) {
+    FrameGraphResourceHandle find_handle_by_name(const std::string& name) {
 
         auto it = std::find_if(
-            m_resources.begin(), m_resources.end(),
-            [&name](const FrameGraphResource& element) {
-                return name == element.m_name;
+            m_resource_descs.begin(), 
+            m_resource_descs.end(),
+            [&name](const FrameGraphResourceDesc& element) {
+                return name == element.name;
             }
         );
 
-        return it != m_resources.end() ? FrameGraphResourceHandle { it->m_id } : FrameGraphResourceHandle { std::numeric_limits<uint64>::max() };
+        return it != m_resource_descs.end() ? FrameGraphResourceHandle { it->id } : FrameGraphResourceHandle::invalid();
+    }
+
+    FrameGraphResourceDesc& get_resource_desc(const FrameGraphResourceHandle& handle) {
+        return *m_resource_desc_offsets[handle.get_id()];
     }
 
 private:
 
     uint64 m_offset;
 
-    std::list<FrameGraphResource> m_resources;
-    std::map<uint64, std::list<FrameGraphResource>::iterator> m_resource_handles;
+    std::list<FrameGraphResourceDesc> m_resource_descs;
+    std::map<uint64, std::list<FrameGraphResourceDesc>::iterator> m_resource_desc_offsets;
 };
 
 }
