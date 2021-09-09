@@ -3,17 +3,12 @@
 #pragma once
 
 #include "context.h"
-#include "pass.h"
 #include "resource.h"
+#include "pass.h"
 #include "builder.h"
+#include "task.h"
 
 namespace ionengine::renderer {
-
-struct FrameGraphTaskDesc {
-    std::reference_wrapper<FrameGraphRenderPassDesc> render_pass;
-    std::vector<std::reference_wrapper<FrameGraphResourceDesc>> acquired_resources;
-    std::vector<std::reference_wrapper<FrameGraphResourceDesc>> released_resources;
-};
 
 class FrameGraph {
 public:
@@ -33,50 +28,57 @@ public:
     template<typename T>
     void add_pass(
         const std::string& name, 
-        const std::function<void(RenderPassBuilder&, T&)>& build_func, 
+        const std::function<void(RenderPassBuilder&, T&)>& builder_func, 
         const std::function<void(RenderPassContext&, const T&)>& exec_func
     ) {
         
-        T render_pass_data{};
+        T data{};
 
-        m_render_pass_descs.emplace_back(FrameGraphRenderPassDesc { });
+        m_render_passes.emplace_back(name, std::bind(exec_func, std::placeholders::_1, data));
 
-        RenderPassBuilder builder(
-            m_resource_manager, 
-            name, 
-            false, 
-            std::bind(exec_func, std::placeholders::_1, render_pass_data),
-            m_render_pass_descs.back()
-        );
+        RenderPassBuilder builder(m_resource_manager, m_render_passes.back());
+        builder_func(builder, data);
 
-        build_func(builder, render_pass_data);
-
-        std::cout << format<char>("RenderPass '{}' added with {} inputs, {} outputs", 
-            name,
-            m_render_pass_descs.back().m_input_resources.size(),
-            m_render_pass_descs.back().m_output_resources.size()
-        ) << std::endl;
+        std::cout << format<char>("RenderPass '{}' added", name) << std::endl;
     }
 
     void compile() {
 
-       
+        for(auto& render_pass : m_render_passes) {
+           
+            std::cout << format<char>("Compile pass '{}'", render_pass.get_name()) << std::endl;
+
+            for(auto& resource : render_pass.get_inputs()) {
+                resource.get().acquire();
+
+                
+            }
+
+            for(auto& resource : render_pass.get_outputs()) {
+                resource.get().release();
+            }
+        }
     }
 
     void execute(CommandList& command_list) {
 
-        for(auto& task_desc : m_task_descs) {
+        for(auto& task : m_tasks) {
 
-            for(auto& resource : task_desc.acquired_resources) {
-                
-            }
+           switch(task.get_type()) {
 
-            RenderPassContext context(command_list);
-            task_desc.render_pass.get().m_exec_func(context);
+                case FrameGraphTaskType::ResourceBarrier: {
 
-            for(auto& resource : task_desc.released_resources) {
-                
-            }
+                    command_list.resource_barriers({ std::get<ResourceBarrierDesc>(task.get_task()) });
+                    break;
+                }
+
+                case FrameGraphTaskType::RenderPass: {
+
+                    RenderPassContext context(command_list);
+                    std::get<std::reference_wrapper<FrameGraphRenderPass>>(task.get_task()).get().execute(context);
+                    break;
+                }
+           }
         }
     }
 
@@ -86,8 +88,8 @@ private:
 
     FrameGraphResourceManager m_resource_manager;
 
-    std::vector<FrameGraphRenderPassDesc> m_render_pass_descs;
-    std::vector<FrameGraphTaskDesc> m_task_descs;
+    std::vector<FrameGraphRenderPass> m_render_passes;
+    std::vector<FrameGraphTask> m_tasks;
 };
 
 }

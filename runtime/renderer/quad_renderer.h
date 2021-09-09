@@ -45,6 +45,8 @@ public:
             }
         );
 
+        
+
         struct BasicPassData {
             FrameGraphResourceHandle output;
         };

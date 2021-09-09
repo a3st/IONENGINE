@@ -4,16 +4,33 @@
 
 namespace ionengine::renderer {
 
-struct FrameGraphResourceDesc;
+class FrameGraphRenderPass {
+friend class RenderPassBuilder;
+public:
 
-struct FrameGraphRenderPassDesc {
+    FrameGraphRenderPass(const std::string& name, std::function<void(RenderPassContext&)> exec_func)
+        : m_name(name), m_exec_func(exec_func) {
+
+    }
+
+    const std::vector<std::reference_wrapper<FrameGraphResource>>& get_outputs() const { return m_outputs; }
+    const std::vector<std::reference_wrapper<FrameGraphResource>>& get_inputs() const { return m_inputs; }
+    const std::string& get_name() const { return m_name; }
+    void execute(RenderPassContext& context) { m_exec_func(context); }
+
+protected:
+
+    void add_output(FrameGraphResource& resource) { m_outputs.emplace_back(resource); }
+    void add_input(FrameGraphResource& resource) { m_inputs.emplace_back(resource); }
+
+private:
+
     std::string m_name;
-    bool m_async;
 
     std::function<void(RenderPassContext&)> m_exec_func;
 
-    std::vector<std::reference_wrapper<FrameGraphResourceDesc>> m_input_resources;
-    std::vector<std::reference_wrapper<FrameGraphResourceDesc>> m_output_resources; 
+    std::vector<std::reference_wrapper<FrameGraphResource>> m_outputs;
+    std::vector<std::reference_wrapper<FrameGraphResource>> m_inputs;
 };
 
 }
