@@ -27,24 +27,28 @@ public:
         m_id(id), m_type(type), m_name(name), m_view(view) {
     }
 
+    void set_presentable() { m_presentable = true; }
+
+    bool presentable() const { return m_presentable; }
+
     void acquire() {
 
-        switch(m_type) {
-            
-            case FrameGraphResourceType::Attachment: {
-
-                m_states.emplace_back(ResourceState::PixelShaderResource);
-                break;
+        if(!m_presentable) {
+            switch(m_type) {
+                case FrameGraphResourceType::Attachment: {
+                    m_states.emplace_back(ResourceState::PixelShaderResource);
+                    break;
+                }
             }
+        } else {
+            m_states.emplace_back(ResourceState::Present);
         }
     }
 
     void release() {
 
         switch(m_type) {
-            
             case FrameGraphResourceType::Attachment: {
-
                 m_states.emplace_back(ResourceState::RenderTarget);
                 break;
             }
@@ -59,8 +63,16 @@ public:
         return m_states.back();
     }
 
-protected:
-
+    void print_test() const {
+        for(auto& state : m_states) {
+            std::cout << "resource id " << get_id() << std::endl;
+            std::cout << "resource transitions: ";
+            if(state == ResourceState::PixelShaderResource) std ::cout << "pixelshader";
+            if(state == ResourceState::RenderTarget) std ::cout << "rendertarget";
+            std::cout << std::endl;
+        }
+    }
+    
     uint64 get_id() const { return m_id; }
     const std::string& get_name() const { return m_name; }
 
@@ -73,6 +85,8 @@ private:
 
     std::reference_wrapper<View> m_view;
     std::vector<ResourceState> m_states;
+
+    bool m_presentable;
 };
 
 class FrameGraphResourceHandle {
@@ -135,6 +149,8 @@ public:
     FrameGraphResource& get_resource(const FrameGraphResourceHandle& handle) {
         return *m_resource_offsets[handle.get_id()];
     }
+
+    const std::list<FrameGraphResource>& get_resources() const { return m_resources; }
 
 private:
 

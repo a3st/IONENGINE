@@ -44,19 +44,34 @@ public:
 
     void compile() {
 
+        auto& outputs = m_render_passes.back().get_outputs();
+        if(outputs.size() > 1) {
+            throw std::runtime_error("Frame Graph compile error");
+        }
+        outputs[0].get().set_presentable();
+        std::cout << format<char>("Resource '{}' is presentable", outputs[0].get().get_name()) << std::endl;
+
         for(auto& render_pass : m_render_passes) {
            
             std::cout << format<char>("Compile pass '{}'", render_pass.get_name()) << std::endl;
 
             for(auto& resource : render_pass.get_inputs()) {
-                resource.get().acquire();
-
-                
+                // resource.get().acquire();
             }
 
             for(auto& resource : render_pass.get_outputs()) {
-                resource.get().release();
+                // resource.get().release();
             }
+        }
+
+        
+
+        
+        
+
+        for(auto& resource : m_resource_manager.get_resources()) {
+            
+            resource.print_test();
         }
     }
 
@@ -68,14 +83,13 @@ public:
 
                 case FrameGraphTaskType::ResourceBarrier: {
 
-                    command_list.resource_barriers({ std::get<ResourceBarrierDesc>(task.get_task()) });
+                   
                     break;
                 }
 
                 case FrameGraphTaskType::RenderPass: {
 
-                    RenderPassContext context(command_list);
-                    std::get<std::reference_wrapper<FrameGraphRenderPass>>(task.get_task()).get().execute(context);
+                    
                     break;
                 }
            }

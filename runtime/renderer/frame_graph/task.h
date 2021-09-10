@@ -6,7 +6,8 @@ namespace ionengine::renderer {
 
 enum class FrameGraphTaskType {
     ResourceBarrier,
-    RenderPass
+    RenderPass,
+    Present
 };
 
 class FrameGraphTask {
