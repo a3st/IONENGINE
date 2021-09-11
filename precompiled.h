@@ -22,6 +22,7 @@
 #include <bitset>
 #include <filesystem>
 #include <optional>
+#include <ciso646>
 
 namespace ionengine {
 

@@ -5,24 +5,29 @@
 namespace ionengine::renderer {
 
 enum class FrameGraphTaskType {
-    ResourceBarrier,
-    RenderPass,
-    Present
+    ResourceTransition,
+    RenderPass
+};
+
+struct ResourceTransitionTask {
+    std::reference_wrapper<FrameGraphResource> resource;
+    ResourceState before;
+    ResourceState after;
 };
 
 class FrameGraphTask {
 public:
 
-    FrameGraphTask(const ResourceBarrierDesc& desc) 
-        : m_type(FrameGraphTaskType::ResourceBarrier), m_task(desc) {
+    FrameGraphTask(const ResourceTransitionTask& task) 
+        : m_type(FrameGraphTaskType::ResourceTransition), m_task(task) {
 
     }
 
     FrameGraphTaskType get_type() const { return m_type; }
 
     std::variant<
-        ResourceBarrierDesc,
-        std::reference_wrapper<FrameGraphRenderPass>
+        ResourceTransitionTask
+        
     > get_task() const { return m_task; }
 
 private:
@@ -30,8 +35,7 @@ private:
     FrameGraphTaskType m_type;
 
     std::variant<
-        ResourceBarrierDesc,
-        std::reference_wrapper<FrameGraphRenderPass>
+        ResourceTransitionTask
     > m_task;
 };
 

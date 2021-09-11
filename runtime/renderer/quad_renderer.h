@@ -31,6 +31,7 @@ public:
         }
 
         m_frame_graph->create_resource("swapchain", { Format::RGBA8unorm, 800, 600 }, *m_swapchain_views[0]);
+        m_frame_graph->create_resource("fx", { Format::RGBA8unorm, 800, 600 }, *m_swapchain_views[0]);
 
         struct DepthPassData {
             FrameGraphResourceHandle output;
@@ -39,28 +40,29 @@ public:
         m_frame_graph->add_pass<DepthPassData>(
             "DepthPass",
             [&](RenderPassBuilder& builder, DepthPassData& data) {
-                data.output = builder.add_output("swapchain", RenderPassLoadOp::Clear, RenderPassStoreOp::Store, { 200, 105, 150, 255 } );
+                data.output = builder.write("swapchain", RenderPassLoadOp::Clear, RenderPassStoreOp::Store, { 200, 105, 150, 255 } );
             },
             [=](RenderPassContext& context, const DepthPassData& data) {
             }
         );
 
-        
-
         struct BasicPassData {
+            FrameGraphResourceHandle input;
             FrameGraphResourceHandle output;
         };
 
         m_frame_graph->add_pass<BasicPassData>(
             "BasicPass",
             [&](RenderPassBuilder& builder, BasicPassData& data) {
-                data.output = builder.add_output("swapchain", RenderPassLoadOp::Load, RenderPassStoreOp::Store);
+                data.input = builder.read("fx");
+                data.output = builder.write("swapchain", RenderPassLoadOp::Load, RenderPassStoreOp::Store);
             },
             [=](RenderPassContext& context, const BasicPassData& data) {
             }
         );
 
         m_frame_graph->compile();
+        m_frame_graph->export_dot("quad_renderer_test");
     }
 
     void tick() override {
@@ -88,9 +90,6 @@ private:
 
     uint32 m_frame_index;
     uint32 m_buffer_count;
-
-    bool is_builded = false;
-
 };
 
 }

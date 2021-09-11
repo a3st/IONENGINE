@@ -5,7 +5,6 @@
 namespace ionengine::renderer {
 
 class FrameGraphRenderPass {
-friend class RenderPassBuilder;
 public:
 
     FrameGraphRenderPass(const std::string& name, std::function<void(RenderPassContext&)> exec_func)
@@ -13,15 +12,14 @@ public:
 
     }
 
-    const std::vector<std::reference_wrapper<FrameGraphResource>>& get_outputs() const { return m_outputs; }
-    const std::vector<std::reference_wrapper<FrameGraphResource>>& get_inputs() const { return m_inputs; }
     const std::string& get_name() const { return m_name; }
     void execute(RenderPassContext& context) { m_exec_func(context); }
 
-protected:
+    void add_write(FrameGraphResource& resource) { m_writes.emplace_back(resource); }
+    void add_read(FrameGraphResource& resource) { m_reads.emplace_back(resource); }
 
-    void add_output(FrameGraphResource& resource) { m_outputs.emplace_back(resource); }
-    void add_input(FrameGraphResource& resource) { m_inputs.emplace_back(resource); }
+    const std::vector<std::reference_wrapper<FrameGraphResource>>& get_writes() const { return m_writes; }
+    const std::vector<std::reference_wrapper<FrameGraphResource>>& get_reads() const { return m_reads; }
 
 private:
 
@@ -29,8 +27,8 @@ private:
 
     std::function<void(RenderPassContext&)> m_exec_func;
 
-    std::vector<std::reference_wrapper<FrameGraphResource>> m_outputs;
-    std::vector<std::reference_wrapper<FrameGraphResource>> m_inputs;
+    std::vector<std::reference_wrapper<FrameGraphResource>> m_writes;
+    std::vector<std::reference_wrapper<FrameGraphResource>> m_reads;
 };
 
 }

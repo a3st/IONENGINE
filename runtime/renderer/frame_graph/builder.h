@@ -13,26 +13,25 @@ public:
         
     }
 
-    FrameGraphResourceHandle add_input(const std::string& name, const RenderPassLoadOp load_op, const RenderPassStoreOp store_op, const ClearValueColor& clear_value = { 0, 0, 0, 0 }) {
+    FrameGraphResourceHandle read(const std::string& name) {
        
         FrameGraphResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
         auto& resource = m_resource_manager.get().get_resource(handle);
         
-        m_render_pass.get().add_input(resource);
+        m_render_pass.get().add_read(resource);
 
-        //std::cout << format<char>("got resource '{}', id = {}", resource_desc.name, resource_desc.id) << std::endl;
+        resource.ac();
         return handle;
     }
 
-    FrameGraphResourceHandle add_output(const std::string& name, const RenderPassLoadOp load_op, const RenderPassStoreOp store_op, const ClearValueColor& clear_value = { 0, 0, 0, 0 }) {
+    FrameGraphResourceHandle write(const std::string& name, const RenderPassLoadOp load_op, const RenderPassStoreOp store_op, const ClearValueColor& clear_value = { 0, 0, 0, 0 }) {
         
         FrameGraphResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
         auto& resource = m_resource_manager.get().get_resource(handle);
 
-        m_render_pass.get().add_output(resource);
+        m_render_pass.get().add_write(resource);
         
-        //std::cout << format<char>("got resource '{}', id = {}, uses outputs passes {}", 
-        //resource_desc.name, resource_desc.id, resource_desc.outputs.size()) << std::endl;
+        resource.ac();
         return handle;
     }
 

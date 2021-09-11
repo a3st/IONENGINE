@@ -24,7 +24,8 @@ friend class FrameGraphResourceManager;
 public:
 
     FrameGraphResource(const uint64 id, const FrameGraphResourceType type, const std::string& name, View& view) :
-        m_id(id), m_type(type), m_name(name), m_view(view) {
+        m_id(id), m_type(type), m_name(name), m_view(view), m_ref_count(0) {
+
     }
 
     void set_presentable() { m_presentable = true; }
@@ -32,6 +33,16 @@ public:
     bool presentable() const { return m_presentable; }
 
     void acquire() {
+
+        switch(m_type) {
+            case FrameGraphResourceType::Attachment: {
+                m_states.emplace_back(ResourceState::RenderTarget);
+                break;
+            }
+        }
+    }
+
+    void release() {
 
         if(!m_presentable) {
             switch(m_type) {
@@ -45,18 +56,24 @@ public:
         }
     }
 
-    void release() {
+    void clear() {
 
-        switch(m_type) {
-            case FrameGraphResourceType::Attachment: {
-                m_states.emplace_back(ResourceState::RenderTarget);
-                break;
+        m_states.clear();
+
+        if(!m_presentable) {
+            switch(m_type) {
+                case FrameGraphResourceType::Attachment: {
+                    m_states.emplace_back(ResourceState::PixelShaderResource);
+                    break;
+                }
             }
+        } else {
+            m_states.emplace_back(ResourceState::Present);
         }
     }
 
     ResourceState get_before_state() const {
-        return m_states[m_states.size() - 1];
+        return m_states[m_states.size() - 2];
     }
 
     ResourceState get_after_state() const {
@@ -64,17 +81,22 @@ public:
     }
 
     void print_test() const {
+
+        std::cout << "resource id: " << get_id() << " states: " << std::endl;
         for(auto& state : m_states) {
-            std::cout << "resource id " << get_id() << std::endl;
-            std::cout << "resource transitions: ";
-            if(state == ResourceState::PixelShaderResource) std ::cout << "pixelshader";
-            if(state == ResourceState::RenderTarget) std ::cout << "rendertarget";
-            std::cout << std::endl;
+            if(state == ResourceState::PixelShaderResource) std ::cout << " pixel_shader_resource ";
+            if(state == ResourceState::RenderTarget) std ::cout << " render_target ";
+            if(state == ResourceState::Present) std::cout << " present ";
         }
+        std::cout << std::endl;
     }
     
     uint64 get_id() const { return m_id; }
     const std::string& get_name() const { return m_name; }
+
+    View& get_view() { return m_view; }
+
+    void ac() { m_ref_count++; }
 
 private:
 
@@ -87,6 +109,8 @@ private:
     std::vector<ResourceState> m_states;
 
     bool m_presentable;
+
+    uint32 m_ref_count;
 };
 
 class FrameGraphResourceHandle {
@@ -150,7 +174,7 @@ public:
         return *m_resource_offsets[handle.get_id()];
     }
 
-    const std::list<FrameGraphResource>& get_resources() const { return m_resources; }
+    std::list<FrameGraphResource>& get_resources() { return m_resources; }
 
 private:
 
