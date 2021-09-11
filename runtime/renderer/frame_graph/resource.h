@@ -19,12 +19,20 @@ struct AttachmentDesc {
     }
 };
 
+struct BufferDesc {
+    uint64 size;
+
+    bool operator<(const BufferDesc& rhs) const {
+        return std::tie(size) < std::tie(rhs.size);
+    }
+};
+
 class FrameGraphResource {
 friend class FrameGraphResourceManager;
 public:
 
     FrameGraphResource(const uint64 id, const FrameGraphResourceType type, const std::string& name, View& view) :
-        m_id(id), m_type(type), m_name(name), m_view(view), m_ref_count(0) {
+        m_id(id), m_type(type), m_name(name), m_view(view) {
 
     }
 
@@ -96,21 +104,26 @@ public:
 
     View& get_view() { return m_view; }
 
-    void ac() { m_ref_count++; }
+    const std::variant<
+        AttachmentDesc,
+        BufferDesc
+    >& get_desc() const { return m_desc; }
 
 private:
-
-    FrameGraphResourceType m_type;
 
     uint64 m_id;
     std::string m_name;
 
+    FrameGraphResourceType m_type;
+    std::variant<
+        AttachmentDesc,
+        BufferDesc
+    > m_desc;
+
     std::reference_wrapper<View> m_view;
+
     std::vector<ResourceState> m_states;
-
     bool m_presentable;
-
-    uint32 m_ref_count;
 };
 
 class FrameGraphResourceHandle {

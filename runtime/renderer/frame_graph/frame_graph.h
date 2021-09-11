@@ -13,7 +13,7 @@ namespace ionengine::renderer {
 class FrameGraph {
 public:
 
-    FrameGraph(Device& device) : m_device(device)  {
+    FrameGraph(Device& device) : m_device(device), m_render_pass_cache(device), m_frame_buffer_cache(device)  {
         
     }
 
@@ -91,7 +91,7 @@ public:
         std::cout << format<char>("{} tasks was added", m_tasks.size()) << std::endl;
     }
 
-    void export_dot(const std::string& file_name) {
+    void export_to_graph(const std::string& file_name) {
 
         std::ofstream ofs(file_name + ".dot", std::ios::beg);
 
@@ -111,13 +111,13 @@ public:
 
             ofs << format<char>("Pass_{} [label=\"{}\", color=\"aquamarine2\"];", i, m_render_passes[i].get_name()) << std::endl;
             
-            ofs << "edge [color=\"firebrick3\", label=\"write\", fontcolor=\"firebrick3\"];" << std::endl;
-            for(auto& resource : m_render_passes[i].get_writes()) {
+            ofs << "edge [color=\"dodgerblue2\", label=\"read\", fontcolor=\"dodgerblue2\"];" << std::endl;
+            for(auto& resource : m_render_passes[i].get_reads()) {
                 ofs << format<char>("Res_{} -> Pass_{}", resource.get().get_id(), i) << std::endl;
             }
 
-            ofs << "edge [color=\"dodgerblue2\", label=\"read\", fontcolor=\"dodgerblue2\"];" << std::endl;
-            for(auto& resource : m_render_passes[i].get_reads()) {
+            ofs << "edge [color=\"firebrick3\", label=\"write\", fontcolor=\"firebrick3\"];" << std::endl;
+            for(auto& resource : m_render_passes[i].get_writes()) {
                 ofs << format<char>("Pass_{} -> Res_{}", i, resource.get().get_id()) << std::endl;
             }
         }
@@ -158,6 +158,8 @@ private:
     std::reference_wrapper<Device> m_device;
 
     FrameGraphResourceManager m_resource_manager;
+    FrameGraphRenderPassCache m_render_pass_cache;
+    FrameGraphFrameBufferCache m_frame_buffer_cache;
 
     std::vector<FrameGraphRenderPass> m_render_passes;
     std::vector<FrameGraphTask> m_tasks;

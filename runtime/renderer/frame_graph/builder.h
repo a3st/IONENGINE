@@ -19,19 +19,15 @@ public:
         auto& resource = m_resource_manager.get().get_resource(handle);
         
         m_render_pass.get().add_read(resource);
-
-        resource.ac();
         return handle;
     }
 
-    FrameGraphResourceHandle write(const std::string& name, const RenderPassLoadOp load_op, const RenderPassStoreOp store_op, const ClearValueColor& clear_value = { 0, 0, 0, 0 }) {
+    FrameGraphResourceHandle write(const std::string& name, const RenderPassLoadOp load_op, const RenderPassStoreOp store_op, const ClearValueColor& clear_color = { 0, 0, 0, 0 }) {
         
         FrameGraphResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
         auto& resource = m_resource_manager.get().get_resource(handle);
 
-        m_render_pass.get().add_write(resource);
-        
-        resource.ac();
+        m_render_pass.get().add_write(resource, load_op, store_op, clear_color);
         return handle;
     }
 

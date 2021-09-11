@@ -30,8 +30,8 @@ public:
             m_command_lists.emplace_back(m_device.get().create_command_list(CommandListType::Graphics));
         }
 
+        //m_frame_graph->create_resource("gbuffer", { Format::RGBA8unorm, 800, 600 }, *m_swapchain_views[0]);
         m_frame_graph->create_resource("swapchain", { Format::RGBA8unorm, 800, 600 }, *m_swapchain_views[0]);
-        m_frame_graph->create_resource("fx", { Format::RGBA8unorm, 800, 600 }, *m_swapchain_views[0]);
 
         struct DepthPassData {
             FrameGraphResourceHandle output;
@@ -46,7 +46,7 @@ public:
             }
         );
 
-        struct BasicPassData {
+        /*struct BasicPassData {
             FrameGraphResourceHandle input;
             FrameGraphResourceHandle output;
         };
@@ -54,15 +54,15 @@ public:
         m_frame_graph->add_pass<BasicPassData>(
             "BasicPass",
             [&](RenderPassBuilder& builder, BasicPassData& data) {
-                data.input = builder.read("fx");
+                data.input = builder.read("gbuffer");
                 data.output = builder.write("swapchain", RenderPassLoadOp::Load, RenderPassStoreOp::Store);
             },
             [=](RenderPassContext& context, const BasicPassData& data) {
             }
-        );
+        );*/
 
         m_frame_graph->compile();
-        m_frame_graph->export_dot("quad_renderer_test");
+        //m_frame_graph->export_to_graph("quad_renderer_test");
     }
 
     void tick() override {
