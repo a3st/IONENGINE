@@ -46,11 +46,28 @@ private:
 class FrameGraphRenderPassCache {
 public:
 
+    struct Attachment {
+        Format format;
+        RenderPassLoadOp load_op;
+        RenderPassStoreOp store_op;
+
+        bool operator<(const Attachment& rhs) const {
+            return std::tie(format, load_op, store_op) < std::tie(rhs.format, rhs.load_op, rhs.store_op);
+        }
+    };
+
     struct Key {
-        
+        std::vector<Attachment> colors;
+        Attachment depth_stencil;
+        uint32 sample_count;
+
+        bool operator<(const Key& rhs) const {
+            return std::tie(colors, depth_stencil, sample_count) < std::tie(rhs.colors, rhs.depth_stencil, rhs.sample_count);
+        }
     };
 
     FrameGraphRenderPassCache(Device& device) : m_device(device) {
+
 
     }
 
