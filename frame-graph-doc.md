@@ -12,3 +12,14 @@
    * RenderPassExecutorTask
 
 + AttachmentDesc
+## Details
+1. FrameGraphTaskType
+   * ResourceTransition
+   * RenderPassExecutor
+2. FrameGraphResourceType
+   * Attachment
+   * Buffer
+3. FrameGraphResourceFlags
+   * None
+   * Present
+   * idk, now
