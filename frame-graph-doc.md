@@ -6,16 +6,16 @@
    * FrameGraphResourceManager
 2. FrameGraphResource
    * FrameGraphResourceHandle
-3. FrameGraphRenderPass
-4. FrameGraphTask
+3. FrameGraphTask
    * ResourceTransitionTask
-   * RenderPassExecutorTask
+   * RenderPassTask
 
 + AttachmentDesc
 ## Details
 1. FrameGraphTaskType
    * ResourceTransition
-   * RenderPassExecutor
+   * RenderPass
+   * ComputePass
 2. FrameGraphResourceType
    * Attachment
    * Buffer
