@@ -9,36 +9,27 @@ enum class FrameGraphResourceType {
     Buffer
 };
 
-struct AttachmentDesc {
-    Format format;
-    uint32 width;
-    uint32 height;
-
-    bool operator<(const AttachmentDesc& rhs) const {
-        return std::tie(format, width, height) < std::tie(rhs.format, rhs.width, rhs.height);
-    }
+enum class FrameGraphResourceFlags : uint32 {
+    None = 1 << 0,
+    Present = 1 << 1
 };
 
-struct BufferDesc {
-    uint64 size;
+FrameGraphResourceFlags operator|(const FrameGraphResourceFlags lhs, const FrameGraphResourceFlags rhs) {
+	return static_cast<FrameGraphResourceFlags>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
+}
 
-    bool operator<(const BufferDesc& rhs) const {
-        return std::tie(size) < std::tie(rhs.size);
-    }
-};
+bool operator&(const FrameGraphResourceFlags lhs, const FrameGraphResourceFlags rhs) {
+	return static_cast<uint32>(lhs) & static_cast<uint32>(rhs);
+}
 
 class FrameGraphResource {
 friend class FrameGraphResourceManager;
 public:
 
-    FrameGraphResource(const uint64 id, const FrameGraphResourceType type, const std::string& name, View& view) :
-        m_id(id), m_type(type), m_name(name), m_view(view) {
+    FrameGraphResource(const uint64 id, const FrameGraphResourceType type, const std::string& name, View& view, const FrameGraphResourceFlags flags) :
+        m_id(id), m_type(type), m_name(name), m_view(view), m_flags(flags), m_ref_count(0) {
 
     }
-
-    void set_presentable() { m_presentable = true; }
-
-    bool presentable() const { return m_presentable; }
 
     void acquire() {
 
@@ -48,36 +39,42 @@ public:
                 break;
             }
         }
+
+        m_ref_count++;
     }
 
     void release() {
 
-        if(!m_presentable) {
+        if(m_flags & FrameGraphResourceFlags::Present) {
+            m_states.emplace_back(ResourceState::Present);
+        } else {
             switch(m_type) {
                 case FrameGraphResourceType::Attachment: {
                     m_states.emplace_back(ResourceState::PixelShaderResource);
                     break;
                 }
             }
-        } else {
-            m_states.emplace_back(ResourceState::Present);
         }
+
+        m_ref_count--;
     }
 
     void clear() {
 
         m_states.clear();
 
-        if(!m_presentable) {
+        if(m_flags & FrameGraphResourceFlags::Present) {
+            m_states.emplace_back(ResourceState::Present);
+        } else {
             switch(m_type) {
                 case FrameGraphResourceType::Attachment: {
                     m_states.emplace_back(ResourceState::PixelShaderResource);
                     break;
                 }
             }
-        } else {
-            m_states.emplace_back(ResourceState::Present);
         }
+
+        m_ref_count = 0;
     }
 
     ResourceState get_before_state() const {
@@ -90,7 +87,7 @@ public:
 
     void print_test() const {
 
-        std::cout << "resource id: " << get_id() << " states: " << std::endl;
+        std::cout << "resource id: " << get_id() << " refs: " << m_ref_count << " states: " << std::endl;
         for(auto& state : m_states) {
             if(state == ResourceState::PixelShaderResource) std ::cout << " pixel_shader_resource ";
             if(state == ResourceState::RenderTarget) std ::cout << " render_target ";
@@ -104,26 +101,19 @@ public:
 
     View& get_view() { return m_view; }
 
-    const std::variant<
-        AttachmentDesc,
-        BufferDesc
-    >& get_desc() const { return m_desc; }
-
 private:
 
     uint64 m_id;
     std::string m_name;
 
     FrameGraphResourceType m_type;
-    std::variant<
-        AttachmentDesc,
-        BufferDesc
-    > m_desc;
+    FrameGraphResourceFlags m_flags;
 
     std::reference_wrapper<View> m_view;
 
     std::vector<ResourceState> m_states;
-    bool m_presentable;
+
+    uint32 m_ref_count;
 };
 
 class FrameGraphResourceHandle {
@@ -160,9 +150,9 @@ public:
 
     }
 
-    FrameGraphResourceHandle create(const std::string& name, const AttachmentDesc& desc, View& view) {
+    FrameGraphResourceHandle create(const std::string& name, const FrameGraphResourceType type, View& view, const FrameGraphResourceFlags flags) {
 
-        m_resources.emplace_back(m_offset, FrameGraphResourceType::Attachment, name, view);
+        m_resources.emplace_back(m_offset, FrameGraphResourceType::Attachment, name, view, flags);
         m_resource_offsets[m_offset] = std::prev(m_resources.end());
 
         FrameGraphResourceHandle handle(m_offset);

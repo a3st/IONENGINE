@@ -17,11 +17,11 @@ public:
         
     }
 
-    void create_resource(const std::string& name, const AttachmentDesc& desc, View& view) {
-        m_resource_manager.create(name, desc, view);
+    void create_resource(const std::string& name, const FrameGraphResourceType type, View& view, const FrameGraphResourceFlags flags) {
+        m_resource_manager.create(name, type, view, flags);
     }
 
-    void update_resource(const std::string& name, const AttachmentDesc& desc, View& view) {
+    void update_resource(const std::string& name, View& view) {
 
     }
 
@@ -45,18 +45,15 @@ public:
     void compile() {
 
         m_tasks.clear();
-
-        auto& outputs = m_render_passes.back().get_writes();
-        if(outputs.size() > 1) {
-            throw std::runtime_error("Frame Graph compile error. Outputs resources more than 1 in last pass");
-        }
-        outputs[0].get().set_presentable();
-        std::cout << format<char>("Resource '{}' is presentable", outputs[0].get().get_name()) << std::endl;
+        m_frame_buffer_cache.clear();
+        m_render_pass_cache.clear();
 
         for(auto& resource : m_resource_manager.get_resources()) {
             resource.clear();
         }
-        std::cout << "Resources cleared states" << std::endl;
+
+        auto& outputs = m_render_passes.back().get_writes();
+        assert(outputs.size() == 1 && "output resource in last pass should be 1 and has present bit flag");
 
         for(auto& render_pass : m_render_passes) {
            
@@ -70,7 +67,12 @@ public:
                 resource.get().release();
             }
 
+            std::vector<std::reference_wrapper<View>> colors;
+
             for(auto& resource : render_pass.get_writes()) {
+
+                colors.emplace_back(resource.get().get_view());
+
                 resource.get().acquire();
 
                 if(resource.get().get_after_state() != resource.get().get_before_state()) {
@@ -82,6 +84,23 @@ public:
                     });
                 }
             }
+
+            FrameGraphRenderPassCache::Key render_pass_key{};
+            render_pass_key.colors = render_pass.get_attachments();
+            render_pass_key.sample_count = 1;
+
+            auto& render_pass_cache = m_render_pass_cache.get_render_pass(render_pass_key);
+
+            FrameGraphFrameBufferCache::Key frame_buffer_key = {
+                render_pass_cache,
+                render_pass.get_writes()[0].get().get_view().get_resource().get_width(),
+                render_pass.get_writes()[0].get().get_view().get_resource().get_height(),
+                colors
+            };
+
+            m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
+
+            m_tasks.emplace_back(RenderPassTask { render_pass }); 
         }
 
         for(auto& resource : m_resource_manager.get_resources()) {
@@ -91,12 +110,13 @@ public:
         std::cout << format<char>("{} tasks was added", m_tasks.size()) << std::endl;
     }
 
-    void export_to_graph(const std::string& file_name) {
+    void export_to_dot(const std::string& file_name) {
 
         std::ofstream ofs(file_name + ".dot", std::ios::beg);
 
-        if(not ofs.is_open()) {
-            throw std::runtime_error("file cannot be openned");
+        if(!ofs.is_open()) {
+            
+            return;
         }
 
         ofs << "digraph {" << std::endl;
@@ -143,7 +163,38 @@ public:
 
                 case FrameGraphTaskType::RenderPass: {
 
+                    auto render_pass = std::get<RenderPassTask>(task.get_task());
+
+                    std::vector<std::reference_wrapper<View>> colors;
+                    for(auto& resource : render_pass.render_pass.get().get_writes()) {
+                        colors.emplace_back(resource.get().get_view());
+                    }
+
+                    for(auto& attachment : render_pass.render_pass.get().get_attachments()) {
+                        
+                    }
+
+                    FrameGraphRenderPassCache::Key render_pass_key{};
+                    render_pass_key.colors = render_pass.render_pass.get().get_attachments();
+                    render_pass_key.sample_count = 1;
+
+                    auto& render_pass_cache = m_render_pass_cache.get_render_pass(render_pass_key);
+
+                    FrameGraphFrameBufferCache::Key frame_buffer_key = {
+                        render_pass_cache,
+                        render_pass.render_pass.get().get_writes()[0].get().get_view().get_resource().get_width(),
+                        render_pass.render_pass.get().get_writes()[0].get().get_view().get_resource().get_height(),
+                        colors
+                    };
+
+                    auto& frame_buffer_cache = m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
                     
+                    command_list.begin_render_pass(render_pass_cache, frame_buffer_cache, );
+
+                    RenderPassContext context(command_list);
+                    render_pass.render_pass.get().execute(context);
+                    
+                    command_list.end_render_pass();
                     break;
                 }
            }

@@ -7,15 +7,17 @@ namespace ionengine::renderer {
 class D3DResource : public Resource {
 public:
 
-    D3DResource(winrt::com_ptr<ID3D12Device4>& device, const D3D12_RESOURCE_DESC& desc) : m_device(device), m_resource_desc(desc) {
+    D3DResource(winrt::com_ptr<ID3D12Device4>& device, const D3D12_RESOURCE_DESC& desc) : m_device(device), m_desc(desc) {
 
-        m_resource_format = static_cast<Format>(desc.Format);
+        m_format = static_cast<Format>(desc.Format);
     }
 
     D3DResource(winrt::com_ptr<ID3D12Device4>& device, const winrt::com_ptr<ID3D12Resource>& resource) : m_device(device), m_d3d12_resource(resource) {
 
-        m_resource_desc = m_d3d12_resource->GetDesc();
-        m_resource_format = static_cast<Format>(m_d3d12_resource->GetDesc().Format);
+        m_desc = m_d3d12_resource->GetDesc();
+        m_format = static_cast<Format>(m_d3d12_resource->GetDesc().Format);
+        m_width = static_cast<uint32>(m_d3d12_resource->GetDesc().Width);
+        m_height = static_cast<uint32>(m_d3d12_resource->GetDesc().Height);
     }
 
     void bind_memory(Memory& memory, const uint64 offset) override {
@@ -30,19 +32,21 @@ public:
         ASSERT_SUCCEEDED(m_device.get()->CreatePlacedResource(
             m_memory.value().get().get_heap().get(),
             offset,
-            &std::get<D3D12_RESOURCE_DESC>(m_resource_desc),
+            &std::get<D3D12_RESOURCE_DESC>(m_desc),
             convert_resource_state(resource_state),
             nullptr,
             __uuidof(ID3D12Resource), m_d3d12_resource.put_void()
         ));
     }
 
-    Format get_format() const override { return m_resource_format; }
+    Format get_format() const override { return m_format; }
+    uint32 get_width() const override { return m_width; }
+    uint32 get_height() const override { return m_height; }
 
     std::variant<
         D3D12_RESOURCE_DESC,
         D3D12_SAMPLER_DESC
-    > get_desc() { return m_resource_desc; }
+    > get_desc() { return m_desc; }
 
     winrt::com_ptr<ID3D12Resource>& get_resource() { return m_d3d12_resource; }
 
@@ -55,9 +59,11 @@ private:
     std::variant<
         D3D12_RESOURCE_DESC,
         D3D12_SAMPLER_DESC
-    > m_resource_desc;
+    > m_desc;
 
-    Format m_resource_format;
+    Format m_format;
+    uint32 m_width;
+    uint32 m_height;
 
     std::optional<std::reference_wrapper<D3DMemory>> m_memory;
 };
