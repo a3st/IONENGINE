@@ -170,8 +170,9 @@ public:
                         colors.emplace_back(resource.get().get_view());
                     }
 
+                    ClearValueDesc clear_desc{};
                     for(auto& attachment : render_pass.render_pass.get().get_attachments()) {
-                        
+                        clear_desc.colors.emplace_back(attachment.clear_color);
                     }
 
                     FrameGraphRenderPassCache::Key render_pass_key{};
@@ -189,7 +190,7 @@ public:
 
                     auto& frame_buffer_cache = m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
                     
-                    command_list.begin_render_pass(render_pass_cache, frame_buffer_cache, );
+                    command_list.begin_render_pass(render_pass_cache, frame_buffer_cache, clear_desc);
 
                     RenderPassContext context(command_list);
                     render_pass.render_pass.get().execute(context);
