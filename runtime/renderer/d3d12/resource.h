@@ -16,8 +16,8 @@ public:
 
         m_desc = m_d3d12_resource->GetDesc();
         m_format = static_cast<Format>(m_d3d12_resource->GetDesc().Format);
-        m_width = static_cast<uint32>(m_d3d12_resource->GetDesc().Width);
-        m_height = static_cast<uint32>(m_d3d12_resource->GetDesc().Height);
+        m_width = m_d3d12_resource->GetDesc().Width;
+        m_height = m_d3d12_resource->GetDesc().Height;
     }
 
     void bind_memory(Memory& memory, const uint64 offset) override {
@@ -40,7 +40,7 @@ public:
     }
 
     Format get_format() const override { return m_format; }
-    uint32 get_width() const override { return m_width; }
+    uint64 get_width() const override { return m_width; }
     uint32 get_height() const override { return m_height; }
 
     std::variant<

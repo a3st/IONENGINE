@@ -5,8 +5,8 @@
 #include "context.h"
 #include "resource.h"
 #include "pass.h"
-#include "builder.h"
 #include "task.h"
+#include "builder.h"
 
 namespace ionengine::renderer {
 
@@ -26,7 +26,7 @@ public:
     }
 
     template<typename T>
-    void add_pass(
+    void add_task(
         const std::string& name, 
         const std::function<void(RenderPassBuilder&, T&)>& builder_func, 
         const std::function<void(RenderPassContext&, const T&)>& exec_func
@@ -100,7 +100,7 @@ public:
 
             m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
 
-            m_tasks.emplace_back(RenderPassTask { render_pass }); 
+            m_tasks.emplace_back(RenderPassTask { render_pass });
         }
 
         for(auto& resource : m_resource_manager.get_resources()) {
@@ -198,6 +198,11 @@ public:
                     command_list.end_render_pass();
                     break;
                 }
+
+                case FrameGraphTaskType::ComputePass: {
+
+                    break;
+                }
            }
         }
 
@@ -213,7 +218,8 @@ private:
     FrameGraphRenderPassCache m_render_pass_cache;
     FrameGraphFrameBufferCache m_frame_buffer_cache;
 
-    std::vector<FrameGraphRenderPass> m_render_passes;
+    std::vector<FrameGraphRenderPass> m_deffered_tasks;
+
     std::vector<FrameGraphTask> m_tasks;
 };
 

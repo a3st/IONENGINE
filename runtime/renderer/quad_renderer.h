@@ -36,29 +36,14 @@ public:
             FrameGraphResourceHandle output;
         };
 
-        m_frame_graph->add_pass<DepthPassData>(
+        m_frame_graph->add_task<DepthPassData>(
             "DepthPass",
             [&](RenderPassBuilder& builder, DepthPassData& data) {
-                data.output = builder.write("swapchain", RenderPassLoadOp::Clear, RenderPassStoreOp::Store, { 200, 105, 150, 255 } );
+                data.output = builder.write("swapchain", RenderPassLoadOp::Clear, { 200, 105, 150, 255 } );
             },
             [=](RenderPassContext& context, const DepthPassData& data) {
             }
         );
-
-        /*struct BasicPassData {
-            FrameGraphResourceHandle input;
-            FrameGraphResourceHandle output;
-        };
-
-        m_frame_graph->add_pass<BasicPassData>(
-            "BasicPass",
-            [&](RenderPassBuilder& builder, BasicPassData& data) {
-                data.input = builder.read("gbuffer");
-                data.output = builder.write("swapchain", RenderPassLoadOp::Load, RenderPassStoreOp::Store);
-            },
-            [=](RenderPassContext& context, const BasicPassData& data) {
-            }
-        );*/
 
         m_frame_graph->compile();
         m_frame_graph->export_to_dot("quad_renderer_test");

@@ -4,51 +4,6 @@
 
 namespace ionengine::renderer {
 
-struct AttachmentDesc {
-    Format format;
-    RenderPassLoadOp load_op;
-    RenderPassStoreOp store_op;
-    ClearValueColor clear_color;
-
-    bool operator<(const AttachmentDesc& rhs) const {
-        return std::tie(format, load_op, store_op, clear_color) < std::tie(format, rhs.load_op, rhs.store_op, rhs.clear_color);
-    }
-};
-
-class FrameGraphRenderPass {
-public:
-
-    FrameGraphRenderPass(const std::string& name, std::function<void(RenderPassContext&)> exec_func)
-        : m_name(name), m_exec_func(exec_func) {
-
-    }
-
-    const std::string& get_name() const { return m_name; }
-    void execute(RenderPassContext& context) { m_exec_func(context); }
-
-    void add_write(FrameGraphResource& resource, const RenderPassLoadOp load_op, const RenderPassStoreOp store_op, const ClearValueColor& clear_color) { 
-        m_writes.emplace_back(resource); 
-        m_attachments.emplace_back(AttachmentDesc { resource.get_view().get_resource().get_format(), load_op, store_op, clear_color });
-    }
-
-    void add_read(FrameGraphResource& resource) { m_reads.emplace_back(resource); }
-
-    const std::vector<std::reference_wrapper<FrameGraphResource>>& get_writes() const { return m_writes; }
-    const std::vector<std::reference_wrapper<FrameGraphResource>>& get_reads() const { return m_reads; }
-    const std::vector<AttachmentDesc>& get_attachments() const { return m_attachments; }
-
-private:
-
-    std::string m_name;
-
-    std::function<void(RenderPassContext&)> m_exec_func;
-
-    std::vector<std::reference_wrapper<FrameGraphResource>> m_writes;
-    std::vector<std::reference_wrapper<FrameGraphResource>> m_reads;
-
-    std::vector<AttachmentDesc> m_attachments;
-};
-
 class FrameGraphRenderPassCache {
 public:
 
@@ -72,14 +27,13 @@ public:
         if(it != m_render_passes.end()) {
             return *it->second;
         } else {
-
             RenderPassDesc render_pass_desc{};
 
             for(auto& color : key.colors) {
                 RenderPassColorDesc color_desc{};
                 color_desc.format = color.format;
                 color_desc.load_op = color.load_op;
-                color_desc.store_op = color.store_op;
+                color_desc.store_op = RenderPassStoreOp::Store;
 
                 render_pass_desc.colors.emplace_back(color_desc);
             }
@@ -87,9 +41,14 @@ public:
             RenderPassDepthStencilDesc depth_stencil_desc{};
             depth_stencil_desc.format = key.depth_stencil.format;
             depth_stencil_desc.depth_load_op = key.depth_stencil.load_op;
-            depth_stencil_desc.depth_store_op = key.depth_stencil.store_op;
             depth_stencil_desc.stencil_load_op = key.depth_stencil.load_op;
-            depth_stencil_desc.stencil_store_op = key.depth_stencil.store_op;
+            if(key.depth_stencil.load_op == RenderPassLoadOp::DontCare) {
+                depth_stencil_desc.depth_store_op = RenderPassStoreOp::DontCare;
+                depth_stencil_desc.stencil_store_op = RenderPassStoreOp::DontCare;
+            } else {
+                depth_stencil_desc.depth_store_op = RenderPassStoreOp::Store;
+                depth_stencil_desc.stencil_store_op = RenderPassStoreOp::Store;
+            }
 
             render_pass_desc.depth_stencil = depth_stencil_desc;
             render_pass_desc.sample_count = key.sample_count;

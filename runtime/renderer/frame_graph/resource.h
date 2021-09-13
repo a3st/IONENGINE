@@ -22,6 +22,16 @@ bool operator&(const FrameGraphResourceFlags lhs, const FrameGraphResourceFlags 
 	return static_cast<uint32>(lhs) & static_cast<uint32>(rhs);
 }
 
+struct AttachmentDesc {
+    Format format;
+    RenderPassLoadOp load_op;
+    ClearValueColor clear_color;
+
+    bool operator<(const AttachmentDesc& rhs) const {
+        return std::tie(format, load_op, clear_color) < std::tie(format, rhs.load_op, rhs.clear_color);
+    }
+};
+
 class FrameGraphResource {
 friend class FrameGraphResourceManager;
 public:
@@ -33,61 +43,35 @@ public:
 
     void acquire() {
 
-        switch(m_type) {
-            case FrameGraphResourceType::Attachment: {
-                m_states.emplace_back(ResourceState::RenderTarget);
-                break;
-            }
-        }
-
+        state_acquire();
         m_ref_count++;
     }
 
     void release() {
 
-        if(m_flags & FrameGraphResourceFlags::Present) {
-            m_states.emplace_back(ResourceState::Present);
-        } else {
-            switch(m_type) {
-                case FrameGraphResourceType::Attachment: {
-                    m_states.emplace_back(ResourceState::PixelShaderResource);
-                    break;
-                }
-            }
-        }
-
+        state_release();
         m_ref_count--;
     }
 
     void clear() {
 
         m_states.clear();
-
-        if(m_flags & FrameGraphResourceFlags::Present) {
-            m_states.emplace_back(ResourceState::Present);
-        } else {
-            switch(m_type) {
-                case FrameGraphResourceType::Attachment: {
-                    m_states.emplace_back(ResourceState::PixelShaderResource);
-                    break;
-                }
-            }
-        }
-
+        state_release();
         m_ref_count = 0;
     }
 
-    ResourceState get_before_state() const {
-        return m_states[m_states.size() - 2];
+    std::pair<ResourceState, ResourceState> get_state() const { 
+        return { m_states[m_states.size() - 2], m_states[m_states.size() - 1] };
     }
+    
+    uint64 get_id() const { return m_id; }
+    const std::string& get_name() const { return m_name; }
 
-    ResourceState get_after_state() const {
-        return m_states.back();
-    }
+    View& get_view() { return m_view; }
 
-    void print_test() const {
+    void debug_print() const {
 
-        std::cout << "resource id: " << get_id() << " refs: " << m_ref_count << " states: " << std::endl;
+        std::cout << format<char>("FGResource ID: {}, Name: {}, References: {}\nStates: ", m_name, m_id, m_ref_count) << std::endl;
         for(auto& state : m_states) {
             if(state == ResourceState::PixelShaderResource) std ::cout << " pixel_shader_resource ";
             if(state == ResourceState::RenderTarget) std ::cout << " render_target ";
@@ -95,11 +79,6 @@ public:
         }
         std::cout << std::endl;
     }
-    
-    uint64 get_id() const { return m_id; }
-    const std::string& get_name() const { return m_name; }
-
-    View& get_view() { return m_view; }
 
 private:
 
@@ -114,6 +93,29 @@ private:
     std::vector<ResourceState> m_states;
 
     uint32 m_ref_count;
+
+    void state_acquire() {
+        switch(m_type) {
+            case FrameGraphResourceType::Attachment: {
+                m_states.emplace_back(ResourceState::RenderTarget);
+                break;
+            }
+        }
+    }
+
+    void state_release() {
+
+        if(m_flags & FrameGraphResourceFlags::Present) {
+            m_states.emplace_back(ResourceState::Present);
+        } else {
+            switch(m_type) {
+                case FrameGraphResourceType::Attachment: {
+                    m_states.emplace_back(ResourceState::PixelShaderResource);
+                    break;
+                }
+            }
+        }
+    }
 };
 
 class FrameGraphResourceHandle {

@@ -201,16 +201,16 @@ bool operator&(const ResourceFlags lhs, const ResourceFlags rhs) {
 
 struct RenderPassColorDesc {
     Format format;
-    RenderPassLoadOp load_op = RenderPassLoadOp::Load;
-    RenderPassStoreOp store_op  = RenderPassStoreOp::Store;
+    RenderPassLoadOp load_op = RenderPassLoadOp::DontCare;
+    RenderPassStoreOp store_op  = RenderPassStoreOp::DontCare;
 };
 
 struct RenderPassDepthStencilDesc {
     Format format;
-    RenderPassLoadOp depth_load_op = RenderPassLoadOp::Load;
-    RenderPassStoreOp depth_store_op = RenderPassStoreOp::Store;
-    RenderPassLoadOp stencil_load_op = RenderPassLoadOp::Load;
-    RenderPassStoreOp stencil_store_op = RenderPassStoreOp::Store;
+    RenderPassLoadOp depth_load_op = RenderPassLoadOp::DontCare;
+    RenderPassStoreOp depth_store_op = RenderPassStoreOp::DontCare;
+    RenderPassLoadOp stencil_load_op = RenderPassLoadOp::DontCare;
+    RenderPassStoreOp stencil_store_op = RenderPassStoreOp::DontCare;
 };
 
 struct FrameBufferDesc {
