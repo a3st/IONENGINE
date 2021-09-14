@@ -34,58 +34,98 @@ public:
         
         T data{};
 
-        m_render_passes.emplace_back(name, std::bind(exec_func, std::placeholders::_1, data));
+        m_added_tasks.emplace_back(RenderPassTask { name, std::bind(exec_func, std::placeholders::_1, data) });
 
-        RenderPassBuilder builder(m_resource_manager, m_render_passes.back());
+        RenderPassBuilder builder(m_resource_manager, std::get<RenderPassTask>(m_added_tasks.back().get_task()));
         builder_func(builder, data);
 
-        std::cout << format<char>("RenderPass '{}' added", name) << std::endl;
+        std::cout << format<char>("RenderPassTask '{}' added added to framegraph", name) << std::endl;
+    }
+
+    template<typename T>
+    void add_task(
+        const std::string& name, 
+        const std::function<void(ComputePassBuilder&, T&)>& builder_func, 
+        const std::function<void(ComputePassContext&, const T&)>& exec_func
+    ) {
+        
+        T data{};
+
+        m_added_tasks.emplace_back(ComputePassTask { name, std::bind(exec_func, std::placeholders::_1, data) });
+
+        ComputePassBuilder builder(m_resource_manager, std::get<ComputePassTask>(m_added_tasks.back().get_task()));
+        builder_func(builder, data);
+
+        std::cout << format<char>("ComputePassTask '{}' added to framegraph", name) << std::endl;
     }
 
     void compile() {
 
-        m_tasks.clear();
         m_frame_buffer_cache.clear();
         m_render_pass_cache.clear();
+        m_compiled_tasks.clear();
 
         for(auto& resource : m_resource_manager.get_resources()) {
             resource.clear();
         }
 
-        auto& outputs = m_render_passes.back().get_writes();
-        assert(outputs.size() == 1 && "output resource in last pass should be 1 and has present bit flag");
+        {
+            auto& writes = std::get<RenderPassTask>(m_added_tasks.back().get_task()).m_writes;
+            assert(writes.size() == 1 && "output resource in last pass should be 1 and has present bit flag");
+        }
 
-        for(auto& render_pass : m_render_passes) {
+        for(auto& task : m_added_tasks) {
            
-            std::cout << format<char>("Compile pass '{}' with {} outputs, {} inputs", 
-                render_pass.get_name(),
-                render_pass.get_writes().size(),
-                render_pass.get_reads().size()
-            ) << std::endl;
+            switch(task.get_type()) {
 
-            for(auto& resource : render_pass.get_reads()) {
-                resource.get().release();
-            }
+                case FrameGraphTaskType::RenderPass: {
 
-            std::vector<std::reference_wrapper<View>> colors;
+                    auto& render_pass = std::get<RenderPassTask>(task.get_task());
+                    std::cout << format<char>("Compiled task (RenderPass) '{}' ({} reads, {} writes)", 
+                        render_pass.name,
+                        render_pass.m_reads.size(),
+                        render_pass.m_writes.size()
+                    ) << std::endl;
 
-            for(auto& resource : render_pass.get_writes()) {
+                    for(auto& resource : render_pass.m_reads) {
+                        resource.get().release();
+                    }
 
-                colors.emplace_back(resource.get().get_view());
+                    for(auto& resource : render_pass.m_writes) {
+                        resource.get().acquire();
+                        auto states = resource.get().get_state();
+                        if(states.first != states.second) {
+                            m_compiled_tasks.emplace_back(ResourceTransitionTask { 
+                                    resource,
+                                    states.first, states.second
+                                }
+                            );
+                        }
+                    }
 
-                resource.get().acquire();
+                    FrameGraphRenderPassCache::Key render_pass_key{};
+                    render_pass_key.colors = render_pass.m_attachments;
+                    render_pass_key.sample_count = 1;
 
-                if(resource.get().get_after_state() != resource.get().get_before_state()) {
+                    break;
+                }
+
+                case FrameGraphTaskType::ComputePass: {
+
+                    auto& compute_pass = std::get<RenderPassTask>(task.get_task());
+                    std::cout << format<char>("Compiled task (RenderPass) '{}' ({} reads, {} writes)", 
+                        compute_pass.name,
+                        -1, -1
+                    ) << std::endl;
+
+
                     
-                    m_tasks.emplace_back(ResourceTransitionTask { 
-                        resource,
-                        resource.get().get_before_state(), 
-                        resource.get().get_after_state() 
-                    });
+                    break;
                 }
             }
+        }
 
-            FrameGraphRenderPassCache::Key render_pass_key{};
+            /*FrameGraphRenderPassCache::Key render_pass_key{};
             render_pass_key.colors = render_pass.get_attachments();
             render_pass_key.sample_count = 1;
 
@@ -101,13 +141,11 @@ public:
             m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
 
             m_tasks.emplace_back(RenderPassTask { render_pass });
-        }
+        }*/
 
         for(auto& resource : m_resource_manager.get_resources()) {
-            resource.print_test();
+            resource.debug_print();
         }
-
-        std::cout << format<char>("{} tasks was added", m_tasks.size()) << std::endl;
     }
 
     void export_to_dot(const std::string& file_name) {
@@ -123,7 +161,7 @@ public:
         ofs << "rankdir=\"LR\";" << std::endl;
         ofs << "node [shape=rect, style=\"filled,rounded\", fontcolor=\"white\"];" << std::endl;
 
-        for(auto& resource : m_resource_manager.get_resources()) {
+        /*for(auto& resource : m_resource_manager.get_resources()) {
             ofs << format<char>("Res_{} [label=\"{}\", color=\"darkslategray3\"];", resource.get_id(), resource.get_name()) << std::endl;
         }
 
@@ -140,7 +178,7 @@ public:
             for(auto& resource : m_render_passes[i].get_writes()) {
                 ofs << format<char>("Pass_{} -> Res_{}", i, resource.get().get_id()) << std::endl;
             }
-        }
+        }*/
 
         ofs << "}" << std::endl;
     }
@@ -149,7 +187,7 @@ public:
 
         command_list.reset();
 
-        for(auto& task : m_tasks) {
+        for(auto& task : m_compiled_tasks) {
 
             switch(task.get_type()) {
 
@@ -163,7 +201,7 @@ public:
 
                 case FrameGraphTaskType::RenderPass: {
 
-                    auto render_pass = std::get<RenderPassTask>(task.get_task());
+                    /*auto render_pass = std::get<RenderPassTask>(task.get_task());
 
                     std::vector<std::reference_wrapper<View>> colors;
                     for(auto& resource : render_pass.render_pass.get().get_writes()) {
@@ -195,7 +233,7 @@ public:
                     RenderPassContext context(command_list);
                     render_pass.render_pass.get().execute(context);
                     
-                    command_list.end_render_pass();
+                    command_list.end_render_pass();*/
                     break;
                 }
 
@@ -218,9 +256,8 @@ private:
     FrameGraphRenderPassCache m_render_pass_cache;
     FrameGraphFrameBufferCache m_frame_buffer_cache;
 
-    std::vector<FrameGraphRenderPass> m_deffered_tasks;
-
-    std::vector<FrameGraphTask> m_tasks;
+    std::list<FrameGraphTask> m_added_tasks;
+    std::list<FrameGraphTask> m_compiled_tasks;
 };
 
 }

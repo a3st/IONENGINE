@@ -71,7 +71,7 @@ public:
 
     void debug_print() const {
 
-        std::cout << format<char>("FGResource ID: {}, Name: {}, References: {}\nStates: ", m_name, m_id, m_ref_count) << std::endl;
+        std::cout << format<char>("FGResource ID: {}, Name: {}, References: {}\nStates:", m_id, m_name, m_ref_count);
         for(auto& state : m_states) {
             if(state == ResourceState::PixelShaderResource) std ::cout << " pixel_shader_resource ";
             if(state == ResourceState::RenderTarget) std ::cout << " render_target ";
@@ -132,7 +132,7 @@ public:
 
     bool operator==(const FrameGraphResourceHandle& rhs) const { return m_id == rhs.m_id; }
     
-    static FrameGraphResourceHandle invalid() {
+    static FrameGraphResourceHandle null() {
         return { std::numeric_limits<uint64>::max() };
     }
 
@@ -172,7 +172,7 @@ public:
             }
         );
 
-        return it != m_resources.end() ? FrameGraphResourceHandle { it->get_id() } : FrameGraphResourceHandle::invalid();
+        return it != m_resources.end() ? FrameGraphResourceHandle { it->get_id() } : FrameGraphResourceHandle::null();
     }
 
     FrameGraphResource& get_resource(const FrameGraphResourceHandle& handle) {

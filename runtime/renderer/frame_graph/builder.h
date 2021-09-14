@@ -7,8 +7,8 @@ namespace ionengine::renderer {
 class RenderPassBuilder {
 public:
 
-    RenderPassBuilder(FrameGraphResourceManager& resource_manager, RenderPassTask& render_pass_task) 
-        : m_resource_manager(resource_manager), m_render_pass_task(render_pass_task) {
+    RenderPassBuilder(FrameGraphResourceManager& resource_manager, RenderPassTask& task) 
+        : m_resource_manager(resource_manager), m_task(task) {
         
     }
 
@@ -16,7 +16,7 @@ public:
        
         FrameGraphResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
         auto& resource = m_resource_manager.get().get_resource(handle);
-        m_render_pass_task.get().m_reads.emplace_back(resource);
+        m_task.get().m_reads.emplace_back(resource);
         return handle;
     }
 
@@ -24,15 +24,37 @@ public:
         
         FrameGraphResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
         auto& resource = m_resource_manager.get().get_resource(handle);
-        m_render_pass_task.get().m_writes.emplace_back(resource);
-        m_render_pass_task.get().m_attachments.emplace_back(AttachmentDesc { resource.get_view().get_resource().get_format(), load_op, clear_color });
+        m_task.get().m_writes.emplace_back(resource);
+        m_task.get().m_attachments.emplace_back(AttachmentDesc { resource.get_view().get_resource().get_format(), load_op, clear_color });
         return handle;
     }
 
 private:
 
     std::reference_wrapper<FrameGraphResourceManager> m_resource_manager;
-    std::reference_wrapper<RenderPassTask> m_render_pass_task;
+    std::reference_wrapper<RenderPassTask> m_task;
+};
+
+class ComputePassBuilder {
+public:
+
+    ComputePassBuilder(FrameGraphResourceManager& resource_manager, ComputePassTask& task) 
+        : m_resource_manager(resource_manager), m_task(task) {
+        
+    }
+
+    FrameGraphResourceHandle read(const std::string& name) {
+        return FrameGraphResourceHandle::null();
+    }
+
+    FrameGraphResourceHandle write(const std::string& name) {
+        return FrameGraphResourceHandle::null();
+    }
+
+private:
+
+    std::reference_wrapper<FrameGraphResourceManager> m_resource_manager;
+    std::reference_wrapper<ComputePassTask> m_task;
 };
 
 }

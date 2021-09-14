@@ -46,7 +46,7 @@ public:
         );
 
         m_frame_graph->compile();
-        m_frame_graph->export_to_dot("quad_renderer_test");
+        //m_frame_graph->export_to_dot("quad_renderer_test");
     }
 
     void tick() override {

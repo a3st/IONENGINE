@@ -26,7 +26,8 @@ struct RenderPassTask {
 };
 
 struct ComputePassTask {
-
+    std::string name;
+    std::function<void(RenderPassContext&)> exec_func;
 };
 
 class FrameGraphTask {
@@ -53,7 +54,7 @@ public:
         ResourceTransitionTask,
         RenderPassTask,
         ComputePassTask
-    > get_task() const { return m_task; }
+    >& get_task() { return m_task; }
 
 private:
 

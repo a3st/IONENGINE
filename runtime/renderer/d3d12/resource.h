@@ -62,7 +62,7 @@ private:
     > m_desc;
 
     Format m_format;
-    uint32 m_width;
+    uint64 m_width;
     uint32 m_height;
 
     std::optional<std::reference_wrapper<D3DMemory>> m_memory;
