@@ -39,7 +39,7 @@ public:
         m_frame_graph->add_task<DepthPassData>(
             "DepthPass",
             [&](RenderPassBuilder& builder, DepthPassData& data) {
-                data.output = builder.write("swapchain", RenderPassLoadOp::Clear, { 200, 105, 150, 255 } );
+                data.output = builder.write("swapchain", RenderPassLoadOp::Clear, { 150, 105, 150, 255 } );
             },
             [=](RenderPassContext& context, const DepthPassData& data) {
             }

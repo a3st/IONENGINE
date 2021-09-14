@@ -101,9 +101,12 @@ public:
                 key.render_pass,
                 key.width,
                 key.height,
-                key.colors,
-                key.depth_stencil
+                key.colors
             };
+
+            if(key.depth_stencil.has_value()) {
+                frame_buffer_desc.depth_stencil = key.depth_stencil;
+            }
 
             auto result = m_frame_buffers.emplace(key, m_device.get().create_frame_buffer(frame_buffer_desc));
 

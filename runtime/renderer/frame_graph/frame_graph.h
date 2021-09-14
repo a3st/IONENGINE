@@ -107,6 +107,24 @@ public:
                     render_pass_key.colors = render_pass.m_attachments;
                     render_pass_key.sample_count = 1;
 
+                    auto& render_pass_cache = m_render_pass_cache.get_render_pass(render_pass_key);
+                    auto& resource = render_pass.m_writes[0].get().get_view().get_resource();
+
+                    std::vector<std::reference_wrapper<View>> colors;
+                    for(auto& color : render_pass.m_writes) {
+                        colors.emplace_back(color.get().get_view());
+                    }
+
+                    FrameGraphFrameBufferCache::Key frame_buffer_key = {
+                        render_pass_cache,
+                        static_cast<uint32>(resource.get_width()),
+                        resource.get_height(),
+                        colors
+                    };
+
+                    auto& frame_buffer_cache = m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
+                    
+                    m_compiled_tasks.emplace_back(std::get<RenderPassTask>(task.get_task()));
                     break;
                 }
 
@@ -118,30 +136,10 @@ public:
                         -1, -1
                     ) << std::endl;
 
-
-                    
                     break;
                 }
             }
         }
-
-            /*FrameGraphRenderPassCache::Key render_pass_key{};
-            render_pass_key.colors = render_pass.get_attachments();
-            render_pass_key.sample_count = 1;
-
-            auto& render_pass_cache = m_render_pass_cache.get_render_pass(render_pass_key);
-
-            FrameGraphFrameBufferCache::Key frame_buffer_key = {
-                render_pass_cache,
-                render_pass.get_writes()[0].get().get_view().get_resource().get_width(),
-                render_pass.get_writes()[0].get().get_view().get_resource().get_height(),
-                colors
-            };
-
-            m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
-
-            m_tasks.emplace_back(RenderPassTask { render_pass });
-        }*/
 
         for(auto& resource : m_resource_manager.get_resources()) {
             resource.debug_print();
@@ -151,9 +149,7 @@ public:
     void export_to_dot(const std::string& file_name) {
 
         std::ofstream ofs(file_name + ".dot", std::ios::beg);
-
         if(!ofs.is_open()) {
-            
             return;
         }
 
@@ -161,11 +157,11 @@ public:
         ofs << "rankdir=\"LR\";" << std::endl;
         ofs << "node [shape=rect, style=\"filled,rounded\", fontcolor=\"white\"];" << std::endl;
 
-        /*for(auto& resource : m_resource_manager.get_resources()) {
+        for(auto& resource : m_resource_manager.get_resources()) {
             ofs << format<char>("Res_{} [label=\"{}\", color=\"darkslategray3\"];", resource.get_id(), resource.get_name()) << std::endl;
         }
 
-        for(uint32 i = 0; i < m_render_passes.size(); ++i) {
+        /*for(uint32 i = 0; i < m_added_tasks.size(); ++i) {
 
             ofs << format<char>("Pass_{} [label=\"{}\", color=\"aquamarine2\"];", i, m_render_passes[i].get_name()) << std::endl;
             
@@ -201,39 +197,40 @@ public:
 
                 case FrameGraphTaskType::RenderPass: {
 
-                    /*auto render_pass = std::get<RenderPassTask>(task.get_task());
-
-                    std::vector<std::reference_wrapper<View>> colors;
-                    for(auto& resource : render_pass.render_pass.get().get_writes()) {
-                        colors.emplace_back(resource.get().get_view());
-                    }
-
-                    ClearValueDesc clear_desc{};
-                    for(auto& attachment : render_pass.render_pass.get().get_attachments()) {
-                        clear_desc.colors.emplace_back(attachment.clear_color);
-                    }
+                    auto render_pass = std::get<RenderPassTask>(task.get_task());
 
                     FrameGraphRenderPassCache::Key render_pass_key{};
-                    render_pass_key.colors = render_pass.render_pass.get().get_attachments();
+                    render_pass_key.colors = render_pass.m_attachments;
                     render_pass_key.sample_count = 1;
 
                     auto& render_pass_cache = m_render_pass_cache.get_render_pass(render_pass_key);
+                    auto& resource = render_pass.m_writes[0].get().get_view().get_resource();
+
+                    std::vector<std::reference_wrapper<View>> colors;
+                    for(auto& color : render_pass.m_writes) {
+                        colors.emplace_back(color.get().get_view());
+                    }
 
                     FrameGraphFrameBufferCache::Key frame_buffer_key = {
                         render_pass_cache,
-                        render_pass.render_pass.get().get_writes()[0].get().get_view().get_resource().get_width(),
-                        render_pass.render_pass.get().get_writes()[0].get().get_view().get_resource().get_height(),
+                        static_cast<uint32>(resource.get_width()),
+                        resource.get_height(),
                         colors
                     };
 
                     auto& frame_buffer_cache = m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
                     
+                    ClearValueDesc clear_desc{};
+                    for(auto& attachment : render_pass.m_attachments) {
+                        clear_desc.colors.emplace_back(attachment.clear_color);
+                    }
+
                     command_list.begin_render_pass(render_pass_cache, frame_buffer_cache, clear_desc);
 
                     RenderPassContext context(command_list);
-                    render_pass.render_pass.get().execute(context);
+                    render_pass.exec_func(context);
                     
-                    command_list.end_render_pass();*/
+                    command_list.end_render_pass();
                     break;
                 }
 

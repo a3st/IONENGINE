@@ -298,6 +298,10 @@ struct DepthStencilDesc {
 struct ViewDesc {
     ViewType view_type;
     ViewDimension dimension;
+    uint32 base_mip_level;
+    uint32 base_array_layer;
+    uint32 layer_count;
+    uint32 plane_slice;
 };
 
 struct BlendDesc {

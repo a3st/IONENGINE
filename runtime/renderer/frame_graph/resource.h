@@ -11,7 +11,8 @@ enum class FrameGraphResourceType {
 
 enum class FrameGraphResourceFlags : uint32 {
     None = 1 << 0,
-    Present = 1 << 1
+    Present = 1 << 1,
+    DepthStencil = 1 << 2
 };
 
 FrameGraphResourceFlags operator|(const FrameGraphResourceFlags lhs, const FrameGraphResourceFlags rhs) {
