@@ -15,15 +15,13 @@ public:
         m_command_queues[CommandListType::Copy] = std::make_unique<D3DCommandQueue>(m_d3d12_device, CommandListType::Copy);
         m_command_queues[CommandListType::Compute] = std::make_unique<D3DCommandQueue>(m_d3d12_device, CommandListType::Compute);
     }
-
-    winrt::com_ptr<ID3D12Device4>& get_device() { return m_d3d12_device; }
     
     CommandQueue& get_command_queue(const CommandListType list_type) override {
         return *m_command_queues[list_type];
     }
 
     std::unique_ptr<Swapchain> create_swapchain(void* hwnd, const uint32 width, const uint32 height, const uint32 buffer_count) override {
-        return std::make_unique<D3DSwapchain>(m_dxgi_factory, m_d3d12_device, m_command_queues[CommandListType::Graphics]->get_command_queue(), reinterpret_cast<HWND>(hwnd), width, height, buffer_count);
+        return std::make_unique<D3DSwapchain>(m_dxgi_factory, m_d3d12_device, m_command_queues[CommandListType::Graphics]->get_d3d12_command_queue(), reinterpret_cast<HWND>(hwnd), width, height, buffer_count);
     }
 
     std::unique_ptr<Shader> create_shader(const std::vector<byte>& shader_blob) override {
@@ -73,6 +71,8 @@ public:
     std::unique_ptr<FrameBuffer> create_frame_buffer(const FrameBufferDesc& frame_buffer_desc) override {
         return std::make_unique<D3DFrameBuffer>(m_d3d12_device, frame_buffer_desc);
     }
+
+    winrt::com_ptr<ID3D12Device4>& get_d3d12_device() { return m_d3d12_device; }
 
 private:
 

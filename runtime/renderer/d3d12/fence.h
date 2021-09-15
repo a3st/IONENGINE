@@ -26,7 +26,7 @@ public:
     uint64 get_completed_value() override { return m_d3d12_fence->GetCompletedValue(); }
     void signal(const uint64 value) override { m_d3d12_fence->Signal(value); }
 
-    winrt::com_ptr<ID3D12Fence>& get_fence() { return m_d3d12_fence; }
+    winrt::com_ptr<ID3D12Fence>& get_d3d12_fence() { return m_d3d12_fence; }
 
 private:
 

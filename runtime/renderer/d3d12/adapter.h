@@ -27,8 +27,8 @@ public:
     uint32 get_device_id() const override { return m_device_id; }
     uint32 get_vendor_id() const override { return m_vendor_id; }
 
-    winrt::com_ptr<IDXGIAdapter1>& get_adapter() { return m_dxgi_adapter; }
-    winrt::com_ptr<IDXGIFactory4>& get_factory() { return m_dxgi_factory; }
+    winrt::com_ptr<IDXGIAdapter1>& get_d3d12_adapter() { return m_dxgi_adapter; }
+    winrt::com_ptr<IDXGIFactory4>& get_d3d12_factory() { return m_dxgi_factory; }
     
 private:
 

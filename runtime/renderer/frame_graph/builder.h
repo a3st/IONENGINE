@@ -25,7 +25,8 @@ public:
         FrameGraphResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
         auto& resource = m_resource_manager.get().get_resource(handle);
         m_task.get().m_writes.emplace_back(resource);
-        m_task.get().m_attachments.emplace_back(AttachmentDesc { resource.get_view().get_resource().get_format(), load_op, clear_color });
+        auto resource_desc = std::get<ResourceDesc>(resource.get_view().get_resource().get_desc());
+        m_task.get().m_attachments.emplace_back(AttachmentDesc { resource_desc.format, load_op, clear_color });
         return handle;
     }
 

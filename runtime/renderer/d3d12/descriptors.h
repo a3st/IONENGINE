@@ -64,7 +64,7 @@ public:
 	    ASSERT_SUCCEEDED(m_device.get()->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), __uuidof(ID3D12RootSignature), m_d3d12_root_signature.put_void()));
     }
 
-	winrt::com_ptr<ID3D12RootSignature>& get_root_signature() { return m_d3d12_root_signature; }
+	winrt::com_ptr<ID3D12RootSignature>& get_d3d12_root_signature() { return m_d3d12_root_signature; }
 	const std::vector<DescriptorTableDesc>& get_descriptor_tables() { return m_descriptor_tables; }
 
 private:
@@ -111,24 +111,24 @@ public:
 		}
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE get_gpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, const uint64 offset) {
+	D3D12_GPU_DESCRIPTOR_HANDLE get_d3d12_gpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, const uint64 offset) {
 		return { m_d3d12_descriptor_heaps[heap_type]->GetGPUDescriptorHandleForHeapStart().ptr + offset };
 	}
 
-	D3D12_CPU_DESCRIPTOR_HANDLE get_cpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, const uint64 offset) {
+	D3D12_CPU_DESCRIPTOR_HANDLE get_d3d12_cpu_descriptor_handle(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type, const uint64 offset) {
 		return { m_d3d12_descriptor_heaps[heap_type]->GetCPUDescriptorHandleForHeapStart().ptr + offset };
 	}
 
-	winrt::com_ptr<ID3D12DescriptorHeap>& get_descriptor_heap(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type) {
+	winrt::com_ptr<ID3D12DescriptorHeap>& get_d3d12_descriptor_heap(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type) {
 		return m_d3d12_descriptor_heaps[heap_type];
 	}
 
-	uint64 allocate(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type) {
+	uint64 d3d12_allocate(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type) {
 		m_descriptor_offsets[heap_type] += static_cast<uint64>(m_d3d12_device.get()->GetDescriptorHandleIncrementSize(heap_type));
 		return m_descriptor_offsets[heap_type];
 	}
 
-	void deallocate(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type) {
+	void d3d12_deallocate(const D3D12_DESCRIPTOR_HEAP_TYPE heap_type) {
 		m_descriptor_offsets[heap_type] -= static_cast<uint64>(m_d3d12_device.get()->GetDescriptorHandleIncrementSize(heap_type));
 	}
 
@@ -154,7 +154,7 @@ public:
 
 		std::vector<ID3D12DescriptorHeap*> descriptor_heaps;
 		for(uint32 i = 0; i < descriptor_tables.size(); ++i) {
-			descriptor_heaps.emplace_back(m_descriptor_pool.get().get_descriptor_heap(descriptor_tables[i].type).get());
+			descriptor_heaps.emplace_back(m_descriptor_pool.get().get_d3d12_descriptor_heap(descriptor_tables[i].type).get());
 		}
 
 		if(!descriptor_heaps.empty()) {
@@ -164,9 +164,9 @@ public:
 		for(uint32 i = 0; i < descriptor_tables.size(); ++i) {
 			
 			if(descriptor_tables[i].compute) {
-				command_list->SetComputeRootDescriptorTable(i, m_descriptor_pool.get().get_gpu_descriptor_handle(descriptor_tables[i].type, descriptor_tables[i].offset));
+				command_list->SetComputeRootDescriptorTable(i, m_descriptor_pool.get().get_d3d12_gpu_descriptor_handle(descriptor_tables[i].type, descriptor_tables[i].offset));
 			} else {
-				command_list->SetGraphicsRootDescriptorTable(i, m_descriptor_pool.get().get_gpu_descriptor_handle(descriptor_tables[i].type, descriptor_tables[i].offset));
+				command_list->SetGraphicsRootDescriptorTable(i, m_descriptor_pool.get().get_d3d12_gpu_descriptor_handle(descriptor_tables[i].type, descriptor_tables[i].offset));
 			}	
 		}
 	}

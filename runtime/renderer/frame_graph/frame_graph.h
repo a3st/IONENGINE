@@ -115,10 +115,11 @@ public:
                         colors.emplace_back(color.get().get_view());
                     }
 
+                    auto& resource_desc = std::get<ResourceDesc>(resource.get_desc());
                     FrameGraphFrameBufferCache::Key frame_buffer_key = {
                         render_pass_cache,
-                        static_cast<uint32>(resource.get_width()),
-                        resource.get_height(),
+                        static_cast<uint32>(resource_desc.width),
+                        resource_desc.height,
                         colors
                     };
 
@@ -211,10 +212,11 @@ public:
                         colors.emplace_back(color.get().get_view());
                     }
 
+                    auto& resource_desc = std::get<ResourceDesc>(resource.get_desc());
                     FrameGraphFrameBufferCache::Key frame_buffer_key = {
                         render_pass_cache,
-                        static_cast<uint32>(resource.get_width()),
-                        resource.get_height(),
+                        static_cast<uint32>(resource_desc.width),
+                        resource_desc.height,
                         colors
                     };
 

@@ -303,6 +303,7 @@ struct ViewDesc {
     uint32 array_slice;
     uint32 plane_slice;
     uint32 structure_stride;
+    uint64 buffer_size;
 };
 
 struct ResourceDesc {

@@ -29,8 +29,8 @@ public:
 
         if(m_pipeline.value().get().get_type() == PipelineType::Graphics) {
 
-            m_d3d12_command_list->SetGraphicsRootSignature(m_pipeline.value().get().get_root_signature().get());
-            m_d3d12_command_list->SetPipelineState(m_pipeline.value().get().get_pipeline_state().get());
+            m_d3d12_command_list->SetGraphicsRootSignature(m_pipeline.value().get().get_d3d12_root_signature().get());
+            m_d3d12_command_list->SetPipelineState(m_pipeline.value().get().get_d3d12_pipeline_state().get());
             m_d3d12_command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         } else {
@@ -70,7 +70,7 @@ public:
 
             D3D12_RESOURCE_BARRIER resource_barrier{};
             resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-            resource_barrier.Transition.pResource = static_cast<D3DResource&>(barrier_desc.resource.get()).get_resource().get();
+            resource_barrier.Transition.pResource = static_cast<D3DResource&>(barrier_desc.resource.get()).get_d3d12_resource().get();
             resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             resource_barrier.Transition.StateAfter = convert_resource_state(barrier_desc.state_after);
             resource_barrier.Transition.StateBefore = convert_resource_state(barrier_desc.state_before);
@@ -106,7 +106,7 @@ public:
             end.Type = convert_render_pass_type(render_pass_desc.colors[i].store_op);
 
             D3D12_RENDER_PASS_RENDER_TARGET_DESC render_pass_rt_desc;
-            render_pass_rt_desc.cpuDescriptor = static_cast<D3DView&>(colors[i].get()).get_cpu_descriptor();
+            render_pass_rt_desc.cpuDescriptor = static_cast<D3DView&>(colors[i].get()).get_d3d12_cpu_descriptor();
             render_pass_rt_desc.BeginningAccess = begin;
             render_pass_rt_desc.EndingAccess = end;
 
@@ -132,7 +132,7 @@ public:
             D3D12_RENDER_PASS_ENDING_ACCESS stencil_end{};
             stencil_end.Type = convert_render_pass_type(render_pass_desc.depth_stencil.stencil_store_op);
 
-            render_pass_ds_desc.cpuDescriptor = static_cast<D3DView&>(depth_stencil.value().get()).get_cpu_descriptor();
+            render_pass_ds_desc.cpuDescriptor = static_cast<D3DView&>(depth_stencil.value().get()).get_d3d12_cpu_descriptor();
             render_pass_ds_desc.DepthBeginningAccess = depth_begin;
             render_pass_ds_desc.DepthEndingAccess = depth_end;
             render_pass_ds_desc.StencilBeginningAccess = stencil_begin;
@@ -160,8 +160,21 @@ public:
         m_d3d12_command_list->Reset(m_d3d12_command_allocator.get(), nullptr);
     }
 
-    winrt::com_ptr<ID3D12CommandAllocator>& get_command_allocator() { return m_d3d12_command_allocator; }
-    winrt::com_ptr<ID3D12GraphicsCommandList4>& get_command_list() { return m_d3d12_command_list; }
+    void set_index_buffer(Resource& resource, const Format format) {
+        D3D12_INDEX_BUFFER_VIEW index_view{};
+        index_view.Format = static_cast<DXGI_FORMAT>(format);
+        index_view.BufferLocation = static_cast<D3DResource&>(resource).get_d3d12_resource()->GetGPUVirtualAddress();
+        index_view.SizeInBytes = static_cast<uint32>(std::get<D3D12_RESOURCE_DESC>(static_cast<D3DResource&>(resource).get_d3d12_desc()).Width);
+        m_d3d12_command_list->IASetIndexBuffer(&index_view);
+    }
+
+    void set_vertex_buffer(const uint32 slot, Resource& resource) {
+        D3D12_VERTEX_BUFFER_VIEW vertex_view{};
+
+    }
+
+    winrt::com_ptr<ID3D12CommandAllocator>& get_d3d12_command_allocator() { return m_d3d12_command_allocator; }
+    winrt::com_ptr<ID3D12GraphicsCommandList4>& get_d3d12_command_list() { return m_d3d12_command_list; }
 
 private:
 

@@ -7,7 +7,8 @@ namespace ionengine::renderer {
 class D3DRenderPass : public RenderPass {
 public:
 
-    D3DRenderPass(winrt::com_ptr<ID3D12Device4>& device, const RenderPassDesc& desc) : m_device(device), m_render_pass_desc(desc) {
+    D3DRenderPass(winrt::com_ptr<ID3D12Device4>& device, const RenderPassDesc& render_pass_desc) 
+        : m_device(device), m_render_pass_desc(render_pass_desc) {
 
     }
 
@@ -23,7 +24,8 @@ private:
 class D3DFrameBuffer : public FrameBuffer {
 public:
 
-    D3DFrameBuffer(winrt::com_ptr<ID3D12Device4>& device, const FrameBufferDesc& desc) : m_frame_buffer_desc(desc) {
+    D3DFrameBuffer(winrt::com_ptr<ID3D12Device4>& device, const FrameBufferDesc& frame_buffer_desc) 
+        : m_frame_buffer_desc(frame_buffer_desc) {
 
     }
 

@@ -98,7 +98,7 @@ public:
         }
 
         ASSERT_SUCCEEDED(m_device.get()->CreatePlacedResource(
-            m_memory.value().get().get_heap().get(),
+            m_memory.value().get().get_d3d12_heap().get(),
             offset,
             &std::get<D3D12_RESOURCE_DESC>(m_d3d12_resource_desc),
             convert_resource_state(resource_state),
@@ -117,7 +117,7 @@ public:
         D3D12_SAMPLER_DESC
     >& get_d3d12_desc() const { return m_d3d12_resource_desc; }
 
-    winrt::com_ptr<ID3D12Resource>& get_resource() { return m_d3d12_resource; }
+    winrt::com_ptr<ID3D12Resource>& get_d3d12_resource() { return m_d3d12_resource; }
 
 private:
 

@@ -7,8 +7,8 @@ namespace ionengine::renderer {
 class D3DSwapchain : public Swapchain {
 public:
 
-    D3DSwapchain(winrt::com_ptr<IDXGIFactory4>& factory, winrt::com_ptr<ID3D12Device4>& device, winrt::com_ptr<ID3D12CommandQueue>& queue, HWND hwnd, const uint32 width, const uint32 height, const uint32 buffer_count) :
-        m_dxgi_factory(factory), m_d3d12_device(device), m_d3d12_command_queue(queue) {
+    D3DSwapchain(winrt::com_ptr<IDXGIFactory4>& factory, winrt::com_ptr<ID3D12Device4>& device, winrt::com_ptr<ID3D12CommandQueue>& queue, HWND hwnd, const uint32 width, const uint32 height, const uint32 buffer_count) 
+        : m_dxgi_factory(factory), m_d3d12_device(device), m_d3d12_command_queue(queue) {
         
         DXGI_SWAP_CHAIN_DESC1 swapchain_desc{};
         swapchain_desc.BufferCount = buffer_count;
@@ -36,19 +36,19 @@ public:
 
     uint32 next_buffer(Fence& fence, const uint64 signal_value) override {
         uint32 buffer_index = m_dxgi_swapchain->GetCurrentBackBufferIndex();
-        ASSERT_SUCCEEDED(m_d3d12_command_queue.get()->Signal(static_cast<D3DFence&>(fence).get_fence().get(), signal_value));
+        ASSERT_SUCCEEDED(m_d3d12_command_queue.get()->Signal(static_cast<D3DFence&>(fence).get_d3d12_fence().get(), signal_value));
         return buffer_index;
     }
 
     void present(Fence& fence, const uint64 wait_value) override {
-        ASSERT_SUCCEEDED(m_d3d12_command_queue.get()->Wait(static_cast<D3DFence&>(fence).get_fence().get(), wait_value));
+        ASSERT_SUCCEEDED(m_d3d12_command_queue.get()->Wait(static_cast<D3DFence&>(fence).get_d3d12_fence().get(), wait_value));
 
         ASSERT_SUCCEEDED(m_dxgi_swapchain->Present(0, 0));
     }
     
     uint32 get_back_buffer_index() const { return m_dxgi_swapchain->GetCurrentBackBufferIndex(); }
 
-    winrt::com_ptr<IDXGISwapChain4>& get_swapchain() { return m_dxgi_swapchain; }
+    winrt::com_ptr<IDXGISwapChain4>& get_d3d12_swapchain() { return m_dxgi_swapchain; }
 
 private:
 

@@ -44,7 +44,7 @@ public:
         return out_adapters;
     }
 
-    winrt::com_ptr<IDXGIFactory4>& get_factory() { return m_dxgi_factory; }
+    winrt::com_ptr<IDXGIFactory4>& get_d3d12_factory() { return m_dxgi_factory; }
     winrt::com_ptr<ID3D12Debug>& get_d3d12_debug() { return m_d3d12_debug; }
     winrt::com_ptr<IDXGIDebug>& get_dxgi_debug() { return m_dxgi_debug; }
 
