@@ -4,25 +4,25 @@
 
 namespace ionengine::renderer {
 
-D3D12_FILL_MODE convert_enum(const FillMode fill_mode) {
+D3D12_FILL_MODE convert_fill_mode(const FillMode fill_mode) {
 	switch(fill_mode) {
 		case FillMode::Solid: return D3D12_FILL_MODE_SOLID;
 		case FillMode::Wireframe: return D3D12_FILL_MODE_WIREFRAME;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: assert(false && "passed invalid argument to convert_fill_mode"); break;
 	}
 }
 
-D3D12_CULL_MODE convert_enum(const CullMode cull_mode) {
+D3D12_CULL_MODE convert_cull_mode(const CullMode cull_mode) {
 	switch(cull_mode) {
 		case CullMode::None: return D3D12_CULL_MODE_NONE;
 		case CullMode::Back: return D3D12_CULL_MODE_BACK;
 		case CullMode::Front: return D3D12_CULL_MODE_FRONT;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: assert(false && "passed invalid argument to convert_cull_mode"); break;
 	}
 }
 
-D3D12_COMPARISON_FUNC convert_enum(const ComparisonFunc func) {
-	switch(func) {
+D3D12_COMPARISON_FUNC convert_comparison_func(const ComparisonFunc comparison_func) {
+	switch(comparison_func) {
 		case ComparisonFunc::Always: return D3D12_COMPARISON_FUNC_ALWAYS;
 		case ComparisonFunc::Equal: return D3D12_COMPARISON_FUNC_EQUAL;
 		case ComparisonFunc::Greater: return D3D12_COMPARISON_FUNC_GREATER;
@@ -31,12 +31,12 @@ D3D12_COMPARISON_FUNC convert_enum(const ComparisonFunc func) {
 		case ComparisonFunc::LessEqual: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
 		case ComparisonFunc::Never: return D3D12_COMPARISON_FUNC_NEVER;
 		case ComparisonFunc::NotEqual: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: assert(false && "passed invalid argument to convert_comparison_func"); break;
 	}
 }
 
-D3D12_STENCIL_OP convert_enum(const StencilOp op) {
-	switch(op) {
+D3D12_STENCIL_OP convert_stencil_op(const StencilOp stencil_op) {
+	switch(stencil_op) {
 		case StencilOp::Zero: return D3D12_STENCIL_OP_ZERO;
 		case StencilOp::Replace: return D3D12_STENCIL_OP_REPLACE;
 		case StencilOp::Keep: return D3D12_STENCIL_OP_KEEP;
@@ -45,32 +45,32 @@ D3D12_STENCIL_OP convert_enum(const StencilOp op) {
 		case StencilOp::Incr: return D3D12_STENCIL_OP_INCR;
 		case StencilOp::DecrSat: return D3D12_STENCIL_OP_DECR_SAT;
 		case StencilOp::Decr: return D3D12_STENCIL_OP_DECR;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: assert(false && "passed invalid argument to convert_stencil_op"); break;
 	}
 }
 
-D3D12_BLEND convert_enum(const Blend blend) {
+D3D12_BLEND convert_blend(const Blend blend) {
 	switch(blend) {
 		case Blend::Zero: return D3D12_BLEND_ZERO;
 		case Blend::InvSrcAlpha: return D3D12_BLEND_INV_SRC_ALPHA;
 		case Blend::SrcAlpha: return D3D12_BLEND_SRC_ALPHA;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: assert(false && "passed invalid argument to convert_blend"); break;
 	}
 }
 
-D3D12_BLEND_OP convert_enum(const BlendOp op) {
-	switch(op) {
+D3D12_BLEND_OP convert_blend_op(const BlendOp blend_op) {
+	switch(blend_op) {
 		case BlendOp::Add: return D3D12_BLEND_OP_ADD;
 		case BlendOp::Min: return D3D12_BLEND_OP_MIN;
 		case BlendOp::Max: return D3D12_BLEND_OP_MAX;
 		case BlendOp::RevSubtract: return D3D12_BLEND_OP_REV_SUBTRACT;
 		case BlendOp::Subtract: return D3D12_BLEND_OP_SUBTRACT;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: assert(false && "passed invalid argument to convert_blend_op"); break;
 	}
 }
 
-D3D12_SHADER_VISIBILITY convert_shader_visibility(const ShaderType type) {
-	switch(type) {
+D3D12_SHADER_VISIBILITY convert_shader_visibility(const ShaderType shader_type) {
+	switch(shader_type) {
 		case ShaderType::Vertex: return D3D12_SHADER_VISIBILITY_VERTEX;
 		case ShaderType::Pixel: return D3D12_SHADER_VISIBILITY_PIXEL;
 		case ShaderType::Geometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
@@ -78,12 +78,12 @@ D3D12_SHADER_VISIBILITY convert_shader_visibility(const ShaderType type) {
 		case ShaderType::Domain: return D3D12_SHADER_VISIBILITY_DOMAIN;
 		case ShaderType::All: return D3D12_SHADER_VISIBILITY_ALL;
 		case ShaderType::Compute: return D3D12_SHADER_VISIBILITY_ALL;
-		default: throw std::invalid_argument("passed invalid argument to convert_shader_visibility");
+		default: assert(false && "passed invalid argument to convert_shader_visibility"); break;
 	}
 }
 
-D3D12_DESCRIPTOR_RANGE_TYPE convert_descriptor_range_type(const ViewType type) {
-	switch(type) {
+D3D12_DESCRIPTOR_RANGE_TYPE convert_descriptor_range_type(const ViewType view_type) {
+	switch(view_type) {
 		case ViewType::Texture:
 		case ViewType::StructuredBuffer:
 		case ViewType::Buffer: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -92,30 +92,30 @@ D3D12_DESCRIPTOR_RANGE_TYPE convert_descriptor_range_type(const ViewType type) {
 		case ViewType::RWStructuredBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
 		case ViewType::ConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 		case ViewType::Sampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-		default: throw std::invalid_argument("passed invalid argument to convert_descriptor_range_type");
+		default: assert(false && "passed invalid argument to convert_descriptor_range_type"); break;
 	}
 }
 
-D3D12_COMMAND_LIST_TYPE convert_command_list_type(const CommandListType type) {
-	switch(type) {
+D3D12_COMMAND_LIST_TYPE convert_command_list_type(const CommandListType list_type) {
+	switch(list_type) {
         case CommandListType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
         case CommandListType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
         case CommandListType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-		default: throw std::invalid_argument("passed invalid argument to convert_command_list_type");
+		default: assert(false && "passed invalid argument to convert_command_list_type"); break;
     }
 }
 
-D3D12_HEAP_TYPE convert_enum(const MemoryType type) {
-	switch(type) {
+D3D12_HEAP_TYPE convert_heap_type(const MemoryType heap_type) {
+	switch(heap_type) {
         case MemoryType::Default: return D3D12_HEAP_TYPE_DEFAULT;
         case MemoryType::Upload: return D3D12_HEAP_TYPE_UPLOAD;
         case MemoryType::Readback: return D3D12_HEAP_TYPE_READBACK;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: throw std::invalid_argument("passed invalid argument to convert_heap_type");
     }
 }
 
-D3D12_RESOURCE_STATES convert_resource_state(const ResourceState state) {
-	switch(state) {
+D3D12_RESOURCE_STATES convert_resource_state(const ResourceState resource_state) {
+	switch(resource_state) {
 		case ResourceState::Common: return D3D12_RESOURCE_STATE_COMMON;
 		case ResourceState::VertexAndConstantBuffer: return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 		case ResourceState::IndexBuffer: return D3D12_RESOURCE_STATE_INDEX_BUFFER;
@@ -130,12 +130,39 @@ D3D12_RESOURCE_STATES convert_resource_state(const ResourceState state) {
 		case ResourceState::CopySource: return D3D12_RESOURCE_STATE_COPY_SOURCE;
 		case ResourceState::Present: return D3D12_RESOURCE_STATE_PRESENT;
 		case ResourceState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
-		default: throw std::invalid_argument("passed invalid argument to convert_enum");
+		default: assert(false && "passed invalid argument to convert_resource_state"); break;
 	}
 }
 
-D3D12_DESCRIPTOR_HEAP_TYPE convert_descriptor_heap_type(const ViewType type) {
-	switch(type) {
+D3D12_RESOURCE_DIMENSION convert_resource_dimension(const ViewDimension dimension) {
+	switch(dimension) {
+		case ViewDimension::Buffer: return D3D12_RESOURCE_DIMENSION_BUFFER;
+		case ViewDimension::Texture1D: return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+		case ViewDimension::Texture2D: return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		case ViewDimension::Texture3D: return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+		default: assert(false && "passed invalid argument to convert_resource_dimension"); break;
+	}
+}
+
+D3D12_FILTER convert_filter(const Filter filter) {
+	switch(filter) {
+		case Filter::Anisotropic: return D3D12_FILTER_ANISOTROPIC;
+		case Filter::ComparisonMinMagMipLinear: return D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+		case Filter::MinMagMipLinear: return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+		default: assert(false && "passed invalid argument to convert_filter"); break;
+	}
+}
+
+D3D12_TEXTURE_ADDRESS_MODE convert_texture_address_mode(const TextureAddressMode address_mode) {
+	switch(address_mode) {
+		case TextureAddressMode::Clamp: return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		case TextureAddressMode::Wrap: return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+		default: assert(false && "passed invalid argument to convert_texture_address_mode"); break;
+	}
+}
+
+D3D12_DESCRIPTOR_HEAP_TYPE convert_descriptor_heap_type(const ViewType view_type) {
+	switch(view_type) {
 		case ViewType::Texture:
 		case ViewType::StructuredBuffer:
 		case ViewType::Buffer: 
@@ -146,24 +173,24 @@ D3D12_DESCRIPTOR_HEAP_TYPE convert_descriptor_heap_type(const ViewType type) {
 		case ViewType::Sampler: return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
 		case ViewType::RenderTarget: return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		case ViewType::DepthStencil: return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-		default: throw std::invalid_argument("passed invalid argument to convert_descriptor_heap_type");
+		default: assert(false && "passed invalid argument to convert_descriptor_heap_type"); break;
 	}
 }
 
-D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE convert_render_pass_type(const RenderPassLoadOp op) {
-	switch (op) {
+D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE convert_render_pass_type(const RenderPassLoadOp load_op) {
+	switch (load_op) {
     	case RenderPassLoadOp::Load: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
     	case RenderPassLoadOp::Clear: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
 		case RenderPassLoadOp::DontCare: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
-		default: throw std::invalid_argument("passed invalid argument to convert_render_pass_type");
+		default: assert(false && "passed invalid argument to convert_render_pass_type"); break;
     }
 }
 
-D3D12_RENDER_PASS_ENDING_ACCESS_TYPE convert_render_pass_type(const RenderPassStoreOp op) {
-    switch (op) {
+D3D12_RENDER_PASS_ENDING_ACCESS_TYPE convert_render_pass_type(const RenderPassStoreOp store_op) {
+    switch (store_op) {
     	case RenderPassStoreOp::Store: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
     	case RenderPassStoreOp::DontCare: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
-		default: throw std::invalid_argument("passed invalid argument to convert_render_pass_type");
+		default: assert(false && "passed invalid argument to convert_render_pass_type"); break;
     }
 }
 

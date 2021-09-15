@@ -298,10 +298,39 @@ struct DepthStencilDesc {
 struct ViewDesc {
     ViewType view_type;
     ViewDimension dimension;
-    uint32 base_mip_level;
-    uint32 base_array_layer;
-    uint32 layer_count;
+    uint32 array_size;
+    uint32 mip_slice;
+    uint32 array_slice;
     uint32 plane_slice;
+    uint32 structure_stride;
+};
+
+struct ResourceDesc {
+    ResourceType resource_type;
+    ViewDimension dimension;
+    uint64 width;
+    uint32 height;
+    uint16 array_size;
+    uint16 mip_levels;
+    Format format;
+    uint32 sample_count;
+};
+
+enum class Filter {
+    Anisotropic,
+    MinMagMipLinear,
+    ComparisonMinMagMipLinear
+};
+
+enum class TextureAddressMode {
+    Wrap,
+    Clamp
+};
+
+struct SamplerDesc {
+    Filter filter;
+    TextureAddressMode mode;
+    ComparisonFunc func;
 };
 
 struct BlendDesc {
