@@ -4,7 +4,7 @@
 
 #include "platform/base/window.h"
 
-#include "renderer/api.h"
+#include "renderer/api/api.h"
 #include "renderer/frame_graph/frame_graph.h"
 #include "renderer/quad_renderer.h"
 
@@ -19,8 +19,8 @@ public:
 
     RenderSystem(platform::Window& window) : m_window(window), m_buffer_count(2) {
 
-        std::cout << format<char>("RenderSystem ({} API) initialized", renderer::get_api_name()) << std::endl;
-        m_instance = renderer::create_unique_instance();
+        std::cout << format<char>("RenderSystem ({} API) initialized", renderer::api::get_api_name()) << std::endl;
+        m_instance = renderer::api::create_unique_instance();
 
         auto adapters = m_instance->enumerate_adapters();
         m_adapter = std::move(adapters[0]);
@@ -55,7 +55,7 @@ public:
     void tick() {
         
         uint32 frame_index = m_swapchain->next_buffer(*m_fence, ++m_fence_values[0]);
-        m_device->get_command_queue(renderer::CommandListType::Graphics).wait(*m_fence, m_fence_values[0]);
+        m_device->get_command_queue(renderer::api::CommandListType::Graphics).wait(*m_fence, m_fence_values[0]);
         m_fence->wait(m_fence_values[0]);
 
         m_renderer.get()->tick();
@@ -69,11 +69,11 @@ private:
 
     std::reference_wrapper<platform::Window> m_window;
 
-    std::unique_ptr<renderer::Instance> m_instance;
-    std::unique_ptr<renderer::Adapter> m_adapter;
-    std::unique_ptr<renderer::Device> m_device;
-    std::unique_ptr<renderer::Swapchain> m_swapchain;
-    std::unique_ptr<renderer::Fence> m_fence;
+    std::unique_ptr<renderer::api::Instance> m_instance;
+    std::unique_ptr<renderer::api::Adapter> m_adapter;
+    std::unique_ptr<renderer::api::Device> m_device;
+    std::unique_ptr<renderer::api::Swapchain> m_swapchain;
+    std::unique_ptr<renderer::api::Fence> m_fence;
 
     std::vector<uint64> m_fence_values;
 
