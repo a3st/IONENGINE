@@ -2,26 +2,20 @@
 
 #pragma once
 
-namespace ionengine::renderer {
+namespace ionengine::renderer::fg {
 
-enum class FrameGraphResourceType {
+enum class ResourceType {
     Attachment,
     Buffer
 };
 
-enum class FrameGraphResourceFlags : uint32 {
+enum class ResourceFlags : uint32 {
     None = 1 << 0,
     Present = 1 << 1,
     DepthStencil = 1 << 2
 };
 
-FrameGraphResourceFlags operator|(const FrameGraphResourceFlags lhs, const FrameGraphResourceFlags rhs) {
-	return static_cast<FrameGraphResourceFlags>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
-}
-
-bool operator&(const FrameGraphResourceFlags lhs, const FrameGraphResourceFlags rhs) {
-	return static_cast<uint32>(lhs) & static_cast<uint32>(rhs);
-}
+ENUM_CLASS_BIT_FLAG_DECLARE(ResourceFlags)
 
 struct AttachmentDesc {
     api::Format format;
@@ -33,11 +27,11 @@ struct AttachmentDesc {
     }
 };
 
-class FrameGraphResource {
-friend class FrameGraphResourceManager;
+class Resource {
+friend class ResourceManager;
 public:
 
-    FrameGraphResource(const uint64 id, const FrameGraphResourceType type, const std::string& name, api::View& view, const FrameGraphResourceFlags flags) :
+    Resource(const uint64 id, const ResourceType type, const std::string& name, api::View& view, const ResourceFlags flags) :
         m_id(id), m_type(type), m_name(name), m_view(view), m_flags(flags), m_ref_count(0) {
 
     }
@@ -85,19 +79,17 @@ private:
 
     uint64 m_id;
     std::string m_name;
-
-    FrameGraphResourceType m_type;
-    FrameGraphResourceFlags m_flags;
+    ResourceType m_type;
+    ResourceFlags m_flags;
 
     std::reference_wrapper<api::View> m_view;
-
     std::vector<api::ResourceState> m_states;
 
     uint32 m_ref_count;
 
     void state_acquire() {
         switch(m_type) {
-            case FrameGraphResourceType::Attachment: {
+            case ResourceType::Attachment: {
                 m_states.emplace_back(api::ResourceState::RenderTarget);
                 break;
             }
@@ -106,11 +98,11 @@ private:
 
     void state_release() {
 
-        if(m_flags & FrameGraphResourceFlags::Present) {
+        if(m_flags & ResourceFlags::Present) {
             m_states.emplace_back(api::ResourceState::Present);
         } else {
             switch(m_type) {
-                case FrameGraphResourceType::Attachment: {
+                case ResourceType::Attachment: {
                     m_states.emplace_back(api::ResourceState::PixelShaderResource);
                     break;
                 }
@@ -119,21 +111,21 @@ private:
     }
 };
 
-class FrameGraphResourceHandle {
-friend class FrameGraphResourceManager;
+class ResourceHandle {
+friend class ResourceManager;
 public:
 
-    FrameGraphResourceHandle() {
+    ResourceHandle() {
 
     }
 
-    FrameGraphResourceHandle(const uint64 id) : m_id(id) {
+    ResourceHandle(const uint64 id) : m_id(id) {
 
     }
 
-    bool operator==(const FrameGraphResourceHandle& rhs) const { return m_id == rhs.m_id; }
+    bool operator==(const ResourceHandle& rhs) const { return m_id == rhs.m_id; }
     
-    static FrameGraphResourceHandle null() {
+    static ResourceHandle null() {
         return { std::numeric_limits<uint64>::max() };
     }
 
@@ -146,48 +138,48 @@ private:
     uint64 m_id;
 };
 
-class FrameGraphResourceManager {
+class ResourceManager {
 public:
 
-    FrameGraphResourceManager() : m_offset(0) {
+    ResourceManager() : m_offset(0) {
 
     }
 
-    FrameGraphResourceHandle create(const std::string& name, const FrameGraphResourceType type, api::View& view, const FrameGraphResourceFlags flags) {
+    ResourceHandle create(const std::string& name, const ResourceType type, api::View& view, const ResourceFlags flags) {
 
-        m_resources.emplace_back(m_offset, FrameGraphResourceType::Attachment, name, view, flags);
+        m_resources.emplace_back(m_offset, ResourceType::Attachment, name, view, flags);
         m_resource_offsets[m_offset] = std::prev(m_resources.end());
 
-        FrameGraphResourceHandle handle(m_offset);
+        ResourceHandle handle(m_offset);
         m_offset++;
         return handle;
     }
 
-    FrameGraphResourceHandle find_handle_by_name(const std::string& name) {
+    ResourceHandle find_handle_by_name(const std::string& name) {
 
         auto it = std::find_if(
             m_resources.begin(), 
             m_resources.end(),
-            [&name](const FrameGraphResource& element) {
+            [&name](const Resource& element) {
                 return name == element.get_name();
             }
         );
 
-        return it != m_resources.end() ? FrameGraphResourceHandle { it->get_id() } : FrameGraphResourceHandle::null();
+        return it != m_resources.end() ? ResourceHandle { it->get_id() } : ResourceHandle::null();
     }
 
-    FrameGraphResource& get_resource(const FrameGraphResourceHandle& handle) {
+    Resource& get_resource(const ResourceHandle& handle) {
         return *m_resource_offsets[handle.get_id()];
     }
 
-    std::list<FrameGraphResource>& get_resources() { return m_resources; }
+    std::list<Resource>& get_resources() { return m_resources; }
 
 private:
 
     uint64 m_offset;
 
-    std::list<FrameGraphResource> m_resources;
-    std::map<uint64, std::list<FrameGraphResource>::iterator> m_resource_offsets;
+    std::list<Resource> m_resources;
+    std::map<uint64, std::list<Resource>::iterator> m_resource_offsets;
 };
 
 }

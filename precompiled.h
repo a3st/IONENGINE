@@ -23,6 +23,8 @@
 #include <filesystem>
 #include <optional>
 
+#include "cpputils.h"
+
 namespace ionengine {
 
 typedef std::uint64_t   uint64;

@@ -4,7 +4,7 @@
 
 #include "context.h"
 #include "resource.h"
-#include "pass.h"
+// #include "pass.h"
 #include "task.h"
 #include "builder.h"
 
@@ -17,7 +17,7 @@ public:
         
     }
 
-    void create_resource(const std::string& name, const FrameGraphResourceType type, api::View& view, const FrameGraphResourceFlags flags) {
+    void create_resource(const std::string& name, const ResourceType type, api::View& view, const ResourceFlags flags) {
         m_resource_manager.create(name, type, view, flags);
     }
 
@@ -78,7 +78,7 @@ public:
            
             switch(task.get_type()) {
 
-                case FrameGraphTaskType::RenderPass: {
+                case TaskType::RenderPass: {
 
                     auto& render_pass = std::get<RenderPassTask>(task.get_task());
                     std::cout << format<char>("Compiled task (RenderPass) '{}' ({} reads, {} writes)", 
@@ -103,7 +103,7 @@ public:
                         }
                     }
 
-                    FrameGraphRenderPassCache::Key render_pass_key{};
+                    RenderPassCache::Key render_pass_key{};
                     render_pass_key.colors = render_pass.m_attachments;
                     render_pass_key.sample_count = 1;
 
@@ -116,7 +116,7 @@ public:
                     }
 
                     auto& resource_desc = std::get<api::ResourceDesc>(resource.get_desc());
-                    FrameGraphFrameBufferCache::Key frame_buffer_key = {
+                    FrameBufferCache::Key frame_buffer_key = {
                         render_pass_cache,
                         static_cast<uint32>(resource_desc.width),
                         resource_desc.height,
@@ -129,7 +129,7 @@ public:
                     break;
                 }
 
-                case FrameGraphTaskType::ComputePass: {
+                case TaskType::ComputePass: {
 
                     auto& compute_pass = std::get<RenderPassTask>(task.get_task());
                     std::cout << format<char>("Compiled task (RenderPass) '{}' ({} reads, {} writes)", 
@@ -188,7 +188,7 @@ public:
 
             switch(task.get_type()) {
 
-                case FrameGraphTaskType::ResourceTransition: {
+                case TaskType::ResourceTransition: {
 
                     auto& transition = std::get<ResourceTransitionTask>(task.get_task());
                     auto& resource = transition.resource.get().get_view().get_resource();
@@ -196,11 +196,11 @@ public:
                     break;
                 }
 
-                case FrameGraphTaskType::RenderPass: {
+                case TaskType::RenderPass: {
 
                     auto render_pass = std::get<RenderPassTask>(task.get_task());
 
-                    FrameGraphRenderPassCache::Key render_pass_key{};
+                    RenderPassCache::Key render_pass_key{};
                     render_pass_key.colors = render_pass.m_attachments;
                     render_pass_key.sample_count = 1;
 
@@ -213,7 +213,7 @@ public:
                     }
 
                     auto& resource_desc = std::get<api::ResourceDesc>(resource.get_desc());
-                    FrameGraphFrameBufferCache::Key frame_buffer_key = {
+                    FrameBufferCache::Key frame_buffer_key = {
                         render_pass_cache,
                         static_cast<uint32>(resource_desc.width),
                         resource_desc.height,
@@ -236,7 +236,7 @@ public:
                     break;
                 }
 
-                case FrameGraphTaskType::ComputePass: {
+                case TaskType::ComputePass: {
 
                     break;
                 }
@@ -251,12 +251,12 @@ private:
 
     std::reference_wrapper<api::Device> m_device;
 
-    FrameGraphResourceManager m_resource_manager;
-    FrameGraphRenderPassCache m_render_pass_cache;
-    FrameGraphFrameBufferCache m_frame_buffer_cache;
+    ResourceManager m_resource_manager;
+    RenderPassCache m_render_pass_cache;
+    FrameBufferCache m_frame_buffer_cache;
 
-    std::list<FrameGraphTask> m_added_tasks;
-    std::list<FrameGraphTask> m_compiled_tasks;
+    std::list<Task> m_added_tasks;
+    std::list<Task> m_compiled_tasks;
 };
 
 }

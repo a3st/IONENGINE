@@ -8,8 +8,8 @@ class RenderPassCache {
 public:
 
     struct Key {
-        std::vector<AttachmentDesc> colors;
-        AttachmentDesc depth_stencil;
+        std::vector<api::RenderPassColorDesc> colors;
+        api::RenderPassDepthStencilDesc depth_stencil;
         uint32 sample_count;
 
         bool operator<(const Key& rhs) const {
@@ -27,35 +27,12 @@ public:
         if(it != m_render_passes.end()) {
             return *it->second;
         } else {
-            api::RenderPassDesc render_pass_desc{};
-
-            for(auto& color : key.colors) {
-                api::RenderPassColorDesc color_desc{};
-                color_desc.format = color.format;
-                color_desc.load_op = color.load_op;
-                color_desc.store_op = api::RenderPassStoreOp::Store;
-
-                render_pass_desc.colors.emplace_back(color_desc);
-            }
-
-            api::RenderPassDepthStencilDesc depth_stencil_desc{};
-            depth_stencil_desc.format = key.depth_stencil.format;
-            depth_stencil_desc.depth_load_op = key.depth_stencil.load_op;
-            depth_stencil_desc.stencil_load_op = key.depth_stencil.load_op;
-            if(key.depth_stencil.load_op == api::RenderPassLoadOp::DontCare) {
-                depth_stencil_desc.depth_store_op = api::RenderPassStoreOp::DontCare;
-                depth_stencil_desc.stencil_store_op = api::RenderPassStoreOp::DontCare;
-            } else {
-                depth_stencil_desc.depth_store_op = api::RenderPassStoreOp::Store;
-                depth_stencil_desc.stencil_store_op = api::RenderPassStoreOp::Store;
-            }
-
-            render_pass_desc.depth_stencil = depth_stencil_desc;
-            render_pass_desc.sample_count = key.sample_count;
-
+            api::RenderPassDesc render_pass_desc = {
+                key.colors,
+                key.depth_stencil,
+                key.sample_count
+            };
             auto result = m_render_passes.emplace(key, m_device.get().create_render_pass(render_pass_desc));
-
-            std::cout << "RenderPass (" << renderer::api::get_api_name() << ") created" << std::endl;
             return *result.first->second;
         }
     }
@@ -68,7 +45,7 @@ private:
 
     std::reference_wrapper<api::Device> m_device;
 
-    std::map<FrameGraphRenderPassCache::Key, std::unique_ptr<api::RenderPass>> m_render_passes;
+    std::map<RenderPassCache::Key, std::unique_ptr<api::RenderPass>> m_render_passes;
 };
 
 class FrameBufferCache {
@@ -86,7 +63,7 @@ public:
         }
     };
 
-    FrameGraphFrameBufferCache(api::Device& device) : m_device(device) {
+    FrameBufferCache(api::Device& device) : m_device(device) {
         
     }
 
@@ -97,7 +74,7 @@ public:
             return *it->second;
         } else {
 
-            api::FrameBufferDesc frame_buffer_desc = {
+            /*api::FrameBufferDesc frame_buffer_desc = {
                 key.render_pass,
                 key.width,
                 key.height,
@@ -109,8 +86,7 @@ public:
             }
 
             auto result = m_frame_buffers.emplace(key, m_device.get().create_frame_buffer(frame_buffer_desc));
-
-            std::cout << "FrameBuffer (" << renderer::api::get_api_name() << ") created" << std::endl;
+*/
             return *result.first->second;
         }
     }
@@ -123,7 +99,7 @@ private:
 
     std::reference_wrapper<api::Device> m_device;
 
-    std::map<FrameGraphFrameBufferCache::Key, std::unique_ptr<api::FrameBuffer>> m_frame_buffers;
+    std::map<FrameBufferCache::Key, std::unique_ptr<api::FrameBuffer>> m_frame_buffers;
 };
 
 }

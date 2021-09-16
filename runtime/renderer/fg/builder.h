@@ -2,27 +2,27 @@
 
 #pragma once
 
-namespace ionengine::renderer {
+namespace ionengine::renderer::fg {
 
 class RenderPassBuilder {
 public:
 
-    RenderPassBuilder(FrameGraphResourceManager& resource_manager, RenderPassTask& task) 
+    RenderPassBuilder(ResourceManager& resource_manager, RenderPassTask& task) 
         : m_resource_manager(resource_manager), m_task(task) {
         
     }
 
-    FrameGraphResourceHandle read(const std::string& name) {
+    ResourceHandle read(const std::string& name) {
        
-        FrameGraphResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
+        ResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
         auto& resource = m_resource_manager.get().get_resource(handle);
         m_task.get().m_reads.emplace_back(resource);
         return handle;
     }
 
-    FrameGraphResourceHandle write(const std::string& name, const api::RenderPassLoadOp load_op, const api::ClearValueColor& clear_color = { 0, 0, 0, 0 }) {
+    ResourceHandle write(const std::string& name, const api::RenderPassLoadOp load_op, const api::ClearValueColor& clear_color = { 0, 0, 0, 0 }) {
         
-        FrameGraphResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
+        ResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
         auto& resource = m_resource_manager.get().get_resource(handle);
         m_task.get().m_writes.emplace_back(resource);
         auto resource_desc = std::get<api::ResourceDesc>(resource.get_view().get_resource().get_desc());
@@ -32,29 +32,29 @@ public:
 
 private:
 
-    std::reference_wrapper<FrameGraphResourceManager> m_resource_manager;
+    std::reference_wrapper<ResourceManager> m_resource_manager;
     std::reference_wrapper<RenderPassTask> m_task;
 };
 
 class ComputePassBuilder {
 public:
 
-    ComputePassBuilder(FrameGraphResourceManager& resource_manager, ComputePassTask& task) 
+    ComputePassBuilder(ResourceManager& resource_manager, ComputePassTask& task) 
         : m_resource_manager(resource_manager), m_task(task) {
         
     }
 
-    FrameGraphResourceHandle read(const std::string& name) {
-        return FrameGraphResourceHandle::null();
+    ResourceHandle read(const std::string& name) {
+        return ResourceHandle::null();
     }
 
-    FrameGraphResourceHandle write(const std::string& name) {
-        return FrameGraphResourceHandle::null();
+    ResourceHandle write(const std::string& name) {
+        return ResourceHandle::null();
     }
 
 private:
 
-    std::reference_wrapper<FrameGraphResourceManager> m_resource_manager;
+    std::reference_wrapper<ResourceManager> m_resource_manager;
     std::reference_wrapper<ComputePassTask> m_task;
 };
 

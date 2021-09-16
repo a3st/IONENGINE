@@ -157,13 +157,7 @@ enum class ResourceState {
             ResourceState::IndirectArgument
 };
 
-ResourceState operator|(const ResourceState lhs, const ResourceState rhs) {
-	return static_cast<ResourceState>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
-}
-
-bool operator&(const ResourceState lhs, const ResourceState rhs) {
-	return static_cast<uint32>(lhs) & static_cast<uint32>(rhs);
-}
+ENUM_CLASS_BIT_FLAG_DECLARE(ResourceState)
 
 enum class ResourceType {
     Unknown,
@@ -189,18 +183,16 @@ enum class PipelineType {
     Compute
 };
 
-ResourceFlags operator|(const ResourceFlags lhs, const ResourceFlags rhs) {
-	return static_cast<ResourceFlags>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
-}
-
-bool operator&(const ResourceFlags lhs, const ResourceFlags rhs) {
-	return static_cast<uint32>(lhs) & static_cast<uint32>(rhs);
-}
+ENUM_CLASS_BIT_FLAG_DECLARE(ResourceFlags)
 
 struct RenderPassColorDesc {
     Format format;
     RenderPassLoadOp load_op = RenderPassLoadOp::DontCare;
     RenderPassStoreOp store_op  = RenderPassStoreOp::DontCare;
+
+    auto make_tie() const {
+        return std::tie(format, load_op, store_op);
+    }
 };
 
 struct RenderPassDepthStencilDesc {
@@ -209,6 +201,10 @@ struct RenderPassDepthStencilDesc {
     RenderPassStoreOp depth_store_op = RenderPassStoreOp::DontCare;
     RenderPassLoadOp stencil_load_op = RenderPassLoadOp::DontCare;
     RenderPassStoreOp stencil_store_op = RenderPassStoreOp::DontCare;
+
+    auto make_tie() const { 
+        return std::tie(format, depth_load_op, depth_store_op, stencil_load_op, stencil_store_op);
+    }
 };
 
 struct FrameBufferDesc {

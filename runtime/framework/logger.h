@@ -2,21 +2,17 @@
 
 #pragma once
 
-#include "lib/singleton.h"
-
 namespace ionengine {
 
-class Logger final : public Singleton<Logger> {
-DECLARE_SINGLETON(Logger)
+class Logger {
 public:
-
-protected:
 
     Logger() {
         
     }
 
 private:
+
 };
 
 }

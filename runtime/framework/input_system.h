@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "lib/singleton.h"
 #include "input_types.h"
 #include "platform/base/types.h"
 

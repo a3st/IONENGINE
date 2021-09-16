@@ -6,6 +6,8 @@
 
 #include "lib/memory.h"
 
+#include "pass_cache.h"
+
 namespace ionengine::renderer {
 
 using namespace memory_literals;
@@ -16,7 +18,7 @@ public:
     QuadRenderer(api::Device& device, api::Swapchain& swapchain, const uint32 buffer_count) : m_device(device), m_swapchain(swapchain), 
         m_buffer_count(buffer_count), m_frame_index(0) {
 
-        m_frame_graph = std::make_unique<FrameGraph>(device);
+        m_frame_graph = std::make_unique<fg::FrameGraph>(device);
 
         std::vector<api::DescriptorPoolSize> pool_sizes = { 
             { api::ViewType::ConstantBuffer, 10 },
@@ -53,18 +55,18 @@ public:
             m_command_lists.emplace_back(m_device.get().create_command_list(api::CommandListType::Graphics));
         }
 
-        m_frame_graph->create_resource("swapchain", FrameGraphResourceType::Attachment, *m_swapchain_views[0], FrameGraphResourceFlags::Present);
+        m_frame_graph->create_resource("swapchain", fg::ResourceType::Attachment, *m_swapchain_views[0], fg::ResourceFlags::Present);
 
         struct DepthPassData {
-            FrameGraphResourceHandle output;
+            fg::ResourceHandle output;
         };
 
         m_frame_graph->add_task<DepthPassData>(
             "DepthPass",
-            [&](RenderPassBuilder& builder, DepthPassData& data) {
+            [&](fg::RenderPassBuilder& builder, DepthPassData& data) {
                 data.output = builder.write("swapchain", api::RenderPassLoadOp::Clear, { 150, 105, 150, 255 } );
             },
-            [=](RenderPassContext& context, const DepthPassData& data) {
+            [=](fg::RenderPassContext& context, const DepthPassData& data) {
             }
         );
 
@@ -85,7 +87,7 @@ private:
     std::reference_wrapper<api::Device> m_device;
     std::reference_wrapper<api::Swapchain> m_swapchain;
 
-    std::unique_ptr<FrameGraph> m_frame_graph;
+    std::unique_ptr<fg::FrameGraph> m_frame_graph;
 
     std::vector<std::unique_ptr<api::DescriptorPool>> m_descriptor_pools;
     std::vector<std::unique_ptr<api::View>> m_swapchain_views;
