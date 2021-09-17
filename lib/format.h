@@ -4,26 +4,26 @@
 
 namespace ionengine {
 
-std::wstring stws(const std::string& src) {
-    size_t length = ::strlen(src.c_str()) + 1;
-    assert(src.length() > 0 && "src source length is less than 0 or equal 0");
+inline std::wstring stws(const std::string& src) {
+    size_t length = strlen(src.c_str()) + 1;
+    assert(src.length() > 0 && "source length is less than 0 or equal 0");
     size_t out_size = 0;
     std::wstring out_str(length - 1, 0);
-    ::mbstowcs_s(&out_size, &out_str[0], length, src.c_str(), length - 1);
+    mbstowcs_s(&out_size, &out_str[0], length, src.c_str(), length - 1);
     return out_str;
 }
 
-std::string wsts(const std::wstring& src) {
-    size_t length = ::wcslen(src.c_str()) + 1;
-    assert(src.length() > 0 && "src source length is less than 0 or equal 0");
+inline std::string wsts(const std::wstring& src) {
+    size_t length = wcslen(src.c_str()) + 1;
+    assert(src.length() > 0 && "source length is less than 0 or equal 0");
     size_t out_size = 0;
     std::string out_str(length - 1, 0);
-    ::wcstombs_s(&out_size, &out_str[0], length, src.c_str(), length - 1);
+    wcstombs_s(&out_size, &out_str[0], length, src.c_str(), length - 1);
     return out_str;
 }
 
 template<class T, typename... A>
-std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::basic_string<T, std::char_traits<T>, std::allocator<T>>& fmt, A&&... args) {
+inline std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::basic_string<T, std::char_traits<T>, std::allocator<T>>& fmt, A&&... args) {
     assert(fmt.length() > 0 && "fmt source length is less than 0 or equal 0");
     return internal::format(fmt, std::forward<A>(args)...);
 }
@@ -31,7 +31,7 @@ std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::b
 namespace internal {
 
 template<class T, typename I, typename... A>
-std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::basic_string<T, std::char_traits<T>, std::allocator<T>>& fmt, const I& arg, A&&... args) {
+inline std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::basic_string<T, std::char_traits<T>, std::allocator<T>>& fmt, const I& arg, A&&... args) {
     auto it_arg = std::find(fmt.begin(), fmt.end(), '{');
     auto it_type = std::next(it_arg);
 
@@ -76,7 +76,7 @@ std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::b
 }
 
 template<class T>
-std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::basic_string<T, std::char_traits<T>, std::allocator<T>>& fmt) {
+inline std::basic_string<T, std::char_traits<T>, std::allocator<T>> format(const std::basic_string<T, std::char_traits<T>, std::allocator<T>>& fmt) {
     return fmt;
 }
 

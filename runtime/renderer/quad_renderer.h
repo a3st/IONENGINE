@@ -55,7 +55,9 @@ public:
             m_command_lists.emplace_back(m_device.get().create_command_list(api::CommandListType::Graphics));
         }
 
+        m_frame_graph->create_resource("depthbuffer", fg::ResourceType::Attachment, *m_swapchain_views[0], fg::ResourceFlags::DepthStencil);
         m_frame_graph->create_resource("swapchain", fg::ResourceType::Attachment, *m_swapchain_views[0], fg::ResourceFlags::Present);
+        m_frame_graph->create_resource("gbuffer", fg::ResourceType::Attachment, *m_swapchain_views[0], fg::ResourceFlags::None);
 
         struct DepthPassData {
             fg::ResourceHandle output;
@@ -64,9 +66,24 @@ public:
         m_frame_graph->add_task<DepthPassData>(
             "DepthPass",
             [&](fg::RenderPassBuilder& builder, DepthPassData& data) {
-                data.output = builder.write("swapchain", api::RenderPassLoadOp::Clear, { 150, 105, 150, 255 } );
+                data.output = builder.write("depthbuffer", fg::ResourceOp::Clear, { 150, 105, 150, 255 } );
             },
             [=](fg::RenderPassContext& context, const DepthPassData& data) {
+            }
+        );
+
+        struct BasicPassData {
+            fg::ResourceHandle input;
+            fg::ResourceHandle output;
+        };
+
+        m_frame_graph->add_task<BasicPassData>(
+            "BasicPass",
+            [&](fg::RenderPassBuilder& builder, BasicPassData& data) {
+                data.input = builder.read("depthbuffer");
+                data.output = builder.write("swapchain", fg::ResourceOp::Clear, { 150, 105, 150, 255 } );
+            },
+            [=](fg::RenderPassContext& context, const BasicPassData& data) {
             }
         );
 

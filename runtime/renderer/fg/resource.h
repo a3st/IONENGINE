@@ -2,23 +2,13 @@
 
 #pragma once
 
+#include "lib/math/color.h"
+
 namespace ionengine::renderer::fg {
-
-enum class ResourceType {
-    Attachment,
-    Buffer
-};
-
-enum class ResourceFlags : uint32 {
-    None = 1 << 0,
-    Present = 1 << 1,
-    DepthStencil = 1 << 2
-};
-
-ENUM_CLASS_BIT_FLAG_DECLARE(ResourceFlags)
 
 class Resource {
 friend class ResourceManager;
+friend class FrameGraph;
 public:
 
     Resource(const uint64 id, const ResourceType type, const std::string& name, api::View& view, const ResourceFlags flags) :
@@ -26,42 +16,49 @@ public:
 
     }
 
-    void acquire() {
+    std::pair<api::ResourceState, api::ResourceState> barrier() {
 
-        state_acquire();
-        m_ref_count++;
     }
 
-    void release() {
-
-        state_release();
-        m_ref_count--;
-    }
-
-    void clear() {
-
+    void reset() {
         m_states.clear();
-        state_release();
-        m_ref_count = 0;
-    }
 
-    std::pair<api::ResourceState, api::ResourceState> get_state() const { 
-        return { m_states[m_states.size() - 2], m_states[m_states.size() - 1] };
+        if(m_flags & ResourceFlags::Present) {
+            m_states.emplace_back(api::ResourceState::Present);
+        } else {
+            switch(m_type) {
+                case ResourceType::Attachment: {
+                    m_states.emplace_back(api::ResourceState::RenderTarget);
+                    break;
+                }
+            }
+        }
     }
     
     uint64 get_id() const { return m_id; }
     const std::string& get_name() const { return m_name; }
+    ResourceFlags get_flags() const { return m_flags; }
+
+    bool culling() const { return m_flags & ResourceFlags::None; }
 
     api::View& get_view() { return m_view; }
+
+    void write(Task& task) {
+        m_writers.emplace_back(task);
+    }
+
+    void read(Task& task) {
+        m_readers.emplace_back(task);
+    }
 
     void debug_print() const {
 
         std::cout << format<char>("FGResource ID: {}, Name: {}, References: {}\nStates:", m_id, m_name, m_ref_count);
-        for(auto& state : m_states) {
+        /*for(auto& state : m_states) {
             if(state == api::ResourceState::PixelShaderResource) std ::cout << " pixel_shader_resource ";
             if(state == api::ResourceState::RenderTarget) std ::cout << " render_target ";
             if(state == api::ResourceState::Present) std::cout << " present ";
-        }
+        }*/
         std::cout << std::endl;
     }
 
@@ -75,60 +72,14 @@ private:
     std::reference_wrapper<api::View> m_view;
     std::vector<api::ResourceState> m_states;
 
+    std::vector<std::reference_wrapper<Task>> m_writers;
+    std::vector<std::reference_wrapper<Task>> m_readers;
+
     uint32 m_ref_count;
-
-    void state_acquire() {
-        switch(m_type) {
-            case ResourceType::Attachment: {
-                m_states.emplace_back(api::ResourceState::RenderTarget);
-                break;
-            }
-        }
-    }
-
-    void state_release() {
-
-        if(m_flags & ResourceFlags::Present) {
-            m_states.emplace_back(api::ResourceState::Present);
-        } else {
-            switch(m_type) {
-                case ResourceType::Attachment: {
-                    m_states.emplace_back(api::ResourceState::PixelShaderResource);
-                    break;
-                }
-            }
-        }
-    }
-};
-
-class ResourceHandle {
-friend class ResourceManager;
-public:
-
-    ResourceHandle() {
-
-    }
-
-    ResourceHandle(const uint64 id) : m_id(id) {
-
-    }
-
-    bool operator==(const ResourceHandle& rhs) const { return m_id == rhs.m_id; }
-    
-    static ResourceHandle null() {
-        return { std::numeric_limits<uint64>::max() };
-    }
-
-protected:
-
-    uint64 get_id() const { return m_id; }
-
-private:
-
-    uint64 m_id;
 };
 
 class ResourceManager {
+friend class FrameGraph;
 public:
 
     ResourceManager() : m_offset(0) {
@@ -145,8 +96,7 @@ public:
         return handle;
     }
 
-    ResourceHandle find_handle_by_name(const std::string& name) {
-
+    std::pair<ResourceHandle, std::optional<std::reference_wrapper<Resource>>> find_by_name(const std::string& name) {
         auto it = std::find_if(
             m_resources.begin(), 
             m_resources.end(),
@@ -154,15 +104,13 @@ public:
                 return name == element.get_name();
             }
         );
-
-        return it != m_resources.end() ? ResourceHandle { it->get_id() } : ResourceHandle::null();
+        return it != m_resources.end() ? std::make_pair<ResourceHandle, std::optional<std::reference_wrapper<Resource>>>(ResourceHandle { it->m_id }, *it) : std::make_pair<ResourceHandle, std::optional<std::reference_wrapper<Resource>>>(ResourceHandle::null(), std::nullopt);
     }
 
-    Resource& get_resource(const ResourceHandle& handle) {
-        return *m_resource_offsets[handle.get_id()];
+    std::optional<std::reference_wrapper<Resource>> get_by_handle(const ResourceHandle& handle) {
+        auto it = m_resource_offsets.find(handle.m_id);
+        return it != m_resource_offsets.end() ? std::optional<std::reference_wrapper<Resource>>{ *m_resource_offsets[handle.m_id] } : std::nullopt;
     }
-
-    std::list<Resource>& get_resources() { return m_resources; }
 
 private:
 

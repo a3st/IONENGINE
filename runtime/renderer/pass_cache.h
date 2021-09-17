@@ -32,6 +32,7 @@ public:
                 key.depth_stencil,
                 key.sample_count
             };
+            
             auto result = m_render_passes.emplace(key, m_device.get().create_render_pass(render_pass_desc));
             return *result.first->second;
         }

@@ -2,60 +2,64 @@
 
 #pragma once
 
+#include "lib/math/color.h"
+
 namespace ionengine::renderer::fg {
 
 class RenderPassBuilder {
 public:
 
-    RenderPassBuilder(ResourceManager& resource_manager, RenderPassTask& task) 
+    RenderPassBuilder(ResourceManager& resource_manager, Task& task) 
         : m_resource_manager(resource_manager), m_task(task) {
         
     }
 
     ResourceHandle read(const std::string& name) {
-       
-        ResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
-        auto& resource = m_resource_manager.get().get_resource(handle);
-        m_task.get().m_reads.emplace_back(resource);
-        return handle;
+        auto result = m_resource_manager.get().find_by_name(name);
+        result.second.value().get().read(m_task);
+        m_task.get().read(result.first);
+        return result.first;
     }
 
-    ResourceHandle write(const std::string& name, const api::RenderPassLoadOp load_op, const api::ClearValueColor& clear_color = { 0, 0, 0, 0 }) {
-        
-        ResourceHandle handle = m_resource_manager.get().find_handle_by_name(name);
-        auto& resource = m_resource_manager.get().get_resource(handle);
-        m_task.get().m_writes.emplace_back(resource);
-        auto resource_desc = std::get<api::ResourceDesc>(resource.get_view().get_resource().get_desc());
-        //m_task.get().m_attachments.emplace_back(AttachmentDesc { resource_desc.format, load_op, clear_color });
-        return handle;
+    ResourceHandle write(const std::string& name, const ResourceOp op, const math::Fcolor& clear_color = { 0, 0, 0, 0 }) {
+        auto result = m_resource_manager.get().find_by_name(name);
+        result.second.value().get().write(m_task);
+        m_task.get().write(result.first, AttachmentDesc { op, clear_color });
+        return result.first;
     }
 
 private:
 
     std::reference_wrapper<ResourceManager> m_resource_manager;
-    std::reference_wrapper<RenderPassTask> m_task;
+    std::reference_wrapper<Task> m_task;
 };
 
 class ComputePassBuilder {
 public:
 
-    ComputePassBuilder(ResourceManager& resource_manager, ComputePassTask& task) 
+    ComputePassBuilder(ResourceManager& resource_manager, Task& task) 
         : m_resource_manager(resource_manager), m_task(task) {
         
     }
 
     ResourceHandle read(const std::string& name) {
-        return ResourceHandle::null();
+        auto result = m_resource_manager.get().find_by_name(name);
+        result.second.value().get().read(m_task);
+        m_task.get().read(result.first);
+        return result.first;
     }
 
     ResourceHandle write(const std::string& name) {
-        return ResourceHandle::null();
+        auto result = m_resource_manager.get().find_by_name(name);
+        result.second.value().get().write(m_task);
+        m_task.get().write(result.first, BufferDesc {});
+        return result.first;
     }
 
 private:
 
     std::reference_wrapper<ResourceManager> m_resource_manager;
-    std::reference_wrapper<ComputePassTask> m_task;
+    std::reference_wrapper<Task> m_task;
 };
 
 }

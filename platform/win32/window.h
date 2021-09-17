@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "lib/fmt.h"
-
 namespace ionengine::platform {
 
 class WindowsWindow : public Window {

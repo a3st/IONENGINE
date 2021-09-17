@@ -4,7 +4,6 @@
 #include "platform/api.h"
 
 // test lib
-#include "lib/fmt.h"
 #include "lib/math.h"
 #include "lib/memory.h"
 

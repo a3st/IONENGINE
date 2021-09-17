@@ -113,3 +113,33 @@ struct RenderPassKey {
         return std::tie(color_attachments, depth_stencil_attachment) < std::tie(rhs.color_attachments, rhs.depth_stencil_attachment);
     }
 };
+
+void state_acquire() {
+        switch(m_type) {
+            case ResourceType::Attachment: {
+                m_states.emplace_back(api::ResourceState::RenderTarget);
+                break;
+            }
+        }
+    }
+
+    void state_release() {
+
+        if(m_flags & ResourceFlags::Present) {
+            m_states.emplace_back(api::ResourceState::Present);
+        } else {
+            switch(m_type) {
+                case ResourceType::Attachment: {
+                    m_states.emplace_back(api::ResourceState::PixelShaderResource);
+                    break;
+                }
+            }
+        }
+    }
+
+           
+
+        {
+            //auto& writes = std::get<RenderPassTask>(m_added_tasks.back().get_task()).m_writes;
+            //assert(writes.size() == 1 && "output resource in last pass should be 1 and has present bit flag");
+        }

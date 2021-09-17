@@ -4,10 +4,10 @@
 
 namespace ionengine {
 
-class Logger {
+class LoggerSystem {
 public:
 
-    Logger() {
+    LoggerSystem() {
         
     }
 

@@ -2,11 +2,13 @@
 
 #pragma once
 
+#include "types.h"
 #include "context.h"
+#include "task.h"
 #include "resource.h"
 #include "../pass_cache.h"
-#include "task.h"
 #include "builder.h"
+#include "timeline.h"
 
 namespace ionengine::renderer::fg {
 
@@ -34,12 +36,12 @@ public:
         
         T data{};
 
-        m_added_tasks.emplace_back(RenderPassTask { name, std::bind(exec_func, std::placeholders::_1, data) });
+        m_tasks.emplace_back(TaskType::RenderPass, name, RenderPassTask { std::bind(exec_func, std::placeholders::_1, data) });
 
-        RenderPassBuilder builder(m_resource_manager, std::get<RenderPassTask>(m_added_tasks.back().get_task()));
+        RenderPassBuilder builder(m_resource_manager, m_tasks.back());
         builder_func(builder, data);
 
-        std::cout << format<char>("RenderPassTask '{}' added added to framegraph", name) << std::endl;
+        std::cout << format<char>("RenderPass '{}' added added to framegraph", name) << std::endl;
     }
 
     template<typename T>
@@ -51,36 +53,91 @@ public:
         
         T data{};
 
-        m_added_tasks.emplace_back(ComputePassTask { name, std::bind(exec_func, std::placeholders::_1, data) });
+        m_tasks.emplace_back(TaskType::ComputePass, name, ComputePassTask { std::bind(exec_func, std::placeholders::_1, data) });
 
-        ComputePassBuilder builder(m_resource_manager, std::get<ComputePassTask>(m_added_tasks.back().get_task()));
+        ComputePassBuilder builder(m_resource_manager, m_tasks.back());
         builder_func(builder, data);
 
-        std::cout << format<char>("ComputePassTask '{}' added to framegraph", name) << std::endl;
+        std::cout << format<char>("ComputePass '{}' added to framegraph", name) << std::endl;
     }
 
     void compile() {
 
         m_frame_buffer_cache.clear();
         m_render_pass_cache.clear();
-        m_compiled_tasks.clear();
 
-        for(auto& resource : m_resource_manager.get_resources()) {
-            resource.clear();
+        for(auto& task : m_tasks) {
+            task.m_ref_count = static_cast<uint32>(task.m_writes.size());
         }
 
-        {
-            auto& writes = std::get<RenderPassTask>(m_added_tasks.back().get_task()).m_writes;
-            assert(writes.size() == 1 && "output resource in last pass should be 1 and has present bit flag");
+        for(auto& resource : m_resource_manager.m_resources) {
+            resource.m_ref_count = static_cast<uint32>(resource.m_readers.size());
         }
 
-        for(auto& task : m_added_tasks) {
+        std::stack<std::reference_wrapper<Resource>> unref_resources;
+        for(auto& resource : m_resource_manager.m_resources) {
+            if(resource.m_ref_count == 0 && resource.culling()) {
+                unref_resources.emplace(resource);
+            }
+        }
+
+        while(!unref_resources.empty()) {
+            auto unref_resource = unref_resources.top();
+            unref_resources.pop();
+
+            for(auto writer : unref_resource.get().m_writers) {
+                if(writer.get().m_ref_count > 0) {
+                    writer.get().m_ref_count--;
+                }
+                if(writer.get().m_ref_count == 0) {
+                    for(auto read : writer.get().m_reads) {
+                        auto read_resource = m_resource_manager.get_by_handle(read);
+                        if(read_resource.value().get().m_ref_count > 0) {
+                            read_resource.value().get().m_ref_count--;
+                        }
+                        if(read_resource.value().get().m_ref_count == 0) {
+                            unref_resources.emplace(read_resource.value());
+                        }
+                    }
+                }
+            }
+        }
+
+        m_timelines.clear();
+
+        for(auto& task : m_tasks) {
+
+            if(task.m_ref_count == 0) {
+                std::cout << "Warning: " << task.get_name() << " is culling" << std::endl;
+                continue;
+            }
            
             switch(task.get_type()) {
 
                 case TaskType::RenderPass: {
 
-                    auto& render_pass = std::get<RenderPassTask>(task.get_task());
+                    std::vector<std::reference_wrapper<Resource>> m_invalidates;
+                    std::vector<std::reference_wrapper<Resource>> m_flushes;
+
+                    for(auto& handle : task.m_writes) {
+
+                        auto& resource = m_resource_manager.get_by_handle(handle);
+                        m_flushes.emplace_back(resource);
+                        //auto result = resource.value().get().barrier();
+                    }
+
+                    for(auto& handle : task.m_reads) {
+
+                        auto& resource = m_resource_manager.get_by_handle(handle);
+                        m_invalidates.emplace_back(resource);
+                    }
+
+                    for(auto& resource : m_flushes) {
+
+                        
+                    }
+
+                    /*auto& render_pass = std::get<RenderPassTask>(task.get_task());
                     std::cout << format<char>("Compiled task (RenderPass) '{}' ({} reads, {} writes)", 
                         render_pass.name,
                         render_pass.m_reads.size(),
@@ -103,8 +160,8 @@ public:
                         }
                     }
 
-                    /*RenderPassCache::Key render_pass_key{};
-                    render_pass_key.colors = render_pass.m_attachments;
+                    RenderPassCache::Key render_pass_key{};
+                    render_pass_key.colors = render_pass.m_color_descs;
                     render_pass_key.sample_count = 1;
 
                     auto& render_pass_cache = m_render_pass_cache.get_render_pass(render_pass_key);
@@ -131,18 +188,18 @@ public:
 
                 case TaskType::ComputePass: {
 
-                    auto& compute_pass = std::get<RenderPassTask>(task.get_task());
+                    /*auto& compute_pass = std::get<RenderPassTask>(task.get_task());
                     std::cout << format<char>("Compiled task (RenderPass) '{}' ({} reads, {} writes)", 
                         compute_pass.name,
                         -1, -1
-                    ) << std::endl;
+                    ) << std::endl;*/
 
                     break;
                 }
             }
         }
 
-        for(auto& resource : m_resource_manager.get_resources()) {
+        for(auto& resource : m_resource_manager.m_resources) {
             resource.debug_print();
         }
     }
@@ -158,7 +215,7 @@ public:
         ofs << "rankdir=\"LR\";" << std::endl;
         ofs << "node [shape=rect, style=\"filled,rounded\", fontcolor=\"white\"];" << std::endl;
 
-        for(auto& resource : m_resource_manager.get_resources()) {
+        for(auto& resource : m_resource_manager.m_resources) {
             ofs << format<char>("Res_{} [label=\"{}\", color=\"darkslategray3\"];", resource.get_id(), resource.get_name()) << std::endl;
         }
 
@@ -184,23 +241,22 @@ public:
 
         command_list.reset();
 
-        for(auto& task : m_compiled_tasks) {
+        /*for(auto& task : m_compiled_tasks) {
 
             switch(task.get_type()) {
 
                 case TaskType::ResourceTransition: {
                     auto& resource_transition = std::get<ResourceTransitionTask>(task.get_task());
-
-                    //auto& resource = transition.resource.get().get_view().get_resource();
-                    //command_list.resource_barriers({ { resource, transition.before, transition.after } });
+                    auto& resource = resource_transition.resource.get().get_view().get_resource();
+                    command_list.resource_barriers({ { resource, resource_transition.before, resource_transition.after } });
                     break;
                 }
 
                 case TaskType::RenderPass: {
                     auto render_pass = std::get<RenderPassTask>(task.get_task());
 
-                    /*RenderPassCache::Key render_pass_key{};
-                    render_pass_key.colors = render_pass.m_attachments;
+                    RenderPassCache::Key render_pass_key{};
+                    render_pass_key.colors = render_pass.m_color_descs;
                     render_pass_key.sample_count = 1;
 
                     auto& render_pass_cache = m_render_pass_cache.get_render_pass(render_pass_key);
@@ -222,16 +278,14 @@ public:
                     auto& frame_buffer_cache = m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
                     
                     api::ClearValueDesc clear_desc{};
-                    for(auto& attachment : render_pass.m_attachments) {
-                        clear_desc.colors.emplace_back(attachment.clear_color);
-                    }
+                    clear_desc.colors = render_pass.m_colors_clear_values;
 
                     command_list.begin_render_pass(render_pass_cache, frame_buffer_cache, clear_desc);
 
                     RenderPassContext context(command_list);
                     render_pass.exec_func(context);
                     
-                    command_list.end_render_pass();*/
+                    command_list.end_render_pass();
                     break;
                 }
 
@@ -241,7 +295,7 @@ public:
                     break;
                 }
            }
-        }
+        }*/
 
         command_list.close();
         m_device.get().get_command_queue(api::CommandListType::Graphics).execute_command_lists({ command_list });
@@ -255,8 +309,8 @@ private:
     RenderPassCache m_render_pass_cache;
     FrameBufferCache m_frame_buffer_cache;
 
-    std::list<Task> m_added_tasks;
-    std::list<Task> m_compiled_tasks;
+    std::list<Task> m_tasks;
+    std::list<Timeline> m_timelines;
 };
 
 }

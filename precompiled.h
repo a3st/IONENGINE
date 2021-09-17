@@ -22,8 +22,10 @@
 #include <bitset>
 #include <filesystem>
 #include <optional>
+#include <stack>
 
 #include "cpputils.h"
+#include "lib/format.h"
 
 namespace ionengine {
 
