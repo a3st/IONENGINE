@@ -57,9 +57,19 @@ public:
         uint32 height;
         std::vector<std::reference_wrapper<api::View>> colors;
         std::optional<std::reference_wrapper<api::View>> depth_stencil;
-
+        
         bool operator<(const Key& rhs) const {
-            return std::tie(width, height) < std::tie(width, height);
+            if(!(std::tie(width, height) < std::tie(rhs.width, rhs.height))) return false;
+            if(&render_pass.get() != &rhs.render_pass.get()) return false;
+            if(!std::equal(
+                colors.begin(), colors.end(), 
+                rhs.colors.begin(), 
+                [](const std::reference_wrapper<api::View>& lhs, const std::reference_wrapper<api::View>& rhs) { 
+                    return &lhs.get() == &rhs.get();
+                })
+            ) return false;
+            if(&depth_stencil.value().get() != &rhs.depth_stencil.value().get()) return false;
+            return true;
         }
     };
 
@@ -73,8 +83,7 @@ public:
         if(it != m_frame_buffers.end()) {
             return *it->second;
         } else {
-
-            /*api::FrameBufferDesc frame_buffer_desc = {
+            api::FrameBufferDesc frame_buffer_desc = {
                 key.render_pass,
                 key.width,
                 key.height,
@@ -86,7 +95,6 @@ public:
             }
 
             auto result = m_frame_buffers.emplace(key, m_device.get().create_frame_buffer(frame_buffer_desc));
-*/
             return *result.first->second;
         }
     }

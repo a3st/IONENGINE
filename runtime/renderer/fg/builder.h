@@ -26,7 +26,7 @@ public:
         auto& resource = m_resource_manager.get().get_resource(handle);
         m_task.get().m_writes.emplace_back(resource);
         auto resource_desc = std::get<api::ResourceDesc>(resource.get_view().get_resource().get_desc());
-        m_task.get().m_attachments.emplace_back(AttachmentDesc { resource_desc.format, load_op, clear_color });
+        //m_task.get().m_attachments.emplace_back(AttachmentDesc { resource_desc.format, load_op, clear_color });
         return handle;
     }
 

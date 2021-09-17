@@ -11,3 +11,19 @@ bool operator&(const EnumClass lhs, const EnumClass rhs) { \
 	return static_cast<uint32>(lhs) & static_cast<uint32>(rhs); \
 }
 #endif // ENUM_CLASS_BIT_FLAG_DECLARE
+
+#ifndef STD_TIE_CMP_OPERATOR_DECLARE
+#define STD_TIE_CMP_OPERATOR_DECLARE(Struct) \
+bool operator==(const Struct& lhs, const Struct& rhs) { \
+	return lhs.make_tie() == rhs.make_tie(); \
+} \
+bool operator<(const Struct& lhs, const Struct& rhs) { \
+	return lhs.make_tie() < rhs.make_tie(); \
+} \
+bool operator>(const Struct& lhs, const Struct& rhs) { \
+	return lhs.make_tie() > rhs.make_tie(); \
+} \
+bool operator!=(const Struct& lhs, const Struct& rhs) { \
+	return lhs.make_tie() != rhs.make_tie(); \
+}
+#endif // STD_TIE_CMP_OPERATOR_DECLARE

@@ -17,16 +17,6 @@ enum class ResourceFlags : uint32 {
 
 ENUM_CLASS_BIT_FLAG_DECLARE(ResourceFlags)
 
-struct AttachmentDesc {
-    api::Format format;
-    api::RenderPassLoadOp load_op;
-    api::ClearValueColor clear_color;
-
-    bool operator<(const AttachmentDesc& rhs) const {
-        return std::tie(format, load_op, clear_color) < std::tie(format, rhs.load_op, rhs.clear_color);
-    }
-};
-
 class Resource {
 friend class ResourceManager;
 public:

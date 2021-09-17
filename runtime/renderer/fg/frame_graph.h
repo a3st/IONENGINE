@@ -4,7 +4,7 @@
 
 #include "context.h"
 #include "resource.h"
-// #include "pass.h"
+#include "../pass_cache.h"
 #include "task.h"
 #include "builder.h"
 
@@ -103,7 +103,7 @@ public:
                         }
                     }
 
-                    RenderPassCache::Key render_pass_key{};
+                    /*RenderPassCache::Key render_pass_key{};
                     render_pass_key.colors = render_pass.m_attachments;
                     render_pass_key.sample_count = 1;
 
@@ -125,7 +125,7 @@ public:
 
                     auto& frame_buffer_cache = m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
                     
-                    m_compiled_tasks.emplace_back(std::get<RenderPassTask>(task.get_task()));
+                    m_compiled_tasks.emplace_back(std::get<RenderPassTask>(task.get_task()));*/
                     break;
                 }
 
@@ -189,18 +189,17 @@ public:
             switch(task.get_type()) {
 
                 case TaskType::ResourceTransition: {
+                    auto& resource_transition = std::get<ResourceTransitionTask>(task.get_task());
 
-                    auto& transition = std::get<ResourceTransitionTask>(task.get_task());
-                    auto& resource = transition.resource.get().get_view().get_resource();
-                    command_list.resource_barriers({ { resource, transition.before, transition.after } });
+                    //auto& resource = transition.resource.get().get_view().get_resource();
+                    //command_list.resource_barriers({ { resource, transition.before, transition.after } });
                     break;
                 }
 
                 case TaskType::RenderPass: {
-
                     auto render_pass = std::get<RenderPassTask>(task.get_task());
 
-                    RenderPassCache::Key render_pass_key{};
+                    /*RenderPassCache::Key render_pass_key{};
                     render_pass_key.colors = render_pass.m_attachments;
                     render_pass_key.sample_count = 1;
 
@@ -232,11 +231,12 @@ public:
                     RenderPassContext context(command_list);
                     render_pass.exec_func(context);
                     
-                    command_list.end_render_pass();
+                    command_list.end_render_pass();*/
                     break;
                 }
 
                 case TaskType::ComputePass: {
+                    auto compute_pass = std::get<ComputePassTask>(task.get_task());
 
                     break;
                 }

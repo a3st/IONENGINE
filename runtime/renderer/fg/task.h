@@ -4,6 +4,11 @@
 
 namespace ionengine::renderer::fg {
 
+using AttachmentDesc = std::variant<
+    api::RenderPassColorDesc, 
+    api::RenderPassDepthStencilDesc
+>;
+
 enum class TaskType {
     ResourceTransition,
     RenderPass,

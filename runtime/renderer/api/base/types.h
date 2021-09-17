@@ -190,10 +190,12 @@ struct RenderPassColorDesc {
     RenderPassLoadOp load_op = RenderPassLoadOp::DontCare;
     RenderPassStoreOp store_op  = RenderPassStoreOp::DontCare;
 
-    auto make_tie() const {
-        return std::tie(format, load_op, store_op);
+    auto make_tie() const { 
+        return std::tie(format, load_op, store_op); 
     }
 };
+
+STD_TIE_CMP_OPERATOR_DECLARE(RenderPassColorDesc)
 
 struct RenderPassDepthStencilDesc {
     Format format;
@@ -203,9 +205,11 @@ struct RenderPassDepthStencilDesc {
     RenderPassStoreOp stencil_store_op = RenderPassStoreOp::DontCare;
 
     auto make_tie() const { 
-        return std::tie(format, depth_load_op, depth_store_op, stencil_load_op, stencil_store_op);
+        return std::tie(format, depth_load_op, depth_store_op, stencil_load_op, stencil_store_op); 
     }
 };
+
+STD_TIE_CMP_OPERATOR_DECLARE(RenderPassDepthStencilDesc)
 
 struct FrameBufferDesc {
     std::reference_wrapper<RenderPass> render_pass;
@@ -233,10 +237,12 @@ struct ClearValueColor {
     uint32 b;
     uint32 a;
 
-    bool operator<(const ClearValueColor& rhs) const {
-        return std::tie(r, g, b, a) < std::tie(rhs.r, rhs.g, rhs.b, rhs.a);
+    auto make_tie() const {
+        return std::tie(r, g, b, a);
     }
 };
+
+STD_TIE_CMP_OPERATOR_DECLARE(ClearValueColor)
 
 struct ClearValueDesc {
     std::vector<ClearValueColor> colors;
