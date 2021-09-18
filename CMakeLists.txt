@@ -92,7 +92,7 @@ target_compile_definitions(Runtime-Win32VK PRIVATE
 
 #]]
 
-add_library(Runtime-Android SHARED platform/android/android_native_app_glue.cpp runtime/framework/main.cpp)
+add_library(Runtime-Android SHARED runtime/framework/main.cpp)
 
 # Build Output
 set_target_properties(Runtime-Android PROPERTIES 

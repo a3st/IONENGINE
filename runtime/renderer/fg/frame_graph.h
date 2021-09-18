@@ -115,85 +115,76 @@ public:
             switch(task.get_type()) {
 
                 case TaskType::RenderPass: {
+                    auto& render_pass_task = std::get<RenderPassTask>(task.m_task);
 
-                    std::vector<std::reference_wrapper<Resource>> m_invalidates;
-                    std::vector<std::reference_wrapper<Resource>> m_flushes;
-
+                    std::vector<api::ResourceBarrierDesc> barriers;
                     for(auto& handle : task.m_writes) {
-
-                        auto& resource = m_resource_manager.get_by_handle(handle);
-                        m_flushes.emplace_back(resource);
-                        //auto result = resource.value().get().barrier();
+                        auto& resource = m_resource_manager.get_by_handle(handle).value();
+                        auto result = add_transition_barrier(BarrierType::Write, resource, task);
+                        if(result.has_value()) {
+                            barriers.emplace_back(result.value());
+                        }
                     }
-
                     for(auto& handle : task.m_reads) {
-
-                        auto& resource = m_resource_manager.get_by_handle(handle);
-                        m_invalidates.emplace_back(resource);
+                        auto& resource = m_resource_manager.get_by_handle(handle).value();
+                        auto result = add_transition_barrier(BarrierType::Read, resource, task);
+                        if(result.has_value()) {
+                            barriers.emplace_back(result.value());
+                        }
                     }
+                    m_timelines.emplace_back(TimelineType::Barrier, BarrierTimeline { barriers });
 
-                    for(auto& resource : m_flushes) {
-
+                    std::vector<api::RenderPassColorDesc> color_descs;
+                    api::RenderPassDepthStencilDesc depth_stencil_desc;
+                    std::vector<std::reference_wrapper<api::View>> color_views;
+                    std::optional<std::reference_wrapper<api::View>> depth_stencil_view;
+                    for(uint32 i = 0; i < task.m_writes.size(); ++i) {
+                        auto& resource = m_resource_manager.get_by_handle(task.m_writes[i]).value();
+                        auto& view = resource.get().get_view();
+                        auto& resource_desc = std::get<api::ResourceDesc>(view.get_resource().get_desc());
                         
-                    }
-
-                    /*auto& render_pass = std::get<RenderPassTask>(task.get_task());
-                    std::cout << format<char>("Compiled task (RenderPass) '{}' ({} reads, {} writes)", 
-                        render_pass.name,
-                        render_pass.m_reads.size(),
-                        render_pass.m_writes.size()
-                    ) << std::endl;
-
-                    for(auto& resource : render_pass.m_reads) {
-                        resource.get().release();
-                    }
-
-                    for(auto& resource : render_pass.m_writes) {
-                        resource.get().acquire();
-                        auto states = resource.get().get_state();
-                        if(states.first != states.second) {
-                            m_compiled_tasks.emplace_back(ResourceTransitionTask { 
-                                    resource,
-                                    states.first, states.second
+                        api::RenderPassLoadOp load_op;
+                        switch(render_pass_task.attachments[i].op) {
+                            case ResourceOp::Clear: load_op = api::RenderPassLoadOp::Clear; break;
+                            case ResourceOp::Load: load_op = api::RenderPassLoadOp::Load; break;
+                        }
+                        
+                        if(resource.get().get_flags() & ResourceFlags::DepthStencil) {
+                            depth_stencil_desc = api::RenderPassDepthStencilDesc {
+                                resource_desc.format,
+                                load_op,
+                                api::RenderPassStoreOp::Store,
+                                load_op,
+                                api::RenderPassStoreOp::Store
+                            };
+                            depth_stencil_view = resource.get().get_view();
+                        } else {
+                            color_descs.emplace_back(
+                                api::RenderPassColorDesc { 
+                                    resource_desc.format,
+                                    load_op,
+                                    api::RenderPassStoreOp::Store
                                 }
                             );
+                            color_views.emplace_back(resource.get().get_view());
                         }
                     }
 
-                    RenderPassCache::Key render_pass_key{};
-                    render_pass_key.colors = render_pass.m_color_descs;
-                    render_pass_key.sample_count = 1;
+                    m_timelines.emplace_back(
+                        TimelineType::RenderPass, RenderPassTimeline { 
+                            color_descs, 
+                            depth_stencil_desc, 
+                            1, 
+                            color_views, 
+                            depth_stencil_view 
+                        }
+                    );
 
-                    auto& render_pass_cache = m_render_pass_cache.get_render_pass(render_pass_key);
-                    auto& resource = render_pass.m_writes[0].get().get_view().get_resource();
-
-                    std::vector<std::reference_wrapper<api::View>> colors;
-                    for(auto& color : render_pass.m_writes) {
-                        colors.emplace_back(color.get().get_view());
-                    }
-
-                    auto& resource_desc = std::get<api::ResourceDesc>(resource.get_desc());
-                    FrameBufferCache::Key frame_buffer_key = {
-                        render_pass_cache,
-                        static_cast<uint32>(resource_desc.width),
-                        resource_desc.height,
-                        colors
-                    };
-
-                    auto& frame_buffer_cache = m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
-                    
-                    m_compiled_tasks.emplace_back(std::get<RenderPassTask>(task.get_task()));*/
+                    std::cout << format<char>("RenderPass '{}' is compiled", task.get_name()) << std::endl;
                     break;
                 }
 
                 case TaskType::ComputePass: {
-
-                    /*auto& compute_pass = std::get<RenderPassTask>(task.get_task());
-                    std::cout << format<char>("Compiled task (RenderPass) '{}' ({} reads, {} writes)", 
-                        compute_pass.name,
-                        -1, -1
-                    ) << std::endl;*/
-
                     break;
                 }
             }
@@ -311,6 +302,69 @@ private:
 
     std::list<Task> m_tasks;
     std::list<Timeline> m_timelines;
+
+    std::optional<api::ResourceBarrierDesc> add_transition_barrier(const BarrierType type, Resource& resource, Task& task) {
+        
+        auto& task_it = std::find_if(
+            m_tasks.begin(), 
+            m_tasks.end(), 
+            [&](Task& element) { 
+                return element.get_name() == task.get_name(); 
+            }
+        );
+
+        api::ResourceState src_state;
+        for(auto& handle : task_it->m_reads) {
+            if(ResourceHandle(resource.m_id) == handle) {
+                src_state = api::ResourceState::PixelShaderResource;
+                break;
+            }
+        }
+        for(auto& handle : task_it->m_writes) {
+            if(ResourceHandle(resource.m_id) == handle) {
+                src_state = api::ResourceState::RenderTarget;
+                break;
+            }
+        }
+
+        api::ResourceState dst_state;
+        switch(resource.get_type()) {
+
+            case ResourceType::Attachment: {
+                switch(type) {
+                    case BarrierType::Read: {
+                        dst_state = api::ResourceState::PixelShaderResource;
+                    }
+                    case BarrierType::Write: {
+                        dst_state = api::ResourceState::RenderTarget;
+                    }
+                    case BarrierType::Present: {
+                        dst_state = api::ResourceState::Present;
+                    }
+                }
+            }
+            case ResourceType::Buffer: {
+                break;
+            }
+        }
+
+        api::ResourceState last_state = api::ResourceState::Common;
+        for(auto& it = m_tasks.begin(); it != task_it; ++it) {
+            for(auto& handle : it->m_reads) {
+                if(ResourceHandle(resource.m_id) == handle) {
+                    last_state = api::ResourceState::PixelShaderResource;
+                    break;
+                }
+            }
+            for(auto& handle : it->m_writes) {
+                if(ResourceHandle(resource.m_id) == handle) {
+                    last_state = api::ResourceState::RenderTarget;
+                    break;
+                }
+            }
+        }
+        return src_state != last_state ? std::optional<api::ResourceBarrierDesc>( api::ResourceBarrierDesc { resource.get_view().get_resource(), src_state, dst_state } ) : std::nullopt;
+    }
 };
 
 }

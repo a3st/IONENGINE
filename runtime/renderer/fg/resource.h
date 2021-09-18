@@ -15,31 +15,12 @@ public:
         m_id(id), m_type(type), m_name(name), m_view(view), m_flags(flags), m_ref_count(0) {
 
     }
-
-    std::pair<api::ResourceState, api::ResourceState> barrier() {
-
-    }
-
-    void reset() {
-        m_states.clear();
-
-        if(m_flags & ResourceFlags::Present) {
-            m_states.emplace_back(api::ResourceState::Present);
-        } else {
-            switch(m_type) {
-                case ResourceType::Attachment: {
-                    m_states.emplace_back(api::ResourceState::RenderTarget);
-                    break;
-                }
-            }
-        }
-    }
     
     uint64 get_id() const { return m_id; }
     const std::string& get_name() const { return m_name; }
     ResourceFlags get_flags() const { return m_flags; }
-
     bool culling() const { return m_flags & ResourceFlags::None; }
+    ResourceType get_type() const { return m_type; }
 
     api::View& get_view() { return m_view; }
 
@@ -52,14 +33,7 @@ public:
     }
 
     void debug_print() const {
-
-        std::cout << format<char>("FGResource ID: {}, Name: {}, References: {}\nStates:", m_id, m_name, m_ref_count);
-        /*for(auto& state : m_states) {
-            if(state == api::ResourceState::PixelShaderResource) std ::cout << " pixel_shader_resource ";
-            if(state == api::ResourceState::RenderTarget) std ::cout << " render_target ";
-            if(state == api::ResourceState::Present) std::cout << " present ";
-        }*/
-        std::cout << std::endl;
+        std::cout << format<char>("fg::Resource ID: {}, Name: {}, References: {}", m_id, m_name, m_ref_count) << std::endl;
     }
 
 private:
@@ -70,7 +44,6 @@ private:
     ResourceFlags m_flags;
 
     std::reference_wrapper<api::View> m_view;
-    std::vector<api::ResourceState> m_states;
 
     std::vector<std::reference_wrapper<Task>> m_writers;
     std::vector<std::reference_wrapper<Task>> m_readers;

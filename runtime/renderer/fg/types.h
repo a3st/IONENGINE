@@ -15,6 +15,12 @@ enum class TimelineType {
     ComputePass
 };
 
+enum class BarrierType {
+    Read,
+    Write,
+    Present
+};
+
 enum class ResourceType {
     Attachment,
     Buffer
