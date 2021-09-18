@@ -4,8 +4,9 @@
 #include "platform/wnd/wnd.h"
 
 // test lib
-#include "lib/math.h"
+#include "lib/math/math.h"
 #include "lib/memory.h"
+#include "lib/ini/ini.h"
 
 #include "logger_system.h"
 #include "input_system.h"
@@ -20,6 +21,16 @@ int32 main(int32, char**) {
     auto input_system = create_unique_input_system();
     auto render_system = create_unique_render_system(*window);
     auto logger_system = create_unique_logger_system();
+
+    // test
+    //
+    lib::ini::Lexer lexer("test.ini");
+    lexer.tokenize();
+
+    while(lexer.get_next().has_value()) {
+        std::cout << lexer.get_current().position << std::endl;
+    }
+    //
     
     window_event_loop->run([&](const platform::wnd::WindowEventHandler& event) -> void { 
             
