@@ -14,6 +14,8 @@ struct RenderPassTimeline {
     uint32 sample_count;
     std::vector<std::reference_wrapper<api::View>> color_views;
     std::optional<std::reference_wrapper<api::View>> depth_stencil_view;
+    api::ClearValueDesc clear_value_desc;
+    std::function<void(RenderPassContext&)> exec_func;
 };
 
 class Timeline {

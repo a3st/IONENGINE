@@ -232,10 +232,10 @@ struct ResourceBarrierDesc {
 };
 
 struct ClearValueColor {
-    uint32 r;
-    uint32 g;
-    uint32 b;
-    uint32 a;
+    float r;
+    float g;
+    float b;
+    float a;
 
     auto make_tie() const {
         return std::tie(r, g, b, a);

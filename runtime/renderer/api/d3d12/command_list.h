@@ -21,6 +21,7 @@ public:
             nullptr, 
             __uuidof(ID3D12GraphicsCommandList), m_d3d12_command_list.put_void()
         ));
+        ASSERT_SUCCEEDED(m_d3d12_command_list->Close());
     }
 
     void bind_pipeline(Pipeline& pipeline) override {
@@ -97,10 +98,10 @@ public:
 
             begin.Clear.ClearValue.Format = static_cast<DXGI_FORMAT>(render_pass_desc.colors[i].format);
 
-            begin.Clear.ClearValue.Color[0] = static_cast<float>(clear_value_desc.colors[i].r) / 255.0f;
-            begin.Clear.ClearValue.Color[1] = static_cast<float>(clear_value_desc.colors[i].g) / 255.0f;
-            begin.Clear.ClearValue.Color[2] = static_cast<float>(clear_value_desc.colors[i].b) / 255.0f;
-            begin.Clear.ClearValue.Color[3] = static_cast<float>(clear_value_desc.colors[i].a) / 255.0f;
+            begin.Clear.ClearValue.Color[0] = clear_value_desc.colors[i].r;
+            begin.Clear.ClearValue.Color[1] = clear_value_desc.colors[i].g;
+            begin.Clear.ClearValue.Color[2] = clear_value_desc.colors[i].b;
+            begin.Clear.ClearValue.Color[3] = clear_value_desc.colors[i].a;
 
             D3D12_RENDER_PASS_ENDING_ACCESS end{};
             end.Type = convert_render_pass_type(render_pass_desc.colors[i].store_op);

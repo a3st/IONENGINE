@@ -59,7 +59,7 @@ public:
         m_frame_graph->create_resource("swapchain", fg::ResourceType::Attachment, *m_swapchain_views[0], fg::ResourceFlags::Present);
         m_frame_graph->create_resource("gbuffer", fg::ResourceType::Attachment, *m_swapchain_views[0], fg::ResourceFlags::None);
 
-        struct DepthPassData {
+        /*struct DepthPassData {
             fg::ResourceHandle output;
         };
 
@@ -82,6 +82,19 @@ public:
             [&](fg::RenderPassBuilder& builder, BasicPassData& data) {
                 data.input = builder.read("depthbuffer");
                 data.output = builder.write("swapchain", fg::ResourceOp::Clear, { 150, 105, 150, 255 } );
+            },
+            [=](fg::RenderPassContext& context, const BasicPassData& data) {
+            }
+        );*/
+
+        struct BasicPassData {
+            fg::ResourceHandle output;
+        };
+
+        m_frame_graph->add_task<BasicPassData>(
+            "BasicPass",
+            [&](fg::RenderPassBuilder& builder, BasicPassData& data) {
+                data.output = builder.write("swapchain", fg::ResourceOp::Clear, { 0.5f, 0.6f, 0.4f, 1.0f } );
             },
             [=](fg::RenderPassContext& context, const BasicPassData& data) {
             }

@@ -138,11 +138,15 @@ public:
                     api::RenderPassDepthStencilDesc depth_stencil_desc;
                     std::vector<std::reference_wrapper<api::View>> color_views;
                     std::optional<std::reference_wrapper<api::View>> depth_stencil_view;
+                    api::ClearValueDesc clear_value_desc;
                     for(uint32 i = 0; i < task.m_writes.size(); ++i) {
                         auto& resource = m_resource_manager.get_by_handle(task.m_writes[i]).value();
                         auto& view = resource.get().get_view();
                         auto& resource_desc = std::get<api::ResourceDesc>(view.get_resource().get_desc());
-                        
+
+                        auto& clear_color = render_pass_task.attachments[i].clear_color;
+                        clear_value_desc.colors.emplace_back(api::ClearValueColor { clear_color.r, clear_color.g, clear_color.b, clear_color.a });
+
                         api::RenderPassLoadOp load_op;
                         switch(render_pass_task.attachments[i].op) {
                             case ResourceOp::Clear: load_op = api::RenderPassLoadOp::Clear; break;
@@ -176,9 +180,23 @@ public:
                             depth_stencil_desc, 
                             1, 
                             color_views, 
-                            depth_stencil_view 
+                            depth_stencil_view,
+                            clear_value_desc,
+                            render_pass_task.exec_func
                         }
                     );
+
+                    barriers.clear();
+                    for(auto& handle : task.m_writes) {
+                        auto& resource = m_resource_manager.get_by_handle(handle).value();
+                        if(resource.get().get_flags() & ResourceFlags::Present) {
+                            auto result = add_transition_barrier(BarrierType::Present, resource, task);
+                            if(result.has_value()) {
+                                barriers.emplace_back(result.value());
+                            }
+                        }
+                    }
+                    m_timelines.emplace_back(TimelineType::Barrier, BarrierTimeline { barriers });
 
                     std::cout << format<char>("RenderPass '{}' is compiled", task.get_name()) << std::endl;
                     break;
@@ -232,61 +250,47 @@ public:
 
         command_list.reset();
 
-        /*for(auto& task : m_compiled_tasks) {
+        for(auto& timeline : m_timelines) {
 
-            switch(task.get_type()) {
+            switch(timeline.get_type()) {
 
-                case TaskType::ResourceTransition: {
-                    auto& resource_transition = std::get<ResourceTransitionTask>(task.get_task());
-                    auto& resource = resource_transition.resource.get().get_view().get_resource();
-                    command_list.resource_barriers({ { resource, resource_transition.before, resource_transition.after } });
+                case TimelineType::Barrier: {
+                    auto& barrier = std::get<BarrierTimeline>(timeline.get_timeline());
+                    command_list.resource_barriers(barrier.data);
                     break;
                 }
+                case TimelineType::RenderPass: {
+                    auto render_pass = std::get<RenderPassTimeline>(timeline.get_timeline());
 
-                case TaskType::RenderPass: {
-                    auto render_pass = std::get<RenderPassTask>(task.get_task());
-
-                    RenderPassCache::Key render_pass_key{};
-                    render_pass_key.colors = render_pass.m_color_descs;
-                    render_pass_key.sample_count = 1;
-
+                    RenderPassCache::Key render_pass_key = {
+                        render_pass.color_descs,
+                        render_pass.depth_stencil_desc,
+                        render_pass.sample_count
+                    };
                     auto& render_pass_cache = m_render_pass_cache.get_render_pass(render_pass_key);
-                    auto& resource = render_pass.m_writes[0].get().get_view().get_resource();
-
-                    std::vector<std::reference_wrapper<api::View>> colors;
-                    for(auto& color : render_pass.m_writes) {
-                        colors.emplace_back(color.get().get_view());
-                    }
-
-                    auto& resource_desc = std::get<api::ResourceDesc>(resource.get_desc());
+                    
+                    // change width height todo
                     FrameBufferCache::Key frame_buffer_key = {
                         render_pass_cache,
-                        static_cast<uint32>(resource_desc.width),
-                        resource_desc.height,
-                        colors
+                        800,
+                        600,
+                        render_pass.color_views,
+                        render_pass.depth_stencil_view
                     };
-
                     auto& frame_buffer_cache = m_frame_buffer_cache.get_frame_buffer(frame_buffer_key);
                     
-                    api::ClearValueDesc clear_desc{};
-                    clear_desc.colors = render_pass.m_colors_clear_values;
-
-                    command_list.begin_render_pass(render_pass_cache, frame_buffer_cache, clear_desc);
-
+                    command_list.begin_render_pass(render_pass_cache, frame_buffer_cache, render_pass.clear_value_desc);
                     RenderPassContext context(command_list);
                     render_pass.exec_func(context);
-                    
                     command_list.end_render_pass();
                     break;
                 }
 
-                case TaskType::ComputePass: {
-                    auto compute_pass = std::get<ComputePassTask>(task.get_task());
-
+                case TimelineType::ComputePass: {
                     break;
                 }
            }
-        }*/
+        }
 
         command_list.close();
         m_device.get().get_command_queue(api::CommandListType::Graphics).execute_command_lists({ command_list });
