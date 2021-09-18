@@ -4,7 +4,7 @@ var hierarchy =
       [ "ionengine::renderer::api::D3DAdapter", "classionengine_1_1renderer_1_1api_1_1_d3_d_adapter.html", null ]
     ] ],
     [ "ionengine::renderer::fg::AttachmentDesc", "structionengine_1_1renderer_1_1fg_1_1_attachment_desc.html", null ],
-    [ "ionengine::renderer::fg::BarrierTimeline", "structionengine_1_1renderer_1_1fg_1_1_barrier_timeline.html", null ],
+    [ "ionengine::renderer::fg::BarrierQueueData", "structionengine_1_1renderer_1_1fg_1_1_barrier_queue_data.html", null ],
     [ "ionengine::renderer::BaseRenderer", "classionengine_1_1renderer_1_1_base_renderer.html", [
       [ "ionengine::renderer::QuadRenderer", "classionengine_1_1renderer_1_1_quad_renderer.html", null ]
     ] ],
@@ -55,17 +55,17 @@ var hierarchy =
     ] ],
     [ "ionengine::renderer::FrameBufferCache::Key", "structionengine_1_1renderer_1_1_frame_buffer_cache_1_1_key.html", null ],
     [ "ionengine::renderer::RenderPassCache::Key", "structionengine_1_1renderer_1_1_render_pass_cache_1_1_key.html", null ],
-    [ "ionengine::platform::KeyboardInput", "structionengine_1_1platform_1_1_keyboard_input.html", null ],
+    [ "ionengine::platform::wnd::KeyboardInput", "structionengine_1_1platform_1_1wnd_1_1_keyboard_input.html", null ],
     [ "ionengine::LoggerSystem", "classionengine_1_1_logger_system.html", null ],
     [ "ionengine::math::Matrix< T >", "structionengine_1_1math_1_1_matrix.html", null ],
     [ "ionengine::renderer::api::Memory", "classionengine_1_1renderer_1_1api_1_1_memory.html", [
       [ "ionengine::renderer::api::D3DMemory", "classionengine_1_1renderer_1_1api_1_1_d3_d_memory.html", null ]
     ] ],
-    [ "ionengine::platform::MouseInput", "structionengine_1_1platform_1_1_mouse_input.html", null ],
-    [ "ionengine::platform::MouseMoved", "structionengine_1_1platform_1_1_mouse_moved.html", null ],
-    [ "ionengine::platform::MouseWheel", "structionengine_1_1platform_1_1_mouse_wheel.html", null ],
-    [ "ionengine::platform::PhysicalPosition", "structionengine_1_1platform_1_1_physical_position.html", null ],
-    [ "ionengine::platform::PhysicalSize", "structionengine_1_1platform_1_1_physical_size.html", null ],
+    [ "ionengine::platform::wnd::MouseInput", "structionengine_1_1platform_1_1wnd_1_1_mouse_input.html", null ],
+    [ "ionengine::platform::wnd::MouseMoved", "structionengine_1_1platform_1_1wnd_1_1_mouse_moved.html", null ],
+    [ "ionengine::platform::wnd::MouseWheel", "structionengine_1_1platform_1_1wnd_1_1_mouse_wheel.html", null ],
+    [ "ionengine::platform::wnd::PhysicalPosition", "structionengine_1_1platform_1_1wnd_1_1_physical_position.html", null ],
+    [ "ionengine::platform::wnd::PhysicalSize", "structionengine_1_1platform_1_1wnd_1_1_physical_size.html", null ],
     [ "ionengine::renderer::api::Pipeline", "classionengine_1_1renderer_1_1api_1_1_pipeline.html", [
       [ "ionengine::renderer::api::D3DPipeline", "classionengine_1_1renderer_1_1api_1_1_d3_d_pipeline.html", null ]
     ] ],
@@ -80,8 +80,9 @@ var hierarchy =
     [ "ionengine::renderer::fg::RenderPassContext", "classionengine_1_1renderer_1_1fg_1_1_render_pass_context.html", null ],
     [ "ionengine::renderer::api::RenderPassDepthStencilDesc", "structionengine_1_1renderer_1_1api_1_1_render_pass_depth_stencil_desc.html", null ],
     [ "ionengine::renderer::api::RenderPassDesc", "structionengine_1_1renderer_1_1api_1_1_render_pass_desc.html", null ],
+    [ "ionengine::renderer::fg::RenderPassQueueData", "structionengine_1_1renderer_1_1fg_1_1_render_pass_queue_data.html", null ],
     [ "ionengine::renderer::fg::RenderPassTask", "structionengine_1_1renderer_1_1fg_1_1_render_pass_task.html", null ],
-    [ "ionengine::renderer::fg::RenderPassTimeline", "structionengine_1_1renderer_1_1fg_1_1_render_pass_timeline.html", null ],
+    [ "ionengine::renderer::fg::RenderQueue", "classionengine_1_1renderer_1_1fg_1_1_render_queue.html", null ],
     [ "ionengine::RenderSystem", "classionengine_1_1_render_system.html", null ],
     [ "ionengine::renderer::api::Resource", "classionengine_1_1renderer_1_1api_1_1_resource.html", [
       [ "ionengine::renderer::api::D3DResource", "classionengine_1_1renderer_1_1api_1_1_d3_d_resource.html", null ]
@@ -101,7 +102,6 @@ var hierarchy =
       [ "ionengine::renderer::api::D3DSwapchain", "classionengine_1_1renderer_1_1api_1_1_d3_d_swapchain.html", null ]
     ] ],
     [ "ionengine::renderer::fg::Task", "classionengine_1_1renderer_1_1fg_1_1_task.html", null ],
-    [ "ionengine::renderer::fg::Timeline", "classionengine_1_1renderer_1_1fg_1_1_timeline.html", null ],
     [ "ionengine::math::Vector2< T >", "structionengine_1_1math_1_1_vector2.html", null ],
     [ "ionengine::math::Vector3< T >", "structionengine_1_1math_1_1_vector3.html", null ],
     [ "ionengine::math::Vector4< T >", "structionengine_1_1math_1_1_vector4.html", null ],
@@ -109,11 +109,11 @@ var hierarchy =
       [ "ionengine::renderer::api::D3DView", "classionengine_1_1renderer_1_1api_1_1_d3_d_view.html", null ]
     ] ],
     [ "ionengine::renderer::api::ViewDesc", "structionengine_1_1renderer_1_1api_1_1_view_desc.html", null ],
-    [ "ionengine::platform::Window", "classionengine_1_1platform_1_1_window.html", [
-      [ "ionengine::platform::WindowsWindow", "classionengine_1_1platform_1_1_windows_window.html", null ]
+    [ "ionengine::platform::wnd::Window", "classionengine_1_1platform_1_1wnd_1_1_window.html", [
+      [ "ionengine::platform::wnd::WindowsWindow", "classionengine_1_1platform_1_1wnd_1_1_windows_window.html", null ]
     ] ],
-    [ "ionengine::platform::WindowEventHandler", "structionengine_1_1platform_1_1_window_event_handler.html", null ],
-    [ "ionengine::platform::WindowEventLoop", "classionengine_1_1platform_1_1_window_event_loop.html", [
-      [ "ionengine::platform::WindowsWindowEventLoop", "classionengine_1_1platform_1_1_windows_window_event_loop.html", null ]
+    [ "ionengine::platform::wnd::WindowEventHandler", "structionengine_1_1platform_1_1wnd_1_1_window_event_handler.html", null ],
+    [ "ionengine::platform::wnd::WindowEventLoop", "classionengine_1_1platform_1_1wnd_1_1_window_event_loop.html", [
+      [ "ionengine::platform::wnd::WindowsWindowEventLoop", "classionengine_1_1platform_1_1wnd_1_1_windows_window_event_loop.html", null ]
     ] ]
 ];

@@ -10,17 +10,19 @@ var annotated_dup =
         [ "Vector4", "structionengine_1_1math_1_1_vector4.html", null ]
       ] ],
       [ "platform", null, [
-        [ "KeyboardInput", "structionengine_1_1platform_1_1_keyboard_input.html", null ],
-        [ "MouseInput", "structionengine_1_1platform_1_1_mouse_input.html", null ],
-        [ "MouseMoved", "structionengine_1_1platform_1_1_mouse_moved.html", null ],
-        [ "MouseWheel", "structionengine_1_1platform_1_1_mouse_wheel.html", null ],
-        [ "PhysicalPosition", "structionengine_1_1platform_1_1_physical_position.html", null ],
-        [ "PhysicalSize", "structionengine_1_1platform_1_1_physical_size.html", null ],
-        [ "Window", "classionengine_1_1platform_1_1_window.html", null ],
-        [ "WindowEventHandler", "structionengine_1_1platform_1_1_window_event_handler.html", null ],
-        [ "WindowEventLoop", "classionengine_1_1platform_1_1_window_event_loop.html", null ],
-        [ "WindowsWindow", "classionengine_1_1platform_1_1_windows_window.html", null ],
-        [ "WindowsWindowEventLoop", "classionengine_1_1platform_1_1_windows_window_event_loop.html", null ]
+        [ "wnd", null, [
+          [ "KeyboardInput", "structionengine_1_1platform_1_1wnd_1_1_keyboard_input.html", null ],
+          [ "MouseInput", "structionengine_1_1platform_1_1wnd_1_1_mouse_input.html", null ],
+          [ "MouseMoved", "structionengine_1_1platform_1_1wnd_1_1_mouse_moved.html", null ],
+          [ "MouseWheel", "structionengine_1_1platform_1_1wnd_1_1_mouse_wheel.html", null ],
+          [ "PhysicalPosition", "structionengine_1_1platform_1_1wnd_1_1_physical_position.html", null ],
+          [ "PhysicalSize", "structionengine_1_1platform_1_1wnd_1_1_physical_size.html", null ],
+          [ "Window", "classionengine_1_1platform_1_1wnd_1_1_window.html", "classionengine_1_1platform_1_1wnd_1_1_window" ],
+          [ "WindowEventHandler", "structionengine_1_1platform_1_1wnd_1_1_window_event_handler.html", null ],
+          [ "WindowEventLoop", "classionengine_1_1platform_1_1wnd_1_1_window_event_loop.html", "classionengine_1_1platform_1_1wnd_1_1_window_event_loop" ],
+          [ "WindowsWindow", "classionengine_1_1platform_1_1wnd_1_1_windows_window.html", "classionengine_1_1platform_1_1wnd_1_1_windows_window" ],
+          [ "WindowsWindowEventLoop", "classionengine_1_1platform_1_1wnd_1_1_windows_window_event_loop.html", "classionengine_1_1platform_1_1wnd_1_1_windows_window_event_loop" ]
+        ] ]
       ] ],
       [ "renderer", null, [
         [ "api", null, [
@@ -80,7 +82,7 @@ var annotated_dup =
         ] ],
         [ "fg", null, [
           [ "AttachmentDesc", "structionengine_1_1renderer_1_1fg_1_1_attachment_desc.html", null ],
-          [ "BarrierTimeline", "structionengine_1_1renderer_1_1fg_1_1_barrier_timeline.html", null ],
+          [ "BarrierQueueData", "structionengine_1_1renderer_1_1fg_1_1_barrier_queue_data.html", null ],
           [ "BufferDesc", "structionengine_1_1renderer_1_1fg_1_1_buffer_desc.html", null ],
           [ "ComputePassBuilder", "classionengine_1_1renderer_1_1fg_1_1_compute_pass_builder.html", null ],
           [ "ComputePassContext", "classionengine_1_1renderer_1_1fg_1_1_compute_pass_context.html", null ],
@@ -88,13 +90,13 @@ var annotated_dup =
           [ "FrameGraph", "classionengine_1_1renderer_1_1fg_1_1_frame_graph.html", null ],
           [ "RenderPassBuilder", "classionengine_1_1renderer_1_1fg_1_1_render_pass_builder.html", null ],
           [ "RenderPassContext", "classionengine_1_1renderer_1_1fg_1_1_render_pass_context.html", null ],
+          [ "RenderPassQueueData", "structionengine_1_1renderer_1_1fg_1_1_render_pass_queue_data.html", null ],
           [ "RenderPassTask", "structionengine_1_1renderer_1_1fg_1_1_render_pass_task.html", null ],
-          [ "RenderPassTimeline", "structionengine_1_1renderer_1_1fg_1_1_render_pass_timeline.html", null ],
+          [ "RenderQueue", "classionengine_1_1renderer_1_1fg_1_1_render_queue.html", null ],
           [ "Resource", "classionengine_1_1renderer_1_1fg_1_1_resource.html", null ],
           [ "ResourceHandle", "classionengine_1_1renderer_1_1fg_1_1_resource_handle.html", null ],
           [ "ResourceManager", "classionengine_1_1renderer_1_1fg_1_1_resource_manager.html", null ],
-          [ "Task", "classionengine_1_1renderer_1_1fg_1_1_task.html", null ],
-          [ "Timeline", "classionengine_1_1renderer_1_1fg_1_1_timeline.html", null ]
+          [ "Task", "classionengine_1_1renderer_1_1fg_1_1_task.html", null ]
         ] ],
         [ "BaseRenderer", "classionengine_1_1renderer_1_1_base_renderer.html", null ],
         [ "FrameBufferCache", "classionengine_1_1renderer_1_1_frame_buffer_cache.html", "classionengine_1_1renderer_1_1_frame_buffer_cache" ],
