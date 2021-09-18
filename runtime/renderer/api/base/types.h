@@ -134,7 +134,7 @@ enum class RenderPassStoreOp {
     DontCare
 };
 
-enum class ResourceState {
+enum class ResourceState : uint32 {
     Common = 1 << 0,
     VertexAndConstantBuffer = 1 << 1,
     IndexBuffer = 1 << 2,
@@ -144,17 +144,15 @@ enum class ResourceState {
     DepthStencilRead = 1 << 6,
     NonPixelShaderResource = 1 << 7,
     PixelShaderResource = 1 << 8,
-    IndirectArgument = 1 << 9,
-    CopyDest = 1 << 10,
-    CopySource = 1 << 11,
-    Present = 1 << 14,
-    GenericRead =
-            ResourceState::VertexAndConstantBuffer |
-            ResourceState::IndexBuffer |
-            ResourceState::CopySource |
-            ResourceState::NonPixelShaderResource |
-            ResourceState::PixelShaderResource |
-            ResourceState::IndirectArgument
+    CopyDest = 1 << 9,
+    CopySource = 1 << 10,
+    Present = 1 << 11,
+    GenericRead = 
+        (uint32)ResourceState::VertexAndConstantBuffer | 
+        (uint32)ResourceState::IndexBuffer |
+        (uint32)ResourceState::CopySource |
+        (uint32)ResourceState::NonPixelShaderResource |
+        (uint32)ResourceState::PixelShaderResource
 };
 
 ENUM_CLASS_BIT_FLAG_DECLARE(ResourceState)
@@ -167,23 +165,23 @@ enum class ResourceType {
 };
 
 enum class ResourceFlags : uint32 {
-    RenderTarget = 1 << 1,
-    DepthStencil = 1 << 2,
-    ShaderResource = 1 << 3,
-    UnorderedAccess = 1 << 4,
-    ConstantBuffer = 1 << 5,
-    IndexBuffer = 1 << 6,
-    VertexBuffer = 1 << 7,
-    CopyDest = 1 << 8,
-    CopySource = 1 << 9
+    RenderTarget = 1 << 0,
+    DepthStencil = 1 << 1,
+    ShaderResource = 1 << 2,
+    UnorderedAccess = 1 << 3,
+    ConstantBuffer = 1 << 4,
+    IndexBuffer = 1 << 5,
+    VertexBuffer = 1 << 6,
+    CopyDest = 1 << 7,
+    CopySource = 1 << 8
 };
+
+ENUM_CLASS_BIT_FLAG_DECLARE(ResourceFlags)
 
 enum class PipelineType {
     Graphics,
     Compute
 };
-
-ENUM_CLASS_BIT_FLAG_DECLARE(ResourceFlags)
 
 struct RenderPassColorDesc {
     Format format;

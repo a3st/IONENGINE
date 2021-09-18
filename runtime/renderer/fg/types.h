@@ -9,7 +9,7 @@ enum class TaskType {
     ComputePass
 };
 
-enum class TimelineType {
+enum class RenderQueueType {
     Barrier,
     RenderPass,
     ComputePass

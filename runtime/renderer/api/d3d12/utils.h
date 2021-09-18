@@ -125,7 +125,6 @@ D3D12_RESOURCE_STATES convert_resource_state(const ResourceState resource_state)
 		case ResourceState::DepthStencilRead: return D3D12_RESOURCE_STATE_DEPTH_READ;
 		case ResourceState::NonPixelShaderResource: return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 		case ResourceState::PixelShaderResource: return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-		case ResourceState::IndirectArgument: return D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
 		case ResourceState::CopyDest: return D3D12_RESOURCE_STATE_COPY_DEST;
 		case ResourceState::CopySource: return D3D12_RESOURCE_STATE_COPY_SOURCE;
 		case ResourceState::Present: return D3D12_RESOURCE_STATE_PRESENT;

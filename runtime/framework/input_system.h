@@ -3,7 +3,6 @@
 #pragma once
 
 #include "input_types.h"
-#include "platform/base/types.h"
 
 namespace ionengine {
 
@@ -23,33 +22,32 @@ public:
         m_current_axis.fill(0.0f);
     }
 
-    void on_event_handle(const platform::WindowEventHandler& event) {
+    void on_event_handle(const platform::wnd::WindowEventHandler& event) {
         switch(event.event_type) {
-            case platform::WindowEvent::KeyboardInput: {
-                auto input = std::get<platform::KeyboardInput>(event.event);
+            case platform::wnd::WindowEvent::KeyboardInput: {
+                auto input = std::get<platform::wnd::KeyboardInput>(event.event);
                 m_current_keys[input.scan_code] = static_cast<bool>(input.state);
                 break;
             }
-            case platform::WindowEvent::MouseInput: {
-                auto input = std::get<platform::MouseInput>(event.event);
+            case platform::wnd::WindowEvent::MouseInput: {
+                auto input = std::get<platform::wnd::MouseInput>(event.event);
                 switch(input.button) {
-                    case platform::MouseButton::Left: m_current_keys[static_cast<uint32>(KeyCode::MouseLeft)] = static_cast<bool>(input.state); break;
-                    case platform::MouseButton::Right: m_current_keys[static_cast<uint32>(KeyCode::MouseRight)] = static_cast<bool>(input.state); break;
-                    case platform::MouseButton::Middle: m_current_keys[static_cast<uint32>(KeyCode::MouseMiddle)] = static_cast<bool>(input.state); break;
-                    case platform::MouseButton::Four: m_current_keys[static_cast<uint32>(KeyCode::MouseFour)] = static_cast<bool>(input.state); break;
-                    case platform::MouseButton::Five: m_current_keys[static_cast<uint32>(KeyCode::MouseFive)] = static_cast<bool>(input.state); break;
+                    case platform::wnd::MouseButton::Left: m_current_keys[static_cast<uint32>(KeyCode::MouseLeft)] = static_cast<bool>(input.state); break;
+                    case platform::wnd::MouseButton::Right: m_current_keys[static_cast<uint32>(KeyCode::MouseRight)] = static_cast<bool>(input.state); break;
+                    case platform::wnd::MouseButton::Middle: m_current_keys[static_cast<uint32>(KeyCode::MouseMiddle)] = static_cast<bool>(input.state); break;
+                    case platform::wnd::MouseButton::Four: m_current_keys[static_cast<uint32>(KeyCode::MouseFour)] = static_cast<bool>(input.state); break;
+                    case platform::wnd::MouseButton::Five: m_current_keys[static_cast<uint32>(KeyCode::MouseFive)] = static_cast<bool>(input.state); break;
                 }
                 break;
             }
-            case platform::WindowEvent::MouseMoved: {
-                auto input = std::get<platform::MouseMoved>(event.event);
+            case platform::wnd::WindowEvent::MouseMoved: {
+                auto input = std::get<platform::wnd::MouseMoved>(event.event);
                 if(input.relative) {
                     m_current_axis[static_cast<uint32>(AxisCode::MouseX)] = static_cast<float>(input.position.x);
                     m_current_axis[static_cast<uint32>(AxisCode::MouseY)] = static_cast<float>(input.position.y);
                 }
                 break;
             }
-            default: break;
         }
     }
 

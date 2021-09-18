@@ -2,12 +2,12 @@
 
 #pragma once
 
-namespace ionengine::platform {
+namespace ionengine::platform::wnd {
 
 class WindowsWindow : public Window {
 public:
 
-    WindowsWindow(const std::string& label, const uint32 width, const uint32 height, const WindowStyle window_style, WindowsWindowEventLoop& event_loop) : m_event_loop(event_loop) {
+    WindowsWindow(const std::string& label, const uint32 width, const uint32 height, const WindowStyle style, WindowsWindowEventLoop& event_loop) : m_event_loop(event_loop) {
 		
 		WNDCLASS wnd_class{};
 		wnd_class.lpszClassName = TEXT("WINAPI_WND");
@@ -18,10 +18,21 @@ public:
 			throw std::runtime_error("An error occurred while registering the window");
 		}
 
+		uint32 style_flags = 0;
+		if(style & WindowStyle::Normal) {
+			style_flags |= WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME;
+		}
+		if(style & WindowStyle::Minimize) {
+			style_flags |= WS_MINIMIZEBOX;
+		}
+		if(style & WindowStyle::Maximaze) {
+			style_flags |= WS_MAXIMIZEBOX;
+		}
+
 		m_wnd = CreateWindow(
 			wnd_class.lpszClassName,
 			stws(label).c_str(),
-			static_cast<uint32>(window_style),
+			style_flags,
 			0, 100,
 			width, height,
 			nullptr, nullptr,
@@ -71,7 +82,7 @@ public:
 		::RegisterRawInputDevices(m_devices.data(), 2, sizeof(RAWINPUTDEVICE));
     }
 
-    void* get_native_handle() const override { return reinterpret_cast<void*>(m_wnd); }
+    void* get_handle() const override { return reinterpret_cast<void*>(m_wnd); }
 
 	uint64 get_id() const override { return m_id; }
 
@@ -201,10 +212,6 @@ private:
 
 std::unique_ptr<Window> create_unique_window(const std::string& label, const uint32 width, const uint32 height, const WindowStyle window_style, WindowEventLoop& event_loop) {
 	return std::make_unique<WindowsWindow>(label, width, height, window_style, static_cast<WindowsWindowEventLoop&>(event_loop));
-}
-
-int32 show_message_box(void* hwnd, const std::string& msg, const std::string& label, const MessageBoxStyle msgbox_style) {
-    return MessageBox(reinterpret_cast<HWND>(hwnd), stws(msg).c_str(), stws(label).c_str(), static_cast<uint32>(msgbox_style));
 }
 
 }

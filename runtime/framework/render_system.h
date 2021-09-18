@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "platform/base/window.h"
-
 #include "renderer/api/api.h"
 #include "renderer/fg/frame_graph.h"
 #include "renderer/quad_renderer.h"
@@ -17,7 +15,7 @@ using namespace memory_literals;
 class RenderSystem {
 public:
 
-    RenderSystem(platform::Window& window) : m_window(window), m_buffer_count(2) {
+    RenderSystem(platform::wnd::Window& window) : m_window(window), m_buffer_count(2) {
 
         std::cout << format<char>("RenderSystem ({} API) initialized", renderer::api::get_api_name()) << std::endl;
         m_instance = renderer::api::create_unique_instance();
@@ -39,7 +37,7 @@ public:
         m_device = m_adapter->create_device();
 
         auto client_size = m_window.get().get_client_size();
-        m_swapchain = m_device->create_swapchain(m_window.get().get_native_handle(), client_size.width, client_size.height, m_buffer_count);
+        m_swapchain = m_device->create_swapchain(m_window.get().get_handle(), client_size.width, client_size.height, m_buffer_count);
 
         m_fence_values.resize(m_buffer_count);
         m_fence = m_device->create_fence(0);
@@ -67,7 +65,7 @@ public:
 
 private:
 
-    std::reference_wrapper<platform::Window> m_window;
+    std::reference_wrapper<platform::wnd::Window> m_window;
 
     std::unique_ptr<renderer::api::Instance> m_instance;
     std::unique_ptr<renderer::api::Adapter> m_adapter;

@@ -4,11 +4,11 @@
 
 namespace ionengine::renderer::fg {
 
-struct BarrierTimeline {
+struct BarrierQueueData {
     std::vector<api::ResourceBarrierDesc> data;
 };
 
-struct RenderPassTimeline {
+struct RenderPassQueueData {
     std::vector<api::RenderPassColorDesc> color_descs;
     api::RenderPassDepthStencilDesc depth_stencil_desc;
     uint32 sample_count;
@@ -18,29 +18,29 @@ struct RenderPassTimeline {
     std::function<void(RenderPassContext&)> exec_func;
 };
 
-class Timeline {
+class RenderQueue {
 public:
 
-    Timeline(const TimelineType type, const std::variant<BarrierTimeline, RenderPassTimeline>& timeline) 
-        : m_type(type), m_timeline(timeline) {
+    RenderQueue(const RenderQueueType type, const std::variant<BarrierQueueData, RenderPassQueueData>& data) 
+        : m_type(type), m_data(data) {
 
     }
 
-    TimelineType get_type() const { return m_type; }
+    RenderQueueType get_type() const { return m_type; }
 
     const std::variant<
-        BarrierTimeline,
-        RenderPassTimeline
-    >& get_timeline() const { return m_timeline; }
+        BarrierQueueData,
+        RenderPassQueueData
+    >& get_data() const { return m_data; }
 
 private:
 
-    TimelineType m_type;
+    RenderQueueType m_type;
 
     std::variant<
-        BarrierTimeline,
-        RenderPassTimeline
-    > m_timeline;
+        BarrierQueueData,
+        RenderPassQueueData
+    > m_data;
 };
 
 }

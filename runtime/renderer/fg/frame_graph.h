@@ -8,7 +8,7 @@
 #include "resource.h"
 #include "../pass_cache.h"
 #include "builder.h"
-#include "timeline.h"
+#include "queue.h"
 
 namespace ionengine::renderer::fg {
 
@@ -103,7 +103,7 @@ public:
             }
         }
 
-        m_timelines.clear();
+        m_render_queues.clear();
 
         for(auto& task : m_tasks) {
 
@@ -132,7 +132,7 @@ public:
                             barriers.emplace_back(result.value());
                         }
                     }
-                    m_timelines.emplace_back(TimelineType::Barrier, BarrierTimeline { barriers });
+                    m_render_queues.emplace_back(RenderQueueType::Barrier, BarrierQueueData { barriers });
 
                     std::vector<api::RenderPassColorDesc> color_descs;
                     api::RenderPassDepthStencilDesc depth_stencil_desc;
@@ -174,8 +174,8 @@ public:
                         }
                     }
 
-                    m_timelines.emplace_back(
-                        TimelineType::RenderPass, RenderPassTimeline { 
+                    m_render_queues.emplace_back(
+                        RenderQueueType::RenderPass, RenderPassQueueData { 
                             color_descs, 
                             depth_stencil_desc, 
                             1, 
@@ -196,7 +196,7 @@ public:
                             }
                         }
                     }
-                    m_timelines.emplace_back(TimelineType::Barrier, BarrierTimeline { barriers });
+                    m_render_queues.emplace_back(RenderQueueType::Barrier, BarrierQueueData { barriers });
 
                     std::cout << format<char>("RenderPass '{}' is compiled", task.get_name()) << std::endl;
                     break;
@@ -250,17 +250,17 @@ public:
 
         command_list.reset();
 
-        for(auto& timeline : m_timelines) {
+        for(auto& render_queue : m_render_queues) {
 
-            switch(timeline.get_type()) {
+            switch(render_queue.get_type()) {
 
-                case TimelineType::Barrier: {
-                    auto& barrier = std::get<BarrierTimeline>(timeline.get_timeline());
+                case RenderQueueType::Barrier: {
+                    auto& barrier = std::get<BarrierQueueData>(render_queue.get_data());
                     command_list.resource_barriers(barrier.data);
                     break;
                 }
-                case TimelineType::RenderPass: {
-                    auto render_pass = std::get<RenderPassTimeline>(timeline.get_timeline());
+                case RenderQueueType::RenderPass: {
+                    auto render_pass = std::get<RenderPassQueueData>(render_queue.get_data());
 
                     RenderPassCache::Key render_pass_key = {
                         render_pass.color_descs,
@@ -286,7 +286,7 @@ public:
                     break;
                 }
 
-                case TimelineType::ComputePass: {
+                case RenderQueueType::ComputePass: {
                     break;
                 }
            }
@@ -305,7 +305,7 @@ private:
     FrameBufferCache m_frame_buffer_cache;
 
     std::list<Task> m_tasks;
-    std::list<Timeline> m_timelines;
+    std::list<RenderQueue> m_render_queues;
 
     std::optional<api::ResourceBarrierDesc> add_transition_barrier(const BarrierType type, Resource& resource, Task& task) {
         

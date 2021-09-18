@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::platform {
+namespace ionengine::platform::wnd {
 
 class WindowsWindowEventLoop : public WindowEventLoop {
 public:

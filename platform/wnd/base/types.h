@@ -2,21 +2,22 @@
 
 #pragma once
 
-namespace ionengine::platform {
+namespace ionengine::platform::wnd {
 
 class WindowEventLoop;
 class Window;
 
-enum class WindowStyle : uint32;
-enum class MessageBoxStyle : uint32;
+enum class WindowStyle : uint32 {
+	Normal = 1 << 0,
+    Minimize = 1 << 1,
+    Maximaze = 1 << 2,
+	Borderless =
+		(uint32)Normal |
+		(uint32)Minimize |
+		(uint32)Maximaze
+};
 
-WindowStyle operator|(const WindowStyle lhs, const WindowStyle rhs) {
-	return static_cast<WindowStyle>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
-}
-
-MessageBoxStyle operator|(const MessageBoxStyle lhs, const MessageBoxStyle rhs) {
-	return static_cast<MessageBoxStyle>(static_cast<uint32>(lhs) | static_cast<uint32>(rhs));
-}
+ENUM_CLASS_BIT_FLAG_DECLARE(WindowStyle)
 
 enum class MouseButton {
 	Left,
@@ -46,7 +47,6 @@ struct PhysicalSize {
 	uint32 width;
 	uint32 height;
 };
-
 
 struct PhysicalPosition {
 	int32 x;

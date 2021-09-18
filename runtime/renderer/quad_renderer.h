@@ -22,7 +22,8 @@ public:
 
         std::vector<api::DescriptorPoolSize> pool_sizes = { 
             { api::ViewType::ConstantBuffer, 10 },
-            { api::ViewType::RenderTarget, 10 }
+            { api::ViewType::RenderTarget, 10 },
+            { api::ViewType::DepthStencil, 1 }
         };
 
         m_descriptor_pools.emplace_back(m_device.get().create_descriptor_pool(pool_sizes));
