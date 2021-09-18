@@ -80,4 +80,8 @@ private:
     std::unique_ptr<renderer::BaseRenderer> m_renderer;
 };
 
+std::unique_ptr<RenderSystem> create_unique_render_system(platform::wnd::Window& window) {
+    return std::make_unique<RenderSystem>(window);
+}
+
 }

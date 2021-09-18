@@ -17,9 +17,9 @@ int32 main(int32, char**) {
 
     auto window_event_loop = platform::wnd::create_unique_window_event_loop();
     auto window = platform::wnd::create_unique_window("Runtime", 800, 600, platform::wnd::WindowStyle::Borderless, *window_event_loop);
-
-    auto input_system = std::make_unique<InputSystem>();
-    auto render_system = std::make_unique<RenderSystem>(*window);
+    auto input_system = create_unique_input_system();
+    auto render_system = create_unique_render_system(*window);
+    auto logger_system = create_unique_logger_system();
     
     window_event_loop->run([&](const platform::wnd::WindowEventHandler& event) -> void { 
             

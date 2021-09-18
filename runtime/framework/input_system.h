@@ -62,4 +62,8 @@ private:
     std::array<float, axis_codes_max> m_current_axis;
 };
 
+std::unique_ptr<InputSystem> create_unique_input_system() {
+    return std::make_unique<InputSystem>();
+}
+
 }

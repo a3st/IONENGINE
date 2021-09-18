@@ -15,4 +15,8 @@ private:
 
 };
 
+std::unique_ptr<LoggerSystem> create_unique_logger_system() {
+    return std::make_unique<LoggerSystem>();
+}
+
 }
