@@ -150,7 +150,11 @@ $(document).ready(function(){initNavTree('input__system_8h_source.html',''); ini
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    std::array&lt;float, axis_codes_max&gt; m_current_axis;</div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>};</div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>}</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>std::unique_ptr&lt;InputSystem&gt; create_unique_input_system() {</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="keywordflow">return</span> std::make_unique&lt;InputSystem&gt;();</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>}</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>}</div>
 <div class="ttc" id="aclassionengine_1_1_input_system_html"><div class="ttname"><a href="classionengine_1_1_input_system.html">ionengine::InputSystem</a></div><div class="ttdef"><b>Definition:</b> input_system.h:9</div></div>
 <div class="ttc" id="astructionengine_1_1platform_1_1wnd_1_1_window_event_handler_html"><div class="ttname"><a href="structionengine_1_1platform_1_1wnd_1_1_window_event_handler.html">ionengine::platform::wnd::WindowEventHandler</a></div><div class="ttdef"><b>Definition:</b> platform/wnd/base/types.h:75</div></div>
 </div><!-- fragment --></div><!-- contents -->
@@ -159,7 +163,7 @@ $(document).ready(function(){initNavTree('input__system_8h_source.html',''); ini
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="dir_e5fbe6d2783ccd4c93c7856d92d7be6e.html">GitHub</a></li><li class="navelem"><a class="el" href="dir_fc0fd8571d85e7bddd471a0845aa600b.html">ionengine_ops</a></li><li class="navelem"><a class="el" href="dir_19ad26ea90dfeeeba1ef37fb3deddb78.html">runtime</a></li><li class="navelem"><a class="el" href="dir_c7034ae6a17ceb031b372c66b63d2143.html">framework</a></li><li class="navelem"><b>input_system.h</b></li>
-    <li class="footer">Generated on Sun Sep 19 2021 02:21:14 for IONENGINE by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.2 </li>
+    <li class="footer">Generated on Sun Sep 19 2021 04:58:50 for IONENGINE by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.2 </li>
   </ul>
 </div>
 </body>

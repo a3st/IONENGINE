@@ -1,6 +1,13 @@
 var annotated_dup =
 [
     [ "ionengine", null, [
+      [ "lib", null, [
+        [ "ini", null, [
+          [ "Lexer", "classionengine_1_1lib_1_1ini_1_1_lexer.html", null ],
+          [ "Parser", "classionengine_1_1lib_1_1ini_1_1_parser.html", null ],
+          [ "Token", "structionengine_1_1lib_1_1ini_1_1_token.html", null ]
+        ] ]
+      ] ],
       [ "math", null, [
         [ "Fcolor", "structionengine_1_1math_1_1_fcolor.html", null ],
         [ "Matrix", "structionengine_1_1math_1_1_matrix.html", null ],
