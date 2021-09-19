@@ -27,12 +27,17 @@ int32 main(int32, char**) {
     lib::ini::Lexer lexer("test.ini");
     lexer.tokenize();
 
-    while(lexer.get_next().has_value()) {
-        std::cout << lexer.get_current().position << std::endl;
-    }
-    //
+    auto node = lexer.get_first().value();
+
+    //while(lexer.get_next().has_value) {
+    //    std::cout << lexer.get_current().position << std::endl;
+    //}
+
+    lib::ini::Parser parser("test.ini");
+    parser.parse();
+
     
-    window_event_loop->run([&](const platform::wnd::WindowEventHandler& event) -> void { 
+    window_event_loop->run([&](const platform::wnd::WindowEventHandler& event) { 
             
             switch(event.event_type) {
                 case platform::wnd::WindowEvent::Closed: {
