@@ -7,8 +7,9 @@ namespace ionengine::renderer::api {
 class D3DAdapter : public Adapter {
 public:
 
-    D3DAdapter(winrt::com_ptr<IDXGIFactory4>& instance, winrt::com_ptr<IDXGIAdapter1>& adapter) : m_dxgi_factory(instance), m_dxgi_adapter(adapter) {
-
+    D3DAdapter(IDXGIFactory4* dxgi_factory, IDXGIAdapter1* dxgi_adapter) 
+        : m_dxgi_factory(dxgi_factory), m_dxgi_adapter(dxgi_adapter) {
+    
         DXGI_ADAPTER_DESC adapter_desc{};
         adapter->GetDesc(&adapter_desc);
         
@@ -18,23 +19,22 @@ public:
         m_device_id = adapter_desc.DeviceId;
     }
 
-    std::unique_ptr<Device> create_device() {
-        return std::make_unique<D3DDevice>(m_dxgi_factory, m_dxgi_adapter);
-    }
-
     const std::string& get_name() const override { return m_name; }
     usize get_memory() const override { return m_memory; }
     uint32 get_device_id() const override { return m_device_id; }
     uint32 get_vendor_id() const override { return m_vendor_id; }
 
-    winrt::com_ptr<IDXGIAdapter1>& get_d3d12_adapter() { return m_dxgi_adapter; }
-    winrt::com_ptr<IDXGIFactory4>& get_d3d12_factory() { return m_dxgi_factory; }
+    IDXGIAdapter1* get_dxgi_adapter() { return m_dxgi_adapter; }
+    IDXGIFactory4* get_dxgi_factory() { return m_dxgi_factory; }
+
+    std::unique_ptr<Device> create_device() override {
+        return std::make_unique<D3DDevice>(m_dxgi_factory, m_dxgi_adapter);
+    }
     
 private:
 
-    std::reference_wrapper<winrt::com_ptr<IDXGIFactory4>> m_dxgi_factory;
-
-    winrt::com_ptr<IDXGIAdapter1> m_dxgi_adapter;
+    const IDXGIFactory4* m_dxgi_factory;
+    const IDXGIAdapter1* m_dxgi_adapter;
 
     std::string m_name;
     usize m_memory;

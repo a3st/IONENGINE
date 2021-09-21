@@ -2,18 +2,17 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
 class D3DCommandQueue : public CommandQueue {
 public:
 
-    D3DCommandQueue(winrt::com_ptr<ID3D12Device4>& device, const CommandListType type) : m_device(device) {
+    D3DCommandQueue(ID3D12Device4* device, const D3D12_COMMAND_LIST_TYPE list_type) {
 
         D3D12_COMMAND_QUEUE_DESC queue_desc{};
         queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
-        queue_desc.Type = convert_command_list_type(type);
-
-        ASSERT_SUCCEEDED(m_device.get()->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), m_d3d12_command_queue.put_void()));
+        queue_desc.Type = list_type;
+        ASSERT_SUCCEEDED(m_device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), m_d3d12_queue.put_void()));
     }
 
     void wait(Fence& fence, const uint64 value) override {
@@ -32,14 +31,11 @@ public:
         m_d3d12_command_queue->ExecuteCommandLists(static_cast<uint32>(command_list_ptrs.size()), command_list_ptrs.data());
     }
 
-    winrt::com_ptr<ID3D12CommandQueue>& get_d3d12_command_queue() { return m_d3d12_command_queue; }
-    winrt::com_ptr<ID3D12Device4>& get_d3d12_device() { return m_device; }
+    ID3D12CommandQueue* get_d3d12_queue() { return m_d3d12_queue.get(); }
 
 private:
 
-    std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
-
-    winrt::com_ptr<ID3D12CommandQueue> m_d3d12_command_queue;
+    winrt::com_ptr<ID3D12CommandQueue> m_d3d12_queue;
 };
 
 }

@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
 class Instance;
 class Adapter;
@@ -20,7 +20,48 @@ class Memory;
 class Fence;
 class View;
 
-enum class Format;
+enum class Format {
+    Unknown,
+    RGBA32float,
+    RGBA32uint,
+    RGBA32int,
+    RGB32float,
+    RGB32uint,
+    RGB32int,
+    RG32float,
+    RG32uint,
+    RG32int,
+    R32float,
+    R32uint,
+    R32int,
+    RGBA16float,
+    RGBA16uint,
+    RGBA16int,
+    RGBA16unorm,
+    RGBA16snorm,
+    RG16float,
+    RG16uint,
+    RG16int,
+    RG16unorm,
+    RG16snorm,
+    R16float,
+    R16uint,
+    R16int,
+    R16unorm,
+    R16snorm,
+    RGBA8uint,
+    RGBA8int,
+    RGBA8unorm,
+    RGBA8snorm,
+    RG8uint,
+    RG8int,
+    RG8unorm,
+    RG8snorm,
+    R8uint,
+    R8int,
+    R8unorm,
+    R8snorm
+};
 
 enum class ShaderType {
     Vertex,
@@ -111,6 +152,7 @@ enum class StencilOp {
 
 enum class Blend {
     Zero,
+    One,
     SrcAlpha,
     InvSrcAlpha
 };
@@ -183,20 +225,49 @@ enum class PipelineType {
     Compute
 };
 
+enum class Filter {
+    Anisotropic,
+    MinMagMipLinear,
+    ComparisonMinMagMipLinear
+};
+
+enum class TextureAddressMode {
+    Wrap,
+    Clamp
+};
+
+struct AdapterDesc {
+    std::string name;
+    usize local_memory;
+    uint32 vendor_id;
+    uint32 device_id;
+
+    auto make_tie() const {
+        return std::tie(name, local_memory, vendor_id, device_id);
+    }
+};
+
+STD_TIE_CMP_OPERATOR_DECLARE(AdapterDesc)
+
+struct SwapchainDesc {
+    void* hwnd;
+    uint32 width;
+    uint32 height;
+    uint32 buffer_count;
+};
+
 struct RenderPassColorDesc {
-    Format format;
+    Format format = Format::Unknown;
     RenderPassLoadOp load_op = RenderPassLoadOp::DontCare;
     RenderPassStoreOp store_op  = RenderPassStoreOp::DontCare;
 
-    auto make_tie() const { 
-        return std::tie(format, load_op, store_op); 
-    }
+    auto make_tie() const { return std::tie(format, load_op, store_op); }
 };
 
 STD_TIE_CMP_OPERATOR_DECLARE(RenderPassColorDesc)
 
 struct RenderPassDepthStencilDesc {
-    Format format;
+    Format format = Format::Unknown;
     RenderPassLoadOp depth_load_op = RenderPassLoadOp::DontCare;
     RenderPassStoreOp depth_store_op = RenderPassStoreOp::DontCare;
     RenderPassLoadOp stencil_load_op = RenderPassLoadOp::DontCare;
@@ -210,11 +281,11 @@ struct RenderPassDepthStencilDesc {
 STD_TIE_CMP_OPERATOR_DECLARE(RenderPassDepthStencilDesc)
 
 struct FrameBufferDesc {
-    std::reference_wrapper<RenderPass> render_pass;
+    RenderPass* render_pass;
     uint32 width;
     uint32 height;
-    std::vector<std::reference_wrapper<View>> colors;
-    std::optional<std::reference_wrapper<View>> depth_stencil;
+    std::vector<View*> colors;
+    std::optional<View*> depth_stencil;
 };
 
 struct RenderPassDesc {
@@ -224,20 +295,14 @@ struct RenderPassDesc {
 };
 
 struct ResourceBarrierDesc {
-    std::reference_wrapper<Resource> resource;
-    ResourceState state_before;
-    ResourceState state_after;
+    Resource* resource;
+    ResourceState before;
+    ResourceState after;
 };
 
 struct ClearValueColor {
-    float r;
-    float g;
-    float b;
-    float a;
-
-    auto make_tie() const {
-        return std::tie(r, g, b, a);
-    }
+    float r, g, b, a;
+    auto make_tie() const { return std::tie(r, g, b, a); }
 };
 
 STD_TIE_CMP_OPERATOR_DECLARE(ClearValueColor)
@@ -251,14 +316,14 @@ struct ClearValueDesc {
 struct InputLayoutDesc {
     std::string semantic_name;
     uint32 index;
-    Format format;
+    Format format = Format::Unknown;
     uint32 slot;
     uint32 stride;
 };
 
 struct DescriptorSetLayoutBinding {
     ShaderType shader_type;
-    ViewType view_type;
+    ViewType view_type = ViewType::Unknown;
     uint32 slot;
     uint32 space;
     uint32 count;
@@ -290,8 +355,8 @@ struct DepthStencilDesc {
 };
 
 struct ViewDesc {
-    ViewType view_type;
-    ViewDimension dimension;
+    ViewType view_type = ViewType::Unknown;
+    ViewDimension dimension = ViewDimension::Unknown;
     uint32 array_size;
     uint32 mip_slice;
     uint32 array_slice;
@@ -301,25 +366,14 @@ struct ViewDesc {
 };
 
 struct ResourceDesc {
-    ViewDimension dimension;
+    ViewDimension dimension = ViewDimension::Unknown;
     uint64 width;
     uint32 height;
     uint16 array_size;
     uint16 mip_levels;
-    Format format;
-    uint32 sample_count;
+    Format format = Format::Unknown;
+    uint32 sample_count = 1;
     ResourceFlags flags;
-};
-
-enum class Filter {
-    Anisotropic,
-    MinMagMipLinear,
-    ComparisonMinMagMipLinear
-};
-
-enum class TextureAddressMode {
-    Wrap,
-    Clamp
 };
 
 struct SamplerDesc {
@@ -330,26 +384,26 @@ struct SamplerDesc {
 
 struct BlendDesc {
     bool blend_enable = false;
-    Blend blend_src;
-    Blend blend_dest;
-    BlendOp blend_op;
-    Blend blend_src_alpha;
-    Blend blend_dest_alpha;
-    BlendOp blend_op_alpha;
+    Blend blend_src = Blend::One;
+    Blend blend_dest = Blend::Zero;
+    BlendOp blend_op = BlendOp::Add;
+    Blend blend_src_alpha = Blend::One;
+    Blend blend_dest_alpha = Blend::Zero;
+    BlendOp blend_op_alpha = BlendOp::Add;
 };
 
 struct GraphicsPipelineDesc {
-    std::vector<std::reference_wrapper<Shader>> shaders;
-    std::reference_wrapper<DescriptorSetLayout> layout;
+    std::vector<Shader*> shaders;
+    DescriptorSetLayout* layout;
     std::vector<InputLayoutDesc> inputs;
-    std::reference_wrapper<RenderPass> render_pass;
+    RenderPass* render_pass;
     RasterizerDesc rasterizer;
     DepthStencilDesc depth_stencil;
     BlendDesc blend;
 };
 
 struct DescriptorPoolSize {
-    ViewType type;
+    ViewType type = ViewType::Unknown;
     uint32 count;
 };
 

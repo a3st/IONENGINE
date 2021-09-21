@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
 std::vector<byte> read_shader_code(const std::filesystem::path& shader_path) {
 

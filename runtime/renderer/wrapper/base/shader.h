@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
 /**
     @brief Graphics API Shader class

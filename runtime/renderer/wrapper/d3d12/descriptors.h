@@ -2,12 +2,12 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrappers {
 
 class D3DDescriptorSetLayout : public DescriptorSetLayout {
 public:
 
-    D3DDescriptorSetLayout(winrt::com_ptr<ID3D12Device4>& device, const std::vector<DescriptorSetLayoutBinding>& bindings) : m_device(device) {
+    D3DDescriptorSetLayout(ID3D12Device4* d3d12_device, const std::vector<DescriptorSetLayoutBinding>& bindings) {
 
 		using Key = std::pair<D3D12_DESCRIPTOR_HEAP_TYPE, ShaderType>;
 		std::map<Key, std::vector<D3D12_DESCRIPTOR_RANGE>> ranges_by_key;
@@ -54,15 +54,13 @@ public:
 
 	    winrt::com_ptr<ID3DBlob> blob;
 	    ASSERT_SUCCEEDED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, blob.put(), nullptr));
-	    ASSERT_SUCCEEDED(m_device.get()->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), __uuidof(ID3D12RootSignature), m_d3d12_root_signature.put_void()));
+	    ASSERT_SUCCEEDED(d3d12_device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), __uuidof(ID3D12RootSignature), m_d3d12_root_signature.put_void()));
     }
 
-	winrt::com_ptr<ID3D12RootSignature>& get_d3d12_root_signature() { return m_d3d12_root_signature; }
+	ID3D12RootSignature* get_d3d12_root_signature() { return m_d3d12_root_signature.get(); }
 	const std::vector<DescriptorTableDesc>& get_descriptor_tables() { return m_descriptor_tables; }
 
 private:
-
-    std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
 
     winrt::com_ptr<ID3D12RootSignature> m_d3d12_root_signature;
 

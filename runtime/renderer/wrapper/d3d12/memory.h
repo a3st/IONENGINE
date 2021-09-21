@@ -2,16 +2,16 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
 class D3DMemory : public Memory {
 public:
 
-    D3DMemory(winrt::com_ptr<ID3D12Device4>& device, const MemoryType type, const usize size, const uint32 alignment, const ResourceFlags flags) 
-        : m_device(device), m_type(type) {
+    D3DMemory(ID3D12Device4* d3d12_device, const MemoryType memory_type, const usize size, const uint32 alignment, const ResourceFlags flags) 
+        : m_type(memory_type) {
 
         D3D12_HEAP_DESC heap_desc{};
-        heap_desc.Properties.Type = convert_heap_type(type);
+        heap_desc.Properties.Type = convert_heap_type(memory_type);
         heap_desc.SizeInBytes = size;
         heap_desc.Alignment = alignment;
         switch(flags) {
@@ -23,17 +23,14 @@ public:
             case ResourceFlags::DepthStencil:
             case ResourceFlags::RenderTarget: heap_desc.Flags = D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES; break;
         }
-
-        ASSERT_SUCCEEDED(m_device.get()->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), m_d3d12_heap.put_void()));
+        ASSERT_SUCCEEDED(d3d12_device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), m_d3d12_heap.put_void()));
     }
 
     MemoryType get_type() const override { return m_type; }
 
-    winrt::com_ptr<ID3D12Heap>& get_d3d12_heap() { return m_d3d12_heap; }
+    ID3D12Heap* get_d3d12_heap() { return m_d3d12_heap.get(); }
     
 private:
-
-    std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
 
     winrt::com_ptr<ID3D12Heap> m_d3d12_heap;
     MemoryType m_type;

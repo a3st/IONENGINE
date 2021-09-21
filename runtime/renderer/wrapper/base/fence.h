@@ -2,14 +2,14 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
 class Fence {
 public:
 
     virtual ~Fence() = default;
     
-    virtual uint64 get_completed_value() = 0;
+    virtual uint64 get_completed_value() const = 0;
     virtual void wait(const uint64 value) = 0;
     virtual void signal(const uint64 value) = 0;
 };

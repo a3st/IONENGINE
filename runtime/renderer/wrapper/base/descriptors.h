@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
 class DescriptorSetLayout  {
 public:

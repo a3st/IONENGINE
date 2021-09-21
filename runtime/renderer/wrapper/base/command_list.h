@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
 /**
     @brief Graphics API CommandList class
@@ -50,9 +50,9 @@ public:
 
     /**
         @brief Set resource barriers to command list
-        @param barrier_descs vector of ResourceBarrierDescs
+        @param barriers vector of ResourceBarrierDescs
     */
-    virtual void resource_barriers(const std::vector<ResourceBarrierDesc>& barrier_descs) = 0;
+    virtual void resource_barriers(const std::vector<ResourceBarrierDesc>& barriers) = 0;
     
     /**
         @brief Begin render pass in command list
