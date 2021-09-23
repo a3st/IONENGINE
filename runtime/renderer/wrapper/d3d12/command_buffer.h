@@ -4,29 +4,31 @@
 
 namespace ionengine::renderer::api {
 
-class D3DCommandList : public CommandList {
+class D3DCommandBuffer : public CommandBuffer {
 public:
 
-    D3DCommandList(winrt::com_ptr<ID3D12Device4>& device, const CommandListType list_type) : m_device(device)  {
+    D3DCommandList(ID3D12Device4* d3d12_device, const D3D12_COMMAND_LIST_TYPE list_type) : m_device(device)  {
         
-        ASSERT_SUCCEEDED(m_device.get()->CreateCommandAllocator(
-            convert_command_list_type(list_type), 
-            __uuidof(ID3D12CommandAllocator), m_d3d12_command_allocator.put_void()
-        ));
+        ASSERT_SUCCEEDED(d3d12_device->CreateCommandAllocator(
+                list_type, 
+                __uuidof(ID3D12CommandAllocator), m_d3d12_command_allocator.put_void()
+            )
+        );
 
-        ASSERT_SUCCEEDED(m_device.get()->CreateCommandList(
-            0, 
-            convert_command_list_type(list_type), 
-            m_d3d12_command_allocator.get(), 
-            nullptr, 
-            __uuidof(ID3D12GraphicsCommandList), m_d3d12_command_list.put_void()
-        ));
+        ASSERT_SUCCEEDED(d3d12_device->CreateCommandList(
+                0, 
+                list_type, 
+                m_d3d12_command_allocator.get(), 
+                nullptr, 
+                __uuidof(ID3D12GraphicsCommandList), m_d3d12_command_list.put_void()
+            )
+        );
         ASSERT_SUCCEEDED(m_d3d12_command_list->Close());
     }
 
     void bind_pipeline(Pipeline& pipeline) override {
 
-        m_pipeline = static_cast<D3DPipeline&>(pipeline);
+        m_binded_pipeline = static_cast<D3DPipeline&>(pipeline);
 
         if(m_pipeline.value().get().get_type() == PipelineType::Graphics) {
 
@@ -182,12 +184,10 @@ public:
 
 private:
 
-    std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
-
     winrt::com_ptr<ID3D12CommandAllocator> m_d3d12_command_allocator;
     winrt::com_ptr<ID3D12GraphicsCommandList4> m_d3d12_command_list;
 
-    std::optional<std::reference_wrapper<D3DPipeline>> m_pipeline;
+    D3DPipeline* m_binded_pipeline;
 };
 
 }

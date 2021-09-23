@@ -9,10 +9,10 @@ namespace ionengine::renderer::wrapper {
 
     Command List class for Graphics API. It's needed for create command lists and dispath it to device
 */
-class CommandList {
+class CommandBuffer {
 public:
 
-    virtual ~CommandList() = default;
+    virtual ~CommandBuffer() = default;
     
     /**
         @brief Bind pipeline to command list
