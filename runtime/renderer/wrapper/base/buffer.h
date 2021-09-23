@@ -13,6 +13,8 @@ public:
 
     virtual BufferType get_type() const = 0;
 
+    virtual const BufferDesc& get_desc() const = 0;
+
     virtual byte* map() = 0;
 
     virtual void unmap() = 0;

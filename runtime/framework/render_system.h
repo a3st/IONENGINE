@@ -19,8 +19,19 @@ public:
 
         m_device = renderer::wrapper::create_unique_device(0);
 
+        std::cout << format<char>("Adapter name - {}, memory - {}", m_device->get_adapter_desc().name, m_device->get_adapter_desc().local_memory) << std::endl;
+
         auto client_size = m_window.get().get_client_size();
-        //m_swapchain = m_device->create_swapchain(m_window.get().get_handle(), client_size.width, client_size.height, m_buffer_count);
+
+        renderer::wrapper::SwapchainDesc swapchain_desc{};
+        swapchain_desc.hwnd = m_window.get().get_handle();
+        swapchain_desc.width = client_size.width;
+        swapchain_desc.height = client_size.height;
+        swapchain_desc.buffer_count = m_buffer_count;
+
+        m_swapchain = m_device->create_swapchain(swapchain_desc);
+
+        m_memory = m_device->create_memory(renderer::wrapper::MemoryType::Default, 1024_mb, 0, renderer::wrapper::BufferFlags::VertexBuffer);
 
         //m_fence_values.resize(m_buffer_count);
         //m_fence = m_device->create_fence(0);
@@ -51,6 +62,9 @@ private:
     std::reference_wrapper<platform::wnd::Window> m_window;
 
     std::unique_ptr<renderer::wrapper::Device> m_device;
+    std::unique_ptr<renderer::wrapper::Swapchain> m_swapchain;
+
+    std::unique_ptr<renderer::wrapper::Memory> m_memory;
 
     std::vector<uint64> m_fence_values;
 

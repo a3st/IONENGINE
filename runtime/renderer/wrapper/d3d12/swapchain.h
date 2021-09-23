@@ -7,8 +7,8 @@ namespace ionengine::renderer::wrapper {
 class D3DSwapchain : public Swapchain {
 public:
 
-    D3DSwapchain(IDXGIFactory4* factory, IDXGIDevice1* device, ID3D12CommandQueue* command_queue, const SwapchainDesc& swapchain_desc) 
-        : m_dxgi_factory(factory), m_d3d12_device(device), m_d3d12_command_queue(command_queue) {
+    D3DSwapchain(IDXGIFactory4* d3d12_factory, ID3D12Device4* d3d12_device, ID3D12CommandQueue* d3d12_command_queue, const SwapchainDesc& swapchain_desc) 
+        : m_dxgi_factory(d3d12_factory), m_d3d12_device(d3d12_device), m_d3d12_command_queue(d3d12_command_queue), m_desc(swapchain_desc) {
         
         DXGI_SWAP_CHAIN_DESC1 dxgi_swapchain_desc{};
         dxgi_swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -21,8 +21,9 @@ public:
         dxgi_swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 
         winrt::com_ptr<IDXGISwapChain1> tmp_swapchain;
-        ASSERT_SUCCEEDED(m_dxgi_factory->CreateSwapChainForHwnd(
-                m_queues[CommandListType::Graphics]->get_d3d12_queue().get(), 
+        THROW_IF_FAILED(
+            m_dxgi_factory->CreateSwapChainForHwnd(
+                d3d12_command_queue, 
                 reinterpret_cast<HWND>(swapchain_desc.hwnd), 
                 &dxgi_swapchain_desc, 
                 nullptr, 
@@ -32,38 +33,40 @@ public:
         );
         tmp_swapchain.as(m_dxgi_swapchain);
 
-        for(uint32 i = 0; i < buffer_count; ++i) {
+        for(uint32 i = 0; i < swapchain_desc.buffer_count; ++i) {
             winrt::com_ptr<ID3D12Resource> resource;
-            ASSERT_SUCCEEDED(m_dxgi_swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
-            m_back_buffers.emplace_back(std::make_unique<D3DResource>(m_d3d12_device.get(), ResourceType::Texture, resource, ResourceFlags::RenderTarget));
+            THROW_IF_FAILED(m_dxgi_swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
+            m_buffers.emplace_back(std::make_unique<D3DBuffer>(m_d3d12_device, BufferType::Texture, resource, BufferFlags::RenderTarget));
         }
     }
 
-    Resource* get_back_buffer(const uint32 buffer_index) override { return m_back_buffers[buffer_index]; }
-    uint32 get_back_buffer_index() const override { return m_dxgi_swapchain->GetCurrentBackBufferIndex(); }
+    Buffer* get_buffer(const uint32 buffer_index) override { return m_buffers[buffer_index].get(); }
+    uint32 get_buffer_index() const override { return m_dxgi_swapchain->GetCurrentBackBufferIndex(); }
 
     uint32 next_buffer(Fence* fence, const uint64 signal_value) override {
         uint32 buffer_index = m_dxgi_swapchain->GetCurrentBackBufferIndex();
-        ASSERT_SUCCEEDED(m_d3d12_command_queue->Signal(static_cast<D3DFence*>(fence)->get_d3d12_fence().get(), signal_value));
+        THROW_IF_FAILED(m_d3d12_command_queue->Signal(static_cast<D3DFence*>(fence)->get_d3d12_fence(), signal_value));
         return buffer_index;
     }
 
     void present(Fence* fence, const uint64 wait_value) override {
-        ASSERT_SUCCEEDED(m_d3d12_command_queue->Wait(static_cast<D3DFence*>(fence)->get_d3d12_fence().get(), wait_value));
-        ASSERT_SUCCEEDED(m_dxgi_swapchain->Present(0, 0));
+        THROW_IF_FAILED(m_d3d12_command_queue->Wait(static_cast<D3DFence*>(fence)->get_d3d12_fence(), wait_value));
+        THROW_IF_FAILED(m_dxgi_swapchain->Present(0, 0));
     }
 
     IDXGISwapChain4* get_dxgi_swapchain() { return m_dxgi_swapchain.get(); }
 
 private:
 
-    const IDXGIFactory4* m_dxgi_factory;
-    const ID3D12Device4* m_d3d12_device;
-    const ID3D12CommandQueue* m_d3d12_command_queue;
+    IDXGIFactory4* m_dxgi_factory;
+    ID3D12Device4* m_d3d12_device;
+    ID3D12CommandQueue* m_d3d12_command_queue;
 
     winrt::com_ptr<IDXGISwapChain4> m_dxgi_swapchain;
 
-    std::vector<std::unique_ptr<D3DResource>> m_back_buffers;
+    std::vector<std::unique_ptr<D3DBuffer>> m_buffers;
+
+    SwapchainDesc m_desc;
 };
 
 }

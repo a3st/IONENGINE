@@ -22,7 +22,11 @@ public:
 
     virtual std::unique_ptr<Buffer> create_buffer(const BufferType type, const BufferDesc& buffer_desc) = 0;
 
-    virtual std::unique_ptr<Swapchain> create_swapchain(const SwapchainDesc swapchain_desc) = 0;
+    virtual std::unique_ptr<Swapchain> create_swapchain(const SwapchainDesc& swapchain_desc) = 0;
+
+    virtual const AdapterDesc& get_adapter_desc() const = 0;
+
+    virtual std::unique_ptr<Memory> create_memory(const MemoryType memory_type, const usize size, const uint32 aligment, const BufferFlags buffer_flags) = 0;
     /*
 
     virtual std::unique_ptr<DescriptorSetLayout> create_descriptor_set_layout(const std::vector<DescriptorSetLayoutBinding>& bindings) = 0;

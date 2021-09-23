@@ -7,6 +7,8 @@
 #include "base/fence.h"
 #include "base/memory.h"
 #include "base/buffer.h"
+#include "base/sampler.h"
+#include "base/swapchain.h"
 #include "base/device.h"
 
 #ifdef IONENGINE_RENDERER_D3D12
@@ -18,7 +20,6 @@
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "DXGUID.LIB")
 #pragma comment(lib, "windowsapp.lib")
 
 #include "d3d12/types.h"
@@ -26,6 +27,7 @@
 #include "d3d12/fence.h"
 #include "d3d12/memory.h"
 #include "d3d12/buffer.h"
+#include "d3d12/swapchain.h"
 #include "d3d12/device.h"
 
 #endif

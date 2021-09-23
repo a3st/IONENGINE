@@ -4,11 +4,10 @@
 
 namespace ionengine::renderer::wrapper {
 
-struct DescriptorTableDesc {
-	D3D12_DESCRIPTOR_HEAP_TYPE type;
-	uint32 count;
-	uint32 offset;
-	bool compute;
+class Sampler {
+public:
+
+    virtual ~Sampler() = default;
 };
 
 }

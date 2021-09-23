@@ -172,7 +172,7 @@ D3D12_HEAP_TYPE conv_heap_type(const MemoryType memory_type) {
     }
 }
 
-D3D12_RESOURCE_STATES conv_buffer_state(const BufferState buffer_state) {
+D3D12_RESOURCE_STATES conv_resource_state(const BufferState buffer_state) {
 	
 	switch(buffer_state) {
 		case BufferState::Common: return D3D12_RESOURCE_STATE_COMMON;

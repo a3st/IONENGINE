@@ -9,6 +9,7 @@ public:
 
     virtual ~Memory() = default;
     virtual MemoryType get_type() const = 0;
+    virtual BufferFlags get_flags() const = 0;
 };
 
 
