@@ -45,20 +45,31 @@ public:
         THROW_IF_FAILED(m_d3d12_device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), m_command_queues[CommandBufferType::Compute].put_void()));
     }
 
-    void wait(const CommandBufferType type, Fence* fence, const uint64 value) override {
-        THROW_IF_FAILED(m_command_queues[type]->Wait(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
+    void wait(const CommandBufferType command_buffer_type, Fence* fence, const uint64 value) override {
+        THROW_IF_FAILED(m_command_queues[command_buffer_type]->Wait(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
     }
 
-    void signal(const CommandBufferType type, Fence* fence, const uint64 value) override {
-        THROW_IF_FAILED(m_command_queues[type]->Signal(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
+    void signal(const CommandBufferType command_buffer_type, Fence* fence, const uint64 value) override {
+        THROW_IF_FAILED(m_command_queues[command_buffer_type]->Signal(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
     }
 
-    void execute_command_buffers(const std::vector<CommandBuffer*>& cmd_buffers) override {
-
+    void execute_command_buffers(const CommandBufferType command_buffer_type, const std::vector<CommandBuffer*>& command_buffers) override {
+        std::vector<ID3D12CommandList*> d3d12_command_lists;
+        for(auto& command_buffer : command_buffers) {
+            D3DCommandBuffer* d3d_command_buffer = static_cast<D3DCommandBuffer*>(command_buffer);
+            d3d12_command_lists.emplace_back(d3d_command_buffer->get_d3d12_command_list().get());
+        }
+        if(!d3d12_command_lists.empty()) {
+            m_command_queues[command_buffer_type]->ExecuteCommandLists(d3d12_command_lists.size(), d3d12_command_lists.data());
+        }
     }
 
     std::unique_ptr<Buffer> create_buffer(const BufferType type, const BufferDesc& buffer_desc) override {
         return std::make_unique<D3DBuffer>(m_d3d12_device.get(), type, buffer_desc);
+    }
+
+    std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) override {
+        return std::make_unique<D3DSampler>(sampler_desc);
     }
 
     std::unique_ptr<Swapchain> create_swapchain(const SwapchainDesc& swapchain_desc) override {

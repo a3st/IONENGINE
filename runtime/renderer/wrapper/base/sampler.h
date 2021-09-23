@@ -8,6 +8,8 @@ class Sampler {
 public:
 
     virtual ~Sampler() = default;
+
+    virtual const SamplerDesc& get_desc() const = 0;
 };
 
 }

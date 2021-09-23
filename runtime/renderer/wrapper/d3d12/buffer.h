@@ -12,31 +12,31 @@ public:
         switch(buffer_type) {
             case BufferType::Buffer:
             case BufferType::Texture: {
-                D3D12_RESOURCE_DESC resource_desc{};
-                resource_desc.Dimension = conv_resource_dimension(buffer_desc.dimension);
-                resource_desc.Alignment = 0;
+                D3D12_RESOURCE_DESC d3d12_resource_desc{};
+                d3d12_resource_desc.Dimension = conv_resource_dimension(buffer_desc.dimension);
+                d3d12_resource_desc.Alignment = 0;
                         
                 if(buffer_desc.flags & BufferFlags::ConstantBuffer) {
-                    resource_desc.Width = (buffer_desc.width + 255) & ~255;
+                    d3d12_resource_desc.Width = (buffer_desc.width + 255) & ~255;
                 } else {
-                    resource_desc.Width = buffer_desc.width;
+                    d3d12_resource_desc.Width = buffer_desc.width;
                 }
 
-                resource_desc.Height = buffer_desc.height;
-                resource_desc.DepthOrArraySize = buffer_desc.array_size;
-                resource_desc.MipLevels = buffer_desc.mip_levels;
-                resource_desc.Format = static_cast<DXGI_FORMAT>(buffer_desc.format);
-                resource_desc.SampleDesc.Count = buffer_desc.sample_count;
-                resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+                d3d12_resource_desc.Height = buffer_desc.height;
+                d3d12_resource_desc.DepthOrArraySize = buffer_desc.array_size;
+                d3d12_resource_desc.MipLevels = buffer_desc.mip_levels;
+                d3d12_resource_desc.Format = static_cast<DXGI_FORMAT>(buffer_desc.format);
+                d3d12_resource_desc.SampleDesc.Count = buffer_desc.sample_count;
+                d3d12_resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
                         
                 if(buffer_desc.flags & BufferFlags::RenderTarget) {
-                    resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+                    d3d12_resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
                 } else if(buffer_desc.flags & BufferFlags::DepthStencil) {
-                    resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+                    d3d12_resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
                 } else if(buffer_desc.flags & BufferFlags::UnorderedAccess) {
-                    resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+                    d3d12_resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
                 }
-                m_d3d12_desc = resource_desc;
+                m_d3d12_desc = d3d12_resource_desc;
                 break;
             }
             default: assert(false && "resource type should be Buffer or Texture when passed ResourceDesc"); break;

@@ -14,13 +14,15 @@ public:
 
     virtual ~Device() = default;
 
-    virtual void wait(const CommandBufferType type, Fence* fence, const uint64 value) = 0;
+    virtual void wait(const CommandBufferType command_buffer_type, Fence* fence, const uint64 value) = 0;
 
-    virtual void signal(const CommandBufferType type, Fence* fence, const uint64 value) = 0;
+    virtual void signal(const CommandBufferType command_buffer_type, Fence* fence, const uint64 value) = 0;
 
-    virtual void execute_command_buffers(const std::vector<CommandBuffer*>& cmd_buffers) = 0;
+    virtual void execute_command_buffers(const CommandBufferType command_buffer_type, const std::vector<CommandBuffer*>& command_buffers) = 0;
 
     virtual std::unique_ptr<Buffer> create_buffer(const BufferType type, const BufferDesc& buffer_desc) = 0;
+
+    virtual std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) = 0;
 
     virtual std::unique_ptr<Swapchain> create_swapchain(const SwapchainDesc& swapchain_desc) = 0;
 

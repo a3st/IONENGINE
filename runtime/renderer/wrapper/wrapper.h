@@ -9,6 +9,7 @@
 #include "base/buffer.h"
 #include "base/sampler.h"
 #include "base/swapchain.h"
+#include "base/command_buffer.h"
 #include "base/device.h"
 
 #ifdef IONENGINE_RENDERER_D3D12
@@ -27,7 +28,9 @@
 #include "d3d12/fence.h"
 #include "d3d12/memory.h"
 #include "d3d12/buffer.h"
+#include "d3d12/sampler.h"
 #include "d3d12/swapchain.h"
+#include "d3d12/command_buffer.h"
 #include "d3d12/device.h"
 
 #endif
