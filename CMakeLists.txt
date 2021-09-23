@@ -43,7 +43,7 @@ target_link_libraries(Runtime-Win32
 # Preprocessor
 target_compile_definitions(Runtime-Win32 PRIVATE 
     IONENGINE_PLATFORM_WIN32
-    IONENGINE_RENDERER_WRAPPER_D3D12
+    IONENGINE_RENDERER_D3D12
 )
 
 #[[
@@ -83,7 +83,7 @@ target_link_libraries(Runtime-Win32VK
 # Preprocessor
 target_compile_definitions(Runtime-Win32VK PRIVATE 
     IONENGINE_PLATFORM_WIN32
-    IONENGINE_RENDERER_WRAPPER_VK
+    IONENGINE_RENDERER_VK
 )
 
 #[[

@@ -18,7 +18,7 @@
 #include "base/device.h"
 #include "base/adapter.h"
 
-#ifdef IONENGINE_RENDERER_WRAPPER_D3D12
+#ifdef IONENGINE_RENDERER_D3D12
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -44,11 +44,10 @@
 #include "d3d12/command_buffer.h"
 #include "d3d12/queue.h"
 #include "d3d12/device.h"
-#include "d3d12/adapter.h"
 
 #endif
 
-#ifdef IONENGINE_RENDERER_WRAPPER_D3D12
+#ifdef IONENGINE_RENDERER_VK
 
 #ifdef IONENGINE_PLATFORM_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
