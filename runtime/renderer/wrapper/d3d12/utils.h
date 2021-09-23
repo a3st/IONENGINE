@@ -172,23 +172,23 @@ D3D12_HEAP_TYPE conv_heap_type(const MemoryType memory_type) {
     }
 }
 
-D3D12_RESOURCE_STATES conv_resource_state(const ResourceState resource_state) {
+D3D12_RESOURCE_STATES conv_buffer_state(const BufferState buffer_state) {
 	
-	switch(resource_state) {
-		case ResourceState::Common: return D3D12_RESOURCE_STATE_COMMON;
-		case ResourceState::VertexAndConstantBuffer: return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-		case ResourceState::IndexBuffer: return D3D12_RESOURCE_STATE_INDEX_BUFFER;
-		case ResourceState::RenderTarget: return D3D12_RESOURCE_STATE_RENDER_TARGET;
-		case ResourceState::UnorderedAccess: return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-		case ResourceState::DepthStencilWrite: return D3D12_RESOURCE_STATE_DEPTH_WRITE;
-		case ResourceState::DepthStencilRead: return D3D12_RESOURCE_STATE_DEPTH_READ;
-		case ResourceState::NonPixelShaderResource: return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-		case ResourceState::PixelShaderResource: return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-		case ResourceState::CopyDest: return D3D12_RESOURCE_STATE_COPY_DEST;
-		case ResourceState::CopySource: return D3D12_RESOURCE_STATE_COPY_SOURCE;
-		case ResourceState::Present: return D3D12_RESOURCE_STATE_PRESENT;
-		case ResourceState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
-		default: assert(false && "passed invalid argument to conv_resource_state"); return D3D12_RESOURCE_STATE_COMMON;
+	switch(buffer_state) {
+		case BufferState::Common: return D3D12_RESOURCE_STATE_COMMON;
+		case BufferState::VertexAndConstantBuffer: return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+		case BufferState::IndexBuffer: return D3D12_RESOURCE_STATE_INDEX_BUFFER;
+		case BufferState::RenderTarget: return D3D12_RESOURCE_STATE_RENDER_TARGET;
+		case BufferState::UnorderedAccess: return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+		case BufferState::DepthStencilWrite: return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+		case BufferState::DepthStencilRead: return D3D12_RESOURCE_STATE_DEPTH_READ;
+		case BufferState::NonPixelShaderResource: return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+		case BufferState::PixelShaderResource: return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		case BufferState::CopyDest: return D3D12_RESOURCE_STATE_COPY_DEST;
+		case BufferState::CopySource: return D3D12_RESOURCE_STATE_COPY_SOURCE;
+		case BufferState::Present: return D3D12_RESOURCE_STATE_PRESENT;
+		case BufferState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
+		default: assert(false && "passed invalid argument to conv_buffer_state"); return D3D12_RESOURCE_STATE_COMMON;
 	}
 }
 

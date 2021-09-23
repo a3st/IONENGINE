@@ -4,19 +4,10 @@
 
 #include "base/types.h"
 #include "base/utils.h"
-#include "base/memory.h"
-#include "base/resource.h"
-#include "base/shader.h"
-#include "base/descriptors.h"
-#include "base/view.h"
-#include "base/pass.h"
-#include "base/pipeline.h"
 #include "base/fence.h"
-#include "base/swapchain.h"
-#include "base/command_buffer.h"
-#include "base/queue.h"
+#include "base/memory.h"
+#include "base/buffer.h"
 #include "base/device.h"
-#include "base/adapter.h"
 
 #ifdef IONENGINE_RENDERER_D3D12
 
@@ -32,17 +23,9 @@
 
 #include "d3d12/types.h"
 #include "d3d12/utils.h"
-#include "d3d12/memory.h"
-#include "d3d12/resource.h"
-#include "d3d12/shader.h"
-#include "d3d12/descriptors.h"
-#include "d3d12/view.h"
-#include "d3d12/pass.h"
-#include "d3d12/pipeline.h"
 #include "d3d12/fence.h"
-#include "d3d12/swapchain.h"
-#include "d3d12/command_buffer.h"
-#include "d3d12/queue.h"
+#include "d3d12/memory.h"
+#include "d3d12/buffer.h"
 #include "d3d12/device.h"
 
 #endif

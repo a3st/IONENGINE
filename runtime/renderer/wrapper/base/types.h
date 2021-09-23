@@ -4,21 +4,14 @@
 
 namespace ionengine::renderer::wrapper {
 
-class Instance;
-class Adapter;
-class Device;
-class CommandQueue;
-class Swapchain;
-class Shader;
-class Pipeline;
-class DescriptorSetLayout;
-class DescriptorSet;
-class DescriptorPool;
-class RenderPass;
-class Resource;
-class Memory;
 class Fence;
+class CommandBuffer;
+class Buffer;
+class Swapchain;
+class DescriptorSetLayout;
 class View;
+class RenderPass;
+class Device;
 
 enum class Format {
     Unknown,
@@ -176,7 +169,7 @@ enum class RenderPassStoreOp {
     DontCare
 };
 
-enum class ResourceState : uint32 {
+enum class BufferState : uint32 {
     Common = 1 << 0,
     VertexAndConstantBuffer = 1 << 1,
     IndexBuffer = 1 << 2,
@@ -190,23 +183,22 @@ enum class ResourceState : uint32 {
     CopySource = 1 << 10,
     Present = 1 << 11,
     GenericRead = 
-        (uint32)ResourceState::VertexAndConstantBuffer | 
-        (uint32)ResourceState::IndexBuffer |
-        (uint32)ResourceState::CopySource |
-        (uint32)ResourceState::NonPixelShaderResource |
-        (uint32)ResourceState::PixelShaderResource
+        (uint32)BufferState::VertexAndConstantBuffer | 
+        (uint32)BufferState::IndexBuffer |
+        (uint32)BufferState::CopySource |
+        (uint32)BufferState::NonPixelShaderResource |
+        (uint32)BufferState::PixelShaderResource
 };
 
-ENUM_CLASS_BIT_FLAG_DECLARE(ResourceState)
+ENUM_CLASS_BIT_FLAG_DECLARE(BufferState)
 
-enum class ResourceType {
+enum class BufferType {
     Unknown,
     Buffer,
-    Texture,
-    Sampler
+    Texture
 };
 
-enum class ResourceFlags : uint32 {
+enum class BufferFlags : uint32 {
     RenderTarget = 1 << 0,
     DepthStencil = 1 << 1,
     ShaderResource = 1 << 2,
@@ -218,7 +210,7 @@ enum class ResourceFlags : uint32 {
     CopySource = 1 << 8
 };
 
-ENUM_CLASS_BIT_FLAG_DECLARE(ResourceFlags)
+ENUM_CLASS_BIT_FLAG_DECLARE(BufferFlags)
 
 enum class PipelineType {
     Graphics,
@@ -299,10 +291,10 @@ struct RenderPassDesc {
     uint32 sample_count = 1;
 };
 
-struct ResourceBarrierDesc {
-    Resource* resource;
-    ResourceState before;
-    ResourceState after;
+struct BufferBarrierDesc {
+    Buffer* resource;
+    BufferState before;
+    BufferState after;
 };
 
 struct ClearValueColor {
@@ -370,7 +362,7 @@ struct ViewDesc {
     uint64 buffer_size;
 };
 
-struct ResourceDesc {
+struct BufferDesc {
     ViewDimension dimension = ViewDimension::Unknown;
     uint64 width;
     uint32 height;
@@ -378,7 +370,7 @@ struct ResourceDesc {
     uint16 mip_levels;
     Format format = Format::Unknown;
     uint32 sample_count = 1;
-    ResourceFlags flags;
+    BufferFlags flags;
 };
 
 struct SamplerDesc {
@@ -398,7 +390,7 @@ struct BlendDesc {
 };
 
 struct GraphicsPipelineDesc {
-    std::vector<Shader*> shaders;
+    std::vector<ShaderDesc> shaders;
     DescriptorSetLayout* layout;
     std::vector<InputLayoutDesc> inputs;
     RenderPass* render_pass;

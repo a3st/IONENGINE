@@ -4,10 +4,10 @@
 
 namespace ionengine::renderer::wrapper {
 
-class D3DResource : public Resource {
+class D3DBuffer : public Buffer {
 public:
 
-    D3DResource(ID3D12Device4* device, const ResourceType type, const std::variant<ResourceDesc, SamplerDesc>& desc) : m_device(device), m_desc(desc) {
+    D3DBuffer(ID3D12Device4* device, const ResourceType type, const std::variant<ResourceDesc, SamplerDesc>& desc) : m_device(device), m_desc(desc) {
 
         std::visit(
             [&](const ResourceDesc& resource_desc) {
