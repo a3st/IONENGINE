@@ -99,7 +99,7 @@ enum class ViewType {
     DepthStencil
 };
 
-enum class CommandListType {
+enum class CommandBufferType {
     Graphics,
     Copy,
     Compute
@@ -254,6 +254,11 @@ struct SwapchainDesc {
     uint32 width;
     uint32 height;
     uint32 buffer_count;
+};
+
+struct ShaderDesc {
+    ShaderType shader_type;
+    std::filesystem::path blob_path;
 };
 
 struct RenderPassColorDesc {

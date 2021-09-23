@@ -29,9 +29,34 @@ public:
 
         ASSERT_SUCCEEDED(D3D12CreateDevice(m_dxgi_adapter.get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device4), m_d3d12_device.put_void()));
     
-        m_command_queues[CommandListType::Graphics] = std::make_unique<D3DCommandQueue>(m_d3d12_device.get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
-        m_command_queues[CommandListType::Copy] = std::make_unique<D3DCommandQueue>(m_d3d12_device.get(), D3D12_COMMAND_LIST_TYPE_COPY);
-        m_command_queues[CommandListType::Compute] = std::make_unique<D3DCommandQueue>(m_d3d12_device.get(), D3D12_COMMAND_LIST_TYPE_COMPUTE);
+        D3D12_COMMAND_QUEUE_DESC queue_desc{};
+        queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+        queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        ASSERT_SUCCEEDED(m_device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), m_cmd_queues[CommandBufferType::Graphics].put_void()));
+
+        m_cmd_queues[CommandListType::Graphics] = std::make_unique<D3DCommandQueue>(m_d3d12_device.get(), D3D12_COMMAND_LIST_TYPE_DIRECT);
+        m_cmd_queues[CommandListType::Copy] = std::make_unique<D3DCommandQueue>(m_d3d12_device.get(), D3D12_COMMAND_LIST_TYPE_COPY);
+        m_cmd_queues[CommandListType::Compute] = std::make_unique<D3DCommandQueue>(m_d3d12_device.get(), D3D12_COMMAND_LIST_TYPE_COMPUTE);
+    }
+
+    void wait(const CommandBufferType type, Fence* fence, const uint64 value) override {
+        ASSERT_SUCCEEDED(m_cmd_queues[type]->Wait(static_cast<D3DFence*>(fence)., value));
+    }
+
+    void signal(const CommandBufferType type, Fence* fence, const uint64 value) override {
+        m_cmd_queues[CommandBufferType::Graphics]->
+    }
+
+    void client_wait(Fence* fence, const uint64 value) {
+
+    }
+
+    void client_signal() {
+        
+    }
+
+    void execute_command_buffers(const std::vector<CommandBuffer*>& cmd_buffers) override {
+
     }
 
     ID3D12Device4* get_d3d12_device() { return m_d3d12_device.get(); }
@@ -44,8 +69,8 @@ private:
     winrt::com_ptr<ID3D12Device4> m_d3d12_device;
 
     AdapterDesc m_adapter_desc;
-    
-    std::map<CommandListType, std::unique_ptr<D3DCommandQueue>> m_command_queues;
+
+    std::map<CommandBufferType, winrt::com_ptr<ID3D12CommandQueue>> m_cmd_queues;
 };
 
 }
