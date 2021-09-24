@@ -80,6 +80,10 @@ public:
         return std::make_unique<D3DMemory>(m_d3d12_device.get(), memory_type, size, aligment, buffer_flags);
     }
 
+    std::unique_ptr<View> create_view(const ViewType view_type, Buffer* buffer, const ViewDesc& view_desc) {
+        
+    }
+
     const AdapterDesc& get_adapter_desc() const override { return m_adapter_desc; }
 
     ID3D12Device4* get_d3d12_device() { return m_d3d12_device.get(); }

@@ -9,6 +9,8 @@
 #include "base/buffer.h"
 #include "base/sampler.h"
 #include "base/swapchain.h"
+#include "base/shader_group.h"
+#include "base/pipeline.h"
 #include "base/command_buffer.h"
 #include "base/device.h"
 
@@ -30,6 +32,8 @@
 #include "d3d12/buffer.h"
 #include "d3d12/sampler.h"
 #include "d3d12/swapchain.h"
+#include "d3d12/shader_group.h"
+#include "d3d12/pipeline.h"
 #include "d3d12/command_buffer.h"
 #include "d3d12/device.h"
 

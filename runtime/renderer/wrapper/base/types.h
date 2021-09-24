@@ -310,7 +310,7 @@ struct ClearValueDesc {
     uint8 stencil = 0;
 };
 
-struct InputLayoutDesc {
+struct VertexInputLayoutDesc {
     std::string semantic_name;
     uint32 index;
     Format format = Format::Unknown;
@@ -318,7 +318,7 @@ struct InputLayoutDesc {
     uint32 stride;
 };
 
-struct DescriptorSetLayoutBinding {
+struct DescriptorLayoutBinding {
     ShaderType shader_type;
     ViewType view_type = ViewType::Unknown;
     uint32 slot;
@@ -352,7 +352,6 @@ struct DepthStencilDesc {
 };
 
 struct ViewDesc {
-    ViewType view_type = ViewType::Unknown;
     ViewDimension dimension = ViewDimension::Unknown;
     uint32 array_size;
     uint32 mip_slice;
@@ -389,10 +388,10 @@ struct BlendDesc {
     BlendOp blend_op_alpha = BlendOp::Add;
 };
 
-struct GraphicsPipelineDesc {
+struct PipelineDesc {
     std::vector<ShaderDesc> shaders;
     DescriptorSetLayout* layout;
-    std::vector<InputLayoutDesc> inputs;
+    std::vector<VertexInputLayoutDesc> vertex_inputs;
     RenderPass* render_pass;
     RasterizerDesc rasterizer;
     DepthStencilDesc depth_stencil;

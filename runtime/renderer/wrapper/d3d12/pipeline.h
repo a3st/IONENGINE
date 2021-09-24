@@ -7,7 +7,7 @@ namespace ionengine::renderer::api {
 class D3DPipeline : public Pipeline {
 public:
 
-    D3DPipeline(winrt::com_ptr<ID3D12Device4>& device, const GraphicsPipelineDesc& pipeline_desc) 
+    D3DPipeline(ID3D12Device4* d3d12_device, const PipelineDesc& pipeline_desc) 
         : m_device(device), 
         m_pipeline_type(PipelineType::Graphics), 
         m_d3d12_root_signature(static_cast<D3DDescriptorSetLayout&>(pipeline_desc.layout.get()).get_d3d12_root_signature()) {
@@ -141,8 +141,9 @@ public:
 
 private:
 
-    std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
-    std::reference_wrapper<winrt::com_ptr<ID3D12RootSignature>> m_d3d12_root_signature;
+    ID3D12Device4* m_d3d12_device;
+    
+    ID3D12RootSignature* m_d3d12_root_signature;
     
     winrt::com_ptr<ID3D12PipelineState> m_d3d12_pipeline_state;
 

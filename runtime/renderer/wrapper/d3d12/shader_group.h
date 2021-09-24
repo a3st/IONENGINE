@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::renderer::wrappers {
+namespace ionengine::renderer::wrapper {
 
 class D3DDescriptorSetLayout : public DescriptorSetLayout {
 public:
