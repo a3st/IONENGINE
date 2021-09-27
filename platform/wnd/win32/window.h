@@ -10,59 +10,73 @@ public:
     WindowsWindow(const std::string& label, const uint32 width, const uint32 height, const WindowStyle style, WindowsWindowEventLoop& event_loop) : m_event_loop(event_loop) {
 		
 		WNDCLASS wnd_class{};
-		wnd_class.lpszClassName = TEXT("WINAPI_WND");
-		wnd_class.hInstance = GetModuleHandle(nullptr);
-		wnd_class.lpfnWndProc = WindowsWindow::window_procedure;
+	wnd_class.lpszClassName = TEXT("IONENGINE");
+	wnd_class.hInstance = GetModuleHandle(nullptr);
+	wnd_class.lpfnWndProc = wnd_proc;
 
-		if (!RegisterClass(&wnd_class)) {
-			throw std::runtime_error("An error occurred while registering the window");
-		}
+	if (!RegisterClass(&wnd_class)) {
+		throw std::runtime_error("An error occurred while registering the window");
+	}
 
-		uint32 style_flags = 0;
-		if(style & WindowStyle::Normal) {
-			style_flags |= WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME;
-		}
-		if(style & WindowStyle::Minimize) {
-			style_flags |= WS_MINIMIZEBOX;
-		}
-		if(style & WindowStyle::Maximaze) {
-			style_flags |= WS_MAXIMIZEBOX;
-		}
+	HWND hwnd = CreateWindow(
+		wnd_class.lpszClassName,
+		L"IONENGINE",
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
+		0, 100,
+		800, 600,
+		nullptr, nullptr,
+		wnd_class.hInstance,
+		nullptr
+	);
 
-		m_wnd = CreateWindow(
-			wnd_class.lpszClassName,
-			stws(label).c_str(),
-			style_flags,
-			0, 100,
-			width, height,
-			nullptr, nullptr,
-			wnd_class.hInstance,
-			nullptr
-		);
+    if (!hwnd) {
+		throw std::runtime_error("An error occurred while creating the window");
+	}
 
-		if (!m_wnd) {
-			throw std::runtime_error("An error occurred while creating the window");
-		}
+	ShowWindow(hwnd, SW_SHOWDEFAULT);
 
-		m_id = GetWindowLong(m_wnd, GWL_ID);
-		m_cursor = true;
-		SetWindowLongPtr(m_wnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+    std::array<RAWINPUTDEVICE, 2> devices;
+	devices[0].usUsagePage = 0x01;
+	devices[0].usUsage = 0x06;
+	devices[0].dwFlags = 0;
+	devices[0].hwndTarget = hwnd;
 
-		ShowWindow(m_wnd, SW_SHOWDEFAULT);
+	devices[1].usUsagePage = 0x01;
+	devices[1].usUsage = 0x02;
+	devices[1].dwFlags = 0;
+	devices[1].hwndTarget = hwnd;
 
-		m_devices[0].usUsagePage = 0x01;
-		m_devices[0].usUsage = 0x06;
-		m_devices[0].dwFlags = 0;
-		m_devices[0].hwndTarget = m_wnd;
+	if (!RegisterRawInputDevices(devices.data(), 2, sizeof(RAWINPUTDEVICE))) {
+		throw std::runtime_error("An error occurred while registering raw input devices");
+	}
 
-		m_devices[1].usUsagePage = 0x01;
-		m_devices[1].usUsage = 0x02;
-		m_devices[1].dwFlags = 0;
-		m_devices[1].hwndTarget = m_wnd;
+	std::unique_ptr<AppFramework> app_framework = std::make_unique<AppFramework>(reinterpret_cast<void*>(hwnd), 800, 600);
+	std::unique_ptr<renderer::RenderSystem> renderer = std::make_unique<renderer::RenderSystem>(app_framework.get());
 
-		if (!RegisterRawInputDevices(m_devices.data(), 2, sizeof(RAWINPUTDEVICE))) {
-			throw std::runtime_error("An error occurred while registering raw input devices");
-		}
+    bool running = true;
+    MSG msg{};
+    while (running) {
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+
+		renderer->tick();
+    }
+
+    DestroyWindow(hwnd);
+
+	devices[0].usUsagePage = 0x01;
+	devices[0].usUsage = 0x06;
+	devices[0].dwFlags = RIDEV_REMOVE;
+	devices[0].hwndTarget = nullptr;
+
+	devices[1].usUsagePage = 0x01;
+	devices[1].usUsage = 0x02;
+	devices[1].dwFlags = RIDEV_REMOVE;
+	devices[1].hwndTarget = nullptr;
+
+	RegisterRawInputDevices(devices.data(), 2, sizeof(RAWINPUTDEVICE));
     }
 
     ~WindowsWindow() {

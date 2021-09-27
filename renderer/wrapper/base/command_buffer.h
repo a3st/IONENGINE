@@ -18,7 +18,7 @@ public:
         @brief Bind pipeline to command list
         @param pipeline reference to Pipeline object
     */
-    virtual void bind_pipeline(Pipeline& pipeline) = 0;
+    //virtual void bind_pipeline(Pipeline& pipeline) = 0;
 
     /**
         @brief Close command list
@@ -52,7 +52,7 @@ public:
         @brief Set resource barriers to command list
         @param barriers vector of ResourceBarrierDescs
     */
-    virtual void resource_barriers(const std::vector<ResourceBarrierDesc>& barriers) = 0;
+    //virtual void resource_barriers(const std::vector<BufferBarrierDesc>& barriers) = 0;
     
     /**
         @brief Begin render pass in command list
@@ -60,12 +60,12 @@ public:
         @param frame_buffer reference to FrameBuffer object
         @param clear_desc ClearValueDesc
     */
-    virtual void begin_render_pass(RenderPass& render_pass, FrameBuffer& frame_buffer, const ClearValueDesc& clear_desc) = 0;
+    //virtual void begin_render_pass(RenderPass& render_pass, FrameBuffer& frame_buffer, const ClearValueDesc& clear_desc) = 0;
     
     /**
         @brief End render pass in command list 
     */
-    virtual void end_render_pass() = 0;
+    //virtual void end_render_pass() = 0;
     
     /**
         @brief Draw indexed triangles in command list
@@ -82,7 +82,7 @@ public:
         @param resource Resource to bind to index buffer
         @param format Index buffer format
     */
-    virtual void set_index_buffer(Resource& resource, const Format format) = 0;
+    //virtual void set_index_buffer(Buffer& buffer, const Format format) = 0;
 
     /**
         @brief Set the vertex buffer in command list
@@ -90,7 +90,7 @@ public:
         @param resource Resource to bind to vertex buffer 
         @param stride Vertex buffer stride
     */
-    virtual void set_vertex_buffer(const uint32 slot, Resource& resource, const uint32 stride) = 0;
+    //virtual void set_vertex_buffer(const uint32 slot, Buffer& buffer, const uint32 stride) = 0;
 };
 
 }

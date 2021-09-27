@@ -2,13 +2,13 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
 class D3DPipeline : public Pipeline {
 public:
 
-    D3DPipeline(winrt::com_ptr<ID3D12Device4>& device, const GraphicsPipelineDesc& pipeline_desc) 
-        : m_device(device), 
+    D3DPipeline(ID3D12Device4* device, const GraphicsPipelineDesc& pipeline_desc) { 
+        /*: m_device(device), 
         m_pipeline_type(PipelineType::Graphics), 
         m_d3d12_root_signature(static_cast<D3DDescriptorSetLayout&>(pipeline_desc.layout.get()).get_d3d12_root_signature()) {
 
@@ -132,21 +132,17 @@ public:
         graphics_pipeline_desc.SampleDesc = sample_desc;
         
         ASSERT_SUCCEEDED(m_device.get()->CreateGraphicsPipelineState(&graphics_pipeline_desc, __uuidof(ID3D12PipelineState), m_d3d12_pipeline_state.put_void()));
-    }
+    */}
 
-    PipelineType get_type() const override { return m_pipeline_type; }
+    PipelineType get_type() const override { return m_type; }
 
-    winrt::com_ptr<ID3D12RootSignature>& get_d3d12_root_signature() { return m_d3d12_root_signature; }
-    winrt::com_ptr<ID3D12PipelineState>& get_d3d12_pipeline_state() { return m_d3d12_pipeline_state; }
+    ID3D12PipelineState* get_d3d12_pipeline_state() { return m_d3d12_pipeline_state.get(); }
 
 private:
-
-    std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
-    std::reference_wrapper<winrt::com_ptr<ID3D12RootSignature>> m_d3d12_root_signature;
     
     winrt::com_ptr<ID3D12PipelineState> m_d3d12_pipeline_state;
 
-    PipelineType m_pipeline_type;
+    PipelineType m_type;
 };
 
 }

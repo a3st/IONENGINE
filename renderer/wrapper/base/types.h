@@ -7,7 +7,6 @@ namespace ionengine::renderer::wrapper {
 class Fence;
 class CommandBuffer;
 class Buffer;
-class Swapchain;
 class DescriptorSetLayout;
 class View;
 class RenderPass;
@@ -240,13 +239,6 @@ struct AdapterDesc {
 };
 
 STD_TIE_CMP_OPERATOR_DECLARE(AdapterDesc)
-
-struct SwapchainDesc {
-    void* hwnd;
-    uint32 width;
-    uint32 height;
-    uint32 buffer_count;
-};
 
 struct ShaderDesc {
     ShaderType shader_type;

@@ -87,6 +87,7 @@ struct Vector2 {
     }
 };
 
+using Ivector2 = Vector2<int32>;
 using Fvector2 = Vector2<float>;
 using Dvector2 = Vector2<double>;
 

@@ -24,11 +24,17 @@ public:
 
     virtual std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) = 0;
 
-    virtual std::unique_ptr<Swapchain> create_swapchain(const SwapchainDesc& swapchain_desc) = 0;
+    virtual std::unique_ptr<Fence> create_fence(const uint64 initial_value) = 0;
 
     virtual const AdapterDesc& get_adapter_desc() const = 0;
 
-    virtual std::unique_ptr<Memory> create_memory(const MemoryType memory_type, const usize size, const uint32 aligment, const BufferFlags buffer_flags) = 0;
+    virtual void present() = 0;
+
+    virtual Buffer* get_swapchain_buffer(const uint32 buffer_index) = 0;
+
+    virtual uint32 get_swapchain_buffer_index() const = 0;
+
+    virtual std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 alignment, const BufferFlags buffer_flags) = 0;
     /*
 
     virtual std::unique_ptr<DescriptorSetLayout> create_descriptor_set_layout(const std::vector<DescriptorSetLayoutBinding>& bindings) = 0;
