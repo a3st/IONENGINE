@@ -9,4 +9,3 @@
 #include "color.h"
 #include "matrix.h"
 #include "quaternion.h"
-#include "rect.h"

@@ -18,14 +18,13 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DNDEBUG")
 
 #]]
 
-add_executable(Runtime-Win32 runtime/main_win32.cpp)
+add_executable(Runtime-Win32 runtime/framework/main.cpp)
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
 
 # Build Output
 set_target_properties(Runtime-Win32 PROPERTIES 
     OUTPUT_NAME "IONENGINE-Runtime"
     COMPILE_FLAGS "${COMPILE_FLAGS}"
-    CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
 )
 
 # Include dirs
@@ -44,7 +43,7 @@ target_link_libraries(Runtime-Win32
 # Preprocessor
 target_compile_definitions(Runtime-Win32 PRIVATE 
     IONENGINE_PLATFORM_WIN32
-    IONENGINE_RENDERER_D3D12
+    RENDERER_API_D3D12
 )
 
 #[[
@@ -53,7 +52,7 @@ target_compile_definitions(Runtime-Win32 PRIVATE
 
 #]]
 
-add_executable(Runtime-Win32VK runtime/main_win32.cpp)
+add_executable(Runtime-Win32VK runtime/framework/main.cpp)
 target_precompile_headers(Runtime-Win32VK PRIVATE precompiled.h)
 
 # Build Output
@@ -84,7 +83,7 @@ target_link_libraries(Runtime-Win32VK
 # Preprocessor
 target_compile_definitions(Runtime-Win32VK PRIVATE 
     IONENGINE_PLATFORM_WIN32
-    IONENGINE_RENDERER_VK
+    RENDERER_API_VK
 )
 
 #[[
@@ -93,7 +92,7 @@ target_compile_definitions(Runtime-Win32VK PRIVATE
 
 #]]
 
-add_library(Runtime-Android SHARED runtime/main_android.cpp)
+add_library(Runtime-Android SHARED runtime/framework/main.cpp)
 
 # Build Output
 set_target_properties(Runtime-Android PROPERTIES 
