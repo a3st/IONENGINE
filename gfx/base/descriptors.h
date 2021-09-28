@@ -2,26 +2,19 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::renderer::wrapper {
 
-class DescriptorSetLayout  {
+class ShaderInputLayout  {
 public:
 
     virtual ~DescriptorSetLayout() = default;
 };
 
-class DescriptorPool  {
+class ShaderInputGroup  {
 public:
 
     virtual ~DescriptorPool() = default;
 
-};
-
-class DescriptorSet {
-public:
-
-    virtual ~DescriptorSet() = default;
-    
 };
 
 }

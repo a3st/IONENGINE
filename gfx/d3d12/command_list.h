@@ -2,31 +2,33 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::gfx {
 
 class D3DCommandList : public CommandList {
 public:
 
-    D3DCommandList(winrt::com_ptr<ID3D12Device4>& device, const CommandListType list_type) : m_device(device)  {
+    D3DCommandList(ID3D12Device4* d3d12_device, const D3D12_COMMAND_LIST_TYPE command_list_type) {
         
-        ASSERT_SUCCEEDED(m_device.get()->CreateCommandAllocator(
-            convert_command_list_type(list_type), 
-            __uuidof(ID3D12CommandAllocator), m_d3d12_command_allocator.put_void()
-        ));
+        THROW_IF_FAILED(d3d12_device->CreateCommandAllocator(
+                command_list_type, 
+                __uuidof(ID3D12CommandAllocator), m_d3d12_command_allocator.put_void()
+            )
+        );
 
-        ASSERT_SUCCEEDED(m_device.get()->CreateCommandList(
-            0, 
-            convert_command_list_type(list_type), 
-            m_d3d12_command_allocator.get(), 
-            nullptr, 
-            __uuidof(ID3D12GraphicsCommandList), m_d3d12_command_list.put_void()
-        ));
-        ASSERT_SUCCEEDED(m_d3d12_command_list->Close());
+        THROW_IF_FAILED(d3d12_device->CreateCommandList(
+                0, 
+                command_list_type, 
+                m_d3d12_command_allocator.get(), 
+                nullptr, 
+                __uuidof(ID3D12GraphicsCommandList), m_d3d12_command_list.put_void()
+            )
+        );
+        THROW_IF_FAILED(m_d3d12_command_list->Close());
     }
 
-    void bind_pipeline(Pipeline& pipeline) override {
+    /*void bind_pipeline(Pipeline& pipeline) override {
 
-        m_pipeline = static_cast<D3DPipeline&>(pipeline);
+        m_binded_pipeline = static_cast<D3DPipeline&>(pipeline);
 
         if(m_pipeline.value().get().get_type() == PipelineType::Graphics) {
 
@@ -38,7 +40,7 @@ public:
 
             
         }
-    }
+    }*/
     
     void set_viewport(const int32 x, const int32 y, const uint32 width, const uint32 height) override {
 
@@ -64,7 +66,7 @@ public:
         m_d3d12_command_list->RSSetScissorRects(1, &rect);
     }
 
-    void resource_barriers(const std::vector<ResourceBarrierDesc>& barrier_descs) override {
+    /*void resource_barriers(const std::vector<ResourceBarrierDesc>& barrier_descs) override {
         
         std::vector<D3D12_RESOURCE_BARRIER> d3d12_barriers;
         for(auto& barrier_desc : barrier_descs) {
@@ -82,9 +84,9 @@ public:
         if(!d3d12_barriers.empty()) {
             m_d3d12_command_list->ResourceBarrier(static_cast<uint32>(d3d12_barriers.size()), d3d12_barriers.data());
         }
-    }
+    }*/
 
-    void begin_render_pass(RenderPass& render_pass, FrameBuffer& frame_buffer, const ClearValueDesc& clear_value_desc) override {
+    /*void begin_render_pass(RenderPass& render_pass, FrameBuffer& frame_buffer, const ClearValueDesc& clear_value_desc) override {
 
         auto& render_pass_desc = static_cast<D3DRenderPass&>(render_pass).get_desc();
         auto& colors = static_cast<D3DFrameBuffer&>(frame_buffer).get_desc().colors;
@@ -147,7 +149,7 @@ public:
 
     void end_render_pass() override {
         m_d3d12_command_list->EndRenderPass();
-    }
+    }*/
 
     void draw_indexed(const uint32 index_count, const uint32 instance_count, const uint32 first_index, const int32 vertex_offset, const uint32 first_instance) override {
         m_d3d12_command_list->DrawIndexedInstanced(index_count, instance_count, first_index, vertex_offset, first_instance);
@@ -161,7 +163,7 @@ public:
         m_d3d12_command_list->Reset(m_d3d12_command_allocator.get(), nullptr);
     }
 
-    void set_index_buffer(Resource& resource, const Format format) override {
+    /*void set_index_buffer(Buffer* buffer, const Format format) override {
         D3D12_INDEX_BUFFER_VIEW index_view{};
         index_view.Format = static_cast<DXGI_FORMAT>(format);
         index_view.BufferLocation = static_cast<D3DResource&>(resource).get_d3d12_resource()->GetGPUVirtualAddress();
@@ -169,25 +171,21 @@ public:
         m_d3d12_command_list->IASetIndexBuffer(&index_view);
     }
 
-    void set_vertex_buffer(const uint32 slot, Resource& resource, const uint32 stride) override {
+    void set_vertex_buffer(const uint32 slot, Buffer* buffer, const uint32 stride) override {
         D3D12_VERTEX_BUFFER_VIEW vertex_view{};
         vertex_view.StrideInBytes = stride;
         vertex_view.BufferLocation = static_cast<D3DResource&>(resource).get_d3d12_resource()->GetGPUVirtualAddress();
         vertex_view.SizeInBytes = static_cast<uint32>(std::get<D3D12_RESOURCE_DESC>(static_cast<D3DResource&>(resource).get_d3d12_desc()).Width);
         m_d3d12_command_list->IASetVertexBuffers(slot, 1, &vertex_view);
-    }
+    }*/
 
     winrt::com_ptr<ID3D12CommandAllocator>& get_d3d12_command_allocator() { return m_d3d12_command_allocator; }
     winrt::com_ptr<ID3D12GraphicsCommandList4>& get_d3d12_command_list() { return m_d3d12_command_list; }
 
 private:
 
-    std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_device;
-
     winrt::com_ptr<ID3D12CommandAllocator> m_d3d12_command_allocator;
     winrt::com_ptr<ID3D12GraphicsCommandList4> m_d3d12_command_list;
-
-    std::optional<std::reference_wrapper<D3DPipeline>> m_pipeline;
 };
 
 }

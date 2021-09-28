@@ -2,66 +2,7 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
-
-class D3DInstance;
-class D3DAdapter;
-class D3DDevice;
-class D3DCommandQueue;
-class D3DSwapchain;
-class D3DShader;
-class D3DPipeline;
-class D3DDescriptorSetLayout;
-class D3DDescriptorSet;
-class D3DDescriptorPool;
-class D3DRenderPass;
-class D3DResource;
-class D3DMemory;
-class D3DFence;
-class D3DView;
-
-enum class Format {
-    Unknown = DXGI_FORMAT_UNKNOWN,
-    RGBA32float = DXGI_FORMAT_R32G32B32A32_FLOAT,
-    RGBA32uint = DXGI_FORMAT_R32G32B32A32_UINT,
-    RGBA32int = DXGI_FORMAT_R32G32B32A32_SINT,
-    RGB32float = DXGI_FORMAT_R32G32B32_FLOAT,
-    RGB32uint = DXGI_FORMAT_R32G32B32_UINT,
-    RGB32int = DXGI_FORMAT_R32G32B32_SINT,
-    RG32float = DXGI_FORMAT_R32G32_FLOAT,
-    RG32uint = DXGI_FORMAT_R32G32_UINT,
-    RG32int = DXGI_FORMAT_R32G32_SINT,
-    R32float = DXGI_FORMAT_R32_FLOAT,
-    R32uint = DXGI_FORMAT_R32_UINT,
-    R32int = DXGI_FORMAT_R32_SINT,
-    RGBA16float = DXGI_FORMAT_R16G16B16A16_FLOAT,
-    RGBA16uint = DXGI_FORMAT_R16G16B16A16_UINT,
-    RGBA16int = DXGI_FORMAT_R16G16B16A16_SINT,
-    RGBA16unorm = DXGI_FORMAT_R16G16B16A16_UNORM,
-    RGBA16snorm = DXGI_FORMAT_R16G16B16A16_SNORM,
-    RG16float = DXGI_FORMAT_R16G16_FLOAT,
-    RG16uint = DXGI_FORMAT_R16G16_UINT,
-    RG16int = DXGI_FORMAT_R16G16_SINT,
-    RG16unorm = DXGI_FORMAT_R16G16_UNORM,
-    RG16snorm = DXGI_FORMAT_R16G16_SNORM,
-    R16float = DXGI_FORMAT_R16_FLOAT,
-    R16uint = DXGI_FORMAT_R16_UINT,
-    R16int = DXGI_FORMAT_R16_SINT,
-    R16unorm = DXGI_FORMAT_R16_UNORM,
-    R16snorm = DXGI_FORMAT_R16_SNORM,
-    RGBA8uint = DXGI_FORMAT_R8G8B8A8_UINT,
-    RGBA8int = DXGI_FORMAT_R8G8B8A8_SINT,
-    RGBA8unorm = DXGI_FORMAT_R8G8B8A8_UNORM,
-    RGBA8snorm = DXGI_FORMAT_R8G8B8A8_SNORM,
-    RG8uint = DXGI_FORMAT_R8G8_UINT,
-    RG8int = DXGI_FORMAT_R8G8_SINT,
-    RG8unorm = DXGI_FORMAT_R8G8_UNORM,
-    RG8snorm = DXGI_FORMAT_R8G8_SNORM,
-    R8uint = DXGI_FORMAT_R8_UINT,
-    R8int = DXGI_FORMAT_R8_SINT,
-    R8unorm = DXGI_FORMAT_R8_UNORM,
-    R8snorm = DXGI_FORMAT_R8_SNORM
-};
+namespace ionengine::gfx {
 
 struct DescriptorTableDesc {
 	D3D12_DESCRIPTOR_HEAP_TYPE type;
@@ -70,4 +11,24 @@ struct DescriptorTableDesc {
 	bool compute;
 };
 
+std::string result_to_string(const HRESULT result) {
+	switch(result) {
+		case E_FAIL: return "Attempted to create a device with the debug layer enabled and the layer is not installed";
+		case E_INVALIDARG: return "An invalid parameter was passed to the returning function";
+		case E_OUTOFMEMORY: return "Direct3D could not allocate sufficient memory to complete the call";
+		case E_NOTIMPL: return "The method call isn't implemented with the passed parameter combination";
+		case S_FALSE: return "Alternate success value, indicating a successful but nonstandard completion";
+		case S_OK: return "No error occurred";
+		case D3D12_ERROR_ADAPTER_NOT_FOUND: return "The specified cached PSO was created on a different adapter and cannot be reused on the current adapter";
+		case D3D12_ERROR_DRIVER_VERSION_MISMATCH: return "The specified cached PSO was created on a different driver version and cannot be reused on the current adapter";
+		case DXGI_ERROR_INVALID_CALL: return "The method call is invalid. For example, a method's parameter may not be a valid pointer";
+		case DXGI_ERROR_WAS_STILL_DRAWING: return "The previous blit operation that is transferring information to or from this surface is incomplete";
+		default: return "An unknown error has occurred";
+	}
 }
+
+}
+
+#ifndef THROW_IF_FAILED
+#define THROW_IF_FAILED(Result) if(FAILED(Result)) throw std::runtime_error(result_to_string(Result));
+#endif

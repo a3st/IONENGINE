@@ -3,21 +3,13 @@
 #pragma once
 
 #include "base/types.h"
-#include "base/utils.h"
+#include "base/fence.h"
 #include "base/memory.h"
 #include "base/resource.h"
-#include "base/shader.h"
-#include "base/descriptors.h"
-#include "base/view.h"
-#include "base/pass.h"
-#include "base/pipeline.h"
-#include "base/fence.h"
-#include "base/swapchain.h"
+#include "base/sampler.h"
+//#include "base/pipeline.h"
 #include "base/command_list.h"
-#include "base/queue.h"
 #include "base/device.h"
-#include "base/adapter.h"
-#include "base/instance.h"
 
 #ifdef IONENGINE_GFX_D3D12
 
@@ -28,25 +20,17 @@
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "DXGUID.LIB")
 #pragma comment(lib, "windowsapp.lib")
 
 #include "d3d12/types.h"
-#include "d3d12/utils.h"
+#include "d3d12/conversion.h"
+#include "d3d12/fence.h"
 #include "d3d12/memory.h"
 #include "d3d12/resource.h"
-#include "d3d12/shader.h"
-#include "d3d12/descriptors.h"
-#include "d3d12/view.h"
-#include "d3d12/pass.h"
-#include "d3d12/pipeline.h"
-#include "d3d12/fence.h"
-#include "d3d12/swapchain.h"
+#include "d3d12/sampler.h"
+//#include "d3d12/pipeline.h"
 #include "d3d12/command_list.h"
-#include "d3d12/queue.h"
 #include "d3d12/device.h"
-#include "d3d12/adapter.h"
-#include "d3d12/instance.h"
 
 #endif
 
@@ -66,12 +50,12 @@
 
 #include "vk/types.h"
 #include "vk/utils.h"
-#include "vk/swapchain.h"
-#include "vk/queue.h"
-#include "vk/shader.h"
+#include "vk/fence.h"
+#include "vk/memory.h"
+#include "vk/buffer.h"
+#include "vk/sampler.h"
 #include "vk/pipeline.h"
+#include "vk/command_buffer.h"
 #include "vk/device.h"
-#include "vk/adapter.h"
-#include "vk/instance.h"
 
 #endif

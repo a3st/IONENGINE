@@ -2,25 +2,58 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::gfx {
 
-class Instance;
-class Adapter;
-class Device;
-class CommandQueue;
-class Swapchain;
-class Shader;
-class Pipeline;
-class DescriptorSetLayout;
-class DescriptorSet;
-class DescriptorPool;
-class RenderPass;
-class Resource;
-class Memory;
 class Fence;
+class CommandList;
+class Resource;
+class DescriptorSetLayout;
 class View;
+class RenderPass;
+class Device;
 
-enum class Format;
+enum class Format {
+    Unknown,
+    RGBA32float,
+    RGBA32uint,
+    RGBA32int,
+    RGB32float,
+    RGB32uint,
+    RGB32int,
+    RG32float,
+    RG32uint,
+    RG32int,
+    R32float,
+    R32uint,
+    R32int,
+    RGBA16float,
+    RGBA16uint,
+    RGBA16int,
+    RGBA16unorm,
+    RGBA16snorm,
+    RG16float,
+    RG16uint,
+    RG16int,
+    RG16unorm,
+    RG16snorm,
+    R16float,
+    R16uint,
+    R16int,
+    R16unorm,
+    R16snorm,
+    RGBA8uint,
+    RGBA8int,
+    RGBA8unorm,
+    RGBA8snorm,
+    RG8uint,
+    RG8int,
+    RG8unorm,
+    RG8snorm,
+    R8uint,
+    R8int,
+    R8unorm,
+    R8snorm
+};
 
 enum class ShaderType {
     Vertex,
@@ -111,6 +144,7 @@ enum class StencilOp {
 
 enum class Blend {
     Zero,
+    One,
     SrcAlpha,
     InvSrcAlpha
 };
@@ -148,11 +182,11 @@ enum class ResourceState : uint32 {
     CopySource = 1 << 10,
     Present = 1 << 11,
     GenericRead = 
-        (uint32)ResourceState::VertexAndConstantBuffer | 
-        (uint32)ResourceState::IndexBuffer |
-        (uint32)ResourceState::CopySource |
-        (uint32)ResourceState::NonPixelShaderResource |
-        (uint32)ResourceState::PixelShaderResource
+        ResourceState::VertexAndConstantBuffer | 
+        ResourceState::IndexBuffer |
+        ResourceState::CopySource |
+        ResourceState::NonPixelShaderResource |
+        ResourceState::PixelShaderResource
 };
 
 ENUM_CLASS_BIT_FLAG_DECLARE(ResourceState)
@@ -160,8 +194,7 @@ ENUM_CLASS_BIT_FLAG_DECLARE(ResourceState)
 enum class ResourceType {
     Unknown,
     Buffer,
-    Texture,
-    Sampler
+    Texture
 };
 
 enum class ResourceFlags : uint32 {
@@ -183,20 +216,41 @@ enum class PipelineType {
     Compute
 };
 
+enum class Filter {
+    Anisotropic,
+    MinMagMipLinear,
+    ComparisonMinMagMipLinear
+};
+
+enum class TextureAddressMode {
+    Wrap,
+    Clamp
+};
+
+struct AdapterDesc {
+    std::string name;
+    usize local_memory;
+    uint32 vendor_id;
+    uint32 device_id;
+};
+
+struct ShaderDesc {
+    ShaderType shader_type;
+    std::filesystem::path blob_path;
+};
+
 struct RenderPassColorDesc {
-    Format format;
+    Format format = Format::Unknown;
     RenderPassLoadOp load_op = RenderPassLoadOp::DontCare;
     RenderPassStoreOp store_op  = RenderPassStoreOp::DontCare;
 
-    auto make_tie() const { 
-        return std::tie(format, load_op, store_op); 
-    }
+    auto make_tie() const { return std::tie(format, load_op, store_op); }
 };
 
 STD_TIE_CMP_OPERATOR_DECLARE(RenderPassColorDesc)
 
 struct RenderPassDepthStencilDesc {
-    Format format;
+    Format format = Format::Unknown;
     RenderPassLoadOp depth_load_op = RenderPassLoadOp::DontCare;
     RenderPassStoreOp depth_store_op = RenderPassStoreOp::DontCare;
     RenderPassLoadOp stencil_load_op = RenderPassLoadOp::DontCare;
@@ -210,11 +264,11 @@ struct RenderPassDepthStencilDesc {
 STD_TIE_CMP_OPERATOR_DECLARE(RenderPassDepthStencilDesc)
 
 struct FrameBufferDesc {
-    std::reference_wrapper<RenderPass> render_pass;
+    RenderPass* render_pass;
     uint32 width;
     uint32 height;
-    std::vector<std::reference_wrapper<View>> colors;
-    std::optional<std::reference_wrapper<View>> depth_stencil;
+    std::vector<View*> colors;
+    std::optional<View*> depth_stencil;
 };
 
 struct RenderPassDesc {
@@ -224,20 +278,14 @@ struct RenderPassDesc {
 };
 
 struct ResourceBarrierDesc {
-    std::reference_wrapper<Resource> resource;
-    ResourceState state_before;
-    ResourceState state_after;
+    Resource* resource;
+    ResourceState before;
+    ResourceState after;
 };
 
 struct ClearValueColor {
-    float r;
-    float g;
-    float b;
-    float a;
-
-    auto make_tie() const {
-        return std::tie(r, g, b, a);
-    }
+    float r, g, b, a;
+    auto make_tie() const { return std::tie(r, g, b, a); }
 };
 
 STD_TIE_CMP_OPERATOR_DECLARE(ClearValueColor)
@@ -248,17 +296,17 @@ struct ClearValueDesc {
     uint8 stencil = 0;
 };
 
-struct InputLayoutDesc {
+struct VertexInputLayoutDesc {
     std::string semantic_name;
     uint32 index;
-    Format format;
+    Format format = Format::Unknown;
     uint32 slot;
     uint32 stride;
 };
 
-struct DescriptorSetLayoutBinding {
+struct DescriptorLayoutBinding {
     ShaderType shader_type;
-    ViewType view_type;
+    ViewType view_type = ViewType::Unknown;
     uint32 slot;
     uint32 space;
     uint32 count;
@@ -290,8 +338,7 @@ struct DepthStencilDesc {
 };
 
 struct ViewDesc {
-    ViewType view_type;
-    ViewDimension dimension;
+    ViewDimension dimension = ViewDimension::Unknown;
     uint32 array_size;
     uint32 mip_slice;
     uint32 array_slice;
@@ -301,25 +348,14 @@ struct ViewDesc {
 };
 
 struct ResourceDesc {
-    ViewDimension dimension;
+    ViewDimension dimension = ViewDimension::Unknown;
     uint64 width;
     uint32 height;
     uint16 array_size;
     uint16 mip_levels;
-    Format format;
-    uint32 sample_count;
+    Format format = Format::Unknown;
+    uint32 sample_count = 1;
     ResourceFlags flags;
-};
-
-enum class Filter {
-    Anisotropic,
-    MinMagMipLinear,
-    ComparisonMinMagMipLinear
-};
-
-enum class TextureAddressMode {
-    Wrap,
-    Clamp
 };
 
 struct SamplerDesc {
@@ -330,26 +366,26 @@ struct SamplerDesc {
 
 struct BlendDesc {
     bool blend_enable = false;
-    Blend blend_src;
-    Blend blend_dest;
-    BlendOp blend_op;
-    Blend blend_src_alpha;
-    Blend blend_dest_alpha;
-    BlendOp blend_op_alpha;
+    Blend blend_src = Blend::One;
+    Blend blend_dest = Blend::Zero;
+    BlendOp blend_op = BlendOp::Add;
+    Blend blend_src_alpha = Blend::One;
+    Blend blend_dest_alpha = Blend::Zero;
+    BlendOp blend_op_alpha = BlendOp::Add;
 };
 
-struct GraphicsPipelineDesc {
-    std::vector<std::reference_wrapper<Shader>> shaders;
-    std::reference_wrapper<DescriptorSetLayout> layout;
-    std::vector<InputLayoutDesc> inputs;
-    std::reference_wrapper<RenderPass> render_pass;
+struct PipelineDesc {
+    std::vector<ShaderDesc> shaders;
+    DescriptorSetLayout* layout;
+    std::vector<VertexInputLayoutDesc> vertex_inputs;
+    RenderPass* render_pass;
     RasterizerDesc rasterizer;
     DepthStencilDesc depth_stencil;
     BlendDesc blend;
 };
 
 struct DescriptorPoolSize {
-    ViewType type;
+    ViewType type = ViewType::Unknown;
     uint32 count;
 };
 

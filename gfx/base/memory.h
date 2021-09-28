@@ -2,13 +2,14 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::gfx {
 
 class Memory {
 public:
 
     virtual ~Memory() = default;
     virtual MemoryType get_type() const = 0;
+    virtual ResourceFlags get_flags() const = 0;
 };
 
 

@@ -4,6 +4,8 @@
 
 #include "engine/engine_system.h"
 
+#include "gfx/gfx.h"
+
 namespace ionengine {
 
 class RenderSystem : public EngineSystem {
@@ -11,6 +13,9 @@ public:
 
     RenderSystem(platform::wnd::Window* window) {
 
+        auto client = window->get_client_size();
+
+        m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
     }
 
     void tick() override {
@@ -23,7 +28,7 @@ public:
 
 private:
 
-
+    std::unique_ptr<gfx::Device> m_device;
 };
 
 }
