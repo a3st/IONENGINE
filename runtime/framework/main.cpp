@@ -24,12 +24,12 @@ int32 main(int32, char**) {
 
     // test
     //
-    lib::ini::Lexer lexer("test.ini");
-    lexer.tokenize();
+    //lib::ini::Lexer lexer("test.ini");
+    //lexer.tokenize();
 
-    while(lexer.get_next().has_value()) {
-        std::cout << lexer.get_current().position << std::endl;
-    }
+    //while(lexer.get_next().has_value()) {
+      //  std::cout << lexer.get_current().position << std::endl;
+    //}
     //
     
     window_event_loop->run([&](const platform::wnd::WindowEventHandler& event) -> void { 
