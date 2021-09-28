@@ -49,13 +49,13 @@
 #pragma comment(lib, "vulkan-1.lib")
 
 #include "vk/types.h"
-#include "vk/utils.h"
+#include "vk/conversion.h"
 #include "vk/fence.h"
 #include "vk/memory.h"
-#include "vk/buffer.h"
+#include "vk/resource.h"
 #include "vk/sampler.h"
-#include "vk/pipeline.h"
-#include "vk/command_buffer.h"
+//#include "vk/pipeline.h"
+#include "vk/command_list.h"
 #include "vk/device.h"
 
 #endif

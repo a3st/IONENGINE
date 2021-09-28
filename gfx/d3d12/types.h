@@ -27,6 +27,8 @@ std::string result_to_string(const HRESULT result) {
 	}
 }
 
+extern constexpr char* api_name = "D3D12";
+
 }
 
 #ifndef THROW_IF_FAILED

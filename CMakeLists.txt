@@ -67,12 +67,12 @@ target_include_directories(Runtime-Win32VK PRIVATE
     "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/um"
     "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/winrt"
     "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/"
-    "C:/VulkanSDK/1.2.170.0/Include"
+    "C:/VulkanSDK/1.2.189.2/Include"
 )
 
 # Link Libs
 target_link_directories(Runtime-Win32VK PRIVATE
-    "C:/VulkanSDK/1.2.170.0/Lib"
+    "C:/VulkanSDK/1.2.189.2/Lib"
 )
 
 # Link Libs
@@ -84,6 +84,8 @@ target_link_libraries(Runtime-Win32VK
 target_compile_definitions(Runtime-Win32VK PRIVATE 
     IONENGINE_PLATFORM_WIN32
     IONENGINE_GFX_VK
+    VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
+    VK_NO_PROTOTYPES
 )
 
 #[[

@@ -109,7 +109,7 @@ public:
         return std::make_unique<D3DMemory>(m_d3d12_device.get(), memory_type, size, alignment, resource_flags);
     }
 
-    void present() {
+    void present() override {
         THROW_IF_FAILED(m_dxgi_swapchain->Present(0, 0));
     }
 

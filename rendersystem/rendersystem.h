@@ -16,6 +16,12 @@ public:
         auto client = window->get_client_size();
 
         m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
+
+        gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
+        std::cout << format<char>("Adapter name: {}, Local memory size: {}, Adapter Id: {}, Vendor Id: {}", 
+            adapter_desc.name, adapter_desc.local_memory, adapter_desc.device_id, adapter_desc.vendor_id) << std::endl;
+
+        window->set_label(format<char>("IONENGINE - {}", gfx::api_name));
     }
 
     void tick() override {
