@@ -22,6 +22,13 @@ public:
             adapter_desc.name, adapter_desc.local_memory, adapter_desc.device_id, adapter_desc.vendor_id) << std::endl;
 
         window->set_label(format<char>("IONENGINE - {}", gfx::api_name));
+
+        gfx::ResourceDesc res_desc{};
+        res_desc.width = 1024;
+        res_desc.height = 1;
+        res_desc.mip_levels = 1;
+        res_desc.flags = gfx::ResourceFlags::VertexBuffer;
+        auto resource = m_device->create_resource(gfx::ResourceType::Buffer, res_desc);
     }
 
     void tick() override {

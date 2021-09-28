@@ -11,6 +11,8 @@ class DescriptorSetLayout;
 class View;
 class RenderPass;
 class FrameBuffer;
+class DescriptorSetLayout;
+class DescriptorSet;
 class Pipeline;
 class Device;
 
@@ -306,7 +308,7 @@ struct VertexInputDesc {
     uint32 stride;
 };
 
-struct DescriptorLayoutBinding {
+struct DescriptorSetLayoutBinding {
     ShaderType shader_type;
     ViewType view_type = ViewType::Unknown;
     uint32 slot;

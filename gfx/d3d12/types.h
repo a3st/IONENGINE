@@ -11,6 +11,8 @@ class D3DDescriptorSetLayout;
 class D3DView;
 class D3DRenderPass;
 class D3DFrameBuffer;
+class D3DDescriptorSetLayout;
+class D3DDescriptorSet;
 class D3DPipeline;
 class D3DDevice;
 

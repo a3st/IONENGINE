@@ -20,11 +20,11 @@ public:
 
     virtual void execute_command_buffers(const CommandListType command_list_type, const std::vector<CommandList*>& command_lists) = 0;
 
-    virtual std::unique_ptr<Resource> create_resource(const ResourceType type, const ResourceDesc& resource_desc) = 0;
+    virtual [[nodiscard]] std::unique_ptr<Resource> create_resource(const ResourceType type, const ResourceDesc& resource_desc) = 0;
 
-    virtual std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) = 0;
+    virtual [[nodiscard]] std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) = 0;
 
-    virtual std::unique_ptr<Fence> create_fence(const uint64 initial_value) = 0;
+    virtual [[nodiscard]] std::unique_ptr<Fence> create_fence(const uint64 initial_value) = 0;
 
     virtual const AdapterDesc& get_adapter_desc() const = 0;
 
@@ -34,11 +34,11 @@ public:
 
     virtual uint32 get_swapchain_resource_index() const = 0;
 
-    virtual std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 alignment, const ResourceFlags resource_flags) = 0;
+    virtual [[nodiscard]] std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 alignment, const ResourceFlags resource_flags) = 0;
 
-    virtual std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) = 0;
+    virtual [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) = 0;
 
-    virtual std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) = 0;
+    virtual [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) = 0;
 };
 
 }

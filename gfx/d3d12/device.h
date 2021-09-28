@@ -93,27 +93,27 @@ public:
         }*/
     }
 
-    std::unique_ptr<Resource> create_resource(const ResourceType type, const ResourceDesc& resource_desc) override {
+    [[nodiscard]] std::unique_ptr<Resource> create_resource(const ResourceType type, const ResourceDesc& resource_desc) override {
         return std::make_unique<D3DResource>(m_d3d12_device.get(), type, resource_desc);
     }
 
-    std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) override {
+    [[nodiscard]] std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) override {
         return std::make_unique<D3DSampler>(sampler_desc);
     }
 
-    std::unique_ptr<Fence> create_fence(const uint64 initial_value) override {
+    [[nodiscard]] std::unique_ptr<Fence> create_fence(const uint64 initial_value) override {
         return std::make_unique<D3DFence>(m_d3d12_device.get(), initial_value);
     }
 
-    std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 alignment, const ResourceFlags resource_flags) override {
+    [[nodiscard]] std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 alignment, const ResourceFlags resource_flags) override {
         return std::make_unique<D3DMemory>(m_d3d12_device.get(), memory_type, size, alignment, resource_flags);
     }
 
-    std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) override {
+    [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) override {
         return std::make_unique<D3DPipeline>(m_d3d12_device.get(), pipeline_desc);
     }
 
-    std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) override {
+    [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) override {
         return std::make_unique<D3DPipeline>(m_d3d12_device.get(), pipeline_desc);
     }
 
