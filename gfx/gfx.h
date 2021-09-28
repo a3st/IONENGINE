@@ -19,7 +19,7 @@
 #include "base/adapter.h"
 #include "base/instance.h"
 
-#ifdef RENDERER_API_D3D12
+#ifdef IONENGINE_GFX_D3D12
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -50,7 +50,7 @@
 
 #endif
 
-#ifdef RENDERER_API_VK
+#ifdef IONENGINE_GFX_VK
 
 #ifdef IONENGINE_PLATFORM_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR

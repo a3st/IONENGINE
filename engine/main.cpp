@@ -5,14 +5,9 @@
 
 #include "engine_system_pool.h"
 
-// test lib
-#include "lib/math/math.h"
-#include "lib/memory.h"
-#include "lib/ini/ini.h"
-
-#include "logger_system.h"
 #include "inputsystem/inputsystem.h"
-#include "render_system.h"
+#include "rendersystem/rendersystem.h"
+#include "physicsystem/physicsystem.h"
 
 using namespace ionengine;
 

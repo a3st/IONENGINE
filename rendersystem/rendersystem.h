@@ -3,7 +3,33 @@
 #pragma once
 
 #include "engine/engine_system.h"
-#include "renderer/api/api.h"
+
+namespace ionengine {
+
+class RenderSystem : public EngineSystem {
+public:
+
+    RenderSystem(platform::wnd::Window* window) {
+
+    }
+
+    void tick() override {
+
+    }
+
+    void resize(const uint32 width, const uint32 height) {
+        
+    }
+
+private:
+
+
+};
+
+}
+
+
+/*#include "renderer/api/api.h"
 #include "renderer/fg/frame_graph.h"
 #include "renderer/quad_renderer.h"
 
@@ -82,9 +108,4 @@ private:
 
     std::unique_ptr<renderer::BaseRenderer> m_renderer;
 };
-
-std::unique_ptr<RenderSystem> create_unique_render_system(platform::wnd::Window* window) {
-    return std::make_unique<RenderSystem>(window);
-}
-
-}
+*/
