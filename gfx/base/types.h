@@ -10,6 +10,8 @@ class Resource;
 class DescriptorSetLayout;
 class View;
 class RenderPass;
+class FrameBuffer;
+class Pipeline;
 class Device;
 
 enum class Format {
@@ -296,7 +298,7 @@ struct ClearValueDesc {
     uint8 stencil = 0;
 };
 
-struct VertexInputLayoutDesc {
+struct VertexInputDesc {
     std::string semantic_name;
     uint32 index;
     Format format = Format::Unknown;
@@ -374,14 +376,19 @@ struct BlendDesc {
     BlendOp blend_op_alpha = BlendOp::Add;
 };
 
-struct PipelineDesc {
+struct GraphicsPipelineDesc {
     std::vector<ShaderDesc> shaders;
     DescriptorSetLayout* layout;
-    std::vector<VertexInputLayoutDesc> vertex_inputs;
+    std::vector<VertexInputDesc> vertex_inputs;
     RenderPass* render_pass;
     RasterizerDesc rasterizer;
     DepthStencilDesc depth_stencil;
     BlendDesc blend;
+};
+
+struct ComputePipelineDesc {
+    ShaderDesc shader;
+    DescriptorSetLayout* layout;
 };
 
 struct DescriptorPoolSize {

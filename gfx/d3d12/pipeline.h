@@ -2,12 +2,12 @@
 
 #pragma once
 
-namespace ionengine::renderer::wrapper {
+namespace ionengine::gfx {
 
 class D3DPipeline : public Pipeline {
 public:
 
-    D3DPipeline(ID3D12Device4* device, const GraphicsPipelineDesc& pipeline_desc) { 
+    D3DPipeline(ID3D12Device4* d3d12_device, const GraphicsPipelineDesc& pipeline_desc) { 
         /*: m_device(device), 
         m_pipeline_type(PipelineType::Graphics), 
         m_d3d12_root_signature(static_cast<D3DDescriptorSetLayout&>(pipeline_desc.layout.get()).get_d3d12_root_signature()) {
@@ -132,7 +132,12 @@ public:
         graphics_pipeline_desc.SampleDesc = sample_desc;
         
         ASSERT_SUCCEEDED(m_device.get()->CreateGraphicsPipelineState(&graphics_pipeline_desc, __uuidof(ID3D12PipelineState), m_d3d12_pipeline_state.put_void()));
-    */}
+    */
+    }
+
+    D3DPipeline(ID3D12Device4* d3d12_device, const ComputePipelineDesc& pipeline_desc) {
+
+    }
 
     PipelineType get_type() const override { return m_type; }
 

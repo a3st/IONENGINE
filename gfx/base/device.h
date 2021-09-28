@@ -35,6 +35,10 @@ public:
     virtual uint32 get_swapchain_resource_index() const = 0;
 
     virtual std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 alignment, const ResourceFlags resource_flags) = 0;
+
+    virtual std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) = 0;
+
+    virtual std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) = 0;
 };
 
 }

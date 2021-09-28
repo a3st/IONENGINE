@@ -109,6 +109,14 @@ public:
         return std::make_unique<D3DMemory>(m_d3d12_device.get(), memory_type, size, alignment, resource_flags);
     }
 
+    std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) override {
+        return std::make_unique<D3DPipeline>(m_d3d12_device.get(), pipeline_desc);
+    }
+
+    std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) override {
+        return std::make_unique<D3DPipeline>(m_d3d12_device.get(), pipeline_desc);
+    }
+
     void present() override {
         THROW_IF_FAILED(m_dxgi_swapchain->Present(0, 0));
     }

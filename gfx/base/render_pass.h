@@ -4,11 +4,10 @@
 
 namespace ionengine::gfx {
 
-class Pipeline {
+class RenderPass {
 public:
-
-    virtual ~Pipeline() = default;
-    virtual PipelineType get_type() const = 0;
+    virtual ~RenderPass() = default;
+    virtual const RenderPassDesc& get_desc() const = 0;
 };
 
 }

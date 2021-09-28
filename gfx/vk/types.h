@@ -4,6 +4,15 @@
 
 namespace ionengine::gfx {
 
+class VKFence;
+class VKCommandList;
+class VKResource;
+class VKDescriptorSetLayout;
+class VKView;
+class VKRenderPass;
+class VKFrameBuffer;
+class VKDevice;
+
 std::string result_to_string(const vk::Result result) {
 
 	switch(result) {

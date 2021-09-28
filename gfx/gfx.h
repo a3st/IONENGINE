@@ -7,7 +7,9 @@
 #include "base/memory.h"
 #include "base/resource.h"
 #include "base/sampler.h"
-//#include "base/pipeline.h"
+#include "base/render_pass.h"
+#include "base/frame_buffer.h"
+#include "base/pipeline.h"
 #include "base/command_list.h"
 #include "base/device.h"
 
@@ -28,7 +30,9 @@
 #include "d3d12/memory.h"
 #include "d3d12/resource.h"
 #include "d3d12/sampler.h"
-//#include "d3d12/pipeline.h"
+#include "d3d12/render_pass.h"
+#include "d3d12/frame_buffer.h"
+#include "d3d12/pipeline.h"
 #include "d3d12/command_list.h"
 #include "d3d12/device.h"
 
@@ -54,7 +58,7 @@
 #include "vk/memory.h"
 #include "vk/resource.h"
 #include "vk/sampler.h"
-//#include "vk/pipeline.h"
+#include "vk/pipeline.h"
 #include "vk/command_list.h"
 #include "vk/device.h"
 

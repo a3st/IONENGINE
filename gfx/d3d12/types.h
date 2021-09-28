@@ -4,6 +4,16 @@
 
 namespace ionengine::gfx {
 
+class D3DFence;
+class D3DCommandList;
+class D3DResource;
+class D3DDescriptorSetLayout;
+class D3DView;
+class D3DRenderPass;
+class D3DFrameBuffer;
+class D3DPipeline;
+class D3DDevice;
+
 struct DescriptorTableDesc {
 	D3D12_DESCRIPTOR_HEAP_TYPE type;
 	uint32 count;

@@ -2,13 +2,7 @@
 
 #pragma once
 
-namespace ionengine::renderer::wrapper {
-
-class RenderPass {
-public:
-    virtual ~RenderPass() = default;
-    virtual const RenderPassDesc& get_desc() const = 0;
-};
+namespace ionengine::gfx {
 
 class FrameBuffer {
 public:
