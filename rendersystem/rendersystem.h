@@ -4,9 +4,12 @@
 
 #include "engine/engine_system.h"
 
+#include "lib/memory.h"
 #include "gfx/gfx.h"
 
 namespace ionengine {
+
+using namespace memory_literals;
 
 class RenderSystem : public EngineSystem {
 public:

@@ -4,7 +4,7 @@
 
 #include "base/types.h"
 #include "base/fence.h"
-#include "base/memory.h"
+#include "base/memory_pool.h"
 #include "base/resource.h"
 #include "base/sampler.h"
 #include "base/render_pass.h"
@@ -29,7 +29,7 @@
 #include "d3d12/types.h"
 #include "d3d12/conversion.h"
 #include "d3d12/fence.h"
-#include "d3d12/memory.h"
+#include "d3d12/memory_pool.h"
 #include "d3d12/resource.h"
 #include "d3d12/sampler.h"
 #include "d3d12/render_pass.h"

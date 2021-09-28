@@ -44,5 +44,5 @@ extern constexpr char* api_name = "D3D12";
 }
 
 #ifndef THROW_IF_FAILED
-#define THROW_IF_FAILED(Result) if(FAILED(Result)) throw std::runtime_error(result_to_string(Result));
+#define THROW_IF_FAILED(HResult) if(FAILED(HResult)) throw std::runtime_error(result_to_string(HResult));
 #endif

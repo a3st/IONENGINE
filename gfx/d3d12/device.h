@@ -72,6 +72,13 @@ public:
             THROW_IF_FAILED(m_dxgi_swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
             m_swapchain_buffers.emplace_back(std::make_unique<D3DResource>(m_d3d12_device.get(), ResourceType::Texture, resource, ResourceFlags::RenderTarget));
         }
+
+        using namespace memory_literals;
+        m_mem_pool_test = std::make_unique<D3DMemoryPool>(m_d3d12_device.get(), 512_mb, 1_mb);
+
+        for(uint32 i = 0; i < 1; ++i) {
+            D3DMemoryPtr ptr = m_mem_pool_test->allocate(MemoryType::Default, 912_mb, 0, ResourceFlags::VertexBuffer);
+        }
     }
 
     void wait(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
@@ -93,27 +100,23 @@ public:
         }*/
     }
 
-    [[nodiscard]] std::unique_ptr<Resource> create_resource(const ResourceType type, const ResourceDesc& resource_desc) override {
+    std::unique_ptr<Resource> create_resource(const ResourceType type, const ResourceDesc& resource_desc) override {
         return std::make_unique<D3DResource>(m_d3d12_device.get(), type, resource_desc);
     }
 
-    [[nodiscard]] std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) override {
+    std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) override {
         return std::make_unique<D3DSampler>(sampler_desc);
     }
 
-    [[nodiscard]] std::unique_ptr<Fence> create_fence(const uint64 initial_value) override {
+    std::unique_ptr<Fence> create_fence(const uint64 initial_value) override {
         return std::make_unique<D3DFence>(m_d3d12_device.get(), initial_value);
     }
 
-    [[nodiscard]] std::unique_ptr<Memory> allocate_memory(const MemoryType memory_type, const usize size, const uint32 alignment, const ResourceFlags resource_flags) override {
-        return std::make_unique<D3DMemory>(m_d3d12_device.get(), memory_type, size, alignment, resource_flags);
-    }
-
-    [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) override {
+    std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) override {
         return std::make_unique<D3DPipeline>(m_d3d12_device.get(), pipeline_desc);
     }
 
-    [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) override {
+    std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) override {
         return std::make_unique<D3DPipeline>(m_d3d12_device.get(), pipeline_desc);
     }
 
@@ -136,6 +139,8 @@ private:
     winrt::com_ptr<IDXGIAdapter1> m_dxgi_adapter;
     winrt::com_ptr<ID3D12Device4> m_d3d12_device;
     winrt::com_ptr<IDXGISwapChain4> m_dxgi_swapchain;
+
+    std::unique_ptr<D3DMemoryPool> m_mem_pool_test;
 
     AdapterDesc m_adapter_desc;
 

@@ -41,6 +41,8 @@ public:
             }
             default: assert(false && "resource type should be Buffer or Texture when passed ResourceDesc"); break;
         }
+
+
     }
 
     D3DResource(ID3D12Device4* d3d12_device, const ResourceType resource_type, const winrt::com_ptr<ID3D12Resource>& resource, const ResourceFlags resource_flags) 
@@ -67,7 +69,7 @@ public:
         m_desc = resource_desc;
     }
 
-    void bind_memory(Memory* memory, const uint64 offset) override {
+    /*void bind_memory(Memory* memory, const uint64 offset) override {
         
         assert((memory->get_flags() & m_desc.flags) && "flags binded error");
 
@@ -88,7 +90,7 @@ public:
                 __uuidof(ID3D12Resource), m_d3d12_resource.put_void()
             )
         );
-    }
+    }*/
 
     byte* map() override {
         D3D12_RANGE range{};
@@ -114,8 +116,6 @@ private:
 
     winrt::com_ptr<ID3D12Resource> m_d3d12_resource;
     D3D12_RESOURCE_DESC m_d3d12_desc;
-
-    D3DMemory* m_memory;
 
     ResourceType m_type;
     ResourceDesc m_desc;

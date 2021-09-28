@@ -9,8 +9,6 @@ public:
 
     virtual ~Resource() = default;
 
-    virtual void bind_memory(Memory* memory, const uint64 offset) = 0;
-
     virtual ResourceType get_type() const = 0;
 
     virtual const ResourceDesc& get_desc() const = 0;
