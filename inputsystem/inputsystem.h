@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include "input_types.h"
+#include "engine/engine_system.h"
+#include "types.h"
 
-namespace ionengine {
+namespace ionengine::inputsystem {
 
-class InputSystem {
+class InputSystem : public EngineSystem {
 public:
 
     InputSystem() {
@@ -16,7 +17,7 @@ public:
         m_current_axis.fill(0.0f);
     }
 
-    void tick() {
+    void tick() override {
 
         m_previous_keys = m_current_keys;
         m_current_axis.fill(0.0f);
@@ -43,8 +44,8 @@ public:
             case platform::wnd::WindowEvent::MouseMoved: {
                 auto input = std::get<platform::wnd::MouseMoved>(event.event);
                 if(input.relative) {
-                    m_current_axis[static_cast<uint32>(AxisCode::MouseX)] = static_cast<float>(input.position.x);
-                    m_current_axis[static_cast<uint32>(AxisCode::MouseY)] = static_cast<float>(input.position.y);
+                    m_current_axis[static_cast<uint32>(AnalogCode::MouseX)] = static_cast<float>(input.position.x);
+                    m_current_axis[static_cast<uint32>(AnalogCode::MouseY)] = static_cast<float>(input.position.y);
                 }
                 break;
             }

@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine {
+namespace ionengine::inputsystem {
 
 enum class KeyCode : uint32 {
 	Q = 81,
@@ -104,7 +104,7 @@ enum class KeyCode : uint32 {
 	ShoulderRight = 314
 };
 
-enum class AxisCode : uint32 {
+enum class AnalogCode : uint32 {
 	MouseX,
 	MouseY,
 	MouseWheel,

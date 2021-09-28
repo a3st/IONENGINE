@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "engine/engine_system.h"
 #include "renderer/api/api.h"
 #include "renderer/fg/frame_graph.h"
 #include "renderer/quad_renderer.h"
@@ -12,13 +13,15 @@ namespace ionengine {
 
 using namespace memory_literals;
 
-class RenderSystem {
+class RenderSystem : public EngineSystem {
 public:
 
-    RenderSystem(platform::wnd::Window& window) : m_window(window), m_buffer_count(2) {
+    RenderSystem(platform::wnd::Window* window) : m_window(window), m_buffer_count(2) {
 
         std::cout << format<char>("RenderSystem ({} API) initialized", renderer::api::get_api_name()) << std::endl;
         m_instance = renderer::api::create_unique_instance();
+
+        window->set_label(format<char>("IONENGINE - {}", renderer::api::get_api_name()));
 
         auto adapters = m_instance->enumerate_adapters();
         m_adapter = std::move(adapters[0]);
@@ -36,8 +39,8 @@ public:
 
         m_device = m_adapter->create_device();
 
-        auto client_size = m_window.get().get_client_size();
-        m_swapchain = m_device->create_swapchain(m_window.get().get_handle(), client_size.width, client_size.height, m_buffer_count);
+        auto client_size = m_window->get_client_size();
+        m_swapchain = m_device->create_swapchain(m_window->get_handle(), client_size.width, client_size.height, m_buffer_count);
 
         m_fence_values.resize(m_buffer_count);
         m_fence = m_device->create_fence(0);
@@ -65,7 +68,7 @@ public:
 
 private:
 
-    std::reference_wrapper<platform::wnd::Window> m_window;
+    platform::wnd::Window* m_window;
 
     std::unique_ptr<renderer::api::Instance> m_instance;
     std::unique_ptr<renderer::api::Adapter> m_adapter;
@@ -80,7 +83,7 @@ private:
     std::unique_ptr<renderer::BaseRenderer> m_renderer;
 };
 
-std::unique_ptr<RenderSystem> create_unique_render_system(platform::wnd::Window& window) {
+std::unique_ptr<RenderSystem> create_unique_render_system(platform::wnd::Window* window) {
     return std::make_unique<RenderSystem>(window);
 }
 

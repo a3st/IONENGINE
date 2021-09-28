@@ -43,13 +43,13 @@ public:
         @param width width of window
         @param height height of window
     */
-    virtual void set_window_size(const uint32 width, const uint32 height) = 0;
+    virtual void set_size(const uint32 width, const uint32 height) = 0;
 
     /**
         @brief Get the window size
         @return PhysicalSize PhysicalSize struct that contains size
     */
-    virtual PhysicalSize get_window_size() const = 0;
+    virtual PhysicalSize get_size() const = 0;
 
     /**
         @brief Get the client size of window

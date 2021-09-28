@@ -3,13 +3,15 @@
 #include "precompiled.h"
 #include "platform/wnd/wnd.h"
 
+#include "engine_system_pool.h"
+
 // test lib
 #include "lib/math/math.h"
 #include "lib/memory.h"
 #include "lib/ini/ini.h"
 
 #include "logger_system.h"
-#include "input_system.h"
+#include "inputsystem/inputsystem.h"
 #include "render_system.h"
 
 using namespace ionengine;
@@ -17,20 +19,20 @@ using namespace ionengine;
 int32 main(int32, char**) {
 
     auto window_event_loop = platform::wnd::create_unique_window_event_loop();
-    auto window = platform::wnd::create_unique_window("Runtime", 800, 600, platform::wnd::WindowStyle::Borderless, *window_event_loop);
-    auto input_system = create_unique_input_system();
-    auto render_system = create_unique_render_system(*window);
-    auto logger_system = create_unique_logger_system();
 
-    // test
-    //
-    //lib::ini::Lexer lexer("test.ini");
-    //lexer.tokenize();
+    auto window = platform::wnd::create_unique_window("IONENGINE", 800, 600, platform::wnd::WindowStyle::Borderless, window_event_loop.get());
 
-    //while(lexer.get_next().has_value()) {
-      //  std::cout << lexer.get_current().position << std::endl;
-    //}
-    //
+    std::unique_ptr<EngineSystemPool> engine_system_pool = std::make_unique<EngineSystemPool>();
+
+    struct Environment {
+        inputsystem::InputSystem* inputsys;
+        RenderSystem* rendersys;
+    };
+
+    Environment env = {
+        engine_system_pool->initialize_system<inputsystem::InputSystem>(),
+        engine_system_pool->initialize_system<RenderSystem>(window.get())
+    };
     
     window_event_loop->run([&](const platform::wnd::WindowEventHandler& event) -> void { 
             
@@ -41,26 +43,24 @@ int32 main(int32, char**) {
                 }
                 case platform::wnd::WindowEvent::Sized: {
                     auto event_size = std::get<platform::wnd::PhysicalSize>(event.event);
-                    render_system->resize(event_size.width, event_size.height);
+                    env.rendersys->resize(event_size.width, event_size.height);
                     break;
                 }
                 case platform::wnd::WindowEvent::KeyboardInput:
                 case platform::wnd::WindowEvent::MouseInput:
                 case platform::wnd::WindowEvent::MouseMoved: {
-                    input_system->on_event_handle(event); 
+                    env.inputsys->on_event_handle(event); 
                     break;
                 }
                 case platform::wnd::WindowEvent::Updated: {
-                        
-                    if(input_system->get_key_down(KeyCode::A)) {
+                
+                    if(env.inputsys->get_key_down(inputsystem::KeyCode::A)) {
                         std::cout << 1 << std::endl;
                     }
-                    if(input_system->get_key_up(KeyCode::A)) {
-                            std::cout << 2 << std::endl;
+                    if(env.inputsys->get_key_up(inputsystem::KeyCode::A)) {
+                        std::cout << 2 << std::endl;
                     }
-
-                    render_system->tick();
-                    input_system->tick();
+                    engine_system_pool->execute();
                     break;
                 }
             }

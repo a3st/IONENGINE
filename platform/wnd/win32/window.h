@@ -7,10 +7,17 @@ namespace ionengine::platform::wnd {
 class WindowsWindow : public Window {
 public:
 
-    WindowsWindow(const std::string& label, const uint32 width, const uint32 height, const WindowStyle style, WindowsWindowEventLoop& event_loop) : m_event_loop(event_loop) {
+    WindowsWindow(
+		const std::string& label, 
+		const uint32 width, 
+		const uint32 height, 
+		const WindowStyle style, 
+		WindowsWindowEventLoop* event_loop
+	) : 
+		m_event_loop(event_loop) {
 		
 		WNDCLASS wnd_class{};
-		wnd_class.lpszClassName = TEXT("WINAPI_WND");
+		wnd_class.lpszClassName = TEXT("IONENGINE");
 		wnd_class.hInstance = GetModuleHandle(nullptr);
 		wnd_class.lpfnWndProc = WindowsWindow::window_procedure;
 
@@ -89,9 +96,9 @@ public:
 	void show_cursor(const bool enable) override { m_cursor = enable; }
 	void set_label(const std::string& label) override { SetWindowText(m_wnd, stws(label).c_str()); }
 
-	void set_window_size(const uint32_t width, const uint32_t height) override { SetWindowPos(m_wnd, HWND_TOPMOST, 0, 0, width, height, 0); }
+	void set_size(const uint32_t width, const uint32_t height) override { SetWindowPos(m_wnd, HWND_TOPMOST, 0, 0, width, height, 0); }
 	
-	PhysicalSize get_window_size() const override {
+	PhysicalSize get_size() const override {
 		RECT rect{};
 		GetWindowRect(m_wnd, &rect);
 		return { static_cast<uint32>(rect.right), static_cast<uint32>(rect.bottom) };
@@ -105,7 +112,7 @@ public:
 
 private:
 
-	std::reference_wrapper<WindowsWindowEventLoop> m_event_loop;
+	WindowsWindowEventLoop* m_event_loop;
 
     HWND m_wnd;
 	std::array<RAWINPUTDEVICE, 2> m_devices;
@@ -126,19 +133,19 @@ private:
 
 			case WM_CLOSE: {
 				event_handler.event_type = WindowEvent::Closed;
-				window->m_event_loop.get().emplace_event(event_handler);
+				window->m_event_loop->emplace_event(event_handler);
 				break;
 			}
 			case WM_SIZE: {
 				event_handler.event_type = WindowEvent::Sized;
 				event_handler.event = PhysicalSize { LOWORD(lParam), HIWORD(lParam) };
-				window->m_event_loop.get().emplace_event(event_handler);
+				window->m_event_loop->emplace_event(event_handler);
 				break;
 			}
 			case WM_MOUSEMOVE: {
 				event_handler.event_type = WindowEvent::Moved;
 				event_handler.event = MouseMoved { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), false };
-				window->m_event_loop.get().emplace_event(event_handler);
+				window->m_event_loop->emplace_event(event_handler);
 				break;
 			}
 			case WM_INPUT: {
@@ -167,7 +174,7 @@ private:
 						case WM_SYSKEYUP: event_handler.event = KeyboardInput { static_cast<uint32>(key), ElementState::Released }; break;
 					}
 					
-					window->m_event_loop.get().emplace_event(event_handler);
+					window->m_event_loop->emplace_event(event_handler);
 				} else if (device_type == RIM_TYPEMOUSE) {
 					event_handler.event_type = WindowEvent::MouseInput;
 
@@ -191,17 +198,17 @@ private:
 						case RI_MOUSE_BUTTON_5_UP: event_handler.event = MouseInput { MouseButton::Five, ElementState::Released }; break;
 					}
 
-					window->m_event_loop.get().emplace_event(event_handler);
+					window->m_event_loop->emplace_event(event_handler);
 
 					if (button_flags & RI_MOUSE_WHEEL) {
 						event_handler.event_type = WindowEvent::MouseWheel;
 						event_handler.event = MouseWheel { static_cast<float>(button_data / WHEEL_DELTA) };
-						window->m_event_loop.get().emplace_event(event_handler);
+						window->m_event_loop->emplace_event(event_handler);
 					}
 
 					event_handler.event_type = WindowEvent::MouseMoved;
 					event_handler.event = MouseMoved { x, y, true };
-					window->m_event_loop.get().emplace_event(event_handler);
+					window->m_event_loop->emplace_event(event_handler);
 				}
 				break;
 			}
@@ -210,8 +217,8 @@ private:
     }
 };
 
-std::unique_ptr<Window> create_unique_window(const std::string& label, const uint32 width, const uint32 height, const WindowStyle window_style, WindowEventLoop& event_loop) {
-	return std::make_unique<WindowsWindow>(label, width, height, window_style, static_cast<WindowsWindowEventLoop&>(event_loop));
+std::unique_ptr<Window> create_unique_window(const std::string& label, const uint32 width, const uint32 height, const WindowStyle window_style, WindowEventLoop* event_loop) {
+	return std::make_unique<WindowsWindow>(label, width, height, window_style, static_cast<WindowsWindowEventLoop*>(event_loop));
 }
 
 }
