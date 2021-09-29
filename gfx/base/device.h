@@ -20,7 +20,7 @@ public:
 
     virtual void execute_command_buffers(const CommandListType command_list_type, const std::vector<CommandList*>& command_lists) = 0;
 
-    virtual [[nodiscard]] std::unique_ptr<Resource> create_resource(const ResourceType type, const ResourceDesc& resource_desc) = 0;
+    virtual [[nodiscard]] std::unique_ptr<Resource> create_resource(const ResourceType resource_type, const MemoryType memory_type, const ResourceDesc& resource_desc) = 0;
 
     virtual [[nodiscard]] std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) = 0;
 

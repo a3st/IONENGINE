@@ -4,7 +4,6 @@
 
 #include "base/types.h"
 #include "base/fence.h"
-#include "base/memory_pool.h"
 #include "base/resource.h"
 #include "base/sampler.h"
 #include "base/render_pass.h"

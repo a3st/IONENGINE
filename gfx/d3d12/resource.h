@@ -7,7 +7,8 @@ namespace ionengine::gfx {
 class D3DResource : public Resource {
 public:
 
-    D3DResource(ID3D12Device4* d3d12_device, const ResourceType resource_type, const ResourceDesc& resource_desc) : m_d3d12_device(d3d12_device), m_desc(resource_desc) {
+    D3DResource(ID3D12Device4* d3d12_device, const MemoryType memory_type, const ResourceType resource_type, const ResourceDesc& resource_desc) 
+        : m_d3d12_device(d3d12_device), m_memory_type(memory_type), m_type(resource_type), m_desc(resource_desc) {
 
         switch(resource_type) {
             case ResourceType::Buffer:
@@ -42,7 +43,25 @@ public:
             default: assert(false && "resource type should be Buffer or Texture when passed ResourceDesc"); break;
         }
 
+        m_memory_ptr = D3DAllocatorWrapper::allocate(m_type, m_memory_type, m_desc.width, 0, m_desc.flags);
 
+        ResourceState resource_state;
+        if(memory_type == MemoryType::Upload) {
+            resource_state = ResourceState::GenericRead;
+        } else {
+            resource_state = ResourceState::Common;
+        }
+
+        THROW_IF_FAILED(
+            m_d3d12_device->CreatePlacedResource(
+                m_memory_ptr.d3d12_heap,
+                m_memory_ptr.offset,
+                &m_d3d12_desc,
+                d3d12_resource_state_to_gfx_enum(resource_state),
+                nullptr,
+                __uuidof(ID3D12Resource), m_d3d12_resource.put_void()
+            )
+        );
     }
 
     D3DResource(ID3D12Device4* d3d12_device, const ResourceType resource_type, const winrt::com_ptr<ID3D12Resource>& resource, const ResourceFlags resource_flags) 
@@ -69,28 +88,11 @@ public:
         m_desc = resource_desc;
     }
 
-    /*void bind_memory(Memory* memory, const uint64 offset) override {
-        
-        assert((memory->get_flags() & m_desc.flags) && "flags binded error");
-
-        ResourceState resource_state = ResourceState::Common;
-        if(memory->get_type() == MemoryType::Upload) {
-            resource_state = ResourceState::GenericRead;
+    ~D3DResource() {
+        if(m_memory_ptr.d3d12_heap) {
+            D3DAllocatorWrapper::deallocate(m_type, m_memory_ptr, m_desc.width);
         }
-
-        m_memory = static_cast<D3DMemory*>(memory);
-
-        THROW_IF_FAILED(
-            m_d3d12_device->CreatePlacedResource(
-                m_memory->get_d3d12_heap(),
-                offset,
-                &m_d3d12_desc,
-                d3d12_resource_state_to_gfx_enum(resource_state),
-                nullptr,
-                __uuidof(ID3D12Resource), m_d3d12_resource.put_void()
-            )
-        );
-    }*/
+    }
 
     byte* map() override {
         D3D12_RANGE range{};
@@ -119,6 +121,9 @@ private:
 
     ResourceType m_type;
     ResourceDesc m_desc;
+
+    MemoryType m_memory_type;
+    D3DMemoryPtr m_memory_ptr;
 };
 
 }

@@ -4,15 +4,15 @@
 
 namespace ionengine::memory_literals {
 
-usize operator ""_kb(const usize size) {
+constexpr usize operator ""_kb(const usize size) {
     return size * 1024;
 }
 
-usize operator ""_mb(const usize size) {
+constexpr usize operator ""_mb(const usize size) {
     return size * 1024 * 1024;
 }
 
-usize operator ""_gb(const usize size) {
+constexpr usize operator ""_gb(const usize size) {
     return size * 1024 * 1024 * 1024;
 }
 

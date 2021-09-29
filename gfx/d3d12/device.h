@@ -4,6 +4,8 @@
 
 namespace ionengine::gfx {
 
+using namespace memory_literals;
+
 class D3DDevice : public Device {
 public:
 
@@ -73,19 +75,7 @@ public:
             m_swapchain_buffers.emplace_back(std::make_unique<D3DResource>(m_d3d12_device.get(), ResourceType::Texture, resource, ResourceFlags::RenderTarget));
         }
 
-        using namespace memory_literals;
-        m_mem_pool_test = std::make_unique<D3DMemoryPool>(m_d3d12_device.get(), 64_mb, 1_mb);
-
-        std::vector<D3DMemoryPtr> ptrs;
-        ptrs.resize(3);
-        for(uint32 i = 0; i < 3; ++i) {
-            ptrs[i] = m_mem_pool_test->allocate(MemoryType::Default, 1048579, 0, ResourceFlags::VertexBuffer);
-        }
-        
-        m_mem_pool_test->deallocate(ptrs[0], 32_mb);
-
-        ptrs[0] = m_mem_pool_test->allocate(MemoryType::Default, 32_mb, 0, ResourceFlags::VertexBuffer);
-        
+        D3DAllocatorWrapper::initialize(m_d3d12_device.get(), 64_mb, 512_mb, 128_mb);
     }
 
     void wait(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
@@ -107,8 +97,8 @@ public:
         }*/
     }
 
-    std::unique_ptr<Resource> create_resource(const ResourceType type, const ResourceDesc& resource_desc) override {
-        return std::make_unique<D3DResource>(m_d3d12_device.get(), type, resource_desc);
+    std::unique_ptr<Resource> create_resource(const ResourceType resource_type, const MemoryType memory_type, const ResourceDesc& resource_desc) override {
+        return std::make_unique<D3DResource>(m_d3d12_device.get(), memory_type, resource_type, resource_desc);
     }
 
     std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) override {
@@ -146,8 +136,6 @@ private:
     winrt::com_ptr<IDXGIAdapter1> m_dxgi_adapter;
     winrt::com_ptr<ID3D12Device4> m_d3d12_device;
     winrt::com_ptr<IDXGISwapChain4> m_dxgi_swapchain;
-
-    std::unique_ptr<D3DMemoryPool> m_mem_pool_test;
 
     AdapterDesc m_adapter_desc;
 
