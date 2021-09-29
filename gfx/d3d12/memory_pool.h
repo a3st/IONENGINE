@@ -33,20 +33,37 @@ public:
 
             auto it_block = m_free_blocks.find(size);
             if(it_block != m_free_blocks.end()) {
+                
+                if(!it_block->second.empty()) {
+                    ptr = it_block->second.back();
+                    it_block->second.pop();
 
-
-            } else {
-                if(it_heap->second->offset + size + alignment > it_heap->second->heap_size) {
-                    assert((size + alignment < m_default_size) && "allocation size should be less than default size pool");
-                    auto d3d12_heap = create_heap(memory_type, m_default_size, alignment, resource_flags);
-                    m_memory_heaps.emplace_back(D3DMemoryHeap { d3d12_heap, m_default_size, m_default_size / m_default_block_size, m_default_block_size, 0 });
-
-                    std::cout << "memory pool offset size > heap_size" << std::endl;
-                } else {
-                    std::cout << "memory pool get from pool memory" << std::endl;
-
-                    it_heap->second->offset += size;
+                    std::cout << "memory pool get free block" << std::endl;
+                    return ptr;
                 }
+            }
+            
+            if(it_heap->second->offset + size + alignment > it_heap->second->heap_size) {
+                assert((size + alignment < m_default_size) && "allocation size should be less than default size pool");
+                auto d3d12_heap = create_heap(memory_type, m_default_size, alignment, resource_flags);
+                m_memory_heaps.emplace_back(D3DMemoryHeap { d3d12_heap, m_default_size, m_default_size / m_default_block_size, m_default_block_size, 0 });
+
+                auto& last_heap = std::prev(m_memory_heaps.end());
+                ptr.d3d12_heap = last_heap->d3d12_heap.get();
+                ptr.offset = last_heap->offset;
+
+                last_heap->offset += size;
+
+                m_memory_sizes[key] = last_heap;
+
+                std::cout << "memory pool offset size > heap_size" << std::endl;
+            } else {
+                ptr.d3d12_heap = it_heap->second->d3d12_heap.get();
+                ptr.offset = it_heap->second->offset;
+
+                it_heap->second->offset += size;
+
+                std::cout << "memory pool get from pool memory" << std::endl;
             }
         } else {
             assert((size + alignment < m_default_size) && "allocation size should be less than default size pool");
@@ -61,13 +78,15 @@ public:
 
             m_memory_sizes[key] = last_heap;
 
-            std::cout << "memory pool is empty" << std::endl;
+            std::cout << "memory pool allocating new heap" << std::endl;
         }
         return ptr;
     }
 
     void deallocate(const D3DMemoryPtr& ptr, const usize size) {
+        m_free_blocks[size].push(ptr);
 
+        std::cout << "memory pool deallocate memory" << std::endl;
     }
 
 private:

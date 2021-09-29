@@ -77,7 +77,7 @@ public:
         m_mem_pool_test = std::make_unique<D3DMemoryPool>(m_d3d12_device.get(), 512_mb, 1_mb);
 
         for(uint32 i = 0; i < 1; ++i) {
-            D3DMemoryPtr ptr = m_mem_pool_test->allocate(MemoryType::Default, 912_mb, 0, ResourceFlags::VertexBuffer);
+            D3DMemoryPtr ptr = m_mem_pool_test->allocate(MemoryType::Default, 64_mb, 0, ResourceFlags::VertexBuffer);
         }
     }
 
