@@ -74,6 +74,13 @@ public:
             ptr.d3d12_heap = last_heap->d3d12_heap.get();
             ptr.offset = last_heap->offset;
 
+            std::cout << "size to alloc " << size << std::endl;
+            usize align_memory = (size % m_default_block_size) > 0 ? ((size / m_default_block_size) + 1) * m_default_block_size : size;
+            if(size < m_default_block_size) {
+                align_memory = m_default_block_size;
+            }
+
+            std::cout << "need size to alloc " << align_memory << std::endl;
             last_heap->offset += size;
 
             m_memory_sizes[key] = last_heap;

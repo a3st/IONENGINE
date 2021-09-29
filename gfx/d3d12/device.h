@@ -74,11 +74,18 @@ public:
         }
 
         using namespace memory_literals;
-        m_mem_pool_test = std::make_unique<D3DMemoryPool>(m_d3d12_device.get(), 512_mb, 1_mb);
+        m_mem_pool_test = std::make_unique<D3DMemoryPool>(m_d3d12_device.get(), 64_mb, 1_mb);
 
-        for(uint32 i = 0; i < 1; ++i) {
-            D3DMemoryPtr ptr = m_mem_pool_test->allocate(MemoryType::Default, 64_mb, 0, ResourceFlags::VertexBuffer);
+        std::vector<D3DMemoryPtr> ptrs;
+        ptrs.resize(3);
+        for(uint32 i = 0; i < 3; ++i) {
+            ptrs[i] = m_mem_pool_test->allocate(MemoryType::Default, 1048579, 0, ResourceFlags::VertexBuffer);
         }
+        
+        m_mem_pool_test->deallocate(ptrs[0], 32_mb);
+
+        ptrs[0] = m_mem_pool_test->allocate(MemoryType::Default, 32_mb, 0, ResourceFlags::VertexBuffer);
+        
     }
 
     void wait(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
