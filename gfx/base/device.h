@@ -37,6 +37,8 @@ public:
     virtual [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) = 0;
 
     virtual [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) = 0;
+
+    virtual [[nodiscard]] std::unique_ptr<View> create_view(const ViewType view_type, Resource* resource, const ViewDesc& view_desc) = 0;
 };
 
 }

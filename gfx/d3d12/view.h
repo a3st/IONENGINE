@@ -2,21 +2,21 @@
 
 #pragma once
 
-namespace ionengine::renderer::api {
+namespace ionengine::gfx {
 
 class D3DView : public View {
 public:
 
-    D3DView(winrt::com_ptr<ID3D12Device4>& device, D3DDescriptorPool& descriptor_pool, D3DResource& resource, const ViewDesc& view_desc) 
-        : m_d3d12_device(device), m_descriptor_pool(descriptor_pool), m_resource(resource), m_view_desc(view_desc) {
+    D3DView(ID3D12Device4* d3d12_device, const ViewType view_type, D3DResource* resource, const ViewDesc& view_desc) 
+        : m_d3d12_device(d3d12_device), m_resource(resource), m_type(view_type), m_desc(view_desc) {
 
-        uint64 offset = m_descriptor_pool.get().d3d12_allocate(convert_descriptor_heap_type(view_desc.view_type));
-        m_d3d12_cpu_descriptor = m_descriptor_pool.get().get_d3d12_cpu_descriptor_handle(convert_descriptor_heap_type(view_desc.view_type), offset);
+        //uint64 offset = m_descriptor_pool.get().d3d12_allocate(convert_descriptor_heap_type(view_desc.view_type));
+        //m_d3d12_cpu_descriptor = m_descriptor_pool.get().get_d3d12_cpu_descriptor_handle(convert_descriptor_heap_type(view_desc.view_type), offset);
         
-        switch(view_desc.view_type) {
+        switch(m_type) {
 
             case ViewType::RenderTarget: {
-                auto& resource_desc = std::get<D3D12_RESOURCE_DESC>(m_resource.get().get_d3d12_desc());
+                /*auto& resource_desc = std::get<D3D12_RESOURCE_DESC>(m_resource.get().get_d3d12_desc());
 
                 D3D12_RENDER_TARGET_VIEW_DESC rtv_desc{};
                 rtv_desc.Format = resource_desc.Format;
@@ -56,11 +56,11 @@ public:
                     default: assert(false && "passed unsupported view dimension"); break;
                 }
 
-                m_d3d12_device.get()->CreateRenderTargetView(m_resource.get().get_d3d12_resource().get(), &rtv_desc, m_d3d12_cpu_descriptor);
+                m_d3d12_device.get()->CreateRenderTargetView(m_resource.get().get_d3d12_resource().get(), &rtv_desc, m_d3d12_cpu_descriptor);*/
                 break;
             }
             case ViewType::DepthStencil: {
-                auto& resource_desc = std::get<D3D12_RESOURCE_DESC>(m_resource.get().get_d3d12_desc());
+                /*auto& resource_desc = std::get<D3D12_RESOURCE_DESC>(m_resource.get().get_d3d12_desc());
 
                 D3D12_DEPTH_STENCIL_VIEW_DESC dsv_desc{};
                 dsv_desc.Format = resource_desc.Format;
@@ -93,43 +93,32 @@ public:
                     default: assert(false && "passed unsupported view dimension"); break;
                 }
 
-                m_d3d12_device.get()->CreateDepthStencilView(m_resource.get().get_d3d12_resource().get(), &dsv_desc, m_d3d12_cpu_descriptor);
+                m_d3d12_device.get()->CreateDepthStencilView(m_resource.get().get_d3d12_resource().get(), &dsv_desc, m_d3d12_cpu_descriptor);*/
                 break;
             }
             case ViewType::ConstantBuffer: {
-                auto& resource_desc = std::get<D3D12_RESOURCE_DESC>(m_resource.get().get_d3d12_desc());
+                /*auto& resource_desc = std::get<D3D12_RESOURCE_DESC>(m_resource.get().get_d3d12_desc());
 
                 D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_view{};
                 cbv_view.BufferLocation = m_resource.get().get_d3d12_resource()->GetGPUVirtualAddress();
                 cbv_view.SizeInBytes = static_cast<uint32>(m_view_desc.buffer_size);
 
-                m_d3d12_device.get()->CreateConstantBufferView(&cbv_view, m_d3d12_cpu_descriptor);
-                break;
-            }
-            case ViewType::Sampler: {
-                auto& sampler_desc = std::get<D3D12_SAMPLER_DESC>(m_resource.get().get_d3d12_desc());
-                m_d3d12_device.get()->CreateSampler(&sampler_desc, m_d3d12_cpu_descriptor);
+                m_d3d12_device.get()->CreateConstantBufferView(&cbv_view, m_d3d12_cpu_descriptor);*/
                 break;
             }
         }
     }
 
-    Resource& get_resource() const override { return m_resource; }
-
-    D3D12_CPU_DESCRIPTOR_HANDLE get_d3d12_cpu_descriptor() const { return m_d3d12_cpu_descriptor; }
-    D3D12_GPU_DESCRIPTOR_HANDLE get_d3d12_gpu_descriptor() const { return m_d3d12_gpu_descriptor; }
+    Resource* get_resource() const override { return m_resource; }
 
 private:
 
-    std::reference_wrapper<winrt::com_ptr<ID3D12Device4>> m_d3d12_device;
+    ID3D12Device4* m_d3d12_device;
 
-    D3D12_GPU_DESCRIPTOR_HANDLE m_d3d12_gpu_descriptor;
-    D3D12_CPU_DESCRIPTOR_HANDLE m_d3d12_cpu_descriptor;
+    D3DResource* m_resource;
 
-    std::reference_wrapper<D3DDescriptorPool> m_descriptor_pool;
-    std::reference_wrapper<D3DResource> m_resource;
-
-    ViewDesc m_view_desc;
+    ViewType m_type;
+    ViewDesc m_desc;
 };
 
 }

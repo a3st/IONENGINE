@@ -43,10 +43,7 @@ public:
             default: assert(false && "resource type should be Buffer or Texture when passed ResourceDesc"); break;
         }
 
-        auto now = std::chrono::high_resolution_clock::now();
-        m_memory_ptr = D3DAllocatorWrapper::allocate(m_type, m_memory_type, m_desc.width, 0, m_desc.flags);
-        auto stop = std::chrono::high_resolution_clock::now();
-        //std::cout << "time elapsed D3DResource " << std::chrono::duration_cast<std::chrono::microseconds>(stop - now).count() << std::endl;
+        m_memory_ptr = D3DMemoryAllocatorWrapper::allocate(m_type, m_memory_type, m_desc.width, 0, m_desc.flags);
 
         ResourceState resource_state;
         if(memory_type == MemoryType::Upload) {
@@ -93,12 +90,9 @@ public:
 
     ~D3DResource() {
 
-        auto now = std::chrono::high_resolution_clock::now();
         if(m_memory_ptr.heap) {
-            D3DAllocatorWrapper::deallocate(m_type, m_memory_ptr, m_desc.width);
+            D3DMemoryAllocatorWrapper::deallocate(m_type, m_memory_ptr, m_desc.width, m_desc.flags);
         }
-        auto stop = std::chrono::high_resolution_clock::now();
-        //std::cout << "time elapsed ~D3DResource " << std::chrono::duration_cast<std::chrono::microseconds>(stop - now).count() << std::endl;
     }
 
     byte* map() override {

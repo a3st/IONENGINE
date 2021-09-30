@@ -4,69 +4,6 @@
 
 namespace ionengine::renderer::wrapper {
 
-class D3DDescriptorSetLayout : public DescriptorSetLayout {
-public:
-
-    D3DDescriptorSetLayout(ID3D12Device4* d3d12_device, const std::vector<DescriptorSetLayoutBinding>& bindings) {
-
-		using Key = std::pair<D3D12_DESCRIPTOR_HEAP_TYPE, ShaderType>;
-		std::map<Key, std::vector<D3D12_DESCRIPTOR_RANGE>> ranges_by_key;
-
-		for(auto& binding : bindings) {
-			
-			D3D12_DESCRIPTOR_RANGE range{};
-			range.RangeType = convert_descriptor_range_type(binding.view_type);
-			range.NumDescriptors = binding.count;
-			range.BaseShaderRegister = binding.slot;
-			range.RegisterSpace = binding.space;
-			range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-			ranges_by_key[{ convert_descriptor_heap_type(binding.view_type), binding.shader_type }].emplace_back(range);
-		}
-
-		std::vector<D3D12_ROOT_PARAMETER> parameters;
-
-		uint32 offset = 0;
-
-		for(auto& range : ranges_by_key) {
-			
-			D3D12_ROOT_PARAMETER parameter{};
-			parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-			parameter.DescriptorTable.NumDescriptorRanges = static_cast<uint32>(range.second.size());
-			parameter.DescriptorTable.pDescriptorRanges = range.second.data();
-			parameter.ShaderVisibility = convert_shader_visibility(range.first.second);
-
-			parameters.emplace_back(parameter);
-
-			DescriptorTableDesc table_desc{};
-			table_desc.type = range.first.first;
-			table_desc.count = static_cast<uint32>(range.second.size());
-			table_desc.offset = offset;
-
-			m_descriptor_tables.emplace_back(table_desc);
-			offset = m_device.get()->GetDescriptorHandleIncrementSize(range.first.first) * table_desc.count;
-		}
-
-        D3D12_ROOT_SIGNATURE_DESC root_desc{};
-	    root_desc.NumParameters = static_cast<uint32>(parameters.size());
-	    root_desc.pParameters = parameters.data();
-	    root_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-	    winrt::com_ptr<ID3DBlob> blob;
-	    ASSERT_SUCCEEDED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, blob.put(), nullptr));
-	    ASSERT_SUCCEEDED(d3d12_device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), __uuidof(ID3D12RootSignature), m_d3d12_root_signature.put_void()));
-    }
-
-	ID3D12RootSignature* get_d3d12_root_signature() { return m_d3d12_root_signature.get(); }
-	const std::vector<DescriptorTableDesc>& get_descriptor_tables() { return m_descriptor_tables; }
-
-private:
-
-    winrt::com_ptr<ID3D12RootSignature> m_d3d12_root_signature;
-
-	std::vector<DescriptorTableDesc> m_descriptor_tables;
-};
-
 class D3DDescriptorPool : public DescriptorPool {
 public:
 

@@ -40,7 +40,8 @@ public:
             resources[i] = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc);
         }
 
-        gfx::D3DAllocatorWrapper::debug_test();
+        gfx::ViewDesc view_desc{};
+        auto view = m_device->create_view(gfx::ViewType::Buffer, resources[0].get(), view_desc);
     }
 
     void tick() override {

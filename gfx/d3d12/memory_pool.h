@@ -6,31 +6,16 @@ namespace ionengine::gfx {
 
 using namespace memory_literals;
 
-struct D3DMemoryHeap {
-    winrt::com_ptr<ID3D12Heap> d3d12_heap;
-    usize heap_size;
-    uint64 block_count;
-    usize block_size;
-    uint64 offset;
-    std::vector<uint8> block_data;
-};
-
-struct D3DMemoryPtr {
-    D3DMemoryHeap* heap;
-    uint64 offset;
-};
-
-template<usize T>
+template<MemoryType T, usize S>
 class D3DMemoryPool {
 public:
 
     struct Key {
-        MemoryType memory_type;
         uint32 alignment;
         ResourceFlags resource_flags;
 
         bool operator<(const Key& rhs) const {
-            return std::tie(memory_type, alignment, resource_flags) < std::tie(rhs.memory_type, rhs.alignment, rhs.resource_flags);
+            return std::tie(alignment, resource_flags) < std::tie(rhs.alignment, rhs.resource_flags);
         }
     };
 
@@ -39,10 +24,9 @@ public:
 
     }
 
-    [[nodiscard]] D3DMemoryPtr allocate(const MemoryType memory_type, const usize size, const uint32 alignment, const ResourceFlags resource_flags) {
+    [[nodiscard]] D3DMemoryPtr allocate(const usize size, const uint32 alignment, const ResourceFlags resource_flags) {
 
         Key key = {
-            memory_type,
             alignment,
             resource_flags
         };
@@ -73,11 +57,7 @@ public:
                             ptr.offset = i * heap.block_size;
                         }
 
-                        if(!heap.block_data[i]) {
-                            alloc_size += heap.block_size;
-                        } else {
-                            alloc_size = 0;
-                        }
+                        alloc_size = !heap.block_data[i] ? alloc_size + heap.block_size : alloc_size;
                     } 
                     if(alloc_size != align_size) {
                         ptr.heap = nullptr;
@@ -91,7 +71,7 @@ public:
         if(!ptr.heap) {
             assert((align_size + alignment < m_default_heap_size) && "allocation size should be less than default heap size");
 
-            auto d3d12_heap = create_heap(memory_type, m_default_heap_size, alignment, resource_flags);
+            auto d3d12_heap = create_heap(m_memory_type, m_default_heap_size, alignment, resource_flags);
             auto& heap = m_memory_heaps[key].emplace_back(D3DMemoryHeap { d3d12_heap, m_default_heap_size, m_default_heap_size / m_block_size, m_block_size });
 
             heap.block_data.resize(m_default_heap_size / m_block_size);
@@ -117,27 +97,6 @@ public:
         ptr.heap->offset = ptr.offset;
 
         std::cout << "memory pool deallocate memory" << std::endl;
-    }
-
-    void debug_test() {
-
-        std::cout << "--------------------------" << std::endl;
-        for(auto& heap_type : m_memory_heaps) {
-
-            for(auto& heap : heap_type.second) {
-            
-                std::cout << format<char>("Heap (Size: {}, BlockCount: {})", heap.heap_size, heap.block_count) << std::endl;
-                for(uint64 i = 0; i < heap.block_data.size(); ++i) {
-                    if(heap.block_data[i] == 0x1) {
-                        std::cout << "1";
-                    } else {
-                        std::cout << "0";
-                    }
-                }
-                std::cout << std::endl;
-            }
-        }
-        std::cout << "--------------------------" << std::endl;
     }
 
 private:
@@ -170,13 +129,15 @@ private:
                 ((size / m_block_size) + 1) * m_block_size : size;
     }
 
-    std::map<D3DMemoryPool<T>::Key, std::list<D3DMemoryHeap>> m_memory_heaps;
+    std::map<D3DMemoryPool<T, S>::Key, std::list<D3DMemoryHeap>> m_memory_heaps;
 
     usize m_default_heap_size;
-    const usize m_block_size = T;
+
+    const MemoryType m_memory_type = T;
+    const usize m_block_size = S;
 };
 
-class D3DAllocatorWrapper {
+class D3DMemoryAllocatorWrapper {
 public:
 
     static void initialize(
@@ -185,9 +146,9 @@ public:
         const usize textures_pool_size,
         const usize rtds_pool_size
     ) {
-        m_buffers_memory_pool = std::make_unique<D3DMemoryPool<64_kb>>(d3d12_device, buffers_pool_size);
-        m_textures_memory_pool = std::make_unique<D3DMemoryPool<1_mb>>(d3d12_device, textures_pool_size);
-        m_rtds_textures_memory_pool = std::make_unique<D3DMemoryPool<1_mb>>(d3d12_device, rtds_pool_size);
+        m_buffers_memory_pool = std::make_unique<D3DMemoryPool<MemoryType::Default, 64_kb>>(d3d12_device, buffers_pool_size);
+        m_textures_memory_pool = std::make_unique<D3DMemoryPool<MemoryType::Default, 1_mb>>(d3d12_device, textures_pool_size);
+        m_rtds_textures_memory_pool = std::make_unique<D3DMemoryPool<MemoryType::Default, 1_mb>>(d3d12_device, rtds_pool_size);
     }
 
     [[nodiscard]] static D3DMemoryPtr allocate(const ResourceType resource_type, const MemoryType memory_type, const usize size, const uint32 alignment, const ResourceFlags resource_flags) {
@@ -195,18 +156,22 @@ public:
         D3DMemoryPtr memory_ptr;
         switch(resource_type) {
             case ResourceType::Buffer: {
-                memory_ptr = m_buffers_memory_pool->allocate(memory_type, size, alignment, resource_flags);
+                memory_ptr = m_buffers_memory_pool->allocate(size, alignment, resource_flags);
                 break;
             }
             case ResourceType::Texture: {
-                // todo
+                if(resource_flags & (ResourceFlags::RenderTarget | ResourceFlags::DepthStencil)) {
+                    memory_ptr = m_rtds_textures_memory_pool->allocate(size, alignment, resource_flags);
+                } else {
+                    memory_ptr = m_textures_memory_pool->allocate(size, alignment, resource_flags);
+                }
                 break;
             }
         }
         return memory_ptr;
     }
 
-    static void deallocate(const ResourceType resource_type, const D3DMemoryPtr& ptr, const usize size) {
+    static void deallocate(const ResourceType resource_type, const D3DMemoryPtr& ptr, const usize size, const ResourceFlags resource_flags) {
 
         switch(resource_type) {
             case ResourceType::Buffer: {
@@ -214,21 +179,21 @@ public:
                 break;
             }
             case ResourceType::Texture: {
-                // todo
+                if(resource_flags & (ResourceFlags::RenderTarget | ResourceFlags::DepthStencil)) {
+                    m_rtds_textures_memory_pool->deallocate(ptr, size);
+                } else {
+                    m_textures_memory_pool->deallocate(ptr, size);
+                }
                 break;
             }
         }
     }
 
-    static void debug_test() {
-        m_buffers_memory_pool->debug_test();
-    }
-
 private:
 
-    inline static std::unique_ptr<D3DMemoryPool<64_kb>> m_buffers_memory_pool;
-    inline static std::unique_ptr<D3DMemoryPool<1_mb>> m_textures_memory_pool;
-    inline static std::unique_ptr<D3DMemoryPool<1_mb>> m_rtds_textures_memory_pool;
+    inline static std::unique_ptr<D3DMemoryPool<MemoryType::Default, 64_kb>> m_buffers_memory_pool;
+    inline static std::unique_ptr<D3DMemoryPool<MemoryType::Default, 1_mb>> m_textures_memory_pool;
+    inline static std::unique_ptr<D3DMemoryPool<MemoryType::Default, 1_mb>> m_rtds_textures_memory_pool;
 };
 
 }

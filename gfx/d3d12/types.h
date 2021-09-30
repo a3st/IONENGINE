@@ -7,7 +7,7 @@ namespace ionengine::gfx {
 class D3DFence;
 class D3DCommandList;
 class D3DResource;
-class D3DDescriptorSetLayout;
+class D3DSampler;
 class D3DView;
 class D3DRenderPass;
 class D3DFrameBuffer;
@@ -16,11 +16,36 @@ class D3DDescriptorSet;
 class D3DPipeline;
 class D3DDevice;
 
-struct DescriptorTableDesc {
+struct D3DDescriptorTable {
 	D3D12_DESCRIPTOR_HEAP_TYPE type;
 	uint32 count;
 	uint32 offset;
 	bool compute;
+};
+
+struct D3DMemoryHeap {
+    winrt::com_ptr<ID3D12Heap> d3d12_heap;
+    usize heap_size;
+    uint64 block_count;
+    usize block_size;
+    uint64 offset;
+    std::vector<uint8> block_data;
+};
+
+struct D3DMemoryPtr {
+    D3DMemoryHeap* heap;
+    uint64 offset;
+};
+
+struct D3DDescriptorHeap {
+	winrt::com_ptr<ID3D12DescriptorHeap> d3d12_heap;
+	usize heap_size;
+	uint64 offset;
+};
+
+struct D3DDescriptorPtr {
+	D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
+	D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
 };
 
 std::string result_to_string(const HRESULT result) {

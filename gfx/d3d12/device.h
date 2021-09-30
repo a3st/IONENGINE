@@ -75,7 +75,7 @@ public:
             m_swapchain_buffers.emplace_back(std::make_unique<D3DResource>(m_d3d12_device.get(), ResourceType::Texture, resource, ResourceFlags::RenderTarget));
         }
 
-        D3DAllocatorWrapper::initialize(m_d3d12_device.get(), 32_mb, 512_mb, 128_mb);
+        D3DMemoryAllocatorWrapper::initialize(m_d3d12_device.get(), 32_mb, 512_mb, 128_mb);
     }
 
     void wait(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
@@ -115,6 +115,10 @@ public:
 
     std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) override {
         return std::make_unique<D3DPipeline>(m_d3d12_device.get(), pipeline_desc);
+    }
+
+    std::unique_ptr<View> create_view(const ViewType view_type, Resource* resource, const ViewDesc& view_desc) override {
+        return std::make_unique<D3DView>(m_d3d12_device.get(), view_type, static_cast<D3DResource*>(resource), view_desc);
     }
 
     void present() override {

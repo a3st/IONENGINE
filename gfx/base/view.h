@@ -2,13 +2,13 @@
 
 #pragma once
 
-namespace ionengine::renderer::wrapper {
+namespace ionengine::gfx {
 
 class View {
 public:
     virtual ~View() = default;
 
-    virtual Resource& get_resource() const = 0;
+    virtual Resource* get_resource() const = 0;
 };
 
 }
