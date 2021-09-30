@@ -28,7 +28,7 @@ public:
 
         std::unique_ptr<gfx::Resource> resources[10];
 
-        for(uint32 i = 0; i < 1; ++i)
+        for(uint32 i = 0; i < 10; ++i)
         {
             gfx::ResourceDesc res_desc{};
             res_desc.dimension = gfx::ViewDimension::Buffer;
@@ -37,7 +37,7 @@ public:
             res_desc.mip_levels = 1;
             res_desc.array_size = 1;
             res_desc.flags = gfx::ResourceFlags::VertexBuffer;
-            resources[0] = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc);
+            resources[i] = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc);
         }
 
         gfx::D3DAllocatorWrapper::debug_test();
