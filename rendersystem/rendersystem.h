@@ -32,7 +32,7 @@ public:
         {
             gfx::ResourceDesc res_desc{};
             res_desc.dimension = gfx::ViewDimension::Buffer;
-            res_desc.width = 64_kb;
+            res_desc.width = 16_mb;
             res_desc.height = 1;
             res_desc.mip_levels = 1;
             res_desc.array_size = 1;
