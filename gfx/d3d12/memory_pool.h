@@ -6,20 +6,23 @@ namespace ionengine::gfx {
 
 using namespace memory_literals;
 
+struct D3DMemoryHeap {
+    winrt::com_ptr<ID3D12Heap> d3d12_heap;
+    usize heap_size;
+    uint64 block_count;
+    usize block_size;
+    uint64 offset;
+    std::vector<bool> block_data;
+};
+
 struct D3DMemoryPtr {
-    ID3D12Heap* d3d12_heap;
+    D3DMemoryHeap* heap;
     uint64 offset;
 };
 
 template<usize T>
 class D3DMemoryPool {
 public:
-
-    struct D3DMemoryHeap {
-        winrt::com_ptr<ID3D12Heap> d3d12_heap;
-        usize heap_size;
-        uint64 block_count;
-    };
 
     struct Key {
         MemoryType memory_type;
@@ -50,8 +53,22 @@ public:
         usize align_size = aligned_block_size(size);
         std::cout << "align size to alloc " << align_size << std::endl;
 
-        auto it_heap = m_memory_heap_offsets.find(key);
-        if(it_heap != m_memory_heap_offsets.end()) {
+        auto it_heap = m_memory_heaps.find(key);
+        if(it_heap != m_memory_heaps.end()) {
+
+            for(auto& heap : it_heap.second) {
+
+                if(heap.offset == heap_size) {
+                    continue;
+                }
+
+                auto it = std::find_if(
+                    heap.block_data.begin(), 
+                    heap.block_data.end(), [](bool& element) {
+
+                    }
+                );
+            }
 
             /*std::cout << "try to find free block with size " << align_size << std::endl;
 
@@ -98,19 +115,18 @@ public:
             assert((align_size + alignment < m_default_heap_size) && "allocation size should be less than default heap size");
 
             auto d3d12_heap = create_heap(memory_type, m_default_heap_size, alignment, resource_flags);
-            m_memory_heaps.emplace_back(D3DMemoryPool<T>::D3DMemoryHeap { d3d12_heap, m_default_heap_size, m_default_heap_size / m_block_size });
+            auto& heap = m_memory_heaps[key].emplace_back(D3DMemoryHeap { d3d12_heap, m_default_heap_size, m_default_heap_size / m_block_size, m_block_size });
             
-            auto& last_heap = std::prev(m_memory_heaps.end());
-            m_memory_blocks[last_heap->d3d12_heap.get()].resize(m_default_heap_size / m_block_size);
-            m_memory_heap_offsets[key] = last_heap;
+            heap.block_data.resize(m_default_heap_size / m_block_size);
 
-            auto& block = m_memory_blocks[last_heap->d3d12_heap.get()];
             for(uint32 i = 0; i < align_size/m_block_size; ++i) {
-                block[i] = true;
+                heap.block_data[i] = true;
             }
 
-            ptr.d3d12_heap = last_heap->d3d12_heap.get();
-            ptr.offset = align_size;
+            ptr.heap = &heap;
+            ptr.offset = heap.offset;
+
+            heap.offset += align_size;
 
             std::cout << "memory pool allocating new heap" << std::endl;
         }
@@ -169,12 +185,7 @@ private:
                 ((size / m_block_size) + 1) * m_block_size : size;
     }
 
-    std::list<D3DMemoryPool<T>::D3DMemoryHeap> m_memory_heaps;
-
-    using D3DMemoryHeapIt = typename std::list<D3DMemoryPool<T>::D3DMemoryHeap>::iterator;
-    std::map<D3DMemoryPool<T>::Key, D3DMemoryHeapIt> m_memory_heap_offsets;
-
-    std::map<ID3D12Heap*, std::vector<bool>> m_memory_blocks;
+    std::map<D3DMemoryPool<T>::Key, std::list<D3DMemoryHeap>> m_memory_heaps;
 
     usize m_default_heap_size;
     const usize m_block_size = T;

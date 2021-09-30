@@ -57,7 +57,7 @@ public:
 
         THROW_IF_FAILED(
             m_d3d12_device->CreatePlacedResource(
-                m_memory_ptr.d3d12_heap,
+                m_memory_ptr.heap->d3d12_heap.get(),
                 m_memory_ptr.offset,
                 &m_d3d12_desc,
                 d3d12_resource_state_to_gfx_enum(resource_state),
@@ -94,7 +94,7 @@ public:
     ~D3DResource() {
 
         auto now = std::chrono::high_resolution_clock::now();
-        if(m_memory_ptr.d3d12_heap) {
+        if(m_memory_ptr.heap) {
             D3DAllocatorWrapper::deallocate(m_type, m_memory_ptr, m_desc.width);
         }
         auto stop = std::chrono::high_resolution_clock::now();
