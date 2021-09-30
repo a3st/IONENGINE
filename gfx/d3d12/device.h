@@ -75,7 +75,7 @@ public:
             m_swapchain_buffers.emplace_back(std::make_unique<D3DResource>(m_d3d12_device.get(), ResourceType::Texture, resource, ResourceFlags::RenderTarget));
         }
 
-        D3DAllocatorWrapper::initialize(m_d3d12_device.get(), 64_mb, 512_mb, 128_mb);
+        D3DAllocatorWrapper::initialize(m_d3d12_device.get(), 1_mb, 512_mb, 128_mb);
     }
 
     void wait(const CommandListType command_list_type, Fence* fence, const uint64 value) override {

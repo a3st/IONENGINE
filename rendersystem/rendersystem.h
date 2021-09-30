@@ -26,45 +26,21 @@ public:
 
         window->set_label(format<char>("IONENGINE - {}", gfx::api_name));
 
-        for(uint32 i = 0; i < 10; ++i)
+        std::unique_ptr<gfx::Resource> resources[10];
+
+        for(uint32 i = 0; i < 1; ++i)
         {
             gfx::ResourceDesc res_desc{};
             res_desc.dimension = gfx::ViewDimension::Buffer;
-            res_desc.width = 512_kb;
+            res_desc.width = 64_kb;
             res_desc.height = 1;
             res_desc.mip_levels = 1;
             res_desc.array_size = 1;
             res_desc.flags = gfx::ResourceFlags::VertexBuffer;
-            auto resource = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc);
+            resources[0] = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc);
         }
 
         gfx::D3DAllocatorWrapper::debug_test();
-
-        {
-            gfx::ResourceDesc res_desc2{};
-            res_desc2.dimension = gfx::ViewDimension::Buffer;
-            res_desc2.width = 512;
-            res_desc2.height = 1;
-            res_desc2.mip_levels = 1;
-            res_desc2.array_size = 1;
-            res_desc2.flags = gfx::ResourceFlags::VertexBuffer;
-            auto resource2 = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc2);
-        }
-
-        gfx::D3DAllocatorWrapper::debug_test();
-
-        {
-            gfx::ResourceDesc res_desc2{};
-            res_desc2.dimension = gfx::ViewDimension::Buffer;
-            res_desc2.width = 512;
-            res_desc2.height = 1;
-            res_desc2.mip_levels = 1;
-            res_desc2.array_size = 1;
-            res_desc2.flags = gfx::ResourceFlags::VertexBuffer;
-            auto resource2 = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc2);
-
-            gfx::D3DAllocatorWrapper::debug_test();
-        }
     }
 
     void tick() override {

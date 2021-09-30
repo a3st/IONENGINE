@@ -88,9 +88,7 @@ public:
                 }
             }
         }
-
         if(!ptr.heap) {
-
             assert((align_size + alignment < m_default_heap_size) && "allocation size should be less than default heap size");
 
             auto d3d12_heap = create_heap(memory_type, m_default_heap_size, alignment, resource_flags);
@@ -102,7 +100,8 @@ public:
 
             ptr.heap = &heap;
             ptr.offset = heap.offset;
-
+            std::memset(heap.block_data.data() + ptr.offset / m_block_size, 0x1, sizeof(uint8) * align_size / m_block_size);
+            
             heap.offset += align_size;
 
             std::cout << "memory pool allocating new heap" << std::endl;
@@ -123,9 +122,21 @@ public:
     void debug_test() {
 
         std::cout << "--------------------------" << std::endl;
-        //for(auto& block : m_free_blocks) {
-        //    std::cout << block.first << ": " << block.second.size() << " block" << std::endl;
-        //}
+        for(auto& heap_type : m_memory_heaps) {
+
+            for(auto& heap : heap_type.second) {
+            
+                std::cout << format<char>("Heap (Size: {}, BlockCount: {})", heap.heap_size, heap.block_count) << std::endl;
+                for(uint64 i = 0; i < heap.block_data.size(); ++i) {
+                    if(heap.block_data[i] == 0x1) {
+                        std::cout << "1";
+                    } else {
+                        std::cout << "0";
+                    }
+                }
+                std::cout << std::endl;
+            }
+        }
         std::cout << "--------------------------" << std::endl;
     }
 
