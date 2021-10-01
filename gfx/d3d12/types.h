@@ -44,6 +44,7 @@ struct D3DDescriptorHeap {
 };
 
 struct D3DDescriptorPtr {
+	D3DDescriptorHeap* heap;
 	D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
 	D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
 };
