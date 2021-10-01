@@ -158,22 +158,22 @@ public:
             default: heap_flags = D3D12_HEAP_FLAG_NONE;
         }
 
-        D3DMemoryPtr memory_ptr;
+        D3DMemoryPtr ptr{};
         switch(resource_type) {
             case ResourceType::Buffer: {
-                memory_ptr = m_buffers_memory_pool->allocate(size, alignment, heap_flags);
+                ptr = m_buffers_memory_pool->allocate(size, alignment, heap_flags);
                 break;
             }
             case ResourceType::Texture: {
                 if(resource_flags & (ResourceFlags::RenderTarget | ResourceFlags::DepthStencil)) {
-                    memory_ptr = m_rtds_textures_memory_pool->allocate(size, alignment, heap_flags);
+                    ptr = m_rtds_textures_memory_pool->allocate(size, alignment, heap_flags);
                 } else {
-                    memory_ptr = m_textures_memory_pool->allocate(size, alignment, heap_flags);
+                    ptr = m_textures_memory_pool->allocate(size, alignment, heap_flags);
                 }
                 break;
             }
         }
-        return memory_ptr;
+        return ptr;
     }
 
     static void deallocate(const ResourceType resource_type, const D3DMemoryPtr& ptr, const usize size, const ResourceFlags resource_flags) {
