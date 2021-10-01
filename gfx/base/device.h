@@ -41,6 +41,8 @@ public:
     virtual [[nodiscard]] std::unique_ptr<View> create_view(const ViewType view_type, Resource* resource, const ViewDesc& view_desc) = 0;
 
     virtual [[nodiscard]] std::unique_ptr<View> create_view(Sampler* sampler) = 0;
+
+    virtual [[nodiscard]] std::unique_ptr<DescriptorSet> create_descriptor_set(DescriptorSetLayout* layout) = 0;
 };
 
 }

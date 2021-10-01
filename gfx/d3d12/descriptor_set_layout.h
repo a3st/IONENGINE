@@ -24,7 +24,10 @@ public:
 			ranges[{ d3d12_descriptor_heap_type_to_gfx_enum(binding.view_type), binding.shader_type }].emplace_back(range);
 		}
 
-        uint32 descriptor_offset = 0;
+		std::map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32> offsets;
+		offsets[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = 0;
+		offsets[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = 0;
+
         std::vector<D3D12_ROOT_PARAMETER> parameters;
 
 		for(auto& range : ranges) {
@@ -38,13 +41,12 @@ public:
 			parameters.emplace_back(parameter);
 
 			D3DDescriptorTable descriptor_table{};
-			descriptor_table.type = range.first.first;
+			descriptor_table.heap_type = range.first.first;
 			descriptor_table.count = static_cast<uint32>(range.second.size());
-			descriptor_table.offset = descriptor_offset;
 
-			m_descriptor_tables.emplace_back(descriptor_table);
+			m_descriptor_tables.emplace_back(offsets[range.first.first], descriptor_table);
 
-			descriptor_offset += d3d12_device->GetDescriptorHandleIncrementSize(range.first.first) * descriptor_table.count;
+			offsets[range.first.first] += descriptor_table.count;
 		}
 
         D3D12_ROOT_SIGNATURE_DESC root_desc{};
@@ -59,13 +61,13 @@ public:
 
     ID3D12RootSignature* get_d3d12_root_signature() { return m_d3d12_root_signature.get(); }
 
-    const std::vector<D3DDescriptorTable>& get_descriptor_tables() const { return m_descriptor_tables; }
+    const std::vector<std::pair<uint32, D3DDescriptorTable>>& get_descriptor_tables() const { return m_descriptor_tables; }
 
 private:
 
     winrt::com_ptr<ID3D12RootSignature> m_d3d12_root_signature;
 
-    std::vector<D3DDescriptorTable> m_descriptor_tables;
+    std::vector<std::pair<uint32, D3DDescriptorTable>> m_descriptor_tables;
 };
 
 }

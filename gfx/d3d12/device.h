@@ -126,6 +126,10 @@ public:
         return std::make_unique<D3DView>(m_d3d12_device.get(), static_cast<D3DSampler*>(sampler));
     }
 
+    std::unique_ptr<DescriptorSet> create_descriptor_set(DescriptorSetLayout* layout) override {
+        return std::make_unique<D3DDescriptorSet>(m_d3d12_device.get(), static_cast<D3DDescriptorSetLayout*>(layout));
+    }
+
     void present() override {
         THROW_IF_FAILED(m_dxgi_swapchain->Present(0, 0));
     }

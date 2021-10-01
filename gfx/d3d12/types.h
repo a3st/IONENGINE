@@ -17,9 +17,8 @@ class D3DPipeline;
 class D3DDevice;
 
 struct D3DDescriptorTable {
-	D3D12_DESCRIPTOR_HEAP_TYPE type;
+	D3D12_DESCRIPTOR_HEAP_TYPE heap_type;
 	uint32 count;
-	uint32 offset;
 	bool compute;
 };
 

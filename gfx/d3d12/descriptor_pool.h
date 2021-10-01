@@ -4,7 +4,7 @@
 
 namespace ionengine::gfx {
 
-template<enum D3D12_DESCRIPTOR_HEAP_TYPE T, enum D3D12_DESCRIPTOR_HEAP_FLAGS F>
+template<enum D3D12_DESCRIPTOR_HEAP_TYPE T>
 class D3DDesciptorPool {
 public:
 
@@ -69,7 +69,7 @@ private:
         D3D12_DESCRIPTOR_HEAP_DESC heap_desc{};
         heap_desc.Type = m_heap_type;
         heap_desc.NumDescriptors = descriptor_count;
-        heap_desc.Flags = m_heap_flags;
+        heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
         THROW_IF_FAILED(m_d3d12_device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), d3d12_heap.put_void()));
         return d3d12_heap;
@@ -82,14 +82,13 @@ private:
     uint32 m_default_descriptor_count;
 
     const D3D12_DESCRIPTOR_HEAP_TYPE m_heap_type = T;
-    const D3D12_DESCRIPTOR_HEAP_FLAGS m_heap_flags = F;
 };
 
 class D3DDescriptorAllocatorWrapper {
 public:
 
     static void initialize(ID3D12Device4* d3d12_device) {
-        m_srv_pool = std::make_unique<D3DDesciptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE>>(d3d12_device, 10);
+        m_srv_pool = std::make_unique<D3DDesciptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV>>(d3d12_device, 10);
     }
 
     [[nodiscard]] static D3DDescriptorPtr allocate(const ViewType view_type) {
@@ -112,7 +111,7 @@ public:
 
 private:
 
-    inline static std::unique_ptr<D3DDesciptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE>> m_srv_pool;
+    inline static std::unique_ptr<D3DDesciptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV>> m_srv_pool;
 };
 
 }
