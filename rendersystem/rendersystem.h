@@ -28,7 +28,7 @@ public:
 
         std::unique_ptr<gfx::Resource> resources[10];
 
-        for(uint32 i = 0; i < 10; ++i)
+        for(uint32 i = 0; i < 1; ++i)
         {
             gfx::ResourceDesc res_desc{};
             res_desc.dimension = gfx::ViewDimension::Buffer;
@@ -36,12 +36,13 @@ public:
             res_desc.height = 1;
             res_desc.mip_levels = 1;
             res_desc.array_size = 1;
-            res_desc.flags = gfx::ResourceFlags::VertexBuffer;
+            res_desc.flags = gfx::ResourceFlags::ConstantBuffer;
             resources[i] = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc);
         }
 
         gfx::ViewDesc view_desc{};
-        auto view = m_device->create_view(gfx::ViewType::Buffer, resources[0].get(), view_desc);
+        view_desc.buffer_size = resources[0]->get_desc().width;
+        auto view = m_device->create_view(gfx::ViewType::ConstantBuffer, resources[0].get(), view_desc);
     }
 
     void tick() override {

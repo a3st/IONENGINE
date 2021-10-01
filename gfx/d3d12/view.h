@@ -10,8 +10,7 @@ public:
     D3DView(ID3D12Device4* d3d12_device, const ViewType view_type, D3DResource* resource, const ViewDesc& view_desc) 
         : m_d3d12_device(d3d12_device), m_resource(resource), m_type(view_type), m_desc(view_desc) {
 
-        //uint64 offset = m_descriptor_pool.get().d3d12_allocate(convert_descriptor_heap_type(view_desc.view_type));
-        //m_d3d12_cpu_descriptor = m_descriptor_pool.get().get_d3d12_cpu_descriptor_handle(convert_descriptor_heap_type(view_desc.view_type), offset);
+        m_descriptor_ptr = D3DDescriptorAllocatorWrapper::allocate(view_type);
         
         switch(m_type) {
 
@@ -97,25 +96,57 @@ public:
                 break;
             }
             case ViewType::ConstantBuffer: {
-                /*auto& resource_desc = std::get<D3D12_RESOURCE_DESC>(m_resource.get().get_d3d12_desc());
-
                 D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_view{};
-                cbv_view.BufferLocation = m_resource.get().get_d3d12_resource()->GetGPUVirtualAddress();
-                cbv_view.SizeInBytes = static_cast<uint32>(m_view_desc.buffer_size);
+                cbv_view.BufferLocation = m_resource->get_d3d12_resource()->GetGPUVirtualAddress();
+                cbv_view.SizeInBytes = static_cast<uint32>(m_desc.buffer_size);
 
-                m_d3d12_device.get()->CreateConstantBufferView(&cbv_view, m_d3d12_cpu_descriptor);*/
+                D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
+                    m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
+                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(m_type))
+                };
+
+                m_d3d12_device->CreateConstantBufferView(&cbv_view, cpu_handle);
                 break;
             }
         }
     }
 
+    D3DView(ID3D12Device4* d3d12_device, D3DSampler* sampler) 
+        : m_d3d12_device(d3d12_device), m_sampler(sampler), m_type(ViewType::Sampler) {
+
+        m_descriptor_ptr = D3DDescriptorAllocatorWrapper::allocate(m_type);
+
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
+            m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
+                m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(m_type))
+        };
+
+        m_d3d12_device->CreateSampler(&sampler->get_d3d12_desc(), cpu_handle);
+    }
+
+    ~D3DView() {
+
+        if(m_descriptor_ptr.heap) {
+            D3DDescriptorAllocatorWrapper::deallocate(m_type, m_descriptor_ptr);
+        }
+    }
+
+    ViewType get_type() const override { return m_type; }
+
+    const ViewDesc& get_desc() const override { return m_desc; }
+
     Resource* get_resource() const override { return m_resource; }
+
+    Sampler* get_sampler() const override { return m_sampler; }
 
 private:
 
     ID3D12Device4* m_d3d12_device;
 
     D3DResource* m_resource;
+    D3DSampler* m_sampler;
+
+    D3DDescriptorPtr m_descriptor_ptr;
 
     ViewType m_type;
     ViewDesc m_desc;

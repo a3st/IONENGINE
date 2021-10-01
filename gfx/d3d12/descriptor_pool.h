@@ -16,30 +16,49 @@ public:
 
         D3DDescriptorPtr ptr{};
 
-        auto it_heap = m_descriptor_heaps.find(key);
-        if(it_heap != m_descriptor_heaps.end()) {
+        for(auto& heap : m_descriptor_heaps) {
 
-            for(auto& heap : it_heap->second) {
+            if(heap.offset == heap.heap_size) {
+                continue;
+            } else {
+                for(uint32 i = heap.offset; i < heap.descriptor_data.size(); ++i) {
+                    if(heap.descriptor_data[i] == 0x1) {
+                        continue;
+                    }
 
-                if(heap.offset == heap.heap_size) {
-                    continue;
-                } else {
-                    uint32 alloc_offset = heap.offset + m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(view_type));
-                    ptr.cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { heap.d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + alloc_offset };
-                    ptr.gpu_handle = D3D12_GPU_DESCRIPTOR_HANDLE { heap.d3d12_heap->GetGPUDescriptorHandleForHeapStart().ptr + alloc_offset };
+                    ptr.heap = &heap;
+                    ptr.offset = i;
 
-                    heap.offset++;
+                    heap.offset = i + 1;
+
+                    std::cout << "descriptor pool free block found" << std::endl;
                 }
             }
         }
         if(!ptr.heap) {
             auto d3d12_heap = create_heap(m_default_descriptor_count);
+            auto& heap = m_descriptor_heaps.emplace_back(D3DDescriptorHeap { d3d12_heap, m_default_descriptor_count });
+
+            heap.descriptor_data.resize(m_default_descriptor_count);
+            std::memset(heap.descriptor_data.data() + heap.offset, 0x0, sizeof(uint8) * m_default_descriptor_count);
+
+            ptr.heap = &heap;
+            ptr.offset = heap.offset;
+            
+            heap.descriptor_data[heap.offset] = 0x1;
+            heap.offset++;
+
+            std::cout << "descriptor pool allocating new heap" << std::endl;
         }
         return ptr;
     }
 
-    void deallocate() {
+    void deallocate(const D3DDescriptorPtr& ptr) {
 
+        ptr.heap->descriptor_data[ptr.offset] = 0x0;
+        ptr.heap->offset = ptr.offset;
+
+        std::cout << "descriptor pool deallocate memory" << std::endl;
     }
 
 private:
@@ -70,12 +89,30 @@ class D3DDescriptorAllocatorWrapper {
 public:
 
     static void initialize(ID3D12Device4* d3d12_device) {
+        m_srv_pool = std::make_unique<D3DDesciptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE>>(d3d12_device, 10);
+    }
 
+    [[nodiscard]] static D3DDescriptorPtr allocate(const ViewType view_type) {
+
+        D3DDescriptorPtr ptr{};
+
+        switch(view_type) {
+            case ViewType::ConstantBuffer: ptr = m_srv_pool->allocate();
+        }
+
+        return ptr;
+    }
+
+    static void deallocate(const ViewType view_type, const D3DDescriptorPtr& ptr) {
+
+        switch(view_type) {
+            case ViewType::ConstantBuffer: m_srv_pool->deallocate(ptr);
+        }
     }
 
 private:
 
-
+    inline static std::unique_ptr<D3DDesciptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE>> m_srv_pool;
 };
 
 }

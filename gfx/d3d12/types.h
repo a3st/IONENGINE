@@ -41,12 +41,12 @@ struct D3DDescriptorHeap {
 	winrt::com_ptr<ID3D12DescriptorHeap> d3d12_heap;
 	uint32 heap_size;
 	uint32 offset;
+	std::vector<uint8> descriptor_data;
 };
 
 struct D3DDescriptorPtr {
 	D3DDescriptorHeap* heap;
-	D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
-	D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
+	uint32 offset;
 };
 
 std::string result_to_string(const HRESULT result) {

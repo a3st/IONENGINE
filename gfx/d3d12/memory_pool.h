@@ -57,7 +57,7 @@ public:
                             ptr.offset = i * heap.block_size;
                         }
 
-                        alloc_size = !heap.block_data[i] ? alloc_size + heap.block_size : alloc_size;
+                        alloc_size = heap.block_data[i] == 0x0 ? alloc_size + heap.block_size : alloc_size;
                     } 
                     if(alloc_size != align_size) {
                         ptr.heap = nullptr;
@@ -75,13 +75,12 @@ public:
             auto& heap = m_memory_heaps[key].emplace_back(D3DMemoryHeap { d3d12_heap, m_default_heap_size, m_default_heap_size / m_block_size, m_block_size });
 
             heap.block_data.resize(m_default_heap_size / m_block_size);
-
             std::memset(heap.block_data.data() + heap.offset / m_block_size, 0x0, sizeof(uint8) * align_size / m_block_size);
 
             ptr.heap = &heap;
             ptr.offset = heap.offset;
-            std::memset(heap.block_data.data() + ptr.offset / m_block_size, 0x1, sizeof(uint8) * align_size / m_block_size);
-            
+
+            std::memset(heap.block_data.data() + ptr.offset / m_block_size, 0x1, sizeof(uint8) * align_size / m_block_size); 
             heap.offset += align_size;
 
             std::cout << "memory pool allocating new heap" << std::endl;

@@ -76,6 +76,7 @@ public:
         }
 
         D3DMemoryAllocatorWrapper::initialize(m_d3d12_device.get(), 32_mb, 512_mb, 128_mb);
+        D3DDescriptorAllocatorWrapper::initialize(m_d3d12_device.get());
     }
 
     void wait(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
@@ -119,6 +120,10 @@ public:
 
     std::unique_ptr<View> create_view(const ViewType view_type, Resource* resource, const ViewDesc& view_desc) override {
         return std::make_unique<D3DView>(m_d3d12_device.get(), view_type, static_cast<D3DResource*>(resource), view_desc);
+    }
+
+    std::unique_ptr<View> create_view(Sampler* sampler) override {
+        return std::make_unique<D3DView>(m_d3d12_device.get(), static_cast<D3DSampler*>(sampler));
     }
 
     void present() override {
