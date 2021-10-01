@@ -39,8 +39,8 @@ struct D3DMemoryPtr {
 
 struct D3DDescriptorHeap {
 	winrt::com_ptr<ID3D12DescriptorHeap> d3d12_heap;
-	usize heap_size;
-	uint64 offset;
+	uint32 heap_size;
+	uint32 offset;
 };
 
 struct D3DDescriptorPtr {

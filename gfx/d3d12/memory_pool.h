@@ -19,8 +19,8 @@ public:
         }
     };
 
-    D3DMemoryPool(ID3D12Device4* d3d12_device, const usize default_size) 
-        : m_d3d12_device(d3d12_device), m_default_heap_size(default_size) {
+    D3DMemoryPool(ID3D12Device4* d3d12_device, const usize default_heap_size) 
+        : m_d3d12_device(d3d12_device), m_default_heap_size(default_heap_size) {
 
     }
 
