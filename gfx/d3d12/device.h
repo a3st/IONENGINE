@@ -126,8 +126,8 @@ public:
         return std::make_unique<D3DView>(m_d3d12_device.get(), static_cast<D3DSampler*>(sampler));
     }
 
-    std::unique_ptr<DescriptorSet> create_descriptor_set(DescriptorSetLayout* layout) override {
-        return std::make_unique<D3DDescriptorSet>(m_d3d12_device.get(), static_cast<D3DDescriptorSetLayout*>(layout));
+    std::unique_ptr<BindingSet> create_binding_set(BindingSetLayout* layout) override {
+        return std::make_unique<D3DBindingSet>(m_d3d12_device.get(), static_cast<D3DBindingSetLayout*>(layout));
     }
 
     void present() override {

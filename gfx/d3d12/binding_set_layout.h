@@ -4,10 +4,10 @@
 
 namespace ionengine::gfx {
 
-class D3DDescriptorSetLayout : public DescriptorSetLayout  {
+class D3DBindingSetLayout : public BindingSetLayout  {
 public:
 
-    D3DDescriptorSetLayout(ID3D12Device4* d3d12_device, const std::vector<DescriptorSetLayoutBinding>& bindings) {
+    D3DBindingSetLayout(ID3D12Device4* d3d12_device, const std::vector<BindingSetBinding>& bindings) {
 
         using Key = std::pair<D3D12_DESCRIPTOR_HEAP_TYPE, ShaderType>;
 		std::map<Key, std::vector<D3D12_DESCRIPTOR_RANGE>> ranges;

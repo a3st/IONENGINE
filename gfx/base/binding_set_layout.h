@@ -4,10 +4,10 @@
 
 namespace ionengine::gfx {
 
-class DescriptorSetLayout  {
+class BindingSetLayout  {
 public:
 
-    virtual ~DescriptorSetLayout() = default;
+    virtual ~BindingSetLayout() = default;
 };
 
 }

@@ -7,12 +7,11 @@ namespace ionengine::gfx {
 class Fence;
 class CommandList;
 class Resource;
-class DescriptorSetLayout;
 class View;
 class RenderPass;
 class FrameBuffer;
-class DescriptorSetLayout;
-class DescriptorSet;
+class BindingSetLayout;
+class BindingSet;
 class Pipeline;
 class Device;
 
@@ -308,12 +307,19 @@ struct VertexInputDesc {
     uint32 stride;
 };
 
-struct DescriptorSetLayoutBinding {
+struct BindingSetBinding {
     ShaderType shader_type;
     ViewType view_type = ViewType::Unknown;
     uint32 slot;
     uint32 space;
     uint32 count;
+};
+
+struct WriteBindingSet {
+    uint32 slot;
+    uint32 count;
+    ViewType view_type = ViewType::Unknown;
+    std::vector<View*> views;
 };
 
 struct RasterizerDesc {
@@ -380,7 +386,7 @@ struct BlendDesc {
 
 struct GraphicsPipelineDesc {
     std::vector<ShaderDesc> shaders;
-    DescriptorSetLayout* layout;
+    BindingSetLayout* layout;
     std::vector<VertexInputDesc> vertex_inputs;
     RenderPass* render_pass;
     RasterizerDesc rasterizer;
@@ -390,12 +396,7 @@ struct GraphicsPipelineDesc {
 
 struct ComputePipelineDesc {
     ShaderDesc shader;
-    DescriptorSetLayout* layout;
-};
-
-struct DescriptorPoolSize {
-    ViewType type = ViewType::Unknown;
-    uint32 count;
+    BindingSetLayout* layout;
 };
 
 }

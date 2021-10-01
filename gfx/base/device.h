@@ -42,7 +42,7 @@ public:
 
     virtual [[nodiscard]] std::unique_ptr<View> create_view(Sampler* sampler) = 0;
 
-    virtual [[nodiscard]] std::unique_ptr<DescriptorSet> create_descriptor_set(DescriptorSetLayout* layout) = 0;
+    virtual [[nodiscard]] std::unique_ptr<BindingSet> create_binding_set(BindingSetLayout* layout) = 0;
 };
 
 }

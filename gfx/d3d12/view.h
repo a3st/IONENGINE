@@ -139,6 +139,8 @@ public:
 
     Sampler* get_sampler() const override { return m_sampler; }
 
+    const D3DDescriptorPtr& get_descriptor_ptr() const { return m_descriptor_ptr; }
+
 private:
 
     ID3D12Device4* m_d3d12_device;
