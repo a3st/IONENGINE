@@ -48,7 +48,11 @@ public:
                 if(heap.offset == heap.heap_size) {
                     continue;
                 } else {
-
+                    uint32 alloc_offset = heap.offset + m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(view_type));
+                    ptr.cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
+                        heap.d3d12_heap->GetCPUDescriptorHandleForHeapStart() + alloc_offset;
+                    };
+                    ptr.gpu_handle =
                 }
             }
 

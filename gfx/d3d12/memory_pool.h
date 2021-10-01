@@ -41,10 +41,10 @@ public:
         if(it_heap != m_memory_heaps.end()) {
             for(auto& heap : it_heap->second) {
 
-                usize alloc_size = 0;
                 if(heap.offset + align_size > heap.heap_size) {
                     continue;
                 } else {
+                    usize alloc_size = 0;
                     for(uint64 i = heap.offset / heap.block_size; i < heap.block_data.size(); ++i) {
                         if(alloc_size == align_size) {
                             std::memset(heap.block_data.data() + ptr.offset / m_block_size, 0x1, sizeof(uint8) * align_size / m_block_size);
