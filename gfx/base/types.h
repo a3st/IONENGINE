@@ -271,7 +271,7 @@ struct FrameBufferDesc {
     uint32 width;
     uint32 height;
     std::vector<View*> colors;
-    std::optional<View*> depth_stencil;
+    View* depth_stencil;
 };
 
 struct RenderPassDesc {

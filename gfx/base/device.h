@@ -49,6 +49,8 @@ public:
     virtual [[nodiscard]] std::unique_ptr<RenderPass> create_render_pass(const RenderPassDesc& render_pass_desc) = 0;
 
     virtual [[nodiscard]] std::unique_ptr<FrameBuffer> create_frame_buffer(const FrameBufferDesc frame_buffer_desc) = 0;
+
+    virtual [[nodiscard]] std::unique_ptr<CommandList> create_command_list(const CommandListType command_list_type) = 0;
 };
 
 }

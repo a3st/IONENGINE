@@ -9,6 +9,8 @@ public:
 
     D3DPipeline(ID3D12Device4* d3d12_device, const GraphicsPipelineDesc& pipeline_desc) : m_type(PipelineType::Graphics) {
 
+        assert(d3d12_device && "pointer to d3d12_device is null");
+
         // Input Element Description
         // Description of the input data in the pipeline
         std::vector<D3D12_INPUT_ELEMENT_DESC> input_descs;

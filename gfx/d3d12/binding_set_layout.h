@@ -15,6 +15,8 @@ public:
 
     D3DBindingSetLayout(ID3D12Device4* d3d12_device, const std::vector<BindingSetBinding>& bindings) {
 
+		assert(d3d12_device && "pointer to d3d12_device is null");
+
 		std::vector<Key> ranges;
 
 		for(auto& binding : bindings) {

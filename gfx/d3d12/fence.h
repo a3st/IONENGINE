@@ -9,6 +9,8 @@ public:
 
     D3DFence(ID3D12Device4* d3d12_device, const uint64 initial_value) {
 
+        assert(d3d12_device && "pointer to d3d12_device is null");
+
         THROW_IF_FAILED(d3d12_device->CreateFence(initial_value, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), m_d3d12_fence.put_void()));
         m_fence_event = CreateEvent(nullptr, false, false, nullptr);
         if(!m_fence_event) {

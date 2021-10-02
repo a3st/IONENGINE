@@ -10,6 +10,9 @@ public:
     D3DView(ID3D12Device4* d3d12_device, const ViewType view_type, D3DResource* resource, const ViewDesc& view_desc) 
         : m_d3d12_device(d3d12_device), m_resource(resource), m_type(view_type), m_desc(view_desc) {
 
+        assert(d3d12_device && "pointer to d3d12_device is null");
+        assert(resource && "pointer to resource is null");
+
         m_descriptor_ptr = D3DDescriptorAllocatorWrapper::allocate(view_type);
         
         switch(m_type) {
@@ -119,6 +122,9 @@ public:
 
     D3DView(ID3D12Device4* d3d12_device, D3DSampler* sampler) 
         : m_d3d12_device(d3d12_device), m_sampler(sampler), m_type(ViewType::Sampler) {
+
+        assert(d3d12_device && "pointer to d3d12_device is null");
+        assert(sampler && "pointer to sampler is null");
 
         m_descriptor_ptr = D3DDescriptorAllocatorWrapper::allocate(m_type);
 

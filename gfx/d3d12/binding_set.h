@@ -8,6 +8,9 @@ class D3DBindingSet : public BindingSet  {
 public:
 
     D3DBindingSet(ID3D12Device4* d3d12_device, D3DBindingSetLayout* layout) : m_d3d12_device(d3d12_device), m_layout(layout) {
+
+        assert(d3d12_device && "pointer to d3d12_device is null");
+        assert(layout && "pointer to layout is null");
         
         std::map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32> descriptor_sizes;
         descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = 0;

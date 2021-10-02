@@ -11,6 +11,8 @@ public:
 
     D3DDevice(const uint32 adapter_index, void* window, const uint32 width, const uint32 height, const uint32 buffer_count, const uint32 multisample_count) {
 
+        assert(window && "pointer to window is null");
+
         uint32 flags = 0;
 #ifdef NDEBUG
         if(SUCCEEDED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), m_d3d12_debug.put_void()))) {
@@ -76,10 +78,16 @@ public:
     }
 
     void wait(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
+
+        assert(fence && "pointer to fence is null");
+
         THROW_IF_FAILED(m_command_queues[command_list_type]->Wait(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
     }
 
     void signal(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
+
+        assert(fence && "pointer to fence is null");
+
         THROW_IF_FAILED(m_command_queues[command_list_type]->Signal(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
     }
 
@@ -115,14 +123,23 @@ public:
     }
 
     std::unique_ptr<View> create_view(const ViewType view_type, Resource* resource, const ViewDesc& view_desc) override {
+
+        assert(resource && "pointer to resource is null");
+
         return std::make_unique<D3DView>(m_d3d12_device.get(), view_type, static_cast<D3DResource*>(resource), view_desc);
     }
 
     std::unique_ptr<View> create_view(Sampler* sampler) override {
+
+        assert(sampler && "pointer to sampler is null");
+
         return std::make_unique<D3DView>(m_d3d12_device.get(), static_cast<D3DSampler*>(sampler));
     }
 
     std::unique_ptr<BindingSet> create_binding_set(BindingSetLayout* layout) override {
+
+        assert(layout && "pointer to layout is null");
+
         return std::make_unique<D3DBindingSet>(m_d3d12_device.get(), static_cast<D3DBindingSetLayout*>(layout));
     }
 
@@ -136,6 +153,10 @@ public:
 
     std::unique_ptr<FrameBuffer> create_frame_buffer(const FrameBufferDesc frame_buffer_desc) override {
         return std::make_unique<D3DFrameBuffer>(frame_buffer_desc);
+    }
+
+    std::unique_ptr<CommandList> create_command_list(const CommandListType command_list_type) override {
+        return std::make_unique<D3DCommandList>(m_d3d12_device.get(), command_list_type);
     }
 
     void present() override {
