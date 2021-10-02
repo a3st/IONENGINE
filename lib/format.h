@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine {
+namespace ionengine::lib {
 
 inline std::wstring stws(const std::string& src) {
     size_t length = strlen(src.c_str()) + 1;

@@ -26,7 +26,7 @@ public:
         DXGI_ADAPTER_DESC adapter_desc{};
         m_dxgi_adapter->GetDesc(&adapter_desc);
         
-        m_adapter_desc.name = wsts(adapter_desc.Description);
+        m_adapter_desc.name = lib::wsts(adapter_desc.Description);
         m_adapter_desc.local_memory = adapter_desc.DedicatedVideoMemory;
         m_adapter_desc.vendor_id = adapter_desc.VendorId;
         m_adapter_desc.device_id = adapter_desc.DeviceId;

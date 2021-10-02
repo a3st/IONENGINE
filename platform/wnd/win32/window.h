@@ -38,7 +38,7 @@ public:
 
 		m_wnd = CreateWindow(
 			wnd_class.lpszClassName,
-			stws(label).c_str(),
+			lib::stws(label).c_str(),
 			style_flags,
 			0, 100,
 			width, height,
@@ -94,7 +94,7 @@ public:
 	uint64 get_id() const override { return m_id; }
 
 	void show_cursor(const bool enable) override { m_cursor = enable; }
-	void set_label(const std::string& label) override { SetWindowText(m_wnd, stws(label).c_str()); }
+	void set_label(const std::string& label) override { SetWindowText(m_wnd, lib::stws(label).c_str()); }
 
 	void set_size(const uint32_t width, const uint32_t height) override { SetWindowPos(m_wnd, HWND_TOPMOST, 0, 0, width, height, 0); }
 	
