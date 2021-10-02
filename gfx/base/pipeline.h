@@ -8,6 +8,7 @@ class Pipeline {
 public:
 
     virtual ~Pipeline() = default;
+    
     virtual PipelineType get_type() const = 0;
 };
 

@@ -59,6 +59,15 @@ public:
         };
 
         binding_set->write(write);
+
+        gfx::RenderPassDesc render_pass_desc{};
+        auto render_pass = m_device->create_render_pass(render_pass_desc);
+
+        gfx::GraphicsPipelineDesc pipeline_desc{};
+        pipeline_desc.render_pass = render_pass.get();
+        pipeline_desc.layout = binding_set_layout.get();
+        pipeline_desc.shaders = { { gfx::ShaderType::Vertex, "s.bin" } };
+        auto pipeline = m_device->create_pipeline(pipeline_desc);
     }
 
     void tick() override {

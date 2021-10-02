@@ -45,6 +45,8 @@ public:
     virtual [[nodiscard]] std::unique_ptr<BindingSet> create_binding_set(BindingSetLayout* layout) = 0;
 
     virtual [[nodiscard]] std::unique_ptr<BindingSetLayout> create_binding_set_layout(const std::vector<BindingSetBinding>& bindings) = 0;
+
+    virtual [[nodiscard]] std::unique_ptr<RenderPass> create_render_pass(const RenderPassDesc& render_pass_desc) = 0;
 };
 
 }

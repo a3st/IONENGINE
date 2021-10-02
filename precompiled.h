@@ -27,6 +27,7 @@
 
 #include "cpputils.h"
 #include "lib/format.h"
+#include "lib/expected.h"
 
 namespace ionengine {
 
