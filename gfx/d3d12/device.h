@@ -30,10 +30,6 @@ public:
         m_adapter_desc.device_id = adapter_desc.DeviceId;
 
         THROW_IF_FAILED(D3D12CreateDevice(m_dxgi_adapter.get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device4), m_d3d12_device.put_void()));
-    
-        m_command_queues[CommandListType::Graphics] = nullptr;
-        m_command_queues[CommandListType::Copy] = nullptr;
-        m_command_queues[CommandListType::Compute] = nullptr;
 
         D3D12_COMMAND_QUEUE_DESC queue_desc{};
         queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
@@ -136,6 +132,10 @@ public:
 
     std::unique_ptr<RenderPass> create_render_pass(const RenderPassDesc& render_pass_desc) override {
         return std::make_unique<D3DRenderPass>(render_pass_desc);
+    }
+
+    std::unique_ptr<FrameBuffer> create_frame_buffer(const FrameBufferDesc frame_buffer_desc) override {
+        return std::make_unique<D3DFrameBuffer>(frame_buffer_desc);
     }
 
     void present() override {

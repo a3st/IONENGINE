@@ -7,7 +7,7 @@ namespace ionengine::gfx {
 class D3DFrameBuffer : public FrameBuffer {
 public:
 
-    D3DFrameBuffer(ID3D12Device4* d3d12_device, const FrameBufferDesc& frame_buffer_desc) : m_desc(frame_buffer_desc) {
+    D3DFrameBuffer(const FrameBufferDesc& frame_buffer_desc) : m_desc(frame_buffer_desc) {
 
     }
 

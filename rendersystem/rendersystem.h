@@ -64,9 +64,15 @@ public:
         auto render_pass = m_device->create_render_pass(render_pass_desc);
 
         gfx::GraphicsPipelineDesc pipeline_desc{};
+        pipeline_desc.vertex_inputs = {
+            { "POSITION", 0, gfx::Format::RGB32float, 0, 0 }
+        };
         pipeline_desc.render_pass = render_pass.get();
         pipeline_desc.layout = binding_set_layout.get();
-        pipeline_desc.shaders = { { gfx::ShaderType::Vertex, "s.bin" } };
+        pipeline_desc.shaders = { 
+            { gfx::ShaderType::Vertex, "shaders/pc/basic_vert.bin" },
+            { gfx::ShaderType::Pixel, "shaders/pc/basic_frag.bin" },
+        };
         auto pipeline = m_device->create_pipeline(pipeline_desc);
     }
 

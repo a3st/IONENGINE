@@ -86,6 +86,9 @@ public:
         resource_desc.flags = resource_flags;
 
         m_desc = resource_desc;
+        
+        m_memory_ptr = {};
+        m_memory_type = {};
     }
 
     ~D3DResource() {

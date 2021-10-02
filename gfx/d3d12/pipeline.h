@@ -114,7 +114,6 @@ public:
         graphics_pipeline_desc.RasterizerState = rasterizer_desc;
         graphics_pipeline_desc.DepthStencilState = depth_stencil_desc;
         graphics_pipeline_desc.BlendState = blend_desc;
-
         
         auto read_shader_file = [](const std::filesystem::path& shader_path) -> lib::Expected<std::vector<byte>, std::string> {
 
@@ -166,7 +165,7 @@ public:
 
         std::memcpy(graphics_pipeline_desc.RTVFormats, rtv_formats.data(), rtv_formats.size() * sizeof(DXGI_FORMAT));
         graphics_pipeline_desc.NumRenderTargets = static_cast<uint32>(rtv_formats.size());
-        graphics_pipeline_desc.DSVFormat = static_cast<DXGI_FORMAT>(render_pass_desc.depth_stencil.format);
+        graphics_pipeline_desc.DSVFormat = dxgi_format_to_gfx_enum(render_pass_desc.depth_stencil.format);
         graphics_pipeline_desc.SampleDesc = sample_desc;
         
         THROW_IF_FAILED(d3d12_device->CreateGraphicsPipelineState(&graphics_pipeline_desc, __uuidof(ID3D12PipelineState), m_d3d12_pipeline_state.put_void()));
