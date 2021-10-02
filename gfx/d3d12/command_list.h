@@ -26,21 +26,24 @@ public:
         THROW_IF_FAILED(m_d3d12_command_list->Close());
     }
 
-    /*void bind_pipeline(Pipeline& pipeline) override {
+    void bind_pipeline(Pipeline* pipeline) override {
 
-        m_binded_pipeline = static_cast<D3DPipeline&>(pipeline);
+        assert(pipeline && "pointer to pipeline is null");
 
-        if(m_pipeline.value().get().get_type() == PipelineType::Graphics) {
+        m_current_pipeline = static_cast<D3DPipeline*>(pipeline);
 
-            m_d3d12_command_list->SetGraphicsRootSignature(m_pipeline.value().get().get_d3d12_root_signature().get());
-            m_d3d12_command_list->SetPipelineState(m_pipeline.value().get().get_d3d12_pipeline_state().get());
+        D3DBindingSetLayout* d3d_layout = static_cast<D3DBindingSetLayout*>(m_current_pipeline->get_binding_set_layout());
+
+        if(m_current_pipeline->get_type() == PipelineType::Graphics) {
+
+            m_d3d12_command_list->SetGraphicsRootSignature(d3d_layout->get_d3d12_root_signature());
+            m_d3d12_command_list->SetPipelineState(m_current_pipeline->get_d3d12_pipeline_state());
             m_d3d12_command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
         } else {
 
-            
+            m_d3d12_command_list->SetComputeRootSignature(d3d_layout->get_d3d12_root_signature());
         }
-    }*/
+    }
     
     void set_viewport(const int32 x, const int32 y, const uint32 width, const uint32 height) override {
 
@@ -186,6 +189,8 @@ private:
 
     winrt::com_ptr<ID3D12CommandAllocator> m_d3d12_command_allocator;
     winrt::com_ptr<ID3D12GraphicsCommandList4> m_d3d12_command_list;
+
+    D3DPipeline* m_current_pipeline;
 };
 
 }

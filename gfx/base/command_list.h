@@ -18,7 +18,7 @@ public:
         @brief Bind pipeline to command list
         @param pipeline reference to Pipeline object
     */
-    //virtual void bind_pipeline(Pipeline& pipeline) = 0;
+    virtual void bind_pipeline(Pipeline* pipeline) = 0;
 
     /**
         @brief Close command list

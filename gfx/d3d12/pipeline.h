@@ -105,10 +105,12 @@ public:
         DXGI_SAMPLE_DESC sample_desc{};
         sample_desc.Count = render_pass_desc.sample_count;
 
+        m_layout = static_cast<D3DBindingSetLayout*>(pipeline_desc.layout);
+
         // Graphics Pipeline State Description
         // Description of the pipeline
         D3D12_GRAPHICS_PIPELINE_STATE_DESC graphics_pipeline_desc{};
-        graphics_pipeline_desc.pRootSignature = static_cast<D3DBindingSetLayout*>(pipeline_desc.layout)->get_d3d12_root_signature();
+        graphics_pipeline_desc.pRootSignature = m_layout->get_d3d12_root_signature();
         graphics_pipeline_desc.InputLayout = input_layout_desc;
         graphics_pipeline_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
         graphics_pipeline_desc.RasterizerState = rasterizer_desc;
@@ -177,11 +179,15 @@ public:
 
     PipelineType get_type() const override { return m_type; }
 
+    BindingSetLayout* get_binding_set_layout() override { return static_cast<D3DBindingSetLayout*>(m_layout); }
+
     ID3D12PipelineState* get_d3d12_pipeline_state() { return m_d3d12_pipeline_state.get(); }
 
 private:
     
     winrt::com_ptr<ID3D12PipelineState> m_d3d12_pipeline_state;
+
+    D3DBindingSetLayout* m_layout;
 
     PipelineType m_type;
 };

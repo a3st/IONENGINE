@@ -15,10 +15,8 @@ public:
         switch(m_type) {
 
             case ViewType::RenderTarget: {
-                /*auto& resource_desc = std::get<D3D12_RESOURCE_DESC>(m_resource.get().get_d3d12_desc());
-
                 D3D12_RENDER_TARGET_VIEW_DESC rtv_desc{};
-                rtv_desc.Format = resource_desc.Format;
+                rtv_desc.Format = resource->get_d3d12_desc().Format;
                 
                 switch(view_desc.dimension) {
                     case ViewDimension::Texture1D: {
@@ -55,14 +53,17 @@ public:
                     default: assert(false && "passed unsupported view dimension"); break;
                 }
 
-                m_d3d12_device.get()->CreateRenderTargetView(m_resource.get().get_d3d12_resource().get(), &rtv_desc, m_d3d12_cpu_descriptor);*/
+                D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
+                    m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
+                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(m_type))
+                };
+
+                m_d3d12_device->CreateRenderTargetView(m_resource->get_d3d12_resource(), &rtv_desc, cpu_handle);
                 break;
             }
             case ViewType::DepthStencil: {
-                /*auto& resource_desc = std::get<D3D12_RESOURCE_DESC>(m_resource.get().get_d3d12_desc());
-
                 D3D12_DEPTH_STENCIL_VIEW_DESC dsv_desc{};
-                dsv_desc.Format = resource_desc.Format;
+                dsv_desc.Format = resource->get_d3d12_desc().Format;
                 
                 switch(view_desc.dimension) {
                     case ViewDimension::Texture1D: {
@@ -92,7 +93,12 @@ public:
                     default: assert(false && "passed unsupported view dimension"); break;
                 }
 
-                m_d3d12_device.get()->CreateDepthStencilView(m_resource.get().get_d3d12_resource().get(), &dsv_desc, m_d3d12_cpu_descriptor);*/
+                D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
+                    m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
+                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(m_type))
+                };
+
+                m_d3d12_device->CreateDepthStencilView(m_resource->get_d3d12_resource(), &dsv_desc, cpu_handle);
                 break;
             }
             case ViewType::ConstantBuffer: {

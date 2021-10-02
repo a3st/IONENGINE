@@ -10,6 +10,8 @@ public:
     virtual ~Pipeline() = default;
     
     virtual PipelineType get_type() const = 0;
+
+    virtual BindingSetLayout* get_binding_set_layout() = 0;
 };
 
 }
