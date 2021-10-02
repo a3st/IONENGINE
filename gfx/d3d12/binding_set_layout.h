@@ -7,10 +7,15 @@ namespace ionengine::gfx {
 class D3DBindingSetLayout : public BindingSetLayout  {
 public:
 
+	struct Key {
+		D3D12_DESCRIPTOR_HEAP_TYPE heap_type;
+		D3D12_DESCRIPTOR_RANGE range;
+		D3D12_SHADER_VISIBILITY shader_visibility;
+	};
+
     D3DBindingSetLayout(ID3D12Device4* d3d12_device, const std::vector<BindingSetBinding>& bindings) {
 
-        using Key = std::pair<D3D12_DESCRIPTOR_HEAP_TYPE, ShaderType>;
-		std::map<Key, std::vector<D3D12_DESCRIPTOR_RANGE>> ranges;
+		std::vector<Key> ranges;
 
 		for(auto& binding : bindings) {
 			
@@ -21,7 +26,7 @@ public:
 			range.RegisterSpace = binding.space;
 			range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-			ranges[{ d3d12_descriptor_heap_type_to_gfx_enum(binding.view_type), binding.shader_type }].emplace_back(range);
+			ranges.emplace_back(Key { d3d12_descriptor_heap_type_to_gfx_enum(binding.view_type), range, d3d12_shader_visibility_to_gfx_enum(binding.shader_type) });
 		}
 
 		std::map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32> offsets;
@@ -34,19 +39,19 @@ public:
 			
 			D3D12_ROOT_PARAMETER parameter{};
 			parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-			parameter.DescriptorTable.NumDescriptorRanges = static_cast<uint32>(range.second.size());
-			parameter.DescriptorTable.pDescriptorRanges = range.second.data();
-			parameter.ShaderVisibility = d3d12_shader_visibility_to_gfx_enum(range.first.second);
+			parameter.DescriptorTable.NumDescriptorRanges = 1;
+			parameter.DescriptorTable.pDescriptorRanges = &range.range;
+			parameter.ShaderVisibility = range.shader_visibility;
 
 			parameters.emplace_back(parameter);
 
 			D3DDescriptorTable descriptor_table{};
-			descriptor_table.heap_type = range.first.first;
-			descriptor_table.count = static_cast<uint32>(range.second.size());
+			descriptor_table.heap_type = range.heap_type;
+			descriptor_table.count = static_cast<uint32>(range.range.NumDescriptors);
 
-			m_descriptor_tables.emplace_back(offsets[range.first.first], descriptor_table);
+			m_descriptor_tables.emplace_back(offsets[range.heap_type], descriptor_table);
 
-			offsets[range.first.first] += descriptor_table.count;
+			offsets[range.heap_type] += descriptor_table.count;
 		}
 
         D3D12_ROOT_SIGNATURE_DESC root_desc{};

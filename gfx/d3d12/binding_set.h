@@ -20,28 +20,22 @@ public:
 
         if(descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] > 0) {
             auto d3d12_heap = create_heap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
-            auto heap = m_descriptor_heaps.emplace(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3DDescriptorHeap { d3d12_heap, descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] });
-
-            heap.first->second.descriptor_data.resize(descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
-            std::memset(heap.first->second.descriptor_data.data(), 0x0, sizeof(uint8) * descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+            m_descriptor_heaps.emplace(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, d3d12_heap);
         }
 
         if(descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] > 0) {
             auto d3d12_heap = create_heap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER]);
-            auto heap = m_descriptor_heaps.emplace(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3DDescriptorHeap { d3d12_heap, descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] });
-
-            heap.first->second.descriptor_data.resize(descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER]);
-            std::memset(heap.first->second.descriptor_data.data(), 0x0, sizeof(uint8) * descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER]);
+            m_descriptor_heaps.emplace(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, d3d12_heap);
         }
     }
 
-    void write(const WriteBindingSet& write_set) override {
+    void write(const WriteBindingSet& write_binding_set) override {
 
         auto& descriptor_tables = m_layout->get_descriptor_tables();
 
-        for(uint32 i = 0; i < write_set.count; ++i) {
+        for(uint32 i = 0; i < write_binding_set.count; ++i) {
 
-            auto d3d_view = static_cast<D3DView*>(write_set.views[i]);
+            auto d3d_view = static_cast<D3DView*>(write_binding_set.views[i]);
             D3D12_DESCRIPTOR_HEAP_TYPE heap_type = d3d12_descriptor_heap_type_to_gfx_enum(d3d_view->get_type());
             
             D3D12_CPU_DESCRIPTOR_HANDLE src_handle = {
@@ -50,11 +44,11 @@ public:
             };
 
             D3D12_CPU_DESCRIPTOR_HANDLE dst_handle = {
-                m_descriptor_heaps[heap_type].d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr +
-                1
+                m_descriptor_heaps[heap_type]->GetCPUDescriptorHandleForHeapStart().ptr +
+                    descriptor_tables[write_binding_set.slot].first * m_d3d12_device->GetDescriptorHandleIncrementSize(heap_type) 
             };
 
-            m_d3d12_device->CopyDescriptorsSimple(1, dst_handle, src_handle, heap_type); 
+            m_d3d12_device->CopyDescriptorsSimple(descriptor_tables[write_binding_set.slot].second.count, dst_handle, src_handle, heap_type);
         }
     }
 
@@ -63,8 +57,8 @@ public:
         auto& descriptor_tables = m_layout->get_descriptor_tables();
 
 		std::vector<ID3D12DescriptorHeap*> d3d12_descriptor_heaps;
-		for(uint32 i = 0; i < descriptor_tables.size(); ++i) {
-			d3d12_descriptor_heaps.emplace_back(m_descriptor_heaps[descriptor_tables[i].second.heap_type].d3d12_heap.get());
+		for(auto& descriptor_table : descriptor_tables) {
+			d3d12_descriptor_heaps.emplace_back(m_descriptor_heaps[descriptor_table.second.heap_type].get());
 		}
 
 		if(!d3d12_descriptor_heaps.empty()) {
@@ -72,9 +66,8 @@ public:
 		}
 
 		for(uint32 i = 0; i < descriptor_tables.size(); ++i) {
-			
             D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle = {
-                m_descriptor_heaps[descriptor_tables[i].second.heap_type].d3d12_heap->GetGPUDescriptorHandleForHeapStart().ptr + 
+                m_descriptor_heaps[descriptor_tables[i].second.heap_type]->GetGPUDescriptorHandleForHeapStart().ptr + 
                     descriptor_tables[i].first * m_d3d12_device->GetDescriptorHandleIncrementSize(descriptor_tables[i].second.heap_type)
             };
 
@@ -82,7 +75,7 @@ public:
 				command_list->SetComputeRootDescriptorTable(i, gpu_handle);
 			} else {
 				command_list->SetGraphicsRootDescriptorTable(i, gpu_handle);
-			}	
+			}
 		}
     }
 
@@ -102,9 +95,9 @@ private:
         return d3d12_heap;
     }
 
-    std::map<D3D12_DESCRIPTOR_HEAP_TYPE, D3DDescriptorHeap> m_descriptor_heaps;
-
     D3DBindingSetLayout* m_layout;
+
+    std::map<D3D12_DESCRIPTOR_HEAP_TYPE, winrt::com_ptr<ID3D12DescriptorHeap>> m_descriptor_heaps;
 };
 
 }

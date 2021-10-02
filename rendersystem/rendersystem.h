@@ -32,7 +32,7 @@ public:
         {
             gfx::ResourceDesc res_desc{};
             res_desc.dimension = gfx::ViewDimension::Buffer;
-            res_desc.width = 16_mb;
+            res_desc.width = 64_kb;
             res_desc.height = 1;
             res_desc.mip_levels = 1;
             res_desc.array_size = 1;
@@ -43,6 +43,22 @@ public:
         gfx::ViewDesc view_desc{};
         view_desc.buffer_size = resources[0]->get_desc().width;
         auto view = m_device->create_view(gfx::ViewType::ConstantBuffer, resources[0].get(), view_desc);
+
+        std::vector<gfx::BindingSetBinding> bindings = {
+            { gfx::ShaderType::Vertex, gfx::ViewType::ConstantBuffer, 0, 0, 1 }
+        };
+
+        auto binding_set_layout = m_device->create_binding_set_layout(bindings);
+        auto binding_set = m_device->create_binding_set(binding_set_layout.get());
+
+        gfx::WriteBindingSet write = {
+            0,
+            1,
+            gfx::ViewType::ConstantBuffer,
+            { { view.get() } }
+        };
+
+        binding_set->write(write);
     }
 
     void tick() override {

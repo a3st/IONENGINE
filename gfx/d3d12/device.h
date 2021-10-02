@@ -130,6 +130,10 @@ public:
         return std::make_unique<D3DBindingSet>(m_d3d12_device.get(), static_cast<D3DBindingSetLayout*>(layout));
     }
 
+    std::unique_ptr<BindingSetLayout> create_binding_set_layout(const std::vector<BindingSetBinding>& bindings) override {
+        return std::make_unique<D3DBindingSetLayout>(m_d3d12_device.get(), bindings);
+    }
+
     void present() override {
         THROW_IF_FAILED(m_dxgi_swapchain->Present(0, 0));
     }

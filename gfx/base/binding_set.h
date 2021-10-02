@@ -9,7 +9,7 @@ public:
 
     virtual ~BindingSet() = default;
 
-    virtual void write(const WriteBindingSet& write_set) = 0;
+    virtual void write(const WriteBindingSet& write_binding_set) = 0;
 };
 
 }
