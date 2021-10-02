@@ -58,7 +58,7 @@ public:
 
                 D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
                     m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
-                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(m_type))
+                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
                 };
 
                 m_d3d12_device->CreateRenderTargetView(m_resource->get_d3d12_resource(), &rtv_desc, cpu_handle);
@@ -98,7 +98,7 @@ public:
 
                 D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
                     m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
-                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(m_type))
+                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
                 };
 
                 m_d3d12_device->CreateDepthStencilView(m_resource->get_d3d12_resource(), &dsv_desc, cpu_handle);
@@ -111,7 +111,7 @@ public:
 
                 D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
                     m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
-                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(m_type))
+                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
                 };
 
                 m_d3d12_device->CreateConstantBufferView(&cbv_view, cpu_handle);
@@ -130,7 +130,7 @@ public:
 
         D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
             m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
-                m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(m_type))
+                m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
         };
 
         m_d3d12_device->CreateSampler(&sampler->get_d3d12_desc(), cpu_handle);

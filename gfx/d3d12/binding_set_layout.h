@@ -22,13 +22,13 @@ public:
 		for(auto& binding : bindings) {
 			
 			D3D12_DESCRIPTOR_RANGE range{};
-			range.RangeType = d3d12_descriptor_range_type_to_gfx_enum(binding.view_type);
+			range.RangeType = gfx_to_d3d12_descriptor_range_type(binding.view_type);
 			range.NumDescriptors = binding.count;
 			range.BaseShaderRegister = binding.slot;
 			range.RegisterSpace = binding.space;
 			range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-			ranges.emplace_back(Key { d3d12_descriptor_heap_type_to_gfx_enum(binding.view_type), range, d3d12_shader_visibility_to_gfx_enum(binding.shader_type) });
+			ranges.emplace_back(Key { gfx_to_d3d12_descriptor_heap_type(binding.view_type), range, gfx_to_d3d12_shader_visibility(binding.shader_type) });
 		}
 
 		std::map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32> offsets;

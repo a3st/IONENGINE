@@ -10,11 +10,13 @@ public:
     D3DResource(ID3D12Device4* d3d12_device, const MemoryType memory_type, const ResourceType resource_type, const ResourceDesc& resource_desc) 
         : m_d3d12_device(d3d12_device), m_memory_type(memory_type), m_type(resource_type), m_desc(resource_desc) {
 
+        assert(d3d12_device && "pointer to d3d12_device is null");
+
         switch(resource_type) {
             case ResourceType::Buffer:
             case ResourceType::Texture: {
                 D3D12_RESOURCE_DESC d3d12_resource_desc{};
-                d3d12_resource_desc.Dimension = d3d12_resource_dimension_to_gfx_enum(resource_desc.dimension);
+                d3d12_resource_desc.Dimension = gfx_to_d3d12_resource_dimension(resource_desc.dimension);
                 d3d12_resource_desc.Alignment = 0;
                         
                 if(resource_desc.flags & ResourceFlags::ConstantBuffer) {
@@ -57,7 +59,7 @@ public:
                 m_memory_ptr.heap->d3d12_heap.get(),
                 m_memory_ptr.offset,
                 &m_d3d12_desc,
-                d3d12_resource_state_to_gfx_enum(resource_state),
+                gfx_to_d3d12_resource_state(resource_state),
                 nullptr,
                 __uuidof(ID3D12Resource), m_d3d12_resource.put_void()
             )
@@ -66,6 +68,8 @@ public:
 
     D3DResource(ID3D12Device4* d3d12_device, const ResourceType resource_type, const winrt::com_ptr<ID3D12Resource>& resource, const ResourceFlags resource_flags) 
         : m_d3d12_device(d3d12_device), m_type(resource_type), m_d3d12_resource(resource) {
+
+        assert(d3d12_device && "pointer to d3d12_device is null");
 
         m_d3d12_desc = m_d3d12_resource->GetDesc();
 

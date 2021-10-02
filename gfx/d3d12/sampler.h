@@ -10,11 +10,11 @@ public:
     D3DSampler(const SamplerDesc& sampler_desc) : m_desc(sampler_desc) {
 
         D3D12_SAMPLER_DESC d3d12_sampler_desc{};
-        d3d12_sampler_desc.Filter = d3d12_filter_to_gfx_enum(sampler_desc.filter);
-        d3d12_sampler_desc.AddressU = d3d12_texture_address_mode_to_gfx_enum(sampler_desc.mode);
-        d3d12_sampler_desc.AddressV = d3d12_texture_address_mode_to_gfx_enum(sampler_desc.mode);
-        d3d12_sampler_desc.AddressW = d3d12_texture_address_mode_to_gfx_enum(sampler_desc.mode);
-        d3d12_sampler_desc.ComparisonFunc = d3d12_comparison_func_to_gfx_enum(sampler_desc.func);
+        d3d12_sampler_desc.Filter = gfx_to_d3d12_filter(sampler_desc.filter);
+        d3d12_sampler_desc.AddressU = gfx_to_d3d12_texture_address_mode(sampler_desc.mode);
+        d3d12_sampler_desc.AddressV = gfx_to_d3d12_texture_address_mode(sampler_desc.mode);
+        d3d12_sampler_desc.AddressW = gfx_to_d3d12_texture_address_mode(sampler_desc.mode);
+        d3d12_sampler_desc.ComparisonFunc = gfx_to_d3d12_comparison_func(sampler_desc.func);
         d3d12_sampler_desc.MaxLOD = std::numeric_limits<float>::max();
         d3d12_sampler_desc.MaxAnisotropy = 1;
 

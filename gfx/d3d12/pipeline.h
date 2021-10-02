@@ -18,7 +18,7 @@ public:
             D3D12_INPUT_ELEMENT_DESC input_desc{};
             input_desc.SemanticName = vertex_input.semantic_name.c_str();
             input_desc.SemanticIndex = vertex_input.index;
-            input_desc.Format = dxgi_format_to_gfx_enum(vertex_input.format);
+            input_desc.Format = gfx_to_dxgi_format(vertex_input.format);
             input_desc.InputSlot = vertex_input.slot;
             input_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
             input_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
@@ -34,8 +34,8 @@ public:
         // Rasterizer Description
         // Description of pipeline rasterization
         D3D12_RASTERIZER_DESC rasterizer_desc{};
-        rasterizer_desc.FillMode = d3d12_fill_mode_to_gfx_enum(pipeline_desc.rasterizer.fill_mode);
-        rasterizer_desc.CullMode = d3d12_cull_mode_to_gfx_enum(pipeline_desc.rasterizer.cull_mode);
+        rasterizer_desc.FillMode = gfx_to_d3d12_fill_mode(pipeline_desc.rasterizer.fill_mode);
+        rasterizer_desc.CullMode = gfx_to_d3d12_cull_mode(pipeline_desc.rasterizer.cull_mode);
         rasterizer_desc.FrontCounterClockwise = false;
         rasterizer_desc.DepthBias = pipeline_desc.rasterizer.depth_bias;
         rasterizer_desc.DepthBiasClamp = 0.0f;
@@ -49,22 +49,22 @@ public:
         // Depth Stencil Description
         // Description of the depth and stencil of the pipeline
         D3D12_DEPTH_STENCILOP_DESC front_face_desc{};
-        front_face_desc.StencilFailOp = d3d12_stencil_op_to_gfx_enum(pipeline_desc.depth_stencil.front_face.fail_op);
-        front_face_desc.StencilPassOp = d3d12_stencil_op_to_gfx_enum(pipeline_desc.depth_stencil.front_face.pass_op);
-        front_face_desc.StencilDepthFailOp = d3d12_stencil_op_to_gfx_enum(pipeline_desc.depth_stencil.front_face.depth_fail_op);
-        front_face_desc.StencilFunc = d3d12_comparison_func_to_gfx_enum(pipeline_desc.depth_stencil.front_face.func);
+        front_face_desc.StencilFailOp = gfx_to_d3d12_stencil_op(pipeline_desc.depth_stencil.front_face.fail_op);
+        front_face_desc.StencilPassOp = gfx_to_d3d12_stencil_op(pipeline_desc.depth_stencil.front_face.pass_op);
+        front_face_desc.StencilDepthFailOp = gfx_to_d3d12_stencil_op(pipeline_desc.depth_stencil.front_face.depth_fail_op);
+        front_face_desc.StencilFunc = gfx_to_d3d12_comparison_func(pipeline_desc.depth_stencil.front_face.func);
 
         D3D12_DEPTH_STENCILOP_DESC back_face_desc{};
-        back_face_desc.StencilFailOp = d3d12_stencil_op_to_gfx_enum(pipeline_desc.depth_stencil.back_face.fail_op);
-        back_face_desc.StencilPassOp = d3d12_stencil_op_to_gfx_enum(pipeline_desc.depth_stencil.back_face.pass_op);
-        back_face_desc.StencilDepthFailOp = d3d12_stencil_op_to_gfx_enum(pipeline_desc.depth_stencil.back_face.depth_fail_op);
-        back_face_desc.StencilFunc = d3d12_comparison_func_to_gfx_enum(pipeline_desc.depth_stencil.back_face.func);
+        back_face_desc.StencilFailOp = gfx_to_d3d12_stencil_op(pipeline_desc.depth_stencil.back_face.fail_op);
+        back_face_desc.StencilPassOp = gfx_to_d3d12_stencil_op(pipeline_desc.depth_stencil.back_face.pass_op);
+        back_face_desc.StencilDepthFailOp = gfx_to_d3d12_stencil_op(pipeline_desc.depth_stencil.back_face.depth_fail_op);
+        back_face_desc.StencilFunc = gfx_to_d3d12_comparison_func(pipeline_desc.depth_stencil.back_face.func);
 
         D3D12_DEPTH_STENCIL_DESC depth_stencil_desc{};
         depth_stencil_desc.DepthEnable = pipeline_desc.depth_stencil.depth_test_enable;
         depth_stencil_desc.DepthWriteMask = pipeline_desc.depth_stencil.depth_write_enable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
         // depth_stencil_desc.DepthBoundsTestEnable = desc.depth_stencil.depth_bounds_test_enable;
-        depth_stencil_desc.DepthFunc = d3d12_comparison_func_to_gfx_enum(pipeline_desc.depth_stencil.depth_func);
+        depth_stencil_desc.DepthFunc = gfx_to_d3d12_comparison_func(pipeline_desc.depth_stencil.depth_func);
         depth_stencil_desc.StencilEnable = pipeline_desc.depth_stencil.stencil_enable;
         depth_stencil_desc.StencilReadMask = pipeline_desc.depth_stencil.stencil_read_mask;
         depth_stencil_desc.StencilWriteMask = pipeline_desc.depth_stencil.stencil_write_mask;
@@ -84,12 +84,12 @@ public:
             auto& render_target = blend_desc.RenderTarget[i];
 
             render_target.BlendEnable = pipeline_desc.blend.blend_enable;
-            render_target.BlendOp = d3d12_blend_op_to_gfx_enum(pipeline_desc.blend.blend_op);
-            render_target.SrcBlend = d3d12_blend_to_gfx_enum(pipeline_desc.blend.blend_src);
-            render_target.DestBlend = d3d12_blend_to_gfx_enum(pipeline_desc.blend.blend_dest);
-            render_target.BlendOpAlpha = d3d12_blend_op_to_gfx_enum(pipeline_desc.blend.blend_op_alpha);
-            render_target.SrcBlendAlpha = d3d12_blend_to_gfx_enum(pipeline_desc.blend.blend_src_alpha);
-            render_target.DestBlendAlpha = d3d12_blend_to_gfx_enum(pipeline_desc.blend.blend_dest_alpha);
+            render_target.BlendOp = gfx_to_d3d12_blend_op(pipeline_desc.blend.blend_op);
+            render_target.SrcBlend = gfx_to_d3d12_blend(pipeline_desc.blend.blend_src);
+            render_target.DestBlend = gfx_to_d3d12_blend(pipeline_desc.blend.blend_dest);
+            render_target.BlendOpAlpha = gfx_to_d3d12_blend_op(pipeline_desc.blend.blend_op_alpha);
+            render_target.SrcBlendAlpha = gfx_to_d3d12_blend(pipeline_desc.blend.blend_src_alpha);
+            render_target.DestBlendAlpha = gfx_to_d3d12_blend(pipeline_desc.blend.blend_dest_alpha);
             render_target.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
         }
 
@@ -100,7 +100,7 @@ public:
             if(render_pass_desc.colors[i].format == Format::Unknown) {
                 continue;
             }
-            rtv_formats[i] = dxgi_format_to_gfx_enum(render_pass_desc.colors[i].format);
+            rtv_formats[i] = gfx_to_dxgi_format(render_pass_desc.colors[i].format);
         }
 
         // Sample Description
@@ -169,7 +169,7 @@ public:
 
         std::memcpy(graphics_pipeline_desc.RTVFormats, rtv_formats.data(), rtv_formats.size() * sizeof(DXGI_FORMAT));
         graphics_pipeline_desc.NumRenderTargets = static_cast<uint32>(rtv_formats.size());
-        graphics_pipeline_desc.DSVFormat = dxgi_format_to_gfx_enum(render_pass_desc.depth_stencil.format);
+        graphics_pipeline_desc.DSVFormat = gfx_to_dxgi_format(render_pass_desc.depth_stencil.format);
         graphics_pipeline_desc.SampleDesc = sample_desc;
         
         THROW_IF_FAILED(d3d12_device->CreateGraphicsPipelineState(&graphics_pipeline_desc, __uuidof(ID3D12PipelineState), m_d3d12_pipeline_state.put_void()));

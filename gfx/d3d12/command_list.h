@@ -12,14 +12,14 @@ public:
         assert(d3d12_device && "pointer to d3d12_device is null");
         
         THROW_IF_FAILED(d3d12_device->CreateCommandAllocator(
-                d3d12_command_list_type_to_gfx_enum(command_list_type), 
+                gfx_to_d3d12_command_list_type(command_list_type), 
                 __uuidof(ID3D12CommandAllocator), m_d3d12_command_allocator.put_void()
             )
         );
 
         THROW_IF_FAILED(d3d12_device->CreateCommandList(
                 0, 
-                d3d12_command_list_type_to_gfx_enum(command_list_type), 
+                gfx_to_d3d12_command_list_type(command_list_type), 
                 m_d3d12_command_allocator.get(), 
                 nullptr, 
                 __uuidof(ID3D12GraphicsCommandList), m_d3d12_command_list.put_void()
@@ -80,8 +80,8 @@ public:
             resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
             resource_barrier.Transition.pResource = static_cast<D3DResource*>(barrier.resource)->get_d3d12_resource();
             resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-            resource_barrier.Transition.StateAfter = d3d12_resource_state_to_gfx_enum(barrier.after);
-            resource_barrier.Transition.StateBefore = d3d12_resource_state_to_gfx_enum(barrier.before);
+            resource_barrier.Transition.StateAfter = gfx_to_d3d12_resource_state(barrier.after);
+            resource_barrier.Transition.StateBefore = gfx_to_d3d12_resource_state(barrier.before);
 
             d3d12_barriers.emplace_back(resource_barrier);
         }
@@ -105,13 +105,13 @@ public:
         for(uint32 i = 0; i < colors_views.size(); ++i) {
 
             D3D12_RENDER_PASS_BEGINNING_ACCESS begin{};
-            begin.Type = d3d12_render_pass_begin_type_to_gfx_enum(render_pass_desc.colors[i].load_op);
+            begin.Type = gfx_to_d3d12_render_pass_begin_type(render_pass_desc.colors[i].load_op);
             
-            begin.Clear.ClearValue.Format = dxgi_format_to_gfx_enum(render_pass_desc.colors[i].format);
+            begin.Clear.ClearValue.Format = gfx_to_dxgi_format(render_pass_desc.colors[i].format);
             std::memcpy(&begin.Clear.ClearValue.Color[0], &clear_value_desc.colors[0], sizeof(ClearValueColor));
 
             D3D12_RENDER_PASS_ENDING_ACCESS end{};
-            end.Type = d3d12_render_pass_end_type_to_gfx_enum(render_pass_desc.colors[i].store_op);
+            end.Type = gfx_to_d3d12_render_pass_end_type(render_pass_desc.colors[i].store_op);
 
             D3D12_RENDER_PASS_RENDER_TARGET_DESC render_pass_render_target;
 
@@ -119,7 +119,7 @@ public:
 
             D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = {
                 d3d_view->get_descriptor_ptr().heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
-                    d3d_view->get_descriptor_ptr().offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(d3d_view->get_type()))
+                    d3d_view->get_descriptor_ptr().offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(d3d_view->get_type()))
             };
 
             render_pass_render_target.cpuDescriptor = cpu_handle;
@@ -133,27 +133,27 @@ public:
         if(depth_stencil_view) {
 
             D3D12_RENDER_PASS_BEGINNING_ACCESS depth_begin{};
-            depth_begin.Type = d3d12_render_pass_begin_type_to_gfx_enum(render_pass_desc.depth_stencil.depth_load_op);
+            depth_begin.Type = gfx_to_d3d12_render_pass_begin_type(render_pass_desc.depth_stencil.depth_load_op);
             depth_begin.Clear.ClearValue.Format = static_cast<DXGI_FORMAT>(render_pass_desc.depth_stencil.format);
             depth_begin.Clear.ClearValue.DepthStencil.Depth = clear_value_desc.depth;
 
             D3D12_RENDER_PASS_ENDING_ACCESS depth_end{};
-            depth_end.Type = d3d12_render_pass_end_type_to_gfx_enum(render_pass_desc.depth_stencil.depth_store_op);
+            depth_end.Type = gfx_to_d3d12_render_pass_end_type(render_pass_desc.depth_stencil.depth_store_op);
 
             D3D12_RENDER_PASS_BEGINNING_ACCESS stencil_begin{};
-            stencil_begin.Type = d3d12_render_pass_begin_type_to_gfx_enum(render_pass_desc.depth_stencil.stencil_load_op);
+            stencil_begin.Type = gfx_to_d3d12_render_pass_begin_type(render_pass_desc.depth_stencil.stencil_load_op);
 
             stencil_begin.Clear.ClearValue.Format = static_cast<DXGI_FORMAT>(render_pass_desc.depth_stencil.format);
             stencil_begin.Clear.ClearValue.DepthStencil.Stencil = clear_value_desc.stencil;
 
             D3D12_RENDER_PASS_ENDING_ACCESS stencil_end{};
-            stencil_end.Type = d3d12_render_pass_end_type_to_gfx_enum(render_pass_desc.depth_stencil.stencil_store_op);
+            stencil_end.Type = gfx_to_d3d12_render_pass_end_type(render_pass_desc.depth_stencil.stencil_store_op);
 
             auto d3d_view = static_cast<D3DView*>(depth_stencil_view);
 
             D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = {
                 d3d_view->get_descriptor_ptr().heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
-                    d3d_view->get_descriptor_ptr().offset * m_d3d12_device->GetDescriptorHandleIncrementSize(d3d12_descriptor_heap_type_to_gfx_enum(d3d_view->get_type()))
+                    d3d_view->get_descriptor_ptr().offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(d3d_view->get_type()))
             };
 
             render_pass_depth_stencil.cpuDescriptor = cpu_handle;
@@ -191,7 +191,7 @@ public:
         auto d3d_resource = static_cast<D3DResource*>(resource);
 
         D3D12_INDEX_BUFFER_VIEW index_view{};
-        index_view.Format = dxgi_format_to_gfx_enum(format);
+        index_view.Format = gfx_to_dxgi_format(format);
         index_view.BufferLocation = d3d_resource->get_d3d12_resource()->GetGPUVirtualAddress();
         index_view.SizeInBytes = static_cast<uint32>(d3d_resource->get_d3d12_desc().Width);
         m_d3d12_command_list->IASetIndexBuffer(&index_view);

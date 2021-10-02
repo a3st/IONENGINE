@@ -39,7 +39,7 @@ public:
         for(uint32 i = 0; i < write_binding_set.count; ++i) {
 
             auto d3d_view = static_cast<D3DView*>(write_binding_set.views[i]);
-            D3D12_DESCRIPTOR_HEAP_TYPE heap_type = d3d12_descriptor_heap_type_to_gfx_enum(d3d_view->get_type());
+            D3D12_DESCRIPTOR_HEAP_TYPE heap_type = gfx_to_d3d12_descriptor_heap_type(d3d_view->get_type());
             
             D3D12_CPU_DESCRIPTOR_HANDLE src_handle = {
                 d3d_view->get_descriptor_ptr().heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr +
