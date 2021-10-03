@@ -7,6 +7,9 @@
 #include "lib/memory.h"
 #include "gfx/gfx.h"
 
+#include "frame_buffer_cache.h"
+#include "render_pass_cache.h"
+
 namespace ionengine {
 
 using namespace memory_literals;
