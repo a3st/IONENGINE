@@ -30,9 +30,11 @@ public:
 
     virtual void present() = 0;
 
-    virtual Resource* get_swapchain_resource(const uint32 resource_index) = 0;
+    virtual [[nodiscard]] std::unique_ptr<Resource> create_swapchain_resource(const uint32 buffer_index) = 0;
 
-    virtual uint32 get_swapchain_resource_index() const = 0;
+    virtual uint32 get_swapchain_buffer_index() const = 0;
+
+    virtual uint32 get_swapchain_buffer_size() const = 0;
 
     virtual [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) = 0;
 

@@ -19,6 +19,7 @@ public:
 
     RenderPassCache(gfx::Device* device) : m_device(device) {
 
+        assert(device && "pointer to device is null");
     }
 
     gfx::RenderPass* get_render_pass(const std::vector<gfx::RenderPassColorDesc>& colors, const std::optional<gfx::RenderPassDepthStencilDesc>& depth_stencil, const uint32 sample_count) {

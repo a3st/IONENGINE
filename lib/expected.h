@@ -4,11 +4,6 @@
 
 namespace ionengine::lib {
 
-// helper type for the visitor #4
-template<class... Ts> struct default_visitor : Ts... { using Ts::operator()...; };
-// explicit deduction guide (not needed as of C++20)
-template<class... Ts> default_visitor(Ts...) -> default_visitor<Ts...>;
-
 template<class T, class E>
 class Expected {
 public:
@@ -19,6 +14,15 @@ public:
 
     const std::variant<T, E>& get() const { return m_value; }
 
+    T value() {
+
+        if(auto result = std::get_if<T>(&m_value)) {
+            return *result;
+        } 
+        auto result = std::get_if<E>(&m_value);
+        throw std::runtime_error(*result);
+    }
+
 private:
 
     std::variant<T, E> m_value;
@@ -26,7 +30,22 @@ private:
 
 template<class T, class E>
 inline Expected<T, E> make_expected(const std::variant<T, E>& value) {
+    
     return Expected<T, E>(value);
+}
+
+template<class T, class E>
+void expected_result(
+    const Expected<T, E>& expected,
+    const std::function<void(const T&)> ok_func, 
+    const std::function<void(const E&)> err_func
+) {
+
+    if(auto result = std::get_if<T>(&expected.get())) {
+        ok_func(*result);
+    } else if(auto result = std::get_if<E>(&expected.get())) {
+        err_func(*result);
+    }
 }
 
 }

@@ -8,7 +8,7 @@ class D3DView : public View {
 public:
 
     D3DView(ID3D12Device4* d3d12_device, const ViewType view_type, D3DResource* resource, const ViewDesc& view_desc) 
-        : m_d3d12_device(d3d12_device), m_resource(resource), m_type(view_type), m_desc(view_desc) {
+        : m_d3d12_device(d3d12_device), m_type(view_type), m_desc(view_desc) {
 
         assert(d3d12_device && "pointer to d3d12_device is null");
         assert(resource && "pointer to resource is null");
@@ -61,7 +61,7 @@ public:
                         m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
                 };
 
-                m_d3d12_device->CreateRenderTargetView(m_resource->get_d3d12_resource(), &rtv_desc, cpu_handle);
+                m_d3d12_device->CreateRenderTargetView(resource->get_d3d12_resource(), &rtv_desc, cpu_handle);
                 break;
             }
             case ViewType::DepthStencil: {
@@ -101,12 +101,12 @@ public:
                         m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
                 };
 
-                m_d3d12_device->CreateDepthStencilView(m_resource->get_d3d12_resource(), &dsv_desc, cpu_handle);
+                m_d3d12_device->CreateDepthStencilView(resource->get_d3d12_resource(), &dsv_desc, cpu_handle);
                 break;
             }
             case ViewType::ConstantBuffer: {
                 D3D12_CONSTANT_BUFFER_VIEW_DESC cbv_view{};
-                cbv_view.BufferLocation = m_resource->get_d3d12_resource()->GetGPUVirtualAddress();
+                cbv_view.BufferLocation = resource->get_d3d12_resource()->GetGPUVirtualAddress();
                 cbv_view.SizeInBytes = static_cast<uint32>(m_desc.buffer_size);
 
                 D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
@@ -121,7 +121,7 @@ public:
     }
 
     D3DView(ID3D12Device4* d3d12_device, D3DSampler* sampler) 
-        : m_d3d12_device(d3d12_device), m_sampler(sampler), m_type(ViewType::Sampler) {
+        : m_d3d12_device(d3d12_device), m_type(ViewType::Sampler) {
 
         assert(d3d12_device && "pointer to d3d12_device is null");
         assert(sampler && "pointer to sampler is null");
@@ -147,22 +147,16 @@ public:
 
     const ViewDesc& get_desc() const override { return m_desc; }
 
-    Resource* get_resource() const override { return m_resource; }
-
-    Sampler* get_sampler() const override { return m_sampler; }
-
     const D3DDescriptorPtr& get_descriptor_ptr() const { return m_descriptor_ptr; }
 
 private:
 
     ID3D12Device4* m_d3d12_device;
 
-    D3DResource* m_resource;
-    D3DSampler* m_sampler;
-
     D3DDescriptorPtr m_descriptor_ptr;
 
     ViewType m_type;
+
     ViewDesc m_desc;
 };
 

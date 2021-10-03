@@ -28,7 +28,7 @@ public:
                 d3d12_resource_desc.Height = resource_desc.height;
                 d3d12_resource_desc.DepthOrArraySize = resource_desc.array_size;
                 d3d12_resource_desc.MipLevels = resource_desc.mip_levels;
-                d3d12_resource_desc.Format = static_cast<DXGI_FORMAT>(resource_desc.format);
+                d3d12_resource_desc.Format = gfx_to_dxgi_format(resource_desc.format);
                 d3d12_resource_desc.SampleDesc.Count = resource_desc.sample_count;
                 d3d12_resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
                         
@@ -81,7 +81,7 @@ public:
             case D3D12_RESOURCE_DIMENSION_TEXTURE3D: resource_desc.dimension = ViewDimension::Texture3D; break;
             case D3D12_RESOURCE_DIMENSION_UNKNOWN: resource_desc.dimension = ViewDimension::Unknown; break;
         }
-        resource_desc.format = static_cast<Format>(m_d3d12_desc.Format);
+        resource_desc.format = dxgi_format_to_gfx(m_d3d12_desc.Format);
         resource_desc.width = m_d3d12_desc.Width;
         resource_desc.height = m_d3d12_desc.Height;
         resource_desc.mip_levels = m_d3d12_desc.MipLevels;

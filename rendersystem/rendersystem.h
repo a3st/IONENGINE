@@ -9,8 +9,14 @@
 
 #include "frame_buffer_cache.h"
 #include "render_pass_cache.h"
+#include "pipeline_cache.h"
 
-namespace ionengine {
+#include "texture_manager.h"
+#include "render_texture_manager.h"
+
+#include "framegraph.h"
+
+namespace ionengine::rendersystem {
 
 using namespace memory_literals;
 
@@ -23,13 +29,20 @@ public:
 
         m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
 
+        m_render_texture_manager = std::make_unique<RenderTextureManager>(m_device.get());
+        m_texture_manager = std::make_unique<TextureManager>(m_device.get());
+
         gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
         std::cout << lib::format<char>("Adapter name: {}, Local memory size: {}, Adapter Id: {}, Vendor Id: {}", 
             adapter_desc.name, adapter_desc.local_memory, adapter_desc.device_id, adapter_desc.vendor_id) << std::endl;
 
         window->set_label(lib::format<char>("IONENGINE - {}", gfx::api_name));
 
-        std::unique_ptr<gfx::Resource> resources[10];
+        auto texture = m_render_texture_manager->create_render_texture(
+            static_cast<uint64>(RenderTexture::Alias::Swapchain_0)).value();
+        texture = texture->create_from_swapchain(0).value();
+
+        /*std::unique_ptr<gfx::Resource> resources[10];
 
         for(uint32 i = 0; i < 1; ++i)
         {
@@ -76,7 +89,60 @@ public:
             { gfx::ShaderType::Vertex, "shaders/pc/basic_vert.bin" },
             { gfx::ShaderType::Pixel, "shaders/pc/basic_frag.bin" },
         };
-        auto pipeline = m_device->create_pipeline(pipeline_desc);
+        auto pipeline = m_device->create_pipeline(pipeline_desc);*/
+
+
+
+
+
+
+        m_framegraph = std::make_unique<FrameGraph>(m_device.get());
+
+        struct BasicPassData {
+            FrameGraphResource output_swapchain;
+        };
+
+        auto basic_pass = m_framegraph->add_pass<BasicPassData>(
+            "BasicPass", 
+            [&](RenderPassBuilder* builder, BasicPassData& data) {
+                data.output_swapchain = builder->create(FrameGraphResourceType::Attachment, gfx::Format::Unknown, 800, 600, FrameGraphResourceFlags::Swapchain);
+            },
+            [=](RenderPassContext* context, const BasicPassData& data) {
+
+            }
+        );
+
+        /*struct AsyncPassData {
+            FrameGraphResource output_swapchain;
+        };
+
+        auto async_pass = m_framegraph->add_pass<AsyncPassData>(
+            "AsyncPass",
+            [&](AsyncPassBuilder* builder, AsyncPassData& data) {
+
+            },
+            [=](AsyncPassContext* context, const AsyncPassData& data) {
+
+            }
+        );
+
+        m_framegraph->wait_pass(async_pass);
+
+        struct FinalPassData {
+            FrameGraphResource output_swapchain;
+        };
+
+        auto final_pass = m_framegraph->add_pass<FinalPassData>(
+            "AsyncPass", 
+            [&](RenderPassBuilder* builder, FinalPassData& data) {
+                data.output_swapchain = builder->create();
+            },
+            [=](RenderPassContext* context, const FinalPassData& data) {
+
+            }
+        );*/
+
+        m_framegraph->compile();
     }
 
     void tick() override {
@@ -90,88 +156,11 @@ public:
 private:
 
     std::unique_ptr<gfx::Device> m_device;
+
+    std::unique_ptr<FrameGraph> m_framegraph;
+
+    std::unique_ptr<RenderTextureManager> m_render_texture_manager;
+    std::unique_ptr<TextureManager> m_texture_manager;
 };
 
 }
-
-
-/*#include "renderer/api/api.h"
-#include "renderer/fg/frame_graph.h"
-#include "renderer/quad_renderer.h"
-
-#include "lib/memory.h"
-
-namespace ionengine {
-
-using namespace memory_literals;
-
-class RenderSystem : public EngineSystem {
-public:
-
-    RenderSystem(platform::wnd::Window* window) : m_window(window), m_buffer_count(2) {
-
-        std::cout << format<char>("RenderSystem ({} API) initialized", renderer::api::get_api_name()) << std::endl;
-        m_instance = renderer::api::create_unique_instance();
-
-        window->set_label(format<char>("IONENGINE - {}", renderer::api::get_api_name()));
-
-        auto adapters = m_instance->enumerate_adapters();
-        m_adapter = std::move(adapters[0]);
-        std::cout << format<char>("Selecting default 0 adapter") << std::endl;
-        
-        std::cout <<
-                format<char>(
-                    "Vendor Id: {}\nDevice Id: {}\nDevice Name: {}\nDedicated Memory: {}",
-                    m_adapter->get_vendor_id(), 
-                    m_adapter->get_device_id(), 
-                    m_adapter->get_name(), 
-                    m_adapter->get_memory()
-                ) <<
-        std::endl;
-
-        m_device = m_adapter->create_device();
-
-        auto client_size = m_window->get_client_size();
-        m_swapchain = m_device->create_swapchain(m_window->get_handle(), client_size.width, client_size.height, m_buffer_count);
-
-        m_fence_values.resize(m_buffer_count);
-        m_fence = m_device->create_fence(0);
-
-        // Renderer class
-        m_renderer = std::make_unique<renderer::QuadRenderer>(*m_device, *m_swapchain, m_buffer_count);
-    }
-
-    void resize(const uint32 width, const uint32 height) {
-        
-    }
-
-    void tick() {
-        
-        uint32 frame_index = m_swapchain->next_buffer(*m_fence, ++m_fence_values[0]);
-        m_device->get_command_queue(renderer::api::CommandListType::Graphics).wait(*m_fence, m_fence_values[0]);
-        m_fence->wait(m_fence_values[0]);
-
-        m_renderer.get()->tick();
-
-        m_fence->signal(m_fence_values[0]);
-        
-        m_swapchain->present(*m_fence, m_fence_values[0]);
-    }
-
-private:
-
-    platform::wnd::Window* m_window;
-
-    std::unique_ptr<renderer::api::Instance> m_instance;
-    std::unique_ptr<renderer::api::Adapter> m_adapter;
-    std::unique_ptr<renderer::api::Device> m_device;
-    std::unique_ptr<renderer::api::Swapchain> m_swapchain;
-    std::unique_ptr<renderer::api::Fence> m_fence;
-
-    std::vector<uint64> m_fence_values;
-
-    uint32 m_buffer_count;
-
-    std::unique_ptr<renderer::BaseRenderer> m_renderer;
-};
-*/

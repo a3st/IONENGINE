@@ -22,6 +22,7 @@ public:
 
     FrameBufferCache(gfx::Device* device) : m_device(device) {
         
+        assert(device && "pointer to device is null");
     }
 
     gfx::FrameBuffer* get_frame_buffer(gfx::RenderPass* render_pass, const uint32 width, const uint32 height, std::vector<gfx::View*> color_views, gfx::View* depth_stencil_view) {

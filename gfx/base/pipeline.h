@@ -8,6 +8,8 @@ class Pipeline {
 public:
 
     virtual ~Pipeline() = default;
+
+    virtual std::vector<byte> get_pipeline_cache() const = 0;
     
     virtual PipelineType get_type() const = 0;
 

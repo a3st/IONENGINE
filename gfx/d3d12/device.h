@@ -44,6 +44,9 @@ public:
         queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
         THROW_IF_FAILED(m_d3d12_device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), m_command_queues[CommandListType::Compute].put_void()));
     
+        D3DMemoryAllocatorWrapper::initialize(m_d3d12_device.get(), 32_mb, 512_mb, 128_mb);
+        D3DDescriptorAllocatorWrapper::initialize(m_d3d12_device.get());
+
         DXGI_SWAP_CHAIN_DESC1 dxgi_swapchain_desc{};
         dxgi_swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         dxgi_swapchain_desc.Width = width;
@@ -66,15 +69,6 @@ public:
             )
         );
         tmp_swapchain.as(m_dxgi_swapchain);
-
-        for(uint32 i = 0; i < buffer_count; ++i) {
-            winrt::com_ptr<ID3D12Resource> resource;
-            THROW_IF_FAILED(m_dxgi_swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
-            m_swapchain_buffers.emplace_back(std::make_unique<D3DResource>(m_d3d12_device.get(), ResourceType::Texture, resource, ResourceFlags::RenderTarget));
-        }
-
-        D3DMemoryAllocatorWrapper::initialize(m_d3d12_device.get(), 32_mb, 512_mb, 128_mb);
-        D3DDescriptorAllocatorWrapper::initialize(m_d3d12_device.get());
     }
 
     void wait(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
@@ -91,15 +85,18 @@ public:
         THROW_IF_FAILED(m_command_queues[command_list_type]->Signal(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
     }
 
-    void execute_command_buffers(const CommandListType command_list_type, const std::vector<CommandList*>& command_buffers) override {
-        /*std::vector<ID3D12CommandList*> d3d12_command_lists;
-        for(auto& command_buffer : command_buffers) {
-            D3DCommandBuffer* d3d_command_buffer = static_cast<D3DCommandBuffer*>(command_buffer);
-            d3d12_command_lists.emplace_back(d3d_command_buffer->get_d3d12_command_list().get());
+    void execute_command_buffers(const CommandListType command_list_type, const std::vector<CommandList*>& command_lists) override {
+        
+        std::vector<ID3D12CommandList*> d3d12_command_lists;
+
+        for(auto command_list : command_lists) {
+            auto d3d_command_list = static_cast<D3DCommandList*>(command_list);
+            d3d12_command_lists.emplace_back(d3d_command_list->get_d3d12_command_list());
         }
+
         if(!d3d12_command_lists.empty()) {
-            m_command_queues[command_buffer_type]->ExecuteCommandLists(d3d12_command_lists.size(), d3d12_command_lists.data());
-        }*/
+            m_command_queues[command_list_type]->ExecuteCommandLists(static_cast<uint32>(d3d12_command_lists.size()), d3d12_command_lists.data());
+        }
     }
 
     std::unique_ptr<Resource> create_resource(const ResourceType resource_type, const MemoryType memory_type, const ResourceDesc& resource_desc) override {
@@ -163,9 +160,22 @@ public:
         THROW_IF_FAILED(m_dxgi_swapchain->Present(0, 0));
     }
 
-    Resource* get_swapchain_resource(const uint32 resource_index) override { return m_swapchain_buffers[resource_index].get(); }
+    std::unique_ptr<Resource> create_swapchain_resource(const uint32 buffer_index) override { 
+        
+        winrt::com_ptr<ID3D12Resource> resource;
+        THROW_IF_FAILED(m_dxgi_swapchain->GetBuffer(buffer_index, __uuidof(ID3D12Resource), resource.put_void()));
+            
+        return std::make_unique<D3DResource>(m_d3d12_device.get(), ResourceType::Texture, resource, ResourceFlags::RenderTarget);
+    }
 
-    uint32 get_swapchain_resource_index() const override { return m_dxgi_swapchain->GetCurrentBackBufferIndex(); }
+    uint32 get_swapchain_buffer_index() const override { return m_dxgi_swapchain->GetCurrentBackBufferIndex(); }
+
+    uint32 get_swapchain_buffer_size() const override { 
+        
+        DXGI_SWAP_CHAIN_DESC swapchain_desc{};
+        m_dxgi_swapchain->GetDesc(&swapchain_desc);
+        return swapchain_desc.BufferCount;
+    }
 
     const AdapterDesc& get_adapter_desc() const override { return m_adapter_desc; }
 
@@ -182,7 +192,6 @@ private:
     AdapterDesc m_adapter_desc;
 
     std::map<CommandListType, winrt::com_ptr<ID3D12CommandQueue>> m_command_queues;
-    std::vector<std::unique_ptr<D3DResource>> m_swapchain_buffers;
 };
 
 std::unique_ptr<Device> create_unique_device(const uint32 adapter_index, void* window, const uint32 width, const uint32 height, const uint32 buffer_count, const uint32 multisample_count) {

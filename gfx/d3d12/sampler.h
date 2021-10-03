@@ -28,6 +28,7 @@ public:
 private:
 
     D3D12_SAMPLER_DESC m_d3d12_desc;
+    
     SamplerDesc m_desc;
 };
 

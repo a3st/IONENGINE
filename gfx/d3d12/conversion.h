@@ -51,6 +51,53 @@ DXGI_FORMAT gfx_to_dxgi_format(const Format format) {
 	}
 }
 
+Format dxgi_format_to_gfx(const DXGI_FORMAT format) {
+
+	switch(format) {
+		case DXGI_FORMAT_UNKNOWN: return Format::Unknown;
+		case DXGI_FORMAT_R32G32B32A32_FLOAT: return Format::RGBA32float;
+		case DXGI_FORMAT_R32G32B32A32_UINT: return Format::RGBA32uint;
+		case DXGI_FORMAT_R32G32B32A32_SINT: return Format::RGBA32int;
+		case DXGI_FORMAT_R32G32B32_FLOAT: return Format::RGB32float;
+		case DXGI_FORMAT_R32G32B32_UINT: return Format::RGB32uint;
+		case DXGI_FORMAT_R32G32B32_SINT: return Format::RGB32int;
+		case DXGI_FORMAT_R32G32_FLOAT: return Format::RG32float;
+		case DXGI_FORMAT_R32G32_UINT: return Format::RG32uint;
+		case DXGI_FORMAT_R32G32_SINT: return Format::RG32int;
+		case DXGI_FORMAT_R32_FLOAT: return Format::R32float;
+		case DXGI_FORMAT_R32_UINT: return Format::R32uint;
+		case DXGI_FORMAT_R32_SINT: return Format::R32int;
+		case DXGI_FORMAT_R16G16B16A16_FLOAT: return Format::RGBA16float;
+		case DXGI_FORMAT_R16G16B16A16_UINT: return Format::RGBA16uint;
+		case DXGI_FORMAT_R16G16B16A16_SINT: return Format::RGBA16int;
+		case DXGI_FORMAT_R16G16B16A16_UNORM: return Format::RGBA16unorm;
+		case DXGI_FORMAT_R16G16B16A16_SNORM: return Format::RGBA16snorm;
+		case DXGI_FORMAT_R16G16_FLOAT: return Format::RG16float;
+		case DXGI_FORMAT_R16G16_UINT: return Format::RG16uint;
+		case DXGI_FORMAT_R16G16_SINT: return Format::RG16int;
+		case DXGI_FORMAT_R16G16_UNORM: return Format::RG16unorm;
+		case DXGI_FORMAT_R16G16_SNORM: return Format::RG16snorm;
+		case DXGI_FORMAT_R16_FLOAT: return Format::R16float;
+		case DXGI_FORMAT_R16_UINT: return Format::R16uint;
+		case DXGI_FORMAT_R16_SINT: return Format::R16int;
+		case DXGI_FORMAT_R16_UNORM: return Format::R16unorm;
+		case DXGI_FORMAT_R16_SNORM: return Format::R16snorm;
+		case DXGI_FORMAT_R8G8B8A8_UINT: return Format::RGBA8uint;
+		case DXGI_FORMAT_R8G8B8A8_SINT: return Format::RGBA8int;
+		case DXGI_FORMAT_R8G8B8A8_UNORM: return Format::RGBA8unorm;
+		case DXGI_FORMAT_R8G8B8A8_SNORM: return Format::RGBA8snorm;
+		case DXGI_FORMAT_R8G8_UINT: return Format::RG8uint;
+		case DXGI_FORMAT_R8G8_SINT: return Format::RG8int;
+		case DXGI_FORMAT_R8G8_UNORM: return Format::RG8unorm;
+		case DXGI_FORMAT_R8G8_SNORM: return Format::RG8snorm;
+		case DXGI_FORMAT_R8_UINT: return Format::R8uint;
+		case DXGI_FORMAT_R8_SINT: return Format::R8int;
+		case DXGI_FORMAT_R8_UNORM: return Format::R8unorm;
+		case DXGI_FORMAT_R8_SNORM: return Format::R8snorm;
+		default: assert(false && "passed invalid argument to gfx_to_dxgi_format"); return Format::Unknown;
+	}
+}
+
 D3D12_FILL_MODE gfx_to_d3d12_fill_mode(const FillMode fill_mode) {
 	
 	switch(fill_mode) {

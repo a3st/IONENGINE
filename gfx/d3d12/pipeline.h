@@ -141,29 +141,27 @@ public:
         for(auto& shader : pipeline_desc.shaders) {
 
             auto result = read_shader_file(shader.blob_path);
-            std::visit(
-                lib::default_visitor {
-                    [&](const std::vector<byte>& arg) {
 
-                        auto& blob = shader_blobs.emplace_back(arg);
+            lib::expected_result<std::vector<byte>, std::string>(
+                result,
+                [&](const std::vector<byte>& arg) {
+                    auto& blob = shader_blobs.emplace_back(arg);
 
-                        D3D12_SHADER_BYTECODE shader_code{};
-                        shader_code.pShaderBytecode = blob.data();
-                        shader_code.BytecodeLength = blob.size();
+                    D3D12_SHADER_BYTECODE shader_code{};
+                    shader_code.pShaderBytecode = blob.data();
+                    shader_code.BytecodeLength = blob.size();
 
-                        switch(shader.shader_type) {
-                            case ShaderType::Vertex: graphics_pipeline_desc.VS = shader_code; break;
-                            case ShaderType::Pixel: graphics_pipeline_desc.PS = shader_code; break;
-                            case ShaderType::Geometry: graphics_pipeline_desc.GS = shader_code; break;
-                            case ShaderType::Domain: graphics_pipeline_desc.DS = shader_code; break;
-                            case ShaderType::Hull: graphics_pipeline_desc.HS = shader_code; break;
-                        }
-                    },
-                    [&](const std::string& arg) {
-                        throw std::runtime_error("Pipeline creation error (" + arg + ")");
+                    switch(shader.shader_type) {
+                        case ShaderType::Vertex: graphics_pipeline_desc.VS = shader_code; break;
+                        case ShaderType::Pixel: graphics_pipeline_desc.PS = shader_code; break;
+                        case ShaderType::Geometry: graphics_pipeline_desc.GS = shader_code; break;
+                        case ShaderType::Domain: graphics_pipeline_desc.DS = shader_code; break;
+                        case ShaderType::Hull: graphics_pipeline_desc.HS = shader_code; break;
                     }
                 },
-                result.get()
+                [&](const std::string& arg) {
+                    throw std::runtime_error("Pipeline creation error (" + arg + ")");
+                }
             );
         }
 
@@ -177,6 +175,18 @@ public:
 
     D3DPipeline(ID3D12Device4* d3d12_device, const ComputePipelineDesc& pipeline_desc) : m_type(PipelineType::Compute) {
 
+    }
+
+    std::vector<byte> get_pipeline_cache() const override {
+
+        std::vector<byte> cache_data;
+
+        winrt::com_ptr<ID3DBlob> cache_blob;
+        THROW_IF_FAILED(m_d3d12_pipeline_state->GetCachedBlob(cache_blob.put()));
+
+        cache_data.resize(cache_blob->GetBufferSize());
+        std::memcpy(cache_data.data(), cache_blob->GetBufferPointer(), cache_data.size());
+        return cache_data;
     }
 
     PipelineType get_type() const override { return m_type; }

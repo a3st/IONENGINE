@@ -21,14 +21,14 @@ int32 main(int32, char**) {
 
     struct Environment {
         inputsystem::InputSystem* inputsys;
-        RenderSystem* rendersys;
+        rendersystem::RenderSystem* rendersys;
     };
 
     Environment env{};
     
     try {
         env.inputsys = engine_system_pool->initialize_system<inputsystem::InputSystem>();
-        env.rendersys = engine_system_pool->initialize_system<RenderSystem>(window.get());
+        env.rendersys = engine_system_pool->initialize_system<rendersystem::RenderSystem>(window.get());
 
     } catch(std::exception& e) {
         std::cerr << e.what() << std::endl;

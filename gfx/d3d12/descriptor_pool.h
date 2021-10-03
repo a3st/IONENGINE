@@ -5,10 +5,10 @@
 namespace ionengine::gfx {
 
 template<enum D3D12_DESCRIPTOR_HEAP_TYPE T>
-class D3DDesciptorPool {
+class D3DDescriptorPool {
 public:
 
-    D3DDesciptorPool(ID3D12Device4* d3d12_device, const uint32 default_descriptor_count) : m_d3d12_device(d3d12_device), m_default_descriptor_count(default_descriptor_count) {
+    D3DDescriptorPool(ID3D12Device4* d3d12_device, const uint32 default_descriptor_count) : m_d3d12_device(d3d12_device), m_default_descriptor_count(default_descriptor_count) {
         
     }
 
@@ -22,16 +22,16 @@ public:
                 continue;
             } else {
                 for(uint32 i = heap.offset; i < heap.descriptor_data.size(); ++i) {
-                    if(heap.descriptor_data[i] == 0x1) {
-                        continue;
+                    if(heap.descriptor_data[i] == 0x0) {
+                        ptr.heap = &heap;
+                        ptr.offset = i;
+
+                        heap.descriptor_data[heap.offset] = 0x1;
+                        heap.offset = i + 1;
+
+                        std::cout << "descriptor pool free block found" << std::endl;
+                        break;
                     }
-
-                    ptr.heap = &heap;
-                    ptr.offset = i;
-
-                    heap.offset = i + 1;
-
-                    std::cout << "descriptor pool free block found" << std::endl;
                 }
             }
         }
@@ -40,7 +40,7 @@ public:
             auto& heap = m_descriptor_heaps.emplace_back(D3DDescriptorHeap { d3d12_heap, m_default_descriptor_count });
 
             heap.descriptor_data.resize(m_default_descriptor_count);
-            std::memset(heap.descriptor_data.data() + heap.offset, 0x0, sizeof(uint8) * m_default_descriptor_count);
+            std::memset(heap.descriptor_data.data(), 0x0, sizeof(uint8) * m_default_descriptor_count);
 
             ptr.heap = &heap;
             ptr.offset = heap.offset;
@@ -58,7 +58,7 @@ public:
         ptr.heap->descriptor_data[ptr.offset] = 0x0;
         ptr.heap->offset = ptr.offset;
 
-        std::cout << "descriptor pool deallocate memory" << std::endl;
+        std::cout << "descriptor pool deallocate descriptor" << std::endl;
     }
 
 private:
@@ -88,7 +88,8 @@ class D3DDescriptorAllocatorWrapper {
 public:
 
     static void initialize(ID3D12Device4* d3d12_device) {
-        m_srv_pool = std::make_unique<D3DDesciptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV>>(d3d12_device, 10);
+        m_srv_pool = std::make_unique<D3DDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV>>(d3d12_device, 10);
+        m_rtv_pool = std::make_unique<D3DDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_RTV>>(d3d12_device, 10);
     }
 
     [[nodiscard]] static D3DDescriptorPtr allocate(const ViewType view_type) {
@@ -96,7 +97,8 @@ public:
         D3DDescriptorPtr ptr{};
 
         switch(view_type) {
-            case ViewType::ConstantBuffer: ptr = m_srv_pool->allocate();
+            case ViewType::ConstantBuffer: ptr = m_srv_pool->allocate(); break;
+            case ViewType::RenderTarget: ptr = m_rtv_pool->allocate(); break;
         }
 
         return ptr;
@@ -105,13 +107,15 @@ public:
     static void deallocate(const ViewType view_type, const D3DDescriptorPtr& ptr) {
 
         switch(view_type) {
-            case ViewType::ConstantBuffer: m_srv_pool->deallocate(ptr);
+            case ViewType::ConstantBuffer: m_srv_pool->deallocate(ptr); break;
+            case ViewType::RenderTarget: m_rtv_pool->deallocate(ptr); break;
         }
     }
 
 private:
 
-    inline static std::unique_ptr<D3DDesciptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV>> m_srv_pool;
+    inline static std::unique_ptr<D3DDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV>> m_srv_pool;
+    inline static std::unique_ptr<D3DDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_RTV>> m_rtv_pool;
 };
 
 }
