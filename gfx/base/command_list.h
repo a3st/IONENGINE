@@ -91,6 +91,8 @@ public:
         @param stride Vertex buffer stride
     */
     virtual void set_vertex_buffer(const uint32 slot, Resource* resource, const uint32 stride) = 0;
+
+    virtual void copy_buffer(Resource* src_resource, Resource* dst_resource, const BufferCopyRegion& region) = 0;
 };
 
 }

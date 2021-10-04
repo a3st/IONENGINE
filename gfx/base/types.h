@@ -400,4 +400,10 @@ struct ComputePipelineDesc {
     BindingSetLayout* layout;
 };
 
+struct BufferCopyRegion {
+    usize size;
+    uint64 src_offset;
+    uint64 dst_offset;
+};
+
 }

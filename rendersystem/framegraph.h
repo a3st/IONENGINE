@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "lib/math.h"
+
 namespace ionengine::rendersystem {
 
 enum class FrameGraphResourceType {
@@ -17,31 +19,19 @@ enum class FrameGraphResourceFlags {
 class FrameGraphResource {
 public:
 
-    FrameGraphResource(const uint64 id) : m_id(id) {
+    FrameGraphResource() {
 
     }
-
-    FrameGraphResource() : m_id(std::numeric_limits<uint64>::max()) {
-
-    }
-
-    bool operator==(const FrameGraphResource& rhs) const { return m_id == rhs.m_id; }
-    
-    bool operator<(const FrameGraphResource& rhs) const { return m_id < rhs.m_id; }
-
-    inline static FrameGraphResource null() { return FrameGraphResource(); }
 
 private:
 
-    uint64 m_id;
+    std::unique_ptr<Texture> texture;
 };
-
-
 
 class FrameGraphResourceManager {
 public:
 
-    struct ResourceData {
+    struct Key {
         
     };
 
@@ -49,9 +39,9 @@ public:
 
     }
 
-    FrameGraphResource create_resource(
+    FrameGraphResource* get_resource(
         const FrameGraphResourceType resource_type,
-        const gfx::Format format,
+        const Texture::Format format,
         const uint32 width,
         const uint32 height,
         const FrameGraphResourceFlags resource_flags
@@ -59,7 +49,7 @@ public:
 
         
         
-        return {};
+        return nullptr;
     }
 
     void release_resource(const FrameGraphResource& resource) {
@@ -68,7 +58,12 @@ public:
 
 private:
 
-    std::map<uint64, FrameGraphResourceManager::ResourceData> m_resources;
+    std::map<Key, FrameGraphResource> m_resources;
+};
+
+enum class FrameGraphResourceOp {
+    Load,
+    Clear
 };
 
 class RenderPassBuilder {
@@ -79,24 +74,24 @@ public:
         assert(device && "pointer to resource_manager is null");
     }
 
-    [[nodiscard]] FrameGraphResource create(
+    [[nodiscard]] FrameGraphResource* create(
         const FrameGraphResourceType resource_type,
-        const gfx::Format format,
+        const Texture::Format format,
         const uint32 width,
         const uint32 height,
         const FrameGraphResourceFlags resource_flags
     ) {        
-        return m_resource_manager->create_resource(resource_type, format, width, height, resource_flags);
+        return m_resource_manager->get_resource(resource_type, format, width, height, resource_flags);
     }
 
-    [[nodiscard]] FrameGraphResource write() {
+    [[nodiscard]] FrameGraphResource* write(FrameGraphResource* resource, const FrameGraphResourceOp op, const math::Fcolor& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f }) {
 
-        return {};
+        return nullptr;
     }
 
-    [[nodiscard]] FrameGraphResource read() {
+    [[nodiscard]] FrameGraphResource* read(FrameGraphResource* resource) {
 
-        return {};
+        return nullptr;
     }
 
 private:
@@ -149,6 +144,7 @@ private:
 
 };
 
+template<typename T>
 class FrameGraphPass {
 public:
 
@@ -156,8 +152,13 @@ public:
 
     }
 
+    const T& get_data() { 
+        return m_data;
+    }
+
 private:
 
+    T m_data;
 };
 
 class FrameGraph {
@@ -171,7 +172,7 @@ public:
     }
 
     template<typename T>
-    [[nodiscard]] FrameGraphPass add_pass(
+    [[nodiscard]] FrameGraphPass<T> add_pass(
         const std::string& pass_name, 
         const std::function<void(RenderPassBuilder*, T&)>& builder_func, 
         const std::function<void(RenderPassContext*, const T&)>& exec_func
@@ -182,7 +183,7 @@ public:
     }
 
     template<typename T>
-    [[nodiscard]] FrameGraphPass add_pass(
+    [[nodiscard]] FrameGraphPass<T> add_pass(
         const std::string& pass_name,
         const std::function<void(AsyncPassBuilder*, T&)>& builder_func, 
         const std::function<void(AsyncPassContext*, const T&)>& exec_func
@@ -192,16 +193,13 @@ public:
         return {};
     }
 
-    void wait_pass(const FrameGraphPass& pass) {
+    //void wait_pass(const FrameGraphPass& pass) {
 
-    }
-
-    void compile() {
-
-    }
+    //}
 
     void execute() {
 
+        //std::cout << "execute framegraph" << std::endl;
     }
 
 private:

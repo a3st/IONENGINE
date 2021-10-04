@@ -30,6 +30,7 @@ public:
             m_height(0),
             m_usage(Texture::Usage::Default) {   
 
+            assert(device && "pointer to device is null");
     }
 
     [[nodiscard]] lib::Expected<Texture*, std::string> create_from_swapchain(const uint32 buffer_index) {

@@ -17,7 +17,7 @@ public:
         }
     };
 
-    TexturePool(gfx::Device* device) : m_device(device) {
+    TexturePool(gfx::Device* device, const uint32 size) : m_device(device) {
 
         assert(device && "pointer to device is null");
     }

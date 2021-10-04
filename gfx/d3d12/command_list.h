@@ -212,6 +212,14 @@ public:
         m_d3d12_command_list->IASetVertexBuffers(slot, 1, &vertex_view);
     }
 
+    void copy_buffer(Resource* src_resource, Resource* dst_resource, const BufferCopyRegion& region) override {
+
+        auto d3d_src_resource = static_cast<D3DResource*>(src_resource);
+        auto d3d_dst_resource = static_cast<D3DResource*>(dst_resource);
+
+        m_d3d12_command_list->CopyBufferRegion(d3d_dst_resource->get_d3d12_resource(), region.dst_offset, d3d_src_resource->get_d3d12_resource(), region.src_offset, region.size);
+    }
+
     ID3D12CommandAllocator* get_d3d12_command_allocator() { return m_d3d12_command_allocator.get(); }
 
     ID3D12GraphicsCommandList4* get_d3d12_command_list() { return m_d3d12_command_list.get(); }

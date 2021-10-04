@@ -14,6 +14,7 @@
 #include "pipeline_cache.h"
 
 #include "texture_pool.h"
+#include "buffer.h"
 
 #include "framegraph.h"
 
@@ -30,17 +31,14 @@ public:
 
         m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
 
-        //m_texture_pool = std::make_unique<TextureManager>(m_device.get());
-
         gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
         std::cout << lib::format<char>("Adapter name: {}, Local memory size: {}, Adapter Id: {}, Vendor Id: {}", 
             adapter_desc.name, adapter_desc.local_memory, adapter_desc.device_id, adapter_desc.vendor_id) << std::endl;
 
         window->set_label(lib::format<char>("IONENGINE - {}", gfx::api_name));
-
-        //auto texture = m_render_texture_pool->get_swapchain_texture(0);
-
-        //m_render_texture_pool->debug_print();
+        
+        m_framegraph = std::make_unique<FrameGraph>(m_device.get());
+        
 
         /*std::unique_ptr<gfx::Resource> resources[10];
 
@@ -90,63 +88,40 @@ public:
             { gfx::ShaderType::Pixel, "shaders/pc/basic_frag.bin" },
         };
         auto pipeline = m_device->create_pipeline(pipeline_desc);*/
+    }
 
-
-
-
-
-
-        m_framegraph = std::make_unique<FrameGraph>(m_device.get());
+    void tick() override {
 
         struct BasicPassData {
-            FrameGraphResource output_swapchain;
+            FrameGraphResource* swapchain;
         };
 
         auto basic_pass = m_framegraph->add_pass<BasicPassData>(
             "BasicPass", 
             [&](RenderPassBuilder* builder, BasicPassData& data) {
-                data.output_swapchain = builder->create(FrameGraphResourceType::Attachment, gfx::Format::Unknown, 800, 600, FrameGraphResourceFlags::Swapchain);
+                data.swapchain = builder->create(FrameGraphResourceType::Attachment, Texture::Format::RGBA8, 800, 600, FrameGraphResourceFlags::Swapchain);
+                data.swapchain = builder->write(data.swapchain, FrameGraphResourceOp::Clear, { 0.5f, 0.4f, 0.3f, 1.0f });
             },
             [=](RenderPassContext* context, const BasicPassData& data) {
 
             }
         );
 
-        /*struct AsyncPassData {
-            FrameGraphResource output_swapchain;
-        };
-
-        auto async_pass = m_framegraph->add_pass<AsyncPassData>(
-            "AsyncPass",
-            [&](AsyncPassBuilder* builder, AsyncPassData& data) {
-
-            },
-            [=](AsyncPassContext* context, const AsyncPassData& data) {
-
-            }
-        );
-
-        m_framegraph->wait_pass(async_pass);
-
         struct FinalPassData {
-            FrameGraphResource output_swapchain;
+            FrameGraphResource* output;
         };
 
         auto final_pass = m_framegraph->add_pass<FinalPassData>(
-            "AsyncPass", 
+            "FinalPass", 
             [&](RenderPassBuilder* builder, FinalPassData& data) {
-                data.output_swapchain = builder->create();
+                data.output = builder->write(basic_pass.get_data().swapchain, FrameGraphResourceOp::Clear, {0.5, 0.6f, 0.4f, 1.0f });
             },
             [=](RenderPassContext* context, const FinalPassData& data) {
 
             }
-        );*/
+        );
 
-        m_framegraph->compile();
-    }
-
-    void tick() override {
-
+        m_framegraph->execute();
     }
 
     void resize(const uint32 width, const uint32 height) {
@@ -156,15 +131,7 @@ public:
 private:
 
     std::unique_ptr<gfx::Device> m_device;
-
     std::unique_ptr<FrameGraph> m_framegraph;
-
-    struct {
-        std::unique_ptr<TexturePool<Texture::Usage::Default>> def;
-        std::unique_ptr<TexturePool<Texture::Usage::Swapchain>> swapchain;
-        std::unique_ptr<TexturePool<Texture::Usage::DepthStencil>> depth_stencil;
-        std::unique_ptr<TexturePool<Texture::Usage::RenderTarget>> render_target;
-    } m_texture_pools;
 };
 
 }
