@@ -6,8 +6,19 @@ namespace ionengine::gfx {
 
 using namespace memory_literals;
 
+
+
+
+
+
+
 template<>
 class Device<backend::d3d12> {
+
+    friend const AdapterDesc& get_adapter_desc<backend::d3d12>(Device<backend::d3d12>* device);
+    friend uint32 get_swapchain_buffer_index<backend::d3d12>(Device<backend::d3d12>* device);
+    friend uint32 get_swapchain_buffer_size<backend::d3d12>(Device<backend::d3d12>* device);
+
 public:
 
     Device(const uint32 adapter_index, void* window, const uint32 width, const uint32 height, const uint32 buffer_count, const uint32 multisample_count) {
@@ -166,21 +177,6 @@ public:
 
     */
 
-    
-
-    uint32 get_swapchain_buffer_index() const { return m_dxgi_swapchain->GetCurrentBackBufferIndex(); }
-
-    uint32 get_swapchain_buffer_size() const { 
-        
-        DXGI_SWAP_CHAIN_DESC swapchain_desc{};
-        m_dxgi_swapchain->GetDesc(&swapchain_desc);
-        return swapchain_desc.BufferCount;
-    }
-
-    const AdapterDesc& get_adapter_desc() const { return m_adapter_desc; }
-
-    ID3D12Device4* get_d3d12_device() { return m_d3d12_device.get(); }
-
 private:
 
     winrt::com_ptr<IDXGIFactory4> m_dxgi_factory;
@@ -193,5 +189,36 @@ private:
 
     std::map<CommandListType, winrt::com_ptr<ID3D12CommandQueue>> m_command_queues;
 };
+
+template<class B = backend::base>
+inline std::unique_ptr<Device<B>> create_device(
+    const uint32 adapter_index, 
+    void* window, 
+    const uint32 width, 
+    const uint32 height, 
+    const uint32 buffer_count, 
+    const uint32 multisample_count
+) {
+
+    return std::make_unique<Device<B>>(adapter_index, window, width, height, buffer_count, multisample_count);
+}
+
+template<>
+inline const AdapterDesc& get_adapter_desc<backend::d3d12>(Device<backend::d3d12>* device) {
+    return device->m_adapter_desc;
+}
+
+template<>
+inline uint32 get_swapchain_buffer_index<backend::d3d12>(Device<backend::d3d12>* device) { 
+    return device->m_dxgi_swapchain->GetCurrentBackBufferIndex(); 
+}
+
+template<>
+inline uint32 get_swapchain_buffer_size<backend::d3d12>(Device<backend::d3d12>* device) { 
+        
+    DXGI_SWAP_CHAIN_DESC swapchain_desc{};
+    device->m_dxgi_swapchain->GetDesc(&swapchain_desc);
+    return swapchain_desc.BufferCount;
+}
 
 }

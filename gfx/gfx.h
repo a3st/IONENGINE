@@ -16,8 +16,8 @@ struct base { };
 #include "base/frame_buffer.h"
 #include "base/binding_set_layout.h"
 #include "base/binding_set.h"
-/*#include "base/pipeline.h"
-#include "base/command_list.h"*/
+//#include "base/pipeline.h"
+//#include "base/command_list.h"
 #include "base/device.h"
 
 #ifdef IONENGINE_GFX_BACKEND_D3D12
@@ -46,11 +46,8 @@ struct d3d12 : public base { };
 #include "d3d12/frame_buffer.h"
 #include "d3d12/binding_set_layout.h"
 #include "d3d12/binding_set.h"
-
-/*
-
-#include "d3d12/pipeline.h"
-#include "d3d12/command_list.h"*/
+//#include "d3d12/pipeline.h"
+//#include "d3d12/command_list.h"
 #include "d3d12/device.h"
 
 #endif // IONENGINE_GFX_BACKEND_D3D12
@@ -70,15 +67,5 @@ struct vk_backend : public base_backend { };
 #include <vulkan/vulkan.hpp>
 
 #pragma comment(lib, "vulkan-1.lib")
-
-#include "vk/types.h"
-#include "vk/conversion.h"
-#include "vk/fence.h"
-#include "vk/memory.h"
-#include "vk/resource.h"
-#include "vk/sampler.h"
-#include "vk/pipeline.h"
-#include "vk/command_list.h"
-#include "vk/device.h"
 
 #endif // IONENGINE_GFX_BACKEND_VK

@@ -36,11 +36,9 @@ public:
 
         auto client = window->get_client_size();
 
-        m_device = std::make_unique<gfx::Device<backend>>(0, window->get_handle(), client.width, client.height, 2, 1);
+        m_device = gfx::create_device<backend>(0, window->get_handle(), client.width, client.height, 2, 1);
 
-        //m_texture_pool = std::make_unique<TextureManager>(m_device.get());
-
-        gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
+        gfx::AdapterDesc adapter_desc = gfx::get_adapter_desc(m_device.get());
         std::cout << lib::format<char>("Adapter name: {}, Local memory size: {}, Adapter Id: {}, Vendor Id: {}", 
             adapter_desc.name, adapter_desc.local_memory, adapter_desc.device_id, adapter_desc.vendor_id) << std::endl;
 
@@ -50,7 +48,7 @@ public:
 
         //m_render_texture_pool->debug_print();
 
-        std::unique_ptr<gfx::Resource<backend>> resources[10];
+        /*std::unique_ptr<gfx::Resource<backend>> resources[10];
 
         for(uint32 i = 0; i < 1; ++i)
         {
@@ -63,6 +61,8 @@ public:
             res_desc.flags = gfx::ResourceFlags::ConstantBuffer;
             resources[i] = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc);
         }
+
+        
 
         gfx::ViewDesc view_desc{};
         view_desc.buffer_size = std::get<gfx::ResourceDesc>(resources[0]->get_desc()).width;
@@ -99,10 +99,8 @@ public:
         };
         //auto pipeline = m_device->create_pipeline(pipeline_desc);
 
-
-
-
-
+        
+*/
 
         /*m_framegraph = std::make_unique<FrameGraph>(m_device.get());
 
