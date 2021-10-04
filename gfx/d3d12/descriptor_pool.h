@@ -84,8 +84,7 @@ private:
     const D3D12_DESCRIPTOR_HEAP_TYPE m_heap_type = T;
 };
 
-template<>
-class DescriptorAllocatorWrapper<backend::d3d12> {
+class D3DDescriptorAllocatorWrapper {
 public:
 
     static void initialize(ID3D12Device4* d3d12_device) {

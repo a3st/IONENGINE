@@ -4,29 +4,18 @@
 
 namespace ionengine::gfx {
 
-/**
-    @brief Resource (backend::base)
-
-    Resource base template class
-*/
-
-template<class B = backend::base>
 class Resource {
 public:
 
-    ResourceType get_type() const;
+    virtual ~Resource() = default;
+
+    virtual ResourceType get_type() const = 0;
+
+    virtual const ResourceDesc& get_desc() const = 0;
+
+    virtual byte* map() = 0;
+
+    virtual void unmap() = 0;
 };
-
-template<class B = backend::base>
-const SamplerDesc& get_sampler_desc(Resource<B>* resource);
-
-template<class B = backend::base>
-const ResourceDesc& get_resource_desc(Resource<B>* resource);
-
-template<class B = backend::base>
-byte* map(Resource<B>* resource);
-
-template<class B = backend::base>
-void unmap(Resource<B>* resource);
 
 }

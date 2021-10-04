@@ -4,25 +4,22 @@
 
 namespace ionengine::gfx {
 
-template<>
-class View<backend::d3d12> {
+class D3DView : public View {
 public:
 
-    View(ID3D12Device4* d3d12_device, const ViewType view_type, Resource<backend::d3d12>* resource, const ViewDesc& view_desc) 
+    D3DView(ID3D12Device4* d3d12_device, const ViewType view_type, D3DResource* resource, const ViewDesc& view_desc) 
         : m_d3d12_device(d3d12_device), m_type(view_type), m_desc(view_desc) {
 
         assert(d3d12_device && "pointer to d3d12_device is null");
         assert(resource && "pointer to resource is null");
 
-        m_descriptor_ptr = DescriptorAllocatorWrapper<backend::d3d12>::allocate(view_type);
+        m_descriptor_ptr = D3DDescriptorAllocatorWrapper::allocate(view_type);
         
         switch(m_type) {
 
             case ViewType::RenderTarget: {
                 D3D12_RENDER_TARGET_VIEW_DESC rtv_desc{};
-
-                auto& d3d12_resource_desc = std::get<D3D12_RESOURCE_DESC>(resource->get_d3d12_desc());
-                rtv_desc.Format = d3d12_resource_desc.Format;
+                rtv_desc.Format = resource->get_d3d12_desc().Format;
                 
                 switch(view_desc.dimension) {
                     case ViewDimension::Texture1D: {
@@ -69,9 +66,7 @@ public:
             }
             case ViewType::DepthStencil: {
                 D3D12_DEPTH_STENCIL_VIEW_DESC dsv_desc{};
-
-                auto& d3d12_resource_desc = std::get<D3D12_RESOURCE_DESC>(resource->get_d3d12_desc());
-                dsv_desc.Format = d3d12_resource_desc.Format;
+                dsv_desc.Format = resource->get_d3d12_desc().Format;
                 
                 switch(view_desc.dimension) {
                     case ViewDimension::Texture1D: {
@@ -122,29 +117,35 @@ public:
                 m_d3d12_device->CreateConstantBufferView(&cbv_view, cpu_handle);
                 break;
             }
-            case ViewType::Sampler: {
-                D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
-                    m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
-                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
-                };
-
-                auto& d3d12_sampler_desc = std::get<D3D12_SAMPLER_DESC>(resource->get_d3d12_desc());
-                m_d3d12_device->CreateSampler(&d3d12_sampler_desc, cpu_handle);
-                break;
-            }
         }
     }
 
-    ~View() {
+    D3DView(ID3D12Device4* d3d12_device, D3DSampler* sampler) 
+        : m_d3d12_device(d3d12_device), m_type(ViewType::Sampler) {
+
+        assert(d3d12_device && "pointer to d3d12_device is null");
+        assert(sampler && "pointer to sampler is null");
+
+        m_descriptor_ptr = D3DDescriptorAllocatorWrapper::allocate(m_type);
+
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
+            m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
+                m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
+        };
+
+        m_d3d12_device->CreateSampler(&sampler->get_d3d12_desc(), cpu_handle);
+    }
+
+    ~D3DView() {
 
         if(m_descriptor_ptr.heap) {
-            DescriptorAllocatorWrapper<backend::d3d12>::deallocate(m_type, m_descriptor_ptr);
+            D3DDescriptorAllocatorWrapper::deallocate(m_type, m_descriptor_ptr);
         }
     }
 
-    ViewType get_type() const { return m_type; }
+    ViewType get_type() const override { return m_type; }
 
-    const ViewDesc& get_desc() const { return m_desc; }
+    const ViewDesc& get_desc() const override { return m_desc; }
 
     const D3DDescriptorPtr& get_descriptor_ptr() const { return m_descriptor_ptr; }
 

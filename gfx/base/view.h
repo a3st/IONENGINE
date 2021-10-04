@@ -4,20 +4,13 @@
 
 namespace ionengine::gfx {
 
-/**
-    @brief View (backend::base)
-
-    View base template class
-*/
-
-template<class B = backend::base>
 class View {
 public:
+    virtual ~View() = default;
 
-    ViewType get_type() const;
+    virtual ViewType get_type() const = 0;
+
+    virtual const ViewDesc& get_desc() const = 0;
 };
-
-template<class B = backend::base>
-const ViewDesc& get_view_desc(View<B>* view);
 
 }

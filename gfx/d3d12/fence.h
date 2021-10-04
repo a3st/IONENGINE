@@ -4,11 +4,10 @@
 
 namespace ionengine::gfx {
 
-template<>
-class Fence<backend::d3d12> {
+class D3DFence : public Fence {
 public:
 
-    Fence(ID3D12Device4* d3d12_device, const uint64 initial_value) {
+    D3DFence(ID3D12Device4* d3d12_device, const uint64 initial_value) {
 
         assert(d3d12_device && "pointer to d3d12_device is null");
 
@@ -19,16 +18,16 @@ public:
         }
     }
 
-    uint64 get_completed_value() const { return m_d3d12_fence->GetCompletedValue(); }
+    uint64 get_completed_value() const override { return m_d3d12_fence->GetCompletedValue(); }
 
-    void wait(const uint64 value) {
+    void wait(const uint64 value) override {
         if(m_d3d12_fence->GetCompletedValue() < value) {
             THROW_IF_FAILED(m_d3d12_fence->SetEventOnCompletion(value, m_fence_event));
             WaitForSingleObjectEx(m_fence_event, INFINITE, false);
         }
     }
 
-    void signal(const uint64 value) { THROW_IF_FAILED(m_d3d12_fence->Signal(value)); }
+    void signal(const uint64 value) override { THROW_IF_FAILED(m_d3d12_fence->Signal(value)); }
 
     ID3D12Fence* get_d3d12_fence() { return m_d3d12_fence.get(); }
 

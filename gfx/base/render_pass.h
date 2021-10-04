@@ -4,11 +4,10 @@
 
 namespace ionengine::gfx {
 
-template<class B = backend::base>
 class RenderPass {
 public:
-
-    const RenderPassDesc& get_desc() const;
+    virtual ~RenderPass() = default;
+    virtual const RenderPassDesc& get_desc() const = 0;
 };
 
 }

@@ -4,8 +4,7 @@
 
 namespace ionengine::gfx {
 
-template<>
-class BindingSetLayout<backend::d3d12> {
+class D3DBindingSetLayout : public BindingSetLayout  {
 public:
 
 	struct Key {
@@ -14,7 +13,7 @@ public:
 		D3D12_SHADER_VISIBILITY shader_visibility;
 	};
 
-    BindingSetLayout(ID3D12Device4* d3d12_device, const std::vector<BindingSetInputDesc>& bindings) {
+    D3DBindingSetLayout(ID3D12Device4* d3d12_device, const std::vector<BindingSetBinding>& bindings) {
 
 		assert(d3d12_device && "pointer to d3d12_device is null");
 

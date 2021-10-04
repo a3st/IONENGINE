@@ -4,15 +4,16 @@
 
 namespace ionengine::gfx {
 
-template<class B = backend::base>
 class Pipeline {
 public:
 
-    std::vector<byte> get_pipeline_cache() const;
-    
-    PipelineType get_type() const;
+    virtual ~Pipeline() = default;
 
-    BindingSetLayout* get_binding_set_layout();
+    virtual std::vector<byte> get_pipeline_cache() const = 0;
+    
+    virtual PipelineType get_type() const = 0;
+
+    virtual BindingSetLayout* get_binding_set_layout() = 0;
 };
 
 }

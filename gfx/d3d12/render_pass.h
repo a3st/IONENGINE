@@ -4,15 +4,14 @@
 
 namespace ionengine::gfx {
 
-template<>
-class RenderPass<backend::d3d12> {
+class D3DRenderPass : public RenderPass {
 public:
 
-    RenderPass(const RenderPassDesc& render_pass_desc) : m_desc(render_pass_desc) {
+    D3DRenderPass(const RenderPassDesc& render_pass_desc) : m_desc(render_pass_desc) {
 
     }
 
-    const RenderPassDesc& get_desc() const { return m_desc; }
+    const RenderPassDesc& get_desc() const override { return m_desc; }
     
 private:
 

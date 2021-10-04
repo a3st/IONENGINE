@@ -5,22 +5,32 @@
 namespace ionengine::gfx {
 
 /**
-    @brief Fence (backend::base)
+    @brief GAPI Wrapper Fence class
 
-    Fence base template class
+    Fence is primitive synchronization data between GPU and CPU
 */
-
-template<class B = backend::base>
 class Fence {
 public:
 
-    uint64 get_completed_value() const;
+    virtual ~Fence() = default;
+    
+    /**
+        @brief Get a completed value
+        @return uint64 Completed value
+    */
+    virtual uint64 get_completed_value() const = 0;
+
+    /**
+        @brief Wait for value fence
+        @param value Wait value
+    */
+    virtual void wait(const uint64 value) = 0;
+
+    /**
+        @brief Signal for value fence
+        @param value Signal value
+    */
+    virtual void signal(const uint64 value) = 0;
 };
-
-template<class B = backend::base>
-void wait_fence(Fence<B>* fence, const uint64 value);
-
-template<class B = backend::base>
-void signal_fence(Fence<B>* fence, const uint64 value);
 
 }

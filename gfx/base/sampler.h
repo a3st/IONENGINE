@@ -4,10 +4,12 @@
 
 namespace ionengine::gfx {
 
-class FrameBuffer {
+class Sampler {
 public:
-    virtual ~FrameBuffer() = default;
-    virtual const FrameBufferDesc& get_desc() const = 0;
+
+    virtual ~Sampler() = default;
+
+    virtual const SamplerDesc& get_desc() const = 0;
 };
 
 }
