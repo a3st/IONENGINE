@@ -30,7 +30,7 @@ public:
 
         m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
 
-        m_texture_pool = std::make_unique<TextureManager>(m_device.get());
+        //m_texture_pool = std::make_unique<TextureManager>(m_device.get());
 
         gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
         std::cout << lib::format<char>("Adapter name: {}, Local memory size: {}, Adapter Id: {}, Vendor Id: {}", 
@@ -40,7 +40,7 @@ public:
 
         //auto texture = m_render_texture_pool->get_swapchain_texture(0);
 
-        m_render_texture_pool->debug_print();
+        //m_render_texture_pool->debug_print();
 
         /*std::unique_ptr<gfx::Resource> resources[10];
 

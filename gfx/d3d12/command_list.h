@@ -189,11 +189,12 @@ public:
         assert(resource && "pointer to resource is null");
 
         auto d3d_resource = static_cast<D3DResource*>(resource);
+        auto& d3d12_resource_desc = std::get<D3D12_RESOURCE_DESC>(d3d_resource->get_d3d12_desc());
 
         D3D12_INDEX_BUFFER_VIEW index_view{};
         index_view.Format = gfx_to_dxgi_format(format);
         index_view.BufferLocation = d3d_resource->get_d3d12_resource()->GetGPUVirtualAddress();
-        index_view.SizeInBytes = static_cast<uint32>(d3d_resource->get_d3d12_desc().Width);
+        index_view.SizeInBytes = static_cast<uint32>(d3d12_resource_desc.Width);
         m_d3d12_command_list->IASetIndexBuffer(&index_view);
     }
 
@@ -202,11 +203,12 @@ public:
         assert(resource && "pointer to resource is null");
 
         auto d3d_resource = static_cast<D3DResource*>(resource);
+        auto& d3d12_resource_desc = std::get<D3D12_RESOURCE_DESC>(d3d_resource->get_d3d12_desc());
 
         D3D12_VERTEX_BUFFER_VIEW vertex_view{};
         vertex_view.StrideInBytes = stride;
         vertex_view.BufferLocation = d3d_resource->get_d3d12_resource()->GetGPUVirtualAddress();
-        vertex_view.SizeInBytes = static_cast<uint32>(d3d_resource->get_d3d12_desc().Width);
+        vertex_view.SizeInBytes = static_cast<uint32>(d3d12_resource_desc.Width);
         m_d3d12_command_list->IASetVertexBuffers(slot, 1, &vertex_view);
     }
 

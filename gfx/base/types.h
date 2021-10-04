@@ -197,7 +197,8 @@ ENUM_CLASS_BIT_FLAG_DECLARE(ResourceState)
 enum class ResourceType {
     Unknown,
     Buffer,
-    Texture
+    Texture,
+    Sampler
 };
 
 enum class ResourceFlags : uint32 {
@@ -307,7 +308,7 @@ struct VertexInputDesc {
     uint32 stride;
 };
 
-struct BindingSetBinding {
+struct BindingSetInputDesc {
     ShaderType shader_type;
     ViewType view_type = ViewType::Unknown;
     uint32 slot;

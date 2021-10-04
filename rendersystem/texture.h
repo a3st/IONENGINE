@@ -40,7 +40,7 @@ public:
 
         m_resource = m_device->create_swapchain_resource(buffer_index);
 
-        auto& resource_desc = m_resource->get_desc();
+        auto& resource_desc = std::get<gfx::ResourceDesc>(m_resource->get_desc());
         m_width = static_cast<uint32>(resource_desc.width);
         m_height = resource_desc.height;
 
@@ -65,7 +65,7 @@ public:
 
     gfx::Resource* get_resource() const { return m_resource.get(); }
 
-    RenderTexture::Usage get_usage() const { return m_usage; }
+    Texture::Usage get_usage() const { return m_usage; }
 
 private:
 
@@ -74,7 +74,6 @@ private:
     gfx::Device* m_device;
 
     std::unique_ptr<gfx::View> m_view;
-    std::unique_ptr<gfx::Sampler> m_sampler;
     std::unique_ptr<gfx::Resource> m_resource;
 
     uint32 m_width;

@@ -13,7 +13,7 @@ public:
 		D3D12_SHADER_VISIBILITY shader_visibility;
 	};
 
-    D3DBindingSetLayout(ID3D12Device4* d3d12_device, const std::vector<BindingSetBinding>& bindings) {
+    D3DBindingSetLayout(ID3D12Device4* d3d12_device, const std::vector<BindingSetInputDesc>& bindings) {
 
 		assert(d3d12_device && "pointer to d3d12_device is null");
 

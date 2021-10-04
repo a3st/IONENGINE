@@ -22,7 +22,7 @@ public:
 
     virtual [[nodiscard]] std::unique_ptr<Resource> create_resource(const ResourceType resource_type, const MemoryType memory_type, const ResourceDesc& resource_desc) = 0;
 
-    virtual [[nodiscard]] std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) = 0;
+    virtual [[nodiscard]] std::unique_ptr<Resource> create_resource(const SamplerDesc& sampler_desc) = 0;
 
     virtual [[nodiscard]] std::unique_ptr<Fence> create_fence(const uint64 initial_value) = 0;
 
@@ -42,11 +42,9 @@ public:
 
     virtual [[nodiscard]] std::unique_ptr<View> create_view(const ViewType view_type, Resource* resource, const ViewDesc& view_desc) = 0;
 
-    virtual [[nodiscard]] std::unique_ptr<View> create_view(Sampler* sampler) = 0;
-
     virtual [[nodiscard]] std::unique_ptr<BindingSet> create_binding_set(BindingSetLayout* layout) = 0;
 
-    virtual [[nodiscard]] std::unique_ptr<BindingSetLayout> create_binding_set_layout(const std::vector<BindingSetBinding>& bindings) = 0;
+    virtual [[nodiscard]] std::unique_ptr<BindingSetLayout> create_binding_set_layout(const std::vector<BindingSetInputDesc>& bindings) = 0;
 
     virtual [[nodiscard]] std::unique_ptr<RenderPass> create_render_pass(const RenderPassDesc& render_pass_desc) = 0;
 

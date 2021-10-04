@@ -11,7 +11,7 @@ public:
 
     virtual ResourceType get_type() const = 0;
 
-    virtual const ResourceDesc& get_desc() const = 0;
+    virtual const std::variant<ResourceDesc, SamplerDesc>& get_desc() const = 0;
 
     virtual byte* map() = 0;
 

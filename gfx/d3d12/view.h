@@ -13,13 +13,15 @@ public:
         assert(d3d12_device && "pointer to d3d12_device is null");
         assert(resource && "pointer to resource is null");
 
-        m_descriptor_ptr = D3DDescriptorAllocatorWrapper::allocate(view_type);
+        m_descriptor_ptr = D3DDescriptorAllocatorWrapper::allocate(m_type);
         
         switch(m_type) {
 
             case ViewType::RenderTarget: {
                 D3D12_RENDER_TARGET_VIEW_DESC rtv_desc{};
-                rtv_desc.Format = resource->get_d3d12_desc().Format;
+
+                auto& d3d12_resource_desc = std::get<D3D12_RESOURCE_DESC>(resource->get_d3d12_desc());
+                rtv_desc.Format = d3d12_resource_desc.Format;
                 
                 switch(view_desc.dimension) {
                     case ViewDimension::Texture1D: {
@@ -66,7 +68,9 @@ public:
             }
             case ViewType::DepthStencil: {
                 D3D12_DEPTH_STENCIL_VIEW_DESC dsv_desc{};
-                dsv_desc.Format = resource->get_d3d12_desc().Format;
+
+                auto& d3d12_resource_desc = std::get<D3D12_RESOURCE_DESC>(resource->get_d3d12_desc());
+                dsv_desc.Format = d3d12_resource_desc.Format;
                 
                 switch(view_desc.dimension) {
                     case ViewDimension::Texture1D: {
@@ -117,23 +121,18 @@ public:
                 m_d3d12_device->CreateConstantBufferView(&cbv_view, cpu_handle);
                 break;
             }
+            case ViewType::Sampler: {
+
+                D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
+                    m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
+                        m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
+                };
+
+                auto& d3d12_sampler_desc = std::get<D3D12_SAMPLER_DESC>(resource->get_d3d12_desc());
+                m_d3d12_device->CreateSampler(&d3d12_sampler_desc, cpu_handle);
+                break;
+            }
         }
-    }
-
-    D3DView(ID3D12Device4* d3d12_device, D3DSampler* sampler) 
-        : m_d3d12_device(d3d12_device), m_type(ViewType::Sampler) {
-
-        assert(d3d12_device && "pointer to d3d12_device is null");
-        assert(sampler && "pointer to sampler is null");
-
-        m_descriptor_ptr = D3DDescriptorAllocatorWrapper::allocate(m_type);
-
-        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
-            m_descriptor_ptr.heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr + 
-                m_descriptor_ptr.offset * m_d3d12_device->GetDescriptorHandleIncrementSize(gfx_to_d3d12_descriptor_heap_type(m_type))
-        };
-
-        m_d3d12_device->CreateSampler(&sampler->get_d3d12_desc(), cpu_handle);
     }
 
     ~D3DView() {

@@ -103,8 +103,8 @@ public:
         return std::make_unique<D3DResource>(m_d3d12_device.get(), memory_type, resource_type, resource_desc);
     }
 
-    std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) override {
-        return std::make_unique<D3DSampler>(sampler_desc);
+    std::unique_ptr<Resource> create_resource(const SamplerDesc& sampler_desc) override {
+        return std::make_unique<D3DResource>(m_d3d12_device.get(), sampler_desc);
     }
 
     std::unique_ptr<Fence> create_fence(const uint64 initial_value) override {
@@ -120,27 +120,14 @@ public:
     }
 
     std::unique_ptr<View> create_view(const ViewType view_type, Resource* resource, const ViewDesc& view_desc) override {
-
-        assert(resource && "pointer to resource is null");
-
         return std::make_unique<D3DView>(m_d3d12_device.get(), view_type, static_cast<D3DResource*>(resource), view_desc);
     }
 
-    std::unique_ptr<View> create_view(Sampler* sampler) override {
-
-        assert(sampler && "pointer to sampler is null");
-
-        return std::make_unique<D3DView>(m_d3d12_device.get(), static_cast<D3DSampler*>(sampler));
-    }
-
     std::unique_ptr<BindingSet> create_binding_set(BindingSetLayout* layout) override {
-
-        assert(layout && "pointer to layout is null");
-
         return std::make_unique<D3DBindingSet>(m_d3d12_device.get(), static_cast<D3DBindingSetLayout*>(layout));
     }
 
-    std::unique_ptr<BindingSetLayout> create_binding_set_layout(const std::vector<BindingSetBinding>& bindings) override {
+    std::unique_ptr<BindingSetLayout> create_binding_set_layout(const std::vector<BindingSetInputDesc>& bindings) override {
         return std::make_unique<D3DBindingSetLayout>(m_d3d12_device.get(), bindings);
     }
 
