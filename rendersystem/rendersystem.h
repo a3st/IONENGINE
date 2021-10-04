@@ -7,12 +7,13 @@
 #include "lib/memory.h"
 #include "gfx/gfx.h"
 
+#include "limits.h"
+
 #include "frame_buffer_cache.h"
 #include "render_pass_cache.h"
 #include "pipeline_cache.h"
 
-#include "texture_manager.h"
-#include "render_texture_manager.h"
+#include "texture_pool.h"
 
 #include "framegraph.h"
 
@@ -29,8 +30,7 @@ public:
 
         m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
 
-        m_render_texture_manager = std::make_unique<RenderTextureManager>(m_device.get());
-        m_texture_manager = std::make_unique<TextureManager>(m_device.get());
+        m_texture_pool = std::make_unique<TextureManager>(m_device.get());
 
         gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
         std::cout << lib::format<char>("Adapter name: {}, Local memory size: {}, Adapter Id: {}, Vendor Id: {}", 
@@ -38,9 +38,9 @@ public:
 
         window->set_label(lib::format<char>("IONENGINE - {}", gfx::api_name));
 
-        auto texture = m_render_texture_manager->create_render_texture(
-            static_cast<uint64>(RenderTexture::Alias::Swapchain_0)).value();
-        texture = texture->create_from_swapchain(0).value();
+        //auto texture = m_render_texture_pool->get_swapchain_texture(0);
+
+        m_render_texture_pool->debug_print();
 
         /*std::unique_ptr<gfx::Resource> resources[10];
 
@@ -159,8 +159,12 @@ private:
 
     std::unique_ptr<FrameGraph> m_framegraph;
 
-    std::unique_ptr<RenderTextureManager> m_render_texture_manager;
-    std::unique_ptr<TextureManager> m_texture_manager;
+    struct {
+        std::unique_ptr<TexturePool<Texture::Usage::Default>> def;
+        std::unique_ptr<TexturePool<Texture::Usage::Swapchain>> swapchain;
+        std::unique_ptr<TexturePool<Texture::Usage::DepthStencil>> depth_stencil;
+        std::unique_ptr<TexturePool<Texture::Usage::RenderTarget>> render_target;
+    } m_texture_pools;
 };
 
 }

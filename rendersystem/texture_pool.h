@@ -6,7 +6,8 @@
 
 namespace ionengine::rendersystem {
 
-class TextureManager {
+template<Texture::Usage U> 
+class TexturePool {
 public:
 
     struct Key {
@@ -16,7 +17,7 @@ public:
         }
     };
 
-    TextureManager(gfx::Device* device) : m_device(device) {
+    TexturePool(gfx::Device* device) : m_device(device) {
 
         assert(device && "pointer to device is null");
     }

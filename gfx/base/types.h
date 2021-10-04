@@ -117,7 +117,7 @@ enum class CullMode {
     Back
 };
 
-enum ComparisonFunc {
+enum class ComparisonFunc {
     Never,
     Less,
     Equal,

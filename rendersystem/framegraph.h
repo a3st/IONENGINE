@@ -62,7 +62,7 @@ public:
         return {};
     }
 
-    void delete_resource(const FrameGraphResource& resource) {
+    void release_resource(const FrameGraphResource& resource) {
 
     }
 
