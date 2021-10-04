@@ -2,20 +2,29 @@
 
 #pragma once
 
+namespace ionengine::gfx::backend {
+struct base { };
+}
+
 #include "base/types.h"
 #include "base/fence.h"
+#include "base/memory_pool.h"
 #include "base/resource.h"
-#include "base/sampler.h"
+#include "base/descriptor_pool.h"
+#include "base/view.h"
 #include "base/render_pass.h"
 #include "base/frame_buffer.h"
 #include "base/binding_set_layout.h"
-#include "base/view.h"
 #include "base/binding_set.h"
-#include "base/pipeline.h"
-#include "base/command_list.h"
+/*#include "base/pipeline.h"
+#include "base/command_list.h"*/
 #include "base/device.h"
 
-#ifdef IONENGINE_GFX_D3D12
+#ifdef IONENGINE_GFX_BACKEND_D3D12
+
+namespace ionengine::gfx::backend {
+struct d3d12 : public base { };
+}
 
 #include <d3d12.h>
 #include <dxgi1_6.h>
@@ -31,20 +40,24 @@
 #include "d3d12/fence.h"
 #include "d3d12/memory_pool.h"
 #include "d3d12/resource.h"
-#include "d3d12/sampler.h"
+#include "d3d12/descriptor_pool.h"
+#include "d3d12/view.h"
 #include "d3d12/render_pass.h"
 #include "d3d12/frame_buffer.h"
 #include "d3d12/binding_set_layout.h"
-#include "d3d12/descriptor_pool.h"
-#include "d3d12/view.h"
 #include "d3d12/binding_set.h"
+
+/*
+
 #include "d3d12/pipeline.h"
-#include "d3d12/command_list.h"
+#include "d3d12/command_list.h"*/
 #include "d3d12/device.h"
 
-#endif
+#endif // IONENGINE_GFX_BACKEND_D3D12
 
-#ifdef IONENGINE_GFX_VK
+#ifdef IONENGINE_GFX_BACKEND_VK
+
+struct vk_backend : public base_backend { };
 
 #ifdef IONENGINE_PLATFORM_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -68,4 +81,4 @@
 #include "vk/command_list.h"
 #include "vk/device.h"
 
-#endif
+#endif // IONENGINE_GFX_BACKEND_VK

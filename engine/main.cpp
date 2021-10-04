@@ -25,6 +25,7 @@ int32 main(int32, char**) {
     };
 
     Environment env{};
+
     
     try {
         env.inputsys = engine_system_pool->initialize_system<inputsystem::InputSystem>();

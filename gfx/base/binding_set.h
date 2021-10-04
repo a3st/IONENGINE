@@ -4,12 +4,11 @@
 
 namespace ionengine::gfx {
 
+template<class B = backend::base>
 class BindingSet {
 public:
 
-    virtual ~BindingSet() = default;
-
-    virtual void write(const WriteBindingSet& write_binding_set) = 0;
+    void write(const WriteBindingSet<B>& write_binding_set);
 };
 
 }

@@ -4,12 +4,10 @@
 
 namespace ionengine::gfx {
 
-class Sampler {
+template<class B = backend::base>
+class DescriptorAllocatorWrapper {
 public:
 
-    virtual ~Sampler() = default;
-
-    virtual const SamplerDesc& get_desc() const = 0;
 };
 
 }

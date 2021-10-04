@@ -4,10 +4,11 @@
 
 namespace ionengine::gfx {
 
-class D3DBindingSet : public BindingSet  {
+template<>
+class BindingSet<backend::d3d12>  {
 public:
 
-    D3DBindingSet(ID3D12Device4* d3d12_device, D3DBindingSetLayout* layout) : m_d3d12_device(d3d12_device), m_layout(layout) {
+    BindingSet(ID3D12Device4* d3d12_device, BindingSetLayout<backend::d3d12>* layout) : m_d3d12_device(d3d12_device), m_layout(layout) {
 
         assert(d3d12_device && "pointer to d3d12_device is null");
         assert(layout && "pointer to layout is null");
@@ -32,18 +33,17 @@ public:
         }
     }
 
-    void write(const WriteBindingSet& write_binding_set) override {
+    void write(const WriteBindingSet<backend::d3d12>& write_binding_set) {
 
         auto& descriptor_tables = m_layout->get_descriptor_tables();
 
         for(uint32 i = 0; i < write_binding_set.count; ++i) {
 
-            auto d3d_view = static_cast<D3DView*>(write_binding_set.views[i]);
-            D3D12_DESCRIPTOR_HEAP_TYPE heap_type = gfx_to_d3d12_descriptor_heap_type(d3d_view->get_type());
+            D3D12_DESCRIPTOR_HEAP_TYPE heap_type = gfx_to_d3d12_descriptor_heap_type(write_binding_set.views[i]->get_type());
             
             D3D12_CPU_DESCRIPTOR_HANDLE src_handle = {
-                d3d_view->get_descriptor_ptr().heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr +
-                    d3d_view->get_descriptor_ptr().offset * m_d3d12_device->GetDescriptorHandleIncrementSize(heap_type)
+                write_binding_set.views[i]->get_descriptor_ptr().heap->d3d12_heap->GetCPUDescriptorHandleForHeapStart().ptr +
+                    write_binding_set.views[i]->get_descriptor_ptr().offset * m_d3d12_device->GetDescriptorHandleIncrementSize(heap_type)
             };
 
             D3D12_CPU_DESCRIPTOR_HANDLE dst_handle = {
@@ -98,7 +98,7 @@ private:
         return d3d12_heap;
     }
 
-    D3DBindingSetLayout* m_layout;
+    BindingSetLayout<backend::d3d12>* m_layout;
 
     std::map<D3D12_DESCRIPTOR_HEAP_TYPE, winrt::com_ptr<ID3D12DescriptorHeap>> m_descriptor_heaps;
 };

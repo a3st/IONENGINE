@@ -7,15 +7,23 @@
 #include "lib/memory.h"
 #include "gfx/gfx.h"
 
+#ifdef IONENGINE_RENDERSYSTEM_D3D12
+namespace ionengine::rendersystem { using backend = gfx::backend::d3d12; }
+#endif // IONENGINE_RENDERSYSTEM_D3D12
+
+#ifdef IONENGINE_RENDERSYSTEM_VK
+namespace ionengine::rendersystem { using backend = gfx::backend::vk; }
+#endif // IONENGINE_RENDERSYSTEM_VK
+
 #include "limits.h"
 
-#include "frame_buffer_cache.h"
-#include "render_pass_cache.h"
-#include "pipeline_cache.h"
+//#include "frame_buffer_cache.h"
+//#include "render_pass_cache.h"
+//#include "pipeline_cache.h"
 
-#include "texture_pool.h"
+//#include "texture_pool.h"
 
-#include "framegraph.h"
+//#include "framegraph.h"
 
 namespace ionengine::rendersystem {
 
@@ -28,9 +36,9 @@ public:
 
         auto client = window->get_client_size();
 
-        m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
+        m_device = std::make_unique<gfx::Device<backend>>(0, window->get_handle(), client.width, client.height, 2, 1);
 
-        m_texture_pool = std::make_unique<TextureManager>(m_device.get());
+        //m_texture_pool = std::make_unique<TextureManager>(m_device.get());
 
         gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
         std::cout << lib::format<char>("Adapter name: {}, Local memory size: {}, Adapter Id: {}, Vendor Id: {}", 
@@ -40,9 +48,9 @@ public:
 
         //auto texture = m_render_texture_pool->get_swapchain_texture(0);
 
-        m_render_texture_pool->debug_print();
+        //m_render_texture_pool->debug_print();
 
-        /*std::unique_ptr<gfx::Resource> resources[10];
+        std::unique_ptr<gfx::Resource<backend>> resources[10];
 
         for(uint32 i = 0; i < 1; ++i)
         {
@@ -57,17 +65,17 @@ public:
         }
 
         gfx::ViewDesc view_desc{};
-        view_desc.buffer_size = resources[0]->get_desc().width;
+        view_desc.buffer_size = std::get<gfx::ResourceDesc>(resources[0]->get_desc()).width;
         auto view = m_device->create_view(gfx::ViewType::ConstantBuffer, resources[0].get(), view_desc);
 
-        std::vector<gfx::BindingSetBinding> bindings = {
+        std::vector<gfx::BindingSetInputDesc> bindings = {
             { gfx::ShaderType::Vertex, gfx::ViewType::ConstantBuffer, 0, 0, 1 }
         };
 
         auto binding_set_layout = m_device->create_binding_set_layout(bindings);
         auto binding_set = m_device->create_binding_set(binding_set_layout.get());
 
-        gfx::WriteBindingSet write = {
+        gfx::WriteBindingSet<backend> write = {
             0,
             1,
             gfx::ViewType::ConstantBuffer,
@@ -79,7 +87,7 @@ public:
         gfx::RenderPassDesc render_pass_desc{};
         auto render_pass = m_device->create_render_pass(render_pass_desc);
 
-        gfx::GraphicsPipelineDesc pipeline_desc{};
+        gfx::GraphicsPipelineDesc<backend> pipeline_desc{};
         pipeline_desc.vertex_inputs = {
             { "POSITION", 0, gfx::Format::RGB32float, 0, 0 }
         };
@@ -89,14 +97,14 @@ public:
             { gfx::ShaderType::Vertex, "shaders/pc/basic_vert.bin" },
             { gfx::ShaderType::Pixel, "shaders/pc/basic_frag.bin" },
         };
-        auto pipeline = m_device->create_pipeline(pipeline_desc);*/
+        //auto pipeline = m_device->create_pipeline(pipeline_desc);
 
 
 
 
 
 
-        m_framegraph = std::make_unique<FrameGraph>(m_device.get());
+        /*m_framegraph = std::make_unique<FrameGraph>(m_device.get());
 
         struct BasicPassData {
             FrameGraphResource output_swapchain;
@@ -110,7 +118,7 @@ public:
             [=](RenderPassContext* context, const BasicPassData& data) {
 
             }
-        );
+        );*/
 
         /*struct AsyncPassData {
             FrameGraphResource output_swapchain;
@@ -142,7 +150,7 @@ public:
             }
         );*/
 
-        m_framegraph->compile();
+        //m_framegraph->compile();
     }
 
     void tick() override {
@@ -155,16 +163,16 @@ public:
 
 private:
 
-    std::unique_ptr<gfx::Device> m_device;
+    std::unique_ptr<gfx::Device<backend>> m_device;
 
-    std::unique_ptr<FrameGraph> m_framegraph;
+    //std::unique_ptr<FrameGraph> m_framegraph;
 
-    struct {
+    /*struct {
         std::unique_ptr<TexturePool<Texture::Usage::Default>> def;
         std::unique_ptr<TexturePool<Texture::Usage::Swapchain>> swapchain;
         std::unique_ptr<TexturePool<Texture::Usage::DepthStencil>> depth_stencil;
         std::unique_ptr<TexturePool<Texture::Usage::RenderTarget>> render_target;
-    } m_texture_pools;
+    } m_texture_pools;*/
 };
 
 }

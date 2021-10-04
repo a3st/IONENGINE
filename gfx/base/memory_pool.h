@@ -5,10 +5,9 @@
 namespace ionengine::gfx {
 
 template<class B = backend::base>
-class FrameBuffer {
+class MemoryAllocatorWrapper {
 public:
 
-    const FrameBufferDesc<B>& get_desc() const;
 };
 
 }

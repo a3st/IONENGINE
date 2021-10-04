@@ -6,10 +6,11 @@ namespace ionengine::gfx {
 
 using namespace memory_literals;
 
-class D3DDevice : public Device {
+template<>
+class Device<backend::d3d12> {
 public:
 
-    D3DDevice(const uint32 adapter_index, void* window, const uint32 width, const uint32 height, const uint32 buffer_count, const uint32 multisample_count) {
+    Device(const uint32 adapter_index, void* window, const uint32 width, const uint32 height, const uint32 buffer_count, const uint32 multisample_count) {
 
         assert(window && "pointer to window is null");
 
@@ -44,8 +45,8 @@ public:
         queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
         THROW_IF_FAILED(m_d3d12_device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), m_command_queues[CommandListType::Compute].put_void()));
     
-        D3DMemoryAllocatorWrapper::initialize(m_d3d12_device.get(), 32_mb, 512_mb, 128_mb);
-        D3DDescriptorAllocatorWrapper::initialize(m_d3d12_device.get());
+        MemoryAllocatorWrapper<backend::d3d12>::initialize(m_d3d12_device.get(), 32_mb, 512_mb, 128_mb);
+        DescriptorAllocatorWrapper<backend::d3d12>::initialize(m_d3d12_device.get());
 
         DXGI_SWAP_CHAIN_DESC1 dxgi_swapchain_desc{};
         dxgi_swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -71,21 +72,21 @@ public:
         tmp_swapchain.as(m_dxgi_swapchain);
     }
 
-    void wait(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
+    void wait(const CommandListType command_list_type, Fence<backend::d3d12>* fence, const uint64 value) {
 
         assert(fence && "pointer to fence is null");
 
-        THROW_IF_FAILED(m_command_queues[command_list_type]->Wait(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
+        THROW_IF_FAILED(m_command_queues[command_list_type]->Wait(fence->get_d3d12_fence(), value));
     }
 
-    void signal(const CommandListType command_list_type, Fence* fence, const uint64 value) override {
+    void signal(const CommandListType command_list_type, Fence<backend::d3d12>* fence, const uint64 value) {
 
         assert(fence && "pointer to fence is null");
 
-        THROW_IF_FAILED(m_command_queues[command_list_type]->Signal(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
+        THROW_IF_FAILED(m_command_queues[command_list_type]->Signal(fence->get_d3d12_fence(), value));
     }
 
-    void execute_command_buffers(const CommandListType command_list_type, const std::vector<CommandList*>& command_lists) override {
+    /*void execute_command_lists(const CommandListType command_list_type, const std::vector<CommandList*>& command_lists) override {
         
         std::vector<ID3D12CommandList*> d3d12_command_lists;
 
@@ -97,19 +98,59 @@ public:
         if(!d3d12_command_lists.empty()) {
             m_command_queues[command_list_type]->ExecuteCommandLists(static_cast<uint32>(d3d12_command_lists.size()), d3d12_command_lists.data());
         }
+    }*/
+
+    std::unique_ptr<Resource<backend::d3d12>> create_resource(const ResourceType resource_type, const MemoryType memory_type, const ResourceDesc& resource_desc) {
+        return std::make_unique<Resource<backend::d3d12>>(m_d3d12_device.get(), memory_type, resource_type, resource_desc);
     }
 
-    std::unique_ptr<Resource> create_resource(const ResourceType resource_type, const MemoryType memory_type, const ResourceDesc& resource_desc) override {
-        return std::make_unique<D3DResource>(m_d3d12_device.get(), memory_type, resource_type, resource_desc);
+    std::unique_ptr<Resource<backend::d3d12>> create_resource(const SamplerDesc& sampler_desc) {
+        return std::make_unique<Resource<backend::d3d12>>(m_d3d12_device.get(), sampler_desc);
     }
 
-    std::unique_ptr<Sampler> create_sampler(const SamplerDesc& sampler_desc) override {
-        return std::make_unique<D3DSampler>(sampler_desc);
+    std::unique_ptr<Fence<backend::d3d12>> create_fence(const uint64 initial_value) {
+        return std::make_unique<Fence<backend::d3d12>>(m_d3d12_device.get(), initial_value);
     }
 
-    std::unique_ptr<Fence> create_fence(const uint64 initial_value) override {
-        return std::make_unique<D3DFence>(m_d3d12_device.get(), initial_value);
+    std::unique_ptr<View<backend::d3d12>> create_view(const ViewType view_type, Resource<backend::d3d12>* resource, const ViewDesc& view_desc) {
+
+        assert(resource && "pointer to resource is null");
+
+        return std::make_unique<View<backend::d3d12>>(m_d3d12_device.get(), view_type, resource, view_desc);
     }
+
+    void present() {
+        THROW_IF_FAILED(m_dxgi_swapchain->Present(0, 0));
+    }
+
+    std::unique_ptr<Resource<backend::d3d12>> create_swapchain_resource(const uint32 buffer_index) { 
+        
+        winrt::com_ptr<ID3D12Resource> resource;
+        THROW_IF_FAILED(m_dxgi_swapchain->GetBuffer(buffer_index, __uuidof(ID3D12Resource), resource.put_void()));
+            
+        return std::make_unique<Resource<backend::d3d12>>(m_d3d12_device.get(), ResourceType::Texture, resource, ResourceFlags::RenderTarget);
+    }
+
+    std::unique_ptr<BindingSetLayout<backend::d3d12>> create_binding_set_layout(const std::vector<BindingSetInputDesc>& bindings) {
+        return std::make_unique<BindingSetLayout<backend::d3d12>>(m_d3d12_device.get(), bindings);
+    }
+
+    std::unique_ptr<BindingSet<backend::d3d12>> create_binding_set(BindingSetLayout<backend::d3d12>* layout) {
+
+        assert(layout && "pointer to layout is null");
+
+        return std::make_unique<BindingSet<backend::d3d12>>(m_d3d12_device.get(), layout);
+    }
+
+    std::unique_ptr<RenderPass<backend::d3d12>> create_render_pass(const RenderPassDesc& render_pass_desc) {
+        return std::make_unique<RenderPass<backend::d3d12>>(render_pass_desc);
+    }
+
+    std::unique_ptr<FrameBuffer<backend::d3d12>> create_frame_buffer(const FrameBufferDesc<backend::d3d12>& frame_buffer_desc) {
+        return std::make_unique<FrameBuffer<backend::d3d12>>(frame_buffer_desc);
+    }
+
+    /*
 
     std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) override {
         return std::make_unique<D3DPipeline>(m_d3d12_device.get(), pipeline_desc);
@@ -119,65 +160,24 @@ public:
         return std::make_unique<D3DPipeline>(m_d3d12_device.get(), pipeline_desc);
     }
 
-    std::unique_ptr<View> create_view(const ViewType view_type, Resource* resource, const ViewDesc& view_desc) override {
-
-        assert(resource && "pointer to resource is null");
-
-        return std::make_unique<D3DView>(m_d3d12_device.get(), view_type, static_cast<D3DResource*>(resource), view_desc);
-    }
-
-    std::unique_ptr<View> create_view(Sampler* sampler) override {
-
-        assert(sampler && "pointer to sampler is null");
-
-        return std::make_unique<D3DView>(m_d3d12_device.get(), static_cast<D3DSampler*>(sampler));
-    }
-
-    std::unique_ptr<BindingSet> create_binding_set(BindingSetLayout* layout) override {
-
-        assert(layout && "pointer to layout is null");
-
-        return std::make_unique<D3DBindingSet>(m_d3d12_device.get(), static_cast<D3DBindingSetLayout*>(layout));
-    }
-
-    std::unique_ptr<BindingSetLayout> create_binding_set_layout(const std::vector<BindingSetBinding>& bindings) override {
-        return std::make_unique<D3DBindingSetLayout>(m_d3d12_device.get(), bindings);
-    }
-
-    std::unique_ptr<RenderPass> create_render_pass(const RenderPassDesc& render_pass_desc) override {
-        return std::make_unique<D3DRenderPass>(render_pass_desc);
-    }
-
-    std::unique_ptr<FrameBuffer> create_frame_buffer(const FrameBufferDesc frame_buffer_desc) override {
-        return std::make_unique<D3DFrameBuffer>(frame_buffer_desc);
-    }
-
     std::unique_ptr<CommandList> create_command_list(const CommandListType command_list_type) override {
         return std::make_unique<D3DCommandList>(m_d3d12_device.get(), command_list_type);
     }
 
-    void present() override {
-        THROW_IF_FAILED(m_dxgi_swapchain->Present(0, 0));
-    }
+    */
 
-    std::unique_ptr<Resource> create_swapchain_resource(const uint32 buffer_index) override { 
-        
-        winrt::com_ptr<ID3D12Resource> resource;
-        THROW_IF_FAILED(m_dxgi_swapchain->GetBuffer(buffer_index, __uuidof(ID3D12Resource), resource.put_void()));
-            
-        return std::make_unique<D3DResource>(m_d3d12_device.get(), ResourceType::Texture, resource, ResourceFlags::RenderTarget);
-    }
+    
 
-    uint32 get_swapchain_buffer_index() const override { return m_dxgi_swapchain->GetCurrentBackBufferIndex(); }
+    uint32 get_swapchain_buffer_index() const { return m_dxgi_swapchain->GetCurrentBackBufferIndex(); }
 
-    uint32 get_swapchain_buffer_size() const override { 
+    uint32 get_swapchain_buffer_size() const { 
         
         DXGI_SWAP_CHAIN_DESC swapchain_desc{};
         m_dxgi_swapchain->GetDesc(&swapchain_desc);
         return swapchain_desc.BufferCount;
     }
 
-    const AdapterDesc& get_adapter_desc() const override { return m_adapter_desc; }
+    const AdapterDesc& get_adapter_desc() const { return m_adapter_desc; }
 
     ID3D12Device4* get_d3d12_device() { return m_d3d12_device.get(); }
 
@@ -193,9 +193,5 @@ private:
 
     std::map<CommandListType, winrt::com_ptr<ID3D12CommandQueue>> m_command_queues;
 };
-
-std::unique_ptr<Device> create_unique_device(const uint32 adapter_index, void* window, const uint32 width, const uint32 height, const uint32 buffer_count, const uint32 multisample_count) {
-    return std::make_unique<D3DDevice>(adapter_index, window, width, height, buffer_count, multisample_count);
-}
 
 }

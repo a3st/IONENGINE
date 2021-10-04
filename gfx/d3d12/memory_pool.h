@@ -129,7 +129,8 @@ private:
     const usize m_block_size = S;
 };
 
-class D3DMemoryAllocatorWrapper {
+template<>
+class MemoryAllocatorWrapper<backend::d3d12> {
 public:
 
     static void initialize(

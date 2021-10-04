@@ -4,10 +4,10 @@
 
 namespace ionengine::gfx {
 
+template<class B = backend::base>
 class BindingSetLayout  {
 public:
 
-    virtual ~BindingSetLayout() = default;
 };
 
 }

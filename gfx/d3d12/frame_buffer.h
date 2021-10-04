@@ -4,18 +4,19 @@
 
 namespace ionengine::gfx {
 
-class D3DFrameBuffer : public FrameBuffer {
+template<>
+class FrameBuffer<backend::d3d12> {
 public:
 
-    D3DFrameBuffer(const FrameBufferDesc& frame_buffer_desc) : m_desc(frame_buffer_desc) {
+    FrameBuffer(const FrameBufferDesc<backend::d3d12>& frame_buffer_desc) : m_desc(frame_buffer_desc) {
 
     }
 
-    const FrameBufferDesc& get_desc() const override { return m_desc; }
+    const FrameBufferDesc<backend::d3d12>& get_desc() const { return m_desc; }
 
 private:
 
-    FrameBufferDesc m_desc;
+    FrameBufferDesc<backend::d3d12> m_desc;
 };
 
 }

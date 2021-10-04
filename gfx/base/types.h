@@ -4,15 +4,34 @@
 
 namespace ionengine::gfx {
 
+template<class B>
 class Fence;
-class CommandList;
+
+template<class B>
 class Resource;
+
+template<class B>
 class View;
+
+template<class B>
 class RenderPass;
+
+template<class B>
 class FrameBuffer;
+
+template<class B>
 class BindingSetLayout;
+
+template<class B>
 class BindingSet;
+
+template<class B>
 class Pipeline;
+
+template<class B>
+class CommandList;
+
+template<class B>
 class Device;
 
 enum class Format {
@@ -197,7 +216,8 @@ ENUM_CLASS_BIT_FLAG_DECLARE(ResourceState)
 enum class ResourceType {
     Unknown,
     Buffer,
-    Texture
+    Texture,
+    Sampler
 };
 
 enum class ResourceFlags : uint32 {
@@ -266,12 +286,13 @@ struct RenderPassDepthStencilDesc {
 
 STD_TIE_CMP_OPERATOR_DECLARE(RenderPassDepthStencilDesc)
 
+template<class B = backend::base>
 struct FrameBufferDesc {
-    RenderPass* render_pass;
+    RenderPass<B>* render_pass;
     uint32 width;
     uint32 height;
-    std::vector<View*> colors;
-    View* depth_stencil;
+    std::vector<View<B>*> colors;
+    View<B>* depth_stencil;
 };
 
 struct RenderPassDesc {
@@ -280,8 +301,9 @@ struct RenderPassDesc {
     uint32 sample_count = 1;
 };
 
+template<class B = backend::base>
 struct ResourceBarrierDesc {
-    Resource* resource;
+    Resource<B>* resource;
     ResourceState before;
     ResourceState after;
 };
@@ -307,7 +329,7 @@ struct VertexInputDesc {
     uint32 stride;
 };
 
-struct BindingSetBinding {
+struct BindingSetInputDesc {
     ShaderType shader_type;
     ViewType view_type = ViewType::Unknown;
     uint32 slot;
@@ -315,11 +337,12 @@ struct BindingSetBinding {
     uint32 count;
 };
 
+template<class B = backend::base>
 struct WriteBindingSet {
     uint32 slot;
     uint32 count;
     ViewType view_type = ViewType::Unknown;
-    std::vector<View*> views;
+    std::vector<View<B>*> views;
 };
 
 struct RasterizerDesc {
@@ -384,19 +407,21 @@ struct BlendDesc {
     BlendOp blend_op_alpha = BlendOp::Add;
 };
 
+template<class B = backend::base>
 struct GraphicsPipelineDesc {
     std::vector<ShaderDesc> shaders;
-    BindingSetLayout* layout;
+    BindingSetLayout<B>* layout;
     std::vector<VertexInputDesc> vertex_inputs;
-    RenderPass* render_pass;
+    RenderPass<B>* render_pass;
     RasterizerDesc rasterizer;
     DepthStencilDesc depth_stencil;
     BlendDesc blend;
 };
 
+template<class B = backend::base>
 struct ComputePipelineDesc {
     ShaderDesc shader;
-    BindingSetLayout* layout;
+    BindingSetLayout<B>* layout;
 };
 
 }
