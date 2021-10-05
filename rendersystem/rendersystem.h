@@ -9,13 +9,6 @@
 
 #include "limits.h"
 
-#include "frame_buffer_cache.h"
-#include "render_pass_cache.h"
-#include "pipeline_cache.h"
-
-#include "texture_pool.h"
-#include "buffer.h"
-
 #include "framegraph.h"
 
 namespace ionengine::rendersystem {
@@ -30,6 +23,11 @@ public:
         auto client = window->get_client_size();
 
         m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
+
+        m_present_command_list = m_device->create_command_list(gfx::CommandListType::Graphics);
+
+        m_fence = m_device->create_fence(0);
+        m_fence_value = 0;
 
         gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
         std::cout << lib::format<char>("Adapter name: {}, Local memory size: {}, Adapter Id: {}, Vendor Id: {}", 
@@ -92,18 +90,20 @@ public:
 
     void tick() override {
 
+        m_device->wait(gfx::CommandListType::Graphics, m_fence.get(), m_fence_value);
+
         struct BasicPassData {
             FrameGraphResource* swapchain;
         };
 
         auto basic_pass = m_framegraph->add_pass<BasicPassData>(
             "BasicPass", 
-            [&](RenderPassBuilder* builder, BasicPassData& data) {
+            [&](FrameGraphPassBuilder* builder, BasicPassData& data) {
                 data.swapchain = builder->create(FrameGraphResourceType::Attachment, Texture::Format::RGBA8, 800, 600, FrameGraphResourceFlags::Swapchain);
                 data.swapchain = builder->write(data.swapchain, FrameGraphResourceOp::Clear, { 0.5f, 0.4f, 0.3f, 1.0f });
             },
-            [=](RenderPassContext* context, const BasicPassData& data) {
-
+            [=](FrameGraphPassContext* context, const BasicPassData& data) {
+                
             }
         );
 
@@ -113,15 +113,15 @@ public:
 
         auto final_pass = m_framegraph->add_pass<FinalPassData>(
             "FinalPass", 
-            [&](RenderPassBuilder* builder, FinalPassData& data) {
-                data.output = builder->write(basic_pass.get_data().swapchain, FrameGraphResourceOp::Clear, {0.5, 0.6f, 0.4f, 1.0f });
+            [&](FrameGraphPassBuilder* builder, FinalPassData& data) {
+                data.output = builder->write(basic_pass.swapchain, FrameGraphResourceOp::Clear, {0.5, 0.6f, 0.4f, 1.0f });
             },
-            [=](RenderPassContext* context, const FinalPassData& data) {
+            [=](FrameGraphPassContext* context, const FinalPassData& data) {
 
             }
         );
 
-        m_framegraph->execute();
+        m_framegraph->execute(m_present_command_list.get());
     }
 
     void resize(const uint32 width, const uint32 height) {
@@ -132,6 +132,12 @@ private:
 
     std::unique_ptr<gfx::Device> m_device;
     std::unique_ptr<FrameGraph> m_framegraph;
+
+    std::unique_ptr<gfx::CommandList> m_present_command_list;
+
+    std::unique_ptr<gfx::Fence> m_fence;
+
+    uint64 m_fence_value;
 };
 
 }

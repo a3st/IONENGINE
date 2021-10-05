@@ -4,7 +4,7 @@
 
 namespace ionengine::rendersystem {
 
-class FrameBufferCache {
+class FrameBufferPool {
 public:
 
     struct Key {
@@ -20,7 +20,7 @@ public:
         }
     };
 
-    FrameBufferCache(gfx::Device* device) : m_device(device) {
+    FrameBufferPool(gfx::Device* device) : m_device(device) {
         
         assert(device && "pointer to device is null");
     }
@@ -60,7 +60,7 @@ private:
 
     gfx::Device* m_device;
 
-    std::map<FrameBufferCache::Key, std::unique_ptr<gfx::FrameBuffer>> m_frame_buffers;
+    std::map<FrameBufferPool::Key, std::unique_ptr<gfx::FrameBuffer>> m_frame_buffers;
 };
 
 }
