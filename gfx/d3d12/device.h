@@ -85,7 +85,7 @@ public:
         THROW_IF_FAILED(m_command_queues[command_list_type]->Signal(static_cast<D3DFence*>(fence)->get_d3d12_fence(), value));
     }
 
-    void execute_command_buffers(const CommandListType command_list_type, const std::vector<CommandList*>& command_lists) override {
+    void execute_command_lists(const CommandListType command_list_type, const std::vector<CommandList*>& command_lists) override {
         
         std::vector<ID3D12CommandList*> d3d12_command_lists;
 

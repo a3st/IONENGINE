@@ -20,109 +20,61 @@ public:
 
     RenderSystem(platform::wnd::Window* window) {
 
+        window->set_label(lib::format<char>("IONENGINE - {}", gfx::api_name));
+
         auto client = window->get_client_size();
 
         m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
 
-        m_present_command_list = m_device->create_command_list(gfx::CommandListType::Graphics);
+        // Initialize frame resources
+        m_present_command_lists.resize(2);
+        m_fences.resize(2);
+        m_fence_values.resize(2);
 
-        m_fence = m_device->create_fence(0);
-        m_fence_value = 0;
+        for(uint32 i = 0; i < 2; ++i) {
+            m_present_command_lists[i] = m_device->create_command_list(gfx::CommandListType::Graphics);
+            m_fences[i] = m_device->create_fence(0);
+            m_fence_values[i] = 0;
+        }
 
         gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
         std::cout << lib::format<char>("Adapter name: {}, Local memory size: {}, Adapter Id: {}, Vendor Id: {}", 
             adapter_desc.name, adapter_desc.local_memory, adapter_desc.device_id, adapter_desc.vendor_id) << std::endl;
-
-        window->set_label(lib::format<char>("IONENGINE - {}", gfx::api_name));
         
         m_framegraph = std::make_unique<FrameGraph>(m_device.get());
-        
-
-        /*std::unique_ptr<gfx::Resource> resources[10];
-
-        for(uint32 i = 0; i < 1; ++i)
-        {
-            gfx::ResourceDesc res_desc{};
-            res_desc.dimension = gfx::ViewDimension::Buffer;
-            res_desc.width = 64_kb;
-            res_desc.height = 1;
-            res_desc.mip_levels = 1;
-            res_desc.array_size = 1;
-            res_desc.flags = gfx::ResourceFlags::ConstantBuffer;
-            resources[i] = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Default, res_desc);
-        }
-
-        gfx::ViewDesc view_desc{};
-        view_desc.buffer_size = resources[0]->get_desc().width;
-        auto view = m_device->create_view(gfx::ViewType::ConstantBuffer, resources[0].get(), view_desc);
-
-        std::vector<gfx::BindingSetBinding> bindings = {
-            { gfx::ShaderType::Vertex, gfx::ViewType::ConstantBuffer, 0, 0, 1 }
-        };
-
-        auto binding_set_layout = m_device->create_binding_set_layout(bindings);
-        auto binding_set = m_device->create_binding_set(binding_set_layout.get());
-
-        gfx::WriteBindingSet write = {
-            0,
-            1,
-            gfx::ViewType::ConstantBuffer,
-            { { view.get() } }
-        };
-
-        binding_set->write(write);
-
-        gfx::RenderPassDesc render_pass_desc{};
-        auto render_pass = m_device->create_render_pass(render_pass_desc);
-
-        gfx::GraphicsPipelineDesc pipeline_desc{};
-        pipeline_desc.vertex_inputs = {
-            { "POSITION", 0, gfx::Format::RGB32float, 0, 0 }
-        };
-        pipeline_desc.render_pass = render_pass.get();
-        pipeline_desc.layout = binding_set_layout.get();
-        pipeline_desc.shaders = { 
-            { gfx::ShaderType::Vertex, "shaders/pc/basic_vert.bin" },
-            { gfx::ShaderType::Pixel, "shaders/pc/basic_frag.bin" },
-        };
-        auto pipeline = m_device->create_pipeline(pipeline_desc);*/
     }
 
     void tick() override {
-
-        m_device->wait(gfx::CommandListType::Graphics, m_fence.get(), m_fence_value);
 
         struct BasicPassData {
             FrameGraphResource* swapchain;
         };
 
         auto basic_pass = m_framegraph->add_pass<BasicPassData>(
-            "BasicPass", 
+            "BasicPass",
             [&](FrameGraphPassBuilder* builder, BasicPassData& data) {
                 data.swapchain = builder->create(FrameGraphResourceType::Attachment, Texture::Format::RGBA8, 800, 600, FrameGraphResourceFlags::Swapchain);
-                data.swapchain->resize(120, 120);
-                //data.swapchain = builder->write(data.swapchain, FrameGraphResourceOp::Clear, { 0.5f, 0.4f, 0.3f, 1.0f });
+                data.swapchain = builder->write(data.swapchain, FrameGraphResourceOp::Clear, { 0.9f, 0.4f, 0.3f, 1.0f });
             },
             [=](FrameGraphPassContext* context, const BasicPassData& data) {
                 
             }
         );
 
-        struct FinalPassData {
-            FrameGraphResource* output;
-        };
+        const uint32 frame_index = m_device->get_swapchain_buffer_index();
 
-        auto final_pass = m_framegraph->add_pass<FinalPassData>(
-            "FinalPass", 
-            [&](FrameGraphPassBuilder* builder, FinalPassData& data) {
-                //data.output = builder->write(basic_pass.swapchain, FrameGraphResourceOp::Clear, {0.5, 0.6f, 0.4f, 1.0f });
-            },
-            [=](FrameGraphPassContext* context, const FinalPassData& data) {
+        m_framegraph->execute(m_present_command_lists[frame_index].get());
 
-            }
-        );
+        m_device->present();
 
-        m_framegraph->execute(m_present_command_list.get());
+        // wait for previous frame
+        {
+            const uint64 prev_fence_value = m_fence_values[frame_index];
+            m_device->signal(gfx::CommandListType::Graphics, m_fences[frame_index].get(), m_fence_values[frame_index]);
+            m_fence_values[frame_index]++;
+
+            m_fences[frame_index]->wait(prev_fence_value);
+        }
     }
 
     void resize(const uint32 width, const uint32 height) {
@@ -132,13 +84,12 @@ public:
 private:
 
     std::unique_ptr<gfx::Device> m_device;
+
     std::unique_ptr<FrameGraph> m_framegraph;
 
-    std::unique_ptr<gfx::CommandList> m_present_command_list;
-
-    std::unique_ptr<gfx::Fence> m_fence;
-
-    uint64 m_fence_value;
+    std::vector<std::unique_ptr<gfx::CommandList>> m_present_command_lists;
+    std::vector<std::unique_ptr<gfx::Fence>> m_fences;
+    std::vector<uint64> m_fence_values;
 };
 
 }

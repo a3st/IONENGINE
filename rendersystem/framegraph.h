@@ -3,7 +3,6 @@
 #pragma once
 
 #include "lib/math.h"
-#include "lib/ref_ptr.h"
 
 #include "texture.h"
 
@@ -25,22 +24,25 @@ enum class FrameGraphResourceFlags : uint32 {
 ENUM_CLASS_BIT_FLAG_DECLARE(FrameGraphResourceFlags)
 
 class FrameGraphResource {
-friend class FrameGraphResourcePool;
 public:
 
-    FrameGraphResource(gfx::Device* device) : m_device(device), m_ref_count(0) {
+    FrameGraphResource(gfx::Device* device) : m_device(device) {
 
         assert(device && "pointer to device is null");
 
         m_texture = std::make_unique<Texture>(m_device, "swapchain_texture");
+
+        m_resource_state = gfx::ResourceState::Present;
     }
 
-    [[nodiscard]] lib::Expected<FrameGraphResource*, std::string> create_from_swapchain() {
+    void create_from_swapchain() {
 
         m_texture->create_from_swapchain(m_device->get_swapchain_buffer_index()).value();
-
-        return lib::make_expected<FrameGraphResource*, std::string>(this);
     }
+
+    void set_resource_state(const gfx::ResourceState state) { m_resource_state = state; }
+
+    gfx::ResourceState get_resource_state() const { return m_resource_state; }
 
     Texture* get_texture() const { return m_texture.get(); }
 
@@ -50,7 +52,7 @@ private:
 
     std::unique_ptr<Texture> m_texture;
 
-    uint32 m_ref_count;
+    gfx::ResourceState m_resource_state;
 };
 
 class FrameGraphResourcePool {
@@ -58,6 +60,7 @@ public:
 
     struct Key {
         bool acquire;
+        uint32 frame_index;
         std::unique_ptr<FrameGraphResource> resource;
         FrameGraphResourceFlags resource_flags;
     };
@@ -80,7 +83,8 @@ public:
         for(uint32 i = 0; i < m_resources.size(); ++i) {
 
             if(!m_resources[i].acquire && 
-                m_resources[i].resource_flags == resource_flags) {
+                m_resources[i].resource_flags == resource_flags &&
+                m_resources[i].frame_index == m_device->get_swapchain_buffer_index()) {
 
                 ptr = m_resources[i].resource.get();
                 break;
@@ -91,13 +95,16 @@ public:
 
             FrameGraphResourcePool::Key key = {
                 true,
+                m_device->get_swapchain_buffer_index(),
                 std::make_unique<FrameGraphResource>(m_device),
                 resource_flags
             };
 
             if(resource_flags & FrameGraphResourceFlags::Swapchain) {
-                key.resource->create_from_swapchain().value();
+                key.resource->create_from_swapchain();
             }
+
+            ptr = key.resource.get();
 
             m_resources.emplace_back(std::move(key));
         }
@@ -105,13 +112,14 @@ public:
         return ptr;
     }
 
-    void release(FrameGraphResource* resource) {
+    void release(FrameGraphResource* resource_) {
 
-        for(uint32 i = 0; i < m_resources.size(); ++i) {
+        for(auto& resource : m_resources) {
 
-            if(m_resources[i].resource.get() == resource) {
+            if(resource_ == resource.resource.get()) {
 
-                m_resources[i].acquire = false;
+                resource.acquire = false;
+                break;
             }
         }
     }
@@ -161,24 +169,21 @@ public:
         m_name(name),
         m_exec_func(exec_func) {
 
-        
     }
 
     void execute(FrameGraphPassContext* context) const { m_exec_func(context); }
 
-    void read(const ReadFrameGraphResource& read_resource) {
-        
-        m_reads.emplace_back(read_resource);
-    }
+    void read_resource(const ReadFrameGraphResource& read_resource) { m_read_resources.emplace_back(read_resource); }
+ 
+    void write_resource(const WriteFrameGraphResource& write_resource) { m_write_resources.emplace_back(write_resource); }
 
-    void write(const WriteFrameGraphResource& write_resource) {
+    void create_resource(FrameGraphResource* resource) { m_create_resources.emplace_back(resource); }
 
-        m_writes.emplace_back(write_resource);
-    }
+    const std::vector<WriteFrameGraphResource>& get_write_resources() const { return m_write_resources; }
 
-    const std::vector<WriteFrameGraphResource>& get_writes() const { return m_writes; }
-
-    const std::vector<ReadFrameGraphResource>& get_reads() const { return m_reads; }
+    const std::vector<ReadFrameGraphResource>& get_read_resources() const { return m_read_resources; }
+    
+    const std::vector<FrameGraphResource*>& get_create_resources() const { return m_create_resources; }
 
 private:
 
@@ -186,8 +191,11 @@ private:
 
     std::function<void(FrameGraphPassContext*)> m_exec_func;
 
-    std::vector<WriteFrameGraphResource> m_writes;
-    std::vector<ReadFrameGraphResource> m_reads;
+    std::vector<WriteFrameGraphResource> m_write_resources;
+
+    std::vector<ReadFrameGraphResource> m_read_resources;
+
+    std::vector<FrameGraphResource*> m_create_resources;
 };
 
 class FrameGraphPassBuilder {
@@ -206,9 +214,11 @@ public:
         const uint32 width,
         const uint32 height,
         const FrameGraphResourceFlags resource_flags
-    ) {        
-        
-        return m_resource_pool->get_resource(resource_type, format, width, height, resource_flags);
+    ) {
+
+        FrameGraphResource* resource = m_resource_pool->get_resource(resource_type, format, width, height, resource_flags);
+        m_frame_graph_pass->create_resource(resource);
+        return resource;
     }
 
     [[nodiscard]] FrameGraphResource* write(
@@ -217,19 +227,20 @@ public:
         const math::Fcolor& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f }
     ) {
         
-        m_frame_graph_pass->write(WriteFrameGraphResource { resource, op, clear_color });
+        m_frame_graph_pass->write_resource(WriteFrameGraphResource { resource, op, clear_color });
         return resource;
     }
 
     [[nodiscard]] FrameGraphResource* read(FrameGraphResource* resource) {
         
-        m_frame_graph_pass->read(ReadFrameGraphResource { resource });
+        m_frame_graph_pass->read_resource(ReadFrameGraphResource { resource });
         return resource;
     }
 
 private:
 
     FrameGraphResourcePool* m_resource_pool;
+
     FrameGraphPass* m_frame_graph_pass;
 };
 
@@ -261,16 +272,77 @@ public:
         return data;
     }
 
-    void execute(gfx::CommandList* command_list) {
+    void execute(gfx::CommandList* present_command_list) {
+
+        present_command_list->reset();
 
         FrameGraphPassContext context;
 
-        for(uint32 i = 0; i < m_passes.size(); ++i) {
+        for(auto& pass : m_passes) {
 
-            // std::cout << lib::format<char>("id {}, writes {}, reads {}", i, m_passes[i].get_writes().size(), m_passes[i].get_reads().size()) << std::endl;
-            
-            m_passes[i].execute(&context);
+            std::vector<gfx::RenderPassColorDesc> render_pass_colors;
+            std::vector<gfx::View*> color_views;
+            std::vector<gfx::ResourceBarrierDesc> write_barriers;
+            gfx::ClearValueDesc clear_desc;
+            for(auto write_resource : pass.get_write_resources()) {
+                
+                auto src = write_resource.resource->get_resource_state();
+                auto dst = gfx::ResourceState::RenderTarget;
+                auto resource = write_resource.resource->get_texture()->get_resource();
+                auto view = write_resource.resource->get_texture()->get_view();
+
+                write_barriers.emplace_back(gfx::ResourceBarrierDesc { resource, src, dst });
+
+                write_resource.resource->set_resource_state(dst);
+
+                render_pass_colors.emplace_back(
+                    gfx::RenderPassColorDesc { 
+                        std::get<gfx::ResourceDesc>(resource->get_desc()).format,
+                        render_pass_load_op_to_gfx(write_resource.op),
+                        gfx::RenderPassStoreOp::Store
+                    }
+                );
+
+                color_views.emplace_back(view);
+
+                clear_desc.colors.emplace_back(
+                    gfx::ClearValueColor { 
+                        write_resource.clear_color.r,
+                        write_resource.clear_color.g,
+                        write_resource.clear_color.b,
+                        write_resource.clear_color.a
+                    }
+                );
+            }
+
+            present_command_list->resource_barriers(write_barriers);
+
+            gfx::RenderPass* render_pass = m_render_pass_pool->get_render_pass(render_pass_colors, std::nullopt, 1);
+            gfx::FrameBuffer* frame_buffer = m_frame_buffer_pool->get_frame_buffer(render_pass, 800, 600, color_views, nullptr);
+
+            present_command_list->begin_render_pass(render_pass, frame_buffer, clear_desc);
+            pass.execute(&context);
+            present_command_list->end_render_pass();
+
+            for(auto resource : pass.get_create_resources()) {
+                m_resource_pool->release(resource);
+            }
         }
+
+        for(auto write_resource : m_passes.back().get_write_resources()) {
+
+            auto src = write_resource.resource->get_resource_state();
+            auto dst = gfx::ResourceState::Present;
+            auto resource = write_resource.resource->get_texture()->get_resource();
+
+            present_command_list->resource_barriers({ { resource, src, dst } });
+
+            write_resource.resource->set_resource_state(dst);
+        }
+
+        present_command_list->close();
+
+        m_device->execute_command_lists(gfx::CommandListType::Graphics, { present_command_list });
 
         m_passes.clear();
     }
@@ -279,47 +351,22 @@ private:
 
     gfx::Device* m_device;
 
-    std::unique_ptr<FrameGraphResourcePool> m_resource_pool;
-
     std::vector<FrameGraphPass> m_passes;
+
+    std::unique_ptr<FrameGraphResourcePool> m_resource_pool;
 
     std::unique_ptr<FrameBufferPool> m_frame_buffer_pool;
 
     std::unique_ptr<RenderPassPool> m_render_pass_pool;
+
+    gfx::RenderPassLoadOp render_pass_load_op_to_gfx(const FrameGraphResourceOp op) {
+        
+        switch(op) {
+            case FrameGraphResourceOp::Clear: return gfx::RenderPassLoadOp::Clear;
+            case FrameGraphResourceOp::Load: return gfx::RenderPassLoadOp::Load;
+            default: assert(false && "passed invalid argument to render_pass_load_op_to_gfx"); return gfx::RenderPassLoadOp::DontCare;
+        }
+    }
 };
 
 }
-
-/*namespace ionengine::lib {
-
-template<>
-class RefPtr<rendersystem::FrameGraphResource> {
-public:
-
-    RefPtr(rendersystem::FrameGraphResource* ptr) : m_ptr(ptr) {
-
-    }
-
-    ~RefPtr() { m_ptr->release(); }
-
-    RefPtr(const RefPtr& rhs) : m_ptr(rhs.m_ptr) { m_ptr->acquire(); }
-    
-    RefPtr(RefPtr&& rhs) : m_ptr(rhs.m_ptr) { }
-
-    RefPtr& operator=(const RefPtr& rhs) {
-
-        m_ptr = rhs.m_ptr;
-        m_ptr->acquire();
-        return *this;
-    }
-    
-    RefPtr& operator=(RefPtr&& rhs) {
-
-        m_ptr = rhs.m_ptr;
-        return *this;
-    }
-
-private:
-
-    rendersystem::FrameGraphResource* m_ptr;
-};*/

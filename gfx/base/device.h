@@ -18,7 +18,7 @@ public:
 
     virtual void signal(const CommandListType command_list_type, Fence* fence, const uint64 value) = 0;
 
-    virtual void execute_command_buffers(const CommandListType command_list_type, const std::vector<CommandList*>& command_lists) = 0;
+    virtual void execute_command_lists(const CommandListType command_list_type, const std::vector<CommandList*>& command_lists) = 0;
 
     virtual [[nodiscard]] std::unique_ptr<Resource> create_resource(const ResourceType resource_type, const MemoryType memory_type, const ResourceDesc& resource_desc) = 0;
 
