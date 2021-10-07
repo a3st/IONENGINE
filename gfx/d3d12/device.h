@@ -164,6 +164,14 @@ public:
         return swapchain_desc.BufferCount;
     }
 
+    void resize_swapchain_buffers(const uint32 width, const uint32 height) override { 
+        
+        DXGI_SWAP_CHAIN_DESC1 swapchain_desc{};
+        m_dxgi_swapchain->GetDesc1(&swapchain_desc);
+
+        THROW_IF_FAILED(m_dxgi_swapchain->ResizeBuffers(swapchain_desc.BufferCount, width, height, swapchain_desc.Format, swapchain_desc.Flags));
+    }
+
     const AdapterDesc& get_adapter_desc() const override { return m_adapter_desc; }
 
     ID3D12Device4* get_d3d12_device() { return m_d3d12_device.get(); }

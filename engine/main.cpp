@@ -45,6 +45,7 @@ int32 main(int32, char**) {
                     }
                     case platform::wnd::WindowEvent::Sized: {
                         auto event_size = std::get<platform::wnd::PhysicalSize>(event.event);
+                        std::cout << lib::format<char>("resize {} {}", event_size.width, event_size.height) << std::endl;
                         env.rendersys->resize(event_size.width, event_size.height);
                         break;
                     }

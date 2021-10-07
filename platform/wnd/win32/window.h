@@ -101,13 +101,13 @@ public:
 	PhysicalSize get_size() const override {
 		RECT rect{};
 		GetWindowRect(m_wnd, &rect);
-		return { static_cast<uint32>(rect.right), static_cast<uint32>(rect.bottom) };
+		return { std::max<uint32>(1, static_cast<uint32>(rect.right)), std::max<uint32>(1, static_cast<uint32>(rect.bottom)) };
 	}
 
 	PhysicalSize get_client_size() const override { 
 		RECT rect{};
 		GetClientRect(m_wnd, &rect);
-		return { static_cast<uint32>(rect.right), static_cast<uint32>(rect.bottom) }; 
+		return { std::max<uint32>(1, static_cast<uint32>(rect.right)), std::max<uint32>(1, static_cast<uint32>(rect.bottom)) }; 
 	}
 
 private:
@@ -138,7 +138,7 @@ private:
 			}
 			case WM_SIZE: {
 				event_handler.event_type = WindowEvent::Sized;
-				event_handler.event = PhysicalSize { LOWORD(lParam), HIWORD(lParam) };
+				event_handler.event = PhysicalSize { std::max<uint32>(1, LOWORD(lParam)), std::max<uint32>(1, HIWORD(lParam)) };
 				window->m_event_loop->emplace_event(event_handler);
 				break;
 			}

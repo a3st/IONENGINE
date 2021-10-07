@@ -79,6 +79,15 @@ public:
 
     void resize(const uint32 width, const uint32 height) {
         
+        const uint32 frame_index = m_device->get_swapchain_buffer_index();
+
+        const uint64 prev_fence_value = m_fence_values[frame_index];
+        m_device->signal(gfx::CommandListType::Graphics, m_fences[frame_index].get(), m_fence_values[frame_index]);
+        m_fence_values[frame_index]++;
+
+        m_fences[frame_index]->wait(prev_fence_value);
+
+        m_device->resize_swapchain_buffers(width, height);
     }
 
 private:

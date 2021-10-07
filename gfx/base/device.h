@@ -36,6 +36,8 @@ public:
 
     virtual uint32 get_swapchain_buffer_size() const = 0;
 
+    virtual void resize_swapchain_buffers(const uint32 width, const uint32 height) = 0;
+
     virtual [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const GraphicsPipelineDesc& pipeline_desc) = 0;
 
     virtual [[nodiscard]] std::unique_ptr<Pipeline> create_pipeline(const ComputePipelineDesc& pipeline_desc) = 0;
