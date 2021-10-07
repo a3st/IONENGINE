@@ -169,10 +169,17 @@ public:
     }
 
     void end_render_pass() override {
+        
         m_d3d12_command_list->EndRenderPass();
     }
 
+    void draw_instanced(uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) override {
+         
+         m_d3d12_command_list->DrawInstanced(vertex_count, instance_count, first_vertex, first_instance);
+    }
+
     void draw_indexed(const uint32 index_count, const uint32 instance_count, const uint32 first_index, const int32 vertex_offset, const uint32 first_instance) override {
+        
         m_d3d12_command_list->DrawIndexedInstanced(index_count, instance_count, first_index, vertex_offset, first_instance);
     }
 

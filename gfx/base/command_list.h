@@ -66,6 +66,8 @@ public:
         @brief End render pass in command list 
     */
     virtual void end_render_pass() = 0;
+
+    virtual void draw_instanced(uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) = 0;
     
     /**
         @brief Draw indexed triangles in command list

@@ -6,7 +6,6 @@
 
 namespace ionengine::rendersystem {
 
-template<Texture::Usage U> 
 class TexturePool {
 public:
 
@@ -17,14 +16,25 @@ public:
         }
     };
 
-    TexturePool(gfx::Device* device, const uint32 size) : m_device(device) {
+    TexturePool(gfx::Device* device) : m_device(device) {
 
         assert(device && "pointer to device is null");
+    }
+
+    Texture* get_texture(const std::string& name) {
+
+        
+    }
+
+    void release(Texture* texture) {
+
     }
 
 private:
 
     gfx::Device* m_device;
+
+    std::map<std::string, std::unique_ptr<Texture>> m_textures;
 };
 
 }

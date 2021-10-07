@@ -18,7 +18,7 @@ using namespace memory_literals;
 class RenderSystem : public EngineSystem {
 public:
 
-    RenderSystem(platform::wnd::Window* window) {
+    RenderSystem(platform::wnd::Window* window) : m_window(window) {
 
         window->set_label(lib::format<char>("IONENGINE - {}", gfx::api_name));
 
@@ -35,6 +35,7 @@ public:
             m_present_command_lists[i] = m_device->create_command_list(gfx::CommandListType::Graphics);
             m_fences[i] = m_device->create_fence(0);
             m_fence_values[i] = 0;
+            m_swapchain_textures.emplace_back(std::make_unique<Texture>(m_device.get(), lib::format<char>("swapchain_{}", i)))->create_from_swapchain(i).value();
         }
 
         gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
@@ -42,9 +43,53 @@ public:
             adapter_desc.name, adapter_desc.local_memory, adapter_desc.device_id, adapter_desc.vendor_id) << std::endl;
         
         m_framegraph = std::make_unique<FrameGraph>(m_device.get());
+
+        gfx::ResourceDesc res_desc{};
+        res_desc.dimension = gfx::ViewDimension::Buffer;
+        res_desc.width = 1_mb;
+        res_desc.height = 1;
+        res_desc.mip_levels = 1;
+        res_desc.array_size = 1;
+        res_desc.flags = gfx::ResourceFlags::VertexBuffer;
+        m_basic_resource = m_device->create_resource(gfx::ResourceType::Buffer, gfx::MemoryType::Upload, res_desc);
+
+        std::vector<math::Fvector3> floats = {
+            { 0.0f, 0.25f, 0.0f },
+            { 0.25f, -0.25f, 0.0f },
+            { -0.25f, -0.25f, 0.0f }
+        };
+
+        byte* mapped = m_basic_resource->map();
+        std::memcpy(mapped, floats.data(), sizeof(math::Fvector3) * floats.size());
+        m_basic_resource->unmap();
+
+        gfx::RenderPassDesc render_pass_desc{};
+        render_pass_desc.colors.emplace_back(gfx::RenderPassColorDesc { gfx::Format::RGBA8unorm, gfx::RenderPassLoadOp::DontCare, gfx::RenderPassStoreOp::DontCare });
+        auto render_pass = m_device->create_render_pass(render_pass_desc);
+
+        std::vector<gfx::BindingSetInputDesc> bindings = {
+            { gfx::ShaderType::Vertex, gfx::ViewType::ConstantBuffer, 0, 0, 1 }
+        };
+
+        auto binding_set_layout = m_device->create_binding_set_layout(bindings);
+
+        gfx::GraphicsPipelineDesc pipeline_desc{};
+        pipeline_desc.vertex_inputs = {
+            { "POSITION", 0, gfx::Format::RGB32float, 0, 0 }
+        };
+        pipeline_desc.render_pass = render_pass.get();
+        pipeline_desc.layout = binding_set_layout.get();
+        pipeline_desc.shaders = { 
+            { gfx::ShaderType::Vertex, "shaders/pc/basic_vert.bin" },
+            { gfx::ShaderType::Pixel, "shaders/pc/basic_frag.bin" },
+        };
+        m_basic_pipeline = m_device->create_pipeline(pipeline_desc);
     }
 
     void tick() override {
+
+        auto client = m_window->get_client_size();
+        const uint32 frame_index = m_device->get_swapchain_buffer_index();
 
         struct BasicPassData {
             FrameGraphResource* swapchain;
@@ -53,15 +98,18 @@ public:
         auto basic_pass = m_framegraph->add_pass<BasicPassData>(
             "BasicPass",
             [&](FrameGraphPassBuilder* builder, BasicPassData& data) {
-                data.swapchain = builder->create(FrameGraphResourceType::Attachment, Texture::Format::RGBA8, 800, 600, FrameGraphResourceFlags::Swapchain);
+                data.swapchain = builder->create(FrameGraphResourceType::Attachment, m_swapchain_textures[frame_index].get(), FrameGraphResourceFlags::Swapchain);
                 data.swapchain = builder->write(data.swapchain, FrameGraphResourceOp::Clear, { 0.9f, 0.4f, 0.3f, 1.0f });
             },
             [=](FrameGraphPassContext* context, const BasicPassData& data) {
                 
+                context->get_command_list()->bind_pipeline(m_basic_pipeline.get());
+                context->get_command_list()->set_viewport(0, 0, client.width, client.height);
+                context->get_command_list()->set_scissor_rect(0, 0, client.width, client.height);
+                context->get_command_list()->set_vertex_buffer(0, m_basic_resource.get(), sizeof(math::Fvector3));
+                context->get_command_list()->draw_instanced(3, 1, 0, 0);
             }
         );
-
-        const uint32 frame_index = m_device->get_swapchain_buffer_index();
 
         m_framegraph->execute(m_present_command_lists[frame_index].get());
 
@@ -87,10 +135,20 @@ public:
 
         m_fences[frame_index]->wait(prev_fence_value);
 
-        m_device->resize_swapchain_buffers(width, height);
+        //m_swapchain_textures.clear();
+
+       // m_device->resize_swapchain_buffers(width, height);
+
+        for(uint32 i = 0; i < 2; ++i) {
+            //m_swapchain_textures.emplace_back(std::make_unique<Texture>(m_device.get(), lib::format<char>("swapchain_{}", i)))->create_from_swapchain(i).value();
+        }
+
+        //m_framegraph->reset();
     }
 
 private:
+
+    platform::wnd::Window* m_window;
 
     std::unique_ptr<gfx::Device> m_device;
 
@@ -99,6 +157,14 @@ private:
     std::vector<std::unique_ptr<gfx::CommandList>> m_present_command_lists;
     std::vector<std::unique_ptr<gfx::Fence>> m_fences;
     std::vector<uint64> m_fence_values;
+    std::vector<std::unique_ptr<Texture>> m_swapchain_textures;
+
+
+    //
+    std::unique_ptr<gfx::Pipeline> m_basic_pipeline;
+
+    std::unique_ptr<gfx::Resource> m_basic_resource;
+    std::unique_ptr<gfx::Resource> m_basic_resource_2;
 };
 
 }

@@ -115,7 +115,7 @@ public:
 
         if(m_memory_ptr.heap) {
             auto& resource_desc = std::get<ResourceDesc>(m_desc);
-            D3DMemoryAllocatorWrapper::deallocate(m_type, m_memory_ptr, resource_desc.width, resource_desc.flags);
+            D3DMemoryAllocatorWrapper::deallocate(m_type, m_memory_type, m_memory_ptr, resource_desc.width, resource_desc.flags);
         }
     }
 

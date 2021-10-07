@@ -139,6 +139,7 @@ public:
         const usize rtds_pool_size
     ) {
         m_buffers_memory_pool = std::make_unique<D3DMemoryPool<D3D12_HEAP_TYPE_DEFAULT, 64_kb>>(d3d12_device, buffers_pool_size);
+        m_buffers_upld_memory_pool = std::make_unique<D3DMemoryPool<D3D12_HEAP_TYPE_UPLOAD, 64_kb>>(d3d12_device, buffers_pool_size);
         m_textures_memory_pool = std::make_unique<D3DMemoryPool<D3D12_HEAP_TYPE_DEFAULT, 1_mb>>(d3d12_device, textures_pool_size);
         m_rtds_textures_memory_pool = std::make_unique<D3DMemoryPool<D3D12_HEAP_TYPE_DEFAULT, 1_mb>>(d3d12_device, rtds_pool_size);
     }
@@ -160,7 +161,11 @@ public:
         D3DMemoryPtr ptr{};
         switch(resource_type) {
             case ResourceType::Buffer: {
-                ptr = m_buffers_memory_pool->allocate(size, alignment, heap_flags);
+                if(memory_type == MemoryType::Upload) {
+                    ptr = m_buffers_upld_memory_pool->allocate(size, alignment, heap_flags);
+                } else {
+                    ptr = m_buffers_memory_pool->allocate(size, alignment, heap_flags);
+                }
                 break;
             }
             case ResourceType::Texture: {
@@ -175,11 +180,15 @@ public:
         return ptr;
     }
 
-    static void deallocate(const ResourceType resource_type, const D3DMemoryPtr& ptr, const usize size, const ResourceFlags resource_flags) {
+    static void deallocate(const ResourceType resource_type, const MemoryType memory_type, const D3DMemoryPtr& ptr, const usize size, const ResourceFlags resource_flags) {
 
         switch(resource_type) {
             case ResourceType::Buffer: {
-                m_buffers_memory_pool->deallocate(ptr, size);
+                if(memory_type == MemoryType::Upload) {
+                    m_buffers_upld_memory_pool->deallocate(ptr, size);
+                } else {
+                    m_buffers_memory_pool->deallocate(ptr, size);
+                }
                 break;
             }
             case ResourceType::Texture: {
@@ -198,6 +207,7 @@ private:
     inline static std::unique_ptr<D3DMemoryPool<D3D12_HEAP_TYPE_DEFAULT, 64_kb>> m_buffers_memory_pool;
     inline static std::unique_ptr<D3DMemoryPool<D3D12_HEAP_TYPE_DEFAULT, 1_mb>> m_textures_memory_pool;
     inline static std::unique_ptr<D3DMemoryPool<D3D12_HEAP_TYPE_DEFAULT, 1_mb>> m_rtds_textures_memory_pool;
+    inline static std::unique_ptr<D3DMemoryPool<D3D12_HEAP_TYPE_UPLOAD, 64_kb>> m_buffers_upld_memory_pool;
 };
 
 }
