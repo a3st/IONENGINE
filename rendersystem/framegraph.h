@@ -3,6 +3,7 @@
 #pragma once
 
 #include "lib/math.h"
+#include "lib/ref_ptr.h"
 
 #include "texture.h"
 
@@ -24,9 +25,10 @@ enum class FrameGraphResourceFlags : uint32 {
 ENUM_CLASS_BIT_FLAG_DECLARE(FrameGraphResourceFlags)
 
 class FrameGraphResource {
+friend class FrameGraphResourcePool;
 public:
 
-    FrameGraphResource(gfx::Device* device) : m_device(device) {
+    FrameGraphResource(gfx::Device* device) : m_device(device), m_ref_count(0) {
 
         assert(device && "pointer to device is null");
 
@@ -47,6 +49,8 @@ private:
     gfx::Device* m_device;
 
     std::unique_ptr<Texture> m_texture;
+
+    uint32 m_ref_count;
 };
 
 class FrameGraphResourcePool {
@@ -109,13 +113,6 @@ public:
 
                 m_resources[i].acquire = false;
             }
-        }
-    }
-
-    void flush() {
-
-        for(uint32 i = 0; i < m_resources.size(); ++i) {
-            m_resources[i].acquire = false;
         }
     }
 
@@ -214,7 +211,11 @@ public:
         return m_resource_pool->get_resource(resource_type, format, width, height, resource_flags);
     }
 
-    [[nodiscard]] FrameGraphResource* write(FrameGraphResource* resource, const FrameGraphResourceOp op, const math::Fcolor& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f }) {
+    [[nodiscard]] FrameGraphResource* write(
+        FrameGraphResource* resource, 
+        const FrameGraphResourceOp op, 
+        const math::Fcolor& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f }
+    ) {
         
         m_frame_graph_pass->write(WriteFrameGraphResource { resource, op, clear_color });
         return resource;
@@ -272,7 +273,6 @@ public:
         }
 
         m_passes.clear();
-        m_resource_pool->flush();
     }
 
 private:
@@ -289,3 +289,37 @@ private:
 };
 
 }
+
+/*namespace ionengine::lib {
+
+template<>
+class RefPtr<rendersystem::FrameGraphResource> {
+public:
+
+    RefPtr(rendersystem::FrameGraphResource* ptr) : m_ptr(ptr) {
+
+    }
+
+    ~RefPtr() { m_ptr->release(); }
+
+    RefPtr(const RefPtr& rhs) : m_ptr(rhs.m_ptr) { m_ptr->acquire(); }
+    
+    RefPtr(RefPtr&& rhs) : m_ptr(rhs.m_ptr) { }
+
+    RefPtr& operator=(const RefPtr& rhs) {
+
+        m_ptr = rhs.m_ptr;
+        m_ptr->acquire();
+        return *this;
+    }
+    
+    RefPtr& operator=(RefPtr&& rhs) {
+
+        m_ptr = rhs.m_ptr;
+        return *this;
+    }
+
+private:
+
+    rendersystem::FrameGraphResource* m_ptr;
+};*/

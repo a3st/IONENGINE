@@ -100,7 +100,8 @@ public:
             "BasicPass", 
             [&](FrameGraphPassBuilder* builder, BasicPassData& data) {
                 data.swapchain = builder->create(FrameGraphResourceType::Attachment, Texture::Format::RGBA8, 800, 600, FrameGraphResourceFlags::Swapchain);
-                data.swapchain = builder->write(data.swapchain, FrameGraphResourceOp::Clear, { 0.5f, 0.4f, 0.3f, 1.0f });
+                data.swapchain->resize(120, 120);
+                //data.swapchain = builder->write(data.swapchain, FrameGraphResourceOp::Clear, { 0.5f, 0.4f, 0.3f, 1.0f });
             },
             [=](FrameGraphPassContext* context, const BasicPassData& data) {
                 
@@ -114,7 +115,7 @@ public:
         auto final_pass = m_framegraph->add_pass<FinalPassData>(
             "FinalPass", 
             [&](FrameGraphPassBuilder* builder, FinalPassData& data) {
-                data.output = builder->write(basic_pass.swapchain, FrameGraphResourceOp::Clear, {0.5, 0.6f, 0.4f, 1.0f });
+                //data.output = builder->write(basic_pass.swapchain, FrameGraphResourceOp::Clear, {0.5, 0.6f, 0.4f, 1.0f });
             },
             [=](FrameGraphPassContext* context, const FinalPassData& data) {
 
