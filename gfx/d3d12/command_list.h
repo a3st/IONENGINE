@@ -28,6 +28,12 @@ public:
         THROW_IF_FAILED(m_d3d12_command_list->Close());
     }
 
+    void set_binding_set(BindingSet* binding_set) override {
+
+        auto d3d_binding_set = static_cast<D3DBindingSet*>(binding_set);
+        d3d_binding_set->set_descriptor_tables(m_d3d12_command_list.get());
+    }
+
     void bind_pipeline(Pipeline* pipeline) override {
 
         assert(pipeline && "pointer to pipeline is null");
@@ -38,9 +44,9 @@ public:
 
         if(m_current_pipeline->get_type() == PipelineType::Graphics) {
 
+            m_d3d12_command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             m_d3d12_command_list->SetGraphicsRootSignature(d3d_layout->get_d3d12_root_signature());
             m_d3d12_command_list->SetPipelineState(m_current_pipeline->get_d3d12_pipeline_state());
-            m_d3d12_command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         } else {
 
             m_d3d12_command_list->SetComputeRootSignature(d3d_layout->get_d3d12_root_signature());

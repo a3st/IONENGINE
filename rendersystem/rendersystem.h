@@ -71,7 +71,8 @@ public:
             { gfx::ShaderType::Vertex, gfx::ViewType::ConstantBuffer, 0, 0, 1 }
         };
 
-        auto binding_set_layout = m_device->create_binding_set_layout(bindings);
+        binding_set_layout = m_device->create_binding_set_layout(bindings);
+        m_binding_set = m_device->create_binding_set(binding_set_layout.get());
 
         gfx::GraphicsPipelineDesc pipeline_desc{};
         pipeline_desc.vertex_inputs = {
@@ -83,6 +84,7 @@ public:
             { gfx::ShaderType::Vertex, "shaders/pc/basic_vert.bin" },
             { gfx::ShaderType::Pixel, "shaders/pc/basic_frag.bin" },
         };
+        pipeline_desc.rasterizer.cull_mode = gfx::CullMode::Back;
         m_basic_pipeline = m_device->create_pipeline(pipeline_desc);
     }
 
@@ -99,13 +101,16 @@ public:
             "BasicPass",
             [&](FrameGraphPassBuilder* builder, BasicPassData& data) {
                 data.swapchain = builder->create(FrameGraphResourceType::Attachment, m_swapchain_textures[frame_index].get(), FrameGraphResourceFlags::Swapchain);
-                data.swapchain = builder->write(data.swapchain, FrameGraphResourceOp::Clear, { 0.9f, 0.4f, 0.3f, 1.0f });
+                data.swapchain = builder->write(data.swapchain, FrameGraphResourceOp::Clear, { 0.2f, 0.2f, 0.2f, 1.0f });
             },
             [=](FrameGraphPassContext* context, const BasicPassData& data) {
                 
-                context->get_command_list()->bind_pipeline(m_basic_pipeline.get());
                 context->get_command_list()->set_viewport(0, 0, client.width, client.height);
                 context->get_command_list()->set_scissor_rect(0, 0, client.width, client.height);
+
+                context->get_command_list()->bind_pipeline(m_basic_pipeline.get());
+                context->get_command_list()->set_binding_set(m_binding_set.get());
+
                 context->get_command_list()->set_vertex_buffer(0, m_basic_resource.get(), sizeof(math::Fvector3));
                 context->get_command_list()->draw_instanced(3, 1, 0, 0);
             }
@@ -163,8 +168,12 @@ private:
     //
     std::unique_ptr<gfx::Pipeline> m_basic_pipeline;
 
+    std::unique_ptr<gfx::BindingSet> m_binding_set;
+
+    std::unique_ptr<gfx::BindingSetLayout> binding_set_layout;
+
     std::unique_ptr<gfx::Resource> m_basic_resource;
-    std::unique_ptr<gfx::Resource> m_basic_resource_2;
+
 };
 
 }

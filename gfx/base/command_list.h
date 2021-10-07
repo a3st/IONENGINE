@@ -30,6 +30,8 @@ public:
     */
     virtual void reset() = 0;
 
+    virtual void set_binding_set(BindingSet* binding_set) = 0;
+
     /**
         @brief Set the viewport to command list
         @param x viewport x position

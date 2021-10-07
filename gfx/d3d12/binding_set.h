@@ -21,14 +21,17 @@ public:
             descriptor_sizes[descriptor_table.second.heap_type] += descriptor_table.second.count;
         }
 
+        m_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = nullptr;
+        m_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = nullptr;
+
         if(descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] > 0) {
             auto d3d12_heap = create_heap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
-            m_descriptor_heaps.emplace(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, d3d12_heap);
+            m_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = d3d12_heap;
         }
 
         if(descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] > 0) {
             auto d3d12_heap = create_heap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER]);
-            m_descriptor_heaps.emplace(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, d3d12_heap);
+            m_descriptor_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = d3d12_heap;
         }
     }
 

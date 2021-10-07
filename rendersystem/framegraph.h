@@ -139,7 +139,7 @@ public:
 
             gfx::RenderPass* render_pass = m_render_pass_pool->get_render_pass(render_pass_colors, std::nullopt, 1);
             gfx::FrameBuffer* frame_buffer = m_frame_buffer_pool->get_frame_buffer(render_pass, 800, 600, color_views, nullptr);
-
+    
             present_command_list->begin_render_pass(render_pass, frame_buffer, clear_desc);
             pass.execute(&context);
             present_command_list->end_render_pass();
