@@ -60,8 +60,8 @@ public:
         viewport.TopLeftY = static_cast<float>(y);
         viewport.Width = static_cast<float>(width);
         viewport.Height = static_cast<float>(height);
-        viewport.MinDepth = 0.0f;
-        viewport.MaxDepth = 1.0f;
+        viewport.MinDepth = D3D12_MIN_DEPTH;
+        viewport.MaxDepth = D3D12_MAX_DEPTH;
 
         m_d3d12_command_list->RSSetViewports(1, &viewport);
     }

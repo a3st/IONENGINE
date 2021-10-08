@@ -140,34 +140,27 @@ public:
         std::vector<std::vector<byte>> shader_blobs;
         for(auto& shader : pipeline_desc.shaders) {
 
-            auto result = read_shader_file(shader.blob_path);
+            auto result = read_shader_file(shader.blob_path).value();
 
-            lib::expected_result<std::vector<byte>, std::string>(
-                result,
-                [&](const std::vector<byte>& arg) {
-                    auto& blob = shader_blobs.emplace_back(arg);
+            auto& blob = shader_blobs.emplace_back(result);
 
-                    D3D12_SHADER_BYTECODE shader_code{};
-                    shader_code.pShaderBytecode = blob.data();
-                    shader_code.BytecodeLength = blob.size();
+            D3D12_SHADER_BYTECODE shader_code{};
+            shader_code.pShaderBytecode = blob.data();
+            shader_code.BytecodeLength = blob.size();
 
-                    switch(shader.shader_type) {
-                        case ShaderType::Vertex: graphics_pipeline_desc.VS = shader_code; break;
-                        case ShaderType::Pixel: graphics_pipeline_desc.PS = shader_code; break;
-                        case ShaderType::Geometry: graphics_pipeline_desc.GS = shader_code; break;
-                        case ShaderType::Domain: graphics_pipeline_desc.DS = shader_code; break;
-                        case ShaderType::Hull: graphics_pipeline_desc.HS = shader_code; break;
-                    }
-                },
-                [&](const std::string& arg) {
-                    throw std::runtime_error("Pipeline creation error (" + arg + ")");
-                }
-            );
+            switch(shader.shader_type) {
+                case ShaderType::Vertex: graphics_pipeline_desc.VS = shader_code; break;
+                case ShaderType::Pixel: graphics_pipeline_desc.PS = shader_code; break;
+                case ShaderType::Geometry: graphics_pipeline_desc.GS = shader_code; break;
+                case ShaderType::Domain: graphics_pipeline_desc.DS = shader_code; break;
+                case ShaderType::Hull: graphics_pipeline_desc.HS = shader_code; break;
+            }
         }
 
         std::memcpy(graphics_pipeline_desc.RTVFormats, rtv_formats.data(), rtv_formats.size() * sizeof(DXGI_FORMAT));
         graphics_pipeline_desc.NumRenderTargets = static_cast<uint32>(rtv_formats.size());
         graphics_pipeline_desc.DSVFormat = gfx_to_dxgi_format(render_pass_desc.depth_stencil.format);
+        graphics_pipeline_desc.SampleMask = std::numeric_limits<uint32>::max();
         graphics_pipeline_desc.SampleDesc = sample_desc;
         
         THROW_IF_FAILED(d3d12_device->CreateGraphicsPipelineState(&graphics_pipeline_desc, __uuidof(ID3D12PipelineState), m_d3d12_pipeline_state.put_void()));

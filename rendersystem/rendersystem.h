@@ -84,7 +84,6 @@ public:
             { gfx::ShaderType::Vertex, "shaders/pc/basic_vert.bin" },
             { gfx::ShaderType::Pixel, "shaders/pc/basic_frag.bin" },
         };
-        pipeline_desc.rasterizer.cull_mode = gfx::CullMode::Back;
         m_basic_pipeline = m_device->create_pipeline(pipeline_desc);
     }
 
@@ -140,15 +139,15 @@ public:
 
         m_fences[frame_index]->wait(prev_fence_value);
 
-        //m_swapchain_textures.clear();
+        m_swapchain_textures.clear();
 
-       // m_device->resize_swapchain_buffers(width, height);
+        m_device->resize_swapchain_buffers(width, height);
 
         for(uint32 i = 0; i < 2; ++i) {
-            //m_swapchain_textures.emplace_back(std::make_unique<Texture>(m_device.get(), lib::format<char>("swapchain_{}", i)))->create_from_swapchain(i).value();
+            m_swapchain_textures.emplace_back(std::make_unique<Texture>(m_device.get(), lib::format<char>("swapchain_{}", i)))->create_from_swapchain(i).value();
         }
 
-        //m_framegraph->reset();
+        m_framegraph->reset();
     }
 
 private:
