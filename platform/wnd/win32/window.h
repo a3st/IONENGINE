@@ -136,9 +136,10 @@ private:
 				window->m_event_loop->emplace_event(event_handler);
 				break;
 			}
-			case WM_SIZE: {
+			case WM_EXITSIZEMOVE: {
 				event_handler.event_type = WindowEvent::Sized;
 				event_handler.event = PhysicalSize { std::max<uint32>(1, LOWORD(lParam)), std::max<uint32>(1, HIWORD(lParam)) };
+				std::cout << 123 << std::endl;
 				window->m_event_loop->emplace_event(event_handler);
 				break;
 			}
