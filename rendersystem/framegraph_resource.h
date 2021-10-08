@@ -52,7 +52,7 @@ public:
 
     Texture* get_texture() const { return m_texture; }
 
-    FrameGraphResourceFlags get_flags() { return m_flags; }
+    FrameGraphResourceFlags get_flags() const { return m_flags; }
 
 private:
 
@@ -63,6 +63,22 @@ private:
     gfx::ResourceState m_state;
 
     FrameGraphResourceFlags m_flags;
+};
+
+}
+
+namespace std {
+
+using namespace ionengine;
+
+template<> struct hash<rendersystem::FrameGraphResource> {
+    
+    usize operator()(const rendersystem::FrameGraphResource& rhs) const noexcept {
+
+        usize h1 = std::hash<rendersystem::Texture>{}(*rhs.get_texture());
+        usize h2 = std::hash<uint32>{}(static_cast<uint32>(rhs.get_flags()));
+        return h1 ^ h2;
+    }
 };
 
 }

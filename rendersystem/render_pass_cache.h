@@ -4,7 +4,7 @@
 
 namespace ionengine::rendersystem {
 
-class RenderPassPool {
+class RenderPassCache {
 public:
 
     struct Key {
@@ -17,7 +17,7 @@ public:
         }
     };
 
-    RenderPassPool(gfx::Device* device) : m_device(device) {
+    RenderPassCache(gfx::Device* device) : m_device(device) {
 
         assert(device && "pointer to device is null");
     }
@@ -53,7 +53,7 @@ private:
 
     gfx::Device* m_device;
 
-    std::map<RenderPassPool::Key, std::unique_ptr<gfx::RenderPass>> m_render_passes;
+    std::map<RenderPassCache::Key, std::unique_ptr<gfx::RenderPass>> m_render_passes;
 };
 
 }

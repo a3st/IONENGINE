@@ -85,3 +85,21 @@ private:
 };
 
 }
+
+namespace std {
+
+using namespace ionengine;
+
+template<> struct hash<rendersystem::Texture> {
+    
+    usize operator()(const rendersystem::Texture& rhs) const noexcept {
+
+        usize h1 = std::hash<std::string>{}(rhs.get_name());
+        usize h2 = std::hash<uint32>{}(rhs.get_width());
+        usize h3 = std::hash<uint32>{}(rhs.get_height());
+        usize h4 = std::hash<uint32>{}(static_cast<uint32>(rhs.get_usage()));
+        return h1 ^ h2 ^ h3 ^ h4;
+    }
+};
+
+}

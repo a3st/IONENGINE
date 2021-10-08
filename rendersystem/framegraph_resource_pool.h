@@ -30,8 +30,10 @@ public:
 
         for(auto& res : m_resources) {
 
-            if(!res.acquired && res.frame_index == m_device->get_swapchain_buffer_index() &&
-                res.resource->get_texture() == texture && res.resource->get_flags() == resource_flags) {
+            auto src_texture = std::hash<Texture>{}(*texture);
+            auto dst_texture = std::hash<Texture>{}(*res.resource->get_texture());
+
+            if(!res.acquired && res.frame_index == m_device->get_swapchain_buffer_index() && src_texture == dst_texture) {
 
                 ptr = res.resource.get();
                 //std::cout << "found frame graph resource free" << std::endl;
@@ -67,7 +69,7 @@ public:
         }
     }
 
-    void clear() {
+    void reset() {
         
         m_resources.clear();
     }

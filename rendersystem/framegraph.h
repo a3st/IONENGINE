@@ -3,18 +3,41 @@
 #pragma once
 
 #include "framegraph_resource_pool.h"
-#include "framegraph_pass_pool.h"
-#include "frame_buffer_pool.h"
-#include "render_pass_pool.h"
+
+#include "frame_buffer_cache.h"
+#include "render_pass_cache.h"
 
 namespace ionengine::rendersystem {
+
+class FrameGraphPassContext {
+public:
+
+    FrameGraphPassContext(gfx::CommandList* command_list) : m_command_list(command_list) {
+
+
+    }
+
+    gfx::CommandList* get_command_list() { return m_command_list; }
+
+private:
+
+    gfx::CommandList* m_command_list;
+
+};
+
+struct FrameGraphPassDesc {
+    std::string name;
+    std::function<void(FrameGraphPassContext*)> exec_func;
+    std::vector<FrameGraphResource*> creates;
+    std::vector<WriteFrameGraphResource> writes;
+    std::vector<ReadFrameGraphResource> reads;
+};
 
 class FrameGraphPassBuilder {
 public:
 
-    FrameGraphPassBuilder(FrameGraphResourcePool* resource_pool, FrameGraphPass* frame_graph_pass) 
-        : 
-            m_resource_pool(resource_pool), m_frame_graph_pass(frame_graph_pass) {
+    FrameGraphPassBuilder(FrameGraphResourcePool* resource_pool, FrameGraphPassDesc& pass_desc) 
+        : m_resource_pool(resource_pool), m_pass_desc(pass_desc) {
 
         assert(resource_pool && "pointer to resource_pool is null");
     }
@@ -37,7 +60,7 @@ public:
     ) {
 
         auto resource = m_resource_pool->allocate(resource_type, texture, resource_flags);
-        m_frame_graph_pass->create_resource(resource);
+        m_pass_desc.creates.emplace_back(resource);
         return resource;
     }
 
@@ -47,21 +70,20 @@ public:
         const math::Fcolor& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f }
     ) {
         
-        m_frame_graph_pass->write_resource(WriteFrameGraphResource { resource, op, clear_color });
+        m_pass_desc.writes.emplace_back(WriteFrameGraphResource { resource, op, clear_color });
         return resource;
     }
 
     [[nodiscard]] FrameGraphResource* read(FrameGraphResource* resource) {
         
-        m_frame_graph_pass->read_resource(ReadFrameGraphResource { resource });
+        m_pass_desc.reads.emplace_back(ReadFrameGraphResource { resource });
         return resource;
     }
 
 private:
 
     FrameGraphResourcePool* m_resource_pool;
-
-    FrameGraphPass* m_frame_graph_pass;
+    FrameGraphPassDesc& m_pass_desc;
 };
 
 class FrameGraph {
@@ -72,8 +94,8 @@ public:
         assert(device && "pointer to device is null");
 
         m_resource_pool = std::make_unique<FrameGraphResourcePool>(device);
-        m_frame_buffer_pool = std::make_unique<FrameBufferPool>(device);
-        m_render_pass_pool = std::make_unique<RenderPassPool>(device);
+        m_frame_buffer_cache = std::make_unique<FrameBufferCache>(device);
+        m_render_pass_cache = std::make_unique<RenderPassCache>(device);
     }
 
     template<typename T>
@@ -84,9 +106,9 @@ public:
     ) {
         T data{};
 
-        m_passes.emplace_back(pass_name, std::bind(exec_func, std::placeholders::_1, data));
+        m_pass_descs.emplace_back(FrameGraphPassDesc { pass_name, std::bind(exec_func, std::placeholders::_1, data) });
 
-        FrameGraphPassBuilder builder(m_resource_pool.get(), &m_passes.back());
+        FrameGraphPassBuilder builder(m_resource_pool.get(), m_pass_descs.back());
         builder_func(&builder, data);
 
         return data;
@@ -98,13 +120,13 @@ public:
 
         FrameGraphPassContext context(present_command_list);
 
-        for(auto& pass : m_passes) {
+        for(auto& pass : m_pass_descs) {
 
             std::vector<gfx::RenderPassColorDesc> render_pass_colors;
             std::vector<gfx::View*> color_views;
             std::vector<gfx::ResourceBarrierDesc> write_barriers;
             gfx::ClearValueDesc clear_desc;
-            for(auto write_resource : pass.get_write_resources()) {
+            for(auto write_resource : pass.writes) {
                 
                 auto src = write_resource.resource->get_state();
                 auto dst = gfx::ResourceState::RenderTarget;
@@ -137,19 +159,19 @@ public:
 
             present_command_list->resource_barriers(write_barriers);
 
-            gfx::RenderPass* render_pass = m_render_pass_pool->get_render_pass(render_pass_colors, std::nullopt, 1);
-            gfx::FrameBuffer* frame_buffer = m_frame_buffer_pool->get_frame_buffer(render_pass, 800, 600, color_views, nullptr);
+            gfx::RenderPass* render_pass = m_render_pass_cache->get_render_pass(render_pass_colors, std::nullopt, 1);
+            gfx::FrameBuffer* frame_buffer = m_frame_buffer_cache->get_frame_buffer(render_pass, 800, 600, color_views, nullptr);
     
             present_command_list->begin_render_pass(render_pass, frame_buffer, clear_desc);
-            pass.execute(&context);
+            pass.exec_func(&context);
             present_command_list->end_render_pass();
 
-            for(auto resource : pass.get_create_resources()) {
+            for(auto resource : pass.creates) {
                 m_resource_pool->deallocate(resource);
             }
         }
 
-        for(auto write_resource : m_passes.back().get_write_resources()) {
+        for(auto write_resource : m_pass_descs.back().writes) {
 
             auto src = write_resource.resource->get_state();
             auto dst = gfx::ResourceState::Present;
@@ -164,27 +186,27 @@ public:
 
         m_device->execute_command_lists(gfx::CommandListType::Graphics, { present_command_list });
 
-        m_passes.clear();
+        m_pass_descs.clear();
     }
 
     void reset() {
 
-        m_resource_pool->clear();
-        m_frame_buffer_pool->clear();
-        m_render_pass_pool->clear();
+        m_resource_pool->reset();
+        m_frame_buffer_cache->clear();
+        m_render_pass_cache->clear();
     }
 
 private:
 
     gfx::Device* m_device;
 
-    std::vector<FrameGraphPass> m_passes;
+    std::vector<FrameGraphPassDesc> m_pass_descs;
 
     std::unique_ptr<FrameGraphResourcePool> m_resource_pool;
 
-    std::unique_ptr<FrameBufferPool> m_frame_buffer_pool;
+    std::unique_ptr<FrameBufferCache> m_frame_buffer_cache;
 
-    std::unique_ptr<RenderPassPool> m_render_pass_pool;
+    std::unique_ptr<RenderPassCache> m_render_pass_cache;
 
     gfx::RenderPassLoadOp render_pass_load_op_to_gfx(const FrameGraphResourceOp op) {
         
