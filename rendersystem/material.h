@@ -4,6 +4,15 @@
 
 namespace ionengine::rendersystem {
 
+class Material {
+public:
 
+    Material() {
+        
+    }
+
+private:
+
+};
 
 }

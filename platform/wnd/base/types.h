@@ -46,12 +46,20 @@ enum class WindowEvent {
 struct PhysicalSize {
 	uint32 width;
 	uint32 height;
+
+	auto make_tie() const { return std::tie(width, height); }
 };
+
+STD_TIE_CMP_OPERATOR_DECLARE(PhysicalSize)
 
 struct PhysicalPosition {
 	int32 x;
 	int32 y;
+
+	auto make_tie() const { return std::tie(x, y); }
 };
+
+STD_TIE_CMP_OPERATOR_DECLARE(PhysicalPosition)
 
 struct KeyboardInput {
 	uint32 scan_code;

@@ -14,7 +14,10 @@ public:
 		const WindowStyle style, 
 		WindowsWindowEventLoop* event_loop
 	) : 
-		m_event_loop(event_loop) {
+		m_event_loop(event_loop),
+		m_size{},
+		m_client_size{},
+		m_style_flags(0) {
 		
 		WNDCLASS wnd_class{};
 		wnd_class.lpszClassName = TEXT("IONENGINE");
@@ -25,21 +28,20 @@ public:
 			throw std::runtime_error("An error occurred while registering the window");
 		}
 
-		uint32 style_flags = 0;
 		if(style & WindowStyle::Normal) {
-			style_flags |= WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME;
+			m_style_flags |= WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME;
 		}
 		if(style & WindowStyle::Minimize) {
-			style_flags |= WS_MINIMIZEBOX;
+			m_style_flags |= WS_MINIMIZEBOX;
 		}
 		if(style & WindowStyle::Maximaze) {
-			style_flags |= WS_MAXIMIZEBOX;
+			m_style_flags |= WS_MAXIMIZEBOX;
 		}
 
 		m_wnd = CreateWindow(
 			wnd_class.lpszClassName,
 			lib::stws(label).c_str(),
-			style_flags,
+			m_style_flags,
 			0, 100,
 			width, height,
 			nullptr, nullptr,
@@ -86,7 +88,7 @@ public:
 		m_devices[1].dwFlags = RIDEV_REMOVE;
 		m_devices[1].hwndTarget = nullptr;
 
-		::RegisterRawInputDevices(m_devices.data(), 2, sizeof(RAWINPUTDEVICE));
+		RegisterRawInputDevices(m_devices.data(), 2, sizeof(RAWINPUTDEVICE));
     }
 
     void* get_handle() const override { return reinterpret_cast<void*>(m_wnd); }
@@ -94,21 +96,14 @@ public:
 	uint64 get_id() const override { return m_id; }
 
 	void show_cursor(const bool enable) override { m_cursor = enable; }
+
 	void set_label(const std::string& label) override { SetWindowText(m_wnd, lib::stws(label).c_str()); }
 
 	void set_size(const uint32_t width, const uint32_t height) override { SetWindowPos(m_wnd, HWND_TOPMOST, 0, 0, width, height, 0); }
-	
-	PhysicalSize get_size() const override {
-		RECT rect{};
-		GetWindowRect(m_wnd, &rect);
-		return { std::max<uint32>(1, static_cast<uint32>(rect.right)), std::max<uint32>(1, static_cast<uint32>(rect.bottom)) };
-	}
 
-	PhysicalSize get_client_size() const override { 
-		RECT rect{};
-		GetClientRect(m_wnd, &rect);
-		return { std::max<uint32>(1, static_cast<uint32>(rect.right)), std::max<uint32>(1, static_cast<uint32>(rect.bottom)) }; 
-	}
+	const PhysicalSize& get_size() const { return m_size; }
+
+	const PhysicalSize& get_client_size() const { return m_client_size; }
 
 private:
 
@@ -119,6 +114,10 @@ private:
 
     bool m_cursor;
 	uint64_t m_id;
+	uint32 m_style_flags;
+
+	PhysicalSize m_size;
+	PhysicalSize m_client_size;
 
 	static LRESULT window_procedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
@@ -130,7 +129,6 @@ private:
 		}
 
 		switch(msg) {
-
 			case WM_CLOSE: {
 				event_handler.event_type = WindowEvent::Closed;
 				window->m_event_loop->emplace_event(event_handler);
@@ -138,9 +136,24 @@ private:
 			}
 			case WM_EXITSIZEMOVE: {
 				event_handler.event_type = WindowEvent::Sized;
-				event_handler.event = PhysicalSize { std::max<uint32>(1, LOWORD(lParam)), std::max<uint32>(1, HIWORD(lParam)) };
-				std::cout << 123 << std::endl;
+				event_handler.event = window->m_client_size;
 				window->m_event_loop->emplace_event(event_handler);
+				break;
+			}
+			case WM_SIZE: {
+				uint32 width = LOWORD(lParam);
+				uint32 height = HIWORD(lParam);
+
+				RECT style_rect{};
+				AdjustWindowRect(&style_rect, window->m_style_flags, false);
+				uint32 style_width = style_rect.right - style_rect.left;
+				uint32 style_height = style_rect.bottom - style_rect.top;
+
+				window->m_client_size.width = std::max<uint32>(1, width - style_width);
+				window->m_client_size.height = std::max<uint32>(1, height - style_height);
+
+				window->m_size.width = std::max<uint32>(1, width);
+				window->m_size.height = std::max<uint32>(1, height);
 				break;
 			}
 			case WM_MOUSEMOVE: {

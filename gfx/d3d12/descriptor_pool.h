@@ -26,7 +26,7 @@ public:
                         ptr.heap = &heap;
                         ptr.offset = i;
 
-                        heap.descriptor_data[heap.offset] = 0x1;
+                        heap.descriptor_data[i] = 0x1;
                         heap.offset = i + 1;
 
                         std::cout << "descriptor pool free block found" << std::endl;

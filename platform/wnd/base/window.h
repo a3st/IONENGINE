@@ -45,17 +45,9 @@ public:
     */
     virtual void set_size(const uint32 width, const uint32 height) = 0;
 
-    /**
-        @brief Get the window size
-        @return PhysicalSize PhysicalSize struct that contains size
-    */
-    virtual PhysicalSize get_size() const = 0;
+    virtual const PhysicalSize& get_size() const = 0;
 
-    /**
-        @brief Get the client size of window
-        @return PhysicalSize PhysicalSize struct that contains size
-    */
-    virtual PhysicalSize get_client_size() const = 0;
+    virtual const PhysicalSize& get_client_size() const = 0;
 };
 
 }

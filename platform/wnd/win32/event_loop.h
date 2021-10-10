@@ -24,8 +24,7 @@ public:
 
             while(!m_events.empty()) {
                 WindowEventHandler event_handler = std::move(m_events.back());
-                m_events.pop();
-                //std::cout << "events count: " << m_events.size() << std::endl;
+                 m_events.pop();
                 function_loop(event_handler);
             }
 

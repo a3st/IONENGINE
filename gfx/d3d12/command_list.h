@@ -190,11 +190,12 @@ public:
     }
 
     void close() override {
-        m_d3d12_command_list->Close();
+        THROW_IF_FAILED(m_d3d12_command_list->Close());
     }
 
     void reset() override {
-        m_d3d12_command_list->Reset(m_d3d12_command_allocator.get(), nullptr);
+        THROW_IF_FAILED(m_d3d12_command_allocator->Reset());
+        THROW_IF_FAILED(m_d3d12_command_list->Reset(m_d3d12_command_allocator.get(), nullptr));
     }
 
     void set_index_buffer(Resource* resource, const Format format) override {

@@ -4,12 +4,16 @@
 
 #include "engine/engine_system.h"
 
+#include "lib/vector2.h"
+
 #include "lib/memory.h"
 #include "gfx/gfx.h"
 
 #include "limits.h"
 
 #include "framegraph.h"
+
+#include "texture_pool.h"
 
 namespace ionengine::rendersystem {
 
@@ -18,24 +22,36 @@ using namespace memory_literals;
 class RenderSystem : public EngineSystem {
 public:
 
-    RenderSystem(platform::wnd::Window* window) : m_window(window) {
+    RenderSystem(platform::wnd::Window* window) 
+        : 
+            m_window(window),
+
+            m_device_id(0),
+            m_render_size{},
+            m_buffered_frames(0) {
 
         window->set_label(lib::format<char>("IONENGINE - {}", gfx::api_name));
 
-        auto client = window->get_client_size();
+        auto& client_size = m_window->get_client_size();
+        m_render_size.x = client_size.width;
+        m_render_size.y = client_size.height;
 
-        m_device = gfx::create_unique_device(0, window->get_handle(), client.width, client.height, 2, 1);
+        m_buffered_frames = 2;
+
+        m_device = gfx::create_unique_device(m_device_id, window->get_handle(), m_render_size.x, m_render_size.y, m_buffered_frames, 1);
+
+        m_texture_pool = std::make_unique<TexturePool>(m_device.get(), 1);
 
         // Initialize frame resources
-        m_present_command_lists.resize(2);
-        m_fences.resize(2);
-        m_fence_values.resize(2);
+        m_present_command_lists.resize(m_buffered_frames);
+        m_fences.resize(m_buffered_frames);
+        m_fence_values.resize(m_buffered_frames);
 
-        for(uint32 i = 0; i < 2; ++i) {
+        for(uint32 i = 0; i < m_buffered_frames; ++i) {
             m_present_command_lists[i] = m_device->create_command_list(gfx::CommandListType::Graphics);
             m_fences[i] = m_device->create_fence(0);
             m_fence_values[i] = 0;
-            m_swapchain_textures.emplace_back(std::make_unique<Texture>(m_device.get(), lib::format<char>("swapchain_{}", i)))->create_from_swapchain(i).value();
+            m_swapchain_textures.emplace_back(std::make_unique<Texture>(m_device.get()))->create_from_swapchain(i).value();
         }
 
         gfx::AdapterDesc adapter_desc = m_device->get_adapter_desc();
@@ -85,11 +101,12 @@ public:
             { gfx::ShaderType::Pixel, "shaders/pc/basic_frag.bin" },
         };
         m_basic_pipeline = m_device->create_pipeline(pipeline_desc);
+
+        m_texture_pool->allocate();
     }
 
     void tick() override {
 
-        auto client = m_window->get_client_size();
         const uint32 frame_index = m_device->get_swapchain_buffer_index();
 
         struct BasicPassData {
@@ -104,8 +121,18 @@ public:
             },
             [=](FrameGraphPassContext* context, const BasicPassData& data) {
                 
-                context->get_command_list()->set_viewport(0, 0, client.width, client.height);
-                context->get_command_list()->set_scissor_rect(0, 0, client.width, client.height);
+                /*
+
+                for(render_queues[Type::Opaque]) {
+                    // copy data to index, vertex buffer
+                    auto copy_command = context->get_copy_command_f_pool();
+                    copy_command->copy_buffers(...)
+                }
+
+                */
+
+                context->get_command_list()->set_viewport(0, 0, m_render_size.x, m_render_size.y);
+                context->get_command_list()->set_scissor_rect(0, 0, m_render_size.x, m_render_size.y);
 
                 context->get_command_list()->bind_pipeline(m_basic_pipeline.get());
                 context->get_command_list()->set_binding_set(m_binding_set.get());
@@ -130,6 +157,13 @@ public:
     }
 
     void resize(const uint32 width, const uint32 height) {
+
+        if(m_render_size.x == width || m_render_size.y == height) {
+            return;
+        }
+
+        m_render_size.x = width;
+        m_render_size.y = height;
         
         const uint32 frame_index = m_device->get_swapchain_buffer_index();
 
@@ -143,8 +177,8 @@ public:
 
         m_device->resize_swapchain_buffers(width, height);
 
-        for(uint32 i = 0; i < 2; ++i) {
-            m_swapchain_textures.emplace_back(std::make_unique<Texture>(m_device.get(), lib::format<char>("swapchain_{}", i)))->create_from_swapchain(i).value();
+        for(uint32 i = 0; i < m_buffered_frames; ++i) {
+            m_swapchain_textures.emplace_back(std::make_unique<Texture>(m_device.get()))->create_from_swapchain(i).value();
         }
 
         m_framegraph->reset();
@@ -153,6 +187,10 @@ public:
 private:
 
     platform::wnd::Window* m_window;
+
+    uint32 m_device_id;
+    math::Uvector2 m_render_size; 
+    uint32 m_buffered_frames;
 
     std::unique_ptr<gfx::Device> m_device;
 
@@ -172,6 +210,9 @@ private:
     std::unique_ptr<gfx::BindingSetLayout> binding_set_layout;
 
     std::unique_ptr<gfx::Resource> m_basic_resource;
+
+
+    std::unique_ptr<TexturePool> m_texture_pool;
 
 };
 
