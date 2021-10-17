@@ -1,4 +1,0 @@
-E:/GitHub/ionengine_ops/gfx/build/CMakeFiles/lgfx-d3d12.dir
-E:/GitHub/ionengine_ops/gfx/build/CMakeFiles/PACKAGE.dir
-E:/GitHub/ionengine_ops/gfx/build/CMakeFiles/ALL_BUILD.dir
-E:/GitHub/ionengine_ops/gfx/build/CMakeFiles/ZERO_CHECK.dir
