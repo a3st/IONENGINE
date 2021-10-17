@@ -2,39 +2,32 @@
 
 #pragma once
 
-namespace ionengine::gfx {
+#include "../types.h"
+#include "d3d12.h"
 
-class D3DFence : public Fence {
+namespace lgfx {
+
+class Fence {
+
 public:
 
-    D3DFence(ID3D12Device4* d3d12_device, const uint64 initial_value) {
+    Fence();
+    ~Fence();
+    Fence(Device* device, const uint64_t initial_value);
+    Fence(const Fence&) = delete;
+    Fence(Fence&& rhs) noexcept;
+    
+    Fence& operator=(const Fence&) = delete;
+    Fence& operator=(Fence&& rhs) noexcept;
 
-        assert(d3d12_device && "pointer to d3d12_device is null");
-
-        THROW_IF_FAILED(d3d12_device->CreateFence(initial_value, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), m_d3d12_fence.put_void()));
-        m_fence_event = CreateEvent(nullptr, false, false, nullptr);
-        if(!m_fence_event) {
-            THROW_IF_FAILED(HRESULT_FROM_WIN32(GetLastError()));
-        }
-    }
-
-    uint64 get_completed_value() const override { return m_d3d12_fence->GetCompletedValue(); }
-
-    void wait(const uint64 value) override {
-        if(m_d3d12_fence->GetCompletedValue() < value) {
-            THROW_IF_FAILED(m_d3d12_fence->SetEventOnCompletion(value, m_fence_event));
-            WaitForSingleObjectEx(m_fence_event, INFINITE, false);
-        }
-    }
-
-    void signal(const uint64 value) override { THROW_IF_FAILED(m_d3d12_fence->Signal(value)); }
-
-    ID3D12Fence* get_d3d12_fence() { return m_d3d12_fence.get(); }
+    uint64_t GetCompletedValue() const;
+    void Signal(const uint64_t value);
+    void Wait(const uint64_t value);
 
 private:
 
-    winrt::com_ptr<ID3D12Fence> m_d3d12_fence;
-    HANDLE m_fence_event;
+    ID3D12Fence* fence_;
+    HANDLE event_;
 };
 
 }

@@ -2,61 +2,9 @@
 
 #pragma once
 
-namespace ionengine::gfx {
+namespace lgfx {
 
-class Fence;
-class CommandList;
-class Resource;
-class View;
-class RenderPass;
-class FrameBuffer;
-class BindingSetLayout;
-class BindingSet;
-class Pipeline;
-class Device;
 
-enum class Format {
-    Unknown,
-    RGBA32float,
-    RGBA32uint,
-    RGBA32int,
-    RGB32float,
-    RGB32uint,
-    RGB32int,
-    RG32float,
-    RG32uint,
-    RG32int,
-    R32float,
-    R32uint,
-    R32int,
-    RGBA16float,
-    RGBA16uint,
-    RGBA16int,
-    RGBA16unorm,
-    RGBA16snorm,
-    RG16float,
-    RG16uint,
-    RG16int,
-    RG16unorm,
-    RG16snorm,
-    R16float,
-    R16uint,
-    R16int,
-    R16unorm,
-    R16snorm,
-    RGBA8uint,
-    RGBA8int,
-    RGBA8unorm,
-    RGBA8snorm,
-    RG8uint,
-    RG8int,
-    RG8unorm,
-    RG8snorm,
-    R8uint,
-    R8int,
-    R8unorm,
-    R8snorm
-};
 
 enum class ShaderType {
     Vertex,
@@ -94,11 +42,7 @@ enum class ViewType {
     DepthStencil
 };
 
-enum class CommandListType {
-    Graphics,
-    Copy,
-    Compute
-};
+
 
 enum class TextureType {
     _1D,
@@ -117,16 +61,7 @@ enum class CullMode {
     Back
 };
 
-enum class ComparisonFunc {
-    Never,
-    Less,
-    Equal,
-    LessEqual,
-    Greater,
-    NotEqual,
-    GreaterEqual,
-    Always
-};
+
 
 enum class MemoryType {
     Default,
@@ -160,16 +95,7 @@ enum class BlendOp {
     Max
 };
 
-enum class RenderPassLoadOp {
-    Load,
-    Clear,
-    DontCare
-};
 
-enum class RenderPassStoreOp {
-    Store,
-    DontCare
-};
 
 enum class ResourceState : uint32 {
     Common = 1 << 0,
@@ -220,16 +146,9 @@ enum class PipelineType {
     Compute
 };
 
-enum class Filter {
-    Anisotropic,
-    MinMagMipLinear,
-    ComparisonMinMagMipLinear
-};
 
-enum class TextureAddressMode {
-    Wrap,
-    Clamp
-};
+
+
 
 struct AdapterDesc {
     std::string name;
