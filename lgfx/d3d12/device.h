@@ -21,6 +21,7 @@ friend class Texture;
 friend struct MemoryHeap;
 friend struct DescriptorHeap;
 friend class TextureView;
+friend class CommandBuffer;
 
 public:
 
@@ -36,6 +37,7 @@ public:
     void Present();
     void Signal(const CommandBufferType type, Fence* fence, const uint64_t value);
     void Wait(const CommandBufferType type, Fence* fence, const uint64_t value);
+    void ExecuteCommandBuffer(const CommandBufferType type, CommandBuffer* buffer);
 
 private:
 

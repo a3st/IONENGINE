@@ -9,6 +9,8 @@ class Fence;
 class TextureView;
 class MemoryPool;
 class Texture;
+class RenderPass;
+class FrameBuffer;
 
 enum class MemoryType {
     kDefault,
@@ -176,7 +178,7 @@ struct RenderPassDepthStencilDesc {
 };
 
 struct RenderPassDesc {
-    std::array<RenderPassColorDesc, 8> colors;
+    std::vector<RenderPassColorDesc> colors;
     RenderPassDepthStencilDesc depth_stencil;
     uint32_t sample_count;
 };
@@ -185,7 +187,7 @@ struct FrameBufferDesc {
     RenderPassDesc* render_pass;
     uint32_t width;
     uint32_t height;
-    std::array<TextureView*, 8> colors;
+    std::vector<TextureView*> colors;
     TextureView* depth_stencil;
 };
 

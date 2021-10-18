@@ -15,7 +15,7 @@ DescriptorHeap::DescriptorHeap(Device* device, const DescriptorType type, const 
 
     D3D12_DESCRIPTOR_HEAP_DESC heap_desc{};
     heap_desc.NumDescriptors = kDescriptorPoolDefaultHeapSize;
-    heap_desc.Type = GFXToD3D12DescriptorHeapType(type);
+    heap_desc.Type = ToD3D12DescriptorHeapType(type);
     heap_desc.Flags = flags == DescriptorFlags::kShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
     THROW_IF_FAILED(device->device_->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(&heap)));

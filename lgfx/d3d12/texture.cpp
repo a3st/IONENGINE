@@ -56,7 +56,7 @@ Texture::Texture(Device* device, const uint32_t buffer_index) {
 
     width_ = static_cast<uint32_t>(resource_desc_.Width);
     height_ = resource_desc_.Height;
-    format_ = DXGIFormatToGFX(resource_desc_.Format);
+    format_ = DXGIFormatTo(resource_desc_.Format);
     flags_ = TextureFlags::kRenderTarget;
     array_layers_ = resource_desc_.DepthOrArraySize;
     mip_levels_ = resource_desc_.MipLevels;

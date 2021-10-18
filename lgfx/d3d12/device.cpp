@@ -2,6 +2,7 @@
 
 #include "../precompiled.h"
 #include "device.h"
+#include "command_buffer.h"
 #include "fence.h"
 
 using namespace lgfx;
@@ -125,35 +126,26 @@ void Device::Present() {
 void Device::Signal(const CommandBufferType type, Fence* fence, const uint64_t value) {
     
     switch(type) {
-        case CommandBufferType::kGraphics: {
-            THROW_IF_FAILED(direct_queue_->Signal(fence->fence_, value));
-            break;
-        }
-        case CommandBufferType::kCopy: {
-            THROW_IF_FAILED(copy_queue_->Signal(fence->fence_, value));
-            break;
-        }
-        case CommandBufferType::kCompute: {
-            THROW_IF_FAILED(compute_queue_->Signal(fence->fence_, value));
-            break;
-        }
+        case CommandBufferType::kGraphics: THROW_IF_FAILED(direct_queue_->Signal(fence->fence_, value)); break;
+        case CommandBufferType::kCopy: THROW_IF_FAILED(copy_queue_->Signal(fence->fence_, value)); break;
+        case CommandBufferType::kCompute: THROW_IF_FAILED(compute_queue_->Signal(fence->fence_, value)); break;
     }
 }
 
 void Device::Wait(const CommandBufferType type, Fence* fence, const uint64_t value) {
 
     switch(type) {
-        case CommandBufferType::kGraphics: {
-            THROW_IF_FAILED(direct_queue_->Wait(fence->fence_, value));
-            break;
-        }
-        case CommandBufferType::kCopy: {
-            THROW_IF_FAILED(copy_queue_->Wait(fence->fence_, value));
-            break;
-        }
-        case CommandBufferType::kCompute: {
-            THROW_IF_FAILED(compute_queue_->Wait(fence->fence_, value));
-            break;
-        }
+        case CommandBufferType::kGraphics: THROW_IF_FAILED(direct_queue_->Wait(fence->fence_, value)); break;
+        case CommandBufferType::kCopy: THROW_IF_FAILED(copy_queue_->Wait(fence->fence_, value)); break;
+        case CommandBufferType::kCompute: THROW_IF_FAILED(compute_queue_->Wait(fence->fence_, value)); break;
+    }
+}
+
+void Device::ExecuteCommandBuffer(const CommandBufferType type, CommandBuffer* buffer) {
+
+    switch(type) {
+        case CommandBufferType::kGraphics: direct_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(&buffer->list_)); break;
+        case CommandBufferType::kCopy: copy_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(&buffer->list_)); break;
+        case CommandBufferType::kCompute: compute_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(&buffer->list_)); break;
     }
 }

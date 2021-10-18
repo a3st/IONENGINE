@@ -22,8 +22,8 @@ MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType ty
 
     D3D12_HEAP_DESC heap_desc{};
     heap_desc.SizeInBytes = kMemoryPoolDefaultHeapSize;
-    heap_desc.Properties.Type = GFXToD3D12HeapType(type);
-    heap_desc.Flags = GFXToD3D12HeapFlags(flags);
+    heap_desc.Properties.Type = ToD3D12HeapType(type);
+    heap_desc.Flags = ToD3D12HeapFlags(flags);
     heap_desc.Alignment = align;
 
     THROW_IF_FAILED(device->device_->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(&heap)));

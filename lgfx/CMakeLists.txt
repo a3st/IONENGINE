@@ -13,10 +13,13 @@ add_library(lgfx-d3d12
     d3d12/device.cpp
     d3d12/fence.cpp
     d3d12/memory_pool.cpp
-    d3d12/conversion.cpp
     d3d12/descriptor_pool.cpp
+    d3d12/conversion.cpp
     d3d12/texture.cpp
     d3d12/texture_view.cpp
+    d3d12/command_buffer.cpp
+    d3d12/frame_buffer.cpp
+    d3d12/render_pass.cpp
 )
 
 target_precompile_headers(lgfx-d3d12 PRIVATE precompiled.h)
