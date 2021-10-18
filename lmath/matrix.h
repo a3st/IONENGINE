@@ -2,10 +2,13 @@
 
 #pragma once
 
-namespace ionengine::math {
+#include "vector3.h"
+
+namespace lmath {
 
 template<typename T>
 struct Matrix {
+
 	T m00, m01, m02, m03;
 	T m10, m11, m12, m13;
 	T m20, m21, m22, m23;
@@ -19,15 +22,15 @@ struct Matrix {
 	}
 
 	Matrix(
-		const T m00_, const T m01_, const T m02_, const T m03_,
-		const T m10_, const T m11_, const T m12_, const T m13_,
-		const T m20_, const T m21_, const T m22_, const T m23_,
-		const T m30_, const T m31_, const T m32_, const T m33_
+		const T _m00, const T _m01, const T _m02, const T _m03,
+		const T _m10, const T _m11, const T _m12, const T _m13,
+		const T _m20, const T _m21, const T _m22, const T _m23,
+		const T _m30, const T _m31, const T _m32, const T _m33
 	) :  
-		m00(m00_), m01(m01_), m02(m02_), m03(m03_),
-		m10(m10_), m11(m11_), m12(m12_), m13(m13_),
-		m20(m20_), m21(m21_), m22(m22_), m23(m23_),
-		m30(m30_), m31(m31_), m32(m32_), m33(m33_) {
+		m00(_m00), m01(_m01), m02(_m02), m03(_m03),
+		m10(_m10), m11(_m11), m12(_m12), m13(_m13),
+		m20(_m20), m21(_m21), m22(_m22), m23(_m23),
+		m30(_m30), m31(_m31), m32(_m32), m33(_m33) {
 	}
 
 	Matrix(const Matrix& rhs) : 
@@ -45,6 +48,7 @@ struct Matrix {
 	}
 
 	Matrix& operator=(const Matrix& rhs) {
+
 		m00 = rhs.m00;
 		m01 = rhs.m01;
 		m02 = rhs.m02;
@@ -65,6 +69,7 @@ struct Matrix {
 	}
 
 	Matrix& operator=(Matrix&& rhs) noexcept {
+
 		m00 = rhs.m00;
 		m01 = rhs.m01;
 		m02 = rhs.m02;
@@ -85,14 +90,17 @@ struct Matrix {
 	}
 
 	const T* data() const {
+
 		return &m00;
 	}
 
-	usize size() const {
+	size_t size() const {
+
 		return 16;
 	}
 
-	void transpose() {
+	void Transpose() {
+
 		Matrix mat;
 		mat = *this;
 
@@ -115,6 +123,7 @@ struct Matrix {
 	}
 
 	Matrix operator*(const Matrix& rhs) const {
+
 		Matrix mat;
 		mat.m00 = m00 * rhs.m00 + m01 * rhs.m10 + m02 * rhs.m20 + m03 * rhs.m30;
 		mat.m01 = m00 * rhs.m01 + m01 * rhs.m11 + m02 * rhs.m21 + m03 * rhs.m31;
@@ -136,6 +145,7 @@ struct Matrix {
 	}
 
 	Matrix operator*(const Vector4<T>& rhs) const {
+
 		Matrix mat;
 		mat.m00 = m00 * rhs.x;
 		mat.m01 = m01 * rhs.y;
@@ -157,6 +167,7 @@ struct Matrix {
 	}
 
 	Matrix operator*(const T rhs) const {
+
 		Matrix mat;
 		mat.m00 = m00 * rhs;
 		mat.m01 = m01 * rhs;
@@ -178,6 +189,7 @@ struct Matrix {
 	}
 
 	Matrix operator+(const Matrix& rhs) const {
+
 		Matrix mat;
 		mat.m00 = m00 + rhs.m00;
 		mat.m01 = m01 + rhs.m01;
@@ -199,6 +211,7 @@ struct Matrix {
 	}
 
 	Matrix operator-(const Matrix& rhs) const {
+
 		Matrix mat;
 		mat.m00 = m00 - rhs.m00;
 		mat.m01 = m01 - rhs.m01;
@@ -219,7 +232,8 @@ struct Matrix {
 		return mat;
 	}
 
-	static Matrix identity() {
+	static Matrix Identity() {
+
 		Matrix mat;
 		mat.m00 = 1;
 		mat.m11 = 1;
@@ -228,23 +242,26 @@ struct Matrix {
 		return mat;
 	}
 
-	static Matrix translate(const Vector3<T>& rhs) {
-		Matrix mat = Matrix::identity();
+	static Matrix Translate(const Vector3<T>& rhs) {
+
+		Matrix mat = Matrix::Identity();
 		mat.m30 = rhs.x;
 		mat.m31 = rhs.y;
 		mat.m32 = rhs.z;
 		return mat;
 	}
 
-	static Matrix scale(const Vector3<T>& rhs) {
-		Matrix mat = Matrix::identity();
+	static Matrix Scale(const Vector3<T>& rhs) {
+
+		Matrix mat = Matrix::Identity();
 		mat.m00 = rhs.x;
 		mat.m11 = rhs.y;
 		mat.m22 = rhs.z;
 		return mat;
 	}
 
-	static Matrix perspective(const T fovy, const T aspect, const T near_dst, const T far_dst) {
+	static Matrix Perspective(const T fovy, const T aspect, const T near_dst, const T far_dst) {
+
 		Matrix mat;
 		mat.m00 = 1 / (math::tan(fovy / 2) * aspect);
 		mat.m11 = 1 / math::tan(fovy / 2);
@@ -254,11 +271,11 @@ struct Matrix {
 		return mat;
 	}
 
-	static Matrix orthographic(
+	static Matrix Orthographic(
 		const T left, const T right,
 		const T bottom, const T top,
-		const T near_dst, const T far_dst
-	) {
+		const T near_dst, const T far_dst) {
+
 		Matrix mat;
 		mat.m00 = 2 / (right - left);
 		mat.m11 = 2 / (top - bottom);
@@ -270,7 +287,8 @@ struct Matrix {
 		return mat;
 	}
 
-	static Matrix look_at(const Vector3<T>& eye, const Vector3<T>& target, const Vector3<T>& up) {
+	static Matrix LookAt(const Vector3<T>& eye, const Vector3<T>& target, const Vector3<T>& up) {
+
 		Vector3<T> z(eye - target);
 		z.normalize();
 
@@ -289,30 +307,26 @@ struct Matrix {
 		mat.m20 = x.z;
 		mat.m21 = y.z;
 		mat.m22 = z.z;
-		mat.m30 = Vector3<T>::dot_product(-x, eye);
-		mat.m31 = Vector3<T>::dot_product(-y, eye);
-		mat.m32 = Vector3<T>::dot_product(-z, eye);
+		mat.m30 = Vector3<T>::DotProduct(-x, eye);
+		mat.m31 = Vector3<T>::DotProduct(-y, eye);
+		mat.m32 = Vector3<T>::DotProduct(-z, eye);
 		return mat;
 	}
 
-	bool operator==(const Matrix& rhs) const
-	{
-		return (m00 == rhs.m00) && (m01 == rhs.m01) && (m02 == rhs.m02) && (m03 == rhs.m03) &&
-			(m10 == rhs.m10) && (m11 == rhs.m11) && (m12 == rhs.m12) && (m13 == rhs.m13) &&
-			(m20 == rhs.m20) && (m11 == rhs.m21) && (m12 == rhs.m22) && (m13 == rhs.m23) &&
-			(m30 == rhs.m30) && (m11 == rhs.m31) && (m12 == rhs.m32) && (m13 == rhs.m33);
+	bool operator==(const Matrix& rhs) const {
+
+		return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) ==
+			std::tie(rhs.m00, rhs.m01, rhs.m02, rhs.m03, rhs.m10, rhs.m11, rhs.m12, rhs.m13, rhs.m20, rhs.m21, rhs.m22, rhs.m23, rhs.m30, rhs.m31, rhs.m32, rhs.m33);
 	}
 
-	bool operator!=(const Matrix& rhs) const
-	{
-		return (m00 != rhs.m00) || (m01 != rhs.m01) || (m02 != rhs.m02) || (m03 != rhs.m03) ||
-			(m10 != rhs.m10) || (m11 != rhs.m11) || (m12 != rhs.m12) || (m13 != rhs.m13) ||
-			(m20 != rhs.m20) || (m11 != rhs.m21) || (m12 != rhs.m22) || (m13 != rhs.m23) ||
-			(m30 != rhs.m30) || (m11 != rhs.m31) || (m12 != rhs.m32) || (m13 != rhs.m33);
+	bool operator!=(const Matrix& rhs) const {
+
+		return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) !=
+			std::tie(rhs.m00, rhs.m01, rhs.m02, rhs.m03, rhs.m10, rhs.m11, rhs.m12, rhs.m13, rhs.m20, rhs.m21, rhs.m22, rhs.m23, rhs.m30, rhs.m31, rhs.m32, rhs.m33);
 	}
 };
 
-using Fmatrix = Matrix<float>;
-using Dmatrix = Matrix<double>;
+using Matrixf = Matrix<float>;
+using Matrixd = Matrix<double>;
 
 }

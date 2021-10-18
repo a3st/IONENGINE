@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include "functions.h"
+#include "types.h"
 #include "vector2.h"
 #include "vector3.h"
 #include "vector4.h"
-#include "color.h"
 #include "matrix.h"
 #include "quaternion.h"

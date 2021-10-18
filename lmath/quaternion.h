@@ -2,25 +2,31 @@
 
 #pragma once
 
-namespace ionengine::math {
+namespace lmath {
 
 template<typename T>
 struct Quaternion {
+
 	T x, y, z, w;
 
 	Quaternion() : x(0), y(0), z(0), w(0) {
+
     }
 
-	Quaternion(const T x_, const T y_, const T z_, const T w_) : x(x_), y(y_), z(z_), w(w_) {
+	Quaternion(const T _x, const T _y, const T _z, const T _w) : x(_x), y(_y), z(_z), w(_w) {
+
     }
 
 	Quaternion(const Quaternion& rhs) : x(rhs.x), y(rhs.y), z(rhs.z), w(rhs.w) {
+
     }
 
 	Quaternion(Quaternion&& rhs) noexcept : x(rhs.x), y(rhs.y), z(rhs.z), w(rhs.w) {
+
     }
 
 	Quaternion& operator=(const Quaternion& rhs) {
+
         x = rhs.x;
 	    y = rhs.y;
 	    z = rhs.z;
@@ -29,6 +35,7 @@ struct Quaternion {
     }
 
 	Quaternion& operator=(Quaternion&& rhs) noexcept {
+
         x = rhs.x;
 	    y = rhs.y;
 	    z = rhs.z;
@@ -36,7 +43,8 @@ struct Quaternion {
 	    return *this;
     }
 
-	void normalize() {
+	void Normalize() {
+
         T inverse = 1 / this->length();
         x = x * inverse;
         y = y * inverse;
@@ -44,14 +52,15 @@ struct Quaternion {
         w = w * inverse;
     }
 
-	Matrix<T> to_matrix() const {
+	Matrix<T> ToMatrix() const {
+
         T sqw = w * w;
         T sqx = x * x;
         T sqy = y * y;
         T sqz = z * z;
         T inverse = 1 / (sqx + sqy + sqz + sqw);
 
-        Matrix<T> mat = Matrix<T>::identity();
+        Matrix<T> mat = Matrix<T>::Identity();
         mat.m00 = (sqx - sqy - sqz + sqw) * inverse;
         mat.m11 = (-sqx + sqy - sqz + sqw) * inverse;
         mat.m22 = (-sqx - sqy + sqz + sqw) * inverse;
@@ -64,20 +73,22 @@ struct Quaternion {
         return mat;
     }
 
-    T length() const {
-		return math::sqrt(x * x + y * y + z * z + w * w);
+    T GetLength() const {
+
+		return std::sqrt(x * x + y * y + z * z + w * w);
 	}
 
-	void to_angle_axis(T* angle, Vector3<T>* axis) const {
+	void ToAngleAxis(T* angle, Vector3<T>* axis) const {
+
         Quaternion quat;
         quat = *this;
 
         if (w > 1) {
-            quat.normalize();
+            quat.Normalize();
         }
 
-        *angle = static_cast<T>(2 * math::acos(quat.w) * math::rad2deg);
-        T s = math::sqrt(1 - quat.w * quat.w);
+        *angle = static_cast<T>(2 * std::acos(quat.w) * kRad2Deg);
+        T s = std::sqrt(1 - quat.w * quat.w);
 
         if (s < 0.001) {
             axis->x = quat.x;
@@ -91,6 +102,7 @@ struct Quaternion {
     }
 
 	Quaternion operator*(const Quaternion& rhs) const {
+
         Quaternion quat;
 	    quat.x = w * rhs.x + x * rhs.w + y * rhs.z - z * rhs.y;
 	    quat.y = w * rhs.y - x * rhs.z + y * rhs.w + z * rhs.x;
@@ -100,38 +112,44 @@ struct Quaternion {
     }
 
 	Quaternion operator*(const T rhs) const {
-		return { x * rhs, y * rhs, z * rhs, w * rhs };
+
+		return Quaternion { x * rhs, y * rhs, z * rhs, w * rhs };
 	}
 
 	Quaternion operator+(const Quaternion& rhs) const {
-		return { x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w };
+
+		return Quaternion { x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w };
 	}
 
 	Quaternion operator-(const Quaternion& rhs) const {
-		return { x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w };
+
+		return Quaternion { x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w };
 	}
 
 	bool operator!=(const Quaternion& rhs) const {
-		return (x != rhs.x) || (y != rhs.y) || (z != rhs.z) || (w != rhs.w);
+
+		return std::tie(x, y, z, w) != std::tie(rhs.x, rhs.y, rhs.z, rhs.w);
 	}
 
 	bool operator==(const Quaternion& rhs) const {
-		return (x == rhs.x) && (y == rhs.y) && (z == rhs.z) && (w == rhs.w);
+
+		return std::tie(x, y, z, w) == std::tie(rhs.x, rhs.y, rhs.z, rhs.w);
 	}
 
-    static Quaternion euler(const T x, const T y, const T z) {
+    static Quaternion Euler(const T x, const T y, const T z) {
+
         T rotx, roty, rotz;
-        rotx = static_cast<T>(x * math::deg2Rad);
-        roty = static_cast<T>(y * math::deg2Rad);
-        rotz = static_cast<T>(z * math::deg2Rad);
+        rotx = static_cast<T>(x * kDeg2Rad);
+        roty = static_cast<T>(y * kDeg2Rad);
+        rotz = static_cast<T>(z * kDeg2Rad);
 
         T sinx, siny, sinz, cosx, cosy, cosz;
-        sinx = math::sin(rotx / 2);
-        siny = math::sin(roty / 2);
-        sinz = math::sin(rotz / 2);
-        cosx = math::cos(rotx / 2);
-        cosy = math::cos(roty / 2);
-        cosz = math::cos(rotz / 2);
+        sinx = std::sin(rotx / 2);
+        siny = std::sin(roty / 2);
+        sinz = std::sin(rotz / 2);
+        cosx = std::cos(rotx / 2);
+        cosy = std::cos(roty / 2);
+        cosz = std::cos(rotz / 2);
 
         Quaternion quat;
         quat.w = cosx * cosy * cosz + sinx * siny * sinz;
@@ -141,15 +159,16 @@ struct Quaternion {
         return quat;
     }
 
-    static Quaternion angle_axis(const T angle, const Vector3<T>& axis) {
-        T rot_angle = static_cast<T>(angle * math::deg2rad);
-	    T rot_sin = math::sin(rot_angle / 2);
-        Vector3<T> norm_axis = axis.normalize();
-	    return { norm_axis.x * rot_sin, norm_axis.y * rot_sin, norm_axis.z * rot_sin, math::cos(rot_angle / 2) };
+    static Quaternion AngleAxis(const T angle, const Vector3<T>& axis) {
+
+        T rot_angle = static_cast<T>(angle * kDeg2Rad);
+	    T rot_sin = std::sin(rot_angle / 2);
+        Vector3<T> norm_axis = axis.Normalize();
+	    return Quaternion { norm_axis.x * rot_sin, norm_axis.y * rot_sin, norm_axis.z * rot_sin, std::cos(rot_angle / 2) };
     }
 };
 
-using Fquaternion = Quaternion<float>;
-using Dquaternion = Quaternion<double>;
+using Quaternionf = Quaternion<float>;
+using Quaterniond = Quaternion<double>;
 
 }

@@ -2,92 +2,112 @@
 
 #pragma once
 
-namespace ionengine::math {
+namespace lmath {
 
 template<typename T>
 struct Vector2 {
+	
 	T x, y;
 
 	Vector2() : x(0), y(0) {
+
     }
 
-	Vector2(const T x_, const T y_, const T z_) : x(x_), y(y_) {
+	Vector2(const T _x, const T _y, const T _z) : x(_x), y(_y) {
+
     }
 
 	Vector2(const Vector2& rhs) : x(rhs.x), y(rhs.y) {
+
     }
 
-	Vector2(Vector2&& rhs) noexcept : x(rhs.x), y(rhs.y) { 
+	Vector2(Vector2&& rhs) noexcept : x(rhs.x), y(rhs.y) {
+
     }
 
 	Vector2& operator=(const Vector2& rhs) {
+
 	    x = rhs.x;
 	    y = rhs.y;
 	    return *this;
     }
 
 	Vector2& operator=(Vector2&& rhs) noexcept {
+
 	    x = rhs.x;
 	    y = rhs.y;
 	    return *this;
     }
 
 	const T* data() const {
+
 		return &x;
 	}
 
-	usize size() const {
+	size_t size() const {
+
 		return 2;
 	}
 
-	void normalize() {
+	void Normalize() {
+
         T inverse = 1 / this->length();
 	    x = x * inverse;
 	    y = y * inverse;
     }
 
-	T length() const {
-		return math::sqrt(x * x + y * y);
+	T GetLength() const {
+
+		return std::sqrt(x * x + y * y);
 	}
 
 	Vector2 operator*(const T rhs) const {
-		return { x * rhs, y * rhs };
+
+		return Vector2 { x * rhs, y * rhs };
 	}
 
 	Vector2 operator-(const Vector2& rhs) const {
-		return { x - rhs.x, y - rhs.y };
+
+		return Vector2 { x - rhs.x, y - rhs.y };
 	}
 
 	Vector2 operator-(const T rhs) const {
-		return { x - rhs, y - rhs };
+
+		return Vector2 { x - rhs, y - rhs };
 	}
 
 	Vector2 operator-() const {
-		return {-x, -y };
+
+		return Vector2 {-x, -y };
 	}
 
 	Vector2 operator+(const Vector2& rhs) const {
-		return { x + rhs.x, y + rhs.y };
+
+		return Vector2 { x + rhs.x, y + rhs.y };
 	}
 
 	Vector2 operator+(const T rhs) const {
-		return { x + rhs, y + rhs };
+
+		return Vector2 { x + rhs, y + rhs };
 	}
 
 	Vector2 operator/(const T rhs) const {
-		return { x / rhs, y / rhs };
+
+		return Vector2 { x / rhs, y / rhs };
 	}
 
 	bool operator==(const Vector2& rhs) const {
-        return (x == rhs.x) && (y == rhs.y);
+
+        return std::tie(x, y) == std::tie(rhs.x, rhs.y);
     }
 
 	bool operator!=(const Vector2& rhs) const {
-        return (x != rhs.x) || (y != rhs.y);
+
+        return std::tie(x, y) != std::tie(rhs.x, rhs.y);
     }
 };
 
-using Fvector2 = Vector2<float>;
-using Dvector2 = Vector2<double>;
+using Vector2f = Vector2<float>;
+using Vector2d = Vector2<double>;
 
 }
