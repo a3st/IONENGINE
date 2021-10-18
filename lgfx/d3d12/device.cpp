@@ -2,6 +2,7 @@
 
 #include "../precompiled.h"
 #include "device.h"
+#include "fence.h"
 
 using namespace lgfx;
 
@@ -119,4 +120,40 @@ Device& Device::operator=(Device&& rhs) noexcept {
 void Device::Present() {
     
     THROW_IF_FAILED(swapchain_->Present(0, 0));
+}
+
+void Device::Signal(const CommandBufferType type, Fence* fence, const uint64_t value) {
+    
+    switch(type) {
+        case CommandBufferType::kGraphics: {
+            THROW_IF_FAILED(direct_queue_->Signal(fence->fence_, value));
+            break;
+        }
+        case CommandBufferType::kCopy: {
+            THROW_IF_FAILED(copy_queue_->Signal(fence->fence_, value));
+            break;
+        }
+        case CommandBufferType::kCompute: {
+            THROW_IF_FAILED(compute_queue_->Signal(fence->fence_, value));
+            break;
+        }
+    }
+}
+
+void Device::Wait(const CommandBufferType type, Fence* fence, const uint64_t value) {
+
+    switch(type) {
+        case CommandBufferType::kGraphics: {
+            THROW_IF_FAILED(direct_queue_->Wait(fence->fence_, value));
+            break;
+        }
+        case CommandBufferType::kCopy: {
+            THROW_IF_FAILED(copy_queue_->Wait(fence->fence_, value));
+            break;
+        }
+        case CommandBufferType::kCompute: {
+            THROW_IF_FAILED(compute_queue_->Wait(fence->fence_, value));
+            break;
+        }
+    }
 }

@@ -9,6 +9,8 @@ namespace lgfx {
 
 class Fence {
 
+friend class Device;
+
 public:
 
     Fence();

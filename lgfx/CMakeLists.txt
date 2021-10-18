@@ -16,6 +16,7 @@ add_library(lgfx-d3d12
     d3d12/conversion.cpp
     d3d12/descriptor_pool.cpp
     d3d12/texture.cpp
+    d3d12/texture_view.cpp
 )
 
 target_precompile_headers(lgfx-d3d12 PRIVATE precompiled.h)

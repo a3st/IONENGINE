@@ -53,12 +53,16 @@ enum class BufferFlags {
     kCopySource = 1 << 5
 };
 
+DECLARE_ENUM_CLASS_BIT_FLAG(BufferFlags)
+
 enum class TextureFlags {
     kRenderTarget = 1 << 0,
     kDepthStencil = 1 << 1,
     kShaderResource = 1 << 2,
     kUnorderedAccess = 1 << 3
 };
+
+DECLARE_ENUM_CLASS_BIT_FLAG(TextureFlags)
 
 enum class Dimension {
     kBuffer,

@@ -10,6 +10,8 @@ namespace lgfx {
 
 class Texture {
 
+friend class TextureView;
+
 public:
 
     Texture();

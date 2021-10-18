@@ -20,6 +20,7 @@ friend class Fence;
 friend class Texture;
 friend struct MemoryHeap;
 friend struct DescriptorHeap;
+friend class TextureView;
 
 public:
 
@@ -33,6 +34,8 @@ public:
     Device& operator=(Device&& rhs) noexcept;
 
     void Present();
+    void Signal(const CommandBufferType type, Fence* fence, const uint64_t value);
+    void Wait(const CommandBufferType type, Fence* fence, const uint64_t value);
 
 private:
 
