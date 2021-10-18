@@ -18,7 +18,13 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DNDEBUG")
 
 #]]
 
-add_executable(Runtime-Win32 engine/main.cpp)
+add_executable(Runtime-Win32
+
+    main.cpp
+
+    platform/win32/window.cpp    
+)
+
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
 
 # Build Output
@@ -52,7 +58,7 @@ target_compile_definitions(Runtime-Win32 PRIVATE
 
 #]]
 
-add_executable(Runtime-Win32VK engine/main.cpp)
+add_executable(Runtime-Win32VK main.cpp)
 target_precompile_headers(Runtime-Win32VK PRIVATE precompiled.h)
 
 # Build Output
@@ -94,7 +100,7 @@ target_compile_definitions(Runtime-Win32VK PRIVATE
 
 #]]
 
-add_library(Runtime-Android SHARED engine/main.cpp)
+add_library(Runtime-Android SHARED main.cpp)
 
 # Build Output
 set_target_properties(Runtime-Android PROPERTIES 
