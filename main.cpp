@@ -3,6 +3,7 @@
 #include "precompiled.h"
 
 #include "platform/platform.h"
+#include "rendersystem/renderer.h"
 
 using namespace ionengine;
 
@@ -10,6 +11,7 @@ int main(int*, char*) {
 
     platform::WindowLoop loop;
     platform::Window window("IONENGINE", 800, 600, &loop);
+    rendersystem::Renderer renderer;
     
     loop.Run([&](const platform::WindowEvent& event) {
             switch(event.type) {
@@ -19,7 +21,7 @@ int main(int*, char*) {
                     break;
                 }
                 case platform::WindowEventType::Updated: {
-                    
+                    renderer.Frame();
                     break;
                 }
             }

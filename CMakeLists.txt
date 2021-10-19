@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(IONENGINE VERSION 0.1.0)
 
-# Shared includes
-include_directories(${PROJECT_SOURCE_DIR})
-
 # Global sets
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,6 +21,8 @@ add_executable(Runtime-Win32
 
     platform/win32/window.cpp
     platform/win32/window_loop.cpp
+
+    rendersystem/renderer.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
@@ -36,21 +35,24 @@ set_target_properties(Runtime-Win32 PROPERTIES
 
 # Include dirs
 target_include_directories(Runtime-Win32 PRIVATE
-    ${PROJECT_SOURCE_DIR}/runtime
-    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/um"
-    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/winrt"
-    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/"
+
 )
 
 # Link Libs
 target_link_libraries(Runtime-Win32
     ${Runtime-Win32}
+    lgfx-d3d12
+)
+
+# Link Libs
+target_link_directories(Runtime-Win32 PRIVATE
+    "lgfx/build/Debug"
 )
 
 # Preprocessor
 target_compile_definitions(Runtime-Win32 PRIVATE 
     IONENGINE_PLATFORM_WIN32
-    IONENGINE_GFX_D3D12
+    LGFX_BACKEND_D3D12
 )
 
 #[[
@@ -80,6 +82,7 @@ target_include_directories(Runtime-Win32VK PRIVATE
 # Link Libs
 target_link_directories(Runtime-Win32VK PRIVATE
     "C:/VulkanSDK/1.2.189.2/Lib"
+    "lgfx/build/Debug"
 )
 
 # Link Libs

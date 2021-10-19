@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "../lgfx/lgfx.h"
+#include "../platform/platform.h"
 
 namespace ionengine::rendersystem {
 
@@ -9,12 +11,13 @@ class Renderer {
 
 public:
 
-    Renderer();
+    Renderer(platform::);
 
+    void Frame();
 
 private:
 
-
+    lgfx::Device device_;
 
 };
 
