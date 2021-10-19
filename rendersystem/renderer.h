@@ -11,13 +11,16 @@ class Renderer {
 
 public:
 
-    Renderer(platform::);
+    Renderer(platform::Window* window);
 
     void Frame();
 
 private:
 
+    platform::Window* window_;
+
     lgfx::Device device_;
+    lgfx::MemoryPool mem_pool;
 
 };
 

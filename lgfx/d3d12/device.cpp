@@ -11,27 +11,15 @@ Device::Device() {
 
 }
 
-Device::~Device() {
-
-    compute_queue_->Release();
-    copy_queue_->Release();
-    direct_queue_->Release();
-    swapchain_->Release();
-    device_->Release();
-    adapter_->Release();
-    debug_->Release();
-    factory_->Release();
-}
-
 Device::Device(const uint32_t adapter_index, void* hwnd, const uint32_t width, const uint32_t height, const uint32_t buffer_count, const uint32_t multisample_count) {
 
     assert(hwnd && "invalid pointer to hwnd");
 
-    THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(&debug_)));
+    THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(debug_.GetAddressOf())));
     debug_->EnableDebugLayer();
 
-    THROW_IF_FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, __uuidof(IDXGIFactory4), reinterpret_cast<void**>(&factory_)));
-    THROW_IF_FAILED(factory_->EnumAdapters1(adapter_index, &adapter_));
+    THROW_IF_FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, __uuidof(IDXGIFactory4), reinterpret_cast<void**>(factory_.GetAddressOf())));
+    THROW_IF_FAILED(factory_->EnumAdapters1(adapter_index, adapter_.GetAddressOf()));
     {
         DXGI_ADAPTER_DESC adapter_desc{};
         adapter_->GetDesc(&adapter_desc);
@@ -46,7 +34,7 @@ Device::Device(const uint32_t adapter_index, void* hwnd, const uint32_t width, c
         adapter_desc_.device_id = adapter_desc.DeviceId;
     }
 
-    THROW_IF_FAILED(D3D12CreateDevice(adapter_, D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(&device_)));
+    THROW_IF_FAILED(D3D12CreateDevice(adapter_.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(device_.GetAddressOf())));
 
     rtv_descriptor_offset_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     dsv_descriptor_offset_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
@@ -56,13 +44,13 @@ Device::Device(const uint32_t adapter_index, void* hwnd, const uint32_t width, c
     D3D12_COMMAND_QUEUE_DESC queue_desc{};
     queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    THROW_IF_FAILED(device_->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(direct_queue_)));
+    THROW_IF_FAILED(device_->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(direct_queue_.GetAddressOf())));
 
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-    THROW_IF_FAILED(device_->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(copy_queue_)));
+    THROW_IF_FAILED(device_->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(copy_queue_.GetAddressOf())));
 
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-    THROW_IF_FAILED(device_->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(compute_queue_)));
+    THROW_IF_FAILED(device_->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(compute_queue_.GetAddressOf())));
 
     DXGI_SWAP_CHAIN_DESC1 swapchain_desc{};
     swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -74,47 +62,41 @@ Device::Device(const uint32_t adapter_index, void* hwnd, const uint32_t width, c
     swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 
-    THROW_IF_FAILED(factory_->CreateSwapChainForHwnd(direct_queue_, reinterpret_cast<HWND>(hwnd), &swapchain_desc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapchain_)));
+    THROW_IF_FAILED(factory_->CreateSwapChainForHwnd(direct_queue_.Get(), reinterpret_cast<HWND>(hwnd), &swapchain_desc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapchain_.GetAddressOf())));
 }
 
 Device::Device(Device&& rhs) noexcept {
 
-    adapter_desc_ = std::move(rhs.adapter_desc_);
-    
-    factory_ = rhs.factory_;
-    debug_ = rhs.debug_;
-    adapter_ = rhs.adapter_;
-    device_ = rhs.device_;
-    swapchain_ = rhs.swapchain_;
-
-    direct_queue_ = rhs.direct_queue_;
-    copy_queue_ = rhs.copy_queue_;
-    compute_queue_ = rhs.compute_queue_;
-
-    rtv_descriptor_offset_ = rhs.rtv_descriptor_offset_;
-    dsv_descriptor_offset_ = rhs.dsv_descriptor_offset_;
-    sampler_descriptor_offset_ = rhs.sampler_descriptor_offset_;
-    srv_descriptor_offset_ = rhs.srv_descriptor_offset_;
+    std::swap(adapter_desc_, rhs.adapter_desc_);
+    factory_.Swap(rhs.factory_);
+    debug_.Swap(rhs.debug_);
+    adapter_.Swap(rhs.adapter_);
+    device_.Swap(rhs.device_);
+    direct_queue_.Swap(rhs.direct_queue_);
+    copy_queue_.Swap(rhs.copy_queue_);
+    compute_queue_.Swap(rhs.compute_queue_);
+    swapchain_.Swap(rhs.swapchain_);
+    std::swap(rtv_descriptor_offset_, rhs.rtv_descriptor_offset_);
+    std::swap(dsv_descriptor_offset_, rhs.dsv_descriptor_offset_);
+    std::swap(sampler_descriptor_offset_, rhs.sampler_descriptor_offset_);
+    std::swap(srv_descriptor_offset_, rhs.srv_descriptor_offset_);
 }
 
 Device& Device::operator=(Device&& rhs) noexcept {
 
-    adapter_desc_ = std::move(rhs.adapter_desc_);
-    
-    factory_ = rhs.factory_;
-    debug_ = rhs.debug_;
-    adapter_ = rhs.adapter_;
-    device_ = rhs.device_;
-    swapchain_ = rhs.swapchain_;
-
-    direct_queue_ = rhs.direct_queue_;
-    copy_queue_ = rhs.copy_queue_;
-    compute_queue_ = rhs.compute_queue_;
-
-    rtv_descriptor_offset_ = rhs.rtv_descriptor_offset_;
-    dsv_descriptor_offset_ = rhs.dsv_descriptor_offset_;
-    sampler_descriptor_offset_ = rhs.sampler_descriptor_offset_;
-    srv_descriptor_offset_ = rhs.srv_descriptor_offset_;
+    std::swap(adapter_desc_, rhs.adapter_desc_);
+    factory_.Swap(rhs.factory_);
+    debug_.Swap(rhs.debug_);
+    adapter_.Swap(rhs.adapter_);
+    device_.Swap(rhs.device_);
+    direct_queue_.Swap(rhs.direct_queue_);
+    copy_queue_.Swap(rhs.copy_queue_);
+    compute_queue_.Swap(rhs.compute_queue_);
+    swapchain_.Swap(rhs.swapchain_);
+    std::swap(rtv_descriptor_offset_, rhs.rtv_descriptor_offset_);
+    std::swap(dsv_descriptor_offset_, rhs.dsv_descriptor_offset_);
+    std::swap(sampler_descriptor_offset_, rhs.sampler_descriptor_offset_);
+    std::swap(srv_descriptor_offset_, rhs.srv_descriptor_offset_);
     return *this;
 }
 
@@ -126,26 +108,26 @@ void Device::Present() {
 void Device::Signal(const CommandBufferType type, Fence* fence, const uint64_t value) {
     
     switch(type) {
-        case CommandBufferType::kGraphics: THROW_IF_FAILED(direct_queue_->Signal(fence->fence_, value)); break;
-        case CommandBufferType::kCopy: THROW_IF_FAILED(copy_queue_->Signal(fence->fence_, value)); break;
-        case CommandBufferType::kCompute: THROW_IF_FAILED(compute_queue_->Signal(fence->fence_, value)); break;
+        case CommandBufferType::kGraphics: THROW_IF_FAILED(direct_queue_->Signal(fence->fence_.Get(), value)); break;
+        case CommandBufferType::kCopy: THROW_IF_FAILED(copy_queue_->Signal(fence->fence_.Get(), value)); break;
+        case CommandBufferType::kCompute: THROW_IF_FAILED(compute_queue_->Signal(fence->fence_.Get(), value)); break;
     }
 }
 
 void Device::Wait(const CommandBufferType type, Fence* fence, const uint64_t value) {
 
     switch(type) {
-        case CommandBufferType::kGraphics: THROW_IF_FAILED(direct_queue_->Wait(fence->fence_, value)); break;
-        case CommandBufferType::kCopy: THROW_IF_FAILED(copy_queue_->Wait(fence->fence_, value)); break;
-        case CommandBufferType::kCompute: THROW_IF_FAILED(compute_queue_->Wait(fence->fence_, value)); break;
+        case CommandBufferType::kGraphics: THROW_IF_FAILED(direct_queue_->Wait(fence->fence_.Get(), value)); break;
+        case CommandBufferType::kCopy: THROW_IF_FAILED(copy_queue_->Wait(fence->fence_.Get(), value)); break;
+        case CommandBufferType::kCompute: THROW_IF_FAILED(compute_queue_->Wait(fence->fence_.Get(), value)); break;
     }
 }
 
 void Device::ExecuteCommandBuffer(const CommandBufferType type, CommandBuffer* buffer) {
 
     switch(type) {
-        case CommandBufferType::kGraphics: direct_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(&buffer->list_)); break;
-        case CommandBufferType::kCopy: copy_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(&buffer->list_)); break;
-        case CommandBufferType::kCompute: compute_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(&buffer->list_)); break;
+        case CommandBufferType::kGraphics: direct_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(buffer->list_.GetAddressOf())); break;
+        case CommandBufferType::kCopy: copy_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(buffer->list_.GetAddressOf())); break;
+        case CommandBufferType::kCompute: compute_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(buffer->list_.GetAddressOf())); break;
     }
 }

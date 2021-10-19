@@ -14,7 +14,6 @@ friend class CommandBuffer;
 public:
 
     RenderPass();
-    ~RenderPass();
     RenderPass(Device* device, const RenderPassDesc& desc);
     RenderPass(const RenderPass&) = delete;
     RenderPass(RenderPass&& rhs) noexcept;

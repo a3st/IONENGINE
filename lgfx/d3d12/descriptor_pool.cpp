@@ -18,7 +18,7 @@ DescriptorHeap::DescriptorHeap(Device* device, const DescriptorType type, const 
     heap_desc.Type = ToD3D12DescriptorHeapType(type);
     heap_desc.Flags = flags == DescriptorFlags::kShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-    THROW_IF_FAILED(device->device_->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(&heap)));
+    THROW_IF_FAILED(device->device_->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(heap.GetAddressOf())));
 
     heap_size = kDescriptorPoolDefaultHeapSize;
     descriptors.resize(heap_size, 0x0);
@@ -26,15 +26,24 @@ DescriptorHeap::DescriptorHeap(Device* device, const DescriptorType type, const 
     offset = 0;
 }
 
-DescriptorHeap::~DescriptorHeap() {
-    heap->Release();
+DescriptorHeap::DescriptorHeap(DescriptorHeap&& rhs) noexcept {
+
+    heap.Swap(rhs.heap);
+    std::swap(heap_size, rhs.heap_size);
+    std::swap(offset, rhs.offset);
+    std::swap(descriptors, rhs.descriptors);
+}
+
+DescriptorHeap& DescriptorHeap::operator=(DescriptorHeap&& rhs) noexcept {
+
+    heap.Swap(rhs.heap);
+    std::swap(heap_size, rhs.heap_size);
+    std::swap(offset, rhs.offset);
+    std::swap(descriptors, rhs.descriptors);
+    return *this;
 }
 
 DescriptorPool::DescriptorPool() {
-
-}
-
-DescriptorPool::~DescriptorPool() {
 
 }
 
@@ -52,18 +61,16 @@ DescriptorPool::DescriptorPool(Device* device, const size_t size, const Descript
 
 DescriptorPool::DescriptorPool(DescriptorPool&& rhs) noexcept {
 
-    type_ = rhs.type_;
-    flags_ = rhs.flags_;
-
-    heaps_ = std::move(rhs.heaps_);
+    std::swap(type_, rhs.type_);
+    std::swap(flags_, rhs.flags_);
+    std::swap(heaps_, rhs.heaps_);
 }
 
 DescriptorPool& DescriptorPool::operator=(DescriptorPool&& rhs) noexcept {
 
-    type_ = rhs.type_;
-    flags_ = rhs.flags_;
-
-    heaps_ = std::move(rhs.heaps_);
+    std::swap(type_, rhs.type_);
+    std::swap(flags_, rhs.flags_);
+    std::swap(heaps_, rhs.heaps_);
     return *this;
 }
 

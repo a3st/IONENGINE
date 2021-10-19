@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "types.h"
+
 #ifdef IONENGINE_PLATFORM_WIN32
 
 #include "win32/window_loop.h"

@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include "vector3.h"
-
 namespace lmath {
 
 template<typename T>

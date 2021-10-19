@@ -6,5 +6,6 @@
 #include <string>
 #include <cassert>
 #include <memory>
+#include <type_traits>
 
 #include "cxx_helpers.h"

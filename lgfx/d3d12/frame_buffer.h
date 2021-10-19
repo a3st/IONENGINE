@@ -12,7 +12,6 @@ class FrameBuffer {
 public:
 
     FrameBuffer();
-    ~FrameBuffer();
     FrameBuffer(Device* device, const FrameBufferDesc& desc);
     FrameBuffer(const FrameBuffer&) = delete;
     FrameBuffer(FrameBuffer&& rhs) noexcept;

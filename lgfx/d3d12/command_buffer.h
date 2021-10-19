@@ -14,7 +14,6 @@ friend class Device;
 public:
 
     CommandBuffer();
-    ~CommandBuffer();
     CommandBuffer(Device* device, const CommandBufferType type);
     CommandBuffer(const CommandBuffer&) = delete;
     CommandBuffer(CommandBuffer&& rhs) noexcept;
@@ -34,8 +33,8 @@ private:
 
     Device* device_;
 
-    ID3D12CommandAllocator* allocator_;
-    ID3D12GraphicsCommandList4* list_;
+    ComPtr<ID3D12CommandAllocator> allocator_;
+    ComPtr<ID3D12GraphicsCommandList4> list_;
 };
 
 }

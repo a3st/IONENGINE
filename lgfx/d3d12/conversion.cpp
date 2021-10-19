@@ -5,7 +5,7 @@
 
 namespace lgfx {
 
-DXGI_FORMAT GFXToDXGIFormat(const Format format) {
+DXGI_FORMAT ToDXGIFormat(const Format format) {
 
 	switch(format) {
 		case Format::kUnknown: return DXGI_FORMAT_UNKNOWN;
@@ -48,11 +48,11 @@ DXGI_FORMAT GFXToDXGIFormat(const Format format) {
 		case Format::kR8int: return DXGI_FORMAT_R8_SINT;
 		case Format::kR8unorm: return DXGI_FORMAT_R8_UNORM;
 		case Format::kR8snorm: return DXGI_FORMAT_R8_SNORM;
-		default: assert(false && "passed invalid argument to GFXToDXGIFormat"); return DXGI_FORMAT_UNKNOWN;
+		default: assert(false && "passed invalid argument to ToDXGIFormat"); return DXGI_FORMAT_UNKNOWN;
 	}
 }
 
-Format DXGIFormatToGFX(const DXGI_FORMAT format) {
+Format DXGIFormatTo(const DXGI_FORMAT format) {
 
 	switch(format) {
 		case DXGI_FORMAT_UNKNOWN: return Format::kUnknown;
@@ -95,7 +95,7 @@ Format DXGIFormatToGFX(const DXGI_FORMAT format) {
 		case DXGI_FORMAT_R8_SINT: return Format::kR8int;
 		case DXGI_FORMAT_R8_UNORM: return Format::kR8unorm;
 		case DXGI_FORMAT_R8_SNORM: return Format::kR8snorm;
-		default: assert(false && "passed invalid argument to DXGIFormatToGFX"); return Format::kUnknown;
+		default: assert(false && "passed invalid argument to DXGIFormatTo"); return Format::kUnknown;
 	}
 }
 
@@ -118,7 +118,7 @@ D3D12_CULL_MODE gfx_to_d3d12_cull_mode(const CullMode cull_mode) {
 	}
 }*/
 
-D3D12_COMPARISON_FUNC GFXToD3D12ComparisonFunc(const ComparisonFunc func) {
+D3D12_COMPARISON_FUNC ToD3D12ComparisonFunc(const ComparisonFunc func) {
 	
 	switch(func) {
 		case ComparisonFunc::kAlways: return D3D12_COMPARISON_FUNC_ALWAYS;
@@ -129,7 +129,7 @@ D3D12_COMPARISON_FUNC GFXToD3D12ComparisonFunc(const ComparisonFunc func) {
 		case ComparisonFunc::kLessEqual: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
 		case ComparisonFunc::kNever: return D3D12_COMPARISON_FUNC_NEVER;
 		case ComparisonFunc::kNotEqual: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
-		default: assert(false && "passed invalid argument to GFXToD3D12ComparisonFunc"); return D3D12_COMPARISON_FUNC_ALWAYS;
+		default: assert(false && "passed invalid argument to ToD3D12ComparisonFunc"); return D3D12_COMPARISON_FUNC_ALWAYS;
 	}
 }
 
@@ -201,33 +201,43 @@ D3D12_DESCRIPTOR_RANGE_TYPE gfx_to_d3d12_descriptor_range_type(const ViewType vi
 	}
 }*/
 
-D3D12_COMMAND_LIST_TYPE GFXToD3D12CommandListType(const CommandBufferType type) {
+D3D12_COMMAND_LIST_TYPE ToD3D12CommandListType(const CommandBufferType type) {
 	
 	switch(type) {
         case CommandBufferType::kGraphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
         case CommandBufferType::kCopy: return D3D12_COMMAND_LIST_TYPE_COPY;
         case CommandBufferType::kCompute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-		default: assert(false && "passed invalid argument to GFXToD3D12CommandListType"); return D3D12_COMMAND_LIST_TYPE_DIRECT;
+		default: assert(false && "passed invalid argument to ToD3D12CommandListType"); return D3D12_COMMAND_LIST_TYPE_DIRECT;
     }
 }
 
-D3D12_HEAP_TYPE GFXToD3D12HeapType(const MemoryType memory_type) {
+D3D12_HEAP_TYPE ToD3D12HeapType(const MemoryType type) {
 	
-	switch(memory_type) {
+	switch(type) {
         case MemoryType::kDefault: return D3D12_HEAP_TYPE_DEFAULT;
         case MemoryType::kUpload: return D3D12_HEAP_TYPE_UPLOAD;
         case MemoryType::kReadBack: return D3D12_HEAP_TYPE_READBACK;
-		default: assert(false && "passed invalid argument to GFXToD3D12HeapType"); return D3D12_HEAP_TYPE_DEFAULT;
+		default: assert(false && "passed invalid argument to ToD3D12HeapType"); return D3D12_HEAP_TYPE_DEFAULT;
     }
 }
 
-D3D12_RESOURCE_STATES GFXToD3D12ResourceState(const MemoryState state) {
+D3D12_HEAP_FLAGS ToD3D12HeapFlags(const MemoryFlags flags) {
+
+	switch(flags) {
+        case MemoryFlags::kBuffers: return D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS;
+        case MemoryFlags::kRT_DS: return D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES;
+        case  MemoryFlags::kNon_RT_DS: return D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES;
+        default: assert(false && "passed invalid argument to ToD3D12HeapFlags"); return D3D12_HEAP_FLAG_NONE;
+    }
+}
+
+D3D12_RESOURCE_STATES ToD3D12ResourceState(const MemoryState state) {
 	
 	switch(state) {
 		case MemoryState::kCommon: return D3D12_RESOURCE_STATE_COMMON;
 		case MemoryState::kRenderTarget: return D3D12_RESOURCE_STATE_RENDER_TARGET;
 		case MemoryState::kPresent: return D3D12_RESOURCE_STATE_PRESENT;
-		default: assert(false && "passed invalid argument to GFXToD3D12ResourceState"); return D3D12_RESOURCE_STATE_COMMON;
+		default: assert(false && "passed invalid argument to ToD3D12ResourceState"); return D3D12_RESOURCE_STATE_COMMON;
 	}
 }
 
@@ -244,22 +254,22 @@ D3D12_RESOURCE_DIMENSION gfx_to_d3d12_resource_dimension(const ViewDimension vie
 }
 */
 
-D3D12_FILTER GFXToD3D12Filter(const Filter filter) {
+D3D12_FILTER ToD3D12Filter(const Filter filter) {
 	
 	switch(filter) {
 		case Filter::kAnisotropic: return D3D12_FILTER_ANISOTROPIC;
 		case Filter::kComparisonMinMagMipLinear: return D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
 		case Filter::kMinMagMipLinear: return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-		default: assert(false && "passed invalid argument to GFXToD3D12Filter"); return D3D12_FILTER_ANISOTROPIC;
+		default: assert(false && "passed invalid argument to ToD3D12Filter"); return D3D12_FILTER_ANISOTROPIC;
 	}
 }
 
-D3D12_TEXTURE_ADDRESS_MODE GFXToD3D12TextureAddressMode(const TextureAddressMode mode) {
+D3D12_TEXTURE_ADDRESS_MODE ToD3D12TextureAddressMode(const TextureAddressMode mode) {
 	
 	switch(mode) {
 		case TextureAddressMode::kClamp: return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 		case TextureAddressMode::kWrap: return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-		default: assert(false && "passed invalid argument to GFXToD3D12TextureAddressMode"); return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+		default: assert(false && "passed invalid argument to ToD3D12TextureAddressMode"); return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 	}
 }
 
@@ -281,22 +291,22 @@ D3D12_DESCRIPTOR_HEAP_TYPE gfx_to_d3d12_descriptor_heap_type(const ViewType view
 	}
 }*/
 
-D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE GFXToD3D12RenderPassBeginType(const RenderPassLoadOp op) {
+D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE ToD3D12RenderPassBeginType(const RenderPassLoadOp op) {
 	
 	switch (op) {
     	case RenderPassLoadOp::kLoad: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
     	case RenderPassLoadOp::kClear: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
 		case RenderPassLoadOp::kDontCare: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_render_pass_begin_type"); return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+		default: assert(false && "passed invalid argument to ToD3D12RenderPassBeginType"); return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
     }
 }
 
-D3D12_RENDER_PASS_ENDING_ACCESS_TYPE GFXToD3D12RenderPassEndType(const RenderPassStoreOp op) {
+D3D12_RENDER_PASS_ENDING_ACCESS_TYPE ToD3D12RenderPassEndType(const RenderPassStoreOp op) {
     
 	switch (op) {
     	case RenderPassStoreOp::kStore: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
     	case RenderPassStoreOp::kDontCare: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
-		default: assert(false && "passed invalid argument to GFXToD3D12RenderPassEndType"); return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
+		default: assert(false && "passed invalid argument to ToD3D12RenderPassEndType"); return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
     }
 }
 

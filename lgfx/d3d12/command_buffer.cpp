@@ -15,20 +15,22 @@ CommandBuffer::CommandBuffer() {
 
 }
 
-CommandBuffer::~CommandBuffer() {
-
-}
-
 CommandBuffer::CommandBuffer(Device* device, const CommandBufferType type) {
 
 }
 
 CommandBuffer::CommandBuffer(CommandBuffer&& rhs) noexcept {
 
+    std::swap(device_, rhs.device_);
+    allocator_.Swap(rhs.allocator_);
+    list_.Swap(rhs.list_);
 }
 
 CommandBuffer& CommandBuffer::operator=(CommandBuffer&& rhs) noexcept {
 
+    std::swap(device_, rhs.device_);
+    allocator_.Swap(rhs.allocator_);
+    list_.Swap(rhs.list_);
     return *this;
 }
 
@@ -96,7 +98,7 @@ void CommandBuffer::TextureMemoryBarrier(Texture* texture, const MemoryState bef
 
     D3D12_RESOURCE_BARRIER resource_barrier{};
     resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    resource_barrier.Transition.pResource = texture->resource_;
+    resource_barrier.Transition.pResource = texture->resource_.Get();
     resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
     resource_barrier.Transition.StateBefore = ToD3D12ResourceState(before);
     resource_barrier.Transition.StateAfter = ToD3D12ResourceState(after);
@@ -107,7 +109,7 @@ void CommandBuffer::TextureMemoryBarrier(Texture* texture, const MemoryState bef
 void CommandBuffer::Reset() {
 
     THROW_IF_FAILED(allocator_->Reset());
-    THROW_IF_FAILED(list_->Reset(allocator_, nullptr));
+    THROW_IF_FAILED(list_->Reset(allocator_.Get(), nullptr));
 }
 
 void CommandBuffer::Close() {

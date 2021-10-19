@@ -16,7 +16,6 @@ friend class CommandBuffer;
 public:
 
     Texture();
-    ~Texture();
     Texture(const Texture&) = delete;
     Texture(Texture&& rhs) noexcept;
     Texture(Device* device, const uint32_t buffer_index);
@@ -40,7 +39,7 @@ private:
     TextureFlags flags_;
     Format format_;
 
-    ID3D12Resource* resource_;
+    ComPtr<ID3D12Resource> resource_;
     D3D12_RESOURCE_DESC resource_desc_;
 
     MemoryPtr ptr_;

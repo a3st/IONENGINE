@@ -9,22 +9,17 @@ FrameBuffer::FrameBuffer() {
 
 }
 
-FrameBuffer::~FrameBuffer() {
-
-}
-
-FrameBuffer::FrameBuffer(Device* device, const FrameBufferDesc& desc) :
-    desc_(desc) {
+FrameBuffer::FrameBuffer(Device* device, const FrameBufferDesc& desc) : desc_(desc) {
 
 }
 
 FrameBuffer::FrameBuffer(FrameBuffer&& rhs) noexcept {
 
-    desc_ = std::move(rhs.desc_);
+    std::swap(desc_, rhs.desc_);
 }
 
 FrameBuffer& FrameBuffer::operator=(FrameBuffer&& rhs) noexcept {
 
-    desc_ = std::move(rhs.desc_);
+    std::swap(desc_, rhs.desc_);
     return *this;
 }

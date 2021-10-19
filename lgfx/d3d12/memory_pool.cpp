@@ -7,7 +7,7 @@
 
 using namespace lgfx;
 
-size_t MemoryPool::AlignedBlockSize(const size_t size) {
+size_t MemoryPool::AlignedBlockSize(const size_t size) const {
 
     return size < kMemoryPoolDefaultBlockSize ? 
         kMemoryPoolDefaultBlockSize : (size % kMemoryPoolDefaultBlockSize) > 0 ?
@@ -15,7 +15,7 @@ size_t MemoryPool::AlignedBlockSize(const size_t size) {
 }
 
 MemoryHeap::MemoryHeap() {
-    
+
 }
 
 MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType type, const MemoryFlags flags) {
@@ -26,7 +26,7 @@ MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType ty
     heap_desc.Flags = ToD3D12HeapFlags(flags);
     heap_desc.Alignment = align;
 
-    THROW_IF_FAILED(device->device_->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(&heap)));
+    THROW_IF_FAILED(device->device_->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(heap.GetAddressOf())));
 
     block_count = kMemoryPoolDefaultHeapSize / kMemoryPoolDefaultBlockSize;
     blocks.resize(block_count, 0x0);
@@ -34,16 +34,26 @@ MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType ty
     offset = 0;
 }
 
-MemoryHeap::~MemoryHeap() {
+MemoryHeap::MemoryHeap(MemoryHeap&& rhs) noexcept {
 
-    heap->Release();
+    heap.Swap(rhs.heap);
+    std::swap(heap_size, rhs.heap_size);
+    std::swap(block_count, rhs.block_count);
+    std::swap(blocks, rhs.blocks);
+    std::swap(offset, rhs.offset);
+}
+
+MemoryHeap& MemoryHeap::operator=(MemoryHeap&& rhs) noexcept {
+
+    heap.Swap(rhs.heap);
+    std::swap(heap_size, rhs.heap_size);
+    std::swap(block_count, rhs.block_count);
+    std::swap(blocks, rhs.blocks);
+    std::swap(offset, rhs.offset);
+    return *this;
 }
 
 MemoryPool::MemoryPool() {
-
-}
-
-MemoryPool::~MemoryPool() {
 
 }
 
@@ -61,18 +71,16 @@ MemoryPool::MemoryPool(Device* device, const size_t size, const uint64_t align, 
 
 MemoryPool::MemoryPool(MemoryPool&& rhs) noexcept {
 
-    type_ = rhs.type_;
-    flags_ = rhs.flags_;
-
-    heaps_ = std::move(rhs.heaps_);
+    std::swap(type_, rhs.type_);
+    std::swap(flags_, rhs.flags_);
+    std::swap(heaps_, rhs.heaps_);
 }
 
 MemoryPool& MemoryPool::operator=(MemoryPool&& rhs) noexcept {
 
-    type_ = rhs.type_;
-    flags_ = rhs.flags_;
-
-    heaps_ = std::move(rhs.heaps_);
+    std::swap(type_, rhs.type_);
+    std::swap(flags_, rhs.flags_);
+    std::swap(heaps_, rhs.heaps_);
     return *this;
 }
 

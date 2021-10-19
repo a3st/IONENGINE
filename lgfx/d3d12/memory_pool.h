@@ -12,7 +12,7 @@ const size_t kMemoryPoolDefaultBlockSize = 1048576;
 
 struct MemoryHeap {
 
-    ID3D12Heap* heap;
+    ComPtr<ID3D12Heap> heap;
 
     size_t heap_size;
 
@@ -23,7 +23,11 @@ struct MemoryHeap {
 
     MemoryHeap();
     MemoryHeap(Device* device, const uint64_t align, const MemoryType type, const MemoryFlags flags);
-    ~MemoryHeap();
+    MemoryHeap(const MemoryHeap&) = delete;
+    MemoryHeap(MemoryHeap&& rhs) noexcept;
+
+    MemoryHeap& operator=(const MemoryHeap&) = delete;
+    MemoryHeap& operator=(MemoryHeap&& rhs) noexcept;
 };
 
 struct MemoryPtr {
@@ -36,7 +40,6 @@ class MemoryPool {
 public:
 
     MemoryPool();
-    ~MemoryPool();
     MemoryPool(Device* device, const size_t size, const uint64_t align, const MemoryType type, const MemoryFlags flags);
     MemoryPool(const MemoryPool&) = delete;
     MemoryPool(MemoryPool&& rhs) noexcept;
@@ -57,7 +60,7 @@ private:
 
     std::vector<MemoryHeap> heaps_;
 
-    size_t AlignedBlockSize(const size_t size);
+    size_t AlignedBlockSize(const size_t size) const;
 };
 
 }

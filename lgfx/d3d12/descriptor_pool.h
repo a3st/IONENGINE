@@ -10,7 +10,8 @@ namespace lgfx {
 const uint32_t kDescriptorPoolDefaultHeapSize = 64;
 
 struct DescriptorHeap {
-    ID3D12DescriptorHeap* heap;
+    
+    ComPtr<ID3D12DescriptorHeap> heap;
 
     size_t heap_size;
 
@@ -20,7 +21,11 @@ struct DescriptorHeap {
 
     DescriptorHeap();
     DescriptorHeap(Device* device, const DescriptorType type, const DescriptorFlags flags);
-    ~DescriptorHeap();
+    DescriptorHeap(const DescriptorHeap&) = delete;
+    DescriptorHeap(DescriptorHeap&& rhs) noexcept;
+
+    DescriptorHeap& operator=(const DescriptorHeap&) = delete;
+    DescriptorHeap& operator=(DescriptorHeap&& rhs) noexcept;
 };
 
 struct DescriptorPtr {
@@ -33,7 +38,6 @@ class DescriptorPool {
 public:
 
     DescriptorPool();
-    ~DescriptorPool();
     DescriptorPool(Device* device, const size_t size, const DescriptorType type, const DescriptorFlags flags);
     DescriptorPool(const DescriptorPool&) = delete;
     DescriptorPool(DescriptorPool&& rhs) noexcept;

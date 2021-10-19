@@ -11,7 +11,7 @@ int main(int*, char*) {
 
     platform::WindowLoop loop;
     platform::Window window("IONENGINE", 800, 600, &loop);
-    rendersystem::Renderer renderer;
+    rendersystem::Renderer renderer(&window);
     
     loop.Run([&](const platform::WindowEvent& event) {
             switch(event.type) {

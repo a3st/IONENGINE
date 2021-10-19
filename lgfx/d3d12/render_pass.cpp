@@ -10,12 +10,7 @@ RenderPass::RenderPass() {
 
 }
 
-RenderPass::~RenderPass() {
-
-}
-
-RenderPass::RenderPass(Device* device, const RenderPassDesc& desc) :
-    desc_(desc) {
+RenderPass::RenderPass(Device* device, const RenderPassDesc& desc) : desc_(desc) {
 
     colors_desc_.resize(desc.colors.size());
     for(uint32_t i = 0; i < static_cast<uint32_t>(desc.colors.size()); ++i) {
@@ -57,15 +52,15 @@ RenderPass::RenderPass(Device* device, const RenderPassDesc& desc) :
 
 RenderPass::RenderPass(RenderPass&& rhs) noexcept {
 
-    desc_ = std::move(rhs.desc_);
-    colors_desc_ = std::move(rhs.colors_desc_);
-    depth_stencil_desc_ = std::move(rhs.depth_stencil_desc_);
+    std::swap(desc_, rhs.desc_);
+    std::swap(colors_desc_, rhs.colors_desc_);
+    std::swap(depth_stencil_desc_, rhs.depth_stencil_desc_);
 }
 
 RenderPass& RenderPass::operator=(RenderPass&& rhs) noexcept {
 
-    desc_ = std::move(rhs.desc_);
-    colors_desc_ = std::move(rhs.colors_desc_);
-    depth_stencil_desc_ = std::move(rhs.depth_stencil_desc_);
+    std::swap(desc_, rhs.desc_);
+    std::swap(colors_desc_, rhs.colors_desc_);
+    std::swap(depth_stencil_desc_, rhs.depth_stencil_desc_);
     return *this;
 }

@@ -4,6 +4,7 @@
 
 #include "../types.h"
 #include "d3d12.h"
+#include "handle_ptr.h"
 
 namespace lgfx {
 
@@ -14,7 +15,6 @@ friend class Device;
 public:
 
     Fence();
-    ~Fence();
     Fence(Device* device, const uint64_t initial_value);
     Fence(const Fence&) = delete;
     Fence(Fence&& rhs) noexcept;
@@ -28,8 +28,8 @@ public:
 
 private:
 
-    ID3D12Fence* fence_;
-    HANDLE event_;
+    ComPtr<ID3D12Fence> fence_;
+    UniqueHANDLE event_;
 };
 
 }
