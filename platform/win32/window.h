@@ -6,10 +6,7 @@
 
 namespace ionengine::platform {
 
-enum class WindowEventType {
-    Closed,
-    Sized
-};
+class WindowLoop;
 
 class Window {
 
@@ -17,7 +14,7 @@ public:
 
     Window();
     ~Window();
-    Window(const std::string& label, const uint32_t width, const uint32_t height);
+    Window(const std::string& label, const uint32_t width, const uint32_t height, WindowLoop* loop);
 
     inline void* GetNativeHandle() const { return reinterpret_cast<HWND>(hwnd_); }
 
@@ -35,6 +32,8 @@ private:
 
     uint32_t width_;
     uint32_t height_;
+
+    WindowLoop* loop_;
 
     static LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

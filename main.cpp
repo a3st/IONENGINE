@@ -8,11 +8,21 @@ using namespace ionengine;
 
 int main(int*, char*) {
 
-    platform::Window window("IONENGINE", 800, 600);
+    platform::WindowLoop loop;
+    platform::Window window("IONENGINE", 800, 600, &loop);
     
-
-    while(true) {
-        
-    }
+    loop.Run([&](const platform::WindowEvent& event) {
+            switch(event.type) {
+                case platform::WindowEventType::Closed: loop.Quit(); break;
+                case platform::WindowEventType::Sized: {
+                    
+                    break;
+                }
+                case platform::WindowEventType::Updated: {
+                    
+                    break;
+                }
+            }
+        });
     return 0;
 }

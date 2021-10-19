@@ -22,7 +22,8 @@ add_executable(Runtime-Win32
 
     main.cpp
 
-    platform/win32/window.cpp    
+    platform/win32/window.cpp
+    platform/win32/window_loop.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

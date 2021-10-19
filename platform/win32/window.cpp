@@ -2,6 +2,7 @@
 
 #include "../../precompiled.h"
 #include "window.h"
+#include "window_loop.h"
 
 using namespace ionengine::platform;
 
@@ -14,7 +15,8 @@ Window::~Window() {
 	DestroyWindow(hwnd_);
 }
 
-Window::Window(const std::string& label, const uint32_t width, const uint32_t height) {
+Window::Window(const std::string& label, const uint32_t width, const uint32_t height, WindowLoop* loop) :
+	width_(0), height_(0), loop_(loop)  {
 
     WNDCLASS wnd_class{};
 	wnd_class.lpszClassName = TEXT("IONENGINE");
@@ -58,10 +60,14 @@ LRESULT Window::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	switch(msg) {
 		case WM_CLOSE: {
-			
+			window->loop_->event_.type = WindowEventType::Closed;
 			break;
 		}
 		case WM_SIZE: {
+			if(wParam & SIZE_MINIMIZED) {
+				break;
+			}
+
 			WORD width = LOWORD(lParam);
 			WORD height = HIWORD(lParam);
 
@@ -72,6 +78,8 @@ LRESULT Window::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 			window->width_ = std::max<uint32_t>(1, width - style_width);
 			window->height_ = std::max<uint32_t>(1, height - style_height);
+
+			window->loop_->event_.type = WindowEventType::Sized;
 			break;
 		}
 	}
