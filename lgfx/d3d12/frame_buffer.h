@@ -20,7 +20,7 @@ public:
     FrameBuffer& operator=(const FrameBuffer&) = delete;
     FrameBuffer& operator=(FrameBuffer&& rhs) noexcept;
 
-    const FrameBufferDesc& GetDesc() const;
+    inline const FrameBufferDesc& GetDesc() const { return desc_; }
 
 private:
 

@@ -41,8 +41,8 @@ public:
     DescriptorPool& operator=(const DescriptorPool&) = delete;
     DescriptorPool& operator=(DescriptorPool&& rhs) noexcept;
 
-    DescriptorType GetType() const;
-    DescriptorFlags GetFlags() const;
+    inline DescriptorType GetType() const { return type_; }
+    inline DescriptorFlags GetFlags() const { return flags_; }
 
     DescriptorPtr Allocate();
     void Deallocate(DescriptorPtr* ptr);

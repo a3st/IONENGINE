@@ -60,18 +60,3 @@ TextureView& TextureView::operator=(TextureView&& rhs) noexcept {
     view_desc_ = std::move(rhs.view_desc_);
     return *this;
 }
-
-Texture* TextureView::GetTexture() const {
-    
-    return texture_;
-}
-
-const TextureViewDesc& TextureView::GetViewDesc() const {
-
-    return view_desc_;
-}
-
-DescriptorPtr TextureView::GetDescriptorPtr() const {
-
-    return ptr_;
-}

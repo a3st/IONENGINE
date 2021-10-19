@@ -118,13 +118,3 @@ void MemoryPool::Deallocate(MemoryPtr* ptr, const size_t size) {
     std::memset(ptr->heap->blocks.data() + ptr->offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
     ptr->heap->offset = ptr->offset;
 }
-
-MemoryType MemoryPool::GetType() const {
-
-    return type_;
-}
-
-MemoryFlags MemoryPool::GetFlags() const {
-
-    return flags_;
-}

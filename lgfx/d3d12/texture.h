@@ -24,12 +24,12 @@ public:
     Texture& operator=(const Texture&) = delete;
     Texture& operator=(Texture&& rhs) noexcept;
 
-    uint32_t GetMipLevels() const;
-    uint32_t GetArrayLayers() const;
-    uint32_t GetWidth() const;
-    uint32_t GetHeight() const;
-    TextureFlags GetFlags() const;
-    Format GetFormat() const;
+    inline uint32_t GetMipLevels() const { return mip_levels_; }
+    inline uint32_t GetArrayLayers() const { return array_layers_; }
+    inline uint32_t GetWidth() const { return width_; }
+    inline uint32_t GetHeight() const { return height_; }
+    inline TextureFlags GetFlags() const { return flags_; }
+    inline Format GetFormat() const { return format_; }
 
 private:
 

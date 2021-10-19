@@ -21,9 +21,9 @@ public:
     TextureView& operator=(const TextureView&) = delete;
     TextureView& operator=(TextureView&& rhs) noexcept;
 
-    Texture* GetTexture() const;
-    const TextureViewDesc& GetViewDesc() const;
-    DescriptorPtr GetDescriptorPtr() const;
+    inline Texture* GetTexture() const { return texture_; }
+    inline const TextureViewDesc& GetViewDesc() const { return view_desc_; }
+    inline DescriptorPtr GetDescriptorPtr() const { return ptr_; }
 
 private:
 

@@ -22,7 +22,7 @@ public:
     RenderPass& operator=(const RenderPass&) = delete;
     RenderPass& operator=(RenderPass&& rhs) noexcept;
 
-    const RenderPassDesc& GetDesc() const;
+    inline const RenderPassDesc& GetDesc() const { return desc_; }
 
 private:
 

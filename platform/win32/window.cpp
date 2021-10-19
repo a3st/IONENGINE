@@ -25,9 +25,15 @@ Window::Window(const std::string& label, const uint32_t width, const uint32_t he
 		throw std::runtime_error("An error occurred while registering the window");
     }
 
+	size_t length = strlen(label.c_str()) + 1;
+    assert(length > 0 && "length is less than 0 or equal 0");
+    size_t result = 0;
+	std::wstring out_str(length - 1, 0);
+    mbstowcs_s(&result, out_str.data(), length, label.c_str(), length - 1);
+
     hwnd_ = CreateWindow(
 		wnd_class.lpszClassName,
-		L"123",
+		out_str.c_str(),
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
 		0, 100,
 		width, height,
@@ -43,12 +49,31 @@ Window::Window(const std::string& label, const uint32_t width, const uint32_t he
 	ShowWindow(hwnd_, SW_SHOWDEFAULT);
 }
 
-void* Window::GetNativeHandle() const {
-
-    return reinterpret_cast<HWND>(hwnd_);
-}
-
 LRESULT Window::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
+	auto window = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	if(!window) {
+		return DefWindowProc(hWnd, msg, wParam, lParam);
+	}
+
+	switch(msg) {
+		case WM_CLOSE: {
+			
+			break;
+		}
+		case WM_SIZE: {
+			WORD width = LOWORD(lParam);
+			WORD height = HIWORD(lParam);
+
+			RECT style_rect{};
+			AdjustWindowRect(&style_rect, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX, false);
+			LONG style_width = style_rect.right - style_rect.left;
+			LONG style_height = style_rect.bottom - style_rect.top;
+
+			window->width_ = std::max<uint32_t>(1, width - style_width);
+			window->height_ = std::max<uint32_t>(1, height - style_height);
+			break;
+		}
+	}
     return DefWindowProc(hWnd, msg, wParam, lParam);
 }

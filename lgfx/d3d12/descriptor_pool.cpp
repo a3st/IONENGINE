@@ -67,16 +67,6 @@ DescriptorPool& DescriptorPool::operator=(DescriptorPool&& rhs) noexcept {
     return *this;
 }
 
-DescriptorFlags DescriptorPool::GetFlags() const {
-
-    return flags_;
-}
-
-DescriptorType DescriptorPool::GetType() const {
-
-    return type_;
-}
-
 DescriptorPtr DescriptorPool::Allocate() {
 
     DescriptorPtr ptr{};

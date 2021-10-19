@@ -69,8 +69,3 @@ RenderPass& RenderPass::operator=(RenderPass&& rhs) noexcept {
     depth_stencil_desc_ = std::move(rhs.depth_stencil_desc_);
     return *this;
 }
-
-const RenderPassDesc& RenderPass::GetDesc() const {
-
-    return desc_;
-}

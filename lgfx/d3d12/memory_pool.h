@@ -47,8 +47,8 @@ public:
     MemoryPtr Allocate(const size_t size);
     void Deallocate(MemoryPtr* ptr, const size_t size);
 
-    MemoryType GetType() const;
-    MemoryFlags GetFlags() const;
+    inline MemoryType GetType() const { return type_; }
+    inline MemoryFlags GetFlags() const { return flags_; }
 
 private:
 

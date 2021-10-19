@@ -61,33 +61,3 @@ Texture::Texture(Device* device, const uint32_t buffer_index) {
     array_layers_ = resource_desc_.DepthOrArraySize;
     mip_levels_ = resource_desc_.MipLevels;
 }
-
-uint32_t Texture::GetArrayLayers() const {
-
-    return array_layers_;
-}
-
-uint32_t Texture::GetMipLevels() const { 
-    
-    return mip_levels_;
-}
-
-uint32_t Texture::GetWidth() const {
-
-    return width_;
-}
-
-uint32_t Texture::GetHeight() const {
-
-    return height_;
-}
-
-TextureFlags Texture::GetFlags() const {
-
-    return flags_;
-}
-
-Format Texture::GetFormat() const {
-
-    return format_;
-}

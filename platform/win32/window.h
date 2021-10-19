@@ -6,6 +6,11 @@
 
 namespace ionengine::platform {
 
+enum class WindowEventType {
+    Closed,
+    Sized
+};
+
 class Window {
 
 public:
@@ -14,15 +19,22 @@ public:
     ~Window();
     Window(const std::string& label, const uint32_t width, const uint32_t height);
 
-    void* GetNativeHandle() const;
+    inline void* GetNativeHandle() const { return reinterpret_cast<HWND>(hwnd_); }
 
-    void set_cursor(const bool show) { cursor_ = show; }
+    inline void SetCursor(const bool show) { cursor_ = show; }
+    inline bool GetCursor() { return cursor_; }
+
+    inline uint32_t GetWidth() { return width_; }
+    inline uint32_t GetHeight() { return height_; }
 
 private:
 
     HWND hwnd_;
     
     bool cursor_;
+
+    uint32_t width_;
+    uint32_t height_;
 
     static LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };

@@ -28,8 +28,3 @@ FrameBuffer& FrameBuffer::operator=(FrameBuffer&& rhs) noexcept {
     desc_ = std::move(rhs.desc_);
     return *this;
 }
-
-const FrameBufferDesc& FrameBuffer::GetDesc() const {
-
-    return desc_;
-}
