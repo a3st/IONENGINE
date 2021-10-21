@@ -212,7 +212,7 @@ struct RenderPassDesc {
 DECLARE_STRUCT_OPERATOR_COMPARE(RenderPassDesc)
 
 struct FrameBufferDesc {
-    RenderPassDesc* render_pass;
+    RenderPass* render_pass;
     uint32_t width;
     uint32_t height;
     std::vector<TextureView*> colors;
