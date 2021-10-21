@@ -4,6 +4,8 @@
 
 #include "d3d12.h"
 
+namespace lgfx {
+
 struct HANDLE_deleter {
     void operator()(HANDLE handle) {
 
@@ -12,3 +14,5 @@ struct HANDLE_deleter {
 };
 
 typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, HANDLE_deleter> UniqueHANDLE;
+
+}

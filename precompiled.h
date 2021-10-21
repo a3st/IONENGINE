@@ -6,5 +6,6 @@
 #include <array>
 #include <numeric>
 #include <functional>
+#include <map>
 
 #include "cxx_helpers.h"

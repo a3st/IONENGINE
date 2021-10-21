@@ -10,9 +10,23 @@ Window::Window() {
 
 }
 
-Window::~Window() {
+Window::Window(Window&& rhs) noexcept {
 
-	DestroyWindow(hwnd_);
+	std::swap(hwnd_, rhs.hwnd_);
+	std::swap(cursor_, rhs.cursor_);
+	std::swap(width_, rhs.width_);
+	std::swap(height_, rhs.height_);
+	std::swap(loop_, rhs.loop_);
+}
+
+Window& Window::operator=(Window&& rhs) noexcept {
+
+	std::swap(hwnd_, rhs.hwnd_);
+	std::swap(cursor_, rhs.cursor_);
+	std::swap(width_, rhs.width_);
+	std::swap(height_, rhs.height_);
+	std::swap(loop_, rhs.loop_);
+	return *this;
 }
 
 Window::Window(const std::string& label, const uint32_t width, const uint32_t height, WindowLoop* loop) :
@@ -33,7 +47,7 @@ Window::Window(const std::string& label, const uint32_t width, const uint32_t he
 	std::wstring out_str(length - 1, 0);
     mbstowcs_s(&result, out_str.data(), length, label.c_str(), length - 1);
 
-    hwnd_ = CreateWindow(
+    hwnd_ = UniqueHWND(CreateWindow(
 		wnd_class.lpszClassName,
 		out_str.c_str(),
 		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
@@ -41,14 +55,14 @@ Window::Window(const std::string& label, const uint32_t width, const uint32_t he
 		width, height,
 		nullptr, nullptr,
 		wnd_class.hInstance,
-		nullptr);
+		nullptr));
 
 	if (!hwnd_) {
 		throw std::runtime_error("An error occurred while creating the window");
 	}
 
-    SetWindowLongPtr(hwnd_, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-	ShowWindow(hwnd_, SW_SHOWDEFAULT);
+    SetWindowLongPtr(reinterpret_cast<HWND>(hwnd_.get()), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+	ShowWindow(reinterpret_cast<HWND>(hwnd_.get()), SW_SHOWDEFAULT);
 }
 
 LRESULT Window::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {

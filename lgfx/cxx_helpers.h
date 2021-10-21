@@ -11,3 +11,19 @@ inline bool operator&(const EnumClass lhs, const EnumClass rhs) { \
 	return static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs); \
 }
 #endif // DECLARE_ENUM_CLASS_BIT_FLAG
+
+#ifndef DECLARE_STRUCT_OPERATOR_COMPARE
+#define DECLARE_STRUCT_OPERATOR_COMPARE(Struct) \
+inline bool operator==(const Struct& lhs, const Struct& rhs) { \
+	return lhs.make_tie() == rhs.make_tie(); \
+} \
+inline bool operator<(const Struct& lhs, const Struct& rhs) { \
+	return lhs.make_tie() < rhs.make_tie(); \
+} \
+inline bool operator>(const Struct& lhs, const Struct& rhs) { \
+	return lhs.make_tie() > rhs.make_tie(); \
+} \
+inline bool operator!=(const Struct& lhs, const Struct& rhs) { \
+	return lhs.make_tie() != rhs.make_tie(); \
+}
+#endif // DECLARE_STRUCT_OPERATOR_COMPARE

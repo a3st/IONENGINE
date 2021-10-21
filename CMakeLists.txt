@@ -23,6 +23,8 @@ add_executable(Runtime-Win32
     platform/win32/window_loop.cpp
 
     rendersystem/renderer.cpp
+    rendersystem/render_pass_cache.cpp
+    rendersystem/frame_buffer_cache.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

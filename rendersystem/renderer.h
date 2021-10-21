@@ -20,8 +20,6 @@ private:
     platform::Window* window_;
 
     lgfx::Device device_;
-    lgfx::MemoryPool mem_pool;
-
 };
 
 }

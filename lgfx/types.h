@@ -161,13 +161,27 @@ struct TextureViewDesc {
     uint32_t mip_level_count;
     uint32_t base_array_layer;
     uint32_t array_layer_count;
+
+    auto make_tie() const {
+
+        return std::tie(dimension, base_mip_level, mip_level_count, base_array_layer, array_layer_count);
+    }
 };
+
+DECLARE_STRUCT_OPERATOR_COMPARE(TextureViewDesc)
 
 struct RenderPassColorDesc {
     Format format;
     RenderPassLoadOp load_op;
     RenderPassStoreOp store_op;
+
+    auto make_tie() const {
+
+        return std::tie(format, load_op, store_op);
+    }
 };
+
+DECLARE_STRUCT_OPERATOR_COMPARE(RenderPassColorDesc)
 
 struct RenderPassDepthStencilDesc {
     Format format;
@@ -175,13 +189,27 @@ struct RenderPassDepthStencilDesc {
     RenderPassStoreOp depth_store_op;
     RenderPassLoadOp stencil_load_op;
     RenderPassStoreOp stencil_store_op;
+
+    auto make_tie() const {
+
+        return std::tie(format, depth_load_op, depth_store_op, stencil_load_op, stencil_store_op);
+    }
 };
+
+DECLARE_STRUCT_OPERATOR_COMPARE(RenderPassDepthStencilDesc)
 
 struct RenderPassDesc {
     std::vector<RenderPassColorDesc> colors;
     RenderPassDepthStencilDesc depth_stencil;
     uint32_t sample_count;
+
+    auto make_tie() const {
+
+        return std::tie(colors, depth_stencil, sample_count);
+    }
 };
+
+DECLARE_STRUCT_OPERATOR_COMPARE(RenderPassDesc)
 
 struct FrameBufferDesc {
     RenderPassDesc* render_pass;
@@ -189,16 +217,37 @@ struct FrameBufferDesc {
     uint32_t height;
     std::vector<TextureView*> colors;
     TextureView* depth_stencil;
+
+    auto make_tie() const {
+
+        return std::tie(render_pass, width, height, colors, depth_stencil);
+    }
 };
+
+DECLARE_STRUCT_OPERATOR_COMPARE(FrameBufferDesc)
 
 struct ClearValueColor {
     float r, g, b, a;
+
+    auto make_tie() const {
+
+        return std::tie(r, g, b, a);
+    }
 };
+
+DECLARE_STRUCT_OPERATOR_COMPARE(ClearValueColor)
 
 struct ClearValueDesc {
     std::array<ClearValueColor, 8> colors;
     float depth;
     uint8_t stencil;
+
+    auto make_tie() const {
+
+        return std::tie(colors, depth, stencil);
+    }
 };
+
+DECLARE_STRUCT_OPERATOR_COMPARE(ClearValueDesc)
 
 }
