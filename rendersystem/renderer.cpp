@@ -12,5 +12,17 @@ Renderer::Renderer(platform::Window* window) : window_(window) {
 
 void Renderer::Frame() {
 
-    
+    struct BasicPass {
+
+    };
+
+    frame_graph_.AddTask<BasicPass>(FrameGraphTaskType::RenderPass,
+        [&](FrameGraphTaskBuilder* builder, BasicPass& data) {
+
+        },
+        [=](FrameGraphTaskContext* context) {
+            
+        });
+
+    frame_graph_.Execute();
 }

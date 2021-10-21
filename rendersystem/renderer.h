@@ -5,6 +5,8 @@
 #include "../lgfx/lgfx.h"
 #include "../platform/platform.h"
 
+#include "frame_graph.h"
+
 namespace ionengine::rendersystem {
 
 class Renderer {
@@ -20,6 +22,8 @@ private:
     platform::Window* window_;
 
     lgfx::Device device_;
+
+    FrameGraph frame_graph_;
 };
 
 }

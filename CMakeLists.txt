@@ -25,6 +25,7 @@ add_executable(Runtime-Win32
     rendersystem/renderer.cpp
     rendersystem/render_pass_cache.cpp
     rendersystem/frame_buffer_cache.cpp
+    rendersystem/frame_graph.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
