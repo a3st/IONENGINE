@@ -24,6 +24,14 @@ private:
     lgfx::Device device_;
 
     FrameGraph frame_graph_;
+
+    struct FrameResource {
+        lgfx::Texture texture;
+        lgfx::TextureView view;
+    };
+
+    std::vector<FrameResource> frame_resources_;
+    lgfx::DescriptorPool frame_descriptor_pool_;
 };
 
 }

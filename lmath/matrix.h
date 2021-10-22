@@ -87,12 +87,12 @@ struct Matrix {
 		return *this;
 	}
 
-	const T* data() const {
+	const T* GetData() const {
 
 		return &m00;
 	}
 
-	size_t size() const {
+	size_t GetSize() const {
 
 		return 16;
 	}

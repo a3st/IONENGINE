@@ -5,6 +5,17 @@
 
 namespace lgfx {
 
+D3D12_DESCRIPTOR_HEAP_TYPE ToD3D12DescriptorHeapType(const DescriptorType type) {
+
+	switch(type) {
+		case DescriptorType::kShaderResource: return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		case DescriptorType::kSampler: return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+		case DescriptorType::kRenderTarget: return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		case DescriptorType::kDepthStencil: return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+		default: assert(false && "passed invalid argument to ToD3D12DescriptorHeapType"); return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	}
+}
+
 DXGI_FORMAT ToDXGIFormat(const Format format) {
 
 	switch(format) {

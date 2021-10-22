@@ -39,12 +39,12 @@ struct Vector2 {
 	    return *this;
     }
 
-	const T* data() const {
+	const T* GetData() const {
 
 		return &x;
 	}
 
-	size_t size() const {
+	size_t GetSize() const {
 
 		return 2;
 	}

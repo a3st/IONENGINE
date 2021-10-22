@@ -3,7 +3,7 @@
 #include "precompiled.h"
 
 #include "platform/platform.h"
-#include "rendersystem/renderer.h"
+#include "rendersystem/rendersystem.h"
 
 using namespace ionengine;
 
