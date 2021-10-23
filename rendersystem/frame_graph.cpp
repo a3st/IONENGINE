@@ -18,12 +18,30 @@ FrameGraphTaskBuilder::FrameGraphTaskBuilder() {
 
 }
 
+FrameGraphTaskContext::FrameGraphTaskContext() {
+    
+}
+
 FrameGraphResource FrameGraphTaskBuilder::Create(const FrameGraphResourceType type, const FrameGraphExternalResourceInfo& info) {
 
     FrameGraphResource resource;
     switch(type) {
         case FrameGraphResourceType::Attachment: {
             resource = FrameGraphResource(info.attachment.texture, info.attachment.view);
+            break;
+        }
+        case FrameGraphResourceType::Buffer: {
+            break;
+        }
+    }
+    return resource;
+}
+
+FrameGraphResource FrameGraphTaskBuilder::Create(const FrameGraphResourceType type, const FrameGraphResourceInfo& info) {
+
+    FrameGraphResource resource;
+    switch(type) {
+        case FrameGraphResourceType::Attachment: {
             break;
         }
         case FrameGraphResourceType::Buffer: {

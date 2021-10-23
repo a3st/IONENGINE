@@ -11,11 +11,15 @@ class FrameBufferCache {
 public:
 
     struct Key {
-        
+        lgfx::RenderPass* render_pass;
+        uint32_t width;
+        uint32_t height;
+        std::vector<lgfx::TextureView*> colors;
+        lgfx::TextureView* depth_stencil;
 
         bool operator<(const Key& rhs) const {
 
-            return false;
+            return std::tie(render_pass, width, height, colors, depth_stencil) < std::tie(rhs.render_pass, rhs.width, rhs.height, rhs.colors, rhs.depth_stencil);
         }
     };
 
@@ -31,6 +35,8 @@ public:
     void Clear();
 
 private:
+
+    lgfx::Device* device_;
 
     std::map<FrameBufferCache::Key, lgfx::FrameBuffer> frame_buffers_;
 };

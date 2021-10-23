@@ -34,6 +34,8 @@ public:
 
 private:
 
+    lgfx::Device* device_;
+
     std::map<RenderPassCache::Key, lgfx::RenderPass> render_passes_;
 };
 

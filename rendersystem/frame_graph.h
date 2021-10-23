@@ -82,6 +82,7 @@ public:
     FrameGraphTaskBuilder();
 
     FrameGraphResource Create(const FrameGraphResourceType type, const FrameGraphExternalResourceInfo& info);
+    FrameGraphResource Create(const FrameGraphResourceType type, const FrameGraphResourceInfo& info);
     void Read(FrameGraphResource* resource);
     void Write(FrameGraphResource* resource, const FrameGraphResourceWriteOp write_op, const Color& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f });
 
@@ -116,14 +117,14 @@ public:
         builder_func(&builder, data);
 
         // Reset command
-        command_buffer_.Reset();
+        //command_buffer_.Reset();
 
         // Barriers
 
 
 
         FrameGraphTaskContext context;
-        exec_func(context, data);
+        exec_func(&context, data);
         
         // Barriers end
         return data;
