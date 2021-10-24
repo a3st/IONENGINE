@@ -32,7 +32,7 @@ TextureView::TextureView() {
 
 }
 
-TextureView::TextureView(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc) {
+TextureView::TextureView(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc) : pool_(pool), texture_(texture), ptr_{}, view_desc_(desc) {
 
     TextureFlags flags = texture->GetFlags();
     if(flags & TextureFlags::kRenderTarget) {

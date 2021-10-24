@@ -22,7 +22,7 @@ public:
 
     inline Texture* GetTexture() const { return texture_; }
     inline const TextureViewDesc& GetViewDesc() const { return view_desc_; }
-    inline DescriptorPtr GetDescriptorPtr() const { return ptr_; }
+    inline const DescriptorPtr& GetDescriptorPtr() const { return ptr_; }
 
 private:
 

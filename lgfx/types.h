@@ -171,9 +171,9 @@ struct TextureViewDesc {
 DECLARE_STRUCT_OPERATOR_COMPARE(TextureViewDesc)
 
 struct RenderPassColorDesc {
-    Format format;
-    RenderPassLoadOp load_op;
-    RenderPassStoreOp store_op;
+    Format format = Format::kUnknown;
+    RenderPassLoadOp load_op = RenderPassLoadOp::kDontCare;
+    RenderPassStoreOp store_op = RenderPassStoreOp::kDontCare;
 
     auto make_tie() const {
 
@@ -184,11 +184,11 @@ struct RenderPassColorDesc {
 DECLARE_STRUCT_OPERATOR_COMPARE(RenderPassColorDesc)
 
 struct RenderPassDepthStencilDesc {
-    Format format;
-    RenderPassLoadOp depth_load_op;
-    RenderPassStoreOp depth_store_op;
-    RenderPassLoadOp stencil_load_op;
-    RenderPassStoreOp stencil_store_op;
+    Format format = Format::kUnknown;
+    RenderPassLoadOp depth_load_op = RenderPassLoadOp::kDontCare;
+    RenderPassStoreOp depth_store_op = RenderPassStoreOp::kDontCare;
+    RenderPassLoadOp stencil_load_op = RenderPassLoadOp::kDontCare;
+    RenderPassStoreOp stencil_store_op = RenderPassStoreOp::kDontCare;
 
     auto make_tie() const {
 
@@ -201,7 +201,7 @@ DECLARE_STRUCT_OPERATOR_COMPARE(RenderPassDepthStencilDesc)
 struct RenderPassDesc {
     std::vector<RenderPassColorDesc> colors;
     RenderPassDepthStencilDesc depth_stencil;
-    uint32_t sample_count;
+    uint32_t sample_count = 1;
 
     auto make_tie() const {
 
@@ -238,7 +238,7 @@ struct ClearValueColor {
 DECLARE_STRUCT_OPERATOR_COMPARE(ClearValueColor)
 
 struct ClearValueDesc {
-    std::array<ClearValueColor, 8> colors;
+    std::vector<ClearValueColor> colors;
     float depth;
     uint8_t stencil;
 

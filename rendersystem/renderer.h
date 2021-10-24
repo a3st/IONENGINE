@@ -19,18 +19,23 @@ public:
 
 private:
 
+    void BeginFrame();
+    void EndFrame();
+
     platform::Window* window_;
 
     lgfx::Device device_;
-
     FrameGraph frame_graph_;
 
-    struct FrameResource {
-        lgfx::Texture texture;
-        lgfx::TextureView view;
-    };
+    struct {
+        std::vector<lgfx::Texture> textures;
+        std::vector<lgfx::TextureView> texture_views;
+        std::vector<lgfx::Fence> fences;
+        std::vector<uint64_t> fence_values;
+    } frame_resources_;
 
-    std::vector<FrameResource> frame_resources_;
+    uint32_t frame_index_;
+
     lgfx::DescriptorPool frame_descriptor_pool_;
 };
 

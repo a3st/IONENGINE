@@ -103,7 +103,7 @@ MemoryPtr MemoryPool::Allocate(const size_t size) {
 
                 if(alloc_size == 0) {
                     ptr.heap = &heaps_[i];
-                    ptr.offset = i * kMemoryPoolDefaultBlockSize;
+                    ptr.offset = j * kMemoryPoolDefaultBlockSize;
                 }
 
                 alloc_size = heaps_[i].blocks[j] == 0x0 ? alloc_size + kMemoryPoolDefaultBlockSize : alloc_size;
@@ -113,7 +113,7 @@ MemoryPtr MemoryPool::Allocate(const size_t size) {
                 ptr.offset = 0;
             }
         }
-        if(ptr.heap != nullptr) {
+        if(ptr.heap) {
             break;
         }
     }

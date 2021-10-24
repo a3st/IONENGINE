@@ -29,6 +29,16 @@ Window& Window::operator=(Window&& rhs) noexcept {
 	return *this;
 }
 
+void Window::SetLabel(const std::string& label) {
+
+	size_t length = strlen(label.c_str()) + 1;
+    assert(length > 0 && "length is less than 0 or equal 0");
+    size_t result = 0;
+	std::wstring out_str(length - 1, 0);
+    mbstowcs_s(&result, out_str.data(), length, label.c_str(), length - 1);
+	SetWindowText(reinterpret_cast<HWND>(hwnd_.get()), out_str.c_str());
+}
+
 Window::Window(const std::string& label, const uint32_t width, const uint32_t height, WindowLoop* loop) :
 	width_(0), height_(0), loop_(loop)  {
 

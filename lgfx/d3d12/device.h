@@ -38,6 +38,7 @@ public:
     void Wait(const CommandBufferType type, Fence* fence, const uint64_t value);
     void ExecuteCommandBuffer(const CommandBufferType type, CommandBuffer* buffer);
 
+    inline uint32_t GetSwapchainBufferIndex() const { return swapchain_->GetCurrentBackBufferIndex(); }
     inline const AdapterDesc& GetAdapterDesc() const { return adapter_desc_; }
 
 private:

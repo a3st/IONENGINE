@@ -26,20 +26,15 @@ RenderPassCache& RenderPassCache::operator=(RenderPassCache&& rhs) noexcept {
     return *this;
 }
 
-lgfx::RenderPass* RenderPassCache::GetRenderPass(const Key& key) {
+lgfx::RenderPass* RenderPassCache::GetRenderPass(const lgfx::RenderPassDesc& desc) {
 
-    auto it = render_passes_.find(key);
+    auto it = render_passes_.find(desc);
     if(it != render_passes_.end()) {
         return &it->second;
     } else {
-        lgfx::RenderPassDesc desc{};
-        desc.colors = key.colors;
-        desc.depth_stencil = key.depth_stencil;
-        desc.sample_count = key.sample_count;
-
-        auto result = render_passes_.emplace(key, lgfx::RenderPass(device_, desc));
+        auto result = render_passes_.emplace(desc, lgfx::RenderPass(device_, desc));
         return &result.first->second;
-    } 
+    }
 }
 
 void RenderPassCache::Clear() {

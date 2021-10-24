@@ -26,20 +26,13 @@ FrameBufferCache& FrameBufferCache::operator=(FrameBufferCache&& rhs) noexcept {
     return *this;
 }
 
-lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(const Key& key) {
-
-    auto it = frame_buffers_.find(key);
+lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(const lgfx::FrameBufferDesc& desc) {
+    
+    auto it = frame_buffers_.find(desc);
     if(it != frame_buffers_.end()) {
         return &it->second;
     } else {
-        lgfx::FrameBufferDesc desc{};
-        desc.render_pass = key.render_pass;
-        desc.width = key.width;
-        desc.height = key.height;
-        desc.colors = key.colors;
-        desc.depth_stencil = key.depth_stencil;
-
-        auto result = frame_buffers_.emplace(key, lgfx::FrameBuffer(device_, desc));
+        auto result = frame_buffers_.emplace(desc, lgfx::FrameBuffer(device_, desc));
         return &result.first->second;
     }
 }

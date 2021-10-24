@@ -7,7 +7,25 @@
 
 using namespace ionengine;
 
+size_t allocate = 0;
+size_t deallocate = 0;
+
+std::wstring label;
+
+void* operator new(size_t size) {
+    ++allocate;
+    void* p = malloc(size);
+    return p;
+}
+ 
+void operator delete(void * p) {
+    ++deallocate;
+    free(p);
+}
+
 int main(int*, char*) {
+
+    label.reserve(50);
 
     platform::WindowLoop loop;
     platform::Window window("IONENGINE", 800, 600, &loop);
@@ -22,6 +40,9 @@ int main(int*, char*) {
                 }
                 case platform::WindowEventType::Updated: {
                     renderer.Frame();
+
+                    swprintf(label.data(), L"Alloc counter %zi/%zi", allocate, deallocate);
+                    SetWindowText(reinterpret_cast<HWND>(window.GetNativeHandle()), label.c_str());
                     break;
                 }
             }

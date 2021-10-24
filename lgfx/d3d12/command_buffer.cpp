@@ -15,8 +15,12 @@ CommandBuffer::CommandBuffer() {
 
 }
 
-CommandBuffer::CommandBuffer(Device* device, const CommandBufferType type) {
+CommandBuffer::CommandBuffer(Device* device, const CommandBufferType type) : device_(device) {
 
+    D3D12_COMMAND_LIST_TYPE list_type = ToD3D12CommandListType(type);
+    THROW_IF_FAILED(device->device_->CreateCommandAllocator(list_type, __uuidof(ID3D12CommandAllocator), reinterpret_cast<void**>(allocator_.GetAddressOf())));
+    THROW_IF_FAILED(device->device_->CreateCommandList(0, list_type, allocator_.Get(), nullptr, __uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(list_.GetAddressOf())));
+    THROW_IF_FAILED(list_->Close());
 }
 
 CommandBuffer::CommandBuffer(CommandBuffer&& rhs) noexcept {

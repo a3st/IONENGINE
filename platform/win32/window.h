@@ -23,6 +23,8 @@ public:
 
     inline void* GetNativeHandle() const { return reinterpret_cast<void*>(hwnd_.get()); }
 
+    void SetLabel(const std::string& label);
+
     inline void SetCursor(const bool show) { cursor_ = show; }
     inline bool GetCursor() { return cursor_; }
 

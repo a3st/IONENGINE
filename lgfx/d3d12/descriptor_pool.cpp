@@ -82,17 +82,17 @@ DescriptorPtr DescriptorPool::Allocate() {
         if(heaps_[i].offset > heaps_[i].heap_size) {
             continue;
         } else {
-            for(uint64_t j = 0; i < heaps_[i].heap_size; ++j) {
+            for(uint32_t j = 0; i < heaps_[i].heap_size; ++j) {
                 if(heaps_[i].descriptors[j] == 0x0) {
                     ptr.heap = &heaps_[i];
-                    ptr.offset = i;
+                    ptr.offset = j;
                     heaps_[i].descriptors[j] = 0x1;
-                    heaps_[i].offset = i + 1;
+                    heaps_[i].offset = j + 1;
                     break;
                 }
             }
         }
-        if(ptr.heap != nullptr) {
+        if(ptr.heap) {
             break;
         }
     }

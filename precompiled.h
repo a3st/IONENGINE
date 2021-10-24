@@ -7,5 +7,6 @@
 #include <numeric>
 #include <functional>
 #include <map>
+#include <string>
 
 #include "cxx_helpers.h"
