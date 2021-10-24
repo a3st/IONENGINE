@@ -31,6 +31,10 @@ struct DescriptorHeap {
 struct DescriptorPtr {
     DescriptorHeap* heap;
     uint32_t offset;
+
+    inline bool operator!() const {
+        return !heap;
+    }
 };
 
 class DescriptorPool {

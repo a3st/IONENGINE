@@ -8,11 +8,9 @@ namespace ionengine::rendersystem {
 
 class TextureViewCache {
 
+    using Key = std::pair<lgfx::Texture*, lgfx::TextureViewDesc>;
+
 public:
-
-    struct Key {
-
-    };
 
     TextureViewCache();
     TextureViewCache(lgfx::Device* device);
@@ -27,7 +25,13 @@ public:
 
 private:
 
-    
+    lgfx::Device* device_;
+
+    std::map<Key, lgfx::TextureView> texture_views_;
+
+    lgfx::DescriptorPool rt_descriptor_pool_;
+    lgfx::DescriptorPool ds_descriptor_pool_;
+    lgfx::DescriptorPool sr_descriptor_pool_;
 };
     
 }

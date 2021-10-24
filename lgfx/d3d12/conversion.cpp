@@ -5,6 +5,17 @@
 
 namespace lgfx {
 
+D3D12_RESOURCE_DIMENSION ToD3D12ResourceDimension(const Dimension dimension) {
+
+	switch(dimension) {
+		case Dimension::kBuffer: return D3D12_RESOURCE_DIMENSION_BUFFER;
+		case Dimension::kTexture1D: return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+		case Dimension::kTexture2D: return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		case Dimension::kTexture3D: return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+		default: assert(false && "passed invalid argument to ToD3D12ResourceDimension"); return D3D12_RESOURCE_DIMENSION_UNKNOWN;
+	}
+}
+
 D3D12_DESCRIPTOR_HEAP_TYPE ToD3D12DescriptorHeapType(const DescriptorType type) {
 
 	switch(type) {

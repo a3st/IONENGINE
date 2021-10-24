@@ -7,6 +7,7 @@
 
 namespace lgfx {
 
+extern D3D12_RESOURCE_DIMENSION ToD3D12ResourceDimension(const Dimension dimension);
 extern D3D12_HEAP_TYPE ToD3D12HeapType(const MemoryType type);
 extern D3D12_DESCRIPTOR_HEAP_TYPE ToD3D12DescriptorHeapType(const DescriptorType type);
 extern D3D12_HEAP_FLAGS ToD3D12HeapFlags(const MemoryFlags flags);

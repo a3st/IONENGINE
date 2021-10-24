@@ -27,7 +27,6 @@ Renderer::Renderer(platform::Window* window) : window_(window) {
         frame_resources_.texture_views[i] = lgfx::TextureView(&device_, &frame_descriptor_pool_, &frame_resources_.textures[i], view_desc);
         frame_resources_.fences[i] = lgfx::Fence(&device_, 0);
     }
-
 }
 
 void Renderer::BeginFrame() {
@@ -45,6 +44,12 @@ void Renderer::Frame() {
                 FrameGraphExternalResourceInfo { 
                     FrameGraphExternalResourceInfo::Attachment { &frame_resources_.textures[frame_index_], &frame_resources_.texture_views[frame_index_] } 
                 });
+
+            FrameGraphResource* dummy = builder->Create(FrameGraphResourceType::Attachment,
+                FrameGraphResourceInfo { 
+                    FrameGraphResourceInfo::Attachment { 800, 600 } 
+                });
+
             builder->Write(swapchain, FrameGraphResourceWriteOp::Clear, Color { 0.4f, 0.5f, 0.3f, 1.0f });
         },
         [=](FrameGraphContext* context) {

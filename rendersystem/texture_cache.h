@@ -10,10 +10,6 @@ class TextureCache {
 
 public:
 
-    struct Key {
-
-    };
-
     TextureCache();
     TextureCache(lgfx::Device* device);
     TextureCache(const TextureCache&) = delete;
@@ -22,12 +18,22 @@ public:
     TextureCache& operator=(const TextureCache&) = delete;
     TextureCache& operator=(TextureCache&& rhs) noexcept;
 
-    lgfx::Texture* GetTexture(const Key& key);
+    lgfx::Texture* GetTexture(const lgfx::TextureDesc& desc);
     void Clear();
 
 private:
 
-    
+    lgfx::Device* device_;
+
+    struct TextureEntry {
+        uint32_t entry_index;
+        std::vector<lgfx::Texture> textures;
+    };
+
+    std::map<lgfx::TextureDesc, TextureEntry> textures_;
+
+    lgfx::MemoryPool rt_memory_pool_;
+    lgfx::MemoryPool sr_memory_pool_;
 };
     
 }

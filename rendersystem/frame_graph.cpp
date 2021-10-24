@@ -33,7 +33,8 @@ FrameGraphContext::FrameGraphContext() {
     
 }
 
-FrameGraphBuilder::FrameGraphBuilder(FrameGraphTask* task) : task_(task) {
+FrameGraphBuilder::FrameGraphBuilder(TextureCache* texture_cache, TextureViewCache* texture_view_cache, FrameGraphTask* task) : 
+    texture_cache_(texture_cache), texture_view_cache_(texture_view_cache), task_(task) {
 
 }
 
@@ -58,6 +59,23 @@ FrameGraphResource* FrameGraphBuilder::Create(const FrameGraphResourceType type,
     FrameGraphResource resource;
     switch(type) {
         case FrameGraphResourceType::Attachment: {
+            lgfx::TextureDesc desc{};
+            desc.dimension = lgfx::Dimension::kTexture2D;
+            desc.width = info.attachment.width;
+            desc.height = info.attachment.height;
+            desc.array_layers = 1;
+            desc.mip_levels = 1;
+            desc.format = lgfx::Format::kRGBA8unorm;
+            desc.flags = lgfx::TextureFlags::kRenderTarget;
+            lgfx::Texture* texture = texture_cache_->GetTexture(desc);
+
+            lgfx::TextureViewDesc view_desc{};
+            view_desc.dimension = desc.dimension;
+            view_desc.mip_level_count = desc.mip_levels;
+            view_desc.array_layer_count = desc.array_layers;
+            lgfx::TextureView* texture_view = texture_view_cache_->GetTextureView({ texture, view_desc });
+
+            resource = FrameGraphResource(texture, texture_view);
             break;
         }
         case FrameGraphResourceType::Buffer: {
@@ -86,11 +104,11 @@ void FrameGraphBuilder::Write(FrameGraphResource* resource, const FrameGraphReso
     switch(resource->type_) {
         case FrameGraphResourceType::Attachment: {
             
-            if(resource->attachment_.texture->GetFlags() & lgfx::TextureFlags::kDepthStencil) {
+            if(resource->attachment_.texture->GetDesc().flags & lgfx::TextureFlags::kDepthStencil) {
                 task_->frame_buffer_desc_.depth_stencil = resource->attachment_.texture_view;
             } else {
                 task_->frame_buffer_desc_.colors.emplace_back(resource->attachment_.texture_view);
-                task_->render_pass_desc_.colors.emplace_back(lgfx::RenderPassColorDesc { resource->attachment_.texture->GetFormat(), to_resource_write_op(write_op), lgfx::RenderPassStoreOp::kStore });
+                task_->render_pass_desc_.colors.emplace_back(lgfx::RenderPassColorDesc { resource->attachment_.texture->GetDesc().format, to_resource_write_op(write_op), lgfx::RenderPassStoreOp::kStore });
                 task_->clear_desc_.colors.emplace_back(lgfx::ClearValueColor { clear_color.r, clear_color.g, clear_color.b, clear_color.a });
             }
 
@@ -113,6 +131,9 @@ FrameGraph::FrameGraph(lgfx::Device* device) : device_(device), task_index_(0) {
     tasks_.resize(kFrameGraphTaskSize);
 
     command_buffer_.Reset();
+
+    texture_cache_ = TextureCache(device);
+    texture_view_cache_ = TextureViewCache(device);
 }
 
 FrameGraph::FrameGraph(FrameGraph&& rhs) noexcept {
@@ -146,7 +167,7 @@ FrameGraphTask* FrameGraph::AddTask(const FrameGraphTaskType type,
 
     auto& task = tasks_[task_index_];
 
-    FrameGraphBuilder builder(&task);
+    FrameGraphBuilder builder(&texture_cache_, &texture_view_cache_, &task);
     builder_func(&builder);
 
     // Resource barriers
@@ -193,6 +214,8 @@ void FrameGraph::Execute() {
         tasks_[i].Clear();
     }
     task_index_ = 0;
+
+    texture_cache_.Clear();
 }
 
 void FrameGraph::Flush() {

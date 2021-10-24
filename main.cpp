@@ -41,7 +41,7 @@ int main(int*, char*) {
                 case platform::WindowEventType::Updated: {
                     renderer.Frame();
 
-                    swprintf(label.data(), L"Alloc counter %zi/%zi", allocate, deallocate);
+                    swprintf(label.data(), L"IONENGINE [Alloc: %zi/%zi]", allocate, deallocate);
                     SetWindowText(reinterpret_cast<HWND>(window.GetNativeHandle()), label.c_str());
                     break;
                 }

@@ -33,6 +33,10 @@ struct MemoryHeap {
 struct MemoryPtr {
     MemoryHeap* heap;
     uint64_t offset;
+
+    inline bool operator!() const {
+        return !heap;
+    }
 };
 
 class MemoryPool {

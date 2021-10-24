@@ -28,6 +28,8 @@ MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType ty
 
     THROW_IF_FAILED(device->device_->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(heap.GetAddressOf())));
 
+    heap_size = kMemoryPoolDefaultHeapSize;
+
     block_count = kMemoryPoolDefaultHeapSize / kMemoryPoolDefaultBlockSize;
     blocks.resize(block_count, 0x0);
 
@@ -88,14 +90,13 @@ MemoryPtr MemoryPool::Allocate(const size_t size) {
 
     MemoryPtr ptr{};
     size_t align_size = AlignedBlockSize(size);
-    
+
     for(uint32_t i = 0; i < static_cast<uint32_t>(heaps_.size()); ++i) {
-        
         if(heaps_[i].offset + align_size > heaps_[i].heap_size) {
             continue;
         } else {
             size_t alloc_size = 0;
-            for(uint64_t j = 0; i < heaps_[i].block_count; ++j) {
+            for(uint64_t j = 0; j < heaps_[i].block_count; ++j) {
                 if(alloc_size == align_size) {
                     std::memset(heaps_[i].blocks.data() + ptr.offset / kMemoryPoolDefaultBlockSize, 0x1, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
                     break;

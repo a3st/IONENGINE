@@ -110,7 +110,7 @@ class FrameGraphBuilder {
 
 public:
 
-    FrameGraphBuilder(FrameGraphTask* task);
+    FrameGraphBuilder(TextureCache* texture_cache, TextureViewCache* texture_view_cache, FrameGraphTask* task);
 
     FrameGraphResource* Create(const FrameGraphResourceType type, const FrameGraphExternalResourceInfo& info);
     FrameGraphResource* Create(const FrameGraphResourceType type, const FrameGraphResourceInfo& info);
@@ -119,6 +119,8 @@ public:
 
 private:
 
+    TextureCache* texture_cache_; 
+    TextureViewCache* texture_view_cache_; 
     FrameGraphTask* task_;
 
 };

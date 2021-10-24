@@ -170,6 +170,23 @@ struct TextureViewDesc {
 
 DECLARE_STRUCT_OPERATOR_COMPARE(TextureViewDesc)
 
+struct TextureDesc {
+    Dimension dimension;
+    uint32_t width;
+    uint32_t height;
+    uint32_t mip_levels;
+    uint32_t array_layers;
+    Format format;
+    TextureFlags flags;
+
+    auto make_tie() const {
+
+        return std::tie(dimension, width, height, mip_levels, array_layers, format, flags);
+    }
+};
+
+DECLARE_STRUCT_OPERATOR_COMPARE(TextureDesc)
+
 struct RenderPassColorDesc {
     Format format = Format::kUnknown;
     RenderPassLoadOp load_op = RenderPassLoadOp::kDontCare;
