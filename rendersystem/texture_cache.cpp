@@ -11,8 +11,8 @@ TextureCache::TextureCache() {
 
 TextureCache::TextureCache(lgfx::Device* device) : device_(device) {
 
-    rt_memory_pool_ = lgfx::MemoryPool(device, lgfx::kMemoryPoolDefaultHeapSize, 0, lgfx::MemoryType::kDefault, lgfx::MemoryFlags::kRT_DS);
-    sr_memory_pool_ = lgfx::MemoryPool(device, lgfx::kMemoryPoolDefaultHeapSize, 0, lgfx::MemoryType::kDefault, lgfx::MemoryFlags::kNon_RT_DS);
+    rt_memory_pool_ = std::make_unique<lgfx::MemoryPool>(device, lgfx::kMemoryPoolDefaultHeapSize, 0, lgfx::MemoryType::kDefault, lgfx::MemoryFlags::kRT_DS);
+    sr_memory_pool_ = std::make_unique<lgfx::MemoryPool>(device, lgfx::kMemoryPoolDefaultHeapSize, 0, lgfx::MemoryType::kDefault, lgfx::MemoryFlags::kNon_RT_DS);
 }
 
 TextureCache::TextureCache(TextureCache&& rhs) noexcept {
@@ -38,29 +38,29 @@ lgfx::Texture* TextureCache::GetTexture(const lgfx::TextureDesc& desc) {
     if(it != textures_.end()) {
         if(it->second.entry_index > static_cast<uint32_t>(it->second.textures.size())) {
             if(desc.flags & lgfx::TextureFlags::kRenderTarget || desc.flags & lgfx::TextureFlags::kDepthStencil) {
-                auto& ret = it->second.textures.emplace_back(device_, &rt_memory_pool_, desc);
+                auto& ret = it->second.textures.emplace_back(std::make_unique<lgfx::Texture>(device_, rt_memory_pool_.get(), desc));
                 ++it->second.entry_index;
-                return &ret;
+                return ret.get();
             } else {
-                auto& ret = it->second.textures.emplace_back(device_, &sr_memory_pool_, desc);
+                auto& ret = it->second.textures.emplace_back(std::make_unique<lgfx::Texture>(device_, sr_memory_pool_.get(), desc));
                 ++it->second.entry_index;
-                return &ret;
+                return ret.get();
             }
         } else {
             auto& ret = it->second.textures[it->second.entry_index];
             ++it->second.entry_index;
-            return &ret;
+            return ret.get();
         }
     } else {
         auto& result = textures_.emplace(desc, TextureEntry { 0 });
         if(desc.flags & lgfx::TextureFlags::kRenderTarget || desc.flags & lgfx::TextureFlags::kDepthStencil) {
-            auto& ret = result.first->second.textures.emplace_back(device_, &rt_memory_pool_, desc);
+            auto& ret = result.first->second.textures.emplace_back(std::make_unique<lgfx::Texture>(device_, rt_memory_pool_.get(), desc));
             ++result.first->second.entry_index;
-            return &ret;
+            return ret.get();
         } else {
-            auto& ret = result.first->second.textures.emplace_back(device_, &sr_memory_pool_, desc);
+            auto& ret = result.first->second.textures.emplace_back(std::make_unique<lgfx::Texture>(device_, sr_memory_pool_.get(), desc));
             ++result.first->second.entry_index;
-            return &ret;
+            return ret.get();
         }
     }
 }

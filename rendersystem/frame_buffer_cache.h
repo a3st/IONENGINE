@@ -25,7 +25,7 @@ private:
 
     lgfx::Device* device_;
 
-    std::map<lgfx::FrameBufferDesc, lgfx::FrameBuffer> frame_buffers_;
+    std::map<lgfx::FrameBufferDesc, std::unique_ptr<lgfx::FrameBuffer>> frame_buffers_;
 };
 
 }

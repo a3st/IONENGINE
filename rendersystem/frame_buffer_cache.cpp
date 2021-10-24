@@ -30,10 +30,10 @@ lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(const lgfx::FrameBufferDesc&
     
     auto it = frame_buffers_.find(desc);
     if(it != frame_buffers_.end()) {
-        return &it->second;
+        return it->second.get();
     } else {
-        auto result = frame_buffers_.emplace(desc, lgfx::FrameBuffer(device_, desc));
-        return &result.first->second;
+        auto result = frame_buffers_.emplace(desc, std::make_unique<lgfx::FrameBuffer>(device_, desc));
+        return result.first->second.get();
     }
 }
 

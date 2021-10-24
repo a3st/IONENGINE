@@ -24,19 +24,19 @@ private:
 
     platform::Window* window_;
 
-    lgfx::Device device_;
-    FrameGraph frame_graph_;
+    std::unique_ptr<lgfx::Device> device_;
+    std::unique_ptr<FrameGraph> frame_graph_;
 
     struct {
-        std::vector<lgfx::Texture> textures;
-        std::vector<lgfx::TextureView> texture_views;
-        std::vector<lgfx::Fence> fences;
+        std::vector<std::unique_ptr<lgfx::Texture>> textures;
+        std::vector<std::unique_ptr<lgfx::TextureView>> texture_views;
+        std::vector<std::unique_ptr<lgfx::Fence>> fences;
         std::vector<uint64_t> fence_values;
     } frame_resources_;
 
     uint32_t frame_index_;
 
-    lgfx::DescriptorPool frame_descriptor_pool_;
+    std::unique_ptr<lgfx::DescriptorPool> frame_descriptor_pool_;
 };
 
 }

@@ -141,7 +141,8 @@ enum class CommandBufferType {
 enum class MemoryState {
     kCommon,
     kRenderTarget,
-    kPresent
+    kPresent,
+    kGenericRead
 };
 
 enum class RenderPassLoadOp {

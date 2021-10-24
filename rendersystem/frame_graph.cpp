@@ -10,13 +10,14 @@ FrameGraphResource::FrameGraphResource() {
 }
 
 FrameGraphResource::FrameGraphResource(lgfx::Texture* texture, lgfx::TextureView* texture_view) :
-    attachment_{ texture, texture_view }, type_(FrameGraphResourceType::Attachment) {
+    attachment_{ texture, texture_view }, type_(FrameGraphResourceType::kAttachment) {
 
 }
 
 FrameGraphTask::FrameGraphTask() : 
     clear_desc_{}, render_pass_desc_{}, frame_buffer_desc_{} {
-
+    
+    resources_.reserve(10);
 }
 
 void FrameGraphTask::Clear() {
@@ -38,27 +39,24 @@ FrameGraphBuilder::FrameGraphBuilder(TextureCache* texture_cache, TextureViewCac
 
 }
 
-FrameGraphResource* FrameGraphBuilder::Create(const FrameGraphResourceType type, const FrameGraphExternalResourceInfo& info) {
+FrameGraphResourceId FrameGraphBuilder::Create(const FrameGraphResourceType type, const FrameGraphExternalResourceInfo& info) {
 
-    FrameGraphResource resource;
     switch(type) {
-        case FrameGraphResourceType::Attachment: {
-            resource = FrameGraphResource(info.attachment.texture, info.attachment.texture_view);
-            break;
+        case FrameGraphResourceType::kAttachment: {
+            task_->resources_.emplace_back(info.attachment.texture, info.attachment.texture_view);
+            return FrameGraphResourceId(task_->resources_.size() - 1);
         }
-        case FrameGraphResourceType::Buffer: {
-            break;
+        case FrameGraphResourceType::kBuffer: {
+            return FrameGraphResourceId(0);
         }
+        default: return FrameGraphResourceId(0);
     }
-    auto& result = task_->resources_.emplace_back(resource);
-    return &result;
 }
 
-FrameGraphResource* FrameGraphBuilder::Create(const FrameGraphResourceType type, const FrameGraphResourceInfo& info) {
+FrameGraphResourceId FrameGraphBuilder::Create(const FrameGraphResourceType type, const FrameGraphResourceInfo& info) {
 
-    FrameGraphResource resource;
     switch(type) {
-        case FrameGraphResourceType::Attachment: {
+        case FrameGraphResourceType::kAttachment: {
             lgfx::TextureDesc desc{};
             desc.dimension = lgfx::Dimension::kTexture2D;
             desc.width = info.attachment.width;
@@ -75,47 +73,48 @@ FrameGraphResource* FrameGraphBuilder::Create(const FrameGraphResourceType type,
             view_desc.array_layer_count = desc.array_layers;
             lgfx::TextureView* texture_view = texture_view_cache_->GetTextureView({ texture, view_desc });
 
-            resource = FrameGraphResource(texture, texture_view);
-            break;
+            task_->resources_.emplace_back(texture, texture_view);
+            return FrameGraphResourceId(task_->resources_.size() - 1);
         }
-        case FrameGraphResourceType::Buffer: {
-            break;
+        case FrameGraphResourceType::kBuffer: {
+            return FrameGraphResourceId(0);
         }
+        default: return FrameGraphResourceId(0);
     }
-
-    auto& result = task_->resources_.emplace_back(resource);
-    return &result;
 }
 
-void FrameGraphBuilder::Read(FrameGraphResource* resource) {
+void FrameGraphBuilder::Read(const FrameGraphResourceId& resource_id) {
 
 }
 
-void FrameGraphBuilder::Write(FrameGraphResource* resource, const FrameGraphResourceWriteOp write_op, const Color& clear_color) {
+void FrameGraphBuilder::Write(const FrameGraphResourceId& resource_id, const FrameGraphResourceWriteOp write_op, const Color& clear_color) {
 
     auto to_resource_write_op = [](const FrameGraphResourceWriteOp op) -> lgfx::RenderPassLoadOp {
         switch(op) {
-            case FrameGraphResourceWriteOp::Load: return lgfx::RenderPassLoadOp::kLoad;
-            case FrameGraphResourceWriteOp::Clear: return lgfx::RenderPassLoadOp::kClear;
+            case FrameGraphResourceWriteOp::kLoad: return lgfx::RenderPassLoadOp::kLoad;
+            case FrameGraphResourceWriteOp::kClear: return lgfx::RenderPassLoadOp::kClear;
             default: assert(false && "passed invalid argument to to_resource_write_op"); return lgfx::RenderPassLoadOp::kDontCare;
         }
     };
 
-    switch(resource->type_) {
-        case FrameGraphResourceType::Attachment: {
+    auto& resource = task_->resources_[resource_id.id_];
+
+    std::cout << (bool)resource.attachment_.texture_view << std::endl;
+
+    switch(resource.type_) {
+        case FrameGraphResourceType::kAttachment: {
             
-            if(resource->attachment_.texture->GetDesc().flags & lgfx::TextureFlags::kDepthStencil) {
-                task_->frame_buffer_desc_.depth_stencil = resource->attachment_.texture_view;
+            if(resource.attachment_.texture->GetDesc().flags & lgfx::TextureFlags::kDepthStencil) {
+                task_->frame_buffer_desc_.depth_stencil = resource.attachment_.texture_view;
             } else {
-                task_->frame_buffer_desc_.colors.emplace_back(resource->attachment_.texture_view);
-                task_->render_pass_desc_.colors.emplace_back(lgfx::RenderPassColorDesc { resource->attachment_.texture->GetDesc().format, to_resource_write_op(write_op), lgfx::RenderPassStoreOp::kStore });
+                task_->frame_buffer_desc_.colors.emplace_back(resource.attachment_.texture_view);
+                task_->render_pass_desc_.colors.emplace_back(lgfx::RenderPassColorDesc { resource.attachment_.texture->GetDesc().format, to_resource_write_op(write_op), lgfx::RenderPassStoreOp::kStore });
                 task_->clear_desc_.colors.emplace_back(lgfx::ClearValueColor { clear_color.r, clear_color.g, clear_color.b, clear_color.a });
             }
-
-            task_->write_textures_.emplace_back(resource->attachment_.texture);
+            task_->write_textures_.emplace_back(resource.attachment_.texture);
             break;
         }
-        case FrameGraphResourceType::Buffer: {
+        case FrameGraphResourceType::kBuffer: {
             break;
         }
     }
@@ -127,10 +126,10 @@ FrameGraph::FrameGraph() {
 
 FrameGraph::FrameGraph(lgfx::Device* device) : device_(device), task_index_(0) {
 
-    command_buffer_ = lgfx::CommandBuffer(device, lgfx::CommandBufferType::kGraphics);
+    command_buffer_ = std::make_unique<lgfx::CommandBuffer>(device, lgfx::CommandBufferType::kGraphics);
     tasks_.resize(kFrameGraphTaskSize);
 
-    command_buffer_.Reset();
+    command_buffer_->Reset();
 
     texture_cache_ = TextureCache(device);
     texture_view_cache_ = TextureViewCache(device);
@@ -171,11 +170,10 @@ FrameGraphTask* FrameGraph::AddTask(const FrameGraphTaskType type,
     builder_func(&builder);
 
     // Resource barriers
-    for(uint32_t i = 0; i < static_cast<uint32_t>(task.write_textures_.size()); ++i) {
-        
-        command_buffer_.TextureMemoryBarrier(task.write_textures_[i], lgfx::MemoryState::kPresent, lgfx::MemoryState::kRenderTarget);
-        
-    }
+    //for(uint32_t i = 0; i < static_cast<uint32_t>(task.write_textures_.size()); ++i) {
+
+    command_buffer_->TextureMemoryBarrier(task.write_textures_[0], lgfx::MemoryState::kPresent, lgfx::MemoryState::kRenderTarget);
+    command_buffer_->TextureMemoryBarrier(task.write_textures_[1], lgfx::MemoryState::kGenericRead, lgfx::MemoryState::kRenderTarget);
 
     task.frame_buffer_desc_.width = 800;
     task.frame_buffer_desc_.height = 600;
@@ -183,19 +181,19 @@ FrameGraphTask* FrameGraph::AddTask(const FrameGraphTaskType type,
     lgfx::RenderPass* render_pass = render_pass_cache_.GetRenderPass(task.render_pass_desc_);
     task.frame_buffer_desc_.render_pass = render_pass;
     lgfx::FrameBuffer* frame_buffer = frame_buffer_cache_.GetFrameBuffer(task.frame_buffer_desc_);
-    command_buffer_.BeginRenderPass(render_pass, frame_buffer, task.clear_desc_);
+
+    command_buffer_->BeginRenderPass(render_pass, frame_buffer, task.clear_desc_);
 
     FrameGraphContext context;
     exec_func(&context);
 
-    command_buffer_.EndRenderPass();
+    command_buffer_->EndRenderPass();
 
     // Resource barriers
-    for(uint32_t i = 0; i < static_cast<uint32_t>(task.write_textures_.size()); ++i) {
+    //for(uint32_t i = 0; i < static_cast<uint32_t>(task.write_textures_.size()); ++i) {
         
-        command_buffer_.TextureMemoryBarrier(task.write_textures_[i], lgfx::MemoryState::kRenderTarget, lgfx::MemoryState::kPresent);
-        
-    }
+    command_buffer_->TextureMemoryBarrier(task.write_textures_[0], lgfx::MemoryState::kRenderTarget, lgfx::MemoryState::kPresent);
+    command_buffer_->TextureMemoryBarrier(task.write_textures_[1], lgfx::MemoryState::kRenderTarget, lgfx::MemoryState::kGenericRead);    
 
     ++task_index_;
     return &task;
@@ -203,9 +201,9 @@ FrameGraphTask* FrameGraph::AddTask(const FrameGraphTaskType type,
 
 void FrameGraph::Execute() {
 
-    command_buffer_.Close();
+    command_buffer_->Close();
 
-    device_->ExecuteCommandBuffer(lgfx::CommandBufferType::kGraphics, &command_buffer_);
+    device_->ExecuteCommandBuffer(lgfx::CommandBufferType::kGraphics, command_buffer_.get());
 
     device_->Present();
 
@@ -220,5 +218,5 @@ void FrameGraph::Execute() {
 
 void FrameGraph::Flush() {
 
-    command_buffer_.Reset();
+    command_buffer_->Reset();
 }

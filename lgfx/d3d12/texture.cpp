@@ -58,7 +58,7 @@ Texture::Texture(Device* device, MemoryPool* pool, const TextureDesc& desc) :
     if(desc.flags & TextureFlags::kRenderTarget) {
         resource_desc_.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
         resource_desc_.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        initial_state_ = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        initial_state_ = D3D12_RESOURCE_STATE_GENERIC_READ;
     } else if(desc.flags & TextureFlags::kDepthStencil) {
         resource_desc_.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
         resource_desc_.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;

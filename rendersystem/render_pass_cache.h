@@ -25,7 +25,7 @@ private:
 
     lgfx::Device* device_;
 
-    std::map<lgfx::RenderPassDesc, lgfx::RenderPass> render_passes_;
+    std::map<lgfx::RenderPassDesc, std::unique_ptr<lgfx::RenderPass>> render_passes_;
 };
 
 }

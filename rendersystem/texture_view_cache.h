@@ -27,11 +27,11 @@ private:
 
     lgfx::Device* device_;
 
-    std::map<Key, lgfx::TextureView> texture_views_;
+    std::map<Key, std::unique_ptr<lgfx::TextureView>> texture_views_;
 
-    lgfx::DescriptorPool rt_descriptor_pool_;
-    lgfx::DescriptorPool ds_descriptor_pool_;
-    lgfx::DescriptorPool sr_descriptor_pool_;
+    std::unique_ptr<lgfx::DescriptorPool> rt_descriptor_pool_;
+    std::unique_ptr<lgfx::DescriptorPool> ds_descriptor_pool_;
+    std::unique_ptr<lgfx::DescriptorPool> sr_descriptor_pool_;
 };
     
 }

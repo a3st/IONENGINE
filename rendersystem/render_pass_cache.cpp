@@ -30,10 +30,10 @@ lgfx::RenderPass* RenderPassCache::GetRenderPass(const lgfx::RenderPassDesc& des
 
     auto it = render_passes_.find(desc);
     if(it != render_passes_.end()) {
-        return &it->second;
+        return it->second.get();
     } else {
-        auto result = render_passes_.emplace(desc, lgfx::RenderPass(device_, desc));
-        return &result.first->second;
+        auto result = render_passes_.emplace(desc, std::make_unique<lgfx::RenderPass>(device_, desc));
+        return result.first->second.get();
     }
 }
 

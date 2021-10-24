@@ -27,13 +27,13 @@ private:
 
     struct TextureEntry {
         uint32_t entry_index;
-        std::vector<lgfx::Texture> textures;
+        std::vector<std::unique_ptr<lgfx::Texture>> textures;
     };
 
     std::map<lgfx::TextureDesc, TextureEntry> textures_;
 
-    lgfx::MemoryPool rt_memory_pool_;
-    lgfx::MemoryPool sr_memory_pool_;
+    std::unique_ptr<lgfx::MemoryPool> rt_memory_pool_;
+    std::unique_ptr<lgfx::MemoryPool> sr_memory_pool_;
 };
     
 }
