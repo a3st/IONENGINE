@@ -13,13 +13,7 @@ friend class CommandBuffer;
 
 public:
 
-    RenderPass();
     RenderPass(Device* device, const RenderPassDesc& desc);
-    RenderPass(const RenderPass&) = delete;
-    RenderPass(RenderPass&& rhs) noexcept;
-
-    RenderPass& operator=(const RenderPass&) = delete;
-    RenderPass& operator=(RenderPass&& rhs) noexcept;
 
     inline const RenderPassDesc& GetDesc() const { return desc_; }
 

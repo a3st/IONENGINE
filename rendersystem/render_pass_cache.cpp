@@ -5,25 +5,8 @@
 
 using namespace ionengine::rendersystem;
 
-RenderPassCache::RenderPassCache() {
-
-}
-
 RenderPassCache::RenderPassCache(lgfx::Device* device) : device_(device) {
 
-}
-
-RenderPassCache::RenderPassCache(RenderPassCache&& rhs) noexcept {
-
-    std::swap(device_, rhs.device_);
-    std::swap(render_passes_, rhs.render_passes_);
-}
-
-RenderPassCache& RenderPassCache::operator=(RenderPassCache&& rhs) noexcept {
-
-    std::swap(device_, rhs.device_);
-    std::swap(render_passes_, rhs.render_passes_);
-    return *this;
 }
 
 lgfx::RenderPass* RenderPassCache::GetRenderPass(const lgfx::RenderPassDesc& desc) {

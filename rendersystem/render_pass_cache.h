@@ -10,13 +10,7 @@ class RenderPassCache {
 
 public:
 
-    RenderPassCache();
     RenderPassCache(lgfx::Device* device);
-    RenderPassCache(const RenderPassCache&) = delete;
-    RenderPassCache(RenderPassCache&& rhs) noexcept;
-
-    RenderPassCache& operator=(const RenderPassCache&) = delete;
-    RenderPassCache& operator=(RenderPassCache&& rhs) noexcept;
 
     lgfx::RenderPass* GetRenderPass(const lgfx::RenderPassDesc& desc);
     void Clear();

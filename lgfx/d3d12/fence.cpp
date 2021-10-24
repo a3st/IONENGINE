@@ -6,10 +6,6 @@
 
 using namespace lgfx;
 
-Fence::Fence() {
-
-}
-
 Fence::Fence(Device* device, const uint64_t initial_value) {
 
     assert(device && "invalid pointer to device");
@@ -20,19 +16,6 @@ Fence::Fence(Device* device, const uint64_t initial_value) {
     if(!event_) {
         THROW_IF_FAILED(HRESULT_FROM_WIN32(GetLastError()));
     }
-}
-
-Fence::Fence(Fence&& rhs) noexcept {
-
-    std::swap(event_, rhs.event_);
-    fence_.Swap(rhs.fence_);
-}
-
-Fence& Fence::operator=(Fence&& rhs) noexcept {
-
-    std::swap(event_, rhs.event_);
-    fence_.Swap(rhs.fence_);
-    return *this;
 }
 
 uint64_t Fence::GetCompletedValue() const {

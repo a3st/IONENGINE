@@ -23,13 +23,9 @@ DescriptorPtr TextureView::CreateRenderTarget(Device* device, DescriptorPool* po
         }
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { ptr.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + ptr.offset * device->rtv_descriptor_offset_ };
+    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { ptr.heap->heap_->GetCPUDescriptorHandleForHeapStart().ptr + ptr.offset * device->rtv_descriptor_offset_ };
     device->device_->CreateRenderTargetView(texture->resource_.Get(), &view_desc, cpu_handle);
     return ptr;
-}
-
-TextureView::TextureView() {
-
 }
 
 TextureView::TextureView(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc) : pool_(pool), texture_(texture), view_desc_(desc) {
@@ -38,21 +34,4 @@ TextureView::TextureView(Device* device, DescriptorPool* pool, Texture* texture,
     if(flags & TextureFlags::kRenderTarget) {
         ptr_ = CreateRenderTarget(device, pool, texture, desc);
     }
-}
-
-TextureView::TextureView(TextureView&& rhs) noexcept {
-
-    std::swap(pool_, rhs.pool_);
-    std::swap(texture_, rhs.texture_);
-    std::swap(ptr_, rhs.ptr_);
-    std::swap(view_desc_, rhs.view_desc_);
-}
-
-TextureView& TextureView::operator=(TextureView&& rhs) noexcept {
-
-    std::swap(pool_, rhs.pool_);
-    std::swap(texture_, rhs.texture_);
-    std::swap(ptr_, rhs.ptr_);
-    std::swap(view_desc_, rhs.view_desc_);
-    return *this;
 }

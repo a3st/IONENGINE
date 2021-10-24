@@ -27,6 +27,8 @@ int main(int*, char*) {
 
     label.reserve(50);
 
+    bool alloc = false;
+
     platform::WindowLoop loop;
     platform::Window window("IONENGINE", 800, 600, &loop);
     rendersystem::Renderer renderer(&window);
@@ -41,8 +43,11 @@ int main(int*, char*) {
                 case platform::WindowEventType::Updated: {
                     renderer.Frame();
 
-                    swprintf(label.data(), L"IONENGINE [Alloc: %zi/%zi]", allocate, deallocate);
-                    SetWindowText(reinterpret_cast<HWND>(window.GetNativeHandle()), label.c_str());
+                    if(!alloc) {
+                        alloc = true;
+                        swprintf(label.data(), L"IONENGINE [Alloc: %zi/%zi]", allocate, deallocate);
+                        SetWindowText(reinterpret_cast<HWND>(window.GetNativeHandle()), label.c_str());
+                    }
                     break;
                 }
             }

@@ -11,31 +11,12 @@
 
 using namespace lgfx;
 
-CommandBuffer::CommandBuffer() {
-
-}
-
 CommandBuffer::CommandBuffer(Device* device, const CommandBufferType type) : device_(device) {
 
     D3D12_COMMAND_LIST_TYPE list_type = ToD3D12CommandListType(type);
     THROW_IF_FAILED(device->device_->CreateCommandAllocator(list_type, __uuidof(ID3D12CommandAllocator), reinterpret_cast<void**>(allocator_.GetAddressOf())));
     THROW_IF_FAILED(device->device_->CreateCommandList(0, list_type, allocator_.Get(), nullptr, __uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(list_.GetAddressOf())));
     THROW_IF_FAILED(list_->Close());
-}
-
-CommandBuffer::CommandBuffer(CommandBuffer&& rhs) noexcept {
-
-    std::swap(device_, rhs.device_);
-    allocator_.Swap(rhs.allocator_);
-    list_.Swap(rhs.list_);
-}
-
-CommandBuffer& CommandBuffer::operator=(CommandBuffer&& rhs) noexcept {
-
-    std::swap(device_, rhs.device_);
-    allocator_.Swap(rhs.allocator_);
-    list_.Swap(rhs.list_);
-    return *this;
 }
 
 void CommandBuffer::SetViewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height) {
@@ -72,7 +53,7 @@ void CommandBuffer::BeginRenderPass(RenderPass* render_pass, FrameBuffer* frame_
         std::memcpy(render_pass->colors_desc_[i].BeginningAccess.Clear.ClearValue.Color, &desc.colors[i], sizeof(ClearValueColor));
 
         DescriptorPtr ptr = frame_buffer_desc.colors[i]->GetDescriptorPtr();
-        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { ptr.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + ptr.offset * device_->rtv_descriptor_offset_ };
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { ptr.heap->heap_->GetCPUDescriptorHandleForHeapStart().ptr + ptr.offset * device_->rtv_descriptor_offset_ };
 
         render_pass->colors_desc_[i].cpuDescriptor = cpu_handle;
     }
@@ -83,7 +64,7 @@ void CommandBuffer::BeginRenderPass(RenderPass* render_pass, FrameBuffer* frame_
             render_pass->depth_stencil_desc_.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = desc.stencil;
 
             DescriptorPtr ptr = frame_buffer_desc.depth_stencil->GetDescriptorPtr();
-            D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { ptr.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + ptr.offset * device_->rtv_descriptor_offset_ };
+            D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { ptr.heap->heap_->GetCPUDescriptorHandleForHeapStart().ptr + ptr.offset * device_->rtv_descriptor_offset_ };
 
             render_pass->depth_stencil_desc_.cpuDescriptor = cpu_handle;
         }

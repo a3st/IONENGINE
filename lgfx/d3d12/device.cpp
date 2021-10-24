@@ -7,10 +7,6 @@
 
 using namespace lgfx;
 
-Device::Device() {
-
-}
-
 Device::Device(const uint32_t adapter_index, void* hwnd, const uint32_t width, const uint32_t height, const uint32_t buffer_count, const uint32_t multisample_count) {
 
     assert(hwnd && "invalid pointer to hwnd");
@@ -63,41 +59,6 @@ Device::Device(const uint32_t adapter_index, void* hwnd, const uint32_t width, c
     swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 
     THROW_IF_FAILED(factory_->CreateSwapChainForHwnd(direct_queue_.Get(), reinterpret_cast<HWND>(hwnd), &swapchain_desc, nullptr, nullptr, reinterpret_cast<IDXGISwapChain1**>(swapchain_.GetAddressOf())));
-}
-
-Device::Device(Device&& rhs) noexcept {
-
-    std::swap(adapter_desc_, rhs.adapter_desc_);
-    factory_.Swap(rhs.factory_);
-    debug_.Swap(rhs.debug_);
-    adapter_.Swap(rhs.adapter_);
-    device_.Swap(rhs.device_);
-    direct_queue_.Swap(rhs.direct_queue_);
-    copy_queue_.Swap(rhs.copy_queue_);
-    compute_queue_.Swap(rhs.compute_queue_);
-    swapchain_.Swap(rhs.swapchain_);
-    std::swap(rtv_descriptor_offset_, rhs.rtv_descriptor_offset_);
-    std::swap(dsv_descriptor_offset_, rhs.dsv_descriptor_offset_);
-    std::swap(sampler_descriptor_offset_, rhs.sampler_descriptor_offset_);
-    std::swap(srv_descriptor_offset_, rhs.srv_descriptor_offset_);
-}
-
-Device& Device::operator=(Device&& rhs) noexcept {
-
-    std::swap(adapter_desc_, rhs.adapter_desc_);
-    factory_.Swap(rhs.factory_);
-    debug_.Swap(rhs.debug_);
-    adapter_.Swap(rhs.adapter_);
-    device_.Swap(rhs.device_);
-    direct_queue_.Swap(rhs.direct_queue_);
-    copy_queue_.Swap(rhs.copy_queue_);
-    compute_queue_.Swap(rhs.compute_queue_);
-    swapchain_.Swap(rhs.swapchain_);
-    std::swap(rtv_descriptor_offset_, rhs.rtv_descriptor_offset_);
-    std::swap(dsv_descriptor_offset_, rhs.dsv_descriptor_offset_);
-    std::swap(sampler_descriptor_offset_, rhs.sampler_descriptor_offset_);
-    std::swap(srv_descriptor_offset_, rhs.srv_descriptor_offset_);
-    return *this;
 }
 
 void Device::Present() {

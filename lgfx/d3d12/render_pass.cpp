@@ -6,10 +6,6 @@
 
 using namespace lgfx;
 
-RenderPass::RenderPass() {
-
-}
-
 RenderPass::RenderPass(Device* device, const RenderPassDesc& desc) : desc_(desc) {
 
     colors_desc_.resize(desc.colors.size());
@@ -48,19 +44,4 @@ RenderPass::RenderPass(Device* device, const RenderPassDesc& desc) : desc_(desc)
         depth_stencil_desc_.StencilBeginningAccess = stencil_begin;
         depth_stencil_desc_.StencilEndingAccess = stencil_end;
     }
-}
-
-RenderPass::RenderPass(RenderPass&& rhs) noexcept {
-
-    std::swap(desc_, rhs.desc_);
-    std::swap(colors_desc_, rhs.colors_desc_);
-    std::swap(depth_stencil_desc_, rhs.depth_stencil_desc_);
-}
-
-RenderPass& RenderPass::operator=(RenderPass&& rhs) noexcept {
-
-    std::swap(desc_, rhs.desc_);
-    std::swap(colors_desc_, rhs.colors_desc_);
-    std::swap(depth_stencil_desc_, rhs.depth_stencil_desc_);
-    return *this;
 }

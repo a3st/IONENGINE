@@ -14,10 +14,6 @@ size_t MemoryPool::AlignedBlockSize(const size_t size) const {
             ((size / kMemoryPoolDefaultBlockSize) + 1) * kMemoryPoolDefaultBlockSize : size;
 }
 
-MemoryHeap::MemoryHeap() {
-
-}
-
 MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType type, const MemoryFlags flags) {
 
     D3D12_HEAP_DESC heap_desc{};
@@ -26,37 +22,14 @@ MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType ty
     heap_desc.Flags = ToD3D12HeapFlags(flags);
     heap_desc.Alignment = align;
 
-    THROW_IF_FAILED(device->device_->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(heap.GetAddressOf())));
+    THROW_IF_FAILED(device->device_->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(heap_.GetAddressOf())));
 
-    heap_size = kMemoryPoolDefaultHeapSize;
+    heap_size_ = kMemoryPoolDefaultHeapSize;
 
-    block_count = kMemoryPoolDefaultHeapSize / kMemoryPoolDefaultBlockSize;
-    blocks.resize(block_count, 0x0);
+    block_count_ = kMemoryPoolDefaultHeapSize / kMemoryPoolDefaultBlockSize;
+    blocks_.resize(block_count_, 0x0);
 
-    offset = 0;
-}
-
-MemoryHeap::MemoryHeap(MemoryHeap&& rhs) noexcept {
-
-    heap.Swap(rhs.heap);
-    std::swap(heap_size, rhs.heap_size);
-    std::swap(block_count, rhs.block_count);
-    std::swap(blocks, rhs.blocks);
-    std::swap(offset, rhs.offset);
-}
-
-MemoryHeap& MemoryHeap::operator=(MemoryHeap&& rhs) noexcept {
-
-    heap.Swap(rhs.heap);
-    std::swap(heap_size, rhs.heap_size);
-    std::swap(block_count, rhs.block_count);
-    std::swap(blocks, rhs.blocks);
-    std::swap(offset, rhs.offset);
-    return *this;
-}
-
-MemoryPool::MemoryPool() {
-
+    offset_ = 0;
 }
 
 MemoryPool::MemoryPool(Device* device, const size_t size, const uint64_t align, const MemoryType type, const MemoryFlags flags) :
@@ -67,23 +40,8 @@ MemoryPool::MemoryPool(Device* device, const size_t size, const uint64_t align, 
     heaps_.resize(heap_count);
 
     for(uint32_t i = 0; i < heap_count; ++i) {
-        heaps_[i] = MemoryHeap(device, align, type, flags);
+        heaps_[i] = std::make_unique<MemoryHeap>(device, align, type, flags);
     }
-}
-
-MemoryPool::MemoryPool(MemoryPool&& rhs) noexcept {
-
-    std::swap(type_, rhs.type_);
-    std::swap(flags_, rhs.flags_);
-    std::swap(heaps_, rhs.heaps_);
-}
-
-MemoryPool& MemoryPool::operator=(MemoryPool&& rhs) noexcept {
-
-    std::swap(type_, rhs.type_);
-    std::swap(flags_, rhs.flags_);
-    std::swap(heaps_, rhs.heaps_);
-    return *this;
 }
 
 MemoryPtr MemoryPool::Allocate(const size_t size) {
@@ -92,22 +50,22 @@ MemoryPtr MemoryPool::Allocate(const size_t size) {
     size_t align_size = AlignedBlockSize(size);
 
     for(uint32_t i = 0; i < static_cast<uint32_t>(heaps_.size()); ++i) {
-        if(heaps_[i].offset + align_size > heaps_[i].heap_size) {
+        if(heaps_[i]->offset_ + align_size > heaps_[i]->heap_size_) {
             continue;
         } else {
             size_t alloc_size = 0;
-            for(uint64_t j = 0; j < heaps_[i].block_count; ++j) {
+            for(uint64_t j = 0; j < heaps_[i]->block_count_; ++j) {
                 if(alloc_size == align_size) {
-                    std::memset(heaps_[i].blocks.data() + ptr.offset / kMemoryPoolDefaultBlockSize, 0x1, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
+                    std::memset(heaps_[i]->blocks_.data() + ptr.offset / kMemoryPoolDefaultBlockSize, 0x1, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
                     break;
                 }
 
                 if(alloc_size == 0) {
-                    ptr.heap = &heaps_[i];
+                    ptr.heap = heaps_[i].get();
                     ptr.offset = j * kMemoryPoolDefaultBlockSize;
                 }
 
-                alloc_size = heaps_[i].blocks[j] == 0x0 ? alloc_size + kMemoryPoolDefaultBlockSize : alloc_size;
+                alloc_size = heaps_[i]->blocks_[j] == 0x0 ? alloc_size + kMemoryPoolDefaultBlockSize : alloc_size;
             }
             if(alloc_size != align_size) {
                 ptr.heap = nullptr;
@@ -124,6 +82,6 @@ MemoryPtr MemoryPool::Allocate(const size_t size) {
 void MemoryPool::Deallocate(MemoryPtr* ptr, const size_t size) {
 
     size_t align_size = AlignedBlockSize(size);
-    std::memset(ptr->heap->blocks.data() + ptr->offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
-    ptr->heap->offset = ptr->offset;
+    std::memset(ptr->heap->blocks_.data() + ptr->offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
+    ptr->heap->offset_ = ptr->offset;
 }

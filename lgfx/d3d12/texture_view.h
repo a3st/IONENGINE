@@ -12,13 +12,7 @@ class TextureView {
 
 public:
 
-    TextureView();
     TextureView(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc);
-    TextureView(const TextureView&) = delete;
-    TextureView(TextureView&& rhs) noexcept;
-
-    TextureView& operator=(const TextureView&) = delete;
-    TextureView& operator=(TextureView&& rhs) noexcept;
 
     inline Texture* GetTexture() const { return texture_; }
     inline const TextureViewDesc& GetViewDesc() const { return view_desc_; }

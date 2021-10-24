@@ -38,20 +38,20 @@ void Renderer::Frame() {
 
     BeginFrame();
 
-    FrameGraphTask* basic_task = frame_graph_->AddTask(FrameGraphTaskType::kRenderPass,
+    auto basic_task = frame_graph_->AddTask(FrameGraphTaskType::kRenderPass,
         [&](FrameGraphBuilder* builder) {
-            FrameGraphResourceId swapchain = builder->Create(FrameGraphResourceType::kAttachment, 
-                FrameGraphExternalResourceInfo { 
-                    FrameGraphExternalResourceInfo::Attachment { frame_resources_.textures[frame_index_].get(), frame_resources_.texture_views[frame_index_].get() } 
-                });
+            FrameGraphResourceId swapchain = builder->Create(FrameGraphResourceCreateInfo {
+                FrameGraphResourceType::kAttachment,
+                0, 0,
+                frame_resources_.textures[frame_index_].get(), frame_resources_.texture_views[frame_index_].get() });
 
-            FrameGraphResourceId dummy = builder->Create(FrameGraphResourceType::kAttachment,
-                FrameGraphResourceInfo { 
-                    FrameGraphResourceInfo::Attachment { 800, 600 } 
-                });
+            /*FrameGraphResourceId dummy = builder->Create(FrameGraphResourceCreateInfo {
+                FrameGraphResourceType::kAttachment,
+                800, 600,
+                nullptr, nullptr });*/
 
             builder->Write(swapchain, FrameGraphResourceWriteOp::kClear, Color { 0.4f, 0.5f, 0.3f, 1.0f });
-            builder->Write(dummy, FrameGraphResourceWriteOp::kClear, Color { 0.4f, 0.5f, 0.9f, 1.0f });
+            //builder->Write(dummy, FrameGraphResourceWriteOp::kClear, Color { 0.4f, 0.5f, 0.9f, 1.0f });
         },
         [=](FrameGraphContext* context) {
             
@@ -65,7 +65,7 @@ void Renderer::Frame() {
 void Renderer::EndFrame() {
 
     // Wait Previous Frame
-    const uint64_t fence_value = frame_resources_.fence_values[frame_index_];
+    /*const uint64_t fence_value = frame_resources_.fence_values[frame_index_];
 
     device_->Signal(lgfx::CommandBufferType::kGraphics, frame_resources_.fences[frame_index_].get(), fence_value);
 
@@ -73,5 +73,5 @@ void Renderer::EndFrame() {
 
     frame_resources_.fences[frame_index_]->Wait(fence_value);
 
-    frame_graph_->Flush();
+    frame_graph_->Flush();*/
 }

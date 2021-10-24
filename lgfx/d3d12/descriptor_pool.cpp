@@ -7,10 +7,6 @@
 
 using namespace lgfx;
 
-DescriptorHeap::DescriptorHeap() {
-
-}
-
 DescriptorHeap::DescriptorHeap(Device* device, const DescriptorType type, const DescriptorFlags flags) {
 
     D3D12_DESCRIPTOR_HEAP_DESC heap_desc{};
@@ -18,33 +14,12 @@ DescriptorHeap::DescriptorHeap(Device* device, const DescriptorType type, const 
     heap_desc.Type = ToD3D12DescriptorHeapType(type);
     heap_desc.Flags = flags == DescriptorFlags::kShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-    THROW_IF_FAILED(device->device_->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(heap.GetAddressOf())));
+    THROW_IF_FAILED(device->device_->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(heap_.GetAddressOf())));
 
-    heap_size = kDescriptorPoolDefaultHeapSize;
-    descriptors.resize(heap_size, 0x0);
+    heap_size_ = kDescriptorPoolDefaultHeapSize;
+    descriptors_.resize(heap_size_, 0x0);
 
-    offset = 0;
-}
-
-DescriptorHeap::DescriptorHeap(DescriptorHeap&& rhs) noexcept {
-
-    heap.Swap(rhs.heap);
-    std::swap(heap_size, rhs.heap_size);
-    std::swap(offset, rhs.offset);
-    std::swap(descriptors, rhs.descriptors);
-}
-
-DescriptorHeap& DescriptorHeap::operator=(DescriptorHeap&& rhs) noexcept {
-
-    heap.Swap(rhs.heap);
-    std::swap(heap_size, rhs.heap_size);
-    std::swap(offset, rhs.offset);
-    std::swap(descriptors, rhs.descriptors);
-    return *this;
-}
-
-DescriptorPool::DescriptorPool() {
-
+    offset_ = 0;
 }
 
 DescriptorPool::DescriptorPool(Device* device, const size_t size, const DescriptorType type, const DescriptorFlags flags) :
@@ -55,23 +30,8 @@ DescriptorPool::DescriptorPool(Device* device, const size_t size, const Descript
     heaps_.resize(heap_count);
 
     for(uint32_t i = 0; i < heap_count; ++i) {
-        heaps_[i] = DescriptorHeap(device, type, flags);
+        heaps_[i] = std::make_unique<DescriptorHeap>(device, type, flags);
     }
-}
-
-DescriptorPool::DescriptorPool(DescriptorPool&& rhs) noexcept {
-
-    std::swap(type_, rhs.type_);
-    std::swap(flags_, rhs.flags_);
-    std::swap(heaps_, rhs.heaps_);
-}
-
-DescriptorPool& DescriptorPool::operator=(DescriptorPool&& rhs) noexcept {
-
-    std::swap(type_, rhs.type_);
-    std::swap(flags_, rhs.flags_);
-    std::swap(heaps_, rhs.heaps_);
-    return *this;
 }
 
 DescriptorPtr DescriptorPool::Allocate() {
@@ -79,15 +39,15 @@ DescriptorPtr DescriptorPool::Allocate() {
     DescriptorPtr ptr{};
 
     for(uint32_t i = 0; i < static_cast<uint32_t>(heaps_.size()); ++i) {
-        if(heaps_[i].offset > heaps_[i].heap_size) {
+        if(heaps_[i]->offset_ > heaps_[i]->heap_size_) {
             continue;
         } else {
-            for(uint32_t j = 0; i < heaps_[i].heap_size; ++j) {
-                if(heaps_[i].descriptors[j] == 0x0) {
-                    ptr.heap = &heaps_[i];
+            for(uint32_t j = 0; i < heaps_[i]->heap_size_; ++j) {
+                if(heaps_[i]->descriptors_[j] == 0x0) {
+                    ptr.heap = heaps_[i].get();
                     ptr.offset = j;
-                    heaps_[i].descriptors[j] = 0x1;
-                    heaps_[i].offset = j + 1;
+                    heaps_[i]->descriptors_[j] = 0x1;
+                    heaps_[i]->offset_ = j + 1;
                     break;
                 }
             }
@@ -101,6 +61,6 @@ DescriptorPtr DescriptorPool::Allocate() {
 
 void DescriptorPool::Deallocate(DescriptorPtr* ptr) {
 
-    ptr->heap->descriptors[ptr->offset] = 0x0;
-    ptr->heap->offset = ptr->offset;
+    ptr->heap->descriptors_[ptr->offset] = 0x0;
+    ptr->heap->offset_ = ptr->offset;
 }

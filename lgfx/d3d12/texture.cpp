@@ -7,31 +7,6 @@
 
 using namespace lgfx;
 
-Texture::Texture() {
-
-}
-
-Texture::Texture(Texture&& rhs) noexcept {
-
-    resource_.Swap(rhs.resource_);
-    std::swap(resource_desc_, rhs.resource_desc_);
-    std::swap(initial_state_, rhs.initial_state_);
-    std::swap(ptr_, rhs.ptr_);
-    std::swap(pool_, rhs.pool_);
-    std::swap(desc_, rhs.desc_);
-}
-
-Texture& Texture::operator=(Texture&& rhs) noexcept {
-
-    resource_.Swap(rhs.resource_);
-    std::swap(resource_desc_, rhs.resource_desc_);
-    std::swap(initial_state_, rhs.initial_state_);
-    std::swap(ptr_, rhs.ptr_);
-    std::swap(pool_, rhs.pool_);
-    std::swap(desc_, rhs.desc_);
-    return *this;
-}
-
 Texture::Texture(Device* device, const uint32_t buffer_index) : desc_{} {
 
     THROW_IF_FAILED(device->swapchain_->GetBuffer(buffer_index, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
@@ -77,5 +52,5 @@ Texture::Texture(Device* device, MemoryPool* pool, const TextureDesc& desc) :
         throw std::runtime_error("Texture allocation error!");
     }
     
-    THROW_IF_FAILED(device->device_->CreatePlacedResource(ptr_.heap->heap.Get(), ptr_.offset, &resource_desc_, initial_state_, nullptr, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
+    THROW_IF_FAILED(device->device_->CreatePlacedResource(ptr_.heap->heap_.Get(), ptr_.offset, &resource_desc_, initial_state_, nullptr, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
 }

@@ -13,18 +13,21 @@ class RenderPass;
 class FrameBuffer;
 
 enum class MemoryType {
+
     kDefault,
     kUpload,
     kReadBack
 };
 
 enum class MemoryFlags {
+
     kBuffers,
     kRT_DS,
     kNon_RT_DS
 };
 
 enum class ComparisonFunc {
+
     kNever,
     kLess,
     kEqual,
@@ -36,17 +39,20 @@ enum class ComparisonFunc {
 };
 
 enum class Filter {
+
     kAnisotropic,
     kMinMagMipLinear,
     kComparisonMinMagMipLinear
 };
 
 enum class TextureAddressMode {
+
     kWrap,
     kClamp
 };
 
 enum class BufferFlags {
+
     kUnorderedAccess = 1 << 0,
     kConstantBuffer = 1 << 1,
     kIndexBuffer = 1 << 2,
@@ -58,6 +64,7 @@ enum class BufferFlags {
 DECLARE_ENUM_CLASS_BIT_FLAG(BufferFlags)
 
 enum class TextureFlags {
+
     kRenderTarget = 1 << 0,
     kDepthStencil = 1 << 1,
     kShaderResource = 1 << 2,
@@ -67,6 +74,7 @@ enum class TextureFlags {
 DECLARE_ENUM_CLASS_BIT_FLAG(TextureFlags)
 
 enum class Dimension {
+
     kBuffer,
     kTexture1D,
     kTexture1DArray,
@@ -78,6 +86,7 @@ enum class Dimension {
 };
 
 enum class DescriptorType {
+
     kSampler,
     kRenderTarget,
     kDepthStencil,
@@ -85,11 +94,13 @@ enum class DescriptorType {
 };
 
 enum class DescriptorFlags {
+
     kNone,
     kShaderVisible
 };
 
 enum class Format {
+
     kUnknown,
     kRGBA32float,
     kRGBA32uint,
@@ -133,12 +144,14 @@ enum class Format {
 };
 
 enum class CommandBufferType {
+
     kGraphics,
     kCopy,
     kCompute
 };
 
 enum class MemoryState {
+
     kCommon,
     kRenderTarget,
     kPresent,
@@ -146,32 +159,49 @@ enum class MemoryState {
 };
 
 enum class RenderPassLoadOp {
+
     kLoad,
     kClear,
     kDontCare
 };
 
 enum class RenderPassStoreOp {
+
     kStore,
     kDontCare
 };
 
 struct TextureViewDesc {
+
     Dimension dimension;
     uint32_t base_mip_level;
     uint32_t mip_level_count;
     uint32_t base_array_layer;
     uint32_t array_layer_count;
 
-    auto make_tie() const {
+    inline bool operator==(const TextureViewDesc& rhs) const {
+        
+        return dimension == rhs.dimension && base_mip_level == rhs.base_mip_level && mip_level_count == rhs.mip_level_count && base_array_layer == rhs.base_array_layer && array_layer_count == rhs.array_layer_count;
+    }
 
-        return std::tie(dimension, base_mip_level, mip_level_count, base_array_layer, array_layer_count);
+    inline bool operator!=(const TextureViewDesc& rhs) const {
+        
+        return dimension != rhs.dimension || base_mip_level != rhs.base_mip_level || mip_level_count != rhs.mip_level_count || base_array_layer != rhs.base_array_layer || array_layer_count != rhs.array_layer_count;
+    }
+
+    inline bool operator<(const TextureViewDesc& rhs) const {
+        
+        return dimension < rhs.dimension || base_mip_level < rhs.base_mip_level || mip_level_count < rhs.mip_level_count || base_array_layer < rhs.base_array_layer || array_layer_count < rhs.array_layer_count;
+    }
+
+    inline bool operator>(const TextureViewDesc& rhs) const {
+        
+        return dimension > rhs.dimension || base_mip_level > rhs.base_mip_level || mip_level_count > rhs.mip_level_count || base_array_layer > rhs.base_array_layer || array_layer_count > rhs.array_layer_count;
     }
 };
 
-DECLARE_STRUCT_OPERATOR_COMPARE(TextureViewDesc)
-
 struct TextureDesc {
+    
     Dimension dimension;
     uint32_t width;
     uint32_t height;
@@ -180,92 +210,189 @@ struct TextureDesc {
     Format format;
     TextureFlags flags;
 
-    auto make_tie() const {
+    inline bool operator==(const TextureDesc& rhs) const {
+        
+        return dimension == rhs.dimension && width == rhs.width && height == rhs.height && mip_levels == rhs.mip_levels && array_layers == rhs.array_layers && format == rhs.format && flags == rhs.flags;
+    }
 
-        return std::tie(dimension, width, height, mip_levels, array_layers, format, flags);
+    inline bool operator!=(const TextureDesc& rhs) const {
+        
+        return dimension != rhs.dimension || width != rhs.width || height != rhs.height || mip_levels != rhs.mip_levels || array_layers != rhs.array_layers || format != rhs.format || flags != rhs.flags;
+    }
+
+    inline bool operator<(const TextureDesc& rhs) const {
+        
+        return dimension < rhs.dimension || width == rhs.width || height < rhs.height || mip_levels < rhs.mip_levels || array_layers < rhs.array_layers || format < rhs.format || flags < rhs.flags;
+    }
+
+    inline bool operator>(const TextureDesc& rhs) const {
+        
+        return dimension > rhs.dimension || width > rhs.width || height > rhs.height || mip_levels > rhs.mip_levels || array_layers > rhs.array_layers || format > rhs.format || flags > rhs.flags;
     }
 };
 
-DECLARE_STRUCT_OPERATOR_COMPARE(TextureDesc)
-
 struct RenderPassColorDesc {
+
     Format format = Format::kUnknown;
     RenderPassLoadOp load_op = RenderPassLoadOp::kDontCare;
     RenderPassStoreOp store_op = RenderPassStoreOp::kDontCare;
 
-    auto make_tie() const {
+    inline bool operator==(const RenderPassColorDesc& rhs) const {
+        
+        return format == rhs.format && load_op == rhs.load_op && store_op == rhs.store_op;
+    }
 
-        return std::tie(format, load_op, store_op);
+    inline bool operator!=(const RenderPassColorDesc& rhs) const {
+        
+        return format != rhs.format || load_op != rhs.load_op || store_op != rhs.store_op;
+    }
+
+    inline bool operator<(const RenderPassColorDesc& rhs) const {
+        
+        return format < rhs.format || load_op < rhs.load_op || store_op < rhs.store_op;
+    }
+
+    inline bool operator>(const RenderPassColorDesc& rhs) const {
+        
+        return format > rhs.format || load_op > rhs.load_op || store_op > rhs.store_op;
     }
 };
 
-DECLARE_STRUCT_OPERATOR_COMPARE(RenderPassColorDesc)
-
 struct RenderPassDepthStencilDesc {
+
     Format format = Format::kUnknown;
     RenderPassLoadOp depth_load_op = RenderPassLoadOp::kDontCare;
     RenderPassStoreOp depth_store_op = RenderPassStoreOp::kDontCare;
     RenderPassLoadOp stencil_load_op = RenderPassLoadOp::kDontCare;
     RenderPassStoreOp stencil_store_op = RenderPassStoreOp::kDontCare;
 
-    auto make_tie() const {
+    inline bool operator==(const RenderPassDepthStencilDesc& rhs) const {
+        
+        return format == rhs.format && depth_load_op == rhs.depth_load_op && depth_store_op == rhs.depth_store_op && stencil_load_op == rhs.stencil_load_op && stencil_store_op == rhs.stencil_store_op;
+    }
 
-        return std::tie(format, depth_load_op, depth_store_op, stencil_load_op, stencil_store_op);
+    inline bool operator!=(const RenderPassDepthStencilDesc& rhs) const {
+        
+        return format != rhs.format && depth_load_op != rhs.depth_load_op || depth_store_op != rhs.depth_store_op || stencil_load_op != rhs.stencil_load_op || stencil_store_op != rhs.stencil_store_op;
+    }
+
+    inline bool operator<(const RenderPassDepthStencilDesc& rhs) const {
+        
+        return format < rhs.format && depth_load_op < rhs.depth_load_op || depth_store_op < rhs.depth_store_op || stencil_load_op < rhs.stencil_load_op || stencil_store_op < rhs.stencil_store_op;
+    }
+
+    inline bool operator>(const RenderPassDepthStencilDesc& rhs) const {
+        
+        return format > rhs.format && depth_load_op > rhs.depth_load_op || depth_store_op > rhs.depth_store_op || stencil_load_op > rhs.stencil_load_op || stencil_store_op > rhs.stencil_store_op;
     }
 };
 
-DECLARE_STRUCT_OPERATOR_COMPARE(RenderPassDepthStencilDesc)
-
 struct RenderPassDesc {
-    std::vector<RenderPassColorDesc> colors;
+
+    std::span<RenderPassColorDesc> colors;
     RenderPassDepthStencilDesc depth_stencil;
     uint32_t sample_count = 1;
 
-    auto make_tie() const {
+    inline bool operator==(const RenderPassDesc& rhs) const {
+        
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin()) && depth_stencil == rhs.depth_stencil && sample_count == rhs.sample_count;
+    }
 
-        return std::tie(colors, depth_stencil, sample_count);
+    inline bool operator!=(const RenderPassDesc& rhs) const {
+        
+        return !std::equal(colors.begin(), colors.end(), rhs.colors.begin()) || depth_stencil != rhs.depth_stencil || sample_count != rhs.sample_count;
+    }
+
+    inline bool operator<(const RenderPassDesc& rhs) const {
+        
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs < rhs; }) || depth_stencil < rhs.depth_stencil || sample_count < rhs.sample_count;
+    }
+
+    inline bool operator>(const RenderPassDesc& rhs) const {
+        
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs > rhs; }) || depth_stencil > rhs.depth_stencil || sample_count > rhs.sample_count;
     }
 };
 
-DECLARE_STRUCT_OPERATOR_COMPARE(RenderPassDesc)
-
 struct FrameBufferDesc {
+
     RenderPass* render_pass;
     uint32_t width;
     uint32_t height;
-    std::vector<TextureView*> colors;
+    std::span<TextureView*> colors;
     TextureView* depth_stencil;
 
-    auto make_tie() const {
+    inline bool operator==(const FrameBufferDesc& rhs) const {
+        
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin()) && render_pass == rhs.render_pass && width == rhs.width && height == rhs.height && depth_stencil == rhs.depth_stencil;
+    }
 
-        return std::tie(render_pass, width, height, colors, depth_stencil);
+    inline bool operator!=(const FrameBufferDesc& rhs) const {
+        
+        return !std::equal(colors.begin(), colors.end(), rhs.colors.begin()) || render_pass != rhs.render_pass || width != rhs.width || height != rhs.height || depth_stencil != rhs.depth_stencil;
+    }
+
+    inline bool operator<(const FrameBufferDesc& rhs) const {
+        
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs < rhs; }) || render_pass < rhs.render_pass || width < rhs.width || height < rhs.height || depth_stencil < rhs.depth_stencil;
+    }
+
+    inline bool operator>(const FrameBufferDesc& rhs) const {
+        
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs > rhs; }) || render_pass > rhs.render_pass || width > rhs.width || height > rhs.height || depth_stencil > rhs.depth_stencil;
     }
 };
-
-DECLARE_STRUCT_OPERATOR_COMPARE(FrameBufferDesc)
 
 struct ClearValueColor {
+
     float r, g, b, a;
 
-    auto make_tie() const {
+    inline bool operator==(const ClearValueColor& rhs) const {
+        
+        return r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a;
+    }
 
-        return std::tie(r, g, b, a);
+    inline bool operator!=(const ClearValueColor& rhs) const {
+        
+        return r != rhs.r || g != rhs.g || b != rhs.b || a != rhs.a;
+    }
+
+    inline bool operator<(const ClearValueColor& rhs) const {
+        
+        return r < rhs.r || g < rhs.g || b < rhs.b || a < rhs.a;
+    }
+
+    inline bool operator>(const ClearValueColor& rhs) const {
+        
+        return r > rhs.r || g > rhs.g || b > rhs.b || a > rhs.a;
     }
 };
 
-DECLARE_STRUCT_OPERATOR_COMPARE(ClearValueColor)
-
 struct ClearValueDesc {
-    std::vector<ClearValueColor> colors;
+
+    std::span<ClearValueColor> colors;
     float depth;
     uint8_t stencil;
 
-    auto make_tie() const {
+    inline bool operator==(const ClearValueDesc& rhs) const {
+        
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin()) && depth == rhs.depth && stencil == rhs.stencil;
+    }
 
-        return std::tie(colors, depth, stencil);
+    inline bool operator!=(const ClearValueDesc& rhs) const {
+        
+        return !std::equal(colors.begin(), colors.end(), rhs.colors.begin()) || depth != rhs.depth || stencil != rhs.stencil;
+    }
+
+    inline bool operator<(const ClearValueDesc& rhs) const {
+        
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs < rhs; }) || depth < rhs.depth || stencil < rhs.stencil;
+    }
+
+    inline bool operator>(const ClearValueDesc& rhs) const {
+        
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs > rhs; }) || depth > rhs.depth || stencil > rhs.stencil;
     }
 };
-
-DECLARE_STRUCT_OPERATOR_COMPARE(ClearValueDesc)
 
 }

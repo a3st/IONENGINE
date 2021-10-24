@@ -15,14 +15,8 @@ friend class CommandBuffer;
 
 public:
 
-    Texture();
-    Texture(const Texture&) = delete;
-    Texture(Texture&& rhs) noexcept;
     Texture(Device* device, const uint32_t buffer_index);
     Texture(Device* device, MemoryPool* pool, const TextureDesc& desc);
-
-    Texture& operator=(const Texture&) = delete;
-    Texture& operator=(Texture&& rhs) noexcept;
 
     inline const TextureDesc& GetDesc() const { return desc_; }
 

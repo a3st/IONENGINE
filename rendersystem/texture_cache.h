@@ -10,13 +10,7 @@ class TextureCache {
 
 public:
 
-    TextureCache();
     TextureCache(lgfx::Device* device);
-    TextureCache(const TextureCache&) = delete;
-    TextureCache(TextureCache&& rhs) noexcept;
-
-    TextureCache& operator=(const TextureCache&) = delete;
-    TextureCache& operator=(TextureCache&& rhs) noexcept;
 
     lgfx::Texture* GetTexture(const lgfx::TextureDesc& desc);
     void Clear();

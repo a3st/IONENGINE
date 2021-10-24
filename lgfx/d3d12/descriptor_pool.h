@@ -9,30 +9,34 @@ namespace lgfx {
 
 const uint32_t kDescriptorPoolDefaultHeapSize = 64;
 
-struct DescriptorHeap {
-    
-    ComPtr<ID3D12DescriptorHeap> heap;
+class DescriptorHeap {
 
-    size_t heap_size;
+friend class DescriptorPool;
+friend class TextureView;
+friend class CommandBuffer;
 
-    uint64_t offset;
+public:
 
-    std::vector<uint8_t> descriptors;
-
-    DescriptorHeap();
     DescriptorHeap(Device* device, const DescriptorType type, const DescriptorFlags flags);
-    DescriptorHeap(const DescriptorHeap&) = delete;
-    DescriptorHeap(DescriptorHeap&& rhs) noexcept;
 
-    DescriptorHeap& operator=(const DescriptorHeap&) = delete;
-    DescriptorHeap& operator=(DescriptorHeap&& rhs) noexcept;
+private:
+
+    ComPtr<ID3D12DescriptorHeap> heap_;
+
+    size_t heap_size_;
+
+    uint64_t offset_;
+
+    std::vector<uint8_t> descriptors_;
 };
 
 struct DescriptorPtr {
+
     DescriptorHeap* heap;
     uint32_t offset;
 
     inline bool operator!() const {
+        
         return !heap;
     }
 };
@@ -41,13 +45,7 @@ class DescriptorPool {
 
 public:
 
-    DescriptorPool();
     DescriptorPool(Device* device, const size_t size, const DescriptorType type, const DescriptorFlags flags);
-    DescriptorPool(const DescriptorPool&) = delete;
-    DescriptorPool(DescriptorPool&& rhs) noexcept;
-
-    DescriptorPool& operator=(const DescriptorPool&) = delete;
-    DescriptorPool& operator=(DescriptorPool&& rhs) noexcept;
 
     inline DescriptorType GetType() const { return type_; }
     inline DescriptorFlags GetFlags() const { return flags_; }
@@ -60,7 +58,7 @@ private:
     DescriptorType type_;
     DescriptorFlags flags_;
 
-    std::vector<DescriptorHeap> heaps_;
+    std::vector<std::unique_ptr<DescriptorHeap>> heaps_;
 };
 
 }

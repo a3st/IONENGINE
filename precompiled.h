@@ -11,5 +11,6 @@
 #include <map>
 #include <string>
 #include <limits>
+#include <span>
 
 #include "cxx_helpers.h"

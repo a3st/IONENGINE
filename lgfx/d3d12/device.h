@@ -18,20 +18,14 @@ class Device {
     
 friend class Fence;
 friend class Texture;
-friend struct MemoryHeap;
-friend struct DescriptorHeap;
+friend class MemoryHeap;
+friend class DescriptorHeap;
 friend class TextureView;
 friend class CommandBuffer;
 
 public:
 
-    Device();
     Device(const uint32_t adapter_index, void* hwnd, const uint32_t width, const uint32_t height, const uint32_t buffer_count, const uint32_t multisample_count);
-    Device(const Device&) = delete;
-    Device(Device&& rhs) noexcept;
-    
-    Device& operator=(const Device&) = delete;
-    Device& operator=(Device&& rhs) noexcept;
 
     void Present();
     void Signal(const CommandBufferType type, Fence* fence, const uint64_t value);
