@@ -43,73 +43,73 @@ struct Vector4 {
         return *this;
     }
 
-	const T* GetData() const {
+	inline const T* GetData() const {
 
 		return &x;
 	}
 
-	size_t GetSize() const {
+	inline size_t GetSize() const {
 
 		return 4;
 	}
 
 	void Normalize() {
 
-        T inverse = 1 / this->length();
+        T inverse = 1 / GetLength();
         x = x * inverse;
         y = y * inverse;
         z = z * inverse;
         w = w * inverse;
     }
 
-	T GetLength() const {
+	inline T GetLength() const {
 
 		return std::sqrt(x * x + y * y + z * z + w * w);
 	}
 
-	Vector4 operator*(const T rhs) const {
+	inline Vector4 operator*(const T rhs) const {
 
 		return Vector4 { x * rhs, y * rhs, z * rhs, w * rhs };
 	}
 
-	Vector4 operator-(const Vector4& rhs) const {
+	inline Vector4 operator-(const Vector4& rhs) const {
 
 		return Vector4 { x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w };
 	}
 
-	Vector4 operator-(const T rhs) const {
+	inline Vector4 operator-(const T rhs) const {
 
 		return Vector4 { x - rhs, y - rhs, z - rhs, w - rhs };
 	}
 
-	Vector4 operator-() const {
+	inline Vector4 operator-() const {
 
 		return Vector4 { -x, -y, -z, -w };
 	}
 
-	Vector4 operator+(const Vector4& rhs) const {
+	inline Vector4 operator+(const Vector4& rhs) const {
 
 		return Vector4 { x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w };
 	}
 
-	Vector4 operator+(const T rhs) const {
+	inline Vector4 operator+(const T rhs) const {
 
 		return Vector4 { x + rhs, y + rhs, z + rhs, w + rhs };
 	}
 
-	Vector4 operator/(const T rhs) const {
+	inline Vector4 operator/(const T rhs) const {
 
 		return Vector4 { x / rhs, y / rhs, z / rhs, w / rhs };
 	}
 
-	bool operator==(const Vector4& rhs) const {
+	inline bool operator==(const Vector4& rhs) const {
 
-		return std::tie(x, y, z, w) == std::tie(rhs.x, rhs.y, rhs.z, rhs.w);
+		return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w;
 	}
 
-	bool operator!=(const Vector4& rhs) const {
+	inline bool operator!=(const Vector4& rhs) const {
 
-		return std::tie(x, y, z, w) != std::tie(rhs.x, rhs.y, rhs.z, rhs.w);
+		return x != rhs.x || y != rhs.y || z != rhs.z || w != rhs.w;
 	}
 };
 

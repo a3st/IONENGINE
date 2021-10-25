@@ -41,80 +41,80 @@ struct Vector3 {
         return *this;
     }
 
-	const T* GetData() const {
+	inline const T* GetData() const {
 
 		return &x;
 	}
 
-	size_t GetSize() const {
+	inline size_t GetSize() const {
 
 		return 3;
 	}
 
 	void Normalize() {
 		
-        T inverse = 1 / this->length();
+        T inverse = 1 / GetLength();
         x = x * inverse;
         y = y * inverse;
         z = z * inverse;
     }
 
-	T GetLength() const {
+	inline T GetLength() const {
 
 		return std::sqrt(x * x + y * y + z * z);
 	}
     
-	Vector3 operator*(const T rhs) const {
+	inline Vector3 operator*(const T rhs) const {
 
 		return Vector3 { x * rhs, y * rhs, z * rhs };
 	}
 
-	Vector3 operator-(const Vector3& rhs) const {
+	inline Vector3 operator-(const Vector3& rhs) const {
 
 		return Vector3 { x - rhs.x, y - rhs.y, z - rhs.z };
 	}
 
-	Vector3 operator-(const T rhs) const {
+	inline Vector3 operator-(const T rhs) const {
 
 		return Vector3 { x - rhs, y - rhs, z - rhs };
 	}
 
-	Vector3 operator-() const {
+	inline Vector3 operator-() const {
 
 		return Vector3 { -x, -y, -z };
 	}
 
-	Vector3 operator+(const Vector3& rhs) const {
+	inline Vector3 operator+(const Vector3& rhs) const {
 
 		return Vector3 { x + rhs.x, y + rhs.y, z + rhs.z };
 	}
 
-	Vector3 operator+(const T rhs) const {
+	inline Vector3 operator+(const T rhs) const {
 
 		return Vector3 { x + rhs, y + rhs, z + rhs };
 	}
 
-	Vector3 operator/(const T rhs) const {
+	inline Vector3 operator/(const T rhs) const {
 
 		return Vector3 { x / rhs, y / rhs, z / rhs };
 	}
 
-	bool operator==(const Vector3& rhs) const {
+	inline bool operator==(const Vector3& rhs) const {
 
-		return std::tie(x, y, z) == std::tie(rhs.x, rhs.y, rhs.z);
+		return x == rhs.x && y == rhs.y && z == rhs.z;
 	}
 
-	bool operator!=(const Vector3& rhs) const {
+	inline bool operator!=(const Vector3& rhs) const {
 
-		return std::tie(x, y, z) != std::tie(rhs.x, rhs.y, rhs.z);
+		return x != rhs.x || y != rhs.y || z != rhs.z;
 	}
 
-	static T DotProduct(const Vector3& lhs, const Vector3& rhs) {
+	inline static T DotProduct(const Vector3& lhs, const Vector3& rhs) {
 
 		return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
 	}
 
-	static Vector3 CrossProduct(const Vector3& lhs, const Vector3& rhs) {
+	inline static Vector3 CrossProduct(const Vector3& lhs, const Vector3& rhs) {
 
 		return Vector3 { lhs.y * rhs.z - lhs.z * rhs.y, lhs.z * rhs.x - lhs.x * rhs.z, lhs.x * rhs.y - lhs.y * rhs.x };
 	}

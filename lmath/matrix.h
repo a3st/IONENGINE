@@ -87,19 +87,19 @@ struct Matrix {
 		return *this;
 	}
 
-	const T* GetData() const {
+	inline const T* GetData() const {
 
 		return &m00;
 	}
 
-	size_t GetSize() const {
+	inline size_t GetSize() const {
 
 		return 16;
 	}
 
 	void Transpose() {
 
-		Matrix mat;
+		Matrix mat{};
 		mat = *this;
 
 		m00 = mat.m00;
@@ -122,7 +122,7 @@ struct Matrix {
 
 	Matrix operator*(const Matrix& rhs) const {
 
-		Matrix mat;
+		Matrix mat{};
 		mat.m00 = m00 * rhs.m00 + m01 * rhs.m10 + m02 * rhs.m20 + m03 * rhs.m30;
 		mat.m01 = m00 * rhs.m01 + m01 * rhs.m11 + m02 * rhs.m21 + m03 * rhs.m31;
 		mat.m02 = m00 * rhs.m02 + m01 * rhs.m12 + m02 * rhs.m22 + m03 * rhs.m32;
@@ -144,7 +144,7 @@ struct Matrix {
 
 	Matrix operator*(const Vector4<T>& rhs) const {
 
-		Matrix mat;
+		Matrix mat{};
 		mat.m00 = m00 * rhs.x;
 		mat.m01 = m01 * rhs.y;
 		mat.m02 = m02 * rhs.z;
@@ -166,7 +166,7 @@ struct Matrix {
 
 	Matrix operator*(const T rhs) const {
 
-		Matrix mat;
+		Matrix mat{};
 		mat.m00 = m00 * rhs;
 		mat.m01 = m01 * rhs;
 		mat.m02 = m02 * rhs;
@@ -188,7 +188,7 @@ struct Matrix {
 
 	Matrix operator+(const Matrix& rhs) const {
 
-		Matrix mat;
+		Matrix mat{};
 		mat.m00 = m00 + rhs.m00;
 		mat.m01 = m01 + rhs.m01;
 		mat.m02 = m02 + rhs.m02;
@@ -210,7 +210,7 @@ struct Matrix {
 
 	Matrix operator-(const Matrix& rhs) const {
 
-		Matrix mat;
+		Matrix mat{};
 		mat.m00 = m00 - rhs.m00;
 		mat.m01 = m01 - rhs.m01;
 		mat.m02 = m02 - rhs.m02;
@@ -232,7 +232,7 @@ struct Matrix {
 
 	static Matrix Identity() {
 
-		Matrix mat;
+		Matrix mat{};
 		mat.m00 = 1;
 		mat.m11 = 1;
 		mat.m22 = 1;
@@ -260,9 +260,9 @@ struct Matrix {
 
 	static Matrix Perspective(const T fovy, const T aspect, const T near_dst, const T far_dst) {
 
-		Matrix mat;
-		mat.m00 = 1 / (math::tan(fovy / 2) * aspect);
-		mat.m11 = 1 / math::tan(fovy / 2);
+		Matrix mat{};
+		mat.m00 = 1 / (std::tan(fovy / 2) * aspect);
+		mat.m11 = 1 / std::tan(fovy / 2);
 		mat.m22 = (far_dst + near_dst) / (near_dst - far_dst);
 		mat.m23 = -1;
 		mat.m32 = (2 * near_dst * far_dst) / (near_dst - far_dst);
@@ -274,7 +274,7 @@ struct Matrix {
 		const T bottom, const T top,
 		const T near_dst, const T far_dst) {
 
-		Matrix mat;
+		Matrix mat{};
 		mat.m00 = 2 / (right - left);
 		mat.m11 = 2 / (top - bottom);
 		mat.m22 = -2 / (far_dst - near_dst);
@@ -288,14 +288,14 @@ struct Matrix {
 	static Matrix LookAt(const Vector3<T>& eye, const Vector3<T>& target, const Vector3<T>& up) {
 
 		Vector3<T> z(eye - target);
-		z.normalize();
+		z.Normalize();
 
 		Vector3<T> x = Vector3<T>::cross_product(up, z);
-		x.normalize();
+		x.Normalize();
 
 		Vector3<T> y = Vector3<T>::cross_product(z, x);
 
-		Matrix mat = Matrix::identity();
+		Matrix mat = Matrix::Identity();
 		mat.m00 = x.x;
 		mat.m01 = y.x;
 		mat.m02 = z.x;
@@ -313,14 +313,20 @@ struct Matrix {
 
 	bool operator==(const Matrix& rhs) const {
 
-		return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) ==
-			std::tie(rhs.m00, rhs.m01, rhs.m02, rhs.m03, rhs.m10, rhs.m11, rhs.m12, rhs.m13, rhs.m20, rhs.m21, rhs.m22, rhs.m23, rhs.m30, rhs.m31, rhs.m32, rhs.m33);
+		return 
+			m00 == rhs.m00 && m01 == rhs.m01 && m02 == rhs.m02 && m03 == rhs.m03 &&
+			m10 == rhs.m10 && m11 == rhs.m11 && m12 == rhs.m12 && m13 == rhs.m13 &&
+			m20 == rhs.m20 && m21 == rhs.m21 && m22 == rhs.m22 && m23 == rhs.m23 &&
+			m30 == rhs.m30 && m31 == rhs.m31 && m32 == rhs.m32 && m33 == rhs.m33;
 	}
 
 	bool operator!=(const Matrix& rhs) const {
 
-		return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) !=
-			std::tie(rhs.m00, rhs.m01, rhs.m02, rhs.m03, rhs.m10, rhs.m11, rhs.m12, rhs.m13, rhs.m20, rhs.m21, rhs.m22, rhs.m23, rhs.m30, rhs.m31, rhs.m32, rhs.m33);
+		return 
+			m00 != rhs.m00 || m01 != rhs.m01 || m02 != rhs.m02 || m03 != rhs.m03 ||
+			m10 != rhs.m10 || m11 != rhs.m11 || m12 != rhs.m12 || m13 != rhs.m13 ||
+			m20 != rhs.m20 || m21 != rhs.m21 || m22 != rhs.m22 || m23 != rhs.m23 ||
+			m30 != rhs.m30 || m31 != rhs.m31 || m32 != rhs.m32 || m33 != rhs.m33;
 	}
 };
 

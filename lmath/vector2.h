@@ -39,71 +39,71 @@ struct Vector2 {
 	    return *this;
     }
 
-	const T* GetData() const {
+	inline const T* GetData() const {
 
 		return &x;
 	}
 
-	size_t GetSize() const {
+	inline size_t GetSize() const {
 
 		return 2;
 	}
 
 	void Normalize() {
 
-        T inverse = 1 / this->length();
+        T inverse = 1 / GetLength();
 	    x = x * inverse;
 	    y = y * inverse;
     }
 
-	T GetLength() const {
+	inline T GetLength() const {
 
 		return std::sqrt(x * x + y * y);
 	}
 
-	Vector2 operator*(const T rhs) const {
+	inline Vector2 operator*(const T rhs) const {
 
 		return Vector2 { x * rhs, y * rhs };
 	}
 
-	Vector2 operator-(const Vector2& rhs) const {
+	inline Vector2 operator-(const Vector2& rhs) const {
 
 		return Vector2 { x - rhs.x, y - rhs.y };
 	}
 
-	Vector2 operator-(const T rhs) const {
+	inline Vector2 operator-(const T rhs) const {
 
 		return Vector2 { x - rhs, y - rhs };
 	}
 
-	Vector2 operator-() const {
+	inline Vector2 operator-() const {
 
-		return Vector2 {-x, -y };
+		return Vector2 { -x, -y };
 	}
 
-	Vector2 operator+(const Vector2& rhs) const {
+	inline Vector2 operator+(const Vector2& rhs) const {
 
 		return Vector2 { x + rhs.x, y + rhs.y };
 	}
 
-	Vector2 operator+(const T rhs) const {
+	inline Vector2 operator+(const T rhs) const {
 
 		return Vector2 { x + rhs, y + rhs };
 	}
 
-	Vector2 operator/(const T rhs) const {
+	inline Vector2 operator/(const T rhs) const {
 
 		return Vector2 { x / rhs, y / rhs };
 	}
 
-	bool operator==(const Vector2& rhs) const {
+	inline bool operator==(const Vector2& rhs) const {
 
-        return std::tie(x, y) == std::tie(rhs.x, rhs.y);
+        return x == rhs.x && y == rhs.y;
     }
 
-	bool operator!=(const Vector2& rhs) const {
+	inline bool operator!=(const Vector2& rhs) const {
 
-        return std::tie(x, y) != std::tie(rhs.x, rhs.y);
+        return x != rhs.x || y != rhs.y;
     }
 };
 

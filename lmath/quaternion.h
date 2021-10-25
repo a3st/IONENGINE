@@ -45,7 +45,7 @@ struct Quaternion {
 
 	void Normalize() {
 
-        T inverse = 1 / this->length();
+        T inverse = 1 / GetLength();
         x = x * inverse;
         y = y * inverse;
         z = z * inverse;
@@ -73,14 +73,14 @@ struct Quaternion {
         return mat;
     }
 
-    T GetLength() const {
+    inline T GetLength() const {
 
 		return std::sqrt(x * x + y * y + z * z + w * w);
 	}
 
 	void ToAngleAxis(T* angle, Vector3<T>* axis) const {
 
-        Quaternion quat;
+        Quaternion quat{};
         quat = *this;
 
         if (w > 1) {
@@ -111,29 +111,29 @@ struct Quaternion {
 	    return quat;
     }
 
-	Quaternion operator*(const T rhs) const {
+	inline Quaternion operator*(const T rhs) const {
 
 		return Quaternion { x * rhs, y * rhs, z * rhs, w * rhs };
 	}
 
-	Quaternion operator+(const Quaternion& rhs) const {
+	inline Quaternion operator+(const Quaternion& rhs) const {
 
 		return Quaternion { x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w };
 	}
 
-	Quaternion operator-(const Quaternion& rhs) const {
+	inline Quaternion operator-(const Quaternion& rhs) const {
 
 		return Quaternion { x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w };
 	}
 
-	bool operator!=(const Quaternion& rhs) const {
+    inline bool operator==(const Quaternion& rhs) const {
 
-		return std::tie(x, y, z, w) != std::tie(rhs.x, rhs.y, rhs.z, rhs.w);
+		return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w;
 	}
 
-	bool operator==(const Quaternion& rhs) const {
+	inline bool operator!=(const Quaternion& rhs) const {
 
-		return std::tie(x, y, z, w) == std::tie(rhs.x, rhs.y, rhs.z, rhs.w);
+		return x != rhs.x || y != rhs.y || z != rhs.z || w != rhs.w;
 	}
 
     static Quaternion Euler(const T x, const T y, const T z) {
@@ -151,7 +151,7 @@ struct Quaternion {
         cosy = std::cos(roty / 2);
         cosz = std::cos(rotz / 2);
 
-        Quaternion quat;
+        Quaternion quat{};
         quat.w = cosx * cosy * cosz + sinx * siny * sinz;
         quat.x = sinx * cosy * cosz + cosx * siny * sinz;
         quat.y = cosx * siny * cosz - sinx * cosy * sinz;
