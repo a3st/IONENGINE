@@ -17,24 +17,21 @@ const size_t kFrameGraphTaskSize = 50;
 const size_t kFrameGraphResourceSize = 50;
 
 enum class FrameGraphTaskType {
+
     kRenderPass,
     kComputePass
 };
 
 enum class FrameGraphResourceType {
+
     kAttachment,
     kBuffer
 };
 
-enum class FrameGraphResourceWriteOp {
+enum class FrameGraphResourceOp {
+
     kLoad,
     kClear
-};
-
-struct FrameGraphResourceDesc {
-    FrameGraphResourceType type;
-    lgfx::Texture* texture;
-    lgfx::TextureView* texture_view;
 };
 
 class FrameGraphResourceId {
@@ -51,23 +48,95 @@ public:
 
     }
 
+    inline bool operator==(const FrameGraphResourceId& rhs) const { return id_ == rhs.id_; }
+    inline bool operator!=(const FrameGraphResourceId& rhs) const { return id_ != rhs.id_; }
+
 private:
 
     uint32_t id_;
 };
 
-struct FrameGraphTaskDesc {
-    FrameGraphTaskType type;
+class FrameGraphResource {
+
+public:
+
+    FrameGraphResource() {
+
+    }
+
+    FrameGraphResource(const FrameGraphResourceType type, lgfx::Texture* texture, lgfx::TextureView* texture_view) :
+        type_(type), texture_(texture), texture_view_(texture_view) {
+
+    }
+
+    inline lgfx::Texture* GetTexture() const { return texture_; }
+    inline lgfx::TextureView* GetTextureView() const { return texture_view_; }
+    inline FrameGraphResourceType GetType() const { return type_; }
+
+private:
+
+    lgfx::Texture* texture_;
+    lgfx::TextureView* texture_view_;
+
+    FrameGraphResourceType type_;
+};
+
+class FrameGraphTaskId {
+
+friend class FrameGraphBuilder;
+
+public:
+
+    FrameGraphTaskId() : id_(std::numeric_limits<uint32_t>::max()) { 
+
+    }
+
+    FrameGraphTaskId(const uint32_t id) : id_(id) {
+
+    }
+
+    inline bool operator==(const FrameGraphTaskId& rhs) const { return id_ == rhs.id_; }
+    inline bool operator!=(const FrameGraphTaskId& rhs) const { return id_ != rhs.id_; }
+
+private:
+
+    uint32_t id_;
+};
+
+class FrameGraphTask {
+
+public:
+
+    FrameGraphTask() {
+
+    }
+
+    FrameGraphTask(const FrameGraphTaskType type) : type_(type) {
+
+    }
+
+private:
+
+    FrameGraphTaskType type_;
+
+    std::span<FrameGraphResourceId> create_resources;
     std::span<FrameGraphResourceId> write_resources;
+    std::span<FrameGraphResourceId> read_resources;
+
     std::span<lgfx::ClearValueColor> clear_colors;
     std::span<lgfx::RenderPassColorDesc> color_descs;
     std::span<lgfx::TextureView*> color_views;
 };
 
-struct FrameGraphResourceCreateInfo {
+struct FrameGraphResourceDesc {
+
     FrameGraphResourceType type;
     uint32_t width;
     uint32_t height;
+    uint32_t mip_levels;
+    uint32_t array_layers;
+    lgfx::Format format;
+    lgfx::TextureFlags flags;
     lgfx::Texture* texture;
     lgfx::TextureView* texture_view;
 };
@@ -76,22 +145,25 @@ class FrameGraphBuilder {
 
 public:
 
-    FrameGraphBuilder(TextureCache* texture_cache, TextureViewCache* texture_view_cache, const uint32_t task_index, std::vector<FrameGraphTaskDesc>& tasks, std::vector<FrameGraphResourceDesc>& resources);
+    FrameGraphBuilder(TextureCache* texture_cache, TextureViewCache* texture_view_cache, std::vector<FrameGraphResource>* resources, std::vector<FrameGraphTask>* tasks);
 
-    FrameGraphResourceId Create(const FrameGraphResourceCreateInfo& create_info);
-    void Read(const FrameGraphResourceId& resource_id);
-    void Write(const FrameGraphResourceId& resource_id, const FrameGraphResourceWriteOp write_op, const Color& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f });
+    inline FrameGraphTaskId GetResult() { return task_id_; }
+
+    FrameGraphResourceId Create(const FrameGraphResourceDesc& desc);
+
+    //void Read(const FrameGraphResourceId& resource_id);
+    void Write(const FrameGraphResourceId& resource_id, const FrameGraphResourceOp op, const Color& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f });
 
 private:
 
-    lgfx::RenderPassLoadOp FrameGraphResourceWriteOpTo(const FrameGraphResourceWriteOp op);
+    //lgfx::RenderPassLoadOp FrameGraphResourceWriteOpTo(const FrameGraphResourceWriteOp op);
 
-    uint32_t task_index_; 
-    std::vector<FrameGraphTaskDesc>& tasks_;
-    std::vector<FrameGraphResourceDesc>& resources_;
+    FrameGraphTaskId task_id_;
 
-    TextureCache* texture_cache_; 
+    TextureCache* texture_cache_;
     TextureViewCache* texture_view_cache_; 
+    std::vector<FrameGraphResource>* resources_;
+    std::vector<FrameGraphTask>* tasks_;
 };
 
 class FrameGraphContext {
@@ -108,7 +180,7 @@ public:
 
     FrameGraph(lgfx::Device* device);
 
-    int32_t AddTask(const FrameGraphTaskType type, 
+    FrameGraphTaskId AddTask(const FrameGraphTaskType type, 
         const std::function<void(FrameGraphBuilder*)>& builder_func, 
         const std::function<void(FrameGraphContext*)>& exec_func);
 
@@ -126,9 +198,8 @@ private:
 
     std::unique_ptr<lgfx::CommandBuffer> command_buffer_;
 
-    std::vector<FrameGraphTaskDesc> tasks_;
-    uint32_t task_index_;
-    std::vector<FrameGraphResourceDesc> resources_;
+    std::vector<FrameGraphTask> tasks_;
+    std::vector<FrameGraphResource> resources_;
 };
 
 }

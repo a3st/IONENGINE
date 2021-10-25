@@ -8,18 +8,20 @@ namespace ionengine::rendersystem {
 
 class RenderPassCache {
 
+    using Key = lgfx::RenderPassDesc;
+
 public:
 
     RenderPassCache(lgfx::Device* device);
 
-    lgfx::RenderPass* GetRenderPass(const lgfx::RenderPassDesc& desc);
+    lgfx::RenderPass* GetRenderPass(const Key& key);
     void Clear();
 
 private:
 
     lgfx::Device* device_;
 
-    std::map<lgfx::RenderPassDesc, std::unique_ptr<lgfx::RenderPass>> render_passes_;
+    std::map<Key, std::unique_ptr<lgfx::RenderPass>> render_passes_;
 };
 
 }

@@ -8,11 +8,13 @@ namespace ionengine::rendersystem {
 
 class TextureCache {
 
+    using Key = lgfx::TextureDesc;
+
 public:
 
     TextureCache(lgfx::Device* device);
 
-    lgfx::Texture* GetTexture(const lgfx::TextureDesc& desc);
+    lgfx::Texture* GetTexture(const Key& key);
     void Clear();
 
 private:
@@ -24,9 +26,9 @@ private:
         std::vector<std::unique_ptr<lgfx::Texture>> textures;
     };
 
-    std::map<lgfx::TextureDesc, TextureEntry> textures_;
+    std::map<Key, TextureEntry> textures_;
 
-    std::unique_ptr<lgfx::MemoryPool> rt_memory_pool_;
+    std::unique_ptr<lgfx::MemoryPool> rtds_memory_pool_;
     std::unique_ptr<lgfx::MemoryPool> sr_memory_pool_;
 };
     

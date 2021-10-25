@@ -2,8 +2,6 @@
 
 #pragma once
 
-//#include "../lmath/lmath.h"
-
 namespace ionengine::rendersystem {
 
 struct Color {
@@ -44,58 +42,27 @@ struct Color {
 		return *this;
 	}
 
-	void RGBToSRGB() {
-
-		for (int32_t i = 0; i < 3; ++i) {
-			float color = (&r)[i];
-			if (color < 0.0031308f) {
-				color = 12.92f * color;
-			} else {
-				color = 1.055f * std::powf(color, 1.0f / 2.4f) - 0.05499995f;
-			}
-		}
-	}
-
-	void SRGBToRGB() {
-
-		for (int32_t i = 0; i < 3; ++i) {
-			float color = (&r)[i];
-			if (color <= 0.040448643f) {
-				color = color / 12.92f;
-			} else {
-				color = std::powf((color + 0.055f) / 1.055f, 2.4f);
-			}
-		}
-	}
-
-	const float* GetData() const {
+	inline const float* GetData() const {
 
 		return &r;
 	}
 
-	size_t GetSize() const {
+	inline size_t GetSize() const {
 
 		return 4;
 	}
 
-	/*lmath::Vector4f ToVector4() const {
-
-		return lmath::Vector4f { r, g, b, a };
-	}
-
-	lmath::Vector3f ToVector3() const {
-
-		return lmath::Vector3f { r, g, b };
-	}*/
+	void SRGBToRGB();
+	void RGBToSRGB();
     
-	bool operator==(const Color& rhs) const {
+	inline bool operator==(const Color& rhs) const {
 
-		return std::tie(r, g, b, a) == std::tie(rhs.r, rhs.g, rhs.b, rhs.a);
+		return r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a;
 	}
 
-	bool operator!=(const Color& rhs) const {
+	inline bool operator!=(const Color& rhs) const {
 
-		return std::tie(r, g, b, a) != std::tie(rhs.r, rhs.g, rhs.b, rhs.a);
+		return r != rhs.r || g != rhs.g || b != rhs.b || a != rhs.a;
 	}
 };
 

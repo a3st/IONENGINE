@@ -9,14 +9,14 @@ FrameBufferCache::FrameBufferCache(lgfx::Device* device) : device_(device) {
 
 }
 
-lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(const lgfx::FrameBufferDesc& desc) {
+lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(const Key& key) {
     
-    auto it = frame_buffers_.find(desc);
+    auto it = frame_buffers_.find(key);
     if(it != frame_buffers_.end()) {
         return it->second.get();
     } else {
-        auto result = frame_buffers_.emplace(desc, std::make_unique<lgfx::FrameBuffer>(device_, desc));
-        return result.first->second.get();
+        auto ret = frame_buffers_.emplace(key, std::make_unique<lgfx::FrameBuffer>(device_, key));
+        return ret.first->second.get();
     }
 }
 

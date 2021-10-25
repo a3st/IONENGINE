@@ -9,14 +9,14 @@ RenderPassCache::RenderPassCache(lgfx::Device* device) : device_(device) {
 
 }
 
-lgfx::RenderPass* RenderPassCache::GetRenderPass(const lgfx::RenderPassDesc& desc) {
+lgfx::RenderPass* RenderPassCache::GetRenderPass(const Key& key) {
 
-    auto it = render_passes_.find(desc);
+    auto it = render_passes_.find(key);
     if(it != render_passes_.end()) {
         return it->second.get();
     } else {
-        auto result = render_passes_.emplace(desc, std::make_unique<lgfx::RenderPass>(device_, desc));
-        return result.first->second.get();
+        auto ret = render_passes_.emplace(key, std::make_unique<lgfx::RenderPass>(device_, key));
+        return ret.first->second.get();
     }
 }
 
