@@ -1,9 +1,9 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#include "precompiled.h"
+#include "../precompiled.h"
 
-#include "platform/platform.h"
-#include "rendersystem/rendersystem.h"
+#include "../platform/platform.h"
+#include "../rendersystem/rendersystem.h"
 
 using namespace ionengine;
 
@@ -26,27 +26,27 @@ void operator delete(void * p) {
 int main(int*, char*) {
 
     label.reserve(50);
+    uint64_t value = 0;
 
-    bool alloc = false;
-
-    platform::WindowLoop loop;
-    platform::Window window("IONENGINE", 800, 600, &loop);
-    rendersystem::Renderer renderer(&window);
+    auto loop = std::make_unique<platform::WindowLoop>();
+    auto window = std::make_unique<platform::Window>("IONENGINE", 800, 600, loop.get());
+    auto renderer = std::make_unique<rendersystem::Renderer>(window.get());
     
-    loop.Run([&](const platform::WindowEvent& event) {
+    loop->Run([&](const platform::WindowEvent& event) {
             switch(event.type) {
-                case platform::WindowEventType::Closed: loop.Quit(); break;
+                case platform::WindowEventType::Closed: loop->Quit(); break;
                 case platform::WindowEventType::Sized: {
                     
                     break;
                 }
                 case platform::WindowEventType::Updated: {
-                    renderer.Frame();
+                    renderer->Frame();
+                    ++value;
 
-                    if(!alloc) {
-                        alloc = true;
+                    if(value >= 10000) {
                         swprintf(label.data(), L"IONENGINE [Alloc: %zi/%zi]", allocate, deallocate);
-                        SetWindowText(reinterpret_cast<HWND>(window.GetNativeHandle()), label.c_str());
+                        SetWindowText(reinterpret_cast<HWND>(window->GetNativeHandle()), label.c_str());
+                        value = 0;
                     }
                     break;
                 }

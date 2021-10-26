@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../lgfx/lgfx.h"
+#include "../lstd/object_pool_ptr.h"
 
 #include "color.h"
 
@@ -200,6 +201,8 @@ private:
 
     std::vector<FrameGraphTask> tasks_;
     std::vector<FrameGraphResource> resources_;
+
+    lstd::object_pool<lgfx::RenderPassColorDesc> color_descs;
 };
 
 }

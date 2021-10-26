@@ -16,6 +16,7 @@ public:
     Renderer(platform::Window* window);
 
     void Frame();
+    void Resize(const uint32_t width, const uint32_t height);
 
 private:
 

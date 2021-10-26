@@ -40,18 +40,22 @@ void Renderer::Frame() {
 
     FrameGraphTaskId basic_task = frame_graph_->AddTask(FrameGraphTaskType::kRenderPass,
         [&](FrameGraphBuilder* builder) {
-            /*FrameGraphResourceId swapchain = builder->Create(FrameGraphResourceCreateInfo {
-                FrameGraphResourceType::kAttachment,
-                0, 0,
-                frame_resources_.textures[frame_index_].get(), frame_resources_.texture_views[frame_index_].get() });*/
 
-            /*FrameGraphResourceId dummy = builder->Create(FrameGraphResourceCreateInfo {
+            FrameGraphResourceId swapchain = builder->Create(FrameGraphResourceDesc {
                 FrameGraphResourceType::kAttachment,
-                800, 600,
-                nullptr, nullptr });*/
+                0, 0, 0, 0, 
+                lgfx::Format::kUnknown, 
+                lgfx::TextureFlags::kRenderTarget,
+                frame_resources_.textures[frame_index_].get(), frame_resources_.texture_views[frame_index_].get() });
 
-            //builder->Write(swapchain, FrameGraphResourceOp::kClear, Color { 0.4f, 0.5f, 0.3f, 1.0f });
-            //builder->Write(dummy, FrameGraphResourceWriteOp::kClear, Color { 0.4f, 0.5f, 0.9f, 1.0f });
+            FrameGraphResourceId dummy = builder->Create(FrameGraphResourceDesc {
+                FrameGraphResourceType::kAttachment,
+                800, 600, 1, 1,
+                lgfx::Format::kRGBA8unorm,
+                lgfx::TextureFlags::kRenderTarget });
+
+            builder->Write(swapchain, FrameGraphResourceOp::kClear, Color { 0.4f, 0.5f, 0.3f, 1.0f });
+            builder->Write(dummy, FrameGraphResourceOp::kClear, Color { 0.4f, 0.5f, 0.9f, 1.0f });
         },
         [=](FrameGraphContext* context) {
             
@@ -74,4 +78,8 @@ void Renderer::EndFrame() {
     frame_resources_.fences[frame_index_]->Wait(fence_value);
 
     frame_graph_->Flush();*/
+}
+
+void Renderer::Resize(const uint32_t width, const uint32_t height) {
+
 }

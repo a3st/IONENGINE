@@ -15,7 +15,7 @@ lgfx::Texture* TextureCache::GetTexture(const Key& key) {
 
     auto it = textures_.find(key);
     if(it != textures_.end()) {
-        if(it->second.entry_index > static_cast<uint32_t>(it->second.textures.size())) {
+        if(it->second.entry_index >= static_cast<uint32_t>(it->second.textures.size())) {
             if(key.flags & lgfx::TextureFlags::kRenderTarget || key.flags & lgfx::TextureFlags::kDepthStencil) {
                 auto& ret = it->second.textures.emplace_back(std::make_unique<lgfx::Texture>(device_, rtds_memory_pool_.get(), key));
                 ++it->second.entry_index;

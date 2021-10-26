@@ -222,7 +222,7 @@ struct TextureDesc {
 
     inline bool operator<(const TextureDesc& rhs) const {
         
-        return dimension < rhs.dimension || width == rhs.width || height < rhs.height || mip_levels < rhs.mip_levels || array_layers < rhs.array_layers || format < rhs.format || flags < rhs.flags;
+        return dimension < rhs.dimension || width < rhs.width || height < rhs.height || mip_levels < rhs.mip_levels || array_layers < rhs.array_layers || format < rhs.format || flags < rhs.flags;
     }
 
     inline bool operator>(const TextureDesc& rhs) const {

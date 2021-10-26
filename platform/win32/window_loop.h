@@ -5,6 +5,7 @@
 namespace ionengine::platform {
 
 enum class WindowEventType {
+
     Unknown,
     Closed,
     Sized,
@@ -12,8 +13,8 @@ enum class WindowEventType {
 };
 
 struct WindowEvent {
-    WindowEventType type;
 
+    WindowEventType type;
 };
 
 class WindowLoop {
@@ -23,11 +24,6 @@ friend class Window;
 public:
 
     WindowLoop();
-    WindowLoop(const WindowLoop&) = delete;
-    WindowLoop(WindowLoop&&) noexcept = delete;
-
-    WindowLoop& operator=(const WindowLoop&) = delete;
-    WindowLoop& operator=(WindowLoop&&) noexcept = delete;
 
     void Run(const std::function<void(const WindowEvent&)>& run_func);
     

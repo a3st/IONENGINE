@@ -79,6 +79,14 @@ FrameGraph::FrameGraph(lgfx::Device* device) : device_(device) {
     texture_view_cache_ = std::make_unique<TextureViewCache>(device);
     render_pass_cache_ = std::make_unique<RenderPassCache>(device);
     frame_buffer_cache_ = std::make_unique<FrameBufferCache>(device);
+
+    // Object Pool Test
+    color_descs = lstd::object_pool<lgfx::RenderPassColorDesc>(10);
+    for(uint32_t i = 0; i < 20; ++i) {
+        auto obj = lstd::make_unique_object_ptr<lgfx::RenderPassColorDesc>(&color_descs);
+        obj->format = lgfx::Format::kRG8unorm;
+        //std::cout << "set format: " << (int32_t)obj->format << std::endl;
+    }
 }
 
 FrameGraphTaskId FrameGraph::AddTask(const FrameGraphTaskType type, 
@@ -139,15 +147,19 @@ void FrameGraph::Execute() {
     }
     
 
-    texture_cache_->Clear();*/
+    */
     /*for(uint32_t i = 0; i < task_index_; ++i) {
         tasks_[i].clear_desc.colors.clear();
         tasks_[i].frame_buffer_desc.colors.clear();
         tasks_[i].render_pass_desc.colors.clear();
         tasks_[i].write_resources.clear();
     }
-    resources_.clear();*/
+    */
     //task_index_ = 0;
+
+    tasks_.clear();
+    resources_.clear();
+    texture_cache_->Clear();
 }
 
 void FrameGraph::Flush() {

@@ -6,29 +6,6 @@
 
 using namespace ionengine::platform;
 
-Window::Window() {
-
-}
-
-Window::Window(Window&& rhs) noexcept {
-
-	std::swap(hwnd_, rhs.hwnd_);
-	std::swap(cursor_, rhs.cursor_);
-	std::swap(width_, rhs.width_);
-	std::swap(height_, rhs.height_);
-	std::swap(loop_, rhs.loop_);
-}
-
-Window& Window::operator=(Window&& rhs) noexcept {
-
-	std::swap(hwnd_, rhs.hwnd_);
-	std::swap(cursor_, rhs.cursor_);
-	std::swap(width_, rhs.width_);
-	std::swap(height_, rhs.height_);
-	std::swap(loop_, rhs.loop_);
-	return *this;
-}
-
 void Window::SetLabel(const std::string& label) {
 
 	size_t length = strlen(label.c_str()) + 1;

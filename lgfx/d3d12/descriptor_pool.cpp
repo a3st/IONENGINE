@@ -42,7 +42,7 @@ DescriptorPtr DescriptorPool::Allocate() {
         if(heaps_[i]->offset_ > heaps_[i]->heap_size_) {
             continue;
         } else {
-            for(uint32_t j = 0; i < heaps_[i]->heap_size_; ++j) {
+            for(uint32_t j = 0; j < heaps_[i]->heap_size_; ++j) {
                 if(heaps_[i]->descriptors_[j] == 0x0) {
                     ptr.heap = heaps_[i].get();
                     ptr.offset = j;
