@@ -3,25 +3,20 @@
 #pragma once
 
 #include "../lgfx/lgfx.h"
+
 #include "../lstd/object_pool_ptr.h"
 
 #include "color.h"
 
-#include "frame_buffer_cache.h"
-#include "render_pass_cache.h"
-#include "texture_view_cache.h"
-#include "texture_cache.h"
+#include "cache/frame_buffer.h"
+#include "cache/render_pass.h"
+#include "cache/texture_view.h"
+#include "cache/texture.h"
 
 namespace ionengine::rendersystem {
 
-const size_t kFrameGraphTaskSize = 50;
-const size_t kFrameGraphResourceSize = 50;
-
-enum class FrameGraphTaskType {
-
-    kRenderPass,
-    kComputePass
-};
+const size_t kFrameGraphResourcePoolSize = 128;
+const size_t kFrameGraphTaskPoolSize = 64;
 
 enum class FrameGraphResourceType {
 
@@ -35,29 +30,9 @@ enum class FrameGraphResourceOp {
     kClear
 };
 
-class FrameGraphResourceId {
+class FrameGraphResource {
 
 friend class FrameGraphBuilder;
-
-public:
-
-    FrameGraphResourceId() : id_(std::numeric_limits<uint32_t>::max()) { 
-
-    }
-
-    FrameGraphResourceId(const uint32_t id) : id_(id) {
-
-    }
-
-    inline bool operator==(const FrameGraphResourceId& rhs) const { return id_ == rhs.id_; }
-    inline bool operator!=(const FrameGraphResourceId& rhs) const { return id_ != rhs.id_; }
-
-private:
-
-    uint32_t id_;
-};
-
-class FrameGraphResource {
 
 public:
 
@@ -82,29 +57,16 @@ private:
     FrameGraphResourceType type_;
 };
 
-class FrameGraphTaskId {
+enum class FrameGraphTaskType {
 
-friend class FrameGraphBuilder;
-
-public:
-
-    FrameGraphTaskId() : id_(std::numeric_limits<uint32_t>::max()) { 
-
-    }
-
-    FrameGraphTaskId(const uint32_t id) : id_(id) {
-
-    }
-
-    inline bool operator==(const FrameGraphTaskId& rhs) const { return id_ == rhs.id_; }
-    inline bool operator!=(const FrameGraphTaskId& rhs) const { return id_ != rhs.id_; }
-
-private:
-
-    uint32_t id_;
+    kUnknown,
+    kRenderPass,
+    kComputePass
 };
 
 class FrameGraphTask {
+
+friend class FrameGraphTaskCache;
 
 public:
 
@@ -120,13 +82,13 @@ private:
 
     FrameGraphTaskType type_;
 
-    std::span<FrameGraphResourceId> create_resources;
-    std::span<FrameGraphResourceId> write_resources;
-    std::span<FrameGraphResourceId> read_resources;
+    std::vector<FrameGraphResource*> create_resources_;
+    std::vector<FrameGraphResource*> write_resources_;
+    std::vector<FrameGraphResource*> read_resources_;
 
-    std::span<lgfx::ClearValueColor> clear_colors;
-    std::span<lgfx::RenderPassColorDesc> color_descs;
-    std::span<lgfx::TextureView*> color_views;
+    std::vector<lgfx::ClearValueColor> clear_colors_;
+    std::vector<lgfx::RenderPassColorDesc> color_descs_;
+    std::vector<lgfx::TextureView*> color_views_;
 };
 
 struct FrameGraphResourceDesc {
@@ -146,32 +108,44 @@ class FrameGraphBuilder {
 
 public:
 
-    FrameGraphBuilder(TextureCache* texture_cache, TextureViewCache* texture_view_cache, std::vector<FrameGraphResource>* resources, std::vector<FrameGraphTask>* tasks);
+    FrameGraphBuilder(
+        TextureCache* texture_cache, 
+        TextureViewCache* texture_view_cache, 
+        lstd::object_pool<FrameGraphResource>* resource_pool, 
+        lstd::object_pool<FrameGraphTask>* task_pool,
+        std::vector<lstd::unique_object_ptr<FrameGraphResource>>& resources,
+        std::vector<lstd::unique_object_ptr<FrameGraphTask>>& tasks);
 
-    inline FrameGraphTaskId GetResult() { return task_id_; }
+    FrameGraphResource* Create(const FrameGraphResourceDesc& desc);
+    void Read(FrameGraphResource* resource);
+    void Write(FrameGraphResource* resource, const FrameGraphResourceOp op, const Color& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f });
 
-    FrameGraphResourceId Create(const FrameGraphResourceDesc& desc);
+    inline FrameGraphTask* operator()() {
 
-    //void Read(const FrameGraphResourceId& resource_id);
-    void Write(const FrameGraphResourceId& resource_id, const FrameGraphResourceOp op, const Color& clear_color = { 0.0f, 0.0f, 0.0f, 0.0f });
+        return task_;
+    }
 
 private:
 
-    //lgfx::RenderPassLoadOp FrameGraphResourceWriteOpTo(const FrameGraphResourceWriteOp op);
-
-    FrameGraphTaskId task_id_;
-
     TextureCache* texture_cache_;
-    TextureViewCache* texture_view_cache_; 
-    std::vector<FrameGraphResource>* resources_;
-    std::vector<FrameGraphTask>* tasks_;
+    TextureViewCache* texture_view_cache_;
+
+    lstd::object_pool<FrameGraphResource>* resource_pool_;
+    lstd::object_pool<FrameGraphTask>* task_pool_;
+
+    std::vector<lstd::unique_object_ptr<FrameGraphResource>>& resources_;
+    std::vector<lstd::unique_object_ptr<FrameGraphTask>>& tasks_;
+
+    FrameGraphTask* task_;
 };
 
 class FrameGraphContext {
 
 public:
 
-    FrameGraphContext();
+    FrameGraphContext() {
+        
+    }
 
 };
 
@@ -180,29 +154,36 @@ class FrameGraph {
 public:
 
     FrameGraph(lgfx::Device* device);
+    FrameGraph(const FrameGraph&) = delete;
+    FrameGraph(FrameGraph&&) = delete;
 
-    FrameGraphTaskId AddTask(const FrameGraphTaskType type, 
-        const std::function<void(FrameGraphBuilder*)>& builder_func, 
-        const std::function<void(FrameGraphContext*)>& exec_func);
+    FrameGraph& operator=(const FrameGraph&) = delete;
+    FrameGraph& operator=(FrameGraph&&) = delete;
+
+    FrameGraphTask* AddTask(const FrameGraphTaskType type, const std::function<void(FrameGraphBuilder*)>& builder_func, const std::function<void(FrameGraphContext*)>& exec_func);
 
     void Execute();
+
+    void Reset();
+
     void Flush();
 
 private:
 
     lgfx::Device* device_;
 
-    std::unique_ptr<FrameBufferCache> frame_buffer_cache_;
-    std::unique_ptr<RenderPassCache> render_pass_cache_;
-    std::unique_ptr<TextureViewCache> texture_view_cache_;
-    std::unique_ptr<TextureCache> texture_cache_;
-
     std::unique_ptr<lgfx::CommandBuffer> command_buffer_;
 
-    std::vector<FrameGraphTask> tasks_;
-    std::vector<FrameGraphResource> resources_;
+    FrameBufferCache frame_buffer_cache_;
+    RenderPassCache render_pass_cache_;
+    TextureViewCache texture_view_cache_;
+    TextureCache texture_cache_;
 
-    lstd::object_pool<lgfx::RenderPassColorDesc> color_descs;
+    lstd::object_pool<FrameGraphResource> resource_pool;
+    lstd::object_pool<FrameGraphTask> task_pool;
+
+    std::vector<lstd::unique_object_ptr<FrameGraphResource>> resources_;
+    std::vector<lstd::unique_object_ptr<FrameGraphTask>> tasks_;
 };
 
 }

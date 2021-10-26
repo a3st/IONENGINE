@@ -5,14 +5,11 @@
 
 using namespace ionengine::rendersystem;
 
-Renderer::Renderer(platform::Window* window) : window_(window) {
-
-    device_ = std::make_unique<lgfx::Device>(0, window->GetNativeHandle(), 800, 600, 2, 1);
-
-    frame_graph_ = std::make_unique<FrameGraph>(device_.get());
-
-    // Swapchain Data
-    frame_descriptor_pool_ = std::make_unique<lgfx::DescriptorPool>(device_.get(), 2, lgfx::DescriptorType::kRenderTarget, lgfx::DescriptorFlags::kNone);
+Renderer::Renderer(platform::Window* window) : 
+    window_(window),
+    device_(0, window->GetNativeHandle(), 800, 600, 2, 1),
+    frame_graph_(&device_),
+    frame_descriptor_pool_(&device_, 2, lgfx::DescriptorType::kRenderTarget, lgfx::DescriptorFlags::kNone) {
 
     frame_resources_.textures.resize(2);
     frame_resources_.texture_views.resize(2);
@@ -23,45 +20,45 @@ Renderer::Renderer(platform::Window* window) : window_(window) {
     view_desc.dimension = lgfx::Dimension::kTexture2D;
 
     for(uint32_t i = 0; i < 2; ++i) {
-        frame_resources_.textures[i] = std::make_unique<lgfx::Texture>(device_.get(), i);
-        frame_resources_.texture_views[i] = std::make_unique<lgfx::TextureView>(device_.get(), frame_descriptor_pool_.get(), frame_resources_.textures[i].get(), view_desc);
-        frame_resources_.fences[i] = std::make_unique<lgfx::Fence>(device_.get(), 0);
+        frame_resources_.textures[i] = std::make_unique<lgfx::Texture>(&device_, i);
+        frame_resources_.texture_views[i] = std::make_unique<lgfx::TextureView>(&device_, &frame_descriptor_pool_, frame_resources_.textures[i].get(), view_desc);
+        frame_resources_.fences[i] = std::make_unique<lgfx::Fence>(&device_, 0);
     }
 }
 
 void Renderer::BeginFrame() {
 
-    frame_index_ = device_->GetSwapchainBufferIndex();
+    frame_index_ = device_.GetSwapchainBufferIndex();
 }
 
 void Renderer::Frame() {
 
     BeginFrame();
 
-    FrameGraphTaskId basic_task = frame_graph_->AddTask(FrameGraphTaskType::kRenderPass,
+    FrameGraphTask* basic_task = frame_graph_.AddTask(FrameGraphTaskType::kRenderPass,
         [&](FrameGraphBuilder* builder) {
 
-            FrameGraphResourceId swapchain = builder->Create(FrameGraphResourceDesc {
+            FrameGraphResource* swapchain = builder->Create(FrameGraphResourceDesc {
                 FrameGraphResourceType::kAttachment,
                 0, 0, 0, 0, 
                 lgfx::Format::kUnknown, 
                 lgfx::TextureFlags::kRenderTarget,
                 frame_resources_.textures[frame_index_].get(), frame_resources_.texture_views[frame_index_].get() });
 
-            FrameGraphResourceId dummy = builder->Create(FrameGraphResourceDesc {
+            FrameGraphResource* dummy = builder->Create(FrameGraphResourceDesc {
                 FrameGraphResourceType::kAttachment,
                 800, 600, 1, 1,
                 lgfx::Format::kRGBA8unorm,
                 lgfx::TextureFlags::kRenderTarget });
 
-            builder->Write(swapchain, FrameGraphResourceOp::kClear, Color { 0.4f, 0.5f, 0.3f, 1.0f });
-            builder->Write(dummy, FrameGraphResourceOp::kClear, Color { 0.4f, 0.5f, 0.9f, 1.0f });
+            //builder->Write(swapchain, FrameGraphResourceOp::kClear, Color { 0.4f, 0.5f, 0.3f, 1.0f });
+            //builder->Write(dummy, FrameGraphResourceOp::kClear, Color { 0.4f, 0.5f, 0.9f, 1.0f });
         },
         [=](FrameGraphContext* context) {
             
         });
 
-    frame_graph_->Execute();
+    frame_graph_.Execute();
 
     EndFrame();
 }

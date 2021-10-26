@@ -1,7 +1,7 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#include "../precompiled.h"
-#include "frame_buffer_cache.h"
+#include "../../precompiled.h"
+#include "frame_buffer.h"
 
 using namespace ionengine::rendersystem;
 
@@ -18,9 +18,4 @@ lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(const Key& key) {
         auto ret = frame_buffers_.emplace(key, std::make_unique<lgfx::FrameBuffer>(device_, key));
         return ret.first->second.get();
     }
-}
-
-void FrameBufferCache::Clear() {
-
-    frame_buffers_.clear();
 }

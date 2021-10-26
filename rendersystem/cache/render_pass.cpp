@@ -1,7 +1,7 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#include "../precompiled.h"
-#include "render_pass_cache.h"
+#include "../../precompiled.h"
+#include "render_pass.h"
 
 using namespace ionengine::rendersystem;
 
@@ -18,9 +18,4 @@ lgfx::RenderPass* RenderPassCache::GetRenderPass(const Key& key) {
         auto ret = render_passes_.emplace(key, std::make_unique<lgfx::RenderPass>(device_, key));
         return ret.first->second.get();
     }
-}
-
-void RenderPassCache::Clear() {
-
-    render_passes_.clear();
 }

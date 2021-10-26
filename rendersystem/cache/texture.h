@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../lgfx/lgfx.h"
+#include "../../lgfx/lgfx.h"
 
 namespace ionengine::rendersystem {
 
@@ -13,9 +13,19 @@ class TextureCache {
 public:
 
     TextureCache(lgfx::Device* device);
+    TextureCache(const TextureCache&) = delete;
+    TextureCache(TextureCache&&) = delete;
+
+    TextureCache& operator=(const TextureCache&) = delete;
+    TextureCache& operator=(TextureCache&&) = delete;
 
     lgfx::Texture* GetTexture(const Key& key);
     void Clear();
+
+    inline void Reset() {
+
+        textures_.clear();
+    }
 
 private:
 
@@ -28,8 +38,8 @@ private:
 
     std::map<Key, TextureEntry> textures_;
 
-    std::unique_ptr<lgfx::MemoryPool> rtds_memory_pool_;
-    std::unique_ptr<lgfx::MemoryPool> sr_memory_pool_;
+    lgfx::MemoryPool rtds_memory_pool_;
+    lgfx::MemoryPool sr_memory_pool_;
 };
     
 }

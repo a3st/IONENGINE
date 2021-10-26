@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../lgfx/lgfx.h"
+#include "../../lgfx/lgfx.h"
 
 namespace ionengine::rendersystem {
 
@@ -13,9 +13,18 @@ class FrameBufferCache {
 public:
 
     FrameBufferCache(lgfx::Device* device);
+    FrameBufferCache(const FrameBufferCache&) = delete;
+    FrameBufferCache(FrameBufferCache&&) = delete;
+
+    FrameBufferCache& operator=(const FrameBufferCache&) = delete;
+    FrameBufferCache& operator=(FrameBufferCache&&) = delete;
 
     lgfx::FrameBuffer* GetFrameBuffer(const Key& key);
-    void Clear();
+    
+    inline void Reset() {
+
+        frame_buffers_.clear();
+    }
 
 private:
 

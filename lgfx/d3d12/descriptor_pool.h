@@ -18,6 +18,11 @@ friend class CommandBuffer;
 public:
 
     DescriptorHeap(Device* device, const DescriptorType type, const DescriptorFlags flags);
+    DescriptorHeap(const DescriptorHeap&) = delete;
+    DescriptorHeap(DescriptorHeap&&) = delete;
+
+    DescriptorHeap& operator=(const DescriptorHeap&) = delete;
+    DescriptorHeap& operator=(DescriptorHeap&&) = delete;
 
 private:
 
@@ -46,6 +51,11 @@ class DescriptorPool {
 public:
 
     DescriptorPool(Device* device, const size_t size, const DescriptorType type, const DescriptorFlags flags);
+    DescriptorPool(const DescriptorPool&) = delete;
+    DescriptorPool(DescriptorPool&&) = delete;
+
+    DescriptorPool& operator=(const DescriptorPool&) = delete;
+    DescriptorPool& operator=(DescriptorPool&&) = delete;
 
     inline DescriptorType GetType() const { return type_; }
     inline DescriptorFlags GetFlags() const { return flags_; }

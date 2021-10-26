@@ -14,6 +14,11 @@ class Renderer {
 public:
 
     Renderer(platform::Window* window);
+    Renderer(const Renderer&) = delete;
+    Renderer(Renderer&&) = delete;
+
+    Renderer& operator=(const Renderer&) = delete;
+    Renderer& operator=(Renderer&&) = delete;
 
     void Frame();
     void Resize(const uint32_t width, const uint32_t height);
@@ -25,8 +30,8 @@ private:
 
     platform::Window* window_;
 
-    std::unique_ptr<lgfx::Device> device_;
-    std::unique_ptr<FrameGraph> frame_graph_;
+    lgfx::Device device_;
+    FrameGraph frame_graph_;
 
     struct {
         std::vector<std::unique_ptr<lgfx::Texture>> textures;
@@ -37,7 +42,7 @@ private:
 
     uint32_t frame_index_;
 
-    std::unique_ptr<lgfx::DescriptorPool> frame_descriptor_pool_;
+    lgfx::DescriptorPool frame_descriptor_pool_;
 };
 
 }

@@ -18,6 +18,11 @@ friend class Texture;
 public:
 
     MemoryHeap(Device* device, const uint64_t align, const MemoryType type, const MemoryFlags flags);
+    MemoryHeap(const MemoryHeap&) = delete;
+    MemoryHeap(MemoryHeap&&) = delete;
+
+    MemoryHeap& operator=(const MemoryHeap&) = delete;
+    MemoryHeap& operator=(MemoryHeap&&) = delete;
 
 private:
 
@@ -47,6 +52,11 @@ class MemoryPool {
 public:
 
     MemoryPool(Device* device, const size_t size, const uint64_t align, const MemoryType type, const MemoryFlags flags);
+    MemoryPool(const MemoryPool&) = delete;
+    MemoryPool(MemoryPool&&) = delete;
+
+    MemoryPool& operator=(const MemoryPool&) = delete;
+    MemoryPool& operator=(MemoryPool&&) = delete;
 
     MemoryPtr Allocate(const size_t size);
     void Deallocate(MemoryPtr* ptr, const size_t size);

@@ -17,6 +17,11 @@ public:
 
     Texture(Device* device, const uint32_t buffer_index);
     Texture(Device* device, MemoryPool* pool, const TextureDesc& desc);
+    Texture(const Texture&) = delete;
+    Texture(Texture&&) = delete;
+
+    Texture& operator=(const Texture&) = delete;
+    Texture& operator=(Texture&&) = delete;
 
     inline const TextureDesc& GetDesc() const { return desc_; }
 

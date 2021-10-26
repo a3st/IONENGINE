@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "../lgfx/lgfx.h"
+#include "../../lgfx/lgfx.h"
 
 namespace ionengine::rendersystem {
 
@@ -13,9 +13,18 @@ class RenderPassCache {
 public:
 
     RenderPassCache(lgfx::Device* device);
+    RenderPassCache(const RenderPassCache&) = delete;
+    RenderPassCache(RenderPassCache&&) = delete;
+
+    RenderPassCache& operator=(const RenderPassCache&) = delete;
+    RenderPassCache& operator=(RenderPassCache&&) = delete;
 
     lgfx::RenderPass* GetRenderPass(const Key& key);
-    void Clear();
+
+    inline void Reset() {
+
+        render_passes_.clear();
+    }
 
 private:
 

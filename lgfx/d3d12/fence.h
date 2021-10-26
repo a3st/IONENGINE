@@ -15,6 +15,11 @@ friend class Device;
 public:
 
     Fence(Device* device, const uint64_t initial_value);
+    Fence(const Fence&) = delete;
+    Fence(Fence&&) = delete;
+
+    Fence& operator=(const Fence&) = delete;
+    Fence& operator=(Fence&&) = delete;
 
     uint64_t GetCompletedValue() const;
     void Signal(const uint64_t value);
