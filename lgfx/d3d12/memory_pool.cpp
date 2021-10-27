@@ -44,9 +44,9 @@ MemoryPool::MemoryPool(Device* device, const size_t size, const uint64_t align, 
     }
 }
 
-MemoryPtr MemoryPool::Allocate(const size_t size) {
+MemoryAllocInfo MemoryPool::Allocate(const size_t size) {
 
-    MemoryPtr ptr{};
+    MemoryAllocInfo alloc_info{};
     size_t align_size = AlignedBlockSize(size);
 
     for(uint32_t i = 0; i < static_cast<uint32_t>(heaps_.size()); ++i) {
@@ -56,32 +56,32 @@ MemoryPtr MemoryPool::Allocate(const size_t size) {
             size_t alloc_size = 0;
             for(uint64_t j = 0; j < heaps_[i]->block_count_; ++j) {
                 if(alloc_size == align_size) {
-                    std::memset(heaps_[i]->blocks_.data() + ptr.offset / kMemoryPoolDefaultBlockSize, 0x1, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
+                    std::memset(heaps_[i]->blocks_.data() + alloc_info.offset / kMemoryPoolDefaultBlockSize, 0x1, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
                     break;
                 }
 
                 if(alloc_size == 0) {
-                    ptr.heap = heaps_[i].get();
-                    ptr.offset = j * kMemoryPoolDefaultBlockSize;
+                    alloc_info.heap = heaps_[i].get();
+                    alloc_info.offset = j * kMemoryPoolDefaultBlockSize;
                 }
 
                 alloc_size = heaps_[i]->blocks_[j] == 0x0 ? alloc_size + kMemoryPoolDefaultBlockSize : alloc_size;
             }
             if(alloc_size != align_size) {
-                ptr.heap = nullptr;
-                ptr.offset = 0;
+                alloc_info.heap = nullptr;
+                alloc_info.offset = 0;
             }
         }
-        if(ptr.heap) {
+        if(alloc_info.heap) {
             break;
         }
     }
-    return ptr;
+    return alloc_info;
 }
 
-void MemoryPool::Deallocate(MemoryPtr ptr, const size_t size) {
+void MemoryPool::Deallocate(const MemoryAllocInfo& alloc_info, const size_t size) {
 
     size_t align_size = AlignedBlockSize(size);
-    std::memset(ptr.heap->blocks_.data() + ptr.offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
-    ptr.heap->offset_ = ptr.offset;
+    std::memset(alloc_info.heap->blocks_.data() + alloc_info.offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
+    alloc_info.heap->offset_ = alloc_info.offset;
 }

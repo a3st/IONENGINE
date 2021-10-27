@@ -31,7 +31,7 @@ private:
     D3D12_RESOURCE_DESC resource_desc_;
     D3D12_RESOURCE_STATES initial_state_;
 
-    MemoryPtr ptr_;
+    MemoryPtr* ptr_;
     MemoryPool* pool_;
 
     TextureDesc desc_;
