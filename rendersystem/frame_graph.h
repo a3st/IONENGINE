@@ -4,7 +4,7 @@
 
 #include "../lgfx/lgfx.h"
 
-#include "../lstd/object_pool_ptr.h"
+#include "../lstd/object_pool.h"
 
 #include "color.h"
 

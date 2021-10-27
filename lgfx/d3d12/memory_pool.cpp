@@ -79,9 +79,9 @@ MemoryPtr MemoryPool::Allocate(const size_t size) {
     return ptr;
 }
 
-void MemoryPool::Deallocate(MemoryPtr* ptr, const size_t size) {
+void MemoryPool::Deallocate(MemoryPtr ptr, const size_t size) {
 
     size_t align_size = AlignedBlockSize(size);
-    std::memset(ptr->heap->blocks_.data() + ptr->offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
-    ptr->heap->offset_ = ptr->offset;
+    std::memset(ptr.heap->blocks_.data() + ptr.offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
+    ptr.heap->offset_ = ptr.offset;
 }

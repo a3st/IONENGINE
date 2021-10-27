@@ -8,5 +8,6 @@
 #include <memory>
 #include <type_traits>
 #include <span>
+#include <functional>
 
 #include "cxx_helpers.h"

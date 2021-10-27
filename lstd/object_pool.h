@@ -38,7 +38,7 @@ public:
         return *this;
     }
 
-    T* acquire() {
+    T* construct() {
 
         std::lock_guard lock(mutex_);
 
@@ -51,7 +51,7 @@ public:
         return ret;
     }
 
-    void release(T* object) {
+    void destroy(T* object) {
 
         std::lock_guard lock(mutex_);
 
@@ -67,5 +67,20 @@ private:
 
     std::mutex mutex_;
 };
+
+template<class T>
+inline void pooled_object_deleter(object_pool<T>* pool, T* ptr) {
+
+    pool->destroy(ptr);
+}
+
+template<class T>
+using unique_object_ptr = std::unique_ptr<T, std::function<void(T*)>>;
+
+template<class T>
+inline unique_object_ptr<T> make_unique_object_ptr(object_pool<T>* pool) {
+    
+    return unique_object_ptr<T>(pool->construct(), [pool](T* ptr) { pooled_object_deleter(pool, ptr); });
+}
 
 }

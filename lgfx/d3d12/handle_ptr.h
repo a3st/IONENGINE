@@ -7,6 +7,7 @@
 namespace lgfx {
 
 struct HANDLE_deleter {
+    
     void operator()(HANDLE handle) {
 
         CloseHandle(handle);

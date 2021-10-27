@@ -59,7 +59,7 @@ public:
     MemoryPool& operator=(MemoryPool&&) = delete;
 
     MemoryPtr Allocate(const size_t size);
-    void Deallocate(MemoryPtr* ptr, const size_t size);
+    void Deallocate(MemoryPtr ptr, const size_t size);
 
     inline MemoryType GetType() const { return type_; }
     inline MemoryFlags GetFlags() const { return flags_; }
@@ -73,5 +73,17 @@ private:
 
     std::vector<std::unique_ptr<MemoryHeap>> heaps_;
 };
+
+inline void PooledMemoryDeleter(MemoryPool* pool, MemoryPtr ptr, const size_t size) {
+
+    pool->Deallocate(ptr, size);
+}
+
+using UniqueMemoryPtr = std::unique_ptr<std::remove_pointer<MemoryPtr>::type, std::function<void(MemoryPtr)>>;
+
+inline UniqueMemoryPtr MakeUniqueMemoryPtr(MemoryPool* pool, const size_t size) {
+    
+    return UniqueMemoryPtr(pool->Allocate(size), [pool, size](MemoryPtr ptr) { PooledMemoryDeleter(pool, ptr, size); });
+}
 
 }
