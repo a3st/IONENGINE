@@ -24,26 +24,20 @@ public:
     DescriptorHeap& operator=(const DescriptorHeap&) = delete;
     DescriptorHeap& operator=(DescriptorHeap&&) = delete;
 
+    inline size_t GetHeapSize() const { return heap_size_; }
+
 private:
 
     ComPtr<ID3D12DescriptorHeap> heap_;
-
     size_t heap_size_;
-
     uint64_t offset_;
-
     std::vector<uint8_t> descriptors_;
 };
 
-struct DescriptorPtr {
+struct DescriptorAllocInfo {
 
     DescriptorHeap* heap;
     uint32_t offset;
-
-    inline bool operator!() const {
-        
-        return !heap;
-    }
 };
 
 class DescriptorPool {
@@ -60,14 +54,13 @@ public:
     inline DescriptorType GetType() const { return type_; }
     inline DescriptorFlags GetFlags() const { return flags_; }
 
-    DescriptorPtr Allocate();
-    void Deallocate(DescriptorPtr* ptr);
+    DescriptorAllocInfo Allocate();
+    void Deallocate(const DescriptorAllocInfo& alloc_info);
 
 private:
 
     DescriptorType type_;
     DescriptorFlags flags_;
-
     std::vector<std::unique_ptr<DescriptorHeap>> heaps_;
 };
 

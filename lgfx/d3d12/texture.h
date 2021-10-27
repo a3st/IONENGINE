@@ -17,6 +17,7 @@ public:
 
     Texture(Device* device, const uint32_t buffer_index);
     Texture(Device* device, MemoryPool* pool, const TextureDesc& desc);
+    ~Texture();
     Texture(const Texture&) = delete;
     Texture(Texture&&) = delete;
 
@@ -31,7 +32,7 @@ private:
     D3D12_RESOURCE_DESC resource_desc_;
     D3D12_RESOURCE_STATES initial_state_;
 
-    MemoryPtr* ptr_;
+    MemoryAllocInfo alloc_info_;
     MemoryPool* pool_;
 
     TextureDesc desc_;

@@ -33,6 +33,8 @@ private:
     lgfx::Device device_;
     FrameGraph frame_graph_;
 
+    lgfx::DescriptorPool frame_descriptor_pool_;
+
     struct {
         std::vector<std::unique_ptr<lgfx::Texture>> textures;
         std::vector<std::unique_ptr<lgfx::TextureView>> texture_views;
@@ -41,8 +43,6 @@ private:
     } frame_resources_;
 
     uint32_t frame_index_;
-
-    lgfx::DescriptorPool frame_descriptor_pool_;
 };
 
 }

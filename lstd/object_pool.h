@@ -16,8 +16,17 @@ public:
     template<class... Args>
     object_pool(const size_t size, Args&&... args) : size_(size) {
 
-        for(uint32_t i = 0; i < size; ++i) {
+        for(size_t i = 0; i < size_; ++i) {
             objects_.push(new T(std::forward<Args>(args)...));
+        }
+    }
+
+    ~object_pool() {
+
+        for(size_t i = 0; i < size_; ++i) {
+            T* ret = objects_.top();
+            objects_.pop();
+            delete ret;
         }
     }
 
@@ -40,8 +49,6 @@ public:
 
     T* construct() {
 
-        std::lock_guard lock(mutex_);
-
         if(objects_.empty()) {
             throw std::runtime_error("object_pool acquire is error");
         }
@@ -53,8 +60,6 @@ public:
 
     void destroy(T* object) {
 
-        std::lock_guard lock(mutex_);
-
         objects_.push(object);
     }
 
@@ -64,23 +69,6 @@ private:
 
     std::stack<T*> objects_;
     size_t size_;
-
-    std::mutex mutex_;
 };
-
-template<class T>
-inline void pooled_object_deleter(object_pool<T>* pool, T* ptr) {
-
-    pool->destroy(ptr);
-}
-
-template<class T>
-using unique_object_ptr = std::unique_ptr<T, std::function<void(T*)>>;
-
-template<class T>
-inline unique_object_ptr<T> make_unique_object_ptr(object_pool<T>* pool) {
-    
-    return unique_object_ptr<T>(pool->construct(), [pool](T* ptr) { pooled_object_deleter(pool, ptr); });
-}
 
 }

@@ -249,12 +249,24 @@ struct RenderPassColorDesc {
 
     inline bool operator<(const RenderPassColorDesc& rhs) const {
         
-        return format < rhs.format || load_op < rhs.load_op || store_op < rhs.store_op;
+        if(load_op != rhs.load_op) {
+            return load_op < rhs.load_op;
+        }
+        if(store_op != rhs.store_op) {
+            return store_op < rhs.store_op;
+        }
+        return format < rhs.format;
     }
 
     inline bool operator>(const RenderPassColorDesc& rhs) const {
         
-        return format > rhs.format || load_op > rhs.load_op || store_op > rhs.store_op;
+        if(load_op != rhs.load_op) {
+            return load_op > rhs.load_op;
+        }
+        if(store_op != rhs.store_op) {
+            return store_op > rhs.store_op;
+        }
+        return format > rhs.format;
     }
 };
 
@@ -278,12 +290,36 @@ struct RenderPassDepthStencilDesc {
 
     inline bool operator<(const RenderPassDepthStencilDesc& rhs) const {
         
-        return format < rhs.format && depth_load_op < rhs.depth_load_op || depth_store_op < rhs.depth_store_op || stencil_load_op < rhs.stencil_load_op || stencil_store_op < rhs.stencil_store_op;
+        if(depth_load_op != rhs.depth_load_op) {
+            return depth_load_op < rhs.depth_load_op;
+        }
+        if(depth_store_op != rhs.depth_store_op) {
+            return depth_store_op < rhs.depth_store_op;
+        }
+        if(stencil_load_op != rhs.stencil_load_op) {
+            return stencil_load_op < rhs.stencil_load_op;
+        }
+        if(stencil_store_op != rhs.stencil_store_op) {
+            return stencil_store_op < rhs.stencil_store_op;
+        }
+        return format < rhs.format;
     }
 
     inline bool operator>(const RenderPassDepthStencilDesc& rhs) const {
         
-        return format > rhs.format && depth_load_op > rhs.depth_load_op || depth_store_op > rhs.depth_store_op || stencil_load_op > rhs.stencil_load_op || stencil_store_op > rhs.stencil_store_op;
+        if(depth_load_op != rhs.depth_load_op) {
+            return depth_load_op > rhs.depth_load_op;
+        }
+        if(depth_store_op != rhs.depth_store_op) {
+            return depth_store_op > rhs.depth_store_op;
+        }
+        if(stencil_load_op != rhs.stencil_load_op) {
+            return stencil_load_op > rhs.stencil_load_op;
+        }
+        if(stencil_store_op != rhs.stencil_store_op) {
+            return stencil_store_op > rhs.stencil_store_op;
+        }
+        return format > rhs.format;
     }
 };
 
@@ -305,12 +341,24 @@ struct RenderPassDesc {
 
     inline bool operator<(const RenderPassDesc& rhs) const {
         
-        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs < rhs; }) || depth_stencil < rhs.depth_stencil || sample_count < rhs.sample_count;
+        if(depth_stencil != rhs.depth_stencil) {
+            return depth_stencil < rhs.depth_stencil;
+        }
+        if(sample_count != rhs.sample_count) {
+            return sample_count < rhs.sample_count;
+        }
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs < rhs; });
     }
 
     inline bool operator>(const RenderPassDesc& rhs) const {
         
-        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs > rhs; }) || depth_stencil > rhs.depth_stencil || sample_count > rhs.sample_count;
+        if(depth_stencil != rhs.depth_stencil) {
+            return depth_stencil > rhs.depth_stencil;
+        }
+        if(sample_count != rhs.sample_count) {
+            return sample_count > rhs.sample_count;
+        }
+        return std::equal(colors.begin(), colors.end(), rhs.colors.begin(), [](auto& lhs, auto& rhs) -> bool { return lhs > rhs; });
     }
 };
 

@@ -7,9 +7,9 @@
 
 using namespace lgfx;
 
-DescriptorPtr TextureView::CreateRenderTarget(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc) {
+DescriptorAllocInfo TextureView::CreateRenderTarget(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc) {
 
-    DescriptorPtr ptr = pool->Allocate();
+    DescriptorAllocInfo alloc_info = pool->Allocate();
 
     D3D12_RENDER_TARGET_VIEW_DESC view_desc{};
     view_desc.Format = texture->resource_desc_.Format;
@@ -23,15 +23,20 @@ DescriptorPtr TextureView::CreateRenderTarget(Device* device, DescriptorPool* po
         }
     }
 
-    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { ptr.heap->heap_->GetCPUDescriptorHandleForHeapStart().ptr + ptr.offset * device->rtv_descriptor_offset_ };
+    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { alloc_info.heap->heap_->GetCPUDescriptorHandleForHeapStart().ptr + alloc_info.offset * device->rtv_descriptor_offset_ };
     device->device_->CreateRenderTargetView(texture->resource_.Get(), &view_desc, cpu_handle);
-    return ptr;
+    return alloc_info;
 }
 
 TextureView::TextureView(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc) : pool_(pool), texture_(texture), view_desc_(desc) {
 
     TextureFlags flags = texture->GetDesc().flags;
     if(flags & TextureFlags::kRenderTarget) {
-        ptr_ = CreateRenderTarget(device, pool, texture, desc);
+        alloc_info_ = CreateRenderTarget(device, pool_, texture_, view_desc_);
     }
+}
+
+TextureView::~TextureView() {
+
+    pool_->Deallocate(alloc_info_);
 }

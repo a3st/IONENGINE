@@ -10,9 +10,12 @@ namespace lgfx {
 
 class TextureView {
 
+friend class CommandBuffer;
+
 public:
 
     TextureView(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc);
+    ~TextureView();
     TextureView(const TextureView&) = delete;
     TextureView(TextureView&&) = delete;
 
@@ -21,16 +24,15 @@ public:
 
     inline Texture* GetTexture() const { return texture_; }
     inline const TextureViewDesc& GetViewDesc() const { return view_desc_; }
-    inline const DescriptorPtr& GetDescriptorPtr() const { return ptr_; }
 
 private:
 
+    DescriptorAllocInfo CreateRenderTarget(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc);
+
     DescriptorPool* pool_;
     Texture* texture_;
-    DescriptorPtr ptr_;
+    DescriptorAllocInfo alloc_info_;
     TextureViewDesc view_desc_;
-
-    DescriptorPtr CreateRenderTarget(Device* device, DescriptorPool* pool, Texture* texture, const TextureViewDesc& desc);
 };
 
 }

@@ -24,15 +24,15 @@ public:
     MemoryHeap& operator=(const MemoryHeap&) = delete;
     MemoryHeap& operator=(MemoryHeap&&) = delete;
 
+    inline size_t GetHeapSize() const { return heap_size_; }
+    inline uint64_t GetBlockCount() const { return block_count_; }
+
 private:
 
     ComPtr<ID3D12Heap> heap_;
-
     size_t heap_size_;
-
     uint64_t block_count_;
     std::vector<uint8_t> blocks_;
-
     uint64_t offset_;
 };
 
@@ -40,11 +40,7 @@ struct MemoryAllocInfo {
 
     MemoryHeap* heap;
     uint64_t offset;
-
-    inline bool operator!() const {
-        
-        return !heap;
-    }
+    size_t size;
 };
 
 class MemoryPool {
@@ -59,18 +55,22 @@ public:
     MemoryPool& operator=(MemoryPool&&) = delete;
 
     MemoryAllocInfo Allocate(const size_t size);
-    void Deallocate(const MemoryAllocInfo& alloc_info, const size_t size);
+    void Deallocate(const MemoryAllocInfo& alloc_info);
 
     inline MemoryType GetType() const { return type_; }
     inline MemoryFlags GetFlags() const { return flags_; }
 
 private:
 
-    size_t AlignedBlockSize(const size_t size) const;
+    inline size_t AlignedBlockSize(const size_t size) const {
+
+        return size < kMemoryPoolDefaultBlockSize ? 
+            kMemoryPoolDefaultBlockSize : (size % kMemoryPoolDefaultBlockSize) > 0 ?
+                (size / kMemoryPoolDefaultBlockSize + 1) * kMemoryPoolDefaultBlockSize : size;
+    }
 
     MemoryType type_;
     MemoryFlags flags_;
-
     std::vector<std::unique_ptr<MemoryHeap>> heaps_;
 };
 

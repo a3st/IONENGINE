@@ -34,9 +34,9 @@ DescriptorPool::DescriptorPool(Device* device, const size_t size, const Descript
     }
 }
 
-DescriptorPtr DescriptorPool::Allocate() {
+DescriptorAllocInfo DescriptorPool::Allocate() {
 
-    DescriptorPtr ptr{};
+    DescriptorAllocInfo alloc_info{};
 
     for(uint32_t i = 0; i < static_cast<uint32_t>(heaps_.size()); ++i) {
         if(heaps_[i]->offset_ > heaps_[i]->heap_size_) {
@@ -44,23 +44,27 @@ DescriptorPtr DescriptorPool::Allocate() {
         } else {
             for(uint32_t j = 0; j < heaps_[i]->heap_size_; ++j) {
                 if(heaps_[i]->descriptors_[j] == 0x0) {
-                    ptr.heap = heaps_[i].get();
-                    ptr.offset = j;
+                    alloc_info.heap = heaps_[i].get();
+                    alloc_info.offset = j;
                     heaps_[i]->descriptors_[j] = 0x1;
                     heaps_[i]->offset_ = j + 1;
                     break;
                 }
             }
         }
-        if(ptr.heap) {
+        if(alloc_info.heap) {
             break;
         }
     }
-    return ptr;
+
+    if(!alloc_info.heap) {
+        throw std::runtime_error("Descriptor Pool error");
+    }
+    return alloc_info;
 }
 
-void DescriptorPool::Deallocate(DescriptorPtr* ptr) {
+void DescriptorPool::Deallocate(const DescriptorAllocInfo& alloc_info) {
 
-    ptr->heap->descriptors_[ptr->offset] = 0x0;
-    ptr->heap->offset_ = ptr->offset;
+    alloc_info.heap->descriptors_[alloc_info.offset] = 0x0;
+    alloc_info.heap->offset_ = alloc_info.offset;
 }

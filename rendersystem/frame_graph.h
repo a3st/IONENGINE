@@ -32,6 +32,7 @@ enum class FrameGraphResourceOp {
 
 class FrameGraphResource {
 
+friend class FrameGraph;
 friend class FrameGraphBuilder;
 
 public:
@@ -53,8 +54,11 @@ private:
 
     lgfx::Texture* texture_;
     lgfx::TextureView* texture_view_;
+    lgfx::MemoryState memory_state_;
 
     FrameGraphResourceType type_;
+
+    bool presentable;
 };
 
 enum class FrameGraphTaskType {
@@ -66,7 +70,8 @@ enum class FrameGraphTaskType {
 
 class FrameGraphTask {
 
-friend class FrameGraphTaskCache;
+friend class FrameGraph;
+friend class FrameGraphBuilder;
 
 public:
 
@@ -102,6 +107,7 @@ struct FrameGraphResourceDesc {
     lgfx::TextureFlags flags;
     lgfx::Texture* texture;
     lgfx::TextureView* texture_view;
+    bool presentable;
 };
 
 class FrameGraphBuilder {
@@ -113,8 +119,8 @@ public:
         TextureViewCache* texture_view_cache, 
         lstd::object_pool<FrameGraphResource>* resource_pool, 
         lstd::object_pool<FrameGraphTask>* task_pool,
-        std::vector<lstd::unique_object_ptr<FrameGraphResource>>& resources,
-        std::vector<lstd::unique_object_ptr<FrameGraphTask>>& tasks);
+        std::vector<FrameGraphResource*>& resources,
+        std::vector<FrameGraphTask*>& tasks);
 
     FrameGraphResource* Create(const FrameGraphResourceDesc& desc);
     void Read(FrameGraphResource* resource);
@@ -127,14 +133,16 @@ public:
 
 private:
 
+    lgfx::RenderPassLoadOp FrameGraphResourceOpTo(const FrameGraphResourceOp op);
+
     TextureCache* texture_cache_;
     TextureViewCache* texture_view_cache_;
 
     lstd::object_pool<FrameGraphResource>* resource_pool_;
     lstd::object_pool<FrameGraphTask>* task_pool_;
 
-    std::vector<lstd::unique_object_ptr<FrameGraphResource>>& resources_;
-    std::vector<lstd::unique_object_ptr<FrameGraphTask>>& tasks_;
+    std::vector<FrameGraphResource*>& resources_;
+    std::vector<FrameGraphTask*>& tasks_;
 
     FrameGraphTask* task_;
 };
@@ -166,8 +174,6 @@ public:
 
     void Reset();
 
-    void Flush();
-
 private:
 
     lgfx::Device* device_;
@@ -182,8 +188,8 @@ private:
     lstd::object_pool<FrameGraphResource> resource_pool;
     lstd::object_pool<FrameGraphTask> task_pool;
 
-    std::vector<lstd::unique_object_ptr<FrameGraphResource>> resources_;
-    std::vector<lstd::unique_object_ptr<FrameGraphTask>> tasks_;
+    std::vector<FrameGraphResource*> resources_;
+    std::vector<FrameGraphTask*> tasks_;
 };
 
 }

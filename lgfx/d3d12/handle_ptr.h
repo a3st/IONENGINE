@@ -14,6 +14,6 @@ struct HANDLE_deleter {
     }
 };
 
-typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, HANDLE_deleter> UniqueHANDLE;
+using UniqueHANDLE = std::unique_ptr<std::remove_pointer<HANDLE>::type, HANDLE_deleter>;
 
 }

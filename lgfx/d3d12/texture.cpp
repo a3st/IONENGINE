@@ -37,7 +37,7 @@ Texture::Texture(Device* device, MemoryPool* pool, const TextureDesc& desc) :
     } else if(desc.flags & TextureFlags::kDepthStencil) {
         resource_desc_.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
         resource_desc_.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        initial_state_ = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+        initial_state_ = D3D12_RESOURCE_STATE_GENERIC_READ;
     } else if(desc.flags & TextureFlags::kUnorderedAccess) {
         resource_desc_.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
         resource_desc_.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
@@ -46,11 +46,12 @@ Texture::Texture(Device* device, MemoryPool* pool, const TextureDesc& desc) :
     }
 
     D3D12_RESOURCE_ALLOCATION_INFO alloc_info = device->device_->GetResourceAllocationInfo(0, 1, &resource_desc_);
-    ptr_ = pool->Allocate(alloc_info.SizeInBytes);
-
-    if(!ptr_) {
-        throw std::runtime_error("Texture allocation error!");
-    }
+    alloc_info_ = pool->Allocate(alloc_info.SizeInBytes);
     
-    THROW_IF_FAILED(device->device_->CreatePlacedResource(ptr_.heap->heap_.Get(), ptr_.offset, &resource_desc_, initial_state_, nullptr, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
+    THROW_IF_FAILED(device->device_->CreatePlacedResource(alloc_info_.heap->heap_.Get(), alloc_info_.offset, &resource_desc_, initial_state_, nullptr, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
+}
+
+Texture::~Texture() {
+
+    pool_->Deallocate(alloc_info_);
 }

@@ -7,13 +7,6 @@
 
 using namespace lgfx;
 
-size_t MemoryPool::AlignedBlockSize(const size_t size) const {
-
-    return size < kMemoryPoolDefaultBlockSize ? 
-        kMemoryPoolDefaultBlockSize : (size % kMemoryPoolDefaultBlockSize) > 0 ?
-            ((size / kMemoryPoolDefaultBlockSize) + 1) * kMemoryPoolDefaultBlockSize : size;
-}
-
 MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType type, const MemoryFlags flags) {
 
     D3D12_HEAP_DESC heap_desc{};
@@ -63,6 +56,7 @@ MemoryAllocInfo MemoryPool::Allocate(const size_t size) {
                 if(alloc_size == 0) {
                     alloc_info.heap = heaps_[i].get();
                     alloc_info.offset = j * kMemoryPoolDefaultBlockSize;
+                    alloc_info.size = align_size;
                 }
 
                 alloc_size = heaps_[i]->blocks_[j] == 0x0 ? alloc_size + kMemoryPoolDefaultBlockSize : alloc_size;
@@ -70,18 +64,23 @@ MemoryAllocInfo MemoryPool::Allocate(const size_t size) {
             if(alloc_size != align_size) {
                 alloc_info.heap = nullptr;
                 alloc_info.offset = 0;
+                alloc_info.size = 0;
             }
         }
         if(alloc_info.heap) {
             break;
         }
     }
+
+    if(!alloc_info.heap) {
+        throw std::runtime_error("Memory Pool error");
+    }
+
     return alloc_info;
 }
 
-void MemoryPool::Deallocate(const MemoryAllocInfo& alloc_info, const size_t size) {
+void MemoryPool::Deallocate(const MemoryAllocInfo& alloc_info) {
 
-    size_t align_size = AlignedBlockSize(size);
-    std::memset(alloc_info.heap->blocks_.data() + alloc_info.offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
+    std::memset(alloc_info.heap->blocks_.data() + alloc_info.offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * alloc_info.size / kMemoryPoolDefaultBlockSize);
     alloc_info.heap->offset_ = alloc_info.offset;
 }
