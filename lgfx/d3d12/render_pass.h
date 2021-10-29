@@ -20,7 +20,6 @@ public:
     RenderPass& operator=(const RenderPass&) = delete;
     RenderPass& operator=(RenderPass&&) = delete;
 
-
     inline const RenderPassDesc& GetDesc() const { return desc_; }
 
 private:

@@ -18,9 +18,11 @@ class Device {
     
 friend class Fence;
 friend class Texture;
+friend class Buffer;
 friend class MemoryHeap;
 friend class DescriptorHeap;
 friend class TextureView;
+friend class BufferView;
 friend class CommandBuffer;
 
 public:

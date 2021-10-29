@@ -13,6 +13,7 @@ class DescriptorHeap {
 
 friend class DescriptorPool;
 friend class TextureView;
+friend class BufferView;
 friend class CommandBuffer;
 
 public:

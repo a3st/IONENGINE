@@ -17,6 +17,9 @@ add_library(lgfx-d3d12
     d3d12/conversion.cpp
     d3d12/texture.cpp
     d3d12/texture_view.cpp
+    d3d12/buffer.cpp
+    d3d12/buffer_view.cpp
+    d3d12/pipeline.cpp
     d3d12/command_buffer.cpp
     d3d12/frame_buffer.cpp
     d3d12/render_pass.cpp

@@ -7,8 +7,10 @@ namespace lgfx {
 class Device;
 class Fence;
 class TextureView;
+class BufferView;
 class MemoryPool;
 class Texture;
+class Buffer;
 class RenderPass;
 class FrameBuffer;
 
@@ -198,6 +200,18 @@ struct TextureViewDesc {
         
         return dimension > rhs.dimension || base_mip_level > rhs.base_mip_level || mip_level_count > rhs.mip_level_count || base_array_layer > rhs.base_array_layer || array_layer_count > rhs.array_layer_count;
     }
+};
+
+struct BufferDesc {
+
+    size_t size;
+    BufferFlags flags;
+};
+
+struct BufferViewDesc {
+
+    Format index_format;
+    uint32_t stride;
 };
 
 struct TextureDesc {

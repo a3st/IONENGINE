@@ -53,5 +53,7 @@ Texture::Texture(Device* device, MemoryPool* pool, const TextureDesc& desc) :
 
 Texture::~Texture() {
 
-    pool_->Deallocate(alloc_info_);
+    if(pool_) {
+        pool_->Deallocate(alloc_info_);
+    }
 }

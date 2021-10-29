@@ -14,6 +14,7 @@ class MemoryHeap {
 
 friend class MemoryPool;
 friend class Texture;
+friend class Buffer;
 
 public:
 
