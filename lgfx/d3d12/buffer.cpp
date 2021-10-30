@@ -1,4 +1,4 @@
-
+// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
 #include "../precompiled.h"
 #include "buffer.h"
@@ -6,7 +6,8 @@
 
 using namespace lgfx;
 
-Buffer::Buffer(Device* device, MemoryPool* pool, const BufferDesc& desc) : pool_(pool), desc_(desc) {
+Buffer::Buffer(Device* device, MemoryPool* pool, const BufferDesc& desc) : 
+    pool_(pool), desc_(desc), resource_desc_{} {
 
     resource_desc_.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     resource_desc_.Width = desc.size;
@@ -19,10 +20,20 @@ Buffer::Buffer(Device* device, MemoryPool* pool, const BufferDesc& desc) : pool_
         resource_desc_.Width = (desc.size + 255) & ~255;
     }
 
-    initial_state_ = D3D12_RESOURCE_STATE_GENERIC_READ;
+    switch(pool_->GetType()) {
+        case MemoryType::kDefault: {
+            initial_state_ = D3D12_RESOURCE_STATE_COMMON;
+            break;
+        }
+        case MemoryType::kReadBack:
+        case MemoryType::kUpload: {
+            initial_state_ = D3D12_RESOURCE_STATE_GENERIC_READ;
+            break;
+        }
+    }
 
     D3D12_RESOURCE_ALLOCATION_INFO alloc_info = device->device_->GetResourceAllocationInfo(0, 1, &resource_desc_);
-    alloc_info_ = pool->Allocate(alloc_info.SizeInBytes);
+    alloc_info_ = pool_->Allocate(alloc_info.SizeInBytes);
     
     THROW_IF_FAILED(device->device_->CreatePlacedResource(alloc_info_.heap->heap_.Get(), alloc_info_.offset, &resource_desc_, initial_state_, nullptr, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
 }

@@ -146,7 +146,7 @@ FrameGraphTask* FrameGraph::AddTask(const FrameGraphTaskType type, const std::fu
 
     command_buffer_->BeginRenderPass(render_pass, frame_buffer, clear_desc);
 
-    FrameGraphContext context;
+    FrameGraphContext context(command_buffer_.get());
     exec_func(&context);
 
     command_buffer_->EndRenderPass();

@@ -42,6 +42,11 @@ private:
         std::vector<uint64_t> fence_values;
     } frame_resources_;
 
+    std::vector<std::unique_ptr<lgfx::DescriptorLayout>> descriptor_layouts_;
+
+    std::unique_ptr<lgfx::Pipeline> pipeline_;
+    std::unique_ptr<lgfx::RenderPass> render_pass_;
+
     uint32_t frame_index_;
 };
 

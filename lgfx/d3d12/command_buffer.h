@@ -20,6 +20,7 @@ public:
     CommandBuffer& operator=(const CommandBuffer&) = delete;
     CommandBuffer& operator=(CommandBuffer&&) = delete;
 
+    void BindPipeline(Pipeline* pipeline);
     void SetViewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height);
     void SetScissorRect(const uint32_t left, const uint32_t top, const uint32_t right, const uint32_t bottom);
     void BeginRenderPass(RenderPass* render_pass, FrameBuffer* frame_buffer, const ClearValueDesc& desc);

@@ -7,6 +7,7 @@
 #include "texture_view.h"
 #include "render_pass.h"
 #include "frame_buffer.h"
+#include "pipeline.h"
 #include "conversion.h"
 
 using namespace lgfx;
@@ -17,6 +18,11 @@ CommandBuffer::CommandBuffer(Device* device, const CommandBufferType type) : dev
     THROW_IF_FAILED(device->device_->CreateCommandAllocator(list_type, __uuidof(ID3D12CommandAllocator), reinterpret_cast<void**>(allocator_.GetAddressOf())));
     THROW_IF_FAILED(device->device_->CreateCommandList(0, list_type, allocator_.Get(), nullptr, __uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(list_.GetAddressOf())));
     THROW_IF_FAILED(list_->Close());
+}
+
+void CommandBuffer::BindPipeline(Pipeline* pipeline) {
+
+    list_->SetPipelineState(pipeline->pipeline_state_.Get());
 }
 
 void CommandBuffer::SetViewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height) {

@@ -13,6 +13,14 @@ class Texture;
 class Buffer;
 class RenderPass;
 class FrameBuffer;
+class Pipeline;
+class DescriptorLayout;
+
+enum class PipelineType {
+
+    kGraphics,
+    kCompute
+};
 
 enum class MemoryType {
 
@@ -53,7 +61,18 @@ enum class TextureAddressMode {
     kClamp
 };
 
-enum class BufferFlags {
+enum class ShaderModuleType {
+    
+    kVertex,
+    kPixel,
+    kGeometry,
+    kHull,
+    kDomain,
+    kCompute,
+    kAll
+};
+
+enum class BufferFlags : uint32_t {
 
     kUnorderedAccess = 1 << 0,
     kConstantBuffer = 1 << 1,
@@ -65,7 +84,7 @@ enum class BufferFlags {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(BufferFlags)
 
-enum class TextureFlags {
+enum class TextureFlags : uint32_t {
 
     kRenderTarget = 1 << 0,
     kDepthStencil = 1 << 1,
@@ -92,7 +111,9 @@ enum class DescriptorType {
     kSampler,
     kRenderTarget,
     kDepthStencil,
-    kShaderResource
+    kShaderResource,
+    kConstantBuffer,
+    kUnorderedAccess
 };
 
 enum class DescriptorFlags {
@@ -160,6 +181,48 @@ enum class MemoryState {
     kGenericRead
 };
 
+enum class StencilOp {
+
+    kKeep,
+    kZero,
+    kReplace,
+    kIncrSat,
+    kDecrSat,
+    kInvert,
+    kIncr,
+    kDecr
+};
+
+enum class Blend {
+
+    kZero,
+    kOne,
+    kSrcAlpha,
+    kInvSrcAlpha
+};
+
+enum class BlendOp {
+
+    kAdd,
+    kSubtract,
+    kRevSubtract,
+    kMin,
+    kMax
+};
+
+enum class FillMode {
+
+    kWireframe,
+    kSolid
+};
+
+enum class CullMode {
+
+    kNone,
+    kFront,
+    kBack
+};
+
 enum class RenderPassLoadOp {
 
     kLoad,
@@ -212,6 +275,81 @@ struct BufferViewDesc {
 
     Format index_format;
     uint32_t stride;
+};
+
+struct DescriptorLayoutBinding {
+
+    DescriptorType type;
+    uint32_t slot;
+    uint32_t space;
+    uint32_t count;
+    ShaderModuleType shader_visible;
+};
+
+struct InputLayoutDesc {
+
+    std::string_view semantic;
+    uint32_t index;
+    Format format = Format::kUnknown;
+    uint32_t slot;
+    uint32_t stride;
+};
+
+struct BlendDesc {
+
+    bool blend_enable = false;
+    Blend blend_src = Blend::kOne;
+    Blend blend_dest = Blend::kZero;
+    BlendOp blend_op = BlendOp::kAdd;
+    Blend blend_src_alpha = Blend::kOne;
+    Blend blend_dest_alpha = Blend::kZero;
+    BlendOp blend_op_alpha = BlendOp::kAdd;
+};
+
+struct StencilOpDesc {
+
+    StencilOp fail_op = StencilOp::kKeep;
+    StencilOp depth_fail_op = StencilOp::kKeep;
+    StencilOp pass_op = StencilOp::kKeep;
+    ComparisonFunc func = ComparisonFunc::kAlways;
+};
+
+struct DepthStencilDesc {
+
+    bool depth_test_enable = false;
+    ComparisonFunc depth_func = ComparisonFunc::kLess;
+    bool depth_write_enable = true;
+    bool depth_bounds_test_enable = false;
+    bool stencil_enable = false;
+    uint8_t stencil_read_mask = 0xff;
+    uint8_t stencil_write_mask = 0xff;
+    StencilOpDesc front_face;
+    StencilOpDesc back_face;
+};
+
+struct RasterizerDesc {
+
+    FillMode fill_mode = FillMode::kSolid;
+    CullMode cull_mode = CullMode::kBack;
+    int32_t depth_bias = 0;
+};
+
+struct ShaderModuleDesc {
+
+    ShaderModuleType type;
+    std::span<std::byte> shader_code;
+};
+
+struct PipelineDesc {
+
+    PipelineType type;
+    DescriptorLayout* layout;
+    std::span<InputLayoutDesc> inputs;
+    std::span<ShaderModuleDesc> shaders;
+    RasterizerDesc rasterizer;
+    DepthStencilDesc depth_stencil;
+    BlendDesc blend;
+    RenderPass* render_pass;
 };
 
 struct TextureDesc {

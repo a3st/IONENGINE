@@ -151,9 +151,15 @@ class FrameGraphContext {
 
 public:
 
-    FrameGraphContext() {
+    FrameGraphContext(lgfx::CommandBuffer* buffer) : buffer_(buffer) {
         
     }
+
+    lgfx::CommandBuffer* GetBuffer() const { return buffer_; }
+
+private:
+
+    lgfx::CommandBuffer* buffer_;
 
 };
 

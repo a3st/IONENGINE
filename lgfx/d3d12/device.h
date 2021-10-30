@@ -24,6 +24,8 @@ friend class DescriptorHeap;
 friend class TextureView;
 friend class BufferView;
 friend class CommandBuffer;
+friend class DescriptorLayout;
+friend class Pipeline;
 
 public:
 

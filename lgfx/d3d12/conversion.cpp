@@ -27,6 +27,17 @@ D3D12_DESCRIPTOR_HEAP_TYPE ToD3D12DescriptorHeapType(const DescriptorType type) 
 	}
 }
 
+D3D12_DESCRIPTOR_RANGE_TYPE ToD3D12DescriptorRangeType(const DescriptorType type) {
+
+	switch(type) {
+		case DescriptorType::kShaderResource: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+		case DescriptorType::kSampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+		case DescriptorType::kConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+		case DescriptorType::kUnorderedAccess: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+		default: assert(false && "passed invalid argument to ToD3D12DescriptorRangeType"); return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	}
+}
+
 DXGI_FORMAT ToDXGIFormat(const Format format) {
 
 	switch(format) {
@@ -121,24 +132,24 @@ Format DXGIFormatTo(const DXGI_FORMAT format) {
 	}
 }
 
-/*D3D12_FILL_MODE gfx_to_d3d12_fill_mode(const FillMode fill_mode) {
+D3D12_FILL_MODE ToD3D12FillMode(const FillMode mode) {
 	
-	switch(fill_mode) {
+	switch(mode) {
 		case FillMode::kSolid: return D3D12_FILL_MODE_SOLID;
 		case FillMode::kWireframe: return D3D12_FILL_MODE_WIREFRAME;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_fill_mode"); return D3D12_FILL_MODE_SOLID;
+		default: assert(false && "passed invalid argument to ToD3D12FillMode"); return D3D12_FILL_MODE_SOLID;
 	}
 }
 
-D3D12_CULL_MODE gfx_to_d3d12_cull_mode(const CullMode cull_mode) {
+D3D12_CULL_MODE ToD3D12CullMode(const CullMode mode) {
 	
-	switch(cull_mode) {
-		case CullMode::None: return D3D12_CULL_MODE_NONE;
-		case CullMode::Back: return D3D12_CULL_MODE_BACK;
-		case CullMode::Front: return D3D12_CULL_MODE_FRONT;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_cull_mode"); return D3D12_CULL_MODE_NONE;
+	switch(mode) {
+		case CullMode::kNone: return D3D12_CULL_MODE_NONE;
+		case CullMode::kBack: return D3D12_CULL_MODE_BACK;
+		case CullMode::kFront: return D3D12_CULL_MODE_FRONT;
+		default: assert(false && "passed invalid argument to ToD3D12CullMode"); return D3D12_CULL_MODE_NONE;
 	}
-}*/
+}
 
 D3D12_COMPARISON_FUNC ToD3D12ComparisonFunc(const ComparisonFunc func) {
 	
@@ -155,73 +166,58 @@ D3D12_COMPARISON_FUNC ToD3D12ComparisonFunc(const ComparisonFunc func) {
 	}
 }
 
-/*
-D3D12_STENCIL_OP gfx_to_d3d12_stencil_op(const StencilOp stencil_op) {
+D3D12_SHADER_VISIBILITY ToD3D12ShaderVisiblity(const ShaderModuleType type) {
 	
-	switch(stencil_op) {
-		case StencilOp::Zero: return D3D12_STENCIL_OP_ZERO;
-		case StencilOp::Replace: return D3D12_STENCIL_OP_REPLACE;
-		case StencilOp::Keep: return D3D12_STENCIL_OP_KEEP;
-		case StencilOp::Invert: return D3D12_STENCIL_OP_INVERT;
-		case StencilOp::IncrSat: return D3D12_STENCIL_OP_INCR_SAT;
-		case StencilOp::Incr: return D3D12_STENCIL_OP_INCR;
-		case StencilOp::DecrSat: return D3D12_STENCIL_OP_DECR_SAT;
-		case StencilOp::Decr: return D3D12_STENCIL_OP_DECR;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_stencil_op"); return D3D12_STENCIL_OP_ZERO;
+	switch(type) {
+		case ShaderModuleType::kVertex: return D3D12_SHADER_VISIBILITY_VERTEX;
+		case ShaderModuleType::kPixel: return D3D12_SHADER_VISIBILITY_PIXEL;
+		case ShaderModuleType::kGeometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
+		case ShaderModuleType::kHull: return D3D12_SHADER_VISIBILITY_HULL;
+		case ShaderModuleType::kDomain: return D3D12_SHADER_VISIBILITY_DOMAIN;
+		case ShaderModuleType::kCompute: return D3D12_SHADER_VISIBILITY_ALL;
+		case ShaderModuleType::kAll: return D3D12_SHADER_VISIBILITY_ALL;
+		default: assert(false && "passed invalid argument to ToD3D12ShaderVisiblity"); return D3D12_SHADER_VISIBILITY_ALL;
 	}
 }
 
-D3D12_BLEND gfx_to_d3d12_blend(const Blend blend) {
+
+D3D12_STENCIL_OP ToD3D12StencilOp(const StencilOp op) {
+	
+	switch(op) {
+		case StencilOp::kZero: return D3D12_STENCIL_OP_ZERO;
+		case StencilOp::kReplace: return D3D12_STENCIL_OP_REPLACE;
+		case StencilOp::kKeep: return D3D12_STENCIL_OP_KEEP;
+		case StencilOp::kInvert: return D3D12_STENCIL_OP_INVERT;
+		case StencilOp::kIncrSat: return D3D12_STENCIL_OP_INCR_SAT;
+		case StencilOp::kIncr: return D3D12_STENCIL_OP_INCR;
+		case StencilOp::kDecrSat: return D3D12_STENCIL_OP_DECR_SAT;
+		case StencilOp::kDecr: return D3D12_STENCIL_OP_DECR;
+		default: assert(false && "passed invalid argument to ToD3D12StencilOp"); return D3D12_STENCIL_OP_ZERO;
+	}
+}
+
+D3D12_BLEND ToD3D12Blend(const Blend blend) {
 	
 	switch(blend) {
-		case Blend::Zero: return D3D12_BLEND_ZERO;
-		case Blend::One: return D3D12_BLEND_ONE;
-		case Blend::InvSrcAlpha: return D3D12_BLEND_INV_SRC_ALPHA;
-		case Blend::SrcAlpha: return D3D12_BLEND_SRC_ALPHA;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_blend"); return D3D12_BLEND_ZERO;
+		case Blend::kZero: return D3D12_BLEND_ZERO;
+		case Blend::kOne: return D3D12_BLEND_ONE;
+		case Blend::kInvSrcAlpha: return D3D12_BLEND_INV_SRC_ALPHA;
+		case Blend::kSrcAlpha: return D3D12_BLEND_SRC_ALPHA;
+		default: assert(false && "passed invalid argument to ToD3D12Blend"); return D3D12_BLEND_ZERO;
 	}
 }
 
-D3D12_BLEND_OP gfx_to_d3d12_blend_op(const BlendOp blend_op) {
+D3D12_BLEND_OP ToD3D12BlendOp(const BlendOp op) {
 	
-	switch(blend_op) {
-		case BlendOp::Add: return D3D12_BLEND_OP_ADD;
-		case BlendOp::Min: return D3D12_BLEND_OP_MIN;
-		case BlendOp::Max: return D3D12_BLEND_OP_MAX;
-		case BlendOp::RevSubtract: return D3D12_BLEND_OP_REV_SUBTRACT;
-		case BlendOp::Subtract: return D3D12_BLEND_OP_SUBTRACT;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_blend_op"); return static_cast<D3D12_BLEND_OP>(0);
+	switch(op) {
+		case BlendOp::kAdd: return D3D12_BLEND_OP_ADD;
+		case BlendOp::kMin: return D3D12_BLEND_OP_MIN;
+		case BlendOp::kMax: return D3D12_BLEND_OP_MAX;
+		case BlendOp::kRevSubtract: return D3D12_BLEND_OP_REV_SUBTRACT;
+		case BlendOp::kSubtract: return D3D12_BLEND_OP_SUBTRACT;
+		default: assert(false && "passed invalid argument to ToD3D12BlendOp"); return D3D12_BLEND_OP_ADD;
 	}
 }
-
-D3D12_SHADER_VISIBILITY gfx_to_d3d12_shader_visibility(const ShaderType shader_type) {
-	
-	switch(shader_type) {
-		case ShaderType::Vertex: return D3D12_SHADER_VISIBILITY_VERTEX;
-		case ShaderType::Pixel: return D3D12_SHADER_VISIBILITY_PIXEL;
-		case ShaderType::Geometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
-		case ShaderType::Hull: return D3D12_SHADER_VISIBILITY_HULL;
-		case ShaderType::Domain: return D3D12_SHADER_VISIBILITY_DOMAIN;
-		case ShaderType::All: return D3D12_SHADER_VISIBILITY_ALL;
-		case ShaderType::Compute: return D3D12_SHADER_VISIBILITY_ALL;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_shader_visibility"); return D3D12_SHADER_VISIBILITY_ALL;
-	}
-}
-
-D3D12_DESCRIPTOR_RANGE_TYPE gfx_to_d3d12_descriptor_range_type(const ViewType view_type) {
-	
-	switch(view_type) {
-		case ViewType::Texture:
-		case ViewType::StructuredBuffer:
-		case ViewType::Buffer: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-		case ViewType::RWTexture:
-		case ViewType::RWBuffer:
-		case ViewType::RWStructuredBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-		case ViewType::ConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-		case ViewType::Sampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_descriptor_range_type"); return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	}
-}*/
 
 D3D12_COMMAND_LIST_TYPE ToD3D12CommandListType(const CommandBufferType type) {
 	
@@ -264,19 +260,6 @@ D3D12_RESOURCE_STATES ToD3D12ResourceState(const MemoryState state) {
 	}
 }
 
-/*
-D3D12_RESOURCE_DIMENSION gfx_to_d3d12_resource_dimension(const ViewDimension view_dimension) {
-	
-	switch(view_dimension) {
-		case ViewDimension::Buffer: return D3D12_RESOURCE_DIMENSION_BUFFER;
-		case ViewDimension::Texture1D: return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
-		case ViewDimension::Texture2D: return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		case ViewDimension::Texture3D: return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_resource_dimension"); return D3D12_RESOURCE_DIMENSION_UNKNOWN;
-	}
-}
-*/
-
 D3D12_FILTER ToD3D12Filter(const Filter filter) {
 	
 	switch(filter) {
@@ -295,24 +278,6 @@ D3D12_TEXTURE_ADDRESS_MODE ToD3D12TextureAddressMode(const TextureAddressMode mo
 		default: assert(false && "passed invalid argument to ToD3D12TextureAddressMode"); return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 	}
 }
-
-/*
-D3D12_DESCRIPTOR_HEAP_TYPE gfx_to_d3d12_descriptor_heap_type(const ViewType view_type) {
-	
-	switch(view_type) {
-		case ViewType::Texture:
-		case ViewType::StructuredBuffer:
-		case ViewType::Buffer: 
-		case ViewType::RWTexture:
-		case ViewType::RWBuffer:
-		case ViewType::RWStructuredBuffer:
-		case ViewType::ConstantBuffer: return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		case ViewType::Sampler: return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-		case ViewType::RenderTarget: return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-		case ViewType::DepthStencil: return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-		default: assert(false && "passed invalid argument to gfx_to_d3d12_descriptor_heap_type"); return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	}
-}*/
 
 D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE ToD3D12RenderPassBeginType(const RenderPassLoadOp op) {
 	

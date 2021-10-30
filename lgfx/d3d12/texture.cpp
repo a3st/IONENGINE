@@ -46,7 +46,7 @@ Texture::Texture(Device* device, MemoryPool* pool, const TextureDesc& desc) :
     }
 
     D3D12_RESOURCE_ALLOCATION_INFO alloc_info = device->device_->GetResourceAllocationInfo(0, 1, &resource_desc_);
-    alloc_info_ = pool->Allocate(alloc_info.SizeInBytes);
+    alloc_info_ = pool_->Allocate(alloc_info.SizeInBytes);
     
     THROW_IF_FAILED(device->device_->CreatePlacedResource(alloc_info_.heap->heap_.Get(), alloc_info_.offset, &resource_desc_, initial_state_, nullptr, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
 }
