@@ -19,5 +19,6 @@
 #include "d3d12/buffer.h"
 #include "d3d12/descriptor_layout.h"
 #include "d3d12/pipeline.h"
+#include "d3d12/descriptor_set.h"
 
 #endif

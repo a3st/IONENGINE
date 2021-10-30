@@ -8,6 +8,8 @@
 #include "render_pass.h"
 #include "frame_buffer.h"
 #include "pipeline.h"
+#include "descriptor_set.h"
+#include "buffer_view.h"
 #include "conversion.h"
 
 using namespace lgfx;
@@ -23,6 +25,10 @@ CommandBuffer::CommandBuffer(Device* device, const CommandBufferType type) : dev
 void CommandBuffer::BindPipeline(Pipeline* pipeline) {
 
     list_->SetPipelineState(pipeline->pipeline_state_.Get());
+}
+
+void CommandBuffer::BindDescriptorSet(DescriptorSet* set) {
+
 }
 
 void CommandBuffer::SetViewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height) {
@@ -106,4 +112,24 @@ void CommandBuffer::Reset() {
 void CommandBuffer::Close() {
 
     THROW_IF_FAILED(list_->Close());
+}
+
+void CommandBuffer::DrawInstanced(uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) {
+
+    list_->DrawInstanced(vertex_count, instance_count, first_vertex, first_instance);
+}
+
+void CommandBuffer::DrawIndexed(const uint32_t index_count, const uint32_t instance_count, const uint32_t first_index, const uint32_t vertex_offset, const uint32_t first_instance) {
+    
+    list_->DrawIndexedInstanced(index_count, instance_count, first_index, vertex_offset, first_instance);
+}
+
+void CommandBuffer::SetIndexBuffer(BufferView* buffer_view) {
+    
+    list_->IASetIndexBuffer(&buffer_view->index_view_desc);
+}
+
+void CommandBuffer::SetVertexBuffer(const uint32_t slot, BufferView* buffer_view) {
+    
+    list_->IASetVertexBuffers(slot, 1, &buffer_view->vertex_view_desc);
 }

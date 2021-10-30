@@ -15,6 +15,7 @@ class RenderPass;
 class FrameBuffer;
 class Pipeline;
 class DescriptorLayout;
+class DescriptorSet;
 
 enum class PipelineType {
 

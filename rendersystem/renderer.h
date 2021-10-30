@@ -46,6 +46,7 @@ private:
 
     std::unique_ptr<lgfx::Pipeline> pipeline_;
     std::unique_ptr<lgfx::RenderPass> render_pass_;
+    std::unique_ptr<lgfx::DescriptorSet> descriptor_set_;
 
     uint32_t frame_index_;
 };

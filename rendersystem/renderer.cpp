@@ -75,6 +75,8 @@ Renderer::Renderer(platform::Window* window) :
     pipeline_desc.render_pass = render_pass_.get();
 
     pipeline_ = std::make_unique<lgfx::Pipeline>(&device_, pipeline_desc);
+
+    descriptor_set_ = std::make_unique<lgfx::DescriptorSet>(&device_);
 }
 
 void Renderer::BeginFrame() {
@@ -108,6 +110,7 @@ void Renderer::Frame() {
         [=](FrameGraphContext* context) {
             
             context->GetBuffer()->BindPipeline(pipeline_.get());
+            context->GetBuffer()->BindDescriptorSet(descriptor_set_.get());
             
         });
 

@@ -7,7 +7,7 @@
 
 namespace lgfx {
 
-const uint32_t kDescriptorPoolDefaultHeapSize = 64;
+const uint32_t kDescriptorPoolDefaultHeapSize = 8;
 
 class DescriptorHeap {
 
