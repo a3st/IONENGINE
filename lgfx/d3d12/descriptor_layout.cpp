@@ -13,8 +13,8 @@ DescriptorLayout::DescriptorLayout(Device* device, const std::span<DescriptorLay
     ranges.resize(bindings.size());
     std::vector<D3D12_ROOT_PARAMETER> parameters;
     parameters.resize(bindings.size());
+
     for(uint32_t i = 0; i < bindings.size(); ++i) {
-			
 		D3D12_DESCRIPTOR_RANGE range{};
 		range.RangeType = ToD3D12DescriptorRangeType(bindings[i].type);
 		range.NumDescriptors = bindings[i].count;
@@ -22,6 +22,8 @@ DescriptorLayout::DescriptorLayout(Device* device, const std::span<DescriptorLay
 		range.RegisterSpace = bindings[i].space;
 		range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
         ranges[i] = range;
+
+        descriptor_tables_.emplace_back(DescriptorTable { bindings[i].type, bindings[i].count, bindings[i].space });
 
         D3D12_ROOT_PARAMETER parameter{};
         parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;

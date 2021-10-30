@@ -35,6 +35,9 @@ private:
 
     lgfx::DescriptorPool frame_descriptor_pool_;
 
+    lgfx::DescriptorPool test_descriptor_pool;
+    lgfx::MemoryPool test_memory_pool;
+
     struct {
         std::vector<std::unique_ptr<lgfx::Texture>> textures;
         std::vector<std::unique_ptr<lgfx::TextureView>> texture_views;
@@ -47,6 +50,9 @@ private:
     std::unique_ptr<lgfx::Pipeline> pipeline_;
     std::unique_ptr<lgfx::RenderPass> render_pass_;
     std::unique_ptr<lgfx::DescriptorSet> descriptor_set_;
+    
+    std::unique_ptr<lgfx::BufferView> buffer_view_;
+    std::unique_ptr<lgfx::Buffer> buffer_;
 
     uint32_t frame_index_;
 };

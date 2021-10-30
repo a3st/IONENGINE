@@ -11,6 +11,7 @@ namespace lgfx {
 class BufferView {
 
 friend class CommandBuffer;
+friend class DescriptorSet;
 
 public:
 

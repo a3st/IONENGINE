@@ -7,9 +7,18 @@
 
 namespace lgfx {
 
+struct DescriptorTable {
+
+    DescriptorType type;
+    uint32_t count;
+    uint32_t slot;
+};
+
 class DescriptorLayout {
 
 friend class Pipeline;
+friend class DescriptorSet;
+friend class CommandBuffer;
 
 public:
 
@@ -18,7 +27,7 @@ public:
 private:
 
     ComPtr<ID3D12RootSignature> root_signature_;
-
+    std::vector<DescriptorTable> descriptor_tables_;
 };
 
 }

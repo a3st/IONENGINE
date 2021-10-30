@@ -10,6 +10,7 @@
 #include "pipeline.h"
 #include "descriptor_set.h"
 #include "buffer_view.h"
+#include "descriptor_layout.h"
 #include "conversion.h"
 
 using namespace lgfx;
@@ -24,11 +25,28 @@ CommandBuffer::CommandBuffer(Device* device, const CommandBufferType type) : dev
 
 void CommandBuffer::BindPipeline(Pipeline* pipeline) {
 
+    list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     list_->SetPipelineState(pipeline->pipeline_state_.Get());
 }
 
 void CommandBuffer::BindDescriptorSet(DescriptorSet* set) {
 
+    list_->SetGraphicsRootSignature(set->layout_->root_signature_.Get());
+    
+    std::array<ID3D12DescriptorHeap*, 2> heaps = { set->srv_pool_.GetHeaps()[0]->heap_.Get(), set->sampler_pool_.GetHeaps()[0]->heap_.Get() }; 
+	list_->SetDescriptorHeaps(static_cast<uint32_t>(heaps.size()), heaps.data());
+
+    for(uint32_t i = 0; i < static_cast<uint32_t>(set->update_descriptors_.size()); ++i) {
+        if(set->update_descriptors_[i].type == DescriptorType::kShaderResource || set->update_descriptors_[i].type == DescriptorType::kConstantBuffer || set->update_descriptors_[i].type == DescriptorType::kUnorderedAccess) {
+            D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle = { set->update_descriptors_[i].alloc_info.heap->heap_->GetGPUDescriptorHandleForHeapStart().ptr + set->update_descriptors_[i].alloc_info.offset * device_->srv_descriptor_offset_ };
+            list_->SetGraphicsRootDescriptorTable(set->update_descriptors_[i].index, gpu_handle);
+        } else {
+            D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle = { set->update_descriptors_[i].alloc_info.heap->heap_->GetGPUDescriptorHandleForHeapStart().ptr + set->update_descriptors_[i].alloc_info.offset * device_->sampler_descriptor_offset_ };
+            list_->SetGraphicsRootDescriptorTable(set->update_descriptors_[i].index, gpu_handle);
+        }
+    }
+
+    set->update_descriptors_.clear();
 }
 
 void CommandBuffer::SetViewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height) {

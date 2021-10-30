@@ -4,10 +4,12 @@
 #include <fstream>
 #include <vector>
 #include <array>
+#include <map>
 #include <string>
 #include <cassert>
 #include <memory>
 #include <type_traits>
+#include <algorithm>
 #include <span>
 #include <functional>
 

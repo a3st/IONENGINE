@@ -13,18 +13,39 @@ const size_t kDescriptorSetSamplerCount = 16;
 
 class DescriptorSet {
 
+friend class CommandBuffer;
+
 public:
 
-    DescriptorSet(Device* device);
+    DescriptorSet(Device* device, DescriptorLayout* layout);
+    ~DescriptorSet();
+    DescriptorSet(const DescriptorSet&) = delete;
+    DescriptorSet(DescriptorSet&&) = delete;
+
+    DescriptorSet& operator=(const DescriptorSet&) = delete;
+    DescriptorSet& operator=(DescriptorSet&&) = delete;
 
     void WriteTexture(const uint32_t slot, const uint32_t space, TextureView* texture_view);
     void WriteBuffer(const uint32_t slot, const uint32_t space, BufferView* buffer_view);
 
 private:
 
-    lgfx::DescriptorPool srv_pool;
-    lgfx::DescriptorPool sampler_pool;
+    struct Key {
+        
+        uint32_t index;
+        DescriptorType type;
+        DescriptorAllocInfo alloc_info;
+    };
 
+    Device* device_;
+    DescriptorLayout* layout_;
+
+    DescriptorPool srv_pool_;
+    DescriptorPool sampler_pool_;
+
+    std::vector<Key> update_descriptors_;
+
+    std::map<uint32_t, std::vector<Key>> descriptors_;
 };
 
 }

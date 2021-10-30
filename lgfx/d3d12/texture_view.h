@@ -11,6 +11,7 @@ namespace lgfx {
 class TextureView {
 
 friend class CommandBuffer;
+friend class DescriptorSet;
 
 public:
 

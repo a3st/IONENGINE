@@ -16,6 +16,7 @@ Buffer::Buffer(Device* device, MemoryPool* pool, const BufferDesc& desc) :
     resource_desc_.DepthOrArraySize = 1;
     resource_desc_.SampleDesc.Count = 1;
     resource_desc_.Format = DXGI_FORMAT_UNKNOWN;
+    resource_desc_.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     if(desc_.flags & BufferFlags::kConstantBuffer) {
         resource_desc_.Width = (desc.size + 255) & ~255;
     }
@@ -43,4 +44,18 @@ Buffer::~Buffer() {
     if(pool_) {
         pool_->Deallocate(alloc_info_);
     }
+}
+
+std::byte* Buffer::Map() {
+
+    std::byte* data;
+    D3D12_RANGE range{};
+    THROW_IF_FAILED(resource_->Map(0, &range, reinterpret_cast<void**>(&data)));
+    return data;
+}
+
+void Buffer::Unmap() {
+    
+    D3D12_RANGE range{};
+    resource_->Unmap(0, &range);
 }

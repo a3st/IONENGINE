@@ -7,7 +7,7 @@
 
 using namespace lgfx;
 
-Texture::Texture(Device* device, const uint32_t buffer_index) : desc_{} {
+Texture::Texture(Device* device, const uint32_t buffer_index) : desc_{}, pool_(nullptr) {
 
     THROW_IF_FAILED(device->swapchain_->GetBuffer(buffer_index, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
     resource_desc_ = resource_->GetDesc();

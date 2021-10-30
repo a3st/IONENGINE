@@ -25,6 +25,9 @@ public:
 
     inline const BufferDesc& GetDesc() const { return desc_; }
 
+    std::byte* Map();
+    void Unmap();
+
 private:
 
     ComPtr<ID3D12Resource> resource_;
