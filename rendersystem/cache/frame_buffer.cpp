@@ -15,7 +15,8 @@ lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(const Key& key) {
     if(it != frame_buffers_.end()) {
         return it->second.get();
     } else {
-        auto ret = frame_buffers_.emplace(key, std::make_unique<lgfx::FrameBuffer>(device_, key));
+        auto ret = frame_buffers_.emplace(key, std::make_unique<lgfx::FrameBuffer>(device_, 
+            key.render_pass, key.width, key.height, key.colors, key.depth_stencil));
         return ret.first->second.get();
     }
 }

@@ -2,9 +2,11 @@
 
 #include <iostream>
 #include <fstream>
+#include <filesystem>
 #include <vector>
 #include <array>
 #include <map>
+#include <ranges>
 #include <string>
 #include <cassert>
 #include <memory>

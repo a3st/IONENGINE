@@ -14,15 +14,35 @@ friend class CommandBuffer;
 
 public:
 
-    Pipeline(Device* device, const PipelineDesc& desc);
+    Pipeline(
+        Device* device, 
+        const PipelineType type,
+        DescriptorLayout* layout,
+        const std::span<InputLayoutDesc>& inputs,
+        const std::span<Shader*>& shaders,
+        const RasterizerDesc& rasterizer,
+        const DepthStencilDesc& depth_stencil,
+        const BlendDesc& blend,
+        RenderPass* render_pass);
 
-    inline const PipelineDesc& GetDesc() const { return desc_; }
+    inline PipelineType GetType() const { return type_; }
+    inline const std::vector<InputLayoutDesc>& GetInputLayoutDescs() const { return inputs_; }
+    inline const std::vector<Shader*>& GetShaders() const { return shaders_; }
+    inline const RasterizerDesc& GetRasterizerDesc() const { return rasterizer_; }
+    inline const DepthStencilDesc& GetDepthStencilDesc() const { return depth_stencil_; }
+    inline const BlendDesc& GetBlendDesc() const { return blend_; }
 
 private:
 
     ComPtr<ID3D12PipelineState> pipeline_state_;
 
-    PipelineDesc desc_;
+    PipelineType type_;
+    std::vector<InputLayoutDesc> inputs_;
+    std::vector<Shader*> shaders_;
+    RasterizerDesc rasterizer_;
+    DepthStencilDesc depth_stencil_;
+    BlendDesc blend_;
+
 };
 
 }

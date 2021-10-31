@@ -8,9 +8,22 @@ namespace ionengine::rendersystem {
 
 class FrameBufferCache {
 
-    using Key = lgfx::FrameBufferDesc;
-
 public:
+
+    struct Key {
+
+        lgfx::RenderPass* render_pass;
+        uint32_t width;
+        uint32_t height;
+        std::vector<lgfx::TextureView*> colors;
+        lgfx::TextureView* depth_stencil;
+
+        inline bool operator<(const Key& rhs) const {
+
+            return std::tie(render_pass, width, height, colors, depth_stencil) <
+                std::tie(rhs.render_pass, rhs.width, rhs.height, rhs.colors, rhs.depth_stencil);
+        }
+    };
 
     FrameBufferCache(lgfx::Device* device);
     FrameBufferCache(const FrameBufferCache&) = delete;

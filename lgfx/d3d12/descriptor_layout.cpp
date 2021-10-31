@@ -14,7 +14,7 @@ DescriptorLayout::DescriptorLayout(Device* device, const std::span<DescriptorLay
     std::vector<D3D12_ROOT_PARAMETER> parameters;
     parameters.resize(bindings.size());
 
-    for(uint32_t i = 0; i < bindings.size(); ++i) {
+    for(size_t i : std::views::iota(0u, bindings.size())) {
 		D3D12_DESCRIPTOR_RANGE range{};
 		range.RangeType = ToD3D12DescriptorRangeType(bindings[i].type);
 		range.NumDescriptors = bindings[i].count;

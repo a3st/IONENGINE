@@ -166,16 +166,16 @@ D3D12_COMPARISON_FUNC ToD3D12ComparisonFunc(const ComparisonFunc func) {
 	}
 }
 
-D3D12_SHADER_VISIBILITY ToD3D12ShaderVisiblity(const ShaderModuleType type) {
+D3D12_SHADER_VISIBILITY ToD3D12ShaderVisiblity(const ShaderType type) {
 	
 	switch(type) {
-		case ShaderModuleType::kVertex: return D3D12_SHADER_VISIBILITY_VERTEX;
-		case ShaderModuleType::kPixel: return D3D12_SHADER_VISIBILITY_PIXEL;
-		case ShaderModuleType::kGeometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
-		case ShaderModuleType::kHull: return D3D12_SHADER_VISIBILITY_HULL;
-		case ShaderModuleType::kDomain: return D3D12_SHADER_VISIBILITY_DOMAIN;
-		case ShaderModuleType::kCompute: return D3D12_SHADER_VISIBILITY_ALL;
-		case ShaderModuleType::kAll: return D3D12_SHADER_VISIBILITY_ALL;
+		case ShaderType::kVertex: return D3D12_SHADER_VISIBILITY_VERTEX;
+		case ShaderType::kPixel: return D3D12_SHADER_VISIBILITY_PIXEL;
+		case ShaderType::kGeometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
+		case ShaderType::kHull: return D3D12_SHADER_VISIBILITY_HULL;
+		case ShaderType::kDomain: return D3D12_SHADER_VISIBILITY_DOMAIN;
+		case ShaderType::kCompute: return D3D12_SHADER_VISIBILITY_ALL;
+		case ShaderType::kAll: return D3D12_SHADER_VISIBILITY_ALL;
 		default: assert(false && "passed invalid argument to ToD3D12ShaderVisiblity"); return D3D12_SHADER_VISIBILITY_ALL;
 	}
 }

@@ -24,7 +24,7 @@ public:
     void BindDescriptorSet(DescriptorSet* set);
     void SetViewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height);
     void SetScissorRect(const uint32_t left, const uint32_t top, const uint32_t right, const uint32_t bottom);
-    void BeginRenderPass(RenderPass* render_pass, FrameBuffer* frame_buffer, const ClearValueDesc& desc);
+    void BeginRenderPass(RenderPass* render_pass, FrameBuffer* frame_buffer, const std::span<ClearValueColor>& colors, float depth, uint8_t stencil);
     void EndRenderPass();
     void TextureMemoryBarrier(Texture* texture, const MemoryState before, const MemoryState after);
     void Reset();

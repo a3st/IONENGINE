@@ -15,7 +15,8 @@ lgfx::RenderPass* RenderPassCache::GetRenderPass(const Key& key) {
     if(it != render_passes_.end()) {
         return it->second.get();
     } else {
-        auto ret = render_passes_.emplace(key, std::make_unique<lgfx::RenderPass>(device_, key));
+        auto ret = render_passes_.emplace(key, std::make_unique<lgfx::RenderPass>(device_,
+            key.colors, key.depth_stencil, key.sample_count));
         return ret.first->second.get();
     }
 }

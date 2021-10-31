@@ -7,6 +7,8 @@
 
 #include "frame_graph.h"
 
+#include "cache/pipeline.h"
+
 namespace ionengine::rendersystem {
 
 class Renderer {
@@ -38,6 +40,8 @@ private:
     lgfx::DescriptorPool test_descriptor_pool;
     lgfx::MemoryPool test_memory_pool;
 
+    PipelineCache pipeline_cache_;
+
     struct {
         std::vector<std::unique_ptr<lgfx::Texture>> textures;
         std::vector<std::unique_ptr<lgfx::TextureView>> texture_views;
@@ -47,12 +51,14 @@ private:
 
     std::vector<std::unique_ptr<lgfx::DescriptorLayout>> descriptor_layouts_;
 
-    std::unique_ptr<lgfx::Pipeline> pipeline_;
-    std::unique_ptr<lgfx::RenderPass> render_pass_;
     std::unique_ptr<lgfx::DescriptorSet> descriptor_set_;
-    
+
     std::unique_ptr<lgfx::BufferView> buffer_view_;
     std::unique_ptr<lgfx::Buffer> buffer_;
+
+    std::vector<std::unique_ptr<lgfx::Shader>> shaders_;
+
+    std::vector<lgfx::Shader*> shaders_c_;
 
     uint32_t frame_index_;
 };

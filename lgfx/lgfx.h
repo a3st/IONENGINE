@@ -20,5 +20,6 @@
 #include "d3d12/descriptor_layout.h"
 #include "d3d12/descriptor_set.h"
 #include "d3d12/pipeline.h"
+#include "d3d12/shader.h"
 
 #endif

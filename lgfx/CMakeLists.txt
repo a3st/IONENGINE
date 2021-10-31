@@ -25,6 +25,7 @@ add_library(lgfx-d3d12
     d3d12/render_pass.cpp
     d3d12/descriptor_set.cpp
     d3d12/descriptor_layout.cpp
+    d3d12/shader.cpp
 )
 
 target_precompile_headers(lgfx-d3d12 PRIVATE precompiled.h)

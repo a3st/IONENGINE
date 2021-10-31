@@ -15,16 +15,16 @@ DescriptorSet::DescriptorSet(Device* device, DescriptorLayout* layout) :
     srv_pool_(device, kDescriptorSetSRVCount, lgfx::DescriptorType::kShaderResource, lgfx::DescriptorFlags::kShaderVisible),
     sampler_pool_(device, kDescriptorSetSamplerCount, lgfx::DescriptorType::kSampler, lgfx::DescriptorFlags::kShaderVisible) {
 
-    for(uint32_t i = 0; i < static_cast<uint32_t>(layout_->descriptor_tables_.size()); ++i) {
+    for(size_t i : std::views::iota(0u, layout_->descriptor_tables_.size())) {
         if(layout_->descriptor_tables_[i].type == DescriptorType::kShaderResource || layout_->descriptor_tables_[i].type == DescriptorType::kUnorderedAccess || layout_->descriptor_tables_[i].type == DescriptorType::kConstantBuffer) {
-            for(uint32_t j = 0; j < layout_->descriptor_tables_[i].count; ++j) {
+            for(size_t j : std::views::iota(0u, layout_->descriptor_tables_[i].count)) {
                 DescriptorAllocInfo alloc_info = srv_pool_.Allocate();
-                descriptors_[layout_->descriptor_tables_[i].slot].emplace_back(Key { i, layout_->descriptor_tables_[i].type, alloc_info });
+                descriptors_[layout_->descriptor_tables_[i].slot].emplace_back(Key { static_cast<uint32_t>(i), layout_->descriptor_tables_[i].type, alloc_info });
             }
         } else {
-            for(uint32_t j = 0; j < layout_->descriptor_tables_[i].count; ++j) {
+            for(size_t j : std::views::iota(0u, layout_->descriptor_tables_[i].count)) {
                 DescriptorAllocInfo alloc_info = sampler_pool_.Allocate();
-                descriptors_[layout_->descriptor_tables_[i].slot].emplace_back(Key { i, layout_->descriptor_tables_[i].type, alloc_info });
+                descriptors_[layout_->descriptor_tables_[i].slot].emplace_back(Key { static_cast<uint32_t>(i), layout_->descriptor_tables_[i].type, alloc_info });
             }
         }
     }
@@ -32,12 +32,12 @@ DescriptorSet::DescriptorSet(Device* device, DescriptorLayout* layout) :
 
 DescriptorSet::~DescriptorSet() {
 
-    for(auto it = descriptors_.begin(); it != descriptors_.end(); ++it) {
-        for(uint32_t i = 0; i < static_cast<uint32_t>(it->second.size()); ++i) {
-            if(it->second[i].type == DescriptorType::kShaderResource || it->second[i].type == DescriptorType::kUnorderedAccess || it->second[i].type == DescriptorType::kConstantBuffer) {
-                srv_pool_.Deallocate(it->second[i].alloc_info);
+    for(auto [key, value] : descriptors_) {
+        for(size_t i : std::views::iota(0u, value.size())) {
+            if(value[i].type == DescriptorType::kShaderResource || value[i].type == DescriptorType::kUnorderedAccess || value[i].type == DescriptorType::kConstantBuffer) {
+                srv_pool_.Deallocate(value[i].alloc_info);
             } else {
-                sampler_pool_.Deallocate(it->second[i].alloc_info);
+                sampler_pool_.Deallocate(value[i].alloc_info);
             }
         }
     }

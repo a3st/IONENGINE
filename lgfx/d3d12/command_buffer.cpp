@@ -73,34 +73,31 @@ void CommandBuffer::SetScissorRect(const uint32_t left, const uint32_t top, cons
     list_->RSSetScissorRects(1, &rect);
 }
 
-void CommandBuffer::BeginRenderPass(RenderPass* render_pass, FrameBuffer* frame_buffer, const ClearValueDesc& desc) {
+void CommandBuffer::BeginRenderPass(RenderPass* render_pass, FrameBuffer* frame_buffer, const std::span<ClearValueColor>& colors, float depth, uint8_t stencil) {
 
-    const RenderPassDesc& render_pass_desc = render_pass->GetDesc();
-    const FrameBufferDesc& frame_buffer_desc = frame_buffer->GetDesc();
+    for(size_t i : std::views::iota(0u, render_pass->render_pass_target_descs_.size())) {
 
-    for(uint32_t i = 0; i < static_cast<uint32_t>(render_pass_desc.colors.size()); ++i) {
+        std::memcpy(render_pass->render_pass_target_descs_[i].BeginningAccess.Clear.ClearValue.Color, &colors[i], sizeof(ClearValueColor));
 
-        std::memcpy(render_pass->colors_desc_[i].BeginningAccess.Clear.ClearValue.Color, &desc.colors[i], sizeof(ClearValueColor));
-
-        DescriptorAllocInfo alloc_info = frame_buffer_desc.colors[i]->alloc_info_;
+        DescriptorAllocInfo alloc_info = frame_buffer->colors_[i]->alloc_info_;
         D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { alloc_info.heap->heap_->GetCPUDescriptorHandleForHeapStart().ptr + alloc_info.offset * device_->rtv_descriptor_offset_ };
 
-        render_pass->colors_desc_[i].cpuDescriptor = cpu_handle;
+        render_pass->render_pass_target_descs_[i].cpuDescriptor = cpu_handle;
     }
 
-    if(frame_buffer_desc.depth_stencil) {
+    if(frame_buffer->depth_stencil_) {
         {
-            render_pass->depth_stencil_desc_.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = desc.depth;
-            render_pass->depth_stencil_desc_.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = desc.stencil;
+            render_pass->render_pass_depth_stencil_desc_.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = depth;
+            render_pass->render_pass_depth_stencil_desc_.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = stencil;
 
-            DescriptorAllocInfo alloc_info = frame_buffer_desc.depth_stencil->alloc_info_;
+            DescriptorAllocInfo alloc_info = frame_buffer->depth_stencil_->alloc_info_;
             D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { alloc_info.heap->heap_->GetCPUDescriptorHandleForHeapStart().ptr + alloc_info.offset * device_->rtv_descriptor_offset_ };
 
-            render_pass->depth_stencil_desc_.cpuDescriptor = cpu_handle;
+            render_pass->render_pass_depth_stencil_desc_.cpuDescriptor = cpu_handle;
         }
-        list_->BeginRenderPass(static_cast<uint32_t>(render_pass->colors_desc_.size()), render_pass->colors_desc_.data(), &render_pass->depth_stencil_desc_, D3D12_RENDER_PASS_FLAG_NONE);
+        list_->BeginRenderPass(static_cast<uint32_t>(render_pass->render_pass_target_descs_.size()), render_pass->render_pass_target_descs_.data(), &render_pass->render_pass_depth_stencil_desc_, D3D12_RENDER_PASS_FLAG_NONE);
     } else {
-        list_->BeginRenderPass(static_cast<uint32_t>(render_pass->colors_desc_.size()), render_pass->colors_desc_.data(), nullptr, D3D12_RENDER_PASS_FLAG_NONE);
+        list_->BeginRenderPass(static_cast<uint32_t>(render_pass->render_pass_target_descs_.size()), render_pass->render_pass_target_descs_.data(), nullptr, D3D12_RENDER_PASS_FLAG_NONE);
     }
 }
 
@@ -144,10 +141,10 @@ void CommandBuffer::DrawIndexed(const uint32_t index_count, const uint32_t insta
 
 void CommandBuffer::SetIndexBuffer(BufferView* buffer_view) {
     
-    list_->IASetIndexBuffer(&buffer_view->index_view_desc);
+    list_->IASetIndexBuffer(&buffer_view->index_view_desc_);
 }
 
 void CommandBuffer::SetVertexBuffer(const uint32_t slot, BufferView* buffer_view) {
     
-    list_->IASetVertexBuffers(slot, 1, &buffer_view->vertex_view_desc);
+    list_->IASetVertexBuffers(slot, 1, &buffer_view->vertex_view_desc_);
 }
