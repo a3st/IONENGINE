@@ -10,6 +10,7 @@
 #include "pipeline.h"
 #include "descriptor_set.h"
 #include "buffer_view.h"
+#include "buffer.h"
 #include "descriptor_layout.h"
 #include "conversion.h"
 
@@ -147,4 +148,9 @@ void CommandBuffer::SetIndexBuffer(BufferView* buffer_view) {
 void CommandBuffer::SetVertexBuffer(const uint32_t slot, BufferView* buffer_view) {
     
     list_->IASetVertexBuffers(slot, 1, &buffer_view->vertex_view_desc_);
+}
+
+void CommandBuffer::CopyBuffer(Buffer* dst_buffer, const uint64_t dst_offset, Buffer* src_buffer, const uint64_t src_offset, const size_t size) {
+
+    list_->CopyBufferRegion(dst_buffer->resource_.Get(), dst_offset, src_buffer->resource_.Get(), src_offset, size);
 }

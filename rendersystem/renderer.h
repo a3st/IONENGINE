@@ -56,6 +56,7 @@ private:
     std::unique_ptr<lgfx::BufferView> buffer_view_;
     std::unique_ptr<lgfx::Buffer> buffer_;
 
+    std::vector<lgfx::InputLayoutDesc> inputs_;
     std::vector<std::unique_ptr<lgfx::Shader>> shaders_;
 
     std::vector<lgfx::Shader*> shaders_c_;

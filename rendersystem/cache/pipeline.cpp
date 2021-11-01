@@ -9,14 +9,34 @@ PipelineCache::PipelineCache(lgfx::Device* device) : device_(device) {
 
 }
 
-lgfx::Pipeline* PipelineCache::GetPipeline(const Key& key) {
+lgfx::Pipeline* PipelineCache::GetPipeline(
+    const lgfx::PipelineType type,
+    lgfx::DescriptorLayout* layout,
+    const std::span<const lgfx::InputLayoutDesc> inputs,
+    const std::span<lgfx::Shader* const> shaders,
+    const lgfx::RasterizerDesc& rasterizer,
+    const lgfx::DepthStencilDesc& depth_stencil,
+    const lgfx::BlendDesc& blend,
+    lgfx::RenderPass* render_pass) {
 
-    auto it = pipelines_.find(key);
+    static PipelineCache::Key kPipelineKey{};
+    kPipelineKey.type = type;
+    kPipelineKey.layout = layout;
+    kPipelineKey.inputs.resize(inputs.size());
+    std::memcpy(kPipelineKey.inputs.data(), inputs.data(), sizeof(lgfx::InputLayoutDesc) * inputs.size());
+    kPipelineKey.shaders.resize(shaders.size());
+    std::memcpy(kPipelineKey.shaders.data(), shaders.data(), sizeof(lgfx::Shader*) * shaders.size());
+    kPipelineKey.rasterizer = rasterizer;
+    kPipelineKey.depth_stencil = depth_stencil;
+    kPipelineKey.blend = blend;
+    kPipelineKey.render_pass = render_pass;
+
+    auto it = pipelines_.find(kPipelineKey);
     if(it != pipelines_.end()) {
         return it->second.get();
     } else {
-        //auto ret = pipelines_.emplace(key, std::make_unique<lgfx::Pipeline>(device_, ));
-        //return ret.first->second.get();
-        return nullptr;
+        auto ret = pipelines_.emplace(kPipelineKey, std::make_unique<lgfx::Pipeline>(device_, 
+            kPipelineKey.type, kPipelineKey.layout, kPipelineKey.inputs, kPipelineKey.shaders, kPipelineKey.rasterizer, kPipelineKey.depth_stencil, kPipelineKey.blend, kPipelineKey.render_pass));
+        return ret.first->second.get();
     }
 }

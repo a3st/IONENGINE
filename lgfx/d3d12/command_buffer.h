@@ -33,6 +33,8 @@ public:
     void DrawIndexed(const uint32_t index_count, const uint32_t instance_count, const uint32_t first_index, const uint32_t vertex_offset, const uint32_t first_instance);
     void SetIndexBuffer(BufferView* buffer_view);
     void SetVertexBuffer(const uint32_t slot, BufferView* buffer_view);
+    void CopyBuffer(Buffer* dst_buffer, const uint64_t dst_offset, Buffer* src_buffer, const uint64_t src_offset, const size_t size);
+    //void CopyBufferToTexture(Buffer* src_buffer, Texture* dst_texture, )
 
 private:
 

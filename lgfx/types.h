@@ -365,4 +365,40 @@ struct ClearValueColor {
     }
 };
 
+struct TextureOffset {
+
+    int32_t x, y, z;
+
+    inline bool operator<(const TextureOffset& rhs) const {
+
+        return std::tie(x, y, z) < std::tie(rhs.x, rhs.y, rhs.z);
+    }
+};
+
+struct TextureExtent3D {
+
+    uint32_t width, height, depth;
+
+    inline bool operator<(const TextureExtent3D& rhs) const {
+
+        return std::tie(width, height, depth) < std::tie(rhs.width, rhs.height, rhs.depth);
+    }
+};
+
+struct BufferTextureCopy {
+
+    uint64_t buffer_offset;
+    uint32_t buffer_row_length;
+    uint32_t texture_mip_level;
+    uint32_t texture_array_layer;
+    TextureOffset texture_offset;
+    TextureExtent3D texture_extent;
+
+    inline bool operator<(const BufferTextureCopy& rhs) const {
+
+        return std::tie(buffer_offset, buffer_row_length, texture_mip_level, texture_array_layer, texture_offset, texture_extent) < 
+            std::tie(rhs.buffer_offset, rhs.buffer_row_length, rhs.texture_mip_level, rhs.texture_array_layer, rhs.texture_offset, rhs.texture_extent);
+    }
+};
+
 }

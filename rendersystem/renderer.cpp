@@ -34,12 +34,15 @@ Renderer::Renderer(platform::Window* window) :
         descriptor_layouts_.emplace_back(std::make_unique<lgfx::DescriptorLayout>(&device_, bindings));
     }
 
-    std::vector<lgfx::InputLayoutDesc> inputs = {
+    inputs_ = {
         { "POSITION", 0, lgfx::Format::kRGB32float, 0, 0 }
     };
 
     shaders_.emplace_back(std::make_unique<lgfx::Shader>(&device_, lgfx::ShaderType::kVertex, "shaders/basic_vert.bin"));
     shaders_.emplace_back(std::make_unique<lgfx::Shader>(&device_, lgfx::ShaderType::kPixel, "shaders/basic_frag.bin"));
+
+    shaders_c_.emplace_back(shaders_[0].get());
+    shaders_c_.emplace_back(shaders_[1].get());
 
     descriptor_set_ = std::make_unique<lgfx::DescriptorSet>(&device_, descriptor_layouts_[0].get());
 
@@ -89,23 +92,19 @@ void Renderer::Frame() {
             context->GetBuffer()->SetViewport(0, 0, 800, 600);
             context->GetBuffer()->SetScissorRect(0, 0, 800, 600);
 
-            /*lgfx::PipelineDesc pipeline_desc{};
-            pipeline_desc.type = lgfx::PipelineType::kGraphics;
-            pipeline_desc.layout = descriptor_layouts_[0].get();
-            shaders_c_.emplace_back(shaders_[0].get());
-            shaders_c_.emplace_back(shaders_[1].get());
-            pipeline_desc.shaders = shaders_c_;
-            pipeline_desc.render_pass = context->GetRenderPass();
-            lgfx::Pipeline* pipeline = pipeline_cache_.GetPipeline(pipeline_desc);*/
+            lgfx::Pipeline* pipeline = pipeline_cache_.GetPipeline(
+                lgfx::PipelineType::kGraphics, 
+                descriptor_layouts_[0].get(), 
+                inputs_, 
+                shaders_c_, 
+                {}, {}, {}, 
+                context->GetRenderPass());
 
-            //context->GetBuffer()->BindPipeline(nullptr);
+            context->GetBuffer()->BindPipeline(pipeline);
             context->GetBuffer()->BindDescriptorSet(descriptor_set_.get());
 
             context->GetBuffer()->SetVertexBuffer(0, buffer_view_.get());
             context->GetBuffer()->DrawInstanced(3, 1, 0, 0);
-
-            shaders_c_.clear();
-            
         });
 
     frame_graph_.Execute();
