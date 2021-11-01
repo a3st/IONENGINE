@@ -14,7 +14,7 @@ friend class Pipeline;
 
 public:
 
-    RenderPass(Device* device, const std::span<RenderPassColorDesc> colors, const RenderPassDepthStencilDesc& depth_stencil, uint32_t sample_count = 1);
+    RenderPass(Device* device, const std::span<const RenderPassColorDesc> colors, const RenderPassDepthStencilDesc& depth_stencil, uint32_t sample_count = 1);
 
     RenderPass(const RenderPass&) = delete;
     RenderPass(RenderPass&&) = delete;

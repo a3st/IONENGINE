@@ -6,7 +6,7 @@
 
 using namespace lgfx;
 
-RenderPass::RenderPass(Device* device, const std::span<RenderPassColorDesc> colors, const RenderPassDepthStencilDesc& depth_stencil, uint32_t sample_count) : 
+RenderPass::RenderPass(Device* device, const std::span<const RenderPassColorDesc> colors, const RenderPassDepthStencilDesc& depth_stencil, uint32_t sample_count) : 
     colors_(colors.begin(), colors.end()), depth_stencil_(depth_stencil), sample_count_(sample_count) {
 
     render_pass_target_descs_.resize(colors_.size());

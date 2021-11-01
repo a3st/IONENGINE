@@ -29,7 +29,7 @@ public:
     RenderPassCache& operator=(const RenderPassCache&) = delete;
     RenderPassCache& operator=(RenderPassCache&&) = delete;
 
-    lgfx::RenderPass* GetRenderPass(const Key& key);
+    lgfx::RenderPass* GetRenderPass(const std::span<const lgfx::RenderPassColorDesc> colors, const lgfx::RenderPassDepthStencilDesc& depth_stencil, const uint32_t sample_count);
 
     inline void Reset() {
 

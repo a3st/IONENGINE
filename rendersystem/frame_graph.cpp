@@ -130,17 +130,8 @@ FrameGraphTask* FrameGraph::AddTask(const FrameGraphTaskType type, const std::fu
         }
     }
 
-    RenderPassCache::Key render_pass_desc{};
-    render_pass_desc.colors = task->color_descs_;
-    render_pass_desc.sample_count = 1;
-    lgfx::RenderPass* render_pass = render_pass_cache_.GetRenderPass(render_pass_desc);
-
-    FrameBufferCache::Key frame_buffer_desc{};
-    frame_buffer_desc.render_pass = render_pass;
-    frame_buffer_desc.width = 800;
-    frame_buffer_desc.height = 600;
-    frame_buffer_desc.colors = task->color_views_;
-    lgfx::FrameBuffer* frame_buffer = frame_buffer_cache_.GetFrameBuffer(frame_buffer_desc);
+    lgfx::RenderPass* render_pass = render_pass_cache_.GetRenderPass(task->color_descs_, {}, 1);
+    lgfx::FrameBuffer* frame_buffer = frame_buffer_cache_.GetFrameBuffer(render_pass, 800, 600, task->color_views_, nullptr);
 
     command_buffer_->BeginRenderPass(render_pass, frame_buffer, task->clear_colors_, 1.0f, 0);
 

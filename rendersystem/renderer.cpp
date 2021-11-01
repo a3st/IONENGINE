@@ -44,7 +44,7 @@ Renderer::Renderer(platform::Window* window) :
     descriptor_set_ = std::make_unique<lgfx::DescriptorSet>(&device_, descriptor_layouts_[0].get());
 
     buffer_ = std::make_unique<lgfx::Buffer>(&device_, &test_memory_pool, 1024 * 1024, lgfx::BufferFlags::kVertexBuffer);
-    buffer_view_ = std::make_unique<lgfx::BufferView>(&device_, nullptr, buffer_.get(), lgfx::Format::kUnknown, sizeof(float) * 3);
+    buffer_view_ = std::make_unique<lgfx::BufferView>(&device_, nullptr, buffer_.get(), lgfx::Format::kUnknown, static_cast<uint32_t>(sizeof(float) * 3));
 
     std::byte* data = buffer_->Map();
     std::vector<float> triangle_data = {
@@ -98,7 +98,7 @@ void Renderer::Frame() {
             pipeline_desc.render_pass = context->GetRenderPass();
             lgfx::Pipeline* pipeline = pipeline_cache_.GetPipeline(pipeline_desc);*/
 
-            context->GetBuffer()->BindPipeline(nullptr);
+            //context->GetBuffer()->BindPipeline(nullptr);
             context->GetBuffer()->BindDescriptorSet(descriptor_set_.get());
 
             context->GetBuffer()->SetVertexBuffer(0, buffer_view_.get());

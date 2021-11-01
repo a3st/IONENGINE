@@ -32,7 +32,7 @@ public:
     FrameBufferCache& operator=(const FrameBufferCache&) = delete;
     FrameBufferCache& operator=(FrameBufferCache&&) = delete;
 
-    lgfx::FrameBuffer* GetFrameBuffer(const Key& key);
+    lgfx::FrameBuffer* GetFrameBuffer(lgfx::RenderPass* render_pass, const uint32_t width, const uint32_t height, const std::span<lgfx::TextureView* const> colors, lgfx::TextureView* depth_stencil);
     
     inline void Reset() {
 

@@ -9,7 +9,7 @@ FrameBuffer::FrameBuffer(
     Device* device, 
     RenderPass* render_pass,
     const uint32_t width, const uint32_t height,
-    const std::span<TextureView*> colors,
+    const std::span<TextureView* const> colors,
     TextureView* depth_stencil) : 
         render_pass_(render_pass), 
         width_(width), height_(height), 

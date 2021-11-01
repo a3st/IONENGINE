@@ -21,15 +21,15 @@ lgfx::TextureView* TextureViewCache::GetTextureView(const Key& key) {
     } else {
         if(key.texture->GetFlags() & lgfx::TextureFlags::kRenderTarget) {
             auto ret = texture_views_.emplace(key, std::make_unique<lgfx::TextureView>(device_, &rt_descriptor_pool_, key.texture, 
-                key.dimension, key.base_mip_level, key.base_array_layer, key.array_layer_count));
+                key.dimension, key.base_mip_level, key.mip_level_count, key.base_array_layer, key.array_layer_count));
             return ret.first->second.get();
         } else if(key.texture->GetFlags() & lgfx::TextureFlags::kDepthStencil) {
             auto ret = texture_views_.emplace(key, std::make_unique<lgfx::TextureView>(device_, &ds_descriptor_pool_, key.texture, 
-                key.dimension, key.base_mip_level, key.base_array_layer, key.array_layer_count));
+                key.dimension, key.base_mip_level, key.mip_level_count, key.base_array_layer, key.array_layer_count));
             return ret.first->second.get();
         } else {
             auto ret = texture_views_.emplace(key, std::make_unique<lgfx::TextureView>(device_, &sr_descriptor_pool_, key.texture, 
-                key.dimension, key.base_mip_level, key.base_array_layer, key.array_layer_count));
+                key.dimension, key.base_mip_level, key.mip_level_count, key.base_array_layer, key.array_layer_count));
             return ret.first->second.get();
         }
     }
