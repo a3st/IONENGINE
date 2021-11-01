@@ -87,10 +87,10 @@ Pipeline::Pipeline(
         blend_desc.RenderTarget[i].BlendEnable = blend_.blend_enable;
         blend_desc.RenderTarget[i].BlendOp = ToD3D12BlendOp(blend_.blend_op);
         blend_desc.RenderTarget[i].SrcBlend = ToD3D12Blend(blend_.blend_src);
-        blend_desc.RenderTarget[i].DestBlend = ToD3D12Blend(blend_.blend_dest);
+        blend_desc.RenderTarget[i].DestBlend = ToD3D12Blend(blend_.blend_dst);
         blend_desc.RenderTarget[i].BlendOpAlpha = ToD3D12BlendOp(blend_.blend_op_alpha);
         blend_desc.RenderTarget[i].SrcBlendAlpha = ToD3D12Blend(blend_.blend_src_alpha);
-        blend_desc.RenderTarget[i].DestBlendAlpha = ToD3D12Blend(blend_.blend_dest_alpha);
+        blend_desc.RenderTarget[i].DestBlendAlpha = ToD3D12Blend(blend_.blend_dst_alpha);
         blend_desc.RenderTarget[i].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
     }
 

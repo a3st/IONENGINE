@@ -245,26 +245,42 @@ struct DescriptorLayoutBinding {
     uint32_t space;
     uint32_t count;
     ShaderType shader_visible;
+
+    inline bool operator<(const DescriptorLayoutBinding& rhs) const {
+
+        return std::tie(type, slot, space, count, shader_visible) < std::tie(rhs.type, rhs.slot, rhs.space, rhs.count, rhs.shader_visible);
+    }
 };
 
 struct InputLayoutDesc {
 
-    std::string_view semantic;
+    std::string semantic;
     uint32_t index;
     Format format = Format::kUnknown;
     uint32_t slot;
     uint32_t stride;
+
+    inline bool operator<(const InputLayoutDesc& rhs) const {
+
+        return std::tie(semantic, index, format, slot, stride) < std::tie(rhs.semantic, rhs.index, rhs.format, rhs.slot, rhs.stride);
+    }
 };
 
 struct BlendDesc {
 
     bool blend_enable = false;
     Blend blend_src = Blend::kOne;
-    Blend blend_dest = Blend::kZero;
+    Blend blend_dst = Blend::kZero;
     BlendOp blend_op = BlendOp::kAdd;
     Blend blend_src_alpha = Blend::kOne;
-    Blend blend_dest_alpha = Blend::kZero;
+    Blend blend_dst_alpha = Blend::kZero;
     BlendOp blend_op_alpha = BlendOp::kAdd;
+
+    inline bool operator<(const BlendDesc& rhs) const {
+
+        return std::tie(blend_enable, blend_src, blend_dst, blend_op, blend_src_alpha, blend_dst_alpha, blend_op_alpha) < 
+            std::tie(rhs.blend_enable, rhs.blend_src, rhs.blend_dst, rhs.blend_op, rhs.blend_src_alpha, rhs.blend_dst_alpha, rhs.blend_op_alpha);
+    }
 };
 
 struct StencilOpDesc {
@@ -273,6 +289,12 @@ struct StencilOpDesc {
     StencilOp depth_fail_op = StencilOp::kKeep;
     StencilOp pass_op = StencilOp::kKeep;
     ComparisonFunc func = ComparisonFunc::kAlways;
+
+    inline bool operator<(const StencilOpDesc& rhs) const {
+
+        return std::tie(fail_op, depth_fail_op, pass_op, func) < 
+            std::tie(rhs.fail_op, rhs.depth_fail_op, rhs.pass_op, rhs.func);
+    }
 };
 
 struct DepthStencilDesc {
@@ -286,6 +308,12 @@ struct DepthStencilDesc {
     uint8_t stencil_write_mask = 0xff;
     StencilOpDesc front_face;
     StencilOpDesc back_face;
+
+    inline bool operator<(const DepthStencilDesc& rhs) const {
+
+        return std::tie(depth_test_enable, depth_func, depth_write_enable, depth_bounds_test_enable, stencil_enable, stencil_read_mask, stencil_write_mask, front_face, back_face) < 
+            std::tie(rhs.depth_test_enable, rhs.depth_func, rhs.depth_write_enable, rhs.depth_bounds_test_enable, rhs.stencil_enable, rhs.stencil_read_mask, rhs.stencil_write_mask, rhs.front_face, rhs.back_face);
+    }
 };
 
 struct RasterizerDesc {
@@ -293,6 +321,11 @@ struct RasterizerDesc {
     FillMode fill_mode = FillMode::kSolid;
     CullMode cull_mode = CullMode::kBack;
     int32_t depth_bias = 0;
+
+    inline bool operator<(const RasterizerDesc& rhs) const {
+
+        return std::tie(fill_mode, cull_mode, depth_bias) < std::tie(rhs.fill_mode, rhs.cull_mode, rhs.depth_bias);
+    }
 };
 
 struct RenderPassColorDesc {
