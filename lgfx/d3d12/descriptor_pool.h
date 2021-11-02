@@ -7,7 +7,7 @@
 
 namespace lgfx {
 
-const uint32_t kDescriptorPoolDefaultHeapSize = 8;
+const uint32_t kDescriptorPoolDefaultHeapSize = 64;
 
 class DescriptorHeap {
 
@@ -15,7 +15,6 @@ friend class DescriptorPool;
 friend class TextureView;
 friend class BufferView;
 friend class CommandBuffer;
-friend class DescriptorSet;
 
 public:
 
@@ -55,7 +54,6 @@ public:
 
     inline DescriptorType GetType() const { return type_; }
     inline DescriptorFlags GetFlags() const { return flags_; }
-    inline const std::vector<std::unique_ptr<DescriptorHeap>>& GetHeaps() const { return heaps_; }
 
     DescriptorAllocInfo Allocate();
     void Deallocate(const DescriptorAllocInfo& alloc_info);

@@ -11,18 +11,11 @@ namespace lgfx {
 class BufferView {
 
 friend class CommandBuffer;
-friend class DescriptorSet;
 
 public:
 
-    BufferView(
-        Device* device, DescriptorPool* pool, 
-        Buffer* buffer, 
-        const Format index_format,
-        const uint32_t stride);
-
+    BufferView(Device* device, DescriptorPool* pool, Buffer* buffer, const BufferViewDesc& desc);
     ~BufferView();
-    
     BufferView(const TextureView&) = delete;
     BufferView(TextureView&&) = delete;
 
@@ -30,6 +23,7 @@ public:
     BufferView& operator=(BufferView&&) = delete;
 
     inline Buffer* GetBuffer() const { return buffer_; }
+    inline const BufferViewDesc& GetDesc() const { return desc_; }
 
 private:
 
@@ -39,16 +33,13 @@ private:
 
     DescriptorPool* pool_;
     Buffer* buffer_;
+    DescriptorAllocInfo alloc_info_;
+    BufferViewDesc desc_;
 
     union {
-        D3D12_INDEX_BUFFER_VIEW index_view_desc_;
-        D3D12_VERTEX_BUFFER_VIEW vertex_view_desc_;
+        D3D12_INDEX_BUFFER_VIEW index_view_desc;
+        D3D12_VERTEX_BUFFER_VIEW vertex_view_desc;
     };
-
-    DescriptorAllocInfo alloc_info_;
-    
-    Format index_format_;
-    uint32_t stride_;
 };
 
 }

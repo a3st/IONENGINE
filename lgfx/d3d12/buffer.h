@@ -15,32 +15,26 @@ friend class CommandBuffer;
 
 public:
 
-    Buffer(Device* device, MemoryPool* pool, const size_t size, const BufferFlags flags);
-
+    Buffer(Device* device, MemoryPool* pool, const BufferDesc& desc);
     ~Buffer();
-    
     Buffer(const Buffer&) = delete;
     Buffer(Buffer&&) = delete;
 
     Buffer& operator=(const Buffer&) = delete;
     Buffer& operator=(Buffer&&) = delete;
 
-    std::byte* Map();
-    void Unmap();
-
-    inline size_t GetSize() const { return size_; }
-    inline BufferFlags GetFlags() const { return flags_; }
+    inline const BufferDesc& GetDesc() const { return desc_; }
 
 private:
 
-    MemoryPool* pool_;
-
     ComPtr<ID3D12Resource> resource_;
+    D3D12_RESOURCE_DESC resource_desc_;
+    D3D12_RESOURCE_STATES initial_state_;
 
     MemoryAllocInfo alloc_info_;
+    MemoryPool* pool_;
 
-    size_t size_;
-    BufferFlags flags_;
+    BufferDesc desc_;
 };
 
 }

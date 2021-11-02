@@ -14,7 +14,7 @@ DescriptorAllocInfo BufferView::CreateConstantBuffer(Device* device) {
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC view_desc{};
     view_desc.BufferLocation = buffer_->resource_->GetGPUVirtualAddress();
-    view_desc.SizeInBytes = static_cast<uint32_t>(buffer_->GetSize());
+    view_desc.SizeInBytes = static_cast<uint32_t>(buffer_->resource_desc_.Width);
 
     D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { alloc_info.heap->heap_->GetCPUDescriptorHandleForHeapStart().ptr + alloc_info.offset * device->srv_descriptor_offset_ };
     device->device_->CreateConstantBufferView(&view_desc, cpu_handle);
@@ -25,8 +25,8 @@ D3D12_INDEX_BUFFER_VIEW BufferView::CreateIndexBuffer() {
 
     D3D12_INDEX_BUFFER_VIEW view_desc{};
     view_desc.BufferLocation = buffer_->resource_->GetGPUVirtualAddress();
-    view_desc.SizeInBytes = static_cast<uint32_t>(buffer_->GetSize());
-    view_desc.Format = ToDXGIFormat(index_format_);
+    view_desc.SizeInBytes = static_cast<uint32_t>(buffer_->resource_desc_.Width);
+    view_desc.Format = ToDXGIFormat(desc_.index_format);
     return view_desc;
 }
 
@@ -34,28 +34,21 @@ D3D12_VERTEX_BUFFER_VIEW BufferView::CreateVertexBuffer() {
 
     D3D12_VERTEX_BUFFER_VIEW view_desc{};
     view_desc.BufferLocation = buffer_->resource_->GetGPUVirtualAddress();
-    view_desc.SizeInBytes = static_cast<uint32_t>(buffer_->GetSize());
-    view_desc.StrideInBytes = stride_;
+    view_desc.SizeInBytes = static_cast<uint32_t>(buffer_->resource_desc_.Width);
+    view_desc.StrideInBytes = desc_.stride;
     return view_desc;
 }
 
-BufferView::BufferView(
-    Device* device, DescriptorPool* pool, 
-    Buffer* buffer, 
-    const Format index_format,
-    const uint32_t stride) : 
-        pool_(pool), 
-        buffer_(buffer), 
-        index_format_(index_format), 
-        stride_(stride) {
+BufferView::BufferView(Device* device, DescriptorPool* pool, Buffer* buffer, const BufferViewDesc& desc) :
+    pool_(pool), buffer_(buffer), desc_(desc) {
 
-    BufferFlags flags = buffer->GetFlags();
+    BufferFlags flags = buffer->GetDesc().flags;
     if(flags & BufferFlags::kConstantBuffer) {
         alloc_info_ = CreateConstantBuffer(device);
     } else if(flags & BufferFlags::kVertexBuffer) {
-        vertex_view_desc_ = CreateVertexBuffer();
+        vertex_view_desc = CreateVertexBuffer();
     } else if(flags & BufferFlags::kIndexBuffer) {
-        index_view_desc_ = CreateIndexBuffer();
+        index_view_desc = CreateIndexBuffer();
     }
 }
 

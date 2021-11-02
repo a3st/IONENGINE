@@ -9,22 +9,13 @@ FrameBufferCache::FrameBufferCache(lgfx::Device* device) : device_(device) {
 
 }
 
-lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(lgfx::RenderPass* render_pass, const uint32_t width, const uint32_t height, const std::span<lgfx::TextureView* const> colors, lgfx::TextureView* depth_stencil) {
+lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(const Key& key) {
     
-    static FrameBufferCache::Key kFrameBufferKey{};
-    kFrameBufferKey.render_pass = render_pass;
-    kFrameBufferKey.width = width;
-    kFrameBufferKey.height = height;
-    kFrameBufferKey.colors.resize(colors.size());
-    std::copy(colors.begin(), colors.end(), kFrameBufferKey.colors.begin());
-    kFrameBufferKey.depth_stencil = depth_stencil;
-
-    auto it = frame_buffers_.find(kFrameBufferKey);
+    auto it = frame_buffers_.find(key);
     if(it != frame_buffers_.end()) {
         return it->second.get();
     } else {
-        auto ret = frame_buffers_.emplace(kFrameBufferKey, std::make_unique<lgfx::FrameBuffer>(device_, 
-            kFrameBufferKey.render_pass, kFrameBufferKey.width, kFrameBufferKey.height, kFrameBufferKey.colors, kFrameBufferKey.depth_stencil));
+        auto ret = frame_buffers_.emplace(key, std::make_unique<lgfx::FrameBuffer>(device_, key));
         return ret.first->second.get();
     }
 }

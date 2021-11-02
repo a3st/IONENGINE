@@ -15,11 +15,5 @@
 #include "d3d12/render_pass.h"
 #include "d3d12/texture_view.h"
 #include "d3d12/texture.h"
-#include "d3d12/buffer_view.h"
-#include "d3d12/buffer.h"
-#include "d3d12/descriptor_layout.h"
-#include "d3d12/descriptor_set.h"
-#include "d3d12/pipeline.h"
-#include "d3d12/shader.h"
 
 #endif

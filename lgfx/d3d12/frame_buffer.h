@@ -9,30 +9,20 @@ namespace lgfx {
 
 class FrameBuffer {
 
-friend class CommandBuffer;
-
 public:
 
-    FrameBuffer(
-        Device* device, 
-        RenderPass* render_pass,
-        const uint32_t width, const uint32_t height,
-        const std::span<TextureView* const> colors,
-        TextureView* depth_stencil);
-
+    FrameBuffer(Device* device, const FrameBufferDesc& desc);
     FrameBuffer(const FrameBuffer&) = delete;
     FrameBuffer(FrameBuffer&&) = delete;
 
     FrameBuffer& operator=(const FrameBuffer&) = delete;
     FrameBuffer& operator=(FrameBuffer&&) = delete;
 
+    inline const FrameBufferDesc& GetDesc() const { return desc_; }
+
 private:
 
-    RenderPass* render_pass_;
-    uint32_t width_;
-    uint32_t height_;
-    std::vector<TextureView*> colors_;
-    TextureView* depth_stencil_;
+    FrameBufferDesc desc_;
 };
 
 }

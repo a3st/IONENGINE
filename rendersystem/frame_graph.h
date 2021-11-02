@@ -151,17 +151,9 @@ class FrameGraphContext {
 
 public:
 
-    FrameGraphContext(lgfx::CommandBuffer* buffer, lgfx::RenderPass* render_pass) : buffer_(buffer), render_pass_(render_pass) {
+    FrameGraphContext() {
         
     }
-
-    lgfx::CommandBuffer* GetBuffer() const { return buffer_; }
-    lgfx::RenderPass* GetRenderPass() const { return render_pass_; }
-
-private:
-
-    lgfx::CommandBuffer* buffer_;
-    lgfx::RenderPass* render_pass_;
 
 };
 
