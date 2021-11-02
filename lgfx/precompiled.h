@@ -1,12 +1,17 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
 #include <iostream>
+#include <fstream>
+#include <filesystem>
 #include <vector>
 #include <array>
+#include <map>
+#include <ranges>
 #include <string>
 #include <cassert>
 #include <memory>
 #include <type_traits>
+#include <algorithm>
 #include <span>
 #include <functional>
 

@@ -9,13 +9,20 @@ RenderPassCache::RenderPassCache(lgfx::Device* device) : device_(device) {
 
 }
 
-lgfx::RenderPass* RenderPassCache::GetRenderPass(const Key& key) {
+lgfx::RenderPass* RenderPassCache::GetRenderPass(const std::span<const lgfx::RenderPassColorDesc> colors, const lgfx::RenderPassDepthStencilDesc& depth_stencil, const uint32_t sample_count) {
 
-    auto it = render_passes_.find(key);
+    static RenderPassCache::Key kRenderPassKey{};
+    kRenderPassKey.colors.resize(colors.size());
+    std::copy(colors.begin(), colors.end(), kRenderPassKey.colors.begin());
+    kRenderPassKey.depth_stencil = depth_stencil;
+    kRenderPassKey.sample_count = sample_count;
+
+    auto it = render_passes_.find(kRenderPassKey);
     if(it != render_passes_.end()) {
         return it->second.get();
     } else {
-        auto ret = render_passes_.emplace(key, std::make_unique<lgfx::RenderPass>(device_, key));
+        auto ret = render_passes_.emplace(kRenderPassKey, std::make_unique<lgfx::RenderPass>(device_,
+            kRenderPassKey.colors, kRenderPassKey.depth_stencil, kRenderPassKey.sample_count));
         return ret.first->second.get();
     }
 }

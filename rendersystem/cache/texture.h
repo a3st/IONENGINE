@@ -8,9 +8,24 @@ namespace ionengine::rendersystem {
 
 class TextureCache {
 
-    using Key = lgfx::TextureDesc;
-
 public:
+
+    struct Key {
+
+        lgfx::Dimension dimension;
+        uint32_t width;
+        uint32_t height;
+        uint32_t mip_levels;
+        uint32_t array_layers;
+        lgfx::Format format;
+        lgfx::TextureFlags flags;
+
+        inline bool operator<(const Key& rhs) const {
+
+            return std::tie(dimension, width, height, mip_levels, array_layers, format, flags) < 
+                std::tie(rhs.dimension, rhs.width, rhs.height, rhs.mip_levels, rhs.array_layers, rhs.format, rhs.flags);
+        }
+    };
 
     TextureCache(lgfx::Device* device);
     TextureCache(const TextureCache&) = delete;
