@@ -25,11 +25,13 @@ add_executable(Runtime-Win32
     rendersystem/renderer.cpp
     rendersystem/color.cpp
     rendersystem/frame_graph.cpp
+    rendersystem/material.cpp
 
     rendersystem/cache/render_pass.cpp
     rendersystem/cache/frame_buffer.cpp
     rendersystem/cache/texture.cpp
     rendersystem/cache/texture_view.cpp
+    rendersystem/cache/pipeline.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

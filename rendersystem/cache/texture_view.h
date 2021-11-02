@@ -8,9 +8,23 @@ namespace ionengine::rendersystem {
 
 class TextureViewCache {
 
-    using Key = std::pair<lgfx::Texture*, lgfx::TextureViewDesc>;
-
 public:
+
+    struct Key {
+
+        lgfx::Texture* texture;
+        lgfx::Dimension dimension;
+        uint32_t base_mip_level;
+        uint32_t mip_level_count;
+        uint32_t base_array_layer;
+        uint32_t array_layer_count;
+
+        inline bool operator<(const Key& rhs) const {
+
+            return std::tie(texture, dimension, base_mip_level, mip_level_count, base_array_layer, array_layer_count) < 
+                std::tie(rhs.texture, rhs.dimension, rhs.base_mip_level, rhs.mip_level_count, rhs.base_array_layer, rhs.array_layer_count);
+        }
+    };
 
     TextureViewCache(lgfx::Device* device);
     TextureViewCache(const TextureViewCache&) = delete;

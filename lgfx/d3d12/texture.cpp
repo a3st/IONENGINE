@@ -7,48 +7,60 @@
 
 using namespace lgfx;
 
-Texture::Texture(Device* device, const uint32_t buffer_index) : desc_{} {
+Texture::Texture(Device* device, const uint32_t buffer_index) : pool_(nullptr) {
 
     THROW_IF_FAILED(device->swapchain_->GetBuffer(buffer_index, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
-    resource_desc_ = resource_->GetDesc();
+    D3D12_RESOURCE_DESC resource_desc = resource_->GetDesc();
 
-    desc_.width = static_cast<uint32_t>(resource_desc_.Width);
-    desc_.height = resource_desc_.Height;
-    desc_.format = DXGIFormatTo(resource_desc_.Format);
-    desc_.flags = TextureFlags::kRenderTarget;
-    desc_.array_layers = resource_desc_.DepthOrArraySize;
-    desc_.mip_levels = resource_desc_.MipLevels;
+    width_ = static_cast<uint32_t>(resource_desc.Width);
+    height_ = resource_desc.Height;
+    array_layers_ = resource_desc.DepthOrArraySize;
+    mip_levels_ = resource_desc.MipLevels;
+    format_ = DXGIFormatTo(resource_desc.Format);
+    flags_ = TextureFlags::kRenderTarget;
 }
 
-Texture::Texture(Device* device, MemoryPool* pool, const TextureDesc& desc) :
-    pool_(pool), desc_(desc), resource_desc_{} {
+Texture::Texture(
+    Device* device, MemoryPool* pool, 
+    const Dimension dimension,
+    const uint32_t width, const uint32_t height,
+    const uint32_t mip_levels, const uint32_t array_layers,
+    const Format format,
+    const TextureFlags flags) : 
+        pool_(pool),
+        dimension_(dimension),
+        width_(width), height_(height),
+        mip_levels_(mip_levels), array_layers_(array_layers),
+        format_(format), flags_(flags) {
 
-    resource_desc_.Dimension = ToD3D12ResourceDimension(desc.dimension);
-    resource_desc_.Width = desc.width;
-    resource_desc_.Height = desc.height;
-    resource_desc_.MipLevels = desc.mip_levels;
-    resource_desc_.DepthOrArraySize = desc.array_layers;
-    resource_desc_.SampleDesc.Count = 1;
-    resource_desc_.Format = ToDXGIFormat(desc.format);
-    if(desc.flags & TextureFlags::kRenderTarget) {
-        resource_desc_.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-        resource_desc_.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        initial_state_ = D3D12_RESOURCE_STATE_GENERIC_READ;
-    } else if(desc.flags & TextureFlags::kDepthStencil) {
-        resource_desc_.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-        resource_desc_.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        initial_state_ = D3D12_RESOURCE_STATE_GENERIC_READ;
-    } else if(desc.flags & TextureFlags::kUnorderedAccess) {
-        resource_desc_.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-        resource_desc_.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-    } else if(desc.flags & TextureFlags::kShaderResource) {
-        resource_desc_.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    D3D12_RESOURCE_STATES initial_state;
+    D3D12_RESOURCE_DESC resource_desc{};
+    resource_desc.Dimension = ToD3D12ResourceDimension(dimension_);
+    resource_desc.Width = width_;
+    resource_desc.Height = height_;
+    resource_desc.MipLevels = mip_levels_;
+    resource_desc.DepthOrArraySize = array_layers_;
+    resource_desc.SampleDesc.Count = 1;
+    resource_desc.Format = ToDXGIFormat(format_);
+    if(flags_ & TextureFlags::kRenderTarget) {
+        resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        initial_state = D3D12_RESOURCE_STATE_GENERIC_READ;
+    } else if(flags_ & TextureFlags::kDepthStencil) {
+        resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        initial_state = D3D12_RESOURCE_STATE_GENERIC_READ;
+    } else if(flags_ & TextureFlags::kUnorderedAccess) {
+        resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+        resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    } else if(flags & TextureFlags::kShaderResource) {
+        
     }
 
-    D3D12_RESOURCE_ALLOCATION_INFO alloc_info = device->device_->GetResourceAllocationInfo(0, 1, &resource_desc_);
-    alloc_info_ = pool->Allocate(alloc_info.SizeInBytes);
+    D3D12_RESOURCE_ALLOCATION_INFO alloc_info = device->device_->GetResourceAllocationInfo(0, 1, &resource_desc);
+    alloc_info_ = pool_->Allocate(alloc_info.SizeInBytes + alloc_info.Alignment);
     
-    THROW_IF_FAILED(device->device_->CreatePlacedResource(alloc_info_.heap->heap_.Get(), alloc_info_.offset, &resource_desc_, initial_state_, nullptr, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
+    THROW_IF_FAILED(device->device_->CreatePlacedResource(alloc_info_.heap->heap_.Get(), alloc_info_.offset, &resource_desc, initial_state, nullptr, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
 }
 
 Texture::~Texture() {
