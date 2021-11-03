@@ -65,7 +65,8 @@ enum class FrameGraphTaskType {
 
     kUnknown,
     kRenderPass,
-    kComputePass
+    kComputePass,
+    kCopyPass
 };
 
 class FrameGraphTask {
@@ -175,6 +176,14 @@ public:
 
     FrameGraph& operator=(const FrameGraph&) = delete;
     FrameGraph& operator=(FrameGraph&&) = delete;
+
+    template<class T>
+    void AddTask2(
+        const FrameGraphTaskType type,
+        const std::function<void(FrameGraphBuilder*, T&)> builder_func,
+        const std::function<void(FrameGraphContext*, T&)> exec_func) {
+
+    }
 
     FrameGraphTask* AddTask(const FrameGraphTaskType type, const std::function<void(FrameGraphBuilder*)>& builder_func, const std::function<void(FrameGraphContext*)>& exec_func);
 

@@ -112,6 +112,21 @@ void Renderer::Frame() {
     frame_graph_.command_buffer_->CopyBuffer(worldmatrix_buff, 0, stage_buffer_.get(), triangle_data_.size() * sizeof(float), sizeof(WorldMatrix));
     frame_graph_.command_buffer_->BufferMemoryBarrier(worldmatrix_buff, lgfx::MemoryState::kCopyDest, lgfx::MemoryState::kCommon);
 
+    struct CopyPassData {
+        FrameGraphResource resource;
+    };
+
+    frame_graph_.AddTask2<CopyPassData>(
+        FrameGraphTaskType::kCopyPass,
+        [&](FrameGraphBuilder* builder, CopyPassData& data) {
+
+            
+        },
+        [=](FrameGraphContext* context, CopyPassData& data) {
+            
+            
+        });
+
     FrameGraphTask* basic_task = frame_graph_.AddTask(FrameGraphTaskType::kRenderPass,
         [&](FrameGraphBuilder* builder) {
 
