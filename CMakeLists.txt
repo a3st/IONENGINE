@@ -32,6 +32,8 @@ add_executable(Runtime-Win32
     rendersystem/cache/texture.cpp
     rendersystem/cache/texture_view.cpp
     rendersystem/cache/pipeline.cpp
+    rendersystem/cache/buffer.cpp
+    rendersystem/cache/buffer_view.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

@@ -119,6 +119,18 @@ void CommandBuffer::TextureMemoryBarrier(Texture* texture, const MemoryState bef
     list_->ResourceBarrier(1, &resource_barrier);
 }
 
+void CommandBuffer::BufferMemoryBarrier(Buffer* buffer, const MemoryState before, const MemoryState after) {
+
+    D3D12_RESOURCE_BARRIER resource_barrier{};
+    resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    resource_barrier.Transition.pResource = buffer->resource_.Get();
+    resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    resource_barrier.Transition.StateBefore = ToD3D12ResourceState(before);
+    resource_barrier.Transition.StateAfter = ToD3D12ResourceState(after);
+
+    list_->ResourceBarrier(1, &resource_barrier);
+}
+
 void CommandBuffer::Reset() {
 
     THROW_IF_FAILED(allocator_->Reset());

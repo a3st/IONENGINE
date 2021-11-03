@@ -8,10 +8,14 @@
 #include "frame_graph.h"
 
 #include "cache/pipeline.h"
+#include "cache/buffer.h"
+#include "cache/buffer_view.h"
 
 namespace ionengine::rendersystem {
 
 class Renderer {
+
+const size_t kRendererStageBufferSize = 67108864;
 
 public:
 
@@ -41,6 +45,8 @@ private:
     lgfx::MemoryPool test_memory_pool;
 
     PipelineCache pipeline_cache_;
+    BufferCache buffer_cache_;
+    BufferViewCache buffer_view_cache_;
 
     struct {
         std::vector<std::unique_ptr<lgfx::Texture>> textures;
@@ -53,8 +59,7 @@ private:
 
     std::unique_ptr<lgfx::DescriptorSet> descriptor_set_;
 
-    std::unique_ptr<lgfx::BufferView> buffer_view_;
-    std::unique_ptr<lgfx::Buffer> buffer_;
+    std::unique_ptr<lgfx::Buffer> stage_buffer_;
 
     std::vector<lgfx::InputLayoutDesc> inputs_;
     std::vector<std::unique_ptr<lgfx::Shader>> shaders_;
@@ -62,6 +67,8 @@ private:
     std::vector<lgfx::Shader*> shaders_c_;
 
     uint32_t frame_index_;
+
+    std::vector<float> triangle_data_;
 };
 
 }

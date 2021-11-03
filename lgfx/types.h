@@ -180,7 +180,9 @@ enum class MemoryState {
     kCommon,
     kRenderTarget,
     kPresent,
-    kGenericRead
+    kGenericRead,
+    kCopySource,
+    kCopyDest
 };
 
 enum class StencilOp {

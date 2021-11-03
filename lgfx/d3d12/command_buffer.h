@@ -27,6 +27,7 @@ public:
     void BeginRenderPass(RenderPass* render_pass, FrameBuffer* frame_buffer, const std::span<ClearValueColor>& colors, float depth, uint8_t stencil);
     void EndRenderPass();
     void TextureMemoryBarrier(Texture* texture, const MemoryState before, const MemoryState after);
+    void BufferMemoryBarrier(Buffer* buffer, const MemoryState before, const MemoryState after);
     void Reset();
     void Close();
     void DrawInstanced(uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance);

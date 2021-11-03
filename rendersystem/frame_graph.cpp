@@ -110,7 +110,7 @@ FrameGraph::FrameGraph(lgfx::Device* device) :
 FrameGraphTask* FrameGraph::AddTask(const FrameGraphTaskType type, const std::function<void(FrameGraphBuilder*)>& builder_func, const std::function<void(FrameGraphContext*)>& exec_func) {
 
     if(tasks_.empty()) {
-        command_buffer_->Reset();
+    //    command_buffer_->Reset();
     }
 
     FrameGraphBuilder builder(&texture_cache_, &texture_view_cache_, &resource_pool, &task_pool, resources_, tasks_);

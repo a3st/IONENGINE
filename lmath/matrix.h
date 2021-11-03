@@ -290,10 +290,10 @@ struct Matrix {
 		Vector3<T> z(eye - target);
 		z.Normalize();
 
-		Vector3<T> x = Vector3<T>::cross_product(up, z);
+		Vector3<T> x = Vector3<T>::CrossProduct(up, z);
 		x.Normalize();
 
-		Vector3<T> y = Vector3<T>::cross_product(z, x);
+		Vector3<T> y = Vector3<T>::CrossProduct(z, x);
 
 		Matrix mat = Matrix::Identity();
 		mat.m00 = x.x;

@@ -43,7 +43,7 @@ int main(int*, char*) {
                     renderer.Frame();
                     ++value;
 
-                    if(value >= 10000) {
+                    if(value >= 200) {
                         swprintf(label.data(), L"IONENGINE [Alloc: %zi/%zi]", allocate, deallocate);
                         SetWindowText(reinterpret_cast<HWND>(window.GetNativeHandle()), label.c_str());
                         value = 0;

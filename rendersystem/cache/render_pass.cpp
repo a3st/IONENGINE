@@ -13,7 +13,7 @@ lgfx::RenderPass* RenderPassCache::GetRenderPass(const std::span<const lgfx::Ren
 
     static RenderPassCache::Key kRenderPassKey{};
     kRenderPassKey.colors.resize(colors.size());
-    std::memcpy(kRenderPassKey.colors.data(), colors.data(), sizeof(lgfx::RenderPassColorDesc) * colors.size());
+    std::copy(colors.begin(), colors.end(), kRenderPassKey.colors.begin());
     kRenderPassKey.depth_stencil = depth_stencil;
     kRenderPassKey.sample_count = sample_count;
 

@@ -256,6 +256,8 @@ D3D12_RESOURCE_STATES ToD3D12ResourceState(const MemoryState state) {
 		case MemoryState::kRenderTarget: return D3D12_RESOURCE_STATE_RENDER_TARGET;
 		case MemoryState::kPresent: return D3D12_RESOURCE_STATE_PRESENT;
 		case MemoryState::kGenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
+		case MemoryState::kCopySource: return D3D12_RESOURCE_STATE_COPY_SOURCE;
+		case MemoryState::kCopyDest: return D3D12_RESOURCE_STATE_COPY_DEST;
 		default: assert(false && "passed invalid argument to ToD3D12ResourceState"); return D3D12_RESOURCE_STATE_COMMON;
 	}
 }

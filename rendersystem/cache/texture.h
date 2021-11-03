@@ -46,15 +46,15 @@ private:
 
     lgfx::Device* device_;
 
+    lgfx::MemoryPool rtds_memory_pool_;
+    lgfx::MemoryPool sr_memory_pool_;
+
     struct TextureEntry {
         uint32_t entry_index;
         std::vector<std::unique_ptr<lgfx::Texture>> textures;
     };
 
     std::map<Key, TextureEntry> textures_;
-
-    lgfx::MemoryPool rtds_memory_pool_;
-    lgfx::MemoryPool sr_memory_pool_;
 };
     
 }

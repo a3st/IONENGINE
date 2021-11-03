@@ -182,11 +182,13 @@ public:
 
     void Reset();
 
+    std::unique_ptr<lgfx::CommandBuffer> command_buffer_;
+
 private:
 
     lgfx::Device* device_;
 
-    std::unique_ptr<lgfx::CommandBuffer> command_buffer_;
+    
 
     FrameBufferCache frame_buffer_cache_;
     RenderPassCache render_pass_cache_;

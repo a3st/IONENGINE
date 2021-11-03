@@ -16,7 +16,7 @@ lgfx::FrameBuffer* FrameBufferCache::GetFrameBuffer(lgfx::RenderPass* render_pas
     kFrameBufferKey.width = width;
     kFrameBufferKey.height = height;
     kFrameBufferKey.colors.resize(colors.size());
-    std::memcpy(kFrameBufferKey.colors.data(), colors.data(), sizeof(lgfx::TextureView*) * colors.size());
+    std::copy(colors.begin(), colors.end(), kFrameBufferKey.colors.begin());
     kFrameBufferKey.depth_stencil = depth_stencil;
 
     auto it = frame_buffers_.find(kFrameBufferKey);

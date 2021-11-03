@@ -53,7 +53,7 @@ struct Vector3 {
 
 	void Normalize() {
 		
-        T inverse = 1 / GetLength();
+        T inverse = 1.0f / GetLength();
         x = x * inverse;
         y = y * inverse;
         z = z * inverse;
@@ -61,7 +61,7 @@ struct Vector3 {
 
 	inline T GetLength() const {
 
-		return std::sqrt(x * x + y * y + z * z);
+		return std::sqrtf(x * x + y * y + z * z);
 	}
     
 	inline Vector3 operator*(const T rhs) const {

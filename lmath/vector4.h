@@ -55,7 +55,7 @@ struct Vector4 {
 
 	void Normalize() {
 
-        T inverse = 1 / GetLength();
+        T inverse = 1.0f / GetLength();
         x = x * inverse;
         y = y * inverse;
         z = z * inverse;

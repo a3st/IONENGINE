@@ -23,9 +23,9 @@ lgfx::Pipeline* PipelineCache::GetPipeline(
     kPipelineKey.type = type;
     kPipelineKey.layout = layout;
     kPipelineKey.inputs.resize(inputs.size());
-    std::memcpy(kPipelineKey.inputs.data(), inputs.data(), sizeof(lgfx::InputLayoutDesc) * inputs.size());
+    std::copy(inputs.begin(), inputs.end(), kPipelineKey.inputs.begin());
     kPipelineKey.shaders.resize(shaders.size());
-    std::memcpy(kPipelineKey.shaders.data(), shaders.data(), sizeof(lgfx::Shader*) * shaders.size());
+    std::copy(shaders.begin(), shaders.end(), kPipelineKey.shaders.begin());
     kPipelineKey.rasterizer = rasterizer;
     kPipelineKey.depth_stencil = depth_stencil;
     kPipelineKey.blend = blend;
