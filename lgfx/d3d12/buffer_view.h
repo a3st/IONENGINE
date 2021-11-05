@@ -23,11 +23,11 @@ public:
 
     ~BufferView();
     
-    BufferView(const TextureView&) = delete;
-    BufferView(TextureView&&) = delete;
+    BufferView(const BufferView&) = delete;
+    BufferView(BufferView&& rhs) noexcept;
 
     BufferView& operator=(const BufferView&) = delete;
-    BufferView& operator=(BufferView&&) = delete;
+    BufferView& operator=(BufferView&& rhs) noexcept;
 
     inline Buffer* GetBuffer() const { return buffer_; }
 

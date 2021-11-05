@@ -14,17 +14,17 @@ friend class CommandBuffer;
 public:
 
     FrameBuffer(
-        Device* device, 
-        RenderPass* render_pass,
+        Device* const device, 
+        RenderPass* const render_pass,
         const uint32_t width, const uint32_t height,
         const std::span<TextureView* const> colors,
-        TextureView* depth_stencil);
+        TextureView* const depth_stencil);
 
     FrameBuffer(const FrameBuffer&) = delete;
-    FrameBuffer(FrameBuffer&&) = delete;
+    FrameBuffer(FrameBuffer&& rhs) noexcept;
 
     FrameBuffer& operator=(const FrameBuffer&) = delete;
-    FrameBuffer& operator=(FrameBuffer&&) = delete;
+    FrameBuffer& operator=(FrameBuffer&& rhs) noexcept;
 
 private:
 

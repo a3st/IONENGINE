@@ -14,13 +14,17 @@ friend class Pipeline;
 
 public:
 
-    RenderPass(Device* device, const std::span<const RenderPassColorDesc> colors, const RenderPassDepthStencilDesc& depth_stencil, uint32_t sample_count = 1);
+    RenderPass(
+        Device* const device, 
+        const std::span<const RenderPassColorDesc> colors, 
+        const RenderPassDepthStencilDesc& depth_stencil, 
+        const uint32_t sample_count = 1);
 
     RenderPass(const RenderPass&) = delete;
-    RenderPass(RenderPass&&) = delete;
+    RenderPass(RenderPass&& rhs) noexcept;
 
     RenderPass& operator=(const RenderPass&) = delete;
-    RenderPass& operator=(RenderPass&&) = delete;
+    RenderPass& operator=(RenderPass&& rhs) noexcept;
 
 private:
 

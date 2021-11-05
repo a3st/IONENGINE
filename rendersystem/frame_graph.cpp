@@ -102,9 +102,14 @@ FrameGraph::FrameGraph(lgfx::Device* device) :
     texture_view_cache_(device),
     texture_cache_(device),
     resource_pool(kFrameGraphResourcePoolSize),
-    task_pool(kFrameGraphTaskPoolSize) {
+    task_pool(kFrameGraphTaskPoolSize),
+    
+    copy_buffer_(device, lgfx::CommandBufferType::kCopy),
+    compute_buffer_(device, lgfx::CommandBufferType::kCompute),
+    graphics_buffer_(device, lgfx::CommandBufferType::kGraphics) {
 
     command_buffer_ = std::make_unique<lgfx::CommandBuffer>(device, lgfx::CommandBufferType::kGraphics);
+
 }
 
 FrameGraphTask* FrameGraph::AddTask(const FrameGraphTaskType type, const std::function<void(FrameGraphBuilder*)>& builder_func, const std::function<void(FrameGraphContext*)>& exec_func) {

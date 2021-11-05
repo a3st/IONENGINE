@@ -60,3 +60,22 @@ void Buffer::Unmap() {
     D3D12_RANGE range{};
     resource_->Unmap(0, &range);
 }
+
+Buffer::Buffer(Buffer&& rhs) noexcept {
+
+    std::swap(pool_, rhs.pool_);
+    resource_.Swap(rhs.resource_);
+    std::swap(alloc_info_, rhs.alloc_info_);
+    std::swap(size_, rhs.size_);
+    std::swap(flags_, rhs.flags_);
+}
+
+Buffer& Buffer::operator=(Buffer&& rhs) noexcept {
+
+    std::swap(pool_, rhs.pool_);
+    resource_.Swap(rhs.resource_);
+    std::swap(alloc_info_, rhs.alloc_info_);
+    std::swap(size_, rhs.size_);
+    std::swap(flags_, rhs.flags_);
+    return *this;
+}

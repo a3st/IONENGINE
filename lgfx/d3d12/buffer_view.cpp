@@ -65,3 +65,36 @@ BufferView::~BufferView() {
         pool_->Deallocate(alloc_info_);
     }
 }
+
+BufferView::BufferView(BufferView&& rhs) noexcept {
+
+    std::swap(pool_, rhs.pool_);
+    std::swap(buffer_, rhs.buffer_);
+
+    if(buffer_->GetFlags() & BufferFlags::kVertexBuffer) {
+        std::swap(vertex_view_desc_, rhs.vertex_view_desc_);
+    } else if(buffer_->GetFlags() & BufferFlags::kIndexBuffer) {
+        std::swap(index_view_desc_, rhs.index_view_desc_);
+    }
+
+    std::swap(alloc_info_, rhs.alloc_info_);
+    std::swap(index_format_, rhs.index_format_);
+    std::swap(stride_, rhs.stride_);
+}
+
+BufferView& BufferView::operator=(BufferView&& rhs) noexcept {
+
+    std::swap(pool_, rhs.pool_);
+    std::swap(buffer_, rhs.buffer_);
+
+    if(buffer_->GetFlags() & BufferFlags::kVertexBuffer) {
+        std::swap(vertex_view_desc_, rhs.vertex_view_desc_);
+    } else if(buffer_->GetFlags() & BufferFlags::kIndexBuffer) {
+        std::swap(index_view_desc_, rhs.index_view_desc_);
+    }
+
+    std::swap(alloc_info_, rhs.alloc_info_);
+    std::swap(index_format_, rhs.index_format_);
+    std::swap(stride_, rhs.stride_);
+    return *this;
+}

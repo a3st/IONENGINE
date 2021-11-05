@@ -46,3 +46,22 @@ RenderPass::RenderPass(Device* device, const std::span<const RenderPassColorDesc
         render_pass_depth_stencil_desc_.StencilEndingAccess = stencil_end;
     }
 }
+
+RenderPass::RenderPass(RenderPass&& rhs) noexcept {
+
+    std::swap(render_pass_target_descs_, rhs.render_pass_target_descs_);
+    std::swap(render_pass_depth_stencil_desc_, rhs.render_pass_depth_stencil_desc_);
+    std::swap(colors_, rhs.colors_);
+    std::swap(depth_stencil_, rhs.depth_stencil_);
+    std::swap(sample_count_, rhs.sample_count_);
+}
+
+RenderPass& RenderPass::operator=(RenderPass&& rhs) noexcept {
+
+    std::swap(render_pass_target_descs_, rhs.render_pass_target_descs_);
+    std::swap(render_pass_depth_stencil_desc_, rhs.render_pass_depth_stencil_desc_);
+    std::swap(colors_, rhs.colors_);
+    std::swap(depth_stencil_, rhs.depth_stencil_);
+    std::swap(sample_count_, rhs.sample_count_);
+    return *this;
+}

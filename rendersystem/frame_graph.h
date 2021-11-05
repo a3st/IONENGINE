@@ -197,7 +197,9 @@ private:
 
     lgfx::Device* device_;
 
-    
+    lgfx::CommandBuffer copy_buffer_;
+    lgfx::CommandBuffer compute_buffer_;
+    lgfx::CommandBuffer graphics_buffer_;
 
     FrameBufferCache frame_buffer_cache_;
     RenderPassCache render_pass_cache_;
