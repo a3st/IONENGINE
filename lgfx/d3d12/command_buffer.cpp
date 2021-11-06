@@ -16,7 +16,7 @@
 
 using namespace lgfx;
 
-CommandBuffer::CommandBuffer(Device* device, const CommandBufferType type) : device_(device) {
+CommandBuffer::CommandBuffer(Device* const device, const CommandBufferType type) : device_(device) {
 
     D3D12_COMMAND_LIST_TYPE list_type = ToD3D12CommandListType(type);
     THROW_IF_FAILED(device->device_->CreateCommandAllocator(list_type, __uuidof(ID3D12CommandAllocator), reinterpret_cast<void**>(allocator_.GetAddressOf())));
@@ -24,17 +24,32 @@ CommandBuffer::CommandBuffer(Device* device, const CommandBufferType type) : dev
     THROW_IF_FAILED(list_->Close());
 }
 
-void CommandBuffer::BindPipeline(Pipeline* pipeline) {
+CommandBuffer::CommandBuffer(CommandBuffer&& rhs) noexcept {
+
+    std::swap(device_, rhs.device_);
+    allocator_.Swap(rhs.allocator_);
+    list_.Swap(rhs.list_);
+}
+
+CommandBuffer& CommandBuffer::operator=(CommandBuffer&& rhs) noexcept {
+
+    std::swap(device_, rhs.device_);
+    allocator_.Swap(rhs.allocator_);
+    list_.Swap(rhs.list_);
+    return *this;
+}
+
+void CommandBuffer::BindPipeline(Pipeline* const pipeline) {
 
     list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     list_->SetPipelineState(pipeline->pipeline_state_.Get());
 }
 
-void CommandBuffer::BindDescriptorSet(DescriptorSet* set) {
+void CommandBuffer::BindDescriptorSet(DescriptorSet* const set) {
 
     list_->SetGraphicsRootSignature(set->layout_->root_signature_.Get());
     
-    std::array<ID3D12DescriptorHeap*, 2> heaps = { set->srv_pool_.GetHeaps()[0]->heap_.Get(), set->sampler_pool_.GetHeaps()[0]->heap_.Get() }; 
+    std::array<ID3D12DescriptorHeap*, 2> heaps = { set->srv_pool_.GetHeaps().begin()->heap_.Get(), set->sampler_pool_.GetHeaps().begin()->heap_.Get() }; 
 	list_->SetDescriptorHeaps(static_cast<uint32_t>(heaps.size()), heaps.data());
 
     for(uint32_t i = 0; i < static_cast<uint32_t>(set->update_descriptors_.size()); ++i) {
@@ -74,7 +89,7 @@ void CommandBuffer::SetScissorRect(const uint32_t left, const uint32_t top, cons
     list_->RSSetScissorRects(1, &rect);
 }
 
-void CommandBuffer::BeginRenderPass(RenderPass* render_pass, FrameBuffer* frame_buffer, const std::span<ClearValueColor>& colors, float depth, uint8_t stencil) {
+void CommandBuffer::BeginRenderPass(RenderPass* const render_pass, FrameBuffer* const frame_buffer, const std::span<const ClearValueColor> colors, float depth, uint8_t stencil) {
 
     for(size_t i : std::views::iota(0u, render_pass->render_pass_target_descs_.size())) {
 
@@ -107,7 +122,7 @@ void CommandBuffer::EndRenderPass() {
     list_->EndRenderPass();
 }
 
-void CommandBuffer::TextureMemoryBarrier(Texture* texture, const MemoryState before, const MemoryState after) {
+void CommandBuffer::TextureMemoryBarrier(Texture* const texture, const MemoryState before, const MemoryState after) {
 
     D3D12_RESOURCE_BARRIER resource_barrier{};
     resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -119,7 +134,7 @@ void CommandBuffer::TextureMemoryBarrier(Texture* texture, const MemoryState bef
     list_->ResourceBarrier(1, &resource_barrier);
 }
 
-void CommandBuffer::BufferMemoryBarrier(Buffer* buffer, const MemoryState before, const MemoryState after) {
+void CommandBuffer::BufferMemoryBarrier(Buffer* const buffer, const MemoryState before, const MemoryState after) {
 
     D3D12_RESOURCE_BARRIER resource_barrier{};
     resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -152,17 +167,17 @@ void CommandBuffer::DrawIndexed(const uint32_t index_count, const uint32_t insta
     list_->DrawIndexedInstanced(index_count, instance_count, first_index, vertex_offset, first_instance);
 }
 
-void CommandBuffer::SetIndexBuffer(BufferView* buffer_view) {
+void CommandBuffer::SetIndexBuffer(BufferView* const buffer_view) {
     
     list_->IASetIndexBuffer(&buffer_view->index_view_desc_);
 }
 
-void CommandBuffer::SetVertexBuffer(const uint32_t slot, BufferView* buffer_view) {
+void CommandBuffer::SetVertexBuffer(const uint32_t slot, BufferView* const buffer_view) {
     
     list_->IASetVertexBuffers(slot, 1, &buffer_view->vertex_view_desc_);
 }
 
-void CommandBuffer::CopyBuffer(Buffer* dst_buffer, const uint64_t dst_offset, Buffer* src_buffer, const uint64_t src_offset, const size_t size) {
+void CommandBuffer::CopyBuffer(Buffer* const dst_buffer, const uint64_t dst_offset, Buffer* const src_buffer, const uint64_t src_offset, const size_t size) {
 
     list_->CopyBufferRegion(dst_buffer->resource_.Get(), dst_offset, src_buffer->resource_.Get(), src_offset, size);
 }

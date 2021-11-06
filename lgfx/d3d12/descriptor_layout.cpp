@@ -7,7 +7,7 @@
 
 using namespace lgfx;
 
-DescriptorLayout::DescriptorLayout(Device* device, const std::span<DescriptorLayoutBinding>& bindings) {
+DescriptorLayout::DescriptorLayout(Device* const device, const std::span<const DescriptorLayoutBinding> bindings) {
 
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
     ranges.resize(bindings.size());
@@ -41,4 +41,17 @@ DescriptorLayout::DescriptorLayout(Device* device, const std::span<DescriptorLay
 	ComPtr<ID3DBlob> blob;
 	THROW_IF_FAILED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, blob.GetAddressOf(), nullptr));
 	THROW_IF_FAILED(device->device_->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(), __uuidof(ID3D12RootSignature), reinterpret_cast<void**>(root_signature_.GetAddressOf())));
+}
+
+DescriptorLayout::DescriptorLayout(DescriptorLayout&& rhs) noexcept {
+
+    root_signature_.Swap(rhs.root_signature_);
+    std::swap(descriptor_tables_, rhs.descriptor_tables_);
+}
+
+DescriptorLayout& DescriptorLayout::operator=(DescriptorLayout&& rhs) noexcept {
+
+    root_signature_.Swap(rhs.root_signature_);
+    std::swap(descriptor_tables_, rhs.descriptor_tables_);
+    return *this;
 }

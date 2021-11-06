@@ -19,12 +19,12 @@ friend class DescriptorSet;
 
 public:
 
-    DescriptorHeap(Device* device, const DescriptorType type, const DescriptorFlags flags);
+    DescriptorHeap(Device* const device, const DescriptorType type, const DescriptorFlags flags);
     DescriptorHeap(const DescriptorHeap&) = delete;
-    DescriptorHeap(DescriptorHeap&&) = delete;
+    DescriptorHeap(DescriptorHeap&& rhs) noexcept;
 
     DescriptorHeap& operator=(const DescriptorHeap&) = delete;
-    DescriptorHeap& operator=(DescriptorHeap&&) = delete;
+    DescriptorHeap& operator=(DescriptorHeap&& rhs) noexcept;
 
     inline size_t GetHeapSize() const { return heap_size_; }
 
@@ -46,16 +46,17 @@ class DescriptorPool {
 
 public:
 
-    DescriptorPool(Device* device, const size_t size, const DescriptorType type, const DescriptorFlags flags);
+    DescriptorPool();
+    DescriptorPool(Device* const device, const size_t size, const DescriptorType type, const DescriptorFlags flags);
     DescriptorPool(const DescriptorPool&) = delete;
-    DescriptorPool(DescriptorPool&&) = delete;
+    DescriptorPool(DescriptorPool&& rhs) noexcept;
 
     DescriptorPool& operator=(const DescriptorPool&) = delete;
-    DescriptorPool& operator=(DescriptorPool&&) = delete;
+    DescriptorPool& operator=(DescriptorPool&& rhs) noexcept;
 
     inline DescriptorType GetType() const { return type_; }
     inline DescriptorFlags GetFlags() const { return flags_; }
-    inline const std::vector<std::unique_ptr<DescriptorHeap>>& GetHeaps() const { return heaps_; }
+    inline std::span<const DescriptorHeap> GetHeaps() const { return heaps_; }
 
     DescriptorAllocInfo Allocate();
     void Deallocate(const DescriptorAllocInfo& alloc_info);
@@ -64,7 +65,7 @@ private:
 
     DescriptorType type_;
     DescriptorFlags flags_;
-    std::vector<std::unique_ptr<DescriptorHeap>> heaps_;
+    std::vector<DescriptorHeap> heaps_;
 };
 
 }

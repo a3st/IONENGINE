@@ -6,7 +6,7 @@
 
 using namespace lgfx;
 
-Fence::Fence(Device* device, const uint64_t initial_value) {
+Fence::Fence(Device* const device, const uint64_t initial_value) {
 
     assert(device && "invalid pointer to device");
 
@@ -34,4 +34,17 @@ void Fence::Wait(const uint64_t value) {
         THROW_IF_FAILED(fence_->SetEventOnCompletion(value, reinterpret_cast<HANDLE>(event_.get())));
         WaitForSingleObjectEx(reinterpret_cast<HANDLE>(event_.get()), INFINITE, false);
     }
+}
+
+Fence::Fence(Fence&& rhs) noexcept {
+
+    fence_.Swap(rhs.fence_);
+    event_.swap(rhs.event_);
+}
+
+Fence& Fence::operator=(Fence&& rhs) noexcept {
+    
+    fence_.Swap(rhs.fence_);
+    event_.swap(rhs.event_);
+    return *this;
 }

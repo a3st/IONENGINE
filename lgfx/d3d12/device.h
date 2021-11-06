@@ -8,6 +8,7 @@
 namespace lgfx {
 
 struct AdapterDesc {
+
     std::string name;
     uint32_t vendor_id;
     uint32_t device_id;
@@ -30,17 +31,17 @@ friend class DescriptorSet;
 
 public:
 
-    Device(const uint32_t adapter_index, void* hwnd, const uint32_t width, const uint32_t height, const uint32_t buffer_count, const uint32_t multisample_count);
+    Device(const uint32_t adapter_index, void* const hwnd, const uint32_t width, const uint32_t height, const uint32_t buffer_count, const uint32_t multisample_count);
     Device(const Device&) = delete;
-    Device(Device&&) = delete;
+    Device(Device&& rhs) noexcept;
 
     Device& operator=(const Device&) = delete;
-    Device& operator=(Device&&) = delete;
+    Device& operator=(Device&& rhs) noexcept;
 
     void Present();
-    void Signal(const CommandBufferType type, Fence* fence, const uint64_t value);
-    void Wait(const CommandBufferType type, Fence* fence, const uint64_t value);
-    void ExecuteCommandBuffer(const CommandBufferType type, CommandBuffer* buffer);
+    void Signal(const CommandBufferType type, Fence* const fence, const uint64_t value);
+    void Wait(const CommandBufferType type, Fence* const fence, const uint64_t value);
+    void ExecuteCommandBuffer(const CommandBufferType type, CommandBuffer* const buffer);
 
     inline uint32_t GetSwapchainBufferIndex() const { return swapchain_->GetCurrentBackBufferIndex(); }
     inline const AdapterDesc& GetAdapterDesc() const { return adapter_desc_; }

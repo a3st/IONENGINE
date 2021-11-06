@@ -22,15 +22,36 @@ DescriptorHeap::DescriptorHeap(Device* device, const DescriptorType type, const 
     offset_ = 0;
 }
 
+DescriptorHeap::DescriptorHeap(DescriptorHeap&& rhs) noexcept {
+
+    heap_.Swap(rhs.heap_);
+    std::swap(heap_size_, rhs.heap_size_);
+    std::swap(offset_, rhs.offset_);
+    std::swap(descriptors_, rhs.descriptors_);
+}
+
+DescriptorHeap& DescriptorHeap::operator=(DescriptorHeap&& rhs) noexcept {
+
+    heap_.Swap(rhs.heap_);
+    std::swap(heap_size_, rhs.heap_size_);
+    std::swap(offset_, rhs.offset_);
+    std::swap(descriptors_, rhs.descriptors_);
+    return *this;
+}
+
+DescriptorPool::DescriptorPool() {
+
+}
+
 DescriptorPool::DescriptorPool(Device* device, const size_t size, const DescriptorType type, const DescriptorFlags flags) :
     type_(type),
     flags_(flags) {
 
     size_t heap_count = size > kDescriptorPoolDefaultHeapSize ? size / kDescriptorPoolDefaultHeapSize : 1;
-    heaps_.resize(heap_count);
+    heaps_.reserve(heap_count);
 
-    for(uint32_t i = 0; i < heap_count; ++i) {
-        heaps_[i] = std::make_unique<DescriptorHeap>(device, type, flags);
+    for(size_t i : std::views::iota(0u, heap_count)) {
+        heaps_.emplace_back(device, type, flags);
     }
 }
 
@@ -39,15 +60,15 @@ DescriptorAllocInfo DescriptorPool::Allocate() {
     DescriptorAllocInfo alloc_info{};
 
     for(uint32_t i = 0; i < static_cast<uint32_t>(heaps_.size()); ++i) {
-        if(heaps_[i]->offset_ > heaps_[i]->heap_size_) {
+        if(heaps_[i].offset_ > heaps_[i].heap_size_) {
             continue;
         } else {
-            for(uint32_t j = 0; j < heaps_[i]->heap_size_; ++j) {
-                if(heaps_[i]->descriptors_[j] == 0x0) {
-                    alloc_info.heap = heaps_[i].get();
+            for(uint32_t j = 0; j < heaps_[i].heap_size_; ++j) {
+                if(heaps_[i].descriptors_[j] == 0x0) {
+                    alloc_info.heap = &heaps_[i];
                     alloc_info.offset = j;
-                    heaps_[i]->descriptors_[j] = 0x1;
-                    heaps_[i]->offset_ = j + 1;
+                    heaps_[i].descriptors_[j] = 0x1;
+                    heaps_[i].offset_ = j + 1;
                     break;
                 }
             }
@@ -67,4 +88,19 @@ void DescriptorPool::Deallocate(const DescriptorAllocInfo& alloc_info) {
 
     alloc_info.heap->descriptors_[alloc_info.offset] = 0x0;
     alloc_info.heap->offset_ = alloc_info.offset;
+}
+
+DescriptorPool::DescriptorPool(DescriptorPool&& rhs) noexcept {
+
+    std::swap(type_, rhs.type_);
+    std::swap(flags_, rhs.flags_);
+    std::swap(heaps_, rhs.heaps_);
+}
+
+DescriptorPool& DescriptorPool::operator=(DescriptorPool&& rhs) noexcept {
+
+    std::swap(type_, rhs.type_);
+    std::swap(flags_, rhs.flags_);
+    std::swap(heaps_, rhs.heaps_);
+    return *this;
 }

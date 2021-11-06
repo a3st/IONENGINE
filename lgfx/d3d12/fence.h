@@ -14,12 +14,12 @@ friend class Device;
 
 public:
 
-    Fence(Device* device, const uint64_t initial_value);
+    Fence(Device* const device, const uint64_t initial_value);
     Fence(const Fence&) = delete;
-    Fence(Fence&&) = delete;
+    Fence(Fence&& rhs) noexcept;
 
     Fence& operator=(const Fence&) = delete;
-    Fence& operator=(Fence&&) = delete;
+    Fence& operator=(Fence&& rhs) noexcept;
 
     uint64_t GetCompletedValue() const;
     void Signal(const uint64_t value);

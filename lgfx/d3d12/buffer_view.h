@@ -16,8 +16,8 @@ friend class DescriptorSet;
 public:
 
     BufferView(
-        Device* device, DescriptorPool* pool, 
-        Buffer* buffer, 
+        Device* const device, DescriptorPool* const pool, 
+        Buffer* const buffer, 
         const Format index_format,
         const uint32_t stride);
 

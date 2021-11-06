@@ -7,7 +7,7 @@
 
 using namespace lgfx;
 
-Texture::Texture(Device* device, const uint32_t buffer_index) : pool_(nullptr) {
+Texture::Texture(Device* const device, const uint32_t buffer_index) : pool_(nullptr) {
 
     THROW_IF_FAILED(device->swapchain_->GetBuffer(buffer_index, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
     D3D12_RESOURCE_DESC resource_desc = resource_->GetDesc();
@@ -21,7 +21,7 @@ Texture::Texture(Device* device, const uint32_t buffer_index) : pool_(nullptr) {
 }
 
 Texture::Texture(
-    Device* device, MemoryPool* pool, 
+    Device* const device, MemoryPool* const pool, 
     const Dimension dimension,
     const uint32_t width, const uint32_t height,
     const uint32_t mip_levels, const uint32_t array_layers,
@@ -68,4 +68,33 @@ Texture::~Texture() {
     if(pool_) {
         pool_->Deallocate(alloc_info_);
     }
+}
+
+Texture::Texture(Texture&& rhs) noexcept {
+
+    std::swap(pool_, rhs.pool_);
+    resource_.Swap(rhs.resource_);
+    std::swap(alloc_info_, rhs.alloc_info_);
+    std::swap(dimension_, rhs.dimension_);
+    std::swap(width_, rhs.width_);
+    std::swap(height_, rhs.height_);
+    std::swap(mip_levels_, rhs.mip_levels_);
+    std::swap(array_layers_, rhs.array_layers_);
+    std::swap(format_, rhs.format_);
+    std::swap(flags_, rhs.flags_);
+}
+
+Texture& Texture::operator=(Texture&& rhs) noexcept {
+
+    std::swap(pool_, rhs.pool_);
+    resource_.Swap(rhs.resource_);
+    std::swap(alloc_info_, rhs.alloc_info_);
+    std::swap(dimension_, rhs.dimension_);
+    std::swap(width_, rhs.width_);
+    std::swap(height_, rhs.height_);
+    std::swap(mip_levels_, rhs.mip_levels_);
+    std::swap(array_layers_, rhs.array_layers_);
+    std::swap(format_, rhs.format_);
+    std::swap(flags_, rhs.flags_);
+    return *this;
 }

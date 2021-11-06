@@ -17,13 +17,13 @@ friend class CommandBuffer;
 
 public:
 
-    DescriptorSet(Device* device, DescriptorLayout* layout);
+    DescriptorSet(Device* const device, DescriptorLayout* const layout);
     ~DescriptorSet();
     DescriptorSet(const DescriptorSet&) = delete;
-    DescriptorSet(DescriptorSet&&) = delete;
+    DescriptorSet(DescriptorSet&& rhs) noexcept;
 
     DescriptorSet& operator=(const DescriptorSet&) = delete;
-    DescriptorSet& operator=(DescriptorSet&&) = delete;
+    DescriptorSet& operator=(DescriptorSet&& rhs) noexcept;
 
     void WriteTexture(const uint32_t slot, const uint32_t space, TextureView* texture_view);
     void WriteBuffer(const uint32_t slot, const uint32_t space, BufferView* buffer_view);

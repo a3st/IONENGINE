@@ -17,6 +17,7 @@ class Pipeline;
 class DescriptorLayout;
 class DescriptorSet;
 class Shader;
+class CommandBuffer;
 
 enum class PipelineType {
 

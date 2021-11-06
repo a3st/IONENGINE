@@ -15,15 +15,21 @@ friend class CommandBuffer;
 public:
 
     Pipeline(
-        Device* device, 
+        Device* const device, 
         const PipelineType type,
-        DescriptorLayout* layout,
+        DescriptorLayout* const layout,
         const std::span<const InputLayoutDesc> inputs,
         const std::span<Shader* const> shaders,
         const RasterizerDesc& rasterizer,
         const DepthStencilDesc& depth_stencil,
         const BlendDesc& blend,
-        RenderPass* render_pass);
+        RenderPass* const render_pass);
+
+    Pipeline(const Pipeline&) = delete;
+    Pipeline(Pipeline&& rhs) noexcept;
+
+    Pipeline& operator=(const Pipeline&) = delete;
+    Pipeline& operator=(Pipeline&& rhs) noexcept;
 
     inline PipelineType GetType() const { return type_; }
     inline const std::vector<InputLayoutDesc>& GetInputLayoutDescs() const { return inputs_; }
@@ -42,7 +48,6 @@ private:
     RasterizerDesc rasterizer_;
     DepthStencilDesc depth_stencil_;
     BlendDesc blend_;
-
 };
 
 }

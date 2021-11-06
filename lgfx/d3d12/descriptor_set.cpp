@@ -9,7 +9,7 @@
 
 using namespace lgfx;
 
-DescriptorSet::DescriptorSet(Device* device, DescriptorLayout* layout) : 
+DescriptorSet::DescriptorSet(Device* const device, DescriptorLayout* const layout) : 
     device_(device),
     layout_(layout),
     srv_pool_(device, kDescriptorSetSRVCount, lgfx::DescriptorType::kShaderResource, lgfx::DescriptorFlags::kShaderVisible),
@@ -59,4 +59,13 @@ void DescriptorSet::WriteBuffer(const uint32_t slot, const uint32_t space, Buffe
     device_->device_->CopyDescriptorsSimple(1, dst_handle, src_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     update_descriptors_.emplace_back(descriptors_[space][slot]);
+}
+
+DescriptorSet::DescriptorSet(DescriptorSet&& rhs) noexcept {
+
+}
+
+DescriptorSet& DescriptorSet::operator=(DescriptorSet&& rhs) noexcept {
+
+    return *this;
 }

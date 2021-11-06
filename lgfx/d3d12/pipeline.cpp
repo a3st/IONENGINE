@@ -11,15 +11,15 @@
 using namespace lgfx;
 
 Pipeline::Pipeline(
-    Device* device, 
+    Device* const device, 
     const PipelineType type,
-    DescriptorLayout* layout,
+    DescriptorLayout* const layout,
     const std::span<const InputLayoutDesc> inputs,
     const std::span<Shader* const> shaders,
     const RasterizerDesc& rasterizer,
     const DepthStencilDesc& depth_stencil,
     const BlendDesc& blend,
-    RenderPass* render_pass) : 
+    RenderPass* const render_pass) : 
         type_(type),
         inputs_(inputs.begin(), inputs.end()),
         shaders_(shaders.begin(), shaders.end()),
@@ -129,4 +129,27 @@ Pipeline::Pipeline(
     graphics_pipeline_desc.SampleDesc = sample_desc;
         
     THROW_IF_FAILED(device->device_->CreateGraphicsPipelineState(&graphics_pipeline_desc, __uuidof(ID3D12PipelineState), reinterpret_cast<void**>(pipeline_state_.GetAddressOf())));
+}
+
+Pipeline::Pipeline(Pipeline&& rhs) noexcept {
+
+    pipeline_state_.Swap(rhs.pipeline_state_);
+    std::swap(type_, rhs.type_);
+    std::swap(inputs_, rhs.inputs_);
+    std::swap(shaders_, rhs.shaders_);
+    std::swap(rasterizer_, rhs.rasterizer_);
+    std::swap(depth_stencil_, rhs.depth_stencil_);
+    std::swap(blend_, rhs.blend_);
+}
+
+Pipeline& Pipeline::operator=(Pipeline&& rhs) noexcept {
+
+    pipeline_state_.Swap(rhs.pipeline_state_);
+    std::swap(type_, rhs.type_);
+    std::swap(inputs_, rhs.inputs_);
+    std::swap(shaders_, rhs.shaders_);
+    std::swap(rasterizer_, rhs.rasterizer_);
+    std::swap(depth_stencil_, rhs.depth_stencil_);
+    std::swap(blend_, rhs.blend_);
+    return *this;
 }

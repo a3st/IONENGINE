@@ -7,7 +7,7 @@
 
 using namespace lgfx;
 
-MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType type, const MemoryFlags flags) {
+MemoryHeap::MemoryHeap(Device* const device, const uint64_t align, const MemoryType type, const MemoryFlags flags) {
 
     D3D12_HEAP_DESC heap_desc{};
     heap_desc.SizeInBytes = kMemoryPoolDefaultHeapSize;
@@ -25,15 +25,34 @@ MemoryHeap::MemoryHeap(Device* device, const uint64_t align, const MemoryType ty
     offset_ = 0;
 }
 
-MemoryPool::MemoryPool(Device* device, const size_t size, const uint64_t align, const MemoryType type, const MemoryFlags flags) :
+MemoryHeap::MemoryHeap(MemoryHeap&& rhs) noexcept {
+
+    heap_.Swap(rhs.heap_);
+    std::swap(heap_size_, rhs.heap_size_);
+    std::swap(block_count_, rhs.block_count_);
+    std::swap(blocks_, rhs.blocks_);
+    std::swap(offset_, rhs.offset_);
+}
+
+MemoryHeap& MemoryHeap::operator=(MemoryHeap&& rhs) noexcept {
+
+    heap_.Swap(rhs.heap_);
+    std::swap(heap_size_, rhs.heap_size_);
+    std::swap(block_count_, rhs.block_count_);
+    std::swap(blocks_, rhs.blocks_);
+    std::swap(offset_, rhs.offset_);
+    return *this;
+}
+
+MemoryPool::MemoryPool(Device* const device, const size_t size, const uint64_t align, const MemoryType type, const MemoryFlags flags) :
     type_(type),
     flags_(flags) {
 
     size_t heap_count = size > kMemoryPoolDefaultHeapSize ? size / kMemoryPoolDefaultHeapSize : 1;
-    heaps_.resize(heap_count);
+    heaps_.reserve(heap_count);
 
-    for(uint32_t i = 0; i < heap_count; ++i) {
-        heaps_[i] = std::make_unique<MemoryHeap>(device, align, type, flags);
+    for(size_t i : std::views::iota(0u, heap_count)) {
+        heaps_.emplace_back(device, align, type, flags);
     }
 }
 
@@ -43,23 +62,23 @@ MemoryAllocInfo MemoryPool::Allocate(const size_t size) {
     size_t align_size = AlignedBlockSize(size);
 
     for(uint32_t i = 0; i < static_cast<uint32_t>(heaps_.size()); ++i) {
-        if(heaps_[i]->offset_ + align_size > heaps_[i]->heap_size_) {
+        if(heaps_[i].offset_ + align_size > heaps_[i].heap_size_) {
             continue;
         } else {
             size_t alloc_size = 0;
-            for(uint64_t j = 0; j < heaps_[i]->block_count_; ++j) {
+            for(uint64_t j = 0; j < heaps_[i].block_count_; ++j) {
                 if(alloc_size == align_size) {
-                    std::memset(heaps_[i]->blocks_.data() + alloc_info.offset / kMemoryPoolDefaultBlockSize, 0x1, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
+                    std::memset(heaps_[i].blocks_.data() + alloc_info.offset / kMemoryPoolDefaultBlockSize, 0x1, sizeof(uint8_t) * align_size / kMemoryPoolDefaultBlockSize);
                     break;
                 }
 
                 if(alloc_size == 0) {
-                    alloc_info.heap = heaps_[i].get();
+                    alloc_info.heap = &heaps_[i];
                     alloc_info.offset = j * kMemoryPoolDefaultBlockSize;
                     alloc_info.size = align_size;
                 }
 
-                alloc_size = heaps_[i]->blocks_[j] == 0x0 ? alloc_size + kMemoryPoolDefaultBlockSize : alloc_size;
+                alloc_size = heaps_[i].blocks_[j] == 0x0 ? alloc_size + kMemoryPoolDefaultBlockSize : alloc_size;
             }
             if(alloc_size != align_size) {
                 alloc_info.heap = nullptr;
@@ -83,4 +102,19 @@ void MemoryPool::Deallocate(const MemoryAllocInfo& alloc_info) {
 
     std::memset(alloc_info.heap->blocks_.data() + alloc_info.offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * alloc_info.size / kMemoryPoolDefaultBlockSize);
     alloc_info.heap->offset_ = alloc_info.offset;
+}
+
+MemoryPool::MemoryPool(MemoryPool&& rhs) noexcept {
+
+    std::swap(type_, rhs.type_);
+    std::swap(flags_, rhs.flags_);
+    std::swap(heaps_, rhs.heaps_);
+}
+
+MemoryPool& MemoryPool::operator=(MemoryPool&& rhs) noexcept {
+
+    std::swap(type_, rhs.type_);
+    std::swap(flags_, rhs.flags_);
+    std::swap(heaps_, rhs.heaps_);
+    return *this;
 }

@@ -15,10 +15,10 @@ friend class CommandBuffer;
 
 public:
 
-    Texture(Device* device, const uint32_t buffer_index);
+    Texture(Device* const device, const uint32_t buffer_index);
 
     Texture(
-        Device* device, MemoryPool* pool, 
+        Device* const device, MemoryPool* const pool, 
         const Dimension dimension,
         const uint32_t width, const uint32_t height,
         const uint32_t mip_levels, const uint32_t array_layers,
@@ -28,10 +28,10 @@ public:
     ~Texture();
 
     Texture(const Texture&) = delete;
-    Texture(Texture&&) = delete;
+    Texture(Texture&& rhs) noexcept;
 
     Texture& operator=(const Texture&) = delete;
-    Texture& operator=(Texture&&) = delete;
+    Texture& operator=(Texture&& rhs) noexcept;
 
     inline Dimension GetDimension() const { return dimension_; }
     inline uint32_t GetWidth() const { return width_; }

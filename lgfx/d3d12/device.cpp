@@ -7,7 +7,7 @@
 
 using namespace lgfx;
 
-Device::Device(const uint32_t adapter_index, void* hwnd, const uint32_t width, const uint32_t height, const uint32_t buffer_count, const uint32_t multisample_count) {
+Device::Device(const uint32_t adapter_index, void* const hwnd, const uint32_t width, const uint32_t height, const uint32_t buffer_count, const uint32_t multisample_count) {
 
     assert(hwnd && "invalid pointer to hwnd");
 
@@ -66,7 +66,7 @@ void Device::Present() {
     THROW_IF_FAILED(swapchain_->Present(0, 0));
 }
 
-void Device::Signal(const CommandBufferType type, Fence* fence, const uint64_t value) {
+void Device::Signal(const CommandBufferType type, Fence* const fence, const uint64_t value) {
     
     switch(type) {
         case CommandBufferType::kGraphics: THROW_IF_FAILED(direct_queue_->Signal(fence->fence_.Get(), value)); break;
@@ -75,7 +75,7 @@ void Device::Signal(const CommandBufferType type, Fence* fence, const uint64_t v
     }
 }
 
-void Device::Wait(const CommandBufferType type, Fence* fence, const uint64_t value) {
+void Device::Wait(const CommandBufferType type, Fence* const fence, const uint64_t value) {
 
     switch(type) {
         case CommandBufferType::kGraphics: THROW_IF_FAILED(direct_queue_->Wait(fence->fence_.Get(), value)); break;
@@ -84,11 +84,46 @@ void Device::Wait(const CommandBufferType type, Fence* fence, const uint64_t val
     }
 }
 
-void Device::ExecuteCommandBuffer(const CommandBufferType type, CommandBuffer* buffer) {
+void Device::ExecuteCommandBuffer(const CommandBufferType type, CommandBuffer* const buffer) {
 
     switch(type) {
         case CommandBufferType::kGraphics: direct_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(buffer->list_.GetAddressOf())); break;
         case CommandBufferType::kCopy: copy_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(buffer->list_.GetAddressOf())); break;
         case CommandBufferType::kCompute: compute_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(buffer->list_.GetAddressOf())); break;
     }
+}
+
+Device::Device(Device&& rhs) noexcept {
+
+    std::swap(adapter_desc_, rhs.adapter_desc_);
+    factory_.Swap(rhs.factory_);
+    debug_.Swap(rhs.debug_);
+    adapter_.Swap(rhs.adapter_);
+    device_.Swap(rhs.device_);
+    swapchain_.Swap(rhs.swapchain_);
+    direct_queue_.Swap(rhs.direct_queue_);
+    copy_queue_.Swap(rhs.copy_queue_);
+    compute_queue_.Swap(rhs.compute_queue_);
+    std::swap(rtv_descriptor_offset_, rhs.rtv_descriptor_offset_);
+    std::swap(dsv_descriptor_offset_, rhs.dsv_descriptor_offset_);
+    std::swap(sampler_descriptor_offset_, rhs.sampler_descriptor_offset_);
+    std::swap(srv_descriptor_offset_, rhs.srv_descriptor_offset_);
+}
+
+Device& Device::operator=(Device&& rhs) noexcept {
+
+    std::swap(adapter_desc_, rhs.adapter_desc_);
+    factory_.Swap(rhs.factory_);
+    debug_.Swap(rhs.debug_);
+    adapter_.Swap(rhs.adapter_);
+    device_.Swap(rhs.device_);
+    swapchain_.Swap(rhs.swapchain_);
+    direct_queue_.Swap(rhs.direct_queue_);
+    copy_queue_.Swap(rhs.copy_queue_);
+    compute_queue_.Swap(rhs.compute_queue_);
+    std::swap(rtv_descriptor_offset_, rhs.rtv_descriptor_offset_);
+    std::swap(dsv_descriptor_offset_, rhs.dsv_descriptor_offset_);
+    std::swap(sampler_descriptor_offset_, rhs.sampler_descriptor_offset_);
+    std::swap(srv_descriptor_offset_, rhs.srv_descriptor_offset_);
+    return *this;
 }
