@@ -14,6 +14,8 @@ friend class Pipeline;
 
 public:
 
+    RenderPass() = default;
+
     RenderPass(
         Device* const device, 
         const std::span<const RenderPassColorDesc> colors, 
@@ -21,10 +23,10 @@ public:
         const uint32_t sample_count = 1);
 
     RenderPass(const RenderPass&) = delete;
-    RenderPass(RenderPass&& rhs) noexcept;
+    RenderPass(RenderPass&& rhs) noexcept = default;
 
     RenderPass& operator=(const RenderPass&) = delete;
-    RenderPass& operator=(RenderPass&& rhs) noexcept;
+    RenderPass& operator=(RenderPass&& rhs) noexcept = default;
 
 private:
 

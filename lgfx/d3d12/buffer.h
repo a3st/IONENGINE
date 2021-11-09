@@ -15,19 +15,21 @@ friend class CommandBuffer;
 
 public:
 
+    Buffer() = default;
+
     Buffer(
         Device* const device, 
         MemoryPool* const pool, 
         const size_t size, 
         const BufferFlags flags);
-
-    ~Buffer();
     
     Buffer(const Buffer&) = delete;
-    Buffer(Buffer&& rhs) noexcept;
+
+    Buffer(Buffer&& rhs) noexcept = default;
 
     Buffer& operator=(const Buffer&) = delete;
-    Buffer& operator=(Buffer&& rhs) noexcept;
+
+    Buffer& operator=(Buffer&& rhs) noexcept = default;
 
     std::byte* Map();
     void Unmap();

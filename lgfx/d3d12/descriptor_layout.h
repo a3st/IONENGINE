@@ -22,13 +22,17 @@ friend class CommandBuffer;
 
 public:
 
+    DescriptorLayout() = default;
+
     DescriptorLayout(Device* const device, const std::span<const DescriptorLayoutBinding> bindings);
 
     DescriptorLayout(const DescriptorLayout&) = delete;
-    DescriptorLayout(DescriptorLayout&& rhs) noexcept;
+
+    DescriptorLayout(DescriptorLayout&& rhs) noexcept = default;
 
     DescriptorLayout& operator=(const DescriptorLayout&) = delete;
-    DescriptorLayout& operator=(DescriptorLayout&& rhs) noexcept;
+
+    DescriptorLayout& operator=(DescriptorLayout&& rhs) noexcept = default;
 
 private:
 

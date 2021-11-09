@@ -70,35 +70,3 @@ TextureView::TextureView(
         alloc_info_ = CreateShaderResource(device);
     }
 }
-
-TextureView::~TextureView() {
-
-    if(pool_) {
-        pool_->Deallocate(alloc_info_);
-    }
-}
-
-TextureView::TextureView(TextureView&& rhs) noexcept {
-
-    std::swap(pool_, rhs.pool_);
-    std::swap(texture_, rhs.texture_);
-    std::swap(alloc_info_, rhs.alloc_info_);
-    std::swap(dimension_, rhs.dimension_);
-    std::swap(base_mip_level_, rhs.base_mip_level_);
-    std::swap(mip_level_count_, rhs.mip_level_count_);
-    std::swap(base_array_layer_, rhs.base_array_layer_);
-    std::swap(array_layer_count_, rhs.array_layer_count_);
-}
-
-TextureView& TextureView::operator=(TextureView&& rhs) noexcept {
-
-    std::swap(pool_, rhs.pool_);
-    std::swap(texture_, rhs.texture_);
-    std::swap(alloc_info_, rhs.alloc_info_);
-    std::swap(dimension_, rhs.dimension_);
-    std::swap(base_mip_level_, rhs.base_mip_level_);
-    std::swap(mip_level_count_, rhs.mip_level_count_);
-    std::swap(base_array_layer_, rhs.base_array_layer_);
-    std::swap(array_layer_count_, rhs.array_layer_count_);
-    return *this;
-}

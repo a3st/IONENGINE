@@ -13,12 +13,17 @@ friend class Pipeline;
 
 public:
 
+    Shader() = default;
+
     Shader(Device* const device, const ShaderType type, const std::filesystem::path& path);
+
     Shader(const Shader&) = delete;
-    Shader(Shader&& rhs) noexcept;
+
+    Shader(Shader&& rhs) noexcept = default;
 
     Shader& operator=(const Shader&) = delete;
-    Shader& operator=(Shader&& rhs) noexcept;
+    
+    Shader& operator=(Shader&& rhs) noexcept = default;
 
     inline ShaderType GetType() const { return type_; }
 

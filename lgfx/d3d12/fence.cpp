@@ -35,16 +35,3 @@ void Fence::Wait(const uint64_t value) {
         WaitForSingleObjectEx(reinterpret_cast<HANDLE>(event_.get()), INFINITE, false);
     }
 }
-
-Fence::Fence(Fence&& rhs) noexcept {
-
-    fence_.Swap(rhs.fence_);
-    event_.swap(rhs.event_);
-}
-
-Fence& Fence::operator=(Fence&& rhs) noexcept {
-    
-    fence_.Swap(rhs.fence_);
-    event_.swap(rhs.event_);
-    return *this;
-}

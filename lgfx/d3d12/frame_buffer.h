@@ -13,6 +13,8 @@ friend class CommandBuffer;
 
 public:
 
+    FrameBuffer() = default;
+
     FrameBuffer(
         Device* const device, 
         RenderPass* const render_pass,
@@ -21,10 +23,12 @@ public:
         TextureView* const depth_stencil);
 
     FrameBuffer(const FrameBuffer&) = delete;
-    FrameBuffer(FrameBuffer&& rhs) noexcept;
+
+    FrameBuffer(FrameBuffer&& rhs) noexcept = default;
 
     FrameBuffer& operator=(const FrameBuffer&) = delete;
-    FrameBuffer& operator=(FrameBuffer&& rhs) noexcept;
+    
+    FrameBuffer& operator=(FrameBuffer&& rhs) noexcept = default;
 
 private:
 

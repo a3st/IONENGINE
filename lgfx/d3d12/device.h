@@ -31,12 +31,17 @@ friend class DescriptorSet;
 
 public:
 
+    Device() = default;
+
     Device(const uint32_t adapter_index, void* const hwnd, const uint32_t width, const uint32_t height, const uint32_t buffer_count, const uint32_t multisample_count);
+    
     Device(const Device&) = delete;
-    Device(Device&& rhs) noexcept;
+    
+    Device(Device&& rhs) noexcept = default;
 
     Device& operator=(const Device&) = delete;
-    Device& operator=(Device&& rhs) noexcept;
+    
+    Device& operator=(Device&& rhs) noexcept = default;
 
     void Present();
     void Signal(const CommandBufferType type, Fence* const fence, const uint64_t value);

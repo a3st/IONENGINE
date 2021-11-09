@@ -25,25 +25,6 @@ MemoryHeap::MemoryHeap(Device* const device, const uint64_t align, const MemoryT
     offset_ = 0;
 }
 
-MemoryHeap::MemoryHeap(MemoryHeap&& rhs) noexcept {
-
-    heap_.Swap(rhs.heap_);
-    std::swap(heap_size_, rhs.heap_size_);
-    std::swap(block_count_, rhs.block_count_);
-    std::swap(blocks_, rhs.blocks_);
-    std::swap(offset_, rhs.offset_);
-}
-
-MemoryHeap& MemoryHeap::operator=(MemoryHeap&& rhs) noexcept {
-
-    heap_.Swap(rhs.heap_);
-    std::swap(heap_size_, rhs.heap_size_);
-    std::swap(block_count_, rhs.block_count_);
-    std::swap(blocks_, rhs.blocks_);
-    std::swap(offset_, rhs.offset_);
-    return *this;
-}
-
 MemoryPool::MemoryPool(Device* const device, const size_t size, const uint64_t align, const MemoryType type, const MemoryFlags flags) :
     type_(type),
     flags_(flags) {
@@ -102,19 +83,4 @@ void MemoryPool::Deallocate(const MemoryAllocInfo& alloc_info) {
 
     std::memset(alloc_info.heap->blocks_.data() + alloc_info.offset / kMemoryPoolDefaultBlockSize, 0x0, sizeof(uint8_t) * alloc_info.size / kMemoryPoolDefaultBlockSize);
     alloc_info.heap->offset_ = alloc_info.offset;
-}
-
-MemoryPool::MemoryPool(MemoryPool&& rhs) noexcept {
-
-    std::swap(type_, rhs.type_);
-    std::swap(flags_, rhs.flags_);
-    std::swap(heaps_, rhs.heaps_);
-}
-
-MemoryPool& MemoryPool::operator=(MemoryPool&& rhs) noexcept {
-
-    std::swap(type_, rhs.type_);
-    std::swap(flags_, rhs.flags_);
-    std::swap(heaps_, rhs.heaps_);
-    return *this;
 }

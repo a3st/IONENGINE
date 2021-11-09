@@ -130,26 +130,3 @@ Pipeline::Pipeline(
         
     THROW_IF_FAILED(device->device_->CreateGraphicsPipelineState(&graphics_pipeline_desc, __uuidof(ID3D12PipelineState), reinterpret_cast<void**>(pipeline_state_.GetAddressOf())));
 }
-
-Pipeline::Pipeline(Pipeline&& rhs) noexcept {
-
-    pipeline_state_.Swap(rhs.pipeline_state_);
-    std::swap(type_, rhs.type_);
-    std::swap(inputs_, rhs.inputs_);
-    std::swap(shaders_, rhs.shaders_);
-    std::swap(rasterizer_, rhs.rasterizer_);
-    std::swap(depth_stencil_, rhs.depth_stencil_);
-    std::swap(blend_, rhs.blend_);
-}
-
-Pipeline& Pipeline::operator=(Pipeline&& rhs) noexcept {
-
-    pipeline_state_.Swap(rhs.pipeline_state_);
-    std::swap(type_, rhs.type_);
-    std::swap(inputs_, rhs.inputs_);
-    std::swap(shaders_, rhs.shaders_);
-    std::swap(rasterizer_, rhs.rasterizer_);
-    std::swap(depth_stencil_, rhs.depth_stencil_);
-    std::swap(blend_, rhs.blend_);
-    return *this;
-}

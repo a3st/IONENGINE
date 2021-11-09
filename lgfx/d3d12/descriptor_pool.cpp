@@ -22,27 +22,6 @@ DescriptorHeap::DescriptorHeap(Device* device, const DescriptorType type, const 
     offset_ = 0;
 }
 
-DescriptorHeap::DescriptorHeap(DescriptorHeap&& rhs) noexcept {
-
-    heap_.Swap(rhs.heap_);
-    std::swap(heap_size_, rhs.heap_size_);
-    std::swap(offset_, rhs.offset_);
-    std::swap(descriptors_, rhs.descriptors_);
-}
-
-DescriptorHeap& DescriptorHeap::operator=(DescriptorHeap&& rhs) noexcept {
-
-    heap_.Swap(rhs.heap_);
-    std::swap(heap_size_, rhs.heap_size_);
-    std::swap(offset_, rhs.offset_);
-    std::swap(descriptors_, rhs.descriptors_);
-    return *this;
-}
-
-DescriptorPool::DescriptorPool() {
-
-}
-
 DescriptorPool::DescriptorPool(Device* device, const size_t size, const DescriptorType type, const DescriptorFlags flags) :
     type_(type),
     flags_(flags) {
@@ -88,19 +67,4 @@ void DescriptorPool::Deallocate(const DescriptorAllocInfo& alloc_info) {
 
     alloc_info.heap->descriptors_[alloc_info.offset] = 0x0;
     alloc_info.heap->offset_ = alloc_info.offset;
-}
-
-DescriptorPool::DescriptorPool(DescriptorPool&& rhs) noexcept {
-
-    std::swap(type_, rhs.type_);
-    std::swap(flags_, rhs.flags_);
-    std::swap(heaps_, rhs.heaps_);
-}
-
-DescriptorPool& DescriptorPool::operator=(DescriptorPool&& rhs) noexcept {
-
-    std::swap(type_, rhs.type_);
-    std::swap(flags_, rhs.flags_);
-    std::swap(heaps_, rhs.heaps_);
-    return *this;
 }

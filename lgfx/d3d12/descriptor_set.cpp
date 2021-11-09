@@ -30,19 +30,6 @@ DescriptorSet::DescriptorSet(Device* const device, DescriptorLayout* const layou
     }
 }
 
-DescriptorSet::~DescriptorSet() {
-
-    for(auto [key, value] : descriptors_) {
-        for(size_t i : std::views::iota(0u, value.size())) {
-            if(value[i].type == DescriptorType::kShaderResource || value[i].type == DescriptorType::kUnorderedAccess || value[i].type == DescriptorType::kConstantBuffer) {
-                srv_pool_.Deallocate(value[i].alloc_info);
-            } else {
-                sampler_pool_.Deallocate(value[i].alloc_info);
-            }
-        }
-    }
-}
-
 void DescriptorSet::WriteTexture(const uint32_t slot, const uint32_t space, TextureView* texture_view) {
 
     D3D12_CPU_DESCRIPTOR_HANDLE dst_handle = { descriptors_[space][slot].alloc_info.heap->heap_->GetCPUDescriptorHandleForHeapStart().ptr + descriptors_[space][slot].alloc_info.offset * device_->srv_descriptor_offset_ };
@@ -59,13 +46,4 @@ void DescriptorSet::WriteBuffer(const uint32_t slot, const uint32_t space, Buffe
     device_->device_->CopyDescriptorsSimple(1, dst_handle, src_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     update_descriptors_.emplace_back(descriptors_[space][slot]);
-}
-
-DescriptorSet::DescriptorSet(DescriptorSet&& rhs) noexcept {
-
-}
-
-DescriptorSet& DescriptorSet::operator=(DescriptorSet&& rhs) noexcept {
-
-    return *this;
 }

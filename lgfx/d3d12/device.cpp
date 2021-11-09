@@ -92,38 +92,3 @@ void Device::ExecuteCommandBuffer(const CommandBufferType type, CommandBuffer* c
         case CommandBufferType::kCompute: compute_queue_->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList*const *>(buffer->list_.GetAddressOf())); break;
     }
 }
-
-Device::Device(Device&& rhs) noexcept {
-
-    std::swap(adapter_desc_, rhs.adapter_desc_);
-    factory_.Swap(rhs.factory_);
-    debug_.Swap(rhs.debug_);
-    adapter_.Swap(rhs.adapter_);
-    device_.Swap(rhs.device_);
-    swapchain_.Swap(rhs.swapchain_);
-    direct_queue_.Swap(rhs.direct_queue_);
-    copy_queue_.Swap(rhs.copy_queue_);
-    compute_queue_.Swap(rhs.compute_queue_);
-    std::swap(rtv_descriptor_offset_, rhs.rtv_descriptor_offset_);
-    std::swap(dsv_descriptor_offset_, rhs.dsv_descriptor_offset_);
-    std::swap(sampler_descriptor_offset_, rhs.sampler_descriptor_offset_);
-    std::swap(srv_descriptor_offset_, rhs.srv_descriptor_offset_);
-}
-
-Device& Device::operator=(Device&& rhs) noexcept {
-
-    std::swap(adapter_desc_, rhs.adapter_desc_);
-    factory_.Swap(rhs.factory_);
-    debug_.Swap(rhs.debug_);
-    adapter_.Swap(rhs.adapter_);
-    device_.Swap(rhs.device_);
-    swapchain_.Swap(rhs.swapchain_);
-    direct_queue_.Swap(rhs.direct_queue_);
-    copy_queue_.Swap(rhs.copy_queue_);
-    compute_queue_.Swap(rhs.compute_queue_);
-    std::swap(rtv_descriptor_offset_, rhs.rtv_descriptor_offset_);
-    std::swap(dsv_descriptor_offset_, rhs.dsv_descriptor_offset_);
-    std::swap(sampler_descriptor_offset_, rhs.sampler_descriptor_offset_);
-    std::swap(srv_descriptor_offset_, rhs.srv_descriptor_offset_);
-    return *this;
-}

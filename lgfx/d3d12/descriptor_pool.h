@@ -19,12 +19,17 @@ friend class DescriptorSet;
 
 public:
 
+    DescriptorHeap() = default;
+
     DescriptorHeap(Device* const device, const DescriptorType type, const DescriptorFlags flags);
+    
     DescriptorHeap(const DescriptorHeap&) = delete;
-    DescriptorHeap(DescriptorHeap&& rhs) noexcept;
+    
+    DescriptorHeap(DescriptorHeap&& rhs) noexcept = default;
 
     DescriptorHeap& operator=(const DescriptorHeap&) = delete;
-    DescriptorHeap& operator=(DescriptorHeap&& rhs) noexcept;
+    
+    DescriptorHeap& operator=(DescriptorHeap&& rhs) noexcept = default;
 
     inline size_t GetHeapSize() const { return heap_size_; }
 
@@ -46,13 +51,17 @@ class DescriptorPool {
 
 public:
 
-    DescriptorPool();
+    DescriptorPool() = default;
+
     DescriptorPool(Device* const device, const size_t size, const DescriptorType type, const DescriptorFlags flags);
+    
     DescriptorPool(const DescriptorPool&) = delete;
-    DescriptorPool(DescriptorPool&& rhs) noexcept;
+    
+    DescriptorPool(DescriptorPool&& rhs) noexcept = default;
 
     DescriptorPool& operator=(const DescriptorPool&) = delete;
-    DescriptorPool& operator=(DescriptorPool&& rhs) noexcept;
+
+    DescriptorPool& operator=(DescriptorPool&& rhs) noexcept = default;
 
     inline DescriptorType GetType() const { return type_; }
     inline DescriptorFlags GetFlags() const { return flags_; }

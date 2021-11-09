@@ -18,12 +18,17 @@ friend class Buffer;
 
 public:
 
+    MemoryHeap() = default;
+
     MemoryHeap(Device* const device, const uint64_t align, const MemoryType type, const MemoryFlags flags);
+    
     MemoryHeap(const MemoryHeap&) = delete;
-    MemoryHeap(MemoryHeap&& rhs) noexcept;
+
+    MemoryHeap(MemoryHeap&& rhs) noexcept = default;
 
     MemoryHeap& operator=(const MemoryHeap&) = delete;
-    MemoryHeap& operator=(MemoryHeap&& rhs) noexcept;
+
+    MemoryHeap& operator=(MemoryHeap&& rhs) noexcept = default;
 
     inline size_t GetHeapSize() const { return heap_size_; }
     inline uint64_t GetBlockCount() const { return block_count_; }
@@ -48,12 +53,17 @@ class MemoryPool {
 
 public:
 
+    MemoryPool() = default;
+
     MemoryPool(Device* const device, const size_t size, const uint64_t align, const MemoryType type, const MemoryFlags flags);
+    
     MemoryPool(const MemoryPool&) = delete;
-    MemoryPool(MemoryPool&& rhs) noexcept;
+
+    MemoryPool(MemoryPool&& rhs) noexcept = default;
 
     MemoryPool& operator=(const MemoryPool&) = delete;
-    MemoryPool& operator=(MemoryPool&& rhs) noexcept;
+
+    MemoryPool& operator=(MemoryPool&& rhs) noexcept = default;
 
     MemoryAllocInfo Allocate(const size_t size);
     void Deallocate(const MemoryAllocInfo& alloc_info);

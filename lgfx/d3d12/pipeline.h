@@ -14,6 +14,8 @@ friend class CommandBuffer;
 
 public:
 
+    Pipeline() = default;
+
     Pipeline(
         Device* const device, 
         const PipelineType type,
@@ -26,10 +28,12 @@ public:
         RenderPass* const render_pass);
 
     Pipeline(const Pipeline&) = delete;
-    Pipeline(Pipeline&& rhs) noexcept;
+
+    Pipeline(Pipeline&& rhs) noexcept = default;
 
     Pipeline& operator=(const Pipeline&) = delete;
-    Pipeline& operator=(Pipeline&& rhs) noexcept;
+    
+    Pipeline& operator=(Pipeline&& rhs) noexcept = default;
 
     inline PipelineType GetType() const { return type_; }
     inline const std::vector<InputLayoutDesc>& GetInputLayoutDescs() const { return inputs_; }

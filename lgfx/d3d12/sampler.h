@@ -10,12 +10,17 @@ class Sampler {
 
 public:
 
+    Sampler() = default;
+
     Sampler(Device* device);
+    
     Sampler(const Sampler&) = delete;
-    Sampler(Sampler&&) = delete;
+
+    Sampler(Sampler&&) noexcept = default;
 
     Sampler& operator=(const Sampler&) = delete;
-
+    
+    Sampler& operator=(Sampler&& rhs) noexcept = default;
 
 private:
 

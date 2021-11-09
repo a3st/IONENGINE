@@ -17,22 +17,3 @@ FrameBuffer::FrameBuffer(
         depth_stencil_(depth_stencil) {
 
 }
-
-FrameBuffer::FrameBuffer(FrameBuffer&& rhs) noexcept {
-
-    std::swap(render_pass_, rhs.render_pass_);
-    std::swap(width_, rhs.width_);
-    std::swap(height_, rhs.height_);
-    std::swap(colors_, rhs.colors_);
-    std::swap(depth_stencil_, rhs.depth_stencil_);
-}
-
-FrameBuffer& FrameBuffer::operator=(FrameBuffer&& rhs) noexcept {
-
-    std::swap(render_pass_, rhs.render_pass_);
-    std::swap(width_, rhs.width_);
-    std::swap(height_, rhs.height_);
-    std::swap(colors_, rhs.colors_);
-    std::swap(depth_stencil_, rhs.depth_stencil_);
-    return *this;
-}

@@ -13,12 +13,17 @@ friend class Device;
 
 public:
 
+    CommandBuffer() = default;
+
     CommandBuffer(Device* const device, const CommandBufferType type);
+
     CommandBuffer(const CommandBuffer&) = delete;
-    CommandBuffer(CommandBuffer&& rhs) noexcept;
+
+    CommandBuffer(CommandBuffer&& rhs) noexcept = default;
 
     CommandBuffer& operator=(const CommandBuffer&) = delete;
-    CommandBuffer& operator=(CommandBuffer&& rhs) noexcept;
+
+    CommandBuffer& operator=(CommandBuffer&& rhs) noexcept = default;
 
     void BindPipeline(Pipeline* const pipeline);
     void BindDescriptorSet(DescriptorSet* const set);

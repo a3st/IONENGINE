@@ -15,6 +15,8 @@ friend class DescriptorSet;
 
 public:
 
+    TextureView() = default;
+
     TextureView(
         Device* const device, DescriptorPool* const pool, 
         Texture* const texture, 
@@ -22,13 +24,13 @@ public:
         const uint32_t base_mip_level, const uint32_t mip_level_count,
         const uint32_t base_array_layer, const uint32_t array_layer_count);
 
-    ~TextureView();
-
     TextureView(const TextureView&) = delete;
-    TextureView(TextureView&& rhs) noexcept;
+
+    TextureView(TextureView&& rhs) noexcept = default;
 
     TextureView& operator=(const TextureView&) = delete;
-    TextureView& operator=(TextureView&& rhs) noexcept;
+
+    TextureView& operator=(TextureView&& rhs) noexcept = default;
 
     inline Texture* GetTexture() const { return texture_; }
     inline Dimension GetDimension() const { return dimension_; }

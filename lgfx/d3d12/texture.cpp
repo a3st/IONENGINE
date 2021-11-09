@@ -62,39 +62,3 @@ Texture::Texture(
     
     THROW_IF_FAILED(device->device_->CreatePlacedResource(alloc_info_.heap->heap_.Get(), alloc_info_.offset, &resource_desc, initial_state, nullptr, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource_.GetAddressOf())));
 }
-
-Texture::~Texture() {
-
-    if(pool_) {
-        pool_->Deallocate(alloc_info_);
-    }
-}
-
-Texture::Texture(Texture&& rhs) noexcept {
-
-    std::swap(pool_, rhs.pool_);
-    resource_.Swap(rhs.resource_);
-    std::swap(alloc_info_, rhs.alloc_info_);
-    std::swap(dimension_, rhs.dimension_);
-    std::swap(width_, rhs.width_);
-    std::swap(height_, rhs.height_);
-    std::swap(mip_levels_, rhs.mip_levels_);
-    std::swap(array_layers_, rhs.array_layers_);
-    std::swap(format_, rhs.format_);
-    std::swap(flags_, rhs.flags_);
-}
-
-Texture& Texture::operator=(Texture&& rhs) noexcept {
-
-    std::swap(pool_, rhs.pool_);
-    resource_.Swap(rhs.resource_);
-    std::swap(alloc_info_, rhs.alloc_info_);
-    std::swap(dimension_, rhs.dimension_);
-    std::swap(width_, rhs.width_);
-    std::swap(height_, rhs.height_);
-    std::swap(mip_levels_, rhs.mip_levels_);
-    std::swap(array_layers_, rhs.array_layers_);
-    std::swap(format_, rhs.format_);
-    std::swap(flags_, rhs.flags_);
-    return *this;
-}

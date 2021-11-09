@@ -15,19 +15,21 @@ friend class DescriptorSet;
 
 public:
 
+    BufferView() = default;
+
     BufferView(
         Device* const device, DescriptorPool* const pool, 
         Buffer* const buffer, 
         const Format index_format,
         const uint32_t stride);
-
-    ~BufferView();
     
     BufferView(const BufferView&) = delete;
-    BufferView(BufferView&& rhs) noexcept;
+    
+    BufferView(BufferView&& rhs) noexcept = default;
 
     BufferView& operator=(const BufferView&) = delete;
-    BufferView& operator=(BufferView&& rhs) noexcept;
+
+    BufferView& operator=(BufferView&& rhs) noexcept = default;
 
     inline Buffer* GetBuffer() const { return buffer_; }
 

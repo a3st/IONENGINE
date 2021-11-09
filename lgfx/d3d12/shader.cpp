@@ -22,18 +22,3 @@ Shader::Shader(Device* const device, const ShaderType type, const std::filesyste
     shader_.pShaderBytecode = data_.data();
     shader_.BytecodeLength = data_.size();
 }
-
-Shader::Shader(Shader&& rhs) noexcept {
-
-    std::swap(type_, rhs.type_);
-    std::swap(shader_, rhs.shader_);
-    std::swap(data_, rhs.data_);
-}
-
-Shader& Shader::operator=(Shader&& rhs) noexcept {
-    
-    std::swap(type_, rhs.type_);
-    std::swap(shader_, rhs.shader_);
-    std::swap(data_, rhs.data_);
-    return *this;
-}

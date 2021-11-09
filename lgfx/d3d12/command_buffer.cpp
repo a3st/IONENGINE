@@ -24,21 +24,6 @@ CommandBuffer::CommandBuffer(Device* const device, const CommandBufferType type)
     THROW_IF_FAILED(list_->Close());
 }
 
-CommandBuffer::CommandBuffer(CommandBuffer&& rhs) noexcept {
-
-    std::swap(device_, rhs.device_);
-    allocator_.Swap(rhs.allocator_);
-    list_.Swap(rhs.list_);
-}
-
-CommandBuffer& CommandBuffer::operator=(CommandBuffer&& rhs) noexcept {
-
-    std::swap(device_, rhs.device_);
-    allocator_.Swap(rhs.allocator_);
-    list_.Swap(rhs.list_);
-    return *this;
-}
-
 void CommandBuffer::BindPipeline(Pipeline* const pipeline) {
 
     list_->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

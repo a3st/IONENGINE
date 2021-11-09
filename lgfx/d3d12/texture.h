@@ -15,6 +15,8 @@ friend class CommandBuffer;
 
 public:
 
+    Texture() = default;
+
     Texture(Device* const device, const uint32_t buffer_index);
 
     Texture(
@@ -25,13 +27,13 @@ public:
         const Format format,
         const TextureFlags flags);
 
-    ~Texture();
-
     Texture(const Texture&) = delete;
-    Texture(Texture&& rhs) noexcept;
+    
+    Texture(Texture&& rhs) noexcept = default;
 
     Texture& operator=(const Texture&) = delete;
-    Texture& operator=(Texture&& rhs) noexcept;
+
+    Texture& operator=(Texture&& rhs) noexcept = default;
 
     inline Dimension GetDimension() const { return dimension_; }
     inline uint32_t GetWidth() const { return width_; }
