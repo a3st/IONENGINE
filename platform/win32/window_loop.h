@@ -2,32 +2,20 @@
 
 #include "winapi.h"
 
+#include <common/platform/window_loop.h>
+
 namespace ionengine::platform {
 
-enum class WindowEventType {
-
-    Unknown,
-    Closed,
-    Sized,
-    Updated
-};
-
-struct WindowEvent {
-
-    WindowEventType type;
-};
-
-class WindowLoop {
-
-friend class Window;
-
+class WindowLoop : IWindowLoop {
 public:
 
     WindowLoop();
 
-    void Run(const std::function<void(const WindowEvent&)>& run_func);
+    void run(const std::function<void(WindowEvent const&)>& run_func) override;
     
-    inline void Quit() { quit_ = true; }
+    void quit() override;
+
+    void set_event(WindowEvent const& event);
 
 private:
 

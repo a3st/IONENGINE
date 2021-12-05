@@ -4,7 +4,8 @@
 
 namespace ionengine::platform {
 
-class Window;
-class WindowLoop;
+struct Size {
+    uint32_t width, height;
+};
 
 }

@@ -9,6 +9,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DNDEBUG")
 
+include_directories(${PROJECT_SOURCE_DIR}/)
+
 #[[
 
     Runtime-Win32 Build Target
@@ -46,7 +48,7 @@ set_target_properties(Runtime-Win32 PROPERTIES
 
 # Include dirs
 target_include_directories(Runtime-Win32 PRIVATE
-
+    
 )
 
 # Link Libs

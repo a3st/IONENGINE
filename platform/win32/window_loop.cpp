@@ -1,6 +1,6 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#include "../../precompiled.h"
+#include <precompiled.h>
 #include "window_loop.h"
 
 using namespace ionengine::platform;
@@ -9,7 +9,7 @@ WindowLoop::WindowLoop() : quit_(false), event_{} {
 
 }
 
-void WindowLoop::Run(const std::function<void(const WindowEvent&)>& run_func) {
+void WindowLoop::run(const std::function<void(WindowEvent const&)>& run_func) {
 
     MSG msg{};
     WindowEvent post_event = { WindowEventType::Updated };
@@ -25,4 +25,14 @@ void WindowLoop::Run(const std::function<void(const WindowEvent&)>& run_func) {
 
         event_.type = WindowEventType::Unknown;
     }
+}
+
+void WindowLoop::set_event(WindowEvent const& event) {
+
+    event_ = event;
+}
+
+void WindowLoop::quit() {
+
+    quit_ = true;
 }

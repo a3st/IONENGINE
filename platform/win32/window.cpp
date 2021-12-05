@@ -6,7 +6,7 @@
 
 using namespace ionengine::platform;
 
-void Window::SetLabel(const std::string& label) {
+void Window::set_label(std::string const& label) {
 
 	size_t length = strlen(label.c_str()) + 1;
     assert(length > 0 && "length is less than 0 or equal 0");
@@ -16,8 +16,8 @@ void Window::SetLabel(const std::string& label) {
 	SetWindowText(reinterpret_cast<HWND>(hwnd_.get()), out_str.c_str());
 }
 
-Window::Window(const std::string& label, const uint32_t width, const uint32_t height, WindowLoop* loop) :
-	width_(0), height_(0), loop_(loop)  {
+Window::Window(std::string const& label, uint32_t const width, uint32_t const height, WindowLoop* const loop) :
+	size_{ width, height }, loop_(loop)  {
 
     WNDCLASS wnd_class{};
 	wnd_class.lpszClassName = TEXT("IONENGINE");
@@ -61,7 +61,7 @@ LRESULT Window::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	switch(msg) {
 		case WM_CLOSE: {
-			window->loop_->event_.type = WindowEventType::Closed;
+			window->loop_->set_event(WindowEvent { WindowEventType::Closed });
 			break;
 		}
 		case WM_SIZE: {
@@ -77,10 +77,9 @@ LRESULT Window::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			LONG style_width = style_rect.right - style_rect.left;
 			LONG style_height = style_rect.bottom - style_rect.top;
 
-			window->width_ = std::max<uint32_t>(1, width - style_width);
-			window->height_ = std::max<uint32_t>(1, height - style_height);
+			window->size_ = Size { std::max<uint32_t>(1, width - style_width), std::max<uint32_t>(1, height - style_height) };
 
-			window->loop_->event_.type = WindowEventType::Sized;
+			window->loop_->set_event(WindowEvent { WindowEventType::Sized });
 			break;
 		}
 	}

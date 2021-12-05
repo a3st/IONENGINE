@@ -2,38 +2,39 @@
 
 #pragma once
 
-#include "winapi.h"
-#include "hwnd_ptr.h"
+#define NOMINMAX
+#define UNICODE
+#define WIN32_LEAN_AND_MEAN
+
+#include <windows.h>
+#include <windowsx.h>
+#include <shellapi.h>
+
+#include <common/platform/window.h>
+#include <common/platform/window_loop.h>
 
 namespace ionengine::platform {
 
-class WindowLoop;
-
-class Window {
-
+class Window : public IWindow {
 public:
 
-    Window(const std::string& label, const uint32_t width, const uint32_t height, WindowLoop* loop);
+    Window(std::string const& label, uint32_t const width, uint32_t const height, WindowLoop* const loop);
 
-    inline void* GetNativeHandle() const { return reinterpret_cast<void*>(hwnd_.get()); }
+    void* get_handle() const override { return reinterpret_cast<void*>(hwnd_.get()); }
 
-    void SetLabel(const std::string& label);
+    void set_label(std::string const& label) override;
 
-    inline void SetCursor(const bool show) { cursor_ = show; }
-    inline bool GetCursor() { return cursor_; }
+    void set_cursor(bool const show) override { cursor_ = show; }
+    
+    bool get_cursor() const override { return cursor_; }
 
-    inline uint32_t GetWidth() { return width_; }
-    inline uint32_t GetHeight() { return height_; }
+    Size get_size() const override { return size_; }
 
 private:
 
-    UniqueHWND hwnd_;
-    
+    HWND hwnd_;
     bool cursor_;
-
-    uint32_t width_;
-    uint32_t height_;
-
+    Size size_;
     WindowLoop* loop_;
 
     static LRESULT WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
