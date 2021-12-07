@@ -24,18 +24,20 @@ add_executable(Runtime-Win32
     platform/win32/window.cpp
     platform/win32/window_loop.cpp
 
-    rendersystem/renderer.cpp
-    rendersystem/color.cpp
-    rendersystem/frame_graph.cpp
-    rendersystem/material.cpp
+    renderer/d3d12/backend.cpp
 
-    rendersystem/cache/render_pass.cpp
-    rendersystem/cache/frame_buffer.cpp
-    rendersystem/cache/texture.cpp
-    rendersystem/cache/texture_view.cpp
-    rendersystem/cache/pipeline.cpp
-    rendersystem/cache/buffer.cpp
-    rendersystem/cache/buffer_view.cpp
+    #rendersystem/renderer.cpp
+    #rendersystem/color.cpp
+    #rendersystem/frame_graph.cpp
+    #rendersystem/material.cpp
+
+    #rendersystem/cache/render_pass.cpp
+    #rendersystem/cache/frame_buffer.cpp
+    #rendersystem/cache/texture.cpp
+    #rendersystem/cache/texture_view.cpp
+    #rendersystem/cache/pipeline.cpp
+    #rendersystem/cache/buffer.cpp
+    #rendersystem/cache/buffer_view.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
@@ -55,6 +57,9 @@ target_include_directories(Runtime-Win32 PRIVATE
 target_link_libraries(Runtime-Win32
     ${Runtime-Win32}
     lgfx-d3d12
+    d3d12.lib
+    dxgi.lib
+    dxguid.lib
 )
 
 # Link Libs

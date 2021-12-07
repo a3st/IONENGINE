@@ -1,38 +1,41 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include "window_loop.h"
+#include <platform/window_loop.h>
+
+#define NOMINMAX
+#define UNICODE
+#include <windows.h>
 
 using namespace ionengine::platform;
 
-WindowLoop::WindowLoop() : quit_(false), event_{} {
-
-}
-
-void WindowLoop::run(const std::function<void(WindowEvent const&)>& run_func) {
+void WindowLoop::run(std::function<void(WindowEvent const&, WindowEventFlow&)> const& run_func) {
 
     MSG msg{};
-    WindowEvent post_event = { WindowEventType::Updated };
 
-    while(!quit_) {
+    while(flow_ != WindowEventFlow::Exit) {
+
         while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
-
-            run_func(event_);
         }
-        run_func(post_event);
 
-        event_.type = WindowEventType::Unknown;
+        while(!events_.empty()) {
+            WindowEvent event = events_.front();
+            run_func(event, flow_);
+            events_.pop();
+        }
+
+        WindowEvent post_event{ WindowEventType::Updated };
+        run_func(post_event, flow_);
+
+        if(flow_ == WindowEventFlow::Unknown || flow_ == WindowEventFlow::Exit) {
+            break;
+        }
     }
 }
 
-void WindowLoop::set_event(WindowEvent const& event) {
+void WindowLoop::push_event(WindowEvent const& event) {
 
-    event_ = event;
-}
-
-void WindowLoop::quit() {
-
-    quit_ = true;
+    events_.push(event);
 }

@@ -16,6 +16,7 @@
 #include <stack>
 #include <map>
 #include <string>
+#include <variant>
 #include <span>
 #include <string_view>
 

@@ -4,12 +4,27 @@
 
 namespace ionengine::platform {
 
+class WindowLoop;
+
 class Window {
 public:
 
+    Window(std::u8string const& label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop* loop);
+
+    ~Window();
+
+    Window(Window const&) = delete;
+
+    Window(Window&&) = delete;
+
+    Window& operator=(Window const&) = delete;
+
+    Window& operator=(Window&&) = delete;
 
 private:
 
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 }
