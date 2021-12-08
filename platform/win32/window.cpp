@@ -101,3 +101,13 @@ Window::Window(std::u8string const& label, uint32_t const width, uint32_t const 
 }
 
 Window::~Window() = default;
+
+Size Window::get_size() const {
+	
+	return { 800, 600 };
+}
+
+void* Window::get_handle() const {
+
+	return impl_->hwnd;
+}

@@ -2,12 +2,9 @@
 
 #pragma once
 
-namespace ionengine::platform {
+#include <platform/types.h>
 
-struct Size {
-    uint32_t width;
-    uint32_t height;
-};
+namespace ionengine::platform {
 
 enum class WindowEventType {
     Unknown,

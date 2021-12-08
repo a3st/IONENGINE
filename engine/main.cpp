@@ -4,12 +4,18 @@
 #include <platform/window.h>
 #include <platform/window_loop.h>
 
+#include <renderer/backend.h>
+#include <renderer/world_renderer.h>
+
 using namespace ionengine;
 
 int main(int*, char*) {
 
     platform::WindowLoop loop;
     platform::Window window(u8"IONENGINE", 800, 600, false, &loop);
+
+    renderer::Backend backend(0, &window);
+    renderer::WorldRenderer world_renderer(&backend);
     
     loop.run(
         [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {

@@ -9,7 +9,7 @@ namespace ionengine::renderer {
 class Backend {
 public:
 
-    Backend(platform::Window* window);
+    Backend(uint32_t const adapter_index, platform::Window* const window);
 
     ~Backend();
 

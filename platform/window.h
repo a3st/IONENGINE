@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <platform/types.h>
+
 namespace ionengine::platform {
 
 class WindowLoop;
@@ -20,6 +22,10 @@ public:
     Window& operator=(Window const&) = delete;
 
     Window& operator=(Window&&) = delete;
+
+    Size get_size() const;
+
+    void* get_handle() const;
 
 private:
 
