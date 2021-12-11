@@ -19,7 +19,11 @@ public:
 
     WorldRenderer& operator=(WorldRenderer&&) = delete;
 
+    void update();
+
 private:
+
+    Backend* backend_;
 
 };
 

@@ -2,3 +2,18 @@
 
 #pragma once
 
+#include <renderer/backend.h>
+
+namespace ionengine::renderer {
+
+class FrameGraph {
+public:
+
+    FrameGraph(Backend* const backend);
+
+private:
+
+
+};
+
+}

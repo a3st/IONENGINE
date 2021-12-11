@@ -30,6 +30,8 @@ struct Backend::Impl {
         ComPtr<ID3D12CommandQueue> copy;
         ComPtr<ID3D12CommandQueue> compute;
     } queues;
+
+    //ComPtr<ID3D12Resource> resources;
 };
 
 Backend::Backend(uint32_t const adapter_index, platform::Window* const window) : impl_(std::make_unique<Impl>()) {
