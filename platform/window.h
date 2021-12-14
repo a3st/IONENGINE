@@ -11,7 +11,7 @@ class WindowLoop;
 class Window {
 public:
 
-    Window(std::u8string const& label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop* loop);
+    Window(std::u8string const& label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop);
 
     ~Window();
 

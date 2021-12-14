@@ -12,7 +12,7 @@ using namespace ionengine;
 int main(int*, char*) {
 
     platform::WindowLoop loop;
-    platform::Window window(u8"IONENGINE", 800, 600, false, &loop);
+    platform::Window window(u8"IONENGINE", 800, 600, false, loop);
 
     renderer::Backend backend(0, &window);
     renderer::WorldRenderer world_renderer(&backend);

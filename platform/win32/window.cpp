@@ -62,8 +62,10 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 	SetWindowText(reinterpret_cast<HWND>(hwnd_.get()), out_str.c_str());
 }*/
 
-Window::Window(std::u8string const& label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop* loop) :
+Window::Window(std::u8string const& label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop) :
 	impl_(std::make_unique<Impl>()) {
+
+	impl_->loop = &loop;
 
     WNDCLASS wnd_class{};
 	wnd_class.lpszClassName = TEXT("IONENGINE");

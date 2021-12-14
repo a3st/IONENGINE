@@ -18,6 +18,16 @@
 using Microsoft::WRL::ComPtr;
 using namespace ionengine::renderer;
 
+D3D12_HEAP_TYPE d3d12_heap_type(const MemoryType type) {
+	
+	switch(type) {
+        case MemoryType::Default: return D3D12_HEAP_TYPE_DEFAULT;
+        case MemoryType::Upload: return D3D12_HEAP_TYPE_UPLOAD;
+        case MemoryType::Readback: return D3D12_HEAP_TYPE_READBACK;
+		default: assert(false && "passed invalid argument to ToD3D12HeapType"); return D3D12_HEAP_TYPE_DEFAULT;
+    }
+}
+
 struct Backend::Impl {
     ComPtr<IDXGIFactory4> factory;
     ComPtr<ID3D12Debug> debug;
@@ -56,7 +66,7 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window) :
         adapter_desc_.device_id = adapter_desc.DeviceId;
     }*/
 
-    THROW_IF_FAILED(D3D12CreateDevice(impl_->adapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(impl_->device.GetAddressOf())));
+    THROW_IF_FAILED(D3D12CreateDevice(impl_->adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(impl_->device.GetAddressOf())));
 
     D3D12_COMMAND_QUEUE_DESC queue_desc{};
     queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
@@ -93,3 +103,150 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window) :
 }
 
 Backend::~Backend() = default;
+
+struct Buffer::Impl {
+    ComPtr<ID3D12Resource> resource;
+    D3D12_RESOURCE_DESC desc;
+};
+
+Buffer::Buffer() = default;
+
+Buffer::Buffer(Backend& backend, BufferType const type, size_t const size) : impl_(std::make_unique<Impl>()) {
+
+    D3D12_RESOURCE_DESC resource_desc{};
+    resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resource_desc.Width = 1024;
+    resource_desc.Height = 1;
+    resource_desc.MipLevels = 1;
+    resource_desc.DepthOrArraySize = 1;
+    resource_desc.SampleDesc.Count = 1;
+    resource_desc.Format = DXGI_FORMAT_UNKNOWN;
+    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+    if(type == BufferType::Constant) {
+        resource_desc.Width = (1024 + 255) & ~255;
+    }
+
+    impl_->desc = resource_desc;
+}
+
+Buffer::Buffer(Buffer&&) = default;
+
+Buffer& Buffer::operator=(Buffer&&) = default;
+
+Buffer::~Buffer() = default;
+
+struct Memory::Impl {
+    Backend* backend;
+    ComPtr<ID3D12Heap> heap;
+    ComPtr<ID3D12Resource> resource;
+    MemoryType type;
+};
+
+Memory::Memory() = default;
+
+Memory::Memory(Backend& backend, MemoryType const type, const size_t size) : impl_(std::make_unique<Impl>()) {
+
+    impl_->type = type;
+    impl_->backend = &backend;
+
+    D3D12_HEAP_DESC heap_desc{};
+    heap_desc.SizeInBytes = size;
+    heap_desc.Properties.Type = d3d12_heap_type(type);
+    THROW_IF_FAILED(backend.impl_->device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(impl_->heap.GetAddressOf())));
+
+    D3D12_RESOURCE_DESC resource_desc{};
+    resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resource_desc.Width = 1024;
+    resource_desc.Height = 1;
+    resource_desc.MipLevels = 1;
+    resource_desc.DepthOrArraySize = 1;
+    resource_desc.SampleDesc.Count = 1;
+    resource_desc.Format = DXGI_FORMAT_UNKNOWN;
+    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+    D3D12_RESOURCE_STATES initial_state{};
+    switch(impl_->type) {
+        case MemoryType::Default: initial_state = D3D12_RESOURCE_STATE_COMMON; break;
+        case MemoryType::Readback:
+        case MemoryType::Upload: initial_state = D3D12_RESOURCE_STATE_GENERIC_READ; break;
+    }
+
+    THROW_IF_FAILED(backend.impl_->device->CreatePlacedResource(
+        impl_->heap.Get(), 
+        0, 
+        &resource_desc, 
+        initial_state, 
+        nullptr, 
+        __uuidof(ID3D12Resource), 
+        reinterpret_cast<void**>(impl_->resource.GetAddressOf())
+    ));
+}
+
+Memory::Memory(Memory&&) = default;
+
+Memory& Memory::operator=(Memory&&) = default;
+
+MemoryType Memory::get_type() const {
+
+    return impl_->type;
+}
+
+void Memory::bind_buffer(Buffer& buffer, uint64_t offset) {
+
+    D3D12_RESOURCE_STATES initial_state;
+    switch(impl_->type) {
+        case MemoryType::Default: initial_state = D3D12_RESOURCE_STATE_COMMON; break;
+        case MemoryType::Readback:
+        case MemoryType::Upload: initial_state = D3D12_RESOURCE_STATE_GENERIC_READ; break;
+    }
+    
+    THROW_IF_FAILED(impl_->backend->impl_->device->CreatePlacedResource(
+        impl_->heap.Get(), 
+        offset, 
+        &buffer.impl_->desc, 
+        initial_state, 
+        nullptr, 
+        __uuidof(ID3D12Resource), 
+        reinterpret_cast<void**>(buffer.impl_->resource.GetAddressOf())
+    ));
+}
+
+char8_t* Memory::map() {
+
+    char8_t* data;
+    D3D12_RANGE range{};
+    THROW_IF_FAILED(impl_->resource->Map(0, &range, reinterpret_cast<void**>(&data)));
+    return data;
+}
+
+void Memory::unmap() {
+    
+    D3D12_RANGE range{};
+    impl_->resource->Unmap(0, &range);
+}
+
+Memory::~Memory() = default;
+
+struct CommandBuffer::Impl {
+    Backend* backend;
+    ComPtr<ID3D12Resource> resource;
+    CommandBufferType type;
+};
+
+CommandBuffer::CommandBuffer() = default;
+
+CommandBuffer::CommandBuffer(Backend& backend, CommandBufferType const type) : impl_(std::make_unique<Impl>()) {
+
+    impl_->type = type;
+    impl_->backend = &backend;
+  
+}
+
+CommandBuffer::CommandBuffer(CommandBuffer&&) = default;
+
+CommandBuffer& CommandBuffer::operator=(CommandBuffer&&) = default;
+
+
+
+CommandBuffer::~CommandBuffer() = default;

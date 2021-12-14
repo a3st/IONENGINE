@@ -25,6 +25,8 @@ private:
 
     Backend* backend_;
 
+    Buffer buffer;
+    Memory memory;
 };
 
 }
