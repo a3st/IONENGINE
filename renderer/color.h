@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::rendersystem {
+namespace ionengine::renderer {
 
 struct Color {
 	

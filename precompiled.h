@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <format>
 #include <limits>
 #include <functional>
 #include <cassert>

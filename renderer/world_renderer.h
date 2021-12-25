@@ -3,6 +3,7 @@
 #pragma once
 
 #include <renderer/backend.h>
+#include <renderer/framegraph.h>
 
 namespace ionengine::renderer {
 
@@ -27,6 +28,8 @@ private:
 
     Buffer buffer;
     Memory memory;
+
+    FrameGraph fg_;
 };
 
 }

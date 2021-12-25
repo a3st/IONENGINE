@@ -24,6 +24,74 @@ enum class CommandBufferType {
     Compute
 };
 
+enum class RenderPassLoadOp {
+    Load,
+    Clear,
+    DontCare
+};
+
+enum class RenderPassStoreOp {
+    Store,
+    DontCare
+};
+
+enum class Format {
+    Unknown,
+    RGBA32float,
+    RGBA32uint,
+    RGBA32int,
+    RGB32float,
+    RGB32uint,
+    RGB32int,
+    RG32float,
+    RG32uint,
+    RG32int,
+    R32float,
+    R32uint,
+    R32int,
+    RGBA16float,
+    RGBA16uint,
+    RGBA16int,
+    RGBA16unorm,
+    RGBA16snorm,
+    RG16float,
+    RG16uint,
+    RG16int,
+    RG16unorm,
+    RG16snorm,
+    R16float,
+    R16uint,
+    R16int,
+    R16unorm,
+    R16snorm,
+    RGBA8uint,
+    RGBA8int,
+    RGBA8unorm,
+    RGBA8snorm,
+    RG8uint,
+    RG8int,
+    RG8unorm,
+    RG8snorm,
+    R8uint,
+    R8int,
+    R8unorm,
+    R8snorm
+};
+
+struct RenderPassColorDesc {
+    Format format = Format::Unknown;
+    RenderPassLoadOp load_op = RenderPassLoadOp::DontCare;
+    RenderPassStoreOp store_op = RenderPassStoreOp::DontCare;
+};
+
+struct RenderPassDepthStencilDesc {
+    Format format = Format::Unknown;
+    RenderPassLoadOp depth_load_op = RenderPassLoadOp::DontCare;
+    RenderPassStoreOp depth_store_op = RenderPassStoreOp::DontCare;
+    RenderPassLoadOp stencil_load_op = RenderPassLoadOp::DontCare;
+    RenderPassStoreOp stencil_store_op = RenderPassStoreOp::DontCare;
+};
+
 class Backend {
 public:
 
@@ -46,6 +114,7 @@ private:
 
     friend class Buffer;
     friend class Memory;
+    friend class CommandBuffer;
 };
 
 class Buffer {
@@ -104,6 +173,28 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
+class RenderPass {
+public:
+
+    RenderPass();
+
+    RenderPass(
+        Backend& backend, 
+        std::span<RenderPassColorDesc const> const colors, 
+        std::optional<RenderPassDepthStencilDesc> const depth_stencil, 
+        uint16_t const sample_count
+    );
+
+    ~RenderPass();
+
+
+private:
+
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+
+};
+
 class CommandBuffer {
 public:
 
@@ -120,6 +211,14 @@ public:
     CommandBuffer& operator=(CommandBuffer&&);
 
     ~CommandBuffer();
+
+    void reset();
+
+    void close();
+
+    void begin_render_pass();
+
+    void end_render_pass();
 
 private:
 

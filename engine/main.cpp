@@ -23,7 +23,8 @@ int main(int*, char*) {
             flow = platform::WindowEventFlow::Poll;
 
             switch(event.type) {
-                case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; break; }
+                case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
+                case platform::WindowEventType::Updated: { world_renderer.update(); } break;
             }
         }
     );

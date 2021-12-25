@@ -18,14 +18,90 @@
 using Microsoft::WRL::ComPtr;
 using namespace ionengine::renderer;
 
-D3D12_HEAP_TYPE d3d12_heap_type(const MemoryType type) {
+D3D12_HEAP_TYPE d3d12_heap_type(MemoryType const type) {
 	
 	switch(type) {
         case MemoryType::Default: return D3D12_HEAP_TYPE_DEFAULT;
         case MemoryType::Upload: return D3D12_HEAP_TYPE_UPLOAD;
         case MemoryType::Readback: return D3D12_HEAP_TYPE_READBACK;
-		default: assert(false && "passed invalid argument to ToD3D12HeapType"); return D3D12_HEAP_TYPE_DEFAULT;
+		default: assert(false && "passed invalid argument to d3d12_heap_type"); return D3D12_HEAP_TYPE_DEFAULT;
     }
+}
+
+D3D12_COMMAND_LIST_TYPE d3d12_command_list_type(CommandBufferType const type) {
+	
+	switch(type) {
+        case CommandBufferType::Direct: return D3D12_COMMAND_LIST_TYPE_DIRECT;
+        case CommandBufferType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
+        case CommandBufferType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+		default: assert(false && "passed invalid argument to d3d12_command_list_type"); return D3D12_COMMAND_LIST_TYPE_DIRECT;
+    }
+}
+
+D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE d3d12_render_pass_begin_type(RenderPassLoadOp const op) {
+	
+	switch (op) {
+    	case RenderPassLoadOp::Load: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
+    	case RenderPassLoadOp::Clear: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+		case RenderPassLoadOp::DontCare: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+		default: assert(false && "passed invalid argument to d3d12_render_pass_begin_type"); return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+    }
+}
+
+D3D12_RENDER_PASS_ENDING_ACCESS_TYPE d3d12_render_pass_end_type(RenderPassStoreOp const op) {
+    
+	switch (op) {
+    	case RenderPassStoreOp::Store: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
+    	case RenderPassStoreOp::DontCare: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
+		default: assert(false && "passed invalid argument to d3d12_render_pass_end_type"); return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
+    }
+}
+
+DXGI_FORMAT dxgi_format(Format const format) {
+
+	switch(format) {
+		case Format::Unknown: return DXGI_FORMAT_UNKNOWN;
+		case Format::RGBA32float: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+		case Format::RGBA32uint: return DXGI_FORMAT_R32G32B32A32_UINT;
+		case Format::RGBA32int: return DXGI_FORMAT_R32G32B32A32_SINT;
+		case Format::RGB32float: return DXGI_FORMAT_R32G32B32_FLOAT;
+		case Format::RGB32uint: return DXGI_FORMAT_R32G32B32_UINT;
+		case Format::RGB32int: return DXGI_FORMAT_R32G32B32_SINT;
+		case Format::RG32float: return DXGI_FORMAT_R32G32_FLOAT;
+		case Format::RG32uint: return DXGI_FORMAT_R32G32_UINT;
+		case Format::RG32int: return DXGI_FORMAT_R32G32_SINT;
+		case Format::R32float: return DXGI_FORMAT_R32_FLOAT;
+		case Format::R32uint: return DXGI_FORMAT_R32_UINT;
+		case Format::R32int: return DXGI_FORMAT_R32_SINT;
+		case Format::RGBA16float: return DXGI_FORMAT_R16G16B16A16_FLOAT;
+		case Format::RGBA16uint: return DXGI_FORMAT_R16G16B16A16_UINT;
+		case Format::RGBA16int: return DXGI_FORMAT_R16G16B16A16_SINT;
+		case Format::RGBA16unorm: return DXGI_FORMAT_R16G16B16A16_UNORM;
+		case Format::RGBA16snorm: return DXGI_FORMAT_R16G16B16A16_SNORM;
+		case Format::RG16float: return DXGI_FORMAT_R16G16_FLOAT;
+		case Format::RG16uint: return DXGI_FORMAT_R16G16_UINT;
+		case Format::RG16int: return DXGI_FORMAT_R16G16_SINT;
+		case Format::RG16unorm: return DXGI_FORMAT_R16G16_UNORM;
+		case Format::RG16snorm: return DXGI_FORMAT_R16G16_SNORM;
+		case Format::R16float: return DXGI_FORMAT_R16_FLOAT;
+		case Format::R16uint: return DXGI_FORMAT_R16_UINT;
+		case Format::R16int: return DXGI_FORMAT_R16_SINT;
+		case Format::R16unorm: return DXGI_FORMAT_R16_UNORM;
+		case Format::R16snorm: return DXGI_FORMAT_R16_SNORM;
+		case Format::RGBA8uint: return DXGI_FORMAT_R8G8B8A8_UINT;
+		case Format::RGBA8int: return DXGI_FORMAT_R8G8B8A8_SINT;
+		case Format::RGBA8unorm: return DXGI_FORMAT_R8G8B8A8_UNORM;
+		case Format::RGBA8snorm: return DXGI_FORMAT_R8G8B8A8_SNORM;
+		case Format::RG8uint: return DXGI_FORMAT_R8G8_UINT;
+		case Format::RG8int: return DXGI_FORMAT_R8G8_SINT;
+		case Format::RG8unorm: return DXGI_FORMAT_R8G8_UNORM;
+		case Format::RG8snorm: return DXGI_FORMAT_R8G8_SNORM;
+		case Format::R8uint: return DXGI_FORMAT_R8_UINT;
+		case Format::R8int: return DXGI_FORMAT_R8_SINT;
+		case Format::R8unorm: return DXGI_FORMAT_R8_UNORM;
+		case Format::R8snorm: return DXGI_FORMAT_R8_SNORM;
+		default: assert(false && "passed invalid argument to dxgi_format"); return DXGI_FORMAT_UNKNOWN;
+	}
 }
 
 struct Backend::Impl {
@@ -228,9 +304,45 @@ void Memory::unmap() {
 
 Memory::~Memory() = default;
 
+struct RenderPass::Impl {
+    std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> colors;
+    std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> depth_stencil;
+    uint16_t sample_count;
+};
+
+RenderPass::RenderPass() = default;
+
+RenderPass::RenderPass(
+    Backend& backend, 
+    std::span<RenderPassColorDesc const> const colors, 
+    std::optional<RenderPassDepthStencilDesc> const depth_stencil, 
+    uint16_t const sample_count
+) : impl_(std::make_unique<Impl>()) {
+
+    impl_->sample_count = sample_count;
+    impl_->colors.reserve(colors.size());
+
+    for(uint32_t i = 0; i < colors.size(); ++i) {
+        D3D12_RENDER_PASS_BEGINNING_ACCESS begin{};
+        begin.Type = d3d12_render_pass_begin_type(colors[i].load_op);
+        begin.Clear.ClearValue.Format = dxgi_format(colors[i].format);
+
+        D3D12_RENDER_PASS_ENDING_ACCESS end{};
+        end.Type = d3d12_render_pass_end_type(colors[i].store_op);
+
+        //impl_->colors.emplace_back();
+
+        //render_pass_target_descs_[i].BeginningAccess = begin;
+        //render_pass_target_descs_[i].EndingAccess = end;
+    }
+}
+
+RenderPass::~RenderPass() = default;
+
 struct CommandBuffer::Impl {
     Backend* backend;
-    ComPtr<ID3D12Resource> resource;
+    ComPtr<ID3D12GraphicsCommandList4> list;
+    ComPtr<ID3D12CommandAllocator> allocator;
     CommandBufferType type;
 };
 
@@ -240,13 +352,48 @@ CommandBuffer::CommandBuffer(Backend& backend, CommandBufferType const type) : i
 
     impl_->type = type;
     impl_->backend = &backend;
-  
+    
+    THROW_IF_FAILED(impl_->backend->impl_->device->CreateCommandAllocator(
+        d3d12_command_list_type(type), 
+        __uuidof(ID3D12CommandAllocator), 
+        reinterpret_cast<void**>(impl_->allocator.GetAddressOf())
+    ));
+
+    THROW_IF_FAILED(impl_->backend->impl_->device->CreateCommandList(
+        0, 
+        d3d12_command_list_type(type), 
+        impl_->allocator.Get(), 
+        nullptr, 
+        __uuidof(ID3D12GraphicsCommandList4), 
+        reinterpret_cast<void**>(impl_->list.GetAddressOf())
+    ));
+
+    THROW_IF_FAILED(impl_->list->Close());
+}
+
+void CommandBuffer::reset() {
+
+    THROW_IF_FAILED(impl_->allocator->Reset());
+    THROW_IF_FAILED(impl_->list->Reset(impl_->allocator.Get(), nullptr));
+}
+
+void CommandBuffer::close() {
+
+    THROW_IF_FAILED(impl_->list->Close());
+}
+
+void CommandBuffer::begin_render_pass() {
+
+    
+}
+
+void CommandBuffer::end_render_pass() {
+
+    impl_->list->EndRenderPass();
 }
 
 CommandBuffer::CommandBuffer(CommandBuffer&&) = default;
 
 CommandBuffer& CommandBuffer::operator=(CommandBuffer&&) = default;
-
-
 
 CommandBuffer::~CommandBuffer() = default;
