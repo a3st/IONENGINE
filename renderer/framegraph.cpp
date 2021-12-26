@@ -36,7 +36,7 @@ void FrameGraph::execute() {
 
     for(uint32_t i = 0; i < tasks_.size(); ++i) {
 
-        std::cout << std::format("task {}, creates {}, writes {}", i, tasks_[i].creates.size(), tasks_[i].writes.size()) << std::endl;
+        //std::cout << std::format("task {}, creates {}, writes {}", i, tasks_[i].creates.size(), tasks_[i].writes.size()) << std::endl;
     }
 
     tasks_.clear();

@@ -25,10 +25,6 @@ public:
 private:
 
     Backend* backend_;
-
-    Buffer buffer;
-    Memory memory;
-
     FrameGraph fg_;
 };
 

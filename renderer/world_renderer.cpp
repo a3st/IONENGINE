@@ -8,12 +8,10 @@ using namespace ionengine::renderer;
 WorldRenderer::WorldRenderer(Backend* const backend) : 
     backend_(backend), fg_(*backend) {
 
-    buffer = Buffer(*backend_, BufferType::Vertex, 1024 * 1024);
-    memory = Memory(*backend_, MemoryType::Upload, 1024 * 1024 * 512);
-    memory.bind_buffer(buffer, 0);
-    char8_t* data = memory.map();
-    memset(data, 1, sizeof(int));
-    memory.unmap();
+
+    ImageId image_test = backend->create_image(ImageDimension::_2D, 1024 * 1024 * 512, 1, 1, 1, ImageFormat::RGBA8Unorm, ImageFlags::Color);
+    //backend->free_image(image_test);
+    ImageId image_test2 = backend->create_image(ImageDimension::_2D, 1024 * 1024 * 512, 1, 1, 1, ImageFormat::RGBA8Unorm, ImageFlags::Color);
 
     //ImageId buffer_0 = backend.create_image(ImageType::2D, 800, 600, Flags::Color);
     //ImageViewId rtv_0 = backend.create_image_view(buffer_0, ...);

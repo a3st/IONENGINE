@@ -2,6 +2,7 @@
 
 #include <precompiled.h>
 #include <renderer/backend.h>
+#include <renderer/handle_pool.h>
 
 #define NOMINMAX
 
@@ -18,90 +19,52 @@
 using Microsoft::WRL::ComPtr;
 using namespace ionengine::renderer;
 
-D3D12_HEAP_TYPE d3d12_heap_type(MemoryType const type) {
-	
-	switch(type) {
-        case MemoryType::Default: return D3D12_HEAP_TYPE_DEFAULT;
-        case MemoryType::Upload: return D3D12_HEAP_TYPE_UPLOAD;
-        case MemoryType::Readback: return D3D12_HEAP_TYPE_READBACK;
-		default: assert(false && "passed invalid argument to d3d12_heap_type"); return D3D12_HEAP_TYPE_DEFAULT;
-    }
+struct MemoryHeap {
+    ComPtr<ID3D12Heap> heap;
+    std::vector<uint8_t> blocks;
+    uint64_t offset;
+};
+
+struct MemoryAllocInfo {
+    MemoryHeap* heap;
+    size_t size;
+    uint64_t offset;
+};
+
+class MemoryPool {
+public:
+
+    MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, size_t const heap_size);
+
+    MemoryAllocInfo allocate(size_t const size);
+    void deallocate(MemoryAllocInfo const& alloc_info);
+
+private:
+
+    std::list<MemoryHeap> _heaps;
+};
+
+MemoryPool::MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, size_t const heap_size) {
+
+    D3D12_HEAP_DESC heap_desc{};
+    heap_desc.SizeInBytes = heap_size;
+    heap_desc.Properties.Type = heap_type;
+
+    ComPtr<ID3D12Heap> heap;
+    THROW_IF_FAILED(device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(heap.GetAddressOf())));
+
+    _heaps.emplace_back(MemoryHeap { heap, std::vector<uint8_t>(heap_size / 1048576, 0x0), 0 });
 }
 
-D3D12_COMMAND_LIST_TYPE d3d12_command_list_type(CommandBufferType const type) {
-	
-	switch(type) {
-        case CommandBufferType::Direct: return D3D12_COMMAND_LIST_TYPE_DIRECT;
-        case CommandBufferType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
-        case CommandBufferType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-		default: assert(false && "passed invalid argument to d3d12_command_list_type"); return D3D12_COMMAND_LIST_TYPE_DIRECT;
-    }
+MemoryAllocInfo MemoryPool::allocate(size_t const size) {
+
+    std::cout << "123 allocated" << std::endl;
+    return MemoryAllocInfo { nullptr, 0, 0 };
 }
 
-D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE d3d12_render_pass_begin_type(RenderPassLoadOp const op) {
-	
-	switch (op) {
-    	case RenderPassLoadOp::Load: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
-    	case RenderPassLoadOp::Clear: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
-		case RenderPassLoadOp::DontCare: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
-		default: assert(false && "passed invalid argument to d3d12_render_pass_begin_type"); return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
-    }
-}
+void MemoryPool::deallocate(MemoryAllocInfo const& alloc_info) {
 
-D3D12_RENDER_PASS_ENDING_ACCESS_TYPE d3d12_render_pass_end_type(RenderPassStoreOp const op) {
-    
-	switch (op) {
-    	case RenderPassStoreOp::Store: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
-    	case RenderPassStoreOp::DontCare: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
-		default: assert(false && "passed invalid argument to d3d12_render_pass_end_type"); return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
-    }
-}
-
-DXGI_FORMAT dxgi_format(Format const format) {
-
-	switch(format) {
-		case Format::Unknown: return DXGI_FORMAT_UNKNOWN;
-		case Format::RGBA32float: return DXGI_FORMAT_R32G32B32A32_FLOAT;
-		case Format::RGBA32uint: return DXGI_FORMAT_R32G32B32A32_UINT;
-		case Format::RGBA32int: return DXGI_FORMAT_R32G32B32A32_SINT;
-		case Format::RGB32float: return DXGI_FORMAT_R32G32B32_FLOAT;
-		case Format::RGB32uint: return DXGI_FORMAT_R32G32B32_UINT;
-		case Format::RGB32int: return DXGI_FORMAT_R32G32B32_SINT;
-		case Format::RG32float: return DXGI_FORMAT_R32G32_FLOAT;
-		case Format::RG32uint: return DXGI_FORMAT_R32G32_UINT;
-		case Format::RG32int: return DXGI_FORMAT_R32G32_SINT;
-		case Format::R32float: return DXGI_FORMAT_R32_FLOAT;
-		case Format::R32uint: return DXGI_FORMAT_R32_UINT;
-		case Format::R32int: return DXGI_FORMAT_R32_SINT;
-		case Format::RGBA16float: return DXGI_FORMAT_R16G16B16A16_FLOAT;
-		case Format::RGBA16uint: return DXGI_FORMAT_R16G16B16A16_UINT;
-		case Format::RGBA16int: return DXGI_FORMAT_R16G16B16A16_SINT;
-		case Format::RGBA16unorm: return DXGI_FORMAT_R16G16B16A16_UNORM;
-		case Format::RGBA16snorm: return DXGI_FORMAT_R16G16B16A16_SNORM;
-		case Format::RG16float: return DXGI_FORMAT_R16G16_FLOAT;
-		case Format::RG16uint: return DXGI_FORMAT_R16G16_UINT;
-		case Format::RG16int: return DXGI_FORMAT_R16G16_SINT;
-		case Format::RG16unorm: return DXGI_FORMAT_R16G16_UNORM;
-		case Format::RG16snorm: return DXGI_FORMAT_R16G16_SNORM;
-		case Format::R16float: return DXGI_FORMAT_R16_FLOAT;
-		case Format::R16uint: return DXGI_FORMAT_R16_UINT;
-		case Format::R16int: return DXGI_FORMAT_R16_SINT;
-		case Format::R16unorm: return DXGI_FORMAT_R16_UNORM;
-		case Format::R16snorm: return DXGI_FORMAT_R16_SNORM;
-		case Format::RGBA8uint: return DXGI_FORMAT_R8G8B8A8_UINT;
-		case Format::RGBA8int: return DXGI_FORMAT_R8G8B8A8_SINT;
-		case Format::RGBA8unorm: return DXGI_FORMAT_R8G8B8A8_UNORM;
-		case Format::RGBA8snorm: return DXGI_FORMAT_R8G8B8A8_SNORM;
-		case Format::RG8uint: return DXGI_FORMAT_R8G8_UINT;
-		case Format::RG8int: return DXGI_FORMAT_R8G8_SINT;
-		case Format::RG8unorm: return DXGI_FORMAT_R8G8_UNORM;
-		case Format::RG8snorm: return DXGI_FORMAT_R8G8_SNORM;
-		case Format::R8uint: return DXGI_FORMAT_R8_UINT;
-		case Format::R8int: return DXGI_FORMAT_R8_SINT;
-		case Format::R8unorm: return DXGI_FORMAT_R8_UNORM;
-		case Format::R8snorm: return DXGI_FORMAT_R8_SNORM;
-		default: assert(false && "passed invalid argument to dxgi_format"); return DXGI_FORMAT_UNKNOWN;
-	}
+    std::cout << "123 deallocated" << std::endl;
 }
 
 struct Backend::Impl {
@@ -117,7 +80,10 @@ struct Backend::Impl {
         ComPtr<ID3D12CommandQueue> compute;
     } queues;
 
-    //ComPtr<ID3D12Resource> resources;
+    std::unique_ptr<MemoryPool> default_pool;
+
+    using ImageData = std::pair<ComPtr<ID3D12Resource>, MemoryAllocInfo>;
+    HandlePool<ImageData> images;
 };
 
 Backend::Backend(uint32_t const adapter_index, platform::Window* const window) : impl_(std::make_unique<Impl>()) {
@@ -176,224 +142,55 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window) :
         nullptr, 
         reinterpret_cast<IDXGISwapChain1**>(impl_->swapchain.GetAddressOf()))
     );
+
+    impl_->default_pool = std::make_unique<MemoryPool>(impl_->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 256);
+}
+
+ImageId Backend::create_image(
+    ImageDimension const dimension, 
+    uint32_t const width, 
+    uint32_t const height, 
+    uint16_t const mip_levels, 
+    uint16_t const array_layers,
+    ImageFormat const format,
+    ImageFlags const flags
+) {
+
+    D3D12_RESOURCE_DESC resource_desc{};
+    resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resource_desc.Width = width;
+    resource_desc.Height = height;
+    resource_desc.MipLevels = mip_levels;
+    resource_desc.DepthOrArraySize = array_layers;
+    resource_desc.SampleDesc.Count = 1;
+    resource_desc.Format = DXGI_FORMAT_UNKNOWN;
+    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+    ComPtr<ID3D12Resource> resource;
+
+    D3D12_HEAP_PROPERTIES heap_props{};
+    heap_props.Type = D3D12_HEAP_TYPE_DEFAULT;
+    impl_->device->CreateCommittedResource(
+        &heap_props, 
+        D3D12_HEAP_FLAG_NONE, 
+        &resource_desc, 
+        D3D12_RESOURCE_STATE_COMMON, 
+        nullptr, 
+        __uuidof(ID3D12Resource), 
+        reinterpret_cast<void**>(resource.GetAddressOf())
+    );
+
+    D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = impl_->device->GetResourceAllocationInfo(0, 1, &resource_desc);
+    MemoryAllocInfo mem_alloc_info = impl_->default_pool->allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+
+    return ImageId(impl_->images.push({ resource, mem_alloc_info }) - 1);
+}
+
+void Backend::free_image(ImageId const& image_id) {
+
+    impl_->default_pool->deallocate(impl_->images[image_id.id()].second);
+    impl_->images[image_id.id()].first = nullptr;
+    impl_->images.erase(image_id.id());
 }
 
 Backend::~Backend() = default;
-
-struct Buffer::Impl {
-    ComPtr<ID3D12Resource> resource;
-    D3D12_RESOURCE_DESC desc;
-};
-
-Buffer::Buffer() = default;
-
-Buffer::Buffer(Backend& backend, BufferType const type, size_t const size) : impl_(std::make_unique<Impl>()) {
-
-    D3D12_RESOURCE_DESC resource_desc{};
-    resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    resource_desc.Width = 1024;
-    resource_desc.Height = 1;
-    resource_desc.MipLevels = 1;
-    resource_desc.DepthOrArraySize = 1;
-    resource_desc.SampleDesc.Count = 1;
-    resource_desc.Format = DXGI_FORMAT_UNKNOWN;
-    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-    if(type == BufferType::Constant) {
-        resource_desc.Width = (1024 + 255) & ~255;
-    }
-
-    impl_->desc = resource_desc;
-}
-
-Buffer::Buffer(Buffer&&) = default;
-
-Buffer& Buffer::operator=(Buffer&&) = default;
-
-Buffer::~Buffer() = default;
-
-struct Memory::Impl {
-    Backend* backend;
-    ComPtr<ID3D12Heap> heap;
-    ComPtr<ID3D12Resource> resource;
-    MemoryType type;
-};
-
-Memory::Memory() = default;
-
-Memory::Memory(Backend& backend, MemoryType const type, const size_t size) : impl_(std::make_unique<Impl>()) {
-
-    impl_->type = type;
-    impl_->backend = &backend;
-
-    D3D12_HEAP_DESC heap_desc{};
-    heap_desc.SizeInBytes = size;
-    heap_desc.Properties.Type = d3d12_heap_type(type);
-    THROW_IF_FAILED(backend.impl_->device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(impl_->heap.GetAddressOf())));
-
-    D3D12_RESOURCE_DESC resource_desc{};
-    resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    resource_desc.Width = 1024;
-    resource_desc.Height = 1;
-    resource_desc.MipLevels = 1;
-    resource_desc.DepthOrArraySize = 1;
-    resource_desc.SampleDesc.Count = 1;
-    resource_desc.Format = DXGI_FORMAT_UNKNOWN;
-    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-    D3D12_RESOURCE_STATES initial_state{};
-    switch(impl_->type) {
-        case MemoryType::Default: initial_state = D3D12_RESOURCE_STATE_COMMON; break;
-        case MemoryType::Readback:
-        case MemoryType::Upload: initial_state = D3D12_RESOURCE_STATE_GENERIC_READ; break;
-    }
-
-    THROW_IF_FAILED(backend.impl_->device->CreatePlacedResource(
-        impl_->heap.Get(), 
-        0, 
-        &resource_desc, 
-        initial_state, 
-        nullptr, 
-        __uuidof(ID3D12Resource), 
-        reinterpret_cast<void**>(impl_->resource.GetAddressOf())
-    ));
-}
-
-Memory::Memory(Memory&&) = default;
-
-Memory& Memory::operator=(Memory&&) = default;
-
-MemoryType Memory::get_type() const {
-
-    return impl_->type;
-}
-
-void Memory::bind_buffer(Buffer& buffer, uint64_t offset) {
-
-    D3D12_RESOURCE_STATES initial_state;
-    switch(impl_->type) {
-        case MemoryType::Default: initial_state = D3D12_RESOURCE_STATE_COMMON; break;
-        case MemoryType::Readback:
-        case MemoryType::Upload: initial_state = D3D12_RESOURCE_STATE_GENERIC_READ; break;
-    }
-    
-    THROW_IF_FAILED(impl_->backend->impl_->device->CreatePlacedResource(
-        impl_->heap.Get(), 
-        offset, 
-        &buffer.impl_->desc, 
-        initial_state, 
-        nullptr, 
-        __uuidof(ID3D12Resource), 
-        reinterpret_cast<void**>(buffer.impl_->resource.GetAddressOf())
-    ));
-}
-
-char8_t* Memory::map() {
-
-    char8_t* data;
-    D3D12_RANGE range{};
-    THROW_IF_FAILED(impl_->resource->Map(0, &range, reinterpret_cast<void**>(&data)));
-    return data;
-}
-
-void Memory::unmap() {
-    
-    D3D12_RANGE range{};
-    impl_->resource->Unmap(0, &range);
-}
-
-Memory::~Memory() = default;
-
-struct RenderPass::Impl {
-    std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> colors;
-    std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> depth_stencil;
-    uint16_t sample_count;
-};
-
-RenderPass::RenderPass() = default;
-
-RenderPass::RenderPass(
-    Backend& backend, 
-    std::span<RenderPassColorDesc const> const colors, 
-    std::optional<RenderPassDepthStencilDesc> const depth_stencil, 
-    uint16_t const sample_count
-) : impl_(std::make_unique<Impl>()) {
-
-    impl_->sample_count = sample_count;
-    impl_->colors.reserve(colors.size());
-
-    for(uint32_t i = 0; i < colors.size(); ++i) {
-        D3D12_RENDER_PASS_BEGINNING_ACCESS begin{};
-        begin.Type = d3d12_render_pass_begin_type(colors[i].load_op);
-        begin.Clear.ClearValue.Format = dxgi_format(colors[i].format);
-
-        D3D12_RENDER_PASS_ENDING_ACCESS end{};
-        end.Type = d3d12_render_pass_end_type(colors[i].store_op);
-
-        //impl_->colors.emplace_back();
-
-        //render_pass_target_descs_[i].BeginningAccess = begin;
-        //render_pass_target_descs_[i].EndingAccess = end;
-    }
-}
-
-RenderPass::~RenderPass() = default;
-
-struct CommandBuffer::Impl {
-    Backend* backend;
-    ComPtr<ID3D12GraphicsCommandList4> list;
-    ComPtr<ID3D12CommandAllocator> allocator;
-    CommandBufferType type;
-};
-
-CommandBuffer::CommandBuffer() = default;
-
-CommandBuffer::CommandBuffer(Backend& backend, CommandBufferType const type) : impl_(std::make_unique<Impl>()) {
-
-    impl_->type = type;
-    impl_->backend = &backend;
-    
-    THROW_IF_FAILED(impl_->backend->impl_->device->CreateCommandAllocator(
-        d3d12_command_list_type(type), 
-        __uuidof(ID3D12CommandAllocator), 
-        reinterpret_cast<void**>(impl_->allocator.GetAddressOf())
-    ));
-
-    THROW_IF_FAILED(impl_->backend->impl_->device->CreateCommandList(
-        0, 
-        d3d12_command_list_type(type), 
-        impl_->allocator.Get(), 
-        nullptr, 
-        __uuidof(ID3D12GraphicsCommandList4), 
-        reinterpret_cast<void**>(impl_->list.GetAddressOf())
-    ));
-
-    THROW_IF_FAILED(impl_->list->Close());
-}
-
-void CommandBuffer::reset() {
-
-    THROW_IF_FAILED(impl_->allocator->Reset());
-    THROW_IF_FAILED(impl_->list->Reset(impl_->allocator.Get(), nullptr));
-}
-
-void CommandBuffer::close() {
-
-    THROW_IF_FAILED(impl_->list->Close());
-}
-
-void CommandBuffer::begin_render_pass() {
-
-    
-}
-
-void CommandBuffer::end_render_pass() {
-
-    impl_->list->EndRenderPass();
-}
-
-CommandBuffer::CommandBuffer(CommandBuffer&&) = default;
-
-CommandBuffer& CommandBuffer::operator=(CommandBuffer&&) = default;
-
-CommandBuffer::~CommandBuffer() = default;

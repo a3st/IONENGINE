@@ -10,9 +10,10 @@
 class Name { \
 public: \
     Name() { } \
-    Name(uint64_t const id) : id_(id) { } \
+    Name(uint64_t const id) : _id(id) { } \
+    uint64_t id() const { return _id; } \
 private: \
-    uint64_t id_; \
+    uint64_t _id; \
 };
 #endif
 

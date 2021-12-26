@@ -2,95 +2,55 @@
 
 #pragma once
 
+#ifndef HELPER_DEFINE_HANDLE
+#define HELPER_DEFINE_HANDLE(Name) \
+class Name { \
+public: \
+    Name() { } \
+    Name(uint64_t const id) : _id(id) { } \
+    uint64_t id() const { return _id; } \
+private: \
+    uint64_t _id; \
+};
+#endif
+
 namespace ionengine::platform { class Window; }
 
 namespace ionengine::renderer {
 
-enum class MemoryType {
-    Default,
-    Upload,
-    Readback
+enum class ImageDimension {
+    _1D,
+    _2D,
+    _3D
 };
 
-enum class BufferType {
+enum class ImageFormat {
+    Unknown,
+    RGBA8Unorm
+};
+
+enum class ImageFlags {
+    Color,
+    DepthStencil,
+    Sampled
+};
+
+enum class BufferFlags {
+    None,
     Vertex,
     Index,
-    Constant
+    Constant,
+    UnorderedAccess
 };
 
-enum class CommandBufferType {
-    Direct,
-    Copy,
-    Compute
-};
-
-enum class RenderPassLoadOp {
-    Load,
-    Clear,
-    DontCare
-};
-
-enum class RenderPassStoreOp {
-    Store,
-    DontCare
-};
-
-enum class Format {
-    Unknown,
-    RGBA32float,
-    RGBA32uint,
-    RGBA32int,
-    RGB32float,
-    RGB32uint,
-    RGB32int,
-    RG32float,
-    RG32uint,
-    RG32int,
-    R32float,
-    R32uint,
-    R32int,
-    RGBA16float,
-    RGBA16uint,
-    RGBA16int,
-    RGBA16unorm,
-    RGBA16snorm,
-    RG16float,
-    RG16uint,
-    RG16int,
-    RG16unorm,
-    RG16snorm,
-    R16float,
-    R16uint,
-    R16int,
-    R16unorm,
-    R16snorm,
-    RGBA8uint,
-    RGBA8int,
-    RGBA8unorm,
-    RGBA8snorm,
-    RG8uint,
-    RG8int,
-    RG8unorm,
-    RG8snorm,
-    R8uint,
-    R8int,
-    R8unorm,
-    R8snorm
-};
-
-struct RenderPassColorDesc {
-    Format format = Format::Unknown;
-    RenderPassLoadOp load_op = RenderPassLoadOp::DontCare;
-    RenderPassStoreOp store_op = RenderPassStoreOp::DontCare;
-};
-
-struct RenderPassDepthStencilDesc {
-    Format format = Format::Unknown;
-    RenderPassLoadOp depth_load_op = RenderPassLoadOp::DontCare;
-    RenderPassStoreOp depth_store_op = RenderPassStoreOp::DontCare;
-    RenderPassLoadOp stencil_load_op = RenderPassLoadOp::DontCare;
-    RenderPassStoreOp stencil_store_op = RenderPassStoreOp::DontCare;
-};
+HELPER_DEFINE_HANDLE(FenceId)
+HELPER_DEFINE_HANDLE(BufferId)
+HELPER_DEFINE_HANDLE(BufferViewId)
+HELPER_DEFINE_HANDLE(ImageId)
+HELPER_DEFINE_HANDLE(ImageViewId)
+HELPER_DEFINE_HANDLE(CommandBufferId)
+HELPER_DEFINE_HANDLE(PipelineId)
+HELPER_DEFINE_HANDLE(ShaderId)
 
 class Backend {
 public:
@@ -107,118 +67,42 @@ public:
 
     Backend& operator=(Backend&&) = delete;
 
-private:
-
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
-
-    friend class Buffer;
-    friend class Memory;
-    friend class CommandBuffer;
-};
-
-class Buffer {
-public:
-
-    Buffer();
-
-    Buffer(Backend& backend, BufferType const type, size_t const size);
-
-    ~Buffer();
-
-    Buffer(Buffer const&) = delete;
-
-    Buffer(Buffer&&);
-
-    Buffer& operator=(Buffer const&) = delete;
-
-    Buffer& operator=(Buffer&&);
-
-private:
-
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
-
-    friend class Memory;
-};
-
-class Memory {
-public:
-
-    Memory();
-
-    Memory(Backend& backend, MemoryType const type, const size_t size);
-
-    Memory(Memory const&) = delete;
-
-    Memory(Memory&&);
-
-    Memory& operator=(Memory const&) = delete;
-
-    Memory& operator=(Memory&&);
-
-    ~Memory();
-
-    MemoryType get_type() const;
-
-    void bind_buffer(Buffer& buffer, uint64_t offset);
-
-    char8_t* map();
-
-    void unmap();
-
-private:
-
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
-};
-
-class RenderPass {
-public:
-
-    RenderPass();
-
-    RenderPass(
-        Backend& backend, 
-        std::span<RenderPassColorDesc const> const colors, 
-        std::optional<RenderPassDepthStencilDesc> const depth_stencil, 
-        uint16_t const sample_count
+    ImageId create_image(
+        ImageDimension const dimension, 
+        uint32_t const width, 
+        uint32_t const height, 
+        uint16_t const mip_levels, 
+        uint16_t const array_layers,
+        ImageFormat const format,
+        ImageFlags const flags
     );
 
-    ~RenderPass();
+    void free_image(ImageId const& image_id);
 
+    ImageViewId create_image_view(
+        ImageId const& image_id,
+        ImageDimension const dimension,
+        uint16_t const base_mip_level, 
+        uint16_t const mip_level_count,
+        uint16_t const base_array_layer, 
+        uint16_t const array_layer_count
+    );
 
-private:
+    void free_image_view(ImageViewId const& image_view_id);
 
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
+    BufferId create_buffer(
+        size_t const size,
+        BufferFlags const flags
+    );
 
-};
+    void free_buffer(BufferId const& buffer_id);
 
-class CommandBuffer {
-public:
+    BufferViewId create_buffer_view(
+        BufferId const& buffer_id,
+        uint32_t const stride
+    );
 
-    CommandBuffer();
-
-    CommandBuffer(Backend& backend, CommandBufferType const type);
-
-    CommandBuffer(CommandBuffer const&) = delete;
-
-    CommandBuffer(CommandBuffer&&);
-
-    CommandBuffer& operator=(CommandBuffer const&) = delete;
-
-    CommandBuffer& operator=(CommandBuffer&&);
-
-    ~CommandBuffer();
-
-    void reset();
-
-    void close();
-
-    void begin_render_pass();
-
-    void end_render_pass();
+    void free_buffer_view(BufferViewId const& buffer_view_id);
 
 private:
 
