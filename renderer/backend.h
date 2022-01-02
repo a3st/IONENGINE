@@ -43,6 +43,23 @@ enum class BufferFlags {
     UnorderedAccess
 };
 
+enum class CommandBufferType {
+    Graphics,
+    Copy,
+    Compute
+};
+
+enum class CommandBufferEventType {
+    Close,
+    Pipeline,
+    Draw,
+    RenderPass  
+};
+
+struct CommandBufferEvent {
+    CommandBufferEventType type;
+};
+
 HELPER_DEFINE_HANDLE(FenceId)
 HELPER_DEFINE_HANDLE(BufferId)
 HELPER_DEFINE_HANDLE(BufferViewId)
@@ -55,7 +72,7 @@ HELPER_DEFINE_HANDLE(ShaderId)
 class Backend {
 public:
 
-    Backend(uint32_t const adapter_index, platform::Window* const window);
+    Backend(uint32_t const adapter_index, platform::Window* const window, uint32_t const frame_count);
 
     ~Backend();
 
@@ -103,6 +120,12 @@ public:
     );
 
     void free_buffer_view(BufferViewId const& buffer_view_id);
+
+    std::pair<ImageId, ImageViewId> acquire_swapchain_attachment();
+
+    CommandBufferId write_cmd(CommandBufferType const cmd_type, std::vector<CommandBufferEvent> const& events);
+
+    FenceId execute(CommandBufferType const cmd_type, std::vector<CommandBufferId> const& buffers);
 
 private:
 

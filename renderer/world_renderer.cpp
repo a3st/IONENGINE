@@ -21,9 +21,16 @@ WorldRenderer::WorldRenderer(Backend* const backend) :
     //FenceId lock_0 = backend.execute(cmd_0);
     //backend.wait(lock_0);
     //backend.present();
+
+    CommandBufferId buffer_id = backend->write_cmd(CommandBufferType::Graphics, {});
+    FenceId lock_0 = backend->execute(CommandBufferType::Graphics, { buffer_id });
 }
 
 void WorldRenderer::update() {
+
+    auto attachment = backend_->acquire_swapchain_attachment();
+
+    //std::cout << "id image: " << attachment.first.id() << std::endl;
 
     struct BasicPassData {
         FrameGraphResourceId swapchain;
