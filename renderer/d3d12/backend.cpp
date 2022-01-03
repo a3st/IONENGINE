@@ -179,19 +179,6 @@ struct Backend::Impl {
 
     using CommandData = std::pair<ComPtr<ID3D12GraphicsCommandList4>, ComPtr<ID3D12CommandAllocator>>;
     HandlePool<CommandData> cmds;
-
-    struct {
-        uint32_t direct;
-        uint32_t copy;
-        uint32_t compute;
-    } write_cmds_index;
-
-    struct {
-        std::vector<CommandBufferId> direct;
-        std::vector<CommandBufferId> copy;
-        std::vector<CommandBufferId> compute;
-    } write_cmds;
-
    
 };
 
@@ -280,7 +267,7 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
         impl_->swapchain_views.emplace_back(impl_->image_views.push(descriptor_alloc_info) - 1);
     }
 
-    impl_->write_cmds_index = {};
+    /*impl_->write_cmds_index = {};
 
     for(uint32_t i = 0; i < 10; ++i) {
         ComPtr<ID3D12CommandAllocator> allocator;
@@ -290,7 +277,7 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
         THROW_IF_FAILED(impl_->device->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE, __uuidof(ID3D12GraphicsCommandList4), reinterpret_cast<void**>(cmd.GetAddressOf())));
     
         impl_->write_cmds.direct.emplace_back(impl_->cmds.push({ cmd, allocator }) - 1);
-    }
+    }*/
 }
 
 Backend::~Backend() = default;
@@ -349,7 +336,7 @@ void Backend::free_image(ImageId const& image_id) {
     impl_->images.erase(image_id.id());
 }
 
-std::pair<ImageId, ImageViewId> Backend::acquire_swapchain_attachment() {
+/*std::pair<ImageId, ImageViewId> Backend::acquire_swapchain_attachment() {
 
     impl_->frame_index = (impl_->frame_index + 1) % impl_->frame_count;
     return { impl_->swapchain_images[impl_->frame_index], impl_->swapchain_views[impl_->frame_index] };
@@ -371,4 +358,4 @@ CommandBufferId Backend::write_cmd(CommandBufferType const cmd_type, std::vector
 
 FenceId Backend::execute(CommandBufferType const cmd_type, std::vector<CommandBufferId> const& buffers) {
     return { 0 };
-}
+}*/

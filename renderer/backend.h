@@ -43,30 +43,43 @@ enum class BufferFlags {
     UnorderedAccess
 };
 
-enum class CommandBufferType {
+enum class QueueType {
     Graphics,
     Copy,
     Compute
 };
 
-enum class CommandBufferEventType {
-    Close,
-    Pipeline,
-    Draw,
-    RenderPass  
+enum class BarrierType {
+    Common,
+    Copy
 };
 
-struct CommandBufferEvent {
-    CommandBufferEventType type;
+struct BatchInfo {
+    uint32_t primitives_count;
 };
 
-HELPER_DEFINE_HANDLE(FenceId)
+struct ComputeInfo {
+    std::array<uint32_t, 3> thread_count;
+    bool async;
+};
+
+struct ShaderContext {
+    std::vector<ImageViewId> targets; // render to (RTV)
+    // std::vector<ClearColor> clear_colors; - render pass emulation
+    // std::vector<ShaderParam> params; - binding shader params.
+    // ShaderParam
+};
+
+struct RenderJob {
+    BatchInfo batch_info;
+    ComputeInfo compute_info;
+    ShaderId shader_id;
+};
+
 HELPER_DEFINE_HANDLE(BufferId)
 HELPER_DEFINE_HANDLE(BufferViewId)
 HELPER_DEFINE_HANDLE(ImageId)
 HELPER_DEFINE_HANDLE(ImageViewId)
-HELPER_DEFINE_HANDLE(CommandBufferId)
-HELPER_DEFINE_HANDLE(PipelineId)
 HELPER_DEFINE_HANDLE(ShaderId)
 
 class Backend {
@@ -121,11 +134,21 @@ public:
 
     void free_buffer_view(BufferViewId const& buffer_view_id);
 
-    std::pair<ImageId, ImageViewId> acquire_swapchain_attachment();
+    ShaderId create_shader();
 
-    CommandBufferId write_cmd(CommandBufferType const cmd_type, std::vector<CommandBufferEvent> const& events);
+    void free_shader(ShaderId const& shader_id);
 
-    FenceId execute(CommandBufferType const cmd_type, std::vector<CommandBufferId> const& buffers);
+    void barrier(BufferId const& buffer_id, BarrierType const barrier_type, uint64_t const sort_key);
+
+    void render(RenderJob const& job, ShaderContext const& shader_context, uint64_t const sort_key);
+
+    // void copy(, uint64_t const sort_key);
+
+    void wait_fence(std::string const& fence_name, uint64_t const sort_key, QueueType const queue_type);
+
+    void signal_fence(std::string const& fence_name, uint64_t const sort_key, QueueType const queue_type);
+
+    void dispatch();
 
 private:
 
