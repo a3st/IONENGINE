@@ -54,6 +54,17 @@ enum class BarrierType {
     Copy
 };
 
+enum class PipelineType {
+    Graphics,
+    Compute
+};
+
+HELPER_DEFINE_HANDLE(BufferId)
+HELPER_DEFINE_HANDLE(BufferViewId)
+HELPER_DEFINE_HANDLE(ImageId)
+HELPER_DEFINE_HANDLE(ImageViewId)
+HELPER_DEFINE_HANDLE(PipelineId)
+
 struct BatchInfo {
     uint32_t primitives_count;
 };
@@ -63,24 +74,20 @@ struct ComputeInfo {
     bool async;
 };
 
-struct ShaderContext {
+struct PipelineContext {
     std::vector<ImageViewId> targets; // render to (RTV)
     // std::vector<ClearColor> clear_colors; - render pass emulation
     // std::vector<ShaderParam> params; - binding shader params.
     // ShaderParam
+    BufferViewId vertex_buffer;
+    BufferViewId index_buffer;
 };
 
-struct RenderJob {
+struct RenderContext {
     BatchInfo batch_info;
     ComputeInfo compute_info;
-    ShaderId shader_id;
+    PipelineId pipeline_id;
 };
-
-HELPER_DEFINE_HANDLE(BufferId)
-HELPER_DEFINE_HANDLE(BufferViewId)
-HELPER_DEFINE_HANDLE(ImageId)
-HELPER_DEFINE_HANDLE(ImageViewId)
-HELPER_DEFINE_HANDLE(ShaderId)
 
 class Backend {
 public:
@@ -134,13 +141,15 @@ public:
 
     void free_buffer_view(BufferViewId const& buffer_view_id);
 
-    ShaderId create_shader();
+    PipelineId create_pipeline(
+        PipelineType const pipeline_type
+    );
 
-    void free_shader(ShaderId const& shader_id);
+    void free_pipeline(PipelineId const& pipeline_id);
 
     void barrier(BufferId const& buffer_id, BarrierType const barrier_type, uint64_t const sort_key);
 
-    void render(RenderJob const& job, ShaderContext const& shader_context, uint64_t const sort_key);
+    void render(RenderContext const& render_context, PipelineContext const& pipeline_context, uint64_t const sort_key);
 
     // void copy(, uint64_t const sort_key);
 

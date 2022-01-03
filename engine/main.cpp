@@ -24,7 +24,10 @@ int main(int*, char*) {
 
             switch(event.type) {
                 case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
-                case platform::WindowEventType::Updated: { world_renderer.update(); } break;
+                case platform::WindowEventType::Updated: { 
+                    world_renderer.update();
+                    backend.dispatch();
+                } break;
             }
         }
     );
