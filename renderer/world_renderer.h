@@ -3,14 +3,15 @@
 #pragma once
 
 #include <renderer/backend.h>
-#include <renderer/framegraph.h>
+#include <renderer/frame_graph.h>
+#include <engine/thread_pool.h>
 
 namespace ionengine::renderer {
 
 class WorldRenderer {
 public:
 
-    WorldRenderer(Backend* const backend);
+    WorldRenderer(Backend* const backend, ThreadPool* const thread_pool);
 
     WorldRenderer(WorldRenderer const&) = delete;
 
@@ -24,8 +25,10 @@ public:
 
 private:
 
-    Backend* backend_;
-    FrameGraph fg_;
+    Backend* _backend;
+    ThreadPool* _thread_pool;
+
+    FrameGraph _frame_graph;
 };
 
 }

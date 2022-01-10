@@ -359,7 +359,3 @@ CommandBufferId Backend::write_cmd(CommandBufferType const cmd_type, std::vector
 FenceId Backend::execute(CommandBufferType const cmd_type, std::vector<CommandBufferId> const& buffers) {
     return { 0 };
 }*/
-
-void Backend::dispatch() {
-    
-}

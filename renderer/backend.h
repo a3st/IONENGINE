@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <renderer/render_queue.h>
+
 #ifndef HELPER_DEFINE_HANDLE
 #define HELPER_DEFINE_HANDLE(Name) \
 class Name { \
@@ -64,6 +66,7 @@ HELPER_DEFINE_HANDLE(BufferViewId)
 HELPER_DEFINE_HANDLE(ImageId)
 HELPER_DEFINE_HANDLE(ImageViewId)
 HELPER_DEFINE_HANDLE(PipelineId)
+HELPER_DEFINE_HANDLE(GPUResourceHandle)
 
 struct BatchInfo {
     uint32_t primitives_count;
@@ -147,19 +150,11 @@ public:
 
     void free_pipeline(PipelineId const& pipeline_id);
 
-    void barrier(BufferId const& buffer_id, BarrierType const barrier_type, uint64_t const sort_key);
+    GPUResourceHandle generate_command_buffer(RenderQueue const& queue);
 
-    void render(RenderContext const& render_context, PipelineContext const& pipeline_context, uint64_t const sort_key);
+    void execute_command_buffers(std::vector<GPUResourceHandle> const& handles);
 
-    // void copy(, uint64_t const sort_key);
-
-    void wait_fence(std::string const& fence_name, uint64_t const sort_key, QueueType const queue_type);
-
-    void signal_fence(std::string const& fence_name, uint64_t const sort_key, QueueType const queue_type);
-
-    void dispatch();
-
-    void generate_commands();
+    void swap_buffers();
 
 private:
 

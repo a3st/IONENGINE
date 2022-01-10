@@ -20,7 +20,7 @@ int main(int*, char*) {
     ThreadPool thread_pool(3);
 
     renderer::Backend backend(0, &window, 2);
-    renderer::WorldRenderer world_renderer(&backend);
+    renderer::WorldRenderer world_renderer(&backend, &thread_pool);
     
     try {
         loop.run(
@@ -32,7 +32,6 @@ int main(int*, char*) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: { 
                         world_renderer.update();
-                        backend.dispatch();
                     } break;
                 }
             }

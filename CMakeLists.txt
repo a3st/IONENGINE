@@ -20,7 +20,6 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 add_executable(Runtime-Win32
 
     engine/main.cpp
-
     engine/thread_pool.cpp
 
     platform/win32/window.cpp
@@ -48,7 +47,6 @@ target_include_directories(Runtime-Win32 PRIVATE
 # Link Libs
 target_link_libraries(Runtime-Win32
     ${Runtime-Win32}
-    lgfx-d3d12
     d3d12.lib
     dxgi.lib
     dxguid.lib
@@ -56,13 +54,12 @@ target_link_libraries(Runtime-Win32
 
 # Link Libs
 target_link_directories(Runtime-Win32 PRIVATE
-    "lgfx/build/Debug"
+
 )
 
 # Preprocessor
 target_compile_definitions(Runtime-Win32 PRIVATE 
     IONENGINE_PLATFORM_WIN32
-    LGFX_BACKEND_D3D12
 )
 
 #[[

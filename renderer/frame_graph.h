@@ -7,17 +7,42 @@
 
 namespace ionengine::renderer {
 
-enum class FrameGraphTaskType {
-    RenderPass,
-    ComputePass
+class FGResourceHandle {
+public:
+
+    FGResourceHandle() = default;
+    FGResourceHandle(uint32_t const id) : _id(id) { }
+
+private:
+    
+    uint32_t _id;
 };
 
-enum class FrameGraphResourceType {
+class FGTaskHandle {
+public:
+
+    FGTaskHandle() = default;
+    FGTaskHandle(uint32_t const id) : _id(id) { }
+
+private:
+    
+    uint32_t _id;
+};
+
+enum class FGTaskType {
+    RenderPass,
+    ComputePass,
+    AsyncComputePass
+};
+
+enum class FGResourceType {
     Attachment,
+    SwapchainAttachment,
+    DepthStencilAttachment,
     Buffer
 };
 
-enum class FrameGraphResourceFlags {
+enum class FGResourceFlags : uint16_t {
     Presentable = 1 << 0,
     DepthStencil = 1 << 1
 };
@@ -27,15 +52,13 @@ enum class FrameGraphResourceOp {
     Clear
 };
 
-HELPER_DEFINE_HANDLE(FrameGraphResourceId)
-
 struct FrameGraphResourceClearDesc {
     Color color;
     uint8_t stencil;
     float depth;
 };
 
-struct FrameGraphResource {
+/*struct FrameGraphResource {
     FrameGraphResourceType resource_type;
     uint32_t width;
     uint32_t height;
@@ -52,20 +75,16 @@ struct FrameGraphTask {
     FrameGraphTaskType task_type;
     std::vector<FrameGraphResourceId> creates;
     std::vector<FrameGraphResourceWrite> writes;
-};
+};*/
 
 class FrameGraphBuilder {
 public:
 
-    FrameGraphBuilder(std::vector<FrameGraphResource>& resources, FrameGraphTask& task);
+    FrameGraphBuilder();
 
-    FrameGraphResourceId create(FrameGraphResource const& desc);
-    void write(FrameGraphResourceId const& id, FrameGraphResourceOp const op, FrameGraphResourceClearDesc const& clear_desc);
+    FGResourceHandle create(FGResourceType const res_type, GPUResourceHandle const& handle);
 
 private:
-
-    std::vector<FrameGraphResource>* resources_;
-    FrameGraphTask* task_;
 
 };
 
@@ -80,28 +99,33 @@ private:
 class FrameGraph {
 public:
 
-    FrameGraph(Backend& backend);
+    FrameGraph() = default;
 
-    template<class T>
-    void add_task(
-        FrameGraphTaskType const task_type,
-        std::function<void(FrameGraphBuilder&, T&)> const build_func, 
-        std::function<void(FrameGraphContext&, T const&)> context_func
+    template<class Data>
+    FGTaskHandle add_task(
+        FGTaskType const task_type,
+        std::function<void(FrameGraphBuilder&, Data&)> const build_func, 
+        std::function<void(FrameGraphContext&, Data const&)> context_func
     ) {
 
-        tasks_.emplace_back(FrameGraphTask { task_type });
-        
-        T data{};
-        FrameGraphBuilder builder(resources_, tasks_.back());
-        build_func(builder, data);
+        return FGTaskHandle {};
     }
 
-    void execute();
+    void wait_until(FGTaskHandle const& handle);
+
+    template<class Data>
+    Data& get_data(FGTaskHandle const& handle) {
+
+        Data data{};
+        return data;
+    }
+
+    void execute(RenderQueue& queue);
 
 private:
 
-    std::vector<FrameGraphResource> resources_;
-    std::vector<FrameGraphTask> tasks_;
+    //std::vector<FrameGraphResource> resources_;
+    //std::vector<FrameGraphTask> tasks_;
 
 };
 

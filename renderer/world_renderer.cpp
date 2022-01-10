@@ -5,13 +5,11 @@
 
 using namespace ionengine::renderer;
 
-WorldRenderer::WorldRenderer(Backend* const backend) : 
-    backend_(backend), fg_(*backend) {
+WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
 
-
-    ImageId image_test = backend->create_image(ImageDimension::_2D, 1024 * 1024 * 512, 1, 1, 1, ImageFormat::RGBA8Unorm, ImageFlags::Color);
+    //ImageId image_test = backend->create_image(ImageDimension::_2D, 1024 * 1024 * 512, 1, 1, 1, ImageFormat::RGBA8Unorm, ImageFlags::Color);
     //backend->free_image(image_test);
-    ImageId image_test2 = backend->create_image(ImageDimension::_2D, 1024 * 1024 * 512, 1, 1, 1, ImageFormat::RGBA8Unorm, ImageFlags::Color);
+    //ImageId image_test2 = backend->create_image(ImageDimension::_2D, 1024 * 1024 * 512, 1, 1, 1, ImageFormat::RGBA8Unorm, ImageFlags::Color);
 
     //ImageId buffer_0 = backend.create_image(ImageType::2D, 800, 600, Flags::Color);
     //ImageViewId rtv_0 = backend.create_image_view(buffer_0, ...);
@@ -26,26 +24,59 @@ WorldRenderer::WorldRenderer(Backend* const backend) :
 void WorldRenderer::update() {
 
     struct BasicPassData {
-        FrameGraphResourceId swapchain;
+        FGResourceHandle swapchain;
+        FGResourceHandle rtv_0;
     };
 
-    fg_.add_task<BasicPassData>(
-        FrameGraphTaskType::RenderPass,
-        [&](FrameGraphBuilder& builder, BasicPassData& data) {
-            data.swapchain = builder.create(FrameGraphResource { 
-                    FrameGraphResourceType::Attachment,
-                    800,
-                    600,
-                    FrameGraphResourceFlags::Presentable
-                }
-            );
+    GPUResourceHandle swapchain_handle;
 
-            builder.write(data.swapchain, FrameGraphResourceOp::Clear, FrameGraphResourceClearDesc { Color(1.0f, 0.5f, 0.2f, 1.0f) });
+    RenderQueue render_queue;
+
+    FGTaskHandle task_1 = _frame_graph.add_task<BasicPassData>(
+        FGTaskType::RenderPass,
+        [&](FrameGraphBuilder& builder, BasicPassData& data) {
+            data.swapchain = builder.create(FGResourceType::SwapchainAttachment, swapchain_handle);
+        },
+        [=](FrameGraphContext& context, BasicPassData const& data) {
+            
+        }
+    );
+
+    FGTaskHandle task_2 = _frame_graph.add_task<BasicPassData>(
+        FGTaskType::AsyncComputePass,
+        [&](FrameGraphBuilder& builder, BasicPassData& data) {
+            
         },
         [=](FrameGraphContext& context, BasicPassData const& data) {
 
         }
     );
 
-    fg_.execute();
+    _frame_graph.wait_until(task_2);
+
+    FGTaskHandle task_3 = _frame_graph.add_task<BasicPassData>(
+        FGTaskType::RenderPass,
+        [&](FrameGraphBuilder& builder, BasicPassData& data) {
+            auto basic_pass_data = _frame_graph.get_data<BasicPassData>(task_1);
+            
+        },
+        [=](FrameGraphContext& context, BasicPassData const& data) {
+
+        }
+    );
+
+    _frame_graph.execute(render_queue);
+
+    std::vector<GPUResourceHandle> cmdbuffers;
+    cmdbuffers.resize(10);
+
+    JobHandle handle = _thread_pool->push(
+        [&]() {
+            cmdbuffers[0] = _backend->generate_command_buffer(render_queue);
+        }
+    );
+
+    _backend->execute_command_buffers(cmdbuffers);
+
+    _backend->swap_buffers();
 }
