@@ -28,21 +28,8 @@ add_executable(Runtime-Win32
 
     renderer/d3d12/backend.cpp
     renderer/world_renderer.cpp
-    renderer/framegraph.cpp
+    renderer/frame_graph.cpp
     renderer/color.cpp
-
-    #rendersystem/renderer.cpp
-    #rendersystem/color.cpp
-    #rendersystem/frame_graph.cpp
-    #rendersystem/material.cpp
-
-    #rendersystem/cache/render_pass.cpp
-    #rendersystem/cache/frame_buffer.cpp
-    #rendersystem/cache/texture.cpp
-    #rendersystem/cache/texture_view.cpp
-    #rendersystem/cache/pipeline.cpp
-    #rendersystem/cache/buffer.cpp
-    #rendersystem/cache/buffer_view.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

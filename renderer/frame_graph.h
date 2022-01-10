@@ -5,18 +5,6 @@
 #include <renderer/backend.h>
 #include <renderer/color.h>
 
-#ifndef HELPER_DEFINE_HANDLE
-#define HELPER_DEFINE_HANDLE(Name) \
-class Name { \
-public: \
-    Name() { } \
-    Name(uint64_t const id) : _id(id) { } \
-    uint64_t id() const { return _id; } \
-private: \
-    uint64_t _id; \
-};
-#endif
-
 namespace ionengine::renderer {
 
 enum class FrameGraphTaskType {

@@ -1,25 +1,26 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include "color.h"
+#include <renderer/color.h>
 
 using namespace ionengine::renderer;
 
-void Color::RGBToSRGB() {
+Color& Color::srgb() {
 
-	for (int32_t i = 0; i < 3; ++i) {
+	for(size_t i = 0; i < 3; ++i) {
 		float color = (&r)[i];
 		if (color < 0.0031308f) {
-			color = 12.92f * color;
+			color = color * 12.92f;
 		} else {
 			color = 1.055f * std::powf(color, 1.0f / 2.4f) - 0.05499995f;
 		}
 	}
+	return *this;
 }
 
-void Color::SRGBToRGB() {
+Color& Color::rgb() {
 
-	for (int32_t i = 0; i < 3; ++i) {
+	for(size_t i = 0; i < 3; ++i) {
 		float color = (&r)[i];
 		if (color <= 0.040448643f) {
 			color = color / 12.92f;
@@ -27,4 +28,5 @@ void Color::SRGBToRGB() {
 			color = std::powf((color + 0.055f) / 1.055f, 2.4f);
 		}
 	}
+	return *this;
 }

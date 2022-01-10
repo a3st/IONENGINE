@@ -159,6 +159,8 @@ public:
 
     void dispatch();
 
+    void generate_commands();
+
 private:
 
     struct Impl;

@@ -6,63 +6,53 @@ namespace ionengine::renderer {
 
 struct Color {
 	
-	float r, g, b, a;
+	float r;
+	float g;
+	float b;
+	float a;
 
-	Color() : r(0), g(0), b(0), a(0) { 
-	
-    }
+	Color() = default;
 
-	Color(const float _r, const float _g, const float _b, const float _a) : r(_r), g(_g), b(_b), a(_a) {	
-	
-    }
+	Color(float const _r, float const _g, float const _b, float const _a) : r(_r), g(_g), b(_b), a(_a) { }
 
-	Color(const Color& rhs) : r(rhs.r), g(rhs.g), b(rhs.b), a(rhs.a) {
-	
-    }
+	Color(Color const& other) : r(other.r), g(other.g), b(other.b), a(other.a) { }
 
-	Color(Color&& rhs) noexcept : r(rhs.r), g(rhs.g), b(rhs.b), a(rhs.a) {
-	
-    }
+	Color(Color&& other) noexcept : r(other.r), g(other.g), b(other.b), a(other.a) { }
 
-	Color& operator=(const Color& rhs) {
+	Color& operator=(Color const& other) {
 
-		r = rhs.r;
-		g = rhs.g;
-		b = rhs.b;
-		a = rhs.a;
+		r = other.r;
+		g = other.g;
+		b = other.b;
+		a = other.a;
 		return *this;
 	}
 
-	Color& operator=(Color&& rhs) noexcept {
+	Color& operator=(Color&& other) noexcept {
 
-		r = rhs.r;
-		g = rhs.g;
-		b = rhs.b;
-		a = rhs.a;
+		r = other.r;
+		g = other.g;
+		b = other.b;
+		a = other.a;
 		return *this;
 	}
 
-	inline const float* GetData() const {
+	const float* data() const { return &r; }
 
-		return &r;
-	}
+	size_t size() const { return 4; }
 
-	inline size_t GetSize() const {
-
-		return 4;
-	}
-
-	void SRGBToRGB();
-	void RGBToSRGB();
+	Color& rgb();
+	
+	Color& srgb();
     
-	inline bool operator==(const Color& rhs) const {
+	bool operator==(Color const& other) const {
 
-		return r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a;
+		return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
 	}
 
-	inline bool operator!=(const Color& rhs) const {
+	bool operator!=(Color const& other) const {
 
-		return r != rhs.r || g != rhs.g || b != rhs.b || a != rhs.a;
+		return std::tie(r, g, b, a) != std::tie(other.r, other.g, other.b, other.a);
 	}
 };
 
