@@ -21,6 +21,8 @@ add_executable(Runtime-Win32
 
     engine/main.cpp
 
+    engine/thread_pool.cpp
+
     platform/win32/window.cpp
     platform/win32/window_loop.cpp
 

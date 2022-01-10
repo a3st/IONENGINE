@@ -7,8 +7,10 @@
 #include <fstream>
 #include <filesystem>
 #include <format>
+#include <random>
 #include <limits>
 #include <functional>
+#include <exception>
 #include <cassert>
 #include <mutex>
 #include <vector>
