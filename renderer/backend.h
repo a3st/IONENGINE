@@ -3,45 +3,45 @@
 #pragma once
 
 #include <renderer/render_queue.h>
-
-#ifndef HELPER_DEFINE_HANDLE
-#define HELPER_DEFINE_HANDLE(Name) \
-class Name { \
-public: \
-    Name() { } \
-    Name(uint64_t const id) : _id(id) { } \
-    uint64_t id() const { return _id; } \
-private: \
-    uint64_t _id; \
-};
-#endif
-
-namespace ionengine::platform { class Window; }
+#include <platform/window.h>
 
 namespace ionengine::renderer {
 
-enum class ImageDimension {
-    _1D,
-    _2D,
-    _3D
+class GPUResourceHandle {
+public:
+
+    GPUResourceHandle() = default;
+    GPUResourceHandle(uint32_t const id) : _id(id) { }
+
+private:
+    
+    uint32_t _id;
 };
 
-enum class ImageFormat {
+enum class TextureDimension {
+    _1D,
+    _2D,
+    _3D,
+    Cube
+};
+
+enum class TextureFormat {
     Unknown,
     RGBA8Unorm
 };
 
-enum class ImageFlags {
-    Color,
+enum class TextureFlags {
+    None,
+    RenderTarget,
     DepthStencil,
-    Sampled
+    UnorderedAccess
 };
 
 enum class BufferFlags {
     None,
     Vertex,
     Index,
-    Constant,
+    ConstantBuffer,
     UnorderedAccess
 };
 
@@ -60,13 +60,6 @@ enum class PipelineType {
     Graphics,
     Compute
 };
-
-HELPER_DEFINE_HANDLE(BufferId)
-HELPER_DEFINE_HANDLE(BufferViewId)
-HELPER_DEFINE_HANDLE(ImageId)
-HELPER_DEFINE_HANDLE(ImageViewId)
-HELPER_DEFINE_HANDLE(PipelineId)
-HELPER_DEFINE_HANDLE(GPUResourceHandle)
 
 struct BatchInfo {
     uint32_t primitives_count;
@@ -92,6 +85,11 @@ struct RenderContext {
     PipelineId pipeline_id;
 };
 
+struct Extent2D {
+    uint32_t width;
+    uint32_t height;
+};
+
 class Backend {
 public:
 
@@ -107,54 +105,45 @@ public:
 
     Backend& operator=(Backend&&) = delete;
 
-    ImageId create_image(
-        ImageDimension const dimension, 
-        uint32_t const width, 
-        uint32_t const height, 
-        uint16_t const mip_levels, 
+    GPUResourceHandle create_texture(
+        TextureDimension const dimension,
+        Extent2D const extent,
+        uint16_t const mip_levels,
         uint16_t const array_layers,
-        ImageFormat const format,
-        ImageFlags const flags
+        TextureFormat const format,
+        TextureFlags const flags
     );
 
-    void free_image(ImageId const& image_id);
+    void destroy_texture(GPUResourceHandle const& handle);
 
-    ImageViewId create_image_view(
-        ImageId const& image_id,
-        ImageDimension const dimension,
+    void create_shader_view(
+        GPUResourceHandle const& handle,
+        TextureDimension const dimension,
         uint16_t const base_mip_level, 
         uint16_t const mip_level_count,
         uint16_t const base_array_layer, 
         uint16_t const array_layer_count
     );
 
-    void free_image_view(ImageViewId const& image_view_id);
-
-    BufferId create_buffer(
+    GPUResourceHandle create_buffer(
         size_t const size,
         BufferFlags const flags
     );
 
-    void free_buffer(BufferId const& buffer_id);
+    void destroy_buffer(GPUResourceHandle const& handle);
 
-    BufferViewId create_buffer_view(
-        BufferId const& buffer_id,
-        uint32_t const stride
+    void create_shader_view(
+        GPUResourceHandle const& handle,
+        uint16_t dummy
     );
-
-    void free_buffer_view(BufferViewId const& buffer_view_id);
-
-    PipelineId create_pipeline(
-        PipelineType const pipeline_type
-    );
-
-    void free_pipeline(PipelineId const& pipeline_id);
 
     GPUResourceHandle generate_command_buffer(RenderQueue const& queue);
 
     void execute_command_buffers(std::vector<GPUResourceHandle> const& handles);
 
     void swap_buffers();
+
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t frame_count);
 
 private:
 

@@ -25,7 +25,7 @@ add_executable(Runtime-Win32
     platform/win32/window.cpp
     platform/win32/window_loop.cpp
 
-    renderer/d3d12/backend.cpp
+    renderer/backend_d3d12.cpp
     renderer/world_renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp

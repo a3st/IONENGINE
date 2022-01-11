@@ -37,7 +37,7 @@ int main(int*, char*) {
             }
         );
     } catch(Exception& e) {
-        std::cerr << std::format("Exception: {}", e.what()) << std::endl;
+        std::cerr << std::format("[Exception] {}", e.what()) << std::endl;
     }
 
     thread_pool.join();
