@@ -13,29 +13,29 @@ void WindowLoop::run(std::function<void(WindowEvent const&, WindowEventFlow&)> c
 
     MSG msg{};
 
-    while(flow_ != WindowEventFlow::Exit) {
+    while(true) {
 
         while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
 
-        while(!events_.empty()) {
-            WindowEvent event = events_.front();
-            run_func(event, flow_);
-            events_.pop();
+        while(!_events.empty()) {
+            WindowEvent event = _events.front();
+            run_func(event, _flow);
+            _events.pop();
         }
 
-        WindowEvent post_event{ WindowEventType::Updated };
-        run_func(post_event, flow_);
-
-        if(flow_ == WindowEventFlow::Unknown || flow_ == WindowEventFlow::Exit) {
+        if(_flow == WindowEventFlow::Exit) {
             break;
         }
+
+        auto post_event = WindowEvent { WindowEventType::Updated };
+        run_func(post_event, _flow);
     }
 }
 
 void WindowLoop::push_event(WindowEvent const& event) {
 
-    events_.push(event);
+    _events.emplace(event);
 }

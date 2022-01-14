@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <platform/types.h>
-
 namespace ionengine::platform {
 
 enum class WindowEventType {
@@ -13,15 +11,20 @@ enum class WindowEventType {
     Updated
 };
 
-struct WindowEvent {
-    WindowEventType type;
-    std::variant<Size> data;
-};
-
 enum class WindowEventFlow {
     Unknown,
     Poll,
     Exit
+};
+
+struct Size {
+    uint32_t width;
+    uint32_t height;
+};
+
+struct WindowEvent {
+    WindowEventType type;
+    std::variant<Size> data;
 };
 
 class WindowLoop {
@@ -31,11 +34,11 @@ public:
 
     WindowLoop(WindowLoop const&) = delete;
 
-    WindowLoop(WindowLoop&&) = delete;
+    WindowLoop(WindowLoop&&) noexcept = delete;
 
     WindowLoop& operator=(WindowLoop const&) = delete;
 
-    WindowLoop& operator=(WindowLoop&&) = delete;
+    WindowLoop& operator=(WindowLoop&&) noexcept = delete;
 
     void run(std::function<void(WindowEvent const&, WindowEventFlow&)> const& run_func);
 
@@ -43,8 +46,8 @@ public:
 
 private:
 
-    WindowEventFlow flow_{WindowEventFlow::Unknown};
-    std::queue<WindowEvent> events_;
+    std::queue<WindowEvent> _events;
+    WindowEventFlow _flow{WindowEventFlow::Unknown};
 };
 
 }

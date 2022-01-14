@@ -6,13 +6,20 @@
 using namespace ionengine::renderer;
 
 
-FrameGraphBuilder::FrameGraphBuilder() {
+FrameGraphBuilder::FrameGraphBuilder(FrameGraph& frame_graph) : _frame_graph(&frame_graph) {
 
 }
 
 FGResourceHandle FrameGraphBuilder::create(FGResourceType const res_type, GPUResourceHandle const& handle) {
 
-    return FGResourceHandle { };
+    size_t offset = _frame_graph->_resources.push(
+        FGResource {
+            res_type,
+            handle
+        }
+    );
+    std::cout << std::format("FG: Created resource (ID: {})", offset - 1) << std::endl;
+    return FGResourceHandle { static_cast<uint32_t>(offset) - 1 };
 }
 
 void FrameGraph::wait_until(FGTaskHandle const& handle) {
@@ -28,4 +35,6 @@ void FrameGraph::execute(RenderQueue& queue) {
 
     //tasks_.clear();
     //resources_.clear();
+
+    _resources.clear();
 }

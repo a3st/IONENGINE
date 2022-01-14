@@ -3,18 +3,18 @@
 #include <precompiled.h>
 #include <renderer/backend.h>
 #include <renderer/handle_pool.h>
-
-#define NOMINMAX
-
-#ifndef THROW_IF_FAILED
-#define THROW_IF_FAILED(Result) if(FAILED(Result)) throw std::runtime_error("123");
-#endif
+#include <platform/window.h>
+#include <lib/exception.h>
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <wrl/client.h>
 
-#include <platform/window.h>
+#define NOMINMAX
+
+#ifndef THROW_IF_FAILED
+#define THROW_IF_FAILED(Result) if(FAILED(Result)) throw ionengine::Exception(hresult_to_string(Result));
+#endif
 
 using Microsoft::WRL::ComPtr;
 using namespace ionengine::renderer;
@@ -42,8 +42,35 @@ struct DescriptorAllocInfo {
     uint32_t offset;
 };
 
+std::u8string hresult_to_string(HRESULT const result) {
+
+	switch(result) {
+		case E_FAIL: return u8"Attempted to create a device with the debug layer enabled and the layer is not installed";
+		case E_INVALIDARG: return u8"An invalid parameter was passed to the returning function";
+		case E_OUTOFMEMORY: return u8"Direct3D could not allocate sufficient memory to complete the call";
+		case E_NOTIMPL: return u8"The method call isn't implemented with the passed parameter combination";
+		case S_FALSE: return u8"Alternate success value, indicating a successful but nonstandard completion";
+		case S_OK: return u8"No error occurred";
+		case D3D12_ERROR_ADAPTER_NOT_FOUND: return u8"The specified cached PSO was created on a different adapter and cannot be reused on the current adapter";
+		case D3D12_ERROR_DRIVER_VERSION_MISMATCH: return u8"The specified cached PSO was created on a different driver version and cannot be reused on the current adapter";
+		case DXGI_ERROR_INVALID_CALL: return u8"The method call is invalid. For example, a method's parameter may not be a valid pointer";
+		case DXGI_ERROR_WAS_STILL_DRAWING: return u8"The previous blit operation that is transferring information to or from this surface is incomplete";
+	}
+    return u8"An unknown error has occurred";
+}
+
 class MemoryPool {
 public:
+
+    MemoryPool() = default;
+
+    MemoryPool(MemoryPool const&) = delete;
+    
+    MemoryPool(MemoryPool&&) = default;
+
+    MemoryPool& operator=(MemoryPool const&) = delete;
+
+    MemoryPool& operator=(MemoryPool&&) noexcept = default;
 
     MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, size_t const heap_size);
 
@@ -69,17 +96,27 @@ MemoryPool::MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, s
 
 MemoryAllocInfo MemoryPool::allocate(size_t const size) {
 
-    std::cout << "123 allocated" << std::endl;
+    // TO DO
     return MemoryAllocInfo { nullptr, 0, 0 };
 }
 
 void MemoryPool::deallocate(MemoryAllocInfo const& alloc_info) {
 
-    std::cout << "123 deallocated" << std::endl;
+    // TO DO
 }
 
 class DescriptorPool {
 public:
+
+    DescriptorPool() = default;
+
+    DescriptorPool(DescriptorPool const&) = delete;
+
+    DescriptorPool(DescriptorPool&&) noexcept = default;
+
+    DescriptorPool& operator=(DescriptorPool const&) = delete;
+
+    DescriptorPool& operator=(DescriptorPool&&) = default;
 
     DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const heap_size);
 
@@ -101,7 +138,13 @@ DescriptorPool::DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE
     ComPtr<ID3D12DescriptorHeap> heap;
     THROW_IF_FAILED(device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(heap.GetAddressOf())));
 
-    _heaps.emplace_back(DescriptorHeap { heap, std::vector<uint8_t>(heap_size, 0x0), 0 });
+    _heaps.emplace_back(
+        DescriptorHeap { 
+            heap, 
+            std::vector<uint8_t>(heap_size, 0x0), 
+            0 
+        }
+    );
 }
 
 DescriptorAllocInfo DescriptorPool::allocate() {
@@ -162,11 +205,25 @@ struct Backend::Impl {
         uint32_t dsv;
     } descriptor_sizes;
 
-    std::unique_ptr<MemoryPool> default_pool;
+    struct {
+        MemoryPool default_tex;
+        MemoryPool upload_stage;
+    } mem_pools;
 
-    std::unique_ptr<DescriptorPool> rtv_pool;
+    struct {
+        DescriptorPool rtv;
+        DescriptorPool sampler;
+        DescriptorPool srv;
+        DescriptorPool dsv;
+    } descriptor_pools;
 
-    using ImageData = std::pair<ComPtr<ID3D12Resource>, MemoryAllocInfo>;
+    struct {
+        using CommandListData = std::pair<ComPtr<ID3D12GraphicsCommandList4>, ComPtr<ID3D12CommandAllocator>>;
+        HandlePool<CommandListData> cmds;
+
+    } handles;
+
+    /*using ImageData = std::pair<ComPtr<ID3D12Resource>, MemoryAllocInfo>;
     HandlePool<ImageData> images;
 
     HandlePool<DescriptorAllocInfo> image_views;
@@ -174,25 +231,22 @@ struct Backend::Impl {
     uint32_t frame_index;
     uint32_t frame_count;
 
-    std::vector<ImageId> swapchain_images;
-    std::vector<ImageViewId> swapchain_views;
-
     using CommandData = std::pair<ComPtr<ID3D12GraphicsCommandList4>, ComPtr<ID3D12CommandAllocator>>;
-    HandlePool<CommandData> cmds;
-   
+    HandlePool<CommandData> cmds;*/
 };
 
-Backend::Backend(uint32_t const adapter_index, platform::Window* const window, uint32_t const frame_count) : impl_(std::make_unique<Impl>()) {
+Backend::Backend(uint32_t const adapter_index, platform::Window* const window, uint32_t const frame_count) : _impl(std::make_unique<Impl>()) {
 
-    THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(impl_->debug.GetAddressOf())));
-    impl_->debug->EnableDebugLayer();
+    THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(_impl->debug.GetAddressOf())));
+    _impl->debug->EnableDebugLayer();
 
-    THROW_IF_FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, __uuidof(IDXGIFactory4), reinterpret_cast<void**>(impl_->factory.GetAddressOf())));
+    THROW_IF_FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, __uuidof(IDXGIFactory4), reinterpret_cast<void**>(_impl->factory.GetAddressOf())));
 
-    THROW_IF_FAILED(impl_->factory->EnumAdapters1(adapter_index, impl_->adapter.GetAddressOf()));
+    THROW_IF_FAILED(_impl->factory->EnumAdapters1(adapter_index, _impl->adapter.GetAddressOf()));
+    
     /*{
         DXGI_ADAPTER_DESC adapter_desc{};
-        adapter_->GetDesc(&adapter_desc);
+        _impl->adapter->GetDesc(&adapter_desc);
 
         size_t length = wcslen(adapter_desc.Description) + 1;
         assert(length > 0 && "length is less than 0 or equal 0");
@@ -204,27 +258,37 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
         adapter_desc_.device_id = adapter_desc.DeviceId;
     }*/
 
-    THROW_IF_FAILED(D3D12CreateDevice(impl_->adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(impl_->device.GetAddressOf())));
+    THROW_IF_FAILED(D3D12CreateDevice(_impl->adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(_impl->device.GetAddressOf())));
 
     D3D12_COMMAND_QUEUE_DESC queue_desc{};
     queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
 
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    THROW_IF_FAILED(impl_->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(impl_->queues.direct.GetAddressOf())));
+    THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->queues.direct.GetAddressOf())));
 
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-    THROW_IF_FAILED(impl_->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(impl_->queues.copy.GetAddressOf())));
+    THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->queues.copy.GetAddressOf())));
 
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-    THROW_IF_FAILED(impl_->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(impl_->queues.compute.GetAddressOf())));
+    THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->queues.compute.GetAddressOf())));
 
-    impl_->descriptor_sizes.rtv = impl_->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    impl_->descriptor_sizes.cbv_srv_uav = impl_->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    impl_->descriptor_sizes.dsv = impl_->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-    impl_->descriptor_sizes.sampler = impl_->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    //_impl->device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE)
 
+    _impl->descriptor_sizes.rtv = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    _impl->descriptor_sizes.cbv_srv_uav = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    _impl->descriptor_sizes.dsv = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    _impl->descriptor_sizes.sampler = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+    _impl->descriptor_pools.rtv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 64);
+    _impl->descriptor_pools.dsv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 16);
+    _impl->descriptor_pools.sampler = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 64);
+    _impl->descriptor_pools.srv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128);
+    
+    _impl->mem_pools.default_tex = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 256);
+    _impl->mem_pools.upload_stage = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_UPLOAD, 1024 * 1024 * 64);
+    
     platform::Size window_size = window->get_size();
-    impl_->frame_count = frame_count;
+    //_impl->frame_count = frame_count;
 
     DXGI_SWAP_CHAIN_DESC1 swapchain_desc{};
     swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -236,16 +300,16 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
     swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 
-    THROW_IF_FAILED(impl_->factory->CreateSwapChainForHwnd(
-        impl_->queues.direct.Get(), 
+    THROW_IF_FAILED(_impl->factory->CreateSwapChainForHwnd(
+        _impl->queues.direct.Get(), 
         reinterpret_cast<HWND>(window->get_handle()), 
         &swapchain_desc, 
         nullptr, 
         nullptr, 
-        reinterpret_cast<IDXGISwapChain1**>(impl_->swapchain.GetAddressOf()))
+        reinterpret_cast<IDXGISwapChain1**>(_impl->swapchain.GetAddressOf()))
     );
 
-    impl_->swapchain_images.reserve(frame_count);
+    /*impl_->swapchain_images.reserve(frame_count);
     impl_->swapchain_views.reserve(frame_count);
 
     impl_->default_pool = std::make_unique<MemoryPool>(impl_->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 256);
@@ -266,7 +330,7 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
         impl_->swapchain_images.emplace_back(impl_->images.push({ resource, {} }) - 1);
         impl_->swapchain_views.emplace_back(impl_->image_views.push(descriptor_alloc_info) - 1);
     }
-
+*/
     /*impl_->write_cmds_index = {};
 
     for(uint32_t i = 0; i < 10; ++i) {
@@ -282,7 +346,24 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
 
 Backend::~Backend() = default;
 
-ImageId Backend::create_image(
+GPUResourceHandle Backend::generate_command_buffer(RenderQueue const& queue) {
+
+    return GPUResourceHandle { };
+}
+
+void Backend::execute_command_buffers(std::vector<GPUResourceHandle> const& handles) {
+
+}
+
+void Backend::swap_buffers() {
+
+}
+
+void Backend::resize_buffers(uint32_t const width, uint32_t const height, uint32_t frame_count) {
+
+}
+
+/*ImageId Backend::create_image(
     ImageDimension const dimension, 
     uint32_t const width, 
     uint32_t const height, 
@@ -336,7 +417,7 @@ void Backend::free_image(ImageId const& image_id) {
     impl_->images.erase(image_id.id());
 }
 
-/*std::pair<ImageId, ImageViewId> Backend::acquire_swapchain_attachment() {
+std::pair<ImageId, ImageViewId> Backend::acquire_swapchain_attachment() {
 
     impl_->frame_index = (impl_->frame_index + 1) % impl_->frame_count;
     return { impl_->swapchain_images[impl_->frame_index], impl_->swapchain_views[impl_->frame_index] };

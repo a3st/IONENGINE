@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <renderer/render_queue.h>
 #include <platform/window.h>
 
 namespace ionengine::renderer {
@@ -15,8 +14,14 @@ public:
 
 private:
     
-    uint32_t _id;
+    uint32_t _id{std::numeric_limits<uint32_t>::max()};
 };
+
+}
+
+#include <renderer/render_queue.h>
+
+namespace ionengine::renderer {
 
 enum class TextureDimension {
     _1D,
@@ -45,44 +50,9 @@ enum class BufferFlags {
     UnorderedAccess
 };
 
-enum class QueueType {
-    Graphics,
-    Copy,
-    Compute
-};
-
-enum class BarrierType {
-    Common,
-    Copy
-};
-
 enum class PipelineType {
     Graphics,
     Compute
-};
-
-struct BatchInfo {
-    uint32_t primitives_count;
-};
-
-struct ComputeInfo {
-    std::array<uint32_t, 3> thread_count;
-    bool async;
-};
-
-struct PipelineContext {
-    std::vector<ImageViewId> targets; // render to (RTV)
-    // std::vector<ClearColor> clear_colors; - render pass emulation
-    // std::vector<ShaderParam> params; - binding shader params.
-    // ShaderParam
-    BufferViewId vertex_buffer;
-    BufferViewId index_buffer;
-};
-
-struct RenderContext {
-    BatchInfo batch_info;
-    ComputeInfo compute_info;
-    PipelineId pipeline_id;
 };
 
 struct Extent2D {
@@ -137,6 +107,8 @@ public:
         uint16_t dummy
     );
 
+    GPUResourceHandle create_command_buffer();
+
     GPUResourceHandle generate_command_buffer(RenderQueue const& queue);
 
     void execute_command_buffers(std::vector<GPUResourceHandle> const& handles);
@@ -148,7 +120,7 @@ public:
 private:
 
     struct Impl;
-    std::unique_ptr<Impl> impl_;
+    std::unique_ptr<Impl> _impl;
 };
 
 }

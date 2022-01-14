@@ -45,6 +45,12 @@ public:
         _offset = index;
     }
 
+    void clear() {
+        
+        std::memset(_spaces.data(), 0x0, sizeof(uint8_t) * _spaces.size());
+        _offset = 0;
+    }
+
     T& operator[](size_t const index) {
         
         return _elements[index];

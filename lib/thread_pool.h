@@ -3,7 +3,7 @@
 #pragma once
 
 #include <lib/lockfree_queue.h>
-#include <engine/exception.h>
+#include <lib/exception.h>
 
 namespace ionengine {
 
@@ -31,7 +31,6 @@ public:
         std::advance(it, thread_current);
 
         uint32_t job_id = (static_cast<uint32_t>(thread_current) << 16) + it->current_job;
-        //std::cout << std::format("generate job handle id: {:#06x}", job_id) << std::endl;
         
         bool result = it->active_jobs.try_push(
             Job {

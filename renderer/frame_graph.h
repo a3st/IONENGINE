@@ -4,6 +4,7 @@
 
 #include <renderer/backend.h>
 #include <renderer/color.h>
+#include <renderer/handle_pool.h>
 
 namespace ionengine::renderer {
 
@@ -42,12 +43,7 @@ enum class FGResourceType {
     Buffer
 };
 
-enum class FGResourceFlags : uint16_t {
-    Presentable = 1 << 0,
-    DepthStencil = 1 << 1
-};
-
-enum class FrameGraphResourceOp {
+enum class FGResourceOp {
     Load,
     Clear
 };
@@ -58,43 +54,17 @@ struct FrameGraphResourceClearDesc {
     float depth;
 };
 
-/*struct FrameGraphResource {
-    FrameGraphResourceType resource_type;
-    uint32_t width;
-    uint32_t height;
-    FrameGraphResourceFlags flags;
+struct FGResource {
+    FGResourceType res_type;
+    GPUResourceHandle handle;
 };
 
-struct FrameGraphResourceWrite {
-    FrameGraphResourceId id;
-    FrameGraphResourceOp op;
-    FrameGraphResourceClearDesc clear_desc;
+struct FGTask {
+    
 };
 
-struct FrameGraphTask {
-    FrameGraphTaskType task_type;
-    std::vector<FrameGraphResourceId> creates;
-    std::vector<FrameGraphResourceWrite> writes;
-};*/
-
-class FrameGraphBuilder {
-public:
-
-    FrameGraphBuilder();
-
-    FGResourceHandle create(FGResourceType const res_type, GPUResourceHandle const& handle);
-
-private:
-
-};
-
-class FrameGraphContext {
-public:
-
-
-private:
-
-};
+class FrameGraphContext;
+class FrameGraphBuilder;
 
 class FrameGraph {
 public:
@@ -106,10 +76,7 @@ public:
         FGTaskType const task_type,
         std::function<void(FrameGraphBuilder&, Data&)> const build_func, 
         std::function<void(FrameGraphContext&, Data const&)> context_func
-    ) {
-
-        return FGTaskHandle {};
-    }
+    );
 
     void wait_until(FGTaskHandle const& handle);
 
@@ -124,9 +91,46 @@ public:
 
 private:
 
-    //std::vector<FrameGraphResource> resources_;
-    //std::vector<FrameGraphTask> tasks_;
+    friend class FrameGraphBuilder;
+
+    HandlePool<FGResource> _resources;
+    HandlePool<FGTask> _tasks;
+};
+
+class FrameGraphContext {
+public:
+
+
+private:
 
 };
+
+class FrameGraphBuilder {
+public:
+
+    FrameGraphBuilder(FrameGraph& frame_graph);
+
+    FGResourceHandle create(FGResourceType const res_type, GPUResourceHandle const& handle);
+
+private:
+
+    FrameGraph* _frame_graph;
+
+};
+
+template<class Data>
+inline FGTaskHandle FrameGraph::add_task(
+    FGTaskType const task_type,
+    std::function<void(FrameGraphBuilder&, Data&)> const build_func, 
+    std::function<void(FrameGraphContext&, Data const&)> context_func
+) {
+
+    Data data{};
+
+    FrameGraphBuilder builder(*this);
+    build_func(builder, data);
+
+    return FGTaskHandle {};
+}
 
 }

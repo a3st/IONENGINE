@@ -2,10 +2,9 @@
 
 #include <precompiled.h>
 #include <platform/window.h>
-#include <platform/window_loop.h>
 
-#include <engine/thread_pool.h>
-#include <engine/exception.h>
+#include <lib/thread_pool.h>
+#include <lib/exception.h>
 
 #include <renderer/backend.h>
 #include <renderer/world_renderer.h>
@@ -14,15 +13,15 @@ using namespace ionengine;
 
 int main(int*, char*) {
 
-    platform::WindowLoop loop;
-    platform::Window window(u8"IONENGINE", 800, 600, false, loop);
-
     ThreadPool thread_pool(3);
-
-    renderer::Backend backend(0, &window, 2);
-    renderer::WorldRenderer world_renderer(&backend, &thread_pool);
     
     try {
+        platform::WindowLoop loop;
+        platform::Window window(u8"IONENGINE", 800, 600, false, loop);
+
+        renderer::Backend backend(0, &window, 2);
+        renderer::WorldRenderer world_renderer(&backend, &thread_pool);
+    
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
 
@@ -36,10 +35,14 @@ int main(int*, char*) {
                 }
             }
         );
+
     } catch(Exception& e) {
         std::cerr << std::format("[Exception] {}", e.what()) << std::endl;
+        std::exit(EXIT_FAILURE);
     }
 
+    std::cout << "Exit app" << std::endl;
+
     thread_pool.join();
-    return 0;
+    return EXIT_SUCCESS;
 }

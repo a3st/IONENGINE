@@ -57,7 +57,7 @@ void WorldRenderer::update() {
     FGTaskHandle task_3 = _frame_graph.add_task<BasicPassData>(
         FGTaskType::RenderPass,
         [&](FrameGraphBuilder& builder, BasicPassData& data) {
-            auto basic_pass_data = _frame_graph.get_data<BasicPassData>(task_1);
+            //auto basic_pass_data = _frame_graph.get_data<BasicPassData>(task_1);
             
         },
         [=](FrameGraphContext& context, BasicPassData const& data) {
@@ -67,16 +67,50 @@ void WorldRenderer::update() {
 
     _frame_graph.execute(render_queue);
 
-    std::vector<GPUResourceHandle> cmdbuffers;
-    cmdbuffers.resize(10);
-
-    JobHandle handle = _thread_pool->push(
-        [&]() {
-            cmdbuffers[0] = _backend->generate_command_buffer(render_queue);
+    render_queue.push(
+        RenderData {
+            RenderDataType::Barrier,
+            BarrierData {
+                swapchain_handle,
+                BarrierType::Present,
+                BarrierType::RenderTarget
+            }
         }
     );
 
-    _backend->execute_command_buffers(cmdbuffers);
+    render_queue.push(
+        RenderData {
+            RenderDataType::RenderPass,
+            RenderPassData {
+                { swapchain_handle },
+                { RenderPassColorDesc { RenderPassLoadOp::Clear, RenderPassStoreOp::Store } },
+                { Color(0.8f, 0.3f, 0.1f, 1.0f) },
+                1
+            }
+        }
+    );
 
-    _backend->swap_buffers();
+    render_queue.push(
+        RenderData {
+            RenderDataType::Barrier,
+            BarrierData {
+                swapchain_handle,
+                BarrierType::RenderTarget,
+                BarrierType::Present
+            }
+        }
+    );
+
+    //std::vector<GPUResourceHandle> cmdbuffers;
+    //cmdbuffers.resize(10);
+
+    /*JobHandle handle = _thread_pool->push(
+        [&]() {
+            cmdbuffers[0] = _backend->generate_command_buffer(render_queue);
+        }
+    );*/
+
+    //_backend->execute_command_buffers(cmdbuffers);
+
+    //_backend->swap_buffers();
 }

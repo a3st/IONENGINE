@@ -2,11 +2,9 @@
 
 #pragma once
 
-#include <platform/types.h>
+#include <platform/window_loop.h>
 
 namespace ionengine::platform {
-
-class WindowLoop;
 
 class Window {
 public:
@@ -27,10 +25,12 @@ public:
 
     void* get_handle() const;
 
+    void set_label(std::u8string const& label);
+
 private:
 
     struct Impl;
-    std::unique_ptr<Impl> impl_;
+    std::unique_ptr<Impl> _impl;
 };
 
 }

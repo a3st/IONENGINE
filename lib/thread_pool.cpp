@@ -1,6 +1,6 @@
 
 #include <precompiled.h>
-#include <engine/thread_pool.h>
+#include <lib/thread_pool.h>
 
 using namespace ionengine;
 
@@ -62,6 +62,8 @@ void ThreadPool::wait_all() {
 void ThreadPool::join() {
 
     _exec = false;
+    _cond_jobs.notify_all();
+    
     for(auto& worker : _workers) {
         worker.thread.join();
     }

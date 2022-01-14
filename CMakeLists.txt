@@ -20,10 +20,10 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 add_executable(Runtime-Win32
 
     engine/main.cpp
-    engine/thread_pool.cpp
+    lib/thread_pool.cpp
 
-    platform/win32/window.cpp
-    platform/win32/window_loop.cpp
+    platform/window_win32.cpp
+    platform/window_loop_win32.cpp
 
     renderer/backend_d3d12.cpp
     renderer/world_renderer.cpp

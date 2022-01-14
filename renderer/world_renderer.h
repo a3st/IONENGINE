@@ -4,7 +4,7 @@
 
 #include <renderer/backend.h>
 #include <renderer/frame_graph.h>
-#include <engine/thread_pool.h>
+#include <lib/thread_pool.h>
 
 namespace ionengine::renderer {
 
