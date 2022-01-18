@@ -87,7 +87,7 @@ public:
         return data;
     }
 
-    void execute(RenderQueue& queue);
+    void execute();
 
 private:
 

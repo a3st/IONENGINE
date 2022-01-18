@@ -3,25 +3,42 @@
 #pragma once
 
 #include <platform/window.h>
+#include <renderer/color.h>
 
 namespace ionengine::renderer {
+
+enum class GPUResourceType : uint16_t {
+    Texture = 0x1,
+    Buffer = 0x2,
+    CommandBuffer = 0x3,
+    Pipeline = 0x4
+};
 
 class GPUResourceHandle {
 public:
 
     GPUResourceHandle() = default;
-    GPUResourceHandle(uint32_t const id) : _id(id) { }
+    
+    GPUResourceHandle(GPUResourceType const res_type, uint16_t const id) { 
+
+        _id = (static_cast<uint32_t>(res_type) << 16) + id; 
+    }
+
+    bool operator==(GPUResourceHandle const& other) {
+        return _id == other._id;
+    }
+
+    bool operator!=(GPUResourceHandle const& other) {
+        return _id != other._id;
+    }
 
 private:
     
     uint32_t _id{std::numeric_limits<uint32_t>::max()};
+
+    friend class CommandGenerator;
+    friend class Backend;
 };
-
-}
-
-#include <renderer/render_queue.h>
-
-namespace ionengine::renderer {
 
 enum class TextureDimension {
     _1D,
@@ -50,14 +67,49 @@ enum class BufferFlags {
     UnorderedAccess
 };
 
+enum class QueueType {
+    Graphics,
+    Copy,
+    Compute
+};
+
 enum class PipelineType {
     Graphics,
     Compute
 };
 
+enum class RenderPassLoadOp {
+    Load,
+    Clear,
+    DontCare
+};
+
+enum class MemoryState {
+    Common,
+    Present,
+    RenderTarget
+};
+
+enum class RenderPassStoreOp {
+    Store,
+    DontCare
+};
+
 struct Extent2D {
     uint32_t width;
     uint32_t height;
+};
+
+struct RenderPassColorDesc {
+    RenderPassLoadOp load_op;
+    RenderPassStoreOp store_op;
+};
+
+struct RenderPassDepthStencilDesc {
+    RenderPassLoadOp depth_load_op;
+    RenderPassStoreOp depth_store_op;
+    RenderPassLoadOp stencil_load_op;
+    RenderPassStoreOp stencil_store_op;
 };
 
 class Backend {
@@ -107,20 +159,61 @@ public:
         uint16_t dummy
     );
 
-    GPUResourceHandle create_command_buffer();
+    GPUResourceHandle create_pipeline(
+        PipelineType const pipeline_type
 
-    GPUResourceHandle generate_command_buffer(RenderQueue const& queue);
+    );
 
-    void execute_command_buffers(std::vector<GPUResourceHandle> const& handles);
+    GPUResourceHandle create_command_buffer(QueueType const queue_type);
+
+    CommandGenerator create_command_generator(GPUResourceHandle const& handle);
+
+    void execute_command_buffers(QueueType const queue_type, std::vector<GPUResourceHandle> const& handles);
+
+    GPUResourceHandle get_swap_texture() const;
 
     void swap_buffers();
 
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t frame_count);
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
 
 private:
 
     struct Impl;
     std::unique_ptr<Impl> _impl;
+
+    friend class CommandGenerator;
+};
+
+class CommandGenerator {
+public:
+
+    CommandGenerator(Backend& backend, uint16_t const cmd_index);
+
+    ~CommandGenerator();
+
+    CommandGenerator& set_pipeline(GPUResourceHandle const& handle);
+
+    CommandGenerator& set_viewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height);
+
+    CommandGenerator& set_scissor(const uint32_t left, const uint32_t top, const uint32_t right, const uint32_t bottom);
+
+    CommandGenerator& barrier(GPUResourceHandle const& handle, MemoryState const before, MemoryState const after);
+        
+    CommandGenerator& render_pass(
+        uint16_t const rtv_count,
+        std::array<GPUResourceHandle, 8> const& rtv_handles,
+        std::array<RenderPassColorDesc, 8> const& rtv_ops,
+        std::array<Color, 8> const& rtv_clears,
+        GPUResourceHandle dsv_handle,
+        RenderPassDepthStencilDesc dsv_op,
+        std::pair<float, uint8_t> dsv_clear,
+        std::function<void()> const& func
+    );
+
+private:
+
+    Backend* _backend;
+    uint16_t _cmd_index{};
 };
 
 }

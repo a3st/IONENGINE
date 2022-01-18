@@ -29,6 +29,8 @@ private:
     ThreadPool* _thread_pool;
 
     FrameGraph _frame_graph;
+
+    std::vector<GPUResourceHandle> cmdbuffs;
 };
 
 }

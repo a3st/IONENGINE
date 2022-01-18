@@ -4,7 +4,7 @@
 
 namespace ionengine::renderer {
 
-template<class T>
+template<class Type>
 class HandlePool {
 public:
 
@@ -14,7 +14,7 @@ public:
         _spaces.reserve(128);
     }
 
-    size_t push(T const& element) {
+    size_t push(Type const& element) {
 
         if(_offset != _elements.size()) {
             auto it = std::find_if(
@@ -36,7 +36,10 @@ public:
             _elements.emplace_back(element);
             _spaces.emplace_back(0x1);
         }
-        return ++_offset;
+
+        const size_t out = _offset;
+        ++_offset;
+        return out;
     }
 
     void erase(size_t const index) {
@@ -51,7 +54,7 @@ public:
         _offset = 0;
     }
 
-    T& operator[](size_t const index) {
+    Type& operator[](size_t const index) {
         
         return _elements[index];
     }
@@ -59,7 +62,7 @@ public:
 private:
 
     size_t _offset{0};
-    std::vector<T> _elements;
+    std::vector<Type> _elements;
     std::vector<uint8_t> _spaces;
 };
 

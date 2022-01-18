@@ -18,15 +18,15 @@ FGResourceHandle FrameGraphBuilder::create(FGResourceType const res_type, GPURes
             handle
         }
     );
-    std::cout << std::format("FG: Created resource (ID: {})", offset - 1) << std::endl;
-    return FGResourceHandle { static_cast<uint32_t>(offset) - 1 };
+    std::cout << std::format("FG: Created resource (ID: {})", offset) << std::endl;
+    return FGResourceHandle { static_cast<uint32_t>(offset) };
 }
 
 void FrameGraph::wait_until(FGTaskHandle const& handle) {
 
 }
 
-void FrameGraph::execute(RenderQueue& queue) {
+void FrameGraph::execute() {
 
     //for(uint32_t i = 0; i < tasks_.size(); ++i) {
 
