@@ -47,9 +47,11 @@ enum class TextureDimension {
     Cube
 };
 
-enum class TextureFormat {
+enum class Format {
     Unknown,
-    RGBA8Unorm
+    RGBA8Unorm,
+    RGBA32,
+    RGB32
 };
 
 enum class TextureFlags {
@@ -95,6 +97,44 @@ enum class RenderPassStoreOp {
     DontCare
 };
 
+enum class ShaderBindType {
+    ShaderResource,
+    ConstantBuffer,
+    UnorderedAccess,
+    Sampler
+};
+
+enum class ShaderStageFlags : uint32_t {
+    Vertex = 1 << 0,
+    Geometry = 1 << 1,
+    Domain = 1 << 2,
+    Pixel = 1 << 3,
+    Compute = 1 << 4,
+    All = Vertex | Geometry | Domain | Pixel | Compute
+};
+
+enum class FillMode {
+    Wireframe,
+    Solid
+};
+
+enum class CullMode {
+    None,
+    Front,
+    Back
+};
+
+enum class CompareOp {
+    Never,
+    Less,
+    Equal,
+    LessEqual,
+    Greater,
+    NotEqual,
+    GreaterEqual,
+    Always
+};
+
 struct Extent2D {
     uint32_t width;
     uint32_t height;
@@ -111,6 +151,36 @@ struct RenderPassDepthStencilDesc {
     RenderPassLoadOp stencil_load_op;
     RenderPassStoreOp stencil_store_op;
 };
+
+struct ShaderBindDesc {
+    ShaderBindType bind_type;
+    uint32_t index;
+    uint32_t count;
+    ShaderStageFlags stage_flags;
+};
+
+struct VertexInputDesc {
+    std::string semantic;
+    uint32_t index;
+    Format format;
+    uint32_t slot;
+    uint32_t stride;
+};
+
+struct ShaderStageDesc {
+    std::span<char8_t> data;
+    ShaderStageFlags stage_flags;
+};
+
+struct RasterizerDesc {
+    FillMode fill_mode;
+    CullMode cull_mode;
+}
+
+struct DepthStencilDesc {
+    CompareOp depth_func;
+    bool write_enable;
+}
 
 class Backend {
 public:
@@ -132,7 +202,7 @@ public:
         Extent2D const extent,
         uint16_t const mip_levels,
         uint16_t const array_layers,
-        TextureFormat const format,
+        Format const format,
         TextureFlags const flags
     );
 
@@ -160,8 +230,13 @@ public:
     );
 
     GPUResourceHandle create_pipeline(
-        PipelineType const pipeline_type
-
+        PipelineType const pipeline_type,
+        std::vector<ShaderBindDesc> const& shader_bindings,
+        std::vector<VertexInputDesc> const& vertex_inputs,
+        std::vector<ShaderStageDesc> const& shader_stages,
+        RasterizerDesc const& rasterizer,
+        DepthStencilDesc const& depth_stencil,
+        
     );
 
     GPUResourceHandle create_command_buffer(QueueType const queue_type);
