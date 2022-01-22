@@ -191,8 +191,9 @@ struct Backend::Impl {
     ComPtr<IDXGIAdapter1> adapter;
     ComPtr<ID3D12Device4> device;
     ComPtr<IDXGISwapChain3> swapchain;
-    
     std::vector<ComPtr<ID3D12Fence>> fences;
+    std::vector<ComPtr<ID3D12RootSignature>> signatures;
+
     HANDLE wait_event;
 
     struct {
@@ -210,6 +211,7 @@ struct Backend::Impl {
 
     struct {
         MemoryPool default_tex;
+        MemoryPool default_buffer;
         MemoryPool upload_stage;
     } mem_pools;
 
@@ -229,10 +231,34 @@ struct Backend::Impl {
 
     using CommandListData = std::pair<ComPtr<ID3D12GraphicsCommandList4>, ComPtr<ID3D12CommandAllocator>>;
 
+    struct BufferData {
+        ComPtr<ID3D12Resource> resource;
+        MemoryAllocInfo memory_alloc;
+        DescriptorAllocInfo descriptor_alloc;
+    };
+
+    struct RenderPassData {
+        std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> rtvs;
+        std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> dsv;
+    };
+
+    struct ShaderData {
+        std::vector<char8_t> data;
+        D3D12_SHADER_VISIBILITY visibility;
+    };
+
+    using PipelineData = std::pair<uint16_t, ComPtr<ID3D12PipelineState>>;
+
     struct {
         HandlePool<CommandListData> commands;
         HandlePool<TextureData> textures;
+        HandlePool<BufferData> buffers;
+        HandlePool<RenderPassData> render_passes;
+        HandlePool<ShaderData> shaders;
+        HandlePool<PipelineData> pipelines;
     } handles;
+
+    std::map<std::vector<ShaderBindDesc>, uint16_t> signature_cache;
 
     std::vector<uint16_t> swap_indices;
     uint32_t frame_index;
@@ -360,6 +386,475 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
 
 Backend::~Backend() = default;
 
+GPUResourceHandle Backend::create_texture(
+    TextureDimension const dimension,
+    Extent2D const extent,
+    uint16_t const mip_levels,
+    uint16_t const array_layers,
+    Format const format,
+    TextureFlags const flags,
+    TextureViewDesc const& texture_view
+) {
+    auto resource_desc = D3D12_RESOURCE_DESC {};
+    switch(dimension) {
+        case TextureDimension::_1D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE1D; break;
+        case TextureDimension::_2D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D; break;
+        case TextureDimension::_3D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D; break;
+    }
+    resource_desc.Width = extent.width;
+    resource_desc.Height = extent.height;
+    resource_desc.MipLevels = mip_levels;
+    resource_desc.DepthOrArraySize = array_layers;
+    resource_desc.SampleDesc.Count = 1;
+    switch(format) {
+        case Format::Unknown: resource_desc.Format = DXGI_FORMAT_UNKNOWN;
+        case Format::RGBA8Unorm: resource_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    }
+    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+    D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
+    MemoryAllocInfo mem_alloc_info = _impl->mem_pools.default_tex.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+
+    ComPtr<ID3D12Resource> resource;
+    THROW_IF_FAILED(_impl->device->CreatePlacedResource(
+        mem_alloc_info.heap->heap.Get(),
+        mem_alloc_info.offset,
+        &resource_desc,
+        D3D12_RESOURCE_STATE_COMMON,
+        nullptr,
+        __uuidof(ID3D12Resource), 
+        reinterpret_cast<void**>(resource.GetAddressOf())
+    ));
+
+    auto descriptor_alloc_info = DescriptorAllocInfo {};
+    switch(flags) {
+        case TextureFlags::RenderTarget: {
+            auto view_desc = D3D12_RENDER_TARGET_VIEW_DESC {};
+            view_desc.Format = resource_desc.Format;
+            switch(dimension) {
+                case TextureDimension::_1D: {
+                    view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1D;
+                    view_desc.Texture1D.MipSlice = mip_levels;
+                } break;
+                case TextureDimension::_2D: {
+                    view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+                    view_desc.Texture2D.MipSlice = mip_levels;
+                    view_desc.Texture2D.PlaneSlice = array_layers;
+                } break;
+                case TextureDimension::_3D: {
+                    view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
+                    view_desc.Texture3D.MipSlice = mip_levels;
+                    view_desc.Texture3D.WSize = array_layers;
+                } break;
+            }
+
+            descriptor_alloc_info = _impl->descriptor_pools.rtv.allocate();
+
+            auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
+                descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                _impl->descriptor_sizes.rtv * // Device descriptor size
+                descriptor_alloc_info.offset // Allocation offset
+            };
+            _impl->device->CreateRenderTargetView(resource.Get(), &view_desc, cpu_handle);
+        } break;
+        
+        case TextureFlags::DepthStencil: {
+            auto view_desc = D3D12_DEPTH_STENCIL_VIEW_DESC {};
+            view_desc.Format = resource_desc.Format;
+            switch(dimension) {
+                case TextureDimension::_1D: {
+                    view_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
+                    view_desc.Texture1D.MipSlice = mip_levels;
+                } break;
+                case TextureDimension::_2D: {
+                    view_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+                    view_desc.Texture2D.MipSlice = mip_levels;
+                } break;
+                default: {
+                    assert(false && "Depth stencil view dimension is unsupported");
+                } break;
+            }
+
+            descriptor_alloc_info = _impl->descriptor_pools.dsv.allocate();
+
+            auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
+                descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                _impl->descriptor_sizes.dsv * // Device descriptor size
+                descriptor_alloc_info.offset // Allocation offset
+            };
+            _impl->device->CreateDepthStencilView(resource.Get(), &view_desc, cpu_handle);
+        } break;
+
+        case TextureFlags::UnorderedAccess: {
+            // TO DO
+        } break;
+
+        default: {
+            auto view_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {};
+            view_desc.Format = resource_desc.Format;
+            switch(dimension) {
+                case TextureDimension::_1D: {
+                    view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+                    view_desc.Texture1D.MipLevels = mip_levels;
+                } break;
+                case TextureDimension::_2D: {
+                    view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+                    view_desc.Texture2D.MipLevels = mip_levels;
+                    view_desc.Texture2D.PlaneSlice = array_layers;
+                } break;
+                case TextureDimension::_3D: {
+                    view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+                    view_desc.Texture3D.MipLevels = mip_levels;
+                } break;
+            }
+            view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
+            descriptor_alloc_info = _impl->descriptor_pools.srv.allocate();
+
+            auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
+                descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                _impl->descriptor_sizes.cbv_srv_uav * // Device descriptor size
+                descriptor_alloc_info.offset // Allocation offset
+            };
+            _impl->device->CreateShaderResourceView(resource.Get(), &view_desc, cpu_handle);
+        } break;
+    }
+
+    size_t handle_id = _impl->handles.textures.push(
+        Backend::Impl::TextureData {
+            resource,
+            mem_alloc_info,
+            descriptor_alloc_info
+        }
+    );
+    return GPUResourceHandle(GPUResourceType::Texture, static_cast<uint16_t>(handle_id));
+}
+
+GPUResourceHandle Backend::create_buffer(
+    size_t const size,
+    BufferFlags const flags,
+    BufferViewDesc const& buffer_view
+) {
+    auto resource_desc = D3D12_RESOURCE_DESC {};
+    resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+    resource_desc.Width = size;
+    resource_desc.Height = 1;
+    resource_desc.MipLevels = 1;
+    resource_desc.DepthOrArraySize = 1;
+    resource_desc.SampleDesc.Count = 1;
+    resource_desc.Format = DXGI_FORMAT_UNKNOWN;
+    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+
+    D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
+    MemoryAllocInfo mem_alloc_info = _impl->mem_pools.default_buffer.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+
+    ComPtr<ID3D12Resource> resource;
+    THROW_IF_FAILED(_impl->device->CreatePlacedResource(
+        mem_alloc_info.heap->heap.Get(),
+        mem_alloc_info.offset,
+        &resource_desc,
+        D3D12_RESOURCE_STATE_COMMON,
+        nullptr,
+        __uuidof(ID3D12Resource), 
+        reinterpret_cast<void**>(resource.GetAddressOf())
+    ));
+
+    auto descriptor_alloc_info = DescriptorAllocInfo {};
+    switch(flags) {
+        case BufferFlags::ConstantBuffer: {
+            auto view_desc = D3D12_CONSTANT_BUFFER_VIEW_DESC {};
+            view_desc.BufferLocation = resource->GetGPUVirtualAddress();
+            view_desc.SizeInBytes = size;
+
+            descriptor_alloc_info = _impl->descriptor_pools.srv.allocate();
+
+            auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
+                descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                _impl->descriptor_sizes.cbv_srv_uav * // Device descriptor size
+                descriptor_alloc_info.offset // Allocation offset
+            };
+            _impl->device->CreateConstantBufferView(&view_desc, cpu_handle);
+        } break;
+    }
+
+    size_t handle_id = _impl->handles.buffers.push(
+        Backend::Impl::BufferData {
+            resource,
+            mem_alloc_info,
+            descriptor_alloc_info
+        }
+    );
+    return GPUResourceHandle(GPUResourceType::Buffer, static_cast<uint16_t>(handle_id));
+}
+
+GPUResourceHandle Backend::create_render_pass(
+    std::vector<GPUResourceHandle> const& rtv_handles,
+    std::vector<RenderPassColorDesc> const& rtv_ops,
+    GPUResourceHandle const& dsv_handle,
+    RenderPassDepthStencilDesc const& dsv_op
+) {
+
+    auto get_render_pass_begin_type = [&](RenderPassLoadOp const load_op) {
+        switch (load_op) {
+    	    case RenderPassLoadOp::Load: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
+    	    case RenderPassLoadOp::Clear: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+		    case RenderPassLoadOp::DontCare: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+        }
+        return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+    };
+    
+    auto get_render_pass_end_type = [&](RenderPassStoreOp const store_op) {
+        switch (store_op) {
+    	    case RenderPassStoreOp::Store: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
+    	    case RenderPassStoreOp::DontCare: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
+        }
+        return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
+    };
+
+    std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> rtvs; 
+    rtvs.resize(rtv_handles.size());
+
+    for(size_t i = 0; i < rtvs.size(); ++i) {
+        auto& texture_data = _impl->handles.textures[rtv_handles[i]._id & 0xffff];
+
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
+            texture_data.descriptor_alloc.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+            _impl->descriptor_sizes.rtv * // Device descriptor size
+            texture_data.descriptor_alloc.offset // Allocation offset
+        };
+
+        auto begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
+        begin.Type = get_render_pass_begin_type(rtv_ops[i].load_op);
+        begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+
+        auto end = D3D12_RENDER_PASS_ENDING_ACCESS {};
+        end.Type = get_render_pass_end_type(rtv_ops[i].store_op);
+
+        rtvs[i].BeginningAccess = begin;
+        rtvs[i].EndingAccess = end;
+        rtvs[i].cpuDescriptor = cpu_handle;
+    }
+
+    std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> dsv_opt;
+
+    if(dsv_handle != GPUResourceHandle()) {
+        auto& texture_data = _impl->handles.textures[dsv_handle._id & 0xffff];
+
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
+            texture_data.descriptor_alloc.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+            _impl->descriptor_sizes.dsv * // Device descriptor size
+            texture_data.descriptor_alloc.offset // Allocation offset
+        };
+
+        auto depth_begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
+        depth_begin.Type = get_render_pass_begin_type(dsv_op.depth_load_op);
+        depth_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+
+        auto stencil_begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
+        stencil_begin.Type = get_render_pass_begin_type(dsv_op.stencil_load_op);
+        stencil_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+
+        auto depth_end = D3D12_RENDER_PASS_ENDING_ACCESS {};
+        depth_end.Type = get_render_pass_end_type(dsv_op.depth_store_op);
+
+        auto stencil_end = D3D12_RENDER_PASS_ENDING_ACCESS {};
+        stencil_end.Type = get_render_pass_end_type(dsv_op.stencil_store_op);
+
+        auto dsv = D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {};
+        dsv.DepthBeginningAccess = depth_begin;
+        dsv.StencilBeginningAccess = stencil_begin;
+        dsv.DepthEndingAccess = depth_end;
+        dsv.StencilEndingAccess = stencil_end;
+        dsv.cpuDescriptor = cpu_handle;
+
+        dsv_opt = dsv;
+    }
+
+    size_t handle_id = _impl->handles.render_passes.push(
+        Backend::Impl::RenderPassData {
+            rtvs,
+            dsv_opt
+        }
+    );
+    return GPUResourceHandle(GPUResourceType::RenderPass, static_cast<uint16_t>(handle_id));
+}
+
+GPUResourceHandle Backend::create_shader(
+    std::span<char8_t> const shader_data,
+    ShaderFlags const flags
+) {
+
+    std::vector<char8_t> data(shader_data.size());
+    std::copy(shader_data.begin(), shader_data.end(), data.begin());
+    
+    D3D12_SHADER_VISIBILITY visibility;
+    switch(flags) {
+        case ShaderFlags::Vertex: visibility = D3D12_SHADER_VISIBILITY_VERTEX; break;
+        case ShaderFlags::Pixel: visibility = D3D12_SHADER_VISIBILITY_VERTEX; break;
+        case ShaderFlags::Geometry: visibility = D3D12_SHADER_VISIBILITY_GEOMETRY; break;
+        case ShaderFlags::Domain: visibility = D3D12_SHADER_VISIBILITY_DOMAIN; break;
+        case ShaderFlags::Hull: visibility = D3D12_SHADER_VISIBILITY_HULL; break;
+        default: assert(false && "Shader visibility is unsupported"); break;
+    }
+
+    size_t handle_id = _impl->handles.shaders.push(
+        Backend::Impl::ShaderData {
+            data,
+            visibility
+        }
+    );
+    return GPUResourceHandle(GPUResourceType::Shader, static_cast<uint16_t>(handle_id));
+}
+
+GPUResourceHandle Backend::create_pipeline(
+    std::vector<ShaderBindDesc> const& shader_bindings,
+    std::vector<VertexInputDesc> const& vertex_inputs,
+    std::vector<GPUResourceHandle> const& shader_handles,
+    RasterizerDesc const& rasterizer,
+    DepthStencilDesc const& depth_stencil,
+    GPUResourceHandle const& render_pass_handle
+) {
+    uint16_t signature_index;
+    auto it = std::find(_impl->signature_cache.begin(), _impl->signature_cache.end(), shader_bindings);
+    if(it != _impl->signature_cache.end()) {
+        signature_index = it->second;
+    } else {
+        std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
+        ranges.reserve(shader_bindings.size());
+
+        std::vector<D3D12_ROOT_PARAMETER> parameters;
+        parameters.reserve(shader_bindings.size());
+
+        auto get_descriptor_range_type = [&](ShaderBindType const bind_type) -> D3D12_DESCRIPTOR_RANGE_TYPE {
+            switch(bind_type) {
+                case ShaderBindType::ShaderResource: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+                case ShaderBindType::ConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+                case ShaderBindType::Sampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+                case ShaderBindType::UnorderedAccess: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+            }
+            return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+        };
+
+        auto get_shader_visibility = [&](ShaderFlags const shader_flags) -> D3D12_SHADER_VISIBILITY {
+            switch(shader_flags) {
+                case ShaderFlags::Vertex: return D3D12_SHADER_VISIBILITY_VERTEX;
+                case ShaderFlags::Pixel: return D3D12_SHADER_VISIBILITY_VERTEX;
+                case ShaderFlags::Geometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
+                case ShaderFlags::Domain: return D3D12_SHADER_VISIBILITY_DOMAIN;
+                case ShaderFlags::Hull: return D3D12_SHADER_VISIBILITY_HULL;
+                case ShaderFlags::All: return D3D12_SHADER_VISIBILITY_ALL;
+            }
+            return D3D12_SHADER_VISIBILITY_ALL;
+        };
+
+        for(auto& binding : shader_bindings) {
+            auto range = D3D12_DESCRIPTOR_RANGE {};
+            range.RangeType = get_descriptor_range_type(binding.bind_type);
+            range.NumDescriptors = binding.count;
+            range.BaseShaderRegister = binding.index;
+            range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+            ranges.emplace_back(range);
+
+            auto parameter = D3D12_ROOT_PARAMETER {};
+            parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+            parameter.DescriptorTable.pDescriptorRanges = &ranges.back();
+            parameter.DescriptorTable.NumDescriptorRanges = 1;
+            parameter.ShaderVisibility = get_shader_visibility(binding.shader_flags);
+
+            parameters.emplace_back(parameter);
+        }
+
+        auto root_desc = D3D12_ROOT_SIGNATURE_DESC {};
+        root_desc.pParameters = parameters.data();
+        root_desc.NumParameters = static_cast<uint32_t>(parameters.size());
+        root_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+        ComPtr<ID3DBlob> blob;
+        THROW_IF_FAILED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, blob.GetAddressOf(), nullptr));
+
+        ComPtr<ID3D12RootSignature> signature;
+        THROW_IF_FAILED(_impl->device->CreateRootSignature(
+            0,
+            blob->GetBufferPointer(), 
+            blob->GetBufferSize(), 
+            __uuidof(ID3D12RootSignature), 
+            reinterpret_cast<void**>(signature.GetAddressOf())
+        ));
+
+        _impl->signatures.emplace_back(signature);
+        signature_index = static_cast<uint16_t>(_impl->signatures.size()) - 1;
+    }
+
+    auto& signature_data = _impl->signatures[signature_index];
+    
+    auto get_fill_mode = [&](FillMode const fill_mode) {
+        switch(fill_mode) {
+            case FillMode::Solid: return D3D12_FILL_MODE_SOLID;
+            case FillMode::Wireframe: return D3D12_FILL_MODE_WIREFRAME;
+        }
+        return D3D12_FILL_MODE_SOLID;
+    };
+
+    auto get_cull_mode = [&](CullMode const cull_mode) {
+        switch(cull_mode) {
+            case CullMode::Front: return D3D12_CULL_MODE_FRONT;
+            case CullMode::Back: return D3D12_CULL_MODE_BACK;
+            case CullMode::None: return D3D12_CULL_MODE_NONE;
+        }
+        return D3D12_CULL_MODE_NONE;
+    };
+
+    auto pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {};
+    pipeline_desc.pRootSignature = signature_data.Get();
+
+    auto rasterizer_desc = D3D12_RASTERIZER_DESC {};
+    rasterizer_desc.FillMode = get_fill_mode(rasterizer.fill_mode);
+    rasterizer_desc.CullMode = get_cull_mode(rasterizer.cull_mode);
+    rasterizer_desc.FrontCounterClockwise = false;
+    rasterizer_desc.DepthBias = 0;
+    rasterizer_desc.DepthBiasClamp = 0.0f;
+    rasterizer_desc.SlopeScaledDepthBias = 0.0f;
+    rasterizer_desc.DepthClipEnable = true;
+    rasterizer_desc.MultisampleEnable = false;
+    rasterizer_desc.AntialiasedLineEnable = false;
+    rasterizer_desc.ForcedSampleCount = 0;
+    rasterizer_desc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+    pipeline_desc.RasterizerState = rasterizer_desc;
+
+    for(auto& shader_handle : shader_handles) {
+        auto& shader_data = _impl->handles.shaders[shader_handle._id & 0xffff];
+
+        auto bytecode = D3D12_SHADER_BYTECODE {};
+        bytecode.pShaderBytecode = shader_data.data.data();
+        bytecode.BytecodeLength = shader_data.data.size();
+        
+        switch(shader_data.visibility) {
+            case D3D12_SHADER_VISIBILITY_VERTEX: pipeline_desc.VS = bytecode; break;
+            case D3D12_SHADER_VISIBILITY_PIXEL: pipeline_desc.PS = bytecode; break;
+            case D3D12_SHADER_VISIBILITY_GEOMETRY: pipeline_desc.GS = bytecode; break;
+            case D3D12_SHADER_VISIBILITY_DOMAIN: pipeline_desc.DS = bytecode; break;
+            case D3D12_SHADER_VISIBILITY_HULL: pipeline_desc.HS = bytecode; break;
+        }
+    }
+
+    ComPtr<ID3D12PipelineState> pipeline_state;
+    THROW_IF_FAILED(_impl->device->CreateGraphicsPipelineState(
+        &pipeline_desc, 
+        __uuidof(ID3D12PipelineState), 
+        reinterpret_cast<void**>(pipeline_state.GetAddressOf())
+    ));
+
+    size_t handle_id = _impl->handles.pipelines.push(
+        Backend::Impl::PipelineData { 
+            signature_index,
+            pipeline_state
+        }
+    );
+    return GPUResourceHandle(GPUResourceType::Pipeline, static_cast<uint16_t>(handle_id));
+}
+
 GPUResourceHandle Backend::create_command_buffer(QueueType const queue_type) {
 
     auto get_command_list_type = [&](QueueType const queue_type) -> D3D12_COMMAND_LIST_TYPE {
@@ -451,62 +946,6 @@ void Backend::resize_buffers(uint32_t const width, uint32_t const height, uint32
     _impl->frame_index = (_impl->frame_index + 1) % _impl->frame_count;
 }
 
-/*
-ImageId Backend::create_texture(
-    ImageDimension const dimension, 
-    uint32_t const width, 
-    uint32_t const height, 
-    uint16_t const mip_levels, 
-    uint16_t const array_layers,
-    ImageFormat const format,
-    ImageFlags const flags
-) {
-
-    D3D12_RESOURCE_DESC resource_desc{};
-    switch(dimension) {
-        case ImageDimension::_1D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE1D; break;
-        case ImageDimension::_2D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D; break;
-        case ImageDimension::_3D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D; break;
-    }
-    resource_desc.Width = width;
-    resource_desc.Height = height;
-    resource_desc.MipLevels = mip_levels;
-    resource_desc.DepthOrArraySize = array_layers;
-    resource_desc.SampleDesc.Count = 1;
-    switch(format) {
-        case ImageFormat::Unknown: resource_desc.Format = DXGI_FORMAT_UNKNOWN;
-        case ImageFormat::RGBA8Unorm: resource_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    }
-    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-    ComPtr<ID3D12Resource> resource;
-
-    D3D12_HEAP_PROPERTIES heap_props{};
-    heap_props.Type = D3D12_HEAP_TYPE_DEFAULT;
-    impl_->device->CreateCommittedResource(
-        &heap_props, 
-        D3D12_HEAP_FLAG_NONE, 
-        &resource_desc, 
-        D3D12_RESOURCE_STATE_COMMON, 
-        nullptr, 
-        __uuidof(ID3D12Resource), 
-        reinterpret_cast<void**>(resource.GetAddressOf())
-    );
-
-    D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = impl_->device->GetResourceAllocationInfo(0, 1, &resource_desc);
-    MemoryAllocInfo mem_alloc_info = impl_->default_pool->allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
-
-    return ImageId(impl_->images.push({ resource, mem_alloc_info }) - 1);
-}
-
-void Backend::free_image(ImageId const& image_id) {
-
-    impl_->default_pool->deallocate(impl_->images[image_id.id()].second);
-    impl_->images[image_id.id()].first = nullptr;
-    impl_->images.erase(image_id.id());
-}
-*/
-
 CommandGenerator::CommandGenerator(Backend& backend, uint16_t const cmd_index) : _backend(&backend), _cmd_index(cmd_index) {
 
     auto& command_data = _backend->_impl->handles.commands[_cmd_index];
@@ -547,7 +986,7 @@ CommandGenerator& CommandGenerator::set_scissor(const uint32_t left, const uint3
     return *this;
 }
 
-CommandGenerator& CommandGenerator::set_pipeline(GPUResourceHandle const& handle) {
+CommandGenerator& CommandGenerator::bind_pipeline(GPUResourceHandle const& handle) {
 
     auto& command_data = _backend->_impl->handles.commands[_cmd_index];
     command_data.first->SetPipelineState(nullptr);
@@ -584,15 +1023,14 @@ CommandGenerator& CommandGenerator::barrier(GPUResourceHandle const& handle, Mem
     return *this;
 }
     
-CommandGenerator& CommandGenerator::render_pass(
+CommandGenerator& CommandGenerator::begin_render_pass(
     uint16_t const rtv_count,
     std::array<GPUResourceHandle, 8> const& rtv_handles,
     std::array<RenderPassColorDesc, 8> const& rtv_ops,
     std::array<Color, 8> const& rtv_clears,
     GPUResourceHandle dsv_handle,
     RenderPassDepthStencilDesc dsv_op,
-    std::pair<float, uint8_t> dsv_clear,
-    std::function<void()> const& func
+    std::pair<float, uint8_t> dsv_clear
 ) {
 
     auto get_render_pass_begin_type = [&](RenderPassLoadOp const load_op) {
@@ -645,8 +1083,13 @@ CommandGenerator& CommandGenerator::render_pass(
         command_data.first->BeginRenderPass(static_cast<uint32_t>(rtv_count), render_pass_rtvs.data(), nullptr, D3D12_RENDER_PASS_FLAG_NONE);
     }
 
-    func();
+    command_data.first->EndRenderPass();
+    return *this;
+}
 
+CommandGenerator& CommandGenerator::end_render_pass() {
+
+    auto& command_data = _backend->_impl->handles.commands[_cmd_index];
     command_data.first->EndRenderPass();
     return *this;
 }

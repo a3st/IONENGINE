@@ -8,10 +8,12 @@
 namespace ionengine::renderer {
 
 enum class GPUResourceType : uint16_t {
-    Texture = 0x1,
-    Buffer = 0x2,
-    CommandBuffer = 0x3,
-    Pipeline = 0x4
+    Texture = 1 << 0,
+    Buffer = 1 << 1,
+    CommandBuffer = 1 << 2,
+    Pipeline = 1 << 3,
+    RenderPass = 1 << 4,
+    Shader = 1 << 5
 };
 
 class GPUResourceHandle {
@@ -104,13 +106,14 @@ enum class ShaderBindType {
     Sampler
 };
 
-enum class ShaderStageFlags : uint32_t {
+enum class ShaderFlags : uint16_t {
     Vertex = 1 << 0,
     Geometry = 1 << 1,
     Domain = 1 << 2,
     Pixel = 1 << 3,
     Compute = 1 << 4,
-    All = Vertex | Geometry | Domain | Pixel | Compute
+    Hull = 1 << 5,
+    All = Vertex | Geometry | Domain | Pixel | Compute | Hull
 };
 
 enum class FillMode {
@@ -140,6 +143,17 @@ struct Extent2D {
     uint32_t height;
 };
 
+struct TextureViewDesc {
+    uint16_t base_mip_level;
+    uint16_t mip_level_count;
+    uint16_t base_array_layer;
+    uint16_t array_layer_count;
+};
+
+struct BufferViewDesc {
+    uint16_t dummy;
+};
+
 struct RenderPassColorDesc {
     RenderPassLoadOp load_op;
     RenderPassStoreOp store_op;
@@ -156,7 +170,11 @@ struct ShaderBindDesc {
     ShaderBindType bind_type;
     uint32_t index;
     uint32_t count;
-    ShaderStageFlags stage_flags;
+    ShaderFlags shader_flags;
+
+    bool operator<(ShaderBindDesc const& other) const {
+        return std::tie(bind_type, index, count, shader_flags) < std::tie(other.bind_type, other.index, other.count, other.shader_flags);
+    }
 };
 
 struct VertexInputDesc {
@@ -167,20 +185,15 @@ struct VertexInputDesc {
     uint32_t stride;
 };
 
-struct ShaderStageDesc {
-    std::span<char8_t> data;
-    ShaderStageFlags stage_flags;
-};
-
 struct RasterizerDesc {
     FillMode fill_mode;
     CullMode cull_mode;
-}
+};
 
 struct DepthStencilDesc {
     CompareOp depth_func;
     bool write_enable;
-}
+};
 
 class Backend {
 public:
@@ -203,43 +216,37 @@ public:
         uint16_t const mip_levels,
         uint16_t const array_layers,
         Format const format,
-        TextureFlags const flags
-    );
-
-    void destroy_texture(GPUResourceHandle const& handle);
-
-    void create_shader_view(
-        GPUResourceHandle const& handle,
-        TextureDimension const dimension,
-        uint16_t const base_mip_level, 
-        uint16_t const mip_level_count,
-        uint16_t const base_array_layer, 
-        uint16_t const array_layer_count
+        TextureFlags const flags,
+        TextureViewDesc const& texture_view
     );
 
     GPUResourceHandle create_buffer(
         size_t const size,
-        BufferFlags const flags
+        BufferFlags const flags,
+        BufferViewDesc const& buffer_view
     );
 
-    void destroy_buffer(GPUResourceHandle const& handle);
-
-    void create_shader_view(
-        GPUResourceHandle const& handle,
-        uint16_t dummy
+    GPUResourceHandle create_render_pass(
+        std::vector<GPUResourceHandle> const& rtv_handles,
+        std::vector<RenderPassColorDesc> const& rtv_ops,
+        GPUResourceHandle const& dsv_handle,
+        RenderPassDepthStencilDesc const& dsv_op
     );
+
+    GPUResourceHandle create_shader(std::span<char8_t> const shader_data, ShaderFlags const flags);
 
     GPUResourceHandle create_pipeline(
-        PipelineType const pipeline_type,
         std::vector<ShaderBindDesc> const& shader_bindings,
         std::vector<VertexInputDesc> const& vertex_inputs,
-        std::vector<ShaderStageDesc> const& shader_stages,
+        std::vector<GPUResourceHandle> const& shader_handles,
         RasterizerDesc const& rasterizer,
         DepthStencilDesc const& depth_stencil,
-        
+        GPUResourceHandle const& render_pass_handle
     );
 
     GPUResourceHandle create_command_buffer(QueueType const queue_type);
+
+    void destroy_handle(GPUResourceHandle const& handle);
 
     CommandGenerator create_command_generator(GPUResourceHandle const& handle);
 
@@ -266,24 +273,25 @@ public:
 
     ~CommandGenerator();
 
-    CommandGenerator& set_pipeline(GPUResourceHandle const& handle);
-
     CommandGenerator& set_viewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height);
 
     CommandGenerator& set_scissor(const uint32_t left, const uint32_t top, const uint32_t right, const uint32_t bottom);
 
     CommandGenerator& barrier(GPUResourceHandle const& handle, MemoryState const before, MemoryState const after);
         
-    CommandGenerator& render_pass(
+    CommandGenerator& begin_render_pass(
         uint16_t const rtv_count,
         std::array<GPUResourceHandle, 8> const& rtv_handles,
         std::array<RenderPassColorDesc, 8> const& rtv_ops,
         std::array<Color, 8> const& rtv_clears,
         GPUResourceHandle dsv_handle,
         RenderPassDepthStencilDesc dsv_op,
-        std::pair<float, uint8_t> dsv_clear,
-        std::function<void()> const& func
+        std::pair<float, uint8_t> dsv_clear
     );
+
+    CommandGenerator& end_render_pass();
+
+    CommandGenerator& bind_pipeline(GPUResourceHandle const& handle);
 
 private:
 

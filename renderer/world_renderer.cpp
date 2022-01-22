@@ -16,22 +16,20 @@ void WorldRenderer::update() {
 
     // Command reset
     {
-        CommandGenerator gen = _backend->create_command_generator(cmdbuffs[0]);
-        gen
+        CommandGenerator generator = _backend->create_command_generator(cmdbuffs[0]);
+        generator
             .set_viewport(0, 0, 800, 600)
             .set_scissor(0, 0, 800, 600)
             .barrier(swapchain_handle, MemoryState::Present, MemoryState::RenderTarget)
-            .render_pass(1, 
+            .begin_render_pass(1, 
                 { swapchain_handle }, 
                 { RenderPassColorDesc { RenderPassLoadOp::Clear, RenderPassStoreOp::Store } },
                 { Color(0.6f, 0.2f, 0.4f, 1.0f) },
                 GPUResourceHandle(),
                 {},
-                { 0.0f, 0x0 },
-                [&]() {
-
-                }
+                { 0.0f, 0x0 }
             )
+            .end_render_pass()
             .barrier(swapchain_handle, MemoryState::RenderTarget, MemoryState::Present);
     } // Command close
 
