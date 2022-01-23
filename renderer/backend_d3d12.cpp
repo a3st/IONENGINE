@@ -564,7 +564,7 @@ GPUResourceHandle Backend::create_buffer(
         case BufferFlags::ConstantBuffer: {
             auto view_desc = D3D12_CONSTANT_BUFFER_VIEW_DESC {};
             view_desc.BufferLocation = resource->GetGPUVirtualAddress();
-            view_desc.SizeInBytes = size;
+            view_desc.SizeInBytes = static_cast<uint32_t>(size);
 
             descriptor_alloc_info = _impl->descriptor_pools.srv.allocate();
 
@@ -712,10 +712,11 @@ GPUResourceHandle Backend::create_pipeline(
     std::vector<GPUResourceHandle> const& shader_handles,
     RasterizerDesc const& rasterizer,
     DepthStencilDesc const& depth_stencil,
+    BlendDesc const& blend,
     GPUResourceHandle const& render_pass_handle
 ) {
     uint16_t signature_index;
-    auto it = std::find(_impl->signature_cache.begin(), _impl->signature_cache.end(), shader_bindings);
+    auto it = _impl->signature_cache.find(shader_bindings);
     if(it != _impl->signature_cache.end()) {
         signature_index = it->second;
     } else {
@@ -805,6 +806,20 @@ GPUResourceHandle Backend::create_pipeline(
         return D3D12_CULL_MODE_NONE;
     };
 
+    auto get_comparison_func = [&](CompareOp const compare_op) {
+        switch(compare_op) {
+            case CompareOp::Always: return D3D12_COMPARISON_FUNC_ALWAYS;
+            case CompareOp::Equal: return D3D12_COMPARISON_FUNC_EQUAL;
+            case CompareOp::Greater: return D3D12_COMPARISON_FUNC_GREATER;
+            case CompareOp::GreaterEqual: return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+            case CompareOp::Less: return D3D12_COMPARISON_FUNC_LESS;
+            case CompareOp::LessEqual: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+            case CompareOp::Never: return D3D12_COMPARISON_FUNC_NEVER;
+            case CompareOp::NotEqual: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+        }
+        return D3D12_COMPARISON_FUNC_ALWAYS;
+    };
+
     auto pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {};
     pipeline_desc.pRootSignature = signature_data.Get();
 
@@ -838,6 +853,41 @@ GPUResourceHandle Backend::create_pipeline(
             case D3D12_SHADER_VISIBILITY_HULL: pipeline_desc.HS = bytecode; break;
         }
     }
+
+    auto depth_stencil_desc = D3D12_DEPTH_STENCIL_DESC {};
+    depth_stencil_desc.DepthFunc = get_comparison_func(depth_stencil.depth_func);
+    depth_stencil_desc.DepthEnable = depth_stencil.write_enable;
+    depth_stencil_desc.StencilEnable = depth_stencil.write_enable;
+    depth_stencil_desc.DepthWriteMask = depth_stencil.write_enable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+    depth_stencil_desc.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+    depth_stencil_desc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+
+    auto depth_stencil_face = D3D12_DEPTH_STENCILOP_DESC {};
+    depth_stencil_face.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+    depth_stencil_face.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+    depth_stencil_face.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+    depth_stencil_face.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+
+    depth_stencil_desc.FrontFace = depth_stencil_face;
+    depth_stencil_desc.BackFace = depth_stencil_face;
+
+    pipeline_desc.DepthStencilState = depth_stencil_desc;
+
+    auto blend_desc = D3D12_BLEND_DESC {};
+    auto render_target_blend_desc = D3D12_RENDER_TARGET_BLEND_DESC {};
+    render_target_blend_desc.BlendEnable = blend.blend_enable;
+    // TODO
+
+    auto render_pass_data = _impl->handles.render_passes[render_pass_handle._id & 0xffff];
+
+    for(size_t i = 0; i < render_pass_data.rtvs.size(); ++i) {
+        blend_desc.RenderTarget[i] = render_target_blend_desc;
+        pipeline_desc.RTVFormats[i] = render_pass_data.rtvs[i].BeginningAccess.Clear.ClearValue.Format;
+    }
+    pipeline_desc.DSVFormat = render_pass_data.dsv.value_or(DXGI_FORMAT_UNKNOWN).DepthBeginningAccess.Clear.ClearValue.Format;
+    pipeline_desc.NumRenderTargets = static_cast<uint32_t>(render_pass_data.rtvs.size());
+    
+    pipeline_desc.BlendState = blend_desc;
 
     ComPtr<ID3D12PipelineState> pipeline_state;
     THROW_IF_FAILED(_impl->device->CreateGraphicsPipelineState(

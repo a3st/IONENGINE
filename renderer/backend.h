@@ -138,6 +138,21 @@ enum class CompareOp {
     Always
 };
 
+enum class Blend {
+    Zero,
+    One,
+    SrcAlpha,
+    InvSrcAlpha
+};
+
+enum class BlendOp {
+    Add,
+    Subtract,
+    RevSubtract,
+    Min,
+    Max
+};
+
 struct Extent2D {
     uint32_t width;
     uint32_t height;
@@ -195,6 +210,16 @@ struct DepthStencilDesc {
     bool write_enable;
 };
 
+struct BlendDesc {
+    bool blend_enable;
+    Blend blend_src;
+    Blend blend_dst;
+    BlendOp D3D12_BLEND_OP;
+    Blend blend_src_alpha;
+    Blend blend_dst_alpha;
+    BlendOp blend_op_alpha;
+};
+
 class Backend {
 public:
 
@@ -241,6 +266,7 @@ public:
         std::vector<GPUResourceHandle> const& shader_handles,
         RasterizerDesc const& rasterizer,
         DepthStencilDesc const& depth_stencil,
+        BlendDesc const& blend,
         GPUResourceHandle const& render_pass_handle
     );
 
