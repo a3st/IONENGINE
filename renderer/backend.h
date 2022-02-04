@@ -153,6 +153,14 @@ enum class BlendOp {
     Max
 };
 
+enum class Filter {
+
+};
+
+enum class TextureAddressMode {
+    
+};
+
 struct Extent2D {
     uint32_t width;
     uint32_t height;
@@ -256,6 +264,15 @@ public:
         std::vector<RenderPassColorDesc> const& rtv_ops,
         GPUResourceHandle const& dsv_handle,
         RenderPassDepthStencilDesc const& dsv_op
+    );
+
+    GPUResourceHandle create_sampler(
+        Filter const filter,
+        TextureAddressMode address_u,
+        TextureAddressMode address_v,
+        TextureAddressMode address_w,
+        uint32_t const anisotropy,
+        CompareOp compare_op
     );
 
     GPUResourceHandle create_shader(std::span<char8_t> const shader_data, ShaderFlags const flags);

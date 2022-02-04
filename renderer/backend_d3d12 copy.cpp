@@ -193,7 +193,6 @@ struct Backend::Impl {
     ComPtr<IDXGISwapChain3> swapchain;
     std::vector<ComPtr<ID3D12Fence>> fences;
     std::vector<ComPtr<ID3D12RootSignature>> signatures;
-    ComPtr<id3d12>
 
     HANDLE wait_event;
 
