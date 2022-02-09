@@ -222,7 +222,7 @@ struct BlendDesc {
     bool blend_enable;
     Blend blend_src;
     Blend blend_dst;
-    BlendOp D3D12_BLEND_OP;
+    BlendOp blend_op;
     Blend blend_src_alpha;
     Blend blend_dst_alpha;
     BlendOp blend_op_alpha;

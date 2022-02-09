@@ -772,14 +772,14 @@ GPUResourceHandle Backend::create_pipeline(
         root_desc.NumParameters = static_cast<uint32_t>(parameters.size());
         root_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-        ComPtr<ID3DBlob> blob;
-        THROW_IF_FAILED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, blob.GetAddressOf(), nullptr));
+        ComPtr<ID3DBlob> serialized_data;
+        THROW_IF_FAILED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, serialized_data.GetAddressOf(), nullptr));
 
         ComPtr<ID3D12RootSignature> signature;
         THROW_IF_FAILED(_impl->device->CreateRootSignature(
             0,
-            blob->GetBufferPointer(), 
-            blob->GetBufferSize(), 
+            serialized_data->GetBufferPointer(), 
+            serialized_data->GetBufferSize(), 
             __uuidof(ID3D12RootSignature), 
             reinterpret_cast<void**>(signature.GetAddressOf())
         ));
@@ -821,8 +821,50 @@ GPUResourceHandle Backend::create_pipeline(
         return D3D12_COMPARISON_FUNC_ALWAYS;
     };
 
+    auto get_blend_func = [&](BlendOp const blend_op) {
+        switch(blend_op) {
+            case BlendOp::Add: return D3D12_BLEND_OP_ADD;
+            case BlendOp::Max: return D3D12_BLEND_OP_MAX;
+            case BlendOp::Min: return D3D12_BLEND_OP_MIN;
+            case BlendOp::RevSubtract: return D3D12_BLEND_OP_REV_SUBTRACT;
+            case BlendOp::Subtract: return D3D12_BLEND_OP_SUBTRACT;
+        }
+        return D3D12_BLEND_OP_ADD;
+    };
+
+    auto get_blend = [&](Blend const blend) {
+        switch(blend) {
+            case Blend::InvSrcAlpha: return D3D12_BLEND_INV_SRC_ALPHA;
+            case Blend::One: return D3D12_BLEND_ONE;
+            case Blend::SrcAlpha: return D3D12_BLEND_SRC_ALPHA;
+            case Blend::Zero: return D3D12_BLEND_ZERO; 
+        }
+        return D3D12_BLEND_ZERO;
+    };
+
+    auto get_dxgi_format = [&](Format const format) {
+        switch(format) {
+            case Format::RGB32: return DXGI_FORMAT_R32G32B32_FLOAT;
+            case Format::RGBA32: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+        }
+        return DXGI_FORMAT_R32G32B32_FLOAT;
+    };
+
     auto pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {};
     pipeline_desc.pRootSignature = signature_data.Get();
+
+    std::vector<D3D12_INPUT_ELEMENT_DESC> input_elements;
+    input_elements.reserve(vertex_inputs.size());
+    for(auto const& input : vertex_inputs) {
+        auto element_desc = D3D12_INPUT_ELEMENT_DESC {};
+        element_desc.SemanticName = input.semantic.c_str();
+        element_desc.InputSlot = input.index;
+        element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        element_desc.Format = get_dxgi_format(input.format);
+        element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+    }
+    pipeline_desc.InputLayout.pInputElementDescs = input_elements.data();
+    pipeline_desc.InputLayout.NumElements = static_cast<uint32_t>(input_elements.size());
 
     auto rasterizer_desc = D3D12_RASTERIZER_DESC {};
     rasterizer_desc.FillMode = get_fill_mode(rasterizer.fill_mode);
@@ -877,7 +919,13 @@ GPUResourceHandle Backend::create_pipeline(
     auto blend_desc = D3D12_BLEND_DESC {};
     auto render_target_blend_desc = D3D12_RENDER_TARGET_BLEND_DESC {};
     render_target_blend_desc.BlendEnable = blend.blend_enable;
-    // TODO
+    render_target_blend_desc.SrcBlend = get_blend(blend.blend_src);
+    render_target_blend_desc.DestBlend = get_blend(blend.blend_dst);
+    render_target_blend_desc.BlendOp = get_blend_func(blend.blend_op);
+    render_target_blend_desc.SrcBlendAlpha = get_blend(blend.blend_src_alpha);
+    render_target_blend_desc.DestBlendAlpha = get_blend(blend.blend_dst_alpha);
+    render_target_blend_desc.BlendOpAlpha = get_blend_func(blend.blend_op_alpha);
+    render_target_blend_desc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
     auto render_pass_data = _impl->handles.render_passes[render_pass_handle._id & 0xffff];
 
@@ -885,10 +933,15 @@ GPUResourceHandle Backend::create_pipeline(
         blend_desc.RenderTarget[i] = render_target_blend_desc;
         pipeline_desc.RTVFormats[i] = render_pass_data.rtvs[i].BeginningAccess.Clear.ClearValue.Format;
     }
-    pipeline_desc.DSVFormat = render_pass_data.dsv.value_or(DXGI_FORMAT_UNKNOWN).DepthBeginningAccess.Clear.ClearValue.Format;
+    pipeline_desc.DSVFormat = render_pass_data.dsv.has_value() ? render_pass_data.dsv.value().DepthBeginningAccess.Clear.ClearValue.Format : DXGI_FORMAT_UNKNOWN;
     pipeline_desc.NumRenderTargets = static_cast<uint32_t>(render_pass_data.rtvs.size());
     
     pipeline_desc.BlendState = blend_desc;
+
+    pipeline_desc.SampleMask = std::numeric_limits<uint32_t>::max();
+
+    // TODO
+    pipeline_desc.SampleDesc.Count = 1;
 
     ComPtr<ID3D12PipelineState> pipeline_state;
     THROW_IF_FAILED(_impl->device->CreateGraphicsPipelineState(
