@@ -4,7 +4,6 @@
 
 #include <renderer/backend.h>
 #include <renderer/color.h>
-#include <renderer/handle_pool.h>
 
 namespace ionengine::renderer {
 

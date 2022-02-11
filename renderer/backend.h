@@ -4,45 +4,18 @@
 
 #include <platform/window.h>
 #include <renderer/color.h>
+#include <lib/handle.h>
 
 namespace ionengine::renderer {
 
-enum class GPUResourceType : uint16_t {
-    Texture = 1 << 0,
-    Buffer = 1 << 1,
-    CommandBuffer = 1 << 2,
-    Pipeline = 1 << 3,
-    RenderPass = 1 << 4,
-    Shader = 1 << 5
-};
+struct Buffer;
+struct Texture;
+struct Pipeline;
+struct Shader;
+struct RenderPass;
+struct Sampler;
 
-class GPUResourceHandle {
-public:
-
-    GPUResourceHandle() = default;
-    
-    GPUResourceHandle(GPUResourceType const res_type, uint16_t const id) { 
-
-        _id = (static_cast<uint32_t>(res_type) << 16) + id; 
-    }
-
-    bool operator==(GPUResourceHandle const& other) {
-        return _id == other._id;
-    }
-
-    bool operator!=(GPUResourceHandle const& other) {
-        return _id != other._id;
-    }
-
-private:
-    
-    uint32_t _id{std::numeric_limits<uint32_t>::max()};
-
-    friend class CommandGenerator;
-    friend class Backend;
-};
-
-enum class TextureDimension {
+enum class Dimension {
     _1D,
     _2D,
     _3D,
@@ -56,18 +29,10 @@ enum class Format {
     RGB32
 };
 
-enum class TextureFlags {
+enum class ResourceFlags {
     None,
     RenderTarget,
     DepthStencil,
-    UnorderedAccess
-};
-
-enum class BufferFlags {
-    None,
-    Vertex,
-    Index,
-    ConstantBuffer,
     UnorderedAccess
 };
 
@@ -157,7 +122,7 @@ enum class Filter {
 
 };
 
-enum class TextureAddressMode {
+enum class AddressMode {
     
 };
 
@@ -228,6 +193,8 @@ struct BlendDesc {
     BlendOp blend_op_alpha;
 };
 
+using GPUResourceHandle = std::variant<Handle<Texture>, Handle<Buffer>>;
+
 class Backend {
 public:
 
@@ -243,103 +210,77 @@ public:
 
     Backend& operator=(Backend&&) = delete;
 
-    GPUResourceHandle create_texture(
-        TextureDimension const dimension,
+    Handle<Texture> create_texture(
+        Dimension const dimension,
         Extent2D const extent,
         uint16_t const mip_levels,
         uint16_t const array_layers,
         Format const format,
-        TextureFlags const flags,
+        ResourceFlags const flags,
         TextureViewDesc const& texture_view
     );
 
-    GPUResourceHandle create_buffer(
+    Handle<Buffer> create_buffer(
         size_t const size,
-        BufferFlags const flags,
+        ResourceFlags const flags,
         BufferViewDesc const& buffer_view
     );
 
-    GPUResourceHandle create_render_pass(
-        std::vector<GPUResourceHandle> const& rtv_handles,
+    Handle<RenderPass> create_render_pass(
+        std::vector<Handle<Texture>> const& rtv_handles,
         std::vector<RenderPassColorDesc> const& rtv_ops,
-        GPUResourceHandle const& dsv_handle,
+        Handle<Texture> const& dsv_handle,
         RenderPassDepthStencilDesc const& dsv_op
     );
 
-    GPUResourceHandle create_sampler(
+    Handle<Sampler> create_sampler(
         Filter const filter,
-        TextureAddressMode address_u,
-        TextureAddressMode address_v,
-        TextureAddressMode address_w,
+        AddressMode const address_u,
+        AddressMode const address_v,
+        AddressMode const address_w,
         uint32_t const anisotropy,
-        CompareOp compare_op
+        CompareOp const compare_op
     );
 
-    GPUResourceHandle create_shader(std::span<char8_t> const shader_data, ShaderFlags const flags);
+    Handle<Shader> create_shader(
+        std::vector<ShaderBindDesc> const& bindings,
+        std::span<char8_t> const data, 
+        ShaderFlags const flags
+    );
 
-    GPUResourceHandle create_pipeline(
-        std::vector<ShaderBindDesc> const& shader_bindings,
+    Handle<Pipeline> create_pipeline(
         std::vector<VertexInputDesc> const& vertex_inputs,
-        std::vector<GPUResourceHandle> const& shader_handles,
+        std::vector<Handle<Shader>> const& shader_handles,
         RasterizerDesc const& rasterizer,
         DepthStencilDesc const& depth_stencil,
         BlendDesc const& blend,
-        GPUResourceHandle const& render_pass_handle
+        Handle<RenderPass> const& render_pass_handle
     );
 
-    GPUResourceHandle create_command_buffer(QueueType const queue_type);
+    void barrier(GPUResourceHandle const& handle, MemoryState const before, MemoryState const after);
 
-    void destroy_handle(GPUResourceHandle const& handle);
+    void bind_pipeline(Handle<Pipeline> const& handle);
 
-    CommandGenerator create_command_generator(GPUResourceHandle const& handle);
+    void set_viewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height);
 
-    void execute_command_buffers(QueueType const queue_type, std::vector<GPUResourceHandle> const& handles);
+    void set_scissor(const uint32_t left, const uint32_t top, const uint32_t right, const uint32_t bottom);
 
-    GPUResourceHandle get_swap_texture() const;
+    void begin_render_pass(Handle<RenderPass> const& handle);
 
-    void swap_buffers();
+    void end_render_pass();
 
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
+    Handle<Texture> begin_frame();
+
+    void end_frame();
+
+    void resize_frame(uint32_t const width, uint32_t const height, uint32_t const frame_count);
+
+    void wait_for_idle_device();
 
 private:
 
     struct Impl;
     std::unique_ptr<Impl> _impl;
-
-    friend class CommandGenerator;
-};
-
-class CommandGenerator {
-public:
-
-    CommandGenerator(Backend& backend, uint16_t const cmd_index);
-
-    ~CommandGenerator();
-
-    CommandGenerator& set_viewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height);
-
-    CommandGenerator& set_scissor(const uint32_t left, const uint32_t top, const uint32_t right, const uint32_t bottom);
-
-    CommandGenerator& barrier(GPUResourceHandle const& handle, MemoryState const before, MemoryState const after);
-        
-    CommandGenerator& begin_render_pass(
-        uint16_t const rtv_count,
-        std::array<GPUResourceHandle, 8> const& rtv_handles,
-        std::array<RenderPassColorDesc, 8> const& rtv_ops,
-        std::array<Color, 8> const& rtv_clears,
-        GPUResourceHandle dsv_handle,
-        RenderPassDepthStencilDesc dsv_op,
-        std::pair<float, uint8_t> dsv_clear
-    );
-
-    CommandGenerator& end_render_pass();
-
-    CommandGenerator& bind_pipeline(GPUResourceHandle const& handle);
-
-private:
-
-    Backend* _backend;
-    uint16_t _cmd_index{};
 };
 
 }

@@ -2,7 +2,7 @@
 
 #include <precompiled.h>
 #include <renderer/backend.h>
-#include <renderer/handle_pool.h>
+#include <lib/instance_container.h>
 #include <platform/window.h>
 #include <lib/exception.h>
 
@@ -185,6 +185,33 @@ void DescriptorPool::deallocate(DescriptorAllocInfo const& alloc_info) {
     --alloc_info.heap->offset;
 }
 
+struct Texture {
+    ComPtr<ID3D12Resource> resource;
+    MemoryAllocInfo memory_alloc_info;
+    DescriptorAllocInfo descriptor_alloc_info;
+};
+
+struct Buffer {
+    ComPtr<ID3D12Resource> resource;
+    MemoryAllocInfo memory_alloc_info;
+    DescriptorAllocInfo descriptor_alloc_info;
+};
+
+struct Pipeline {
+
+    ComPtr<ID3D12PipelineState> pipeline_state;
+};
+
+struct Shader {
+    std::vector<char8_t> bytecode;
+    D3D12_SHADER_VISIBILITY type;
+};
+
+struct RenderPass {
+    std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> colors;
+    std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> depth_stencil;
+};
+
 struct Backend::Impl {
     ComPtr<IDXGIFactory4> factory;
     ComPtr<ID3D12Debug> debug;
@@ -193,15 +220,13 @@ struct Backend::Impl {
     ComPtr<IDXGISwapChain3> swapchain;
     std::vector<ComPtr<ID3D12Fence>> fences;
     std::vector<ComPtr<ID3D12RootSignature>> signatures;
-    ComPtr<id3d12>
 
     HANDLE wait_event;
 
-    struct {
-        ComPtr<ID3D12CommandQueue> direct;
-        ComPtr<ID3D12CommandQueue> copy;
-        ComPtr<ID3D12CommandQueue> compute;
-    } queues;
+    ComPtr<ID3D12CommandQueue> direct_queue;
+    ComPtr<ID3D12CommandQueue> copy_queue;
+    ComPtr<ID3D12CommandQueue> compute_queue;
+
 
     struct {
         uint32_t rtv;
@@ -223,41 +248,13 @@ struct Backend::Impl {
         DescriptorPool dsv;
     } descriptor_pools;
 
-    struct TextureData {
-        ComPtr<ID3D12Resource> resource;
-        MemoryAllocInfo memory_alloc;
-        DescriptorAllocInfo descriptor_alloc;
-        bool is_swap;
-    };
+    //using CommandListData = std::pair<ComPtr<ID3D12GraphicsCommandList4>, ComPtr<ID3D12CommandAllocator>>;
 
-    using CommandListData = std::pair<ComPtr<ID3D12GraphicsCommandList4>, ComPtr<ID3D12CommandAllocator>>;
-
-    struct BufferData {
-        ComPtr<ID3D12Resource> resource;
-        MemoryAllocInfo memory_alloc;
-        DescriptorAllocInfo descriptor_alloc;
-    };
-
-    struct RenderPassData {
-        std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> rtvs;
-        std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> dsv;
-    };
-
-    struct ShaderData {
-        std::vector<char8_t> data;
-        D3D12_SHADER_VISIBILITY visibility;
-    };
-
-    using PipelineData = std::pair<uint16_t, ComPtr<ID3D12PipelineState>>;
-
-    struct {
-        HandlePool<CommandListData> commands;
-        HandlePool<TextureData> textures;
-        HandlePool<BufferData> buffers;
-        HandlePool<RenderPassData> render_passes;
-        HandlePool<ShaderData> shaders;
-        HandlePool<PipelineData> pipelines;
-    } handles;
+    InstanceContainer<Texture> textures;
+    InstanceContainer<Buffer> buffers;
+    InstanceContainer<Pipeline> pipelines;
+    InstanceContainer<Shader> shaders;
+    InstanceContainer<RenderPass> render_passes;
 
     std::map<std::vector<ShaderBindDesc>, uint16_t> signature_cache;
 

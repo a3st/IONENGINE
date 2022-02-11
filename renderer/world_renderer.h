@@ -3,7 +3,7 @@
 #pragma once
 
 #include <renderer/backend.h>
-#include <renderer/frame_graph.h>
+//#include <renderer/frame_graph.h>
 #include <lib/thread_pool.h>
 
 namespace ionengine::renderer {
@@ -28,7 +28,7 @@ private:
     Backend* _backend;
     ThreadPool* _thread_pool;
 
-    FrameGraph _frame_graph;
+    //FrameGraph _frame_graph;
 
     std::vector<GPUResourceHandle> cmdbuffs;
 };
