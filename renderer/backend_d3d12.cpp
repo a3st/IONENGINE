@@ -17,6 +17,7 @@
 #endif
 
 using Microsoft::WRL::ComPtr;
+using ionengine::Handle;
 using namespace ionengine::renderer;
 
 struct MemoryHeap {
@@ -185,6 +186,8 @@ void DescriptorPool::deallocate(DescriptorAllocInfo const& alloc_info) {
     --alloc_info.heap->offset;
 }
 
+namespace ionengine::renderer {
+
 struct Texture {
     ComPtr<ID3D12Resource> resource;
     MemoryAllocInfo memory_alloc_info;
@@ -212,57 +215,46 @@ struct RenderPass {
     std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> depth_stencil;
 };
 
+}
+
 struct Backend::Impl {
+
     ComPtr<IDXGIFactory4> factory;
     ComPtr<ID3D12Debug> debug;
     ComPtr<IDXGIAdapter1> adapter;
     ComPtr<ID3D12Device4> device;
     ComPtr<IDXGISwapChain3> swapchain;
-    std::vector<ComPtr<ID3D12Fence>> fences;
-    std::vector<ComPtr<ID3D12RootSignature>> signatures;
-
-    HANDLE wait_event;
 
     ComPtr<ID3D12CommandQueue> direct_queue;
     ComPtr<ID3D12CommandQueue> copy_queue;
     ComPtr<ID3D12CommandQueue> compute_queue;
 
+    HANDLE wait_event;
 
-    struct {
-        uint32_t rtv;
-        uint32_t cbv_srv_uav;
-        uint32_t sampler;
-        uint32_t dsv;
-    } descriptor_sizes;
+    struct Frame {
+        ComPtr<ID3D12Fence> fence;
+        ComPtr<ID3D12CommandAllocator> command_allocator;
+        ComPtr<ID3D12GraphicsCommandList4> command_list;
 
-    struct {
-        MemoryPool default_tex;
-        MemoryPool default_buffer;
-        MemoryPool upload_stage;
-    } mem_pools;
+        uint64_t fence_value;  
+    };
 
-    struct {
-        DescriptorPool rtv;
-        DescriptorPool sampler;
-        DescriptorPool srv;
-        DescriptorPool dsv;
-    } descriptor_pools;
+    std::vector<Frame> frames;
+    uint16_t frame_index;
 
-    //using CommandListData = std::pair<ComPtr<ID3D12GraphicsCommandList4>, ComPtr<ID3D12CommandAllocator>>;
+    MemoryPool buffer_memory;
+    MemoryPool texture_memory;
+
+    DescriptorPool rtv_descriptor;
+    DescriptorPool sampler_descriptor;
+    DescriptorPool srv_descriptor;
+    DescriptorPool dsv_descriptor;
 
     InstanceContainer<Texture> textures;
     InstanceContainer<Buffer> buffers;
     InstanceContainer<Pipeline> pipelines;
     InstanceContainer<Shader> shaders;
     InstanceContainer<RenderPass> render_passes;
-
-    std::map<std::vector<ShaderBindDesc>, uint16_t> signature_cache;
-
-    std::vector<uint16_t> swap_indices;
-    uint32_t frame_index;
-    uint32_t frame_count;
-
-    std::vector<uint64_t> fence_values;
 };
 
 Backend::Backend(uint32_t const adapter_index, platform::Window* const window, uint32_t const frame_count) : _impl(std::make_unique<Impl>()) {
@@ -273,52 +265,30 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
     THROW_IF_FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, __uuidof(IDXGIFactory4), reinterpret_cast<void**>(_impl->factory.GetAddressOf())));
 
     THROW_IF_FAILED(_impl->factory->EnumAdapters1(adapter_index, _impl->adapter.GetAddressOf()));
-    
-    /*{
-        DXGI_ADAPTER_DESC adapter_desc{};
-        _impl->adapter->GetDesc(&adapter_desc);
-
-        size_t length = wcslen(adapter_desc.Description) + 1;
-        assert(length > 0 && "length is less than 0 or equal 0");
-        size_t result = 0;
-        wcstombs_s(&result, adapter_desc_.name.data(), length, adapter_desc.Description, length - 1);
-        
-        adapter_desc_.local_memory = adapter_desc.DedicatedVideoMemory;
-        adapter_desc_.vendor_id = adapter_desc.VendorId;
-        adapter_desc_.device_id = adapter_desc.DeviceId;
-    }*/
 
     THROW_IF_FAILED(D3D12CreateDevice(_impl->adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(_impl->device.GetAddressOf())));
 
     D3D12_COMMAND_QUEUE_DESC queue_desc{};
-    queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+    queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-    THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->queues.direct.GetAddressOf())));
+    THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->direct_queue.GetAddressOf())));
 
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-    THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->queues.copy.GetAddressOf())));
+    THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->copy_queue.GetAddressOf())));
 
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-    THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->queues.compute.GetAddressOf())));
+    THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->compute_queue.GetAddressOf())));
 
-    //_impl->device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE)
-
-    _impl->descriptor_sizes.rtv = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    _impl->descriptor_sizes.cbv_srv_uav = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    _impl->descriptor_sizes.dsv = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-    _impl->descriptor_sizes.sampler = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-
-    _impl->descriptor_pools.rtv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 64);
+    /*_impl->descriptor_pools.rtv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 64);
     _impl->descriptor_pools.dsv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 16);
     _impl->descriptor_pools.sampler = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 64);
     _impl->descriptor_pools.srv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128);
     
     _impl->mem_pools.default_tex = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 256);
     _impl->mem_pools.upload_stage = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_UPLOAD, 1024 * 1024 * 64);
-    
+    */
     platform::Size window_size = window->get_size();
-    _impl->frame_count = frame_count;
 
     auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
     swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -338,10 +308,6 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
         nullptr, 
         reinterpret_cast<IDXGISwapChain1**>(_impl->swapchain.GetAddressOf()))
     );
-
-    _impl->swap_indices.reserve(frame_count);
-    _impl->fences.resize(frame_count);
-    _impl->fence_values.resize(frame_count);
 
     for(uint32_t i = 0; i < frame_count; ++i) {
         ComPtr<ID3D12Resource> resource;
@@ -384,20 +350,19 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
 
 Backend::~Backend() = default;
 
-GPUResourceHandle Backend::create_texture(
-    TextureDimension const dimension,
+Handle<Texture> Backend::create_texture(
+    Dimension const dimension,
     Extent2D const extent,
     uint16_t const mip_levels,
     uint16_t const array_layers,
     Format const format,
-    TextureFlags const flags,
-    TextureViewDesc const& texture_view
+    ResourceFlags const flags
 ) {
     auto resource_desc = D3D12_RESOURCE_DESC {};
     switch(dimension) {
-        case TextureDimension::_1D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE1D; break;
-        case TextureDimension::_2D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D; break;
-        case TextureDimension::_3D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D; break;
+        case Dimension::_1D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE1D; break;
+        case Dimension::_2D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D; break;
+        case Dimension::_3D: resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D; break;
     }
     resource_desc.Width = extent.width;
     resource_desc.Height = extent.height;
@@ -411,7 +376,7 @@ GPUResourceHandle Backend::create_texture(
     resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
     D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
-    MemoryAllocInfo mem_alloc_info = _impl->mem_pools.default_tex.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+    MemoryAllocInfo mem_alloc_info = _impl->texture_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
 
     ComPtr<ID3D12Resource> resource;
     THROW_IF_FAILED(_impl->device->CreatePlacedResource(
@@ -426,45 +391,46 @@ GPUResourceHandle Backend::create_texture(
 
     auto descriptor_alloc_info = DescriptorAllocInfo {};
     switch(flags) {
-        case TextureFlags::RenderTarget: {
+        case ResourceFlags::RenderTarget: {
             auto view_desc = D3D12_RENDER_TARGET_VIEW_DESC {};
             view_desc.Format = resource_desc.Format;
             switch(dimension) {
-                case TextureDimension::_1D: {
+                case Dimension::_1D: {
                     view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1D;
                     view_desc.Texture1D.MipSlice = mip_levels;
                 } break;
-                case TextureDimension::_2D: {
+                case Dimension::_2D: {
                     view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
                     view_desc.Texture2D.MipSlice = mip_levels;
                     view_desc.Texture2D.PlaneSlice = array_layers;
                 } break;
-                case TextureDimension::_3D: {
+                case Dimension::_3D: {
                     view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
                     view_desc.Texture3D.MipSlice = mip_levels;
                     view_desc.Texture3D.WSize = array_layers;
                 } break;
             }
 
-            descriptor_alloc_info = _impl->descriptor_pools.rtv.allocate();
+            descriptor_alloc_info = _impl->rtv_descriptor.allocate();
 
+            const uint32_t rtv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
             auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
                 descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                _impl->descriptor_sizes.rtv * // Device descriptor size
+                rtv_size * // Device descriptor size
                 descriptor_alloc_info.offset // Allocation offset
             };
             _impl->device->CreateRenderTargetView(resource.Get(), &view_desc, cpu_handle);
         } break;
         
-        case TextureFlags::DepthStencil: {
+        case ResourceFlags::DepthStencil: {
             auto view_desc = D3D12_DEPTH_STENCIL_VIEW_DESC {};
             view_desc.Format = resource_desc.Format;
             switch(dimension) {
-                case TextureDimension::_1D: {
+                case Dimension::_1D: {
                     view_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
                     view_desc.Texture1D.MipSlice = mip_levels;
                 } break;
-                case TextureDimension::_2D: {
+                case Dimension::_2D: {
                     view_desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
                     view_desc.Texture2D.MipSlice = mip_levels;
                 } break;
@@ -473,17 +439,18 @@ GPUResourceHandle Backend::create_texture(
                 } break;
             }
 
-            descriptor_alloc_info = _impl->descriptor_pools.dsv.allocate();
+            descriptor_alloc_info = _impl->dsv_descriptor.allocate();
 
+            const uint32_t dsv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
             auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
                 descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                _impl->descriptor_sizes.dsv * // Device descriptor size
+                dsv_size * // Device descriptor size
                 descriptor_alloc_info.offset // Allocation offset
             };
             _impl->device->CreateDepthStencilView(resource.Get(), &view_desc, cpu_handle);
         } break;
 
-        case TextureFlags::UnorderedAccess: {
+        case ResourceFlags::UnorderedAccess: {
             // TO DO
         } break;
 
@@ -491,48 +458,43 @@ GPUResourceHandle Backend::create_texture(
             auto view_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {};
             view_desc.Format = resource_desc.Format;
             switch(dimension) {
-                case TextureDimension::_1D: {
+                case Dimension::_1D: {
                     view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
                     view_desc.Texture1D.MipLevels = mip_levels;
                 } break;
-                case TextureDimension::_2D: {
+                case Dimension::_2D: {
                     view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
                     view_desc.Texture2D.MipLevels = mip_levels;
                     view_desc.Texture2D.PlaneSlice = array_layers;
                 } break;
-                case TextureDimension::_3D: {
+                case Dimension::_3D: {
                     view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
                     view_desc.Texture3D.MipLevels = mip_levels;
                 } break;
             }
             view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-            descriptor_alloc_info = _impl->descriptor_pools.srv.allocate();
+            descriptor_alloc_info = _impl->srv_descriptor.allocate();
 
+            const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
             auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
                 descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                _impl->descriptor_sizes.cbv_srv_uav * // Device descriptor size
+                srv_size * // Device descriptor size
                 descriptor_alloc_info.offset // Allocation offset
             };
             _impl->device->CreateShaderResourceView(resource.Get(), &view_desc, cpu_handle);
         } break;
     }
 
-    size_t handle_id = _impl->handles.textures.push(
-        Backend::Impl::TextureData {
-            resource,
-            mem_alloc_info,
-            descriptor_alloc_info
-        }
-    );
-    return GPUResourceHandle(GPUResourceType::Texture, static_cast<uint16_t>(handle_id));
+    return _impl->textures.push(Texture {
+        resource,
+        mem_alloc_info,
+        descriptor_alloc_info
+    });
 }
 
-GPUResourceHandle Backend::create_buffer(
-    size_t const size,
-    BufferFlags const flags,
-    BufferViewDesc const& buffer_view
-) {
+Handle<Buffer> Backend::create_buffer(size_t const size, ResourceFlags const flags) {
+
     auto resource_desc = D3D12_RESOURCE_DESC {};
     resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
     resource_desc.Width = size;
@@ -544,7 +506,7 @@ GPUResourceHandle Backend::create_buffer(
     resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
     D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
-    MemoryAllocInfo mem_alloc_info = _impl->mem_pools.default_buffer.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+    MemoryAllocInfo mem_alloc_info = _impl->buffer_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
 
     ComPtr<ID3D12Resource> resource;
     THROW_IF_FAILED(_impl->device->CreatePlacedResource(
@@ -559,36 +521,34 @@ GPUResourceHandle Backend::create_buffer(
 
     auto descriptor_alloc_info = DescriptorAllocInfo {};
     switch(flags) {
-        case BufferFlags::ConstantBuffer: {
+        case ResourceFlags::ConstantBuffer: {
             auto view_desc = D3D12_CONSTANT_BUFFER_VIEW_DESC {};
             view_desc.BufferLocation = resource->GetGPUVirtualAddress();
             view_desc.SizeInBytes = static_cast<uint32_t>(size);
 
-            descriptor_alloc_info = _impl->descriptor_pools.srv.allocate();
+            descriptor_alloc_info = _impl->srv_descriptor.allocate();
 
+            const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
             auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
                 descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                _impl->descriptor_sizes.cbv_srv_uav * // Device descriptor size
+                srv_size * // Device descriptor size
                 descriptor_alloc_info.offset // Allocation offset
             };
             _impl->device->CreateConstantBufferView(&view_desc, cpu_handle);
         } break;
     }
 
-    size_t handle_id = _impl->handles.buffers.push(
-        Backend::Impl::BufferData {
-            resource,
-            mem_alloc_info,
-            descriptor_alloc_info
-        }
-    );
-    return GPUResourceHandle(GPUResourceType::Buffer, static_cast<uint16_t>(handle_id));
+    return _impl->buffers.push(Buffer {
+        resource,
+        mem_alloc_info,
+        descriptor_alloc_info
+    });
 }
 
-GPUResourceHandle Backend::create_render_pass(
-    std::vector<GPUResourceHandle> const& rtv_handles,
+Handle<RenderPass> Backend::create_render_pass(
+    std::vector<Handle<Texture>> const& rtv_handles,
     std::vector<RenderPassColorDesc> const& rtv_ops,
-    GPUResourceHandle const& dsv_handle,
+    Handle<Texture> const& dsv_handle,
     RenderPassDepthStencilDesc const& dsv_op
 ) {
 
@@ -613,17 +573,18 @@ GPUResourceHandle Backend::create_render_pass(
     rtvs.resize(rtv_handles.size());
 
     for(size_t i = 0; i < rtvs.size(); ++i) {
-        auto& texture_data = _impl->handles.textures[rtv_handles[i]._id & 0xffff];
+        auto& texture = _impl->textures.get(rtv_handles[i]);
 
+        const uint32_t rtv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
         D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
-            texture_data.descriptor_alloc.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-            _impl->descriptor_sizes.rtv * // Device descriptor size
-            texture_data.descriptor_alloc.offset // Allocation offset
+            texture.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+            rtv_size * // Device descriptor size
+            texture.descriptor_alloc_info.offset // Allocation offset
         };
 
         auto begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
         begin.Type = get_render_pass_begin_type(rtv_ops[i].load_op);
-        begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+        begin.Clear.ClearValue.Format = texture.resource->GetDesc().Format;
 
         auto end = D3D12_RENDER_PASS_ENDING_ACCESS {};
         end.Type = get_render_pass_end_type(rtv_ops[i].store_op);
@@ -635,22 +596,23 @@ GPUResourceHandle Backend::create_render_pass(
 
     std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> dsv_opt;
 
-    if(dsv_handle != GPUResourceHandle()) {
-        auto& texture_data = _impl->handles.textures[dsv_handle._id & 0xffff];
+    if(dsv_handle != Handle<Texture>()) {
+        auto& texture = _impl->textures.get(dsv_handle);
 
+        const uint32_t dsv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
         D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
-            texture_data.descriptor_alloc.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-            _impl->descriptor_sizes.dsv * // Device descriptor size
-            texture_data.descriptor_alloc.offset // Allocation offset
+            texture.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+            dsv_size * // Device descriptor size
+            texture.descriptor_alloc_info.offset // Allocation offset
         };
 
         auto depth_begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
         depth_begin.Type = get_render_pass_begin_type(dsv_op.depth_load_op);
-        depth_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+        depth_begin.Clear.ClearValue.Format = texture.resource->GetDesc().Format;
 
         auto stencil_begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
         stencil_begin.Type = get_render_pass_begin_type(dsv_op.stencil_load_op);
-        stencil_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+        stencil_begin.Clear.ClearValue.Format = texture.resource->GetDesc().Format;
 
         auto depth_end = D3D12_RENDER_PASS_ENDING_ACCESS {};
         depth_end.Type = get_render_pass_end_type(dsv_op.depth_store_op);
@@ -668,16 +630,13 @@ GPUResourceHandle Backend::create_render_pass(
         dsv_opt = dsv;
     }
 
-    size_t handle_id = _impl->handles.render_passes.push(
-        Backend::Impl::RenderPassData {
-            rtvs,
-            dsv_opt
-        }
-    );
-    return GPUResourceHandle(GPUResourceType::RenderPass, static_cast<uint16_t>(handle_id));
+    return _impl->render_passes.push(RenderPass {
+        rtvs,
+        dsv_opt
+    });
 }
 
-GPUResourceHandle Backend::create_shader(
+Handle<Shader> Backend::create_shader(
     std::span<char8_t> const shader_data,
     ShaderFlags const flags
 ) {

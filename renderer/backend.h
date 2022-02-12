@@ -29,11 +29,18 @@ enum class Format {
     RGB32
 };
 
-enum class ResourceFlags {
-    None,
-    RenderTarget,
-    DepthStencil,
-    UnorderedAccess
+enum class ResourceFlags : uint16_t {
+    None = 1 << 0,
+    RenderTarget = 1 << 1,
+    DepthStencil = 1 << 2,
+    UnorderedAccess = 1 << 3,
+    ConstantBuffer = 1 << 4,
+    VertexShader = 1 << 5,
+    GeometryShader = 1 << 6,
+    DomainShader = 1 << 7,
+    PixelShader = 1 << 8,
+    ComputeShader = 1 << 9,
+    HullShader = 1 << 10
 };
 
 enum class QueueType {
@@ -69,16 +76,6 @@ enum class ShaderBindType {
     ConstantBuffer,
     UnorderedAccess,
     Sampler
-};
-
-enum class ShaderFlags : uint16_t {
-    Vertex = 1 << 0,
-    Geometry = 1 << 1,
-    Domain = 1 << 2,
-    Pixel = 1 << 3,
-    Compute = 1 << 4,
-    Hull = 1 << 5,
-    All = Vertex | Geometry | Domain | Pixel | Compute | Hull
 };
 
 enum class FillMode {
@@ -129,17 +126,6 @@ enum class AddressMode {
 struct Extent2D {
     uint32_t width;
     uint32_t height;
-};
-
-struct TextureViewDesc {
-    uint16_t base_mip_level;
-    uint16_t mip_level_count;
-    uint16_t base_array_layer;
-    uint16_t array_layer_count;
-};
-
-struct BufferViewDesc {
-    uint16_t dummy;
 };
 
 struct RenderPassColorDesc {
@@ -216,15 +202,10 @@ public:
         uint16_t const mip_levels,
         uint16_t const array_layers,
         Format const format,
-        ResourceFlags const flags,
-        TextureViewDesc const& texture_view
+        ResourceFlags const flags
     );
 
-    Handle<Buffer> create_buffer(
-        size_t const size,
-        ResourceFlags const flags,
-        BufferViewDesc const& buffer_view
-    );
+    Handle<Buffer> create_buffer(size_t const size, ResourceFlags const flags);
 
     Handle<RenderPass> create_render_pass(
         std::vector<Handle<Texture>> const& rtv_handles,
@@ -245,7 +226,7 @@ public:
     Handle<Shader> create_shader(
         std::vector<ShaderBindDesc> const& bindings,
         std::span<char8_t> const data, 
-        ShaderFlags const flags
+        ResourceFlags const flags
     );
 
     Handle<Pipeline> create_pipeline(
