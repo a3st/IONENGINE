@@ -30,7 +30,8 @@ private:
 
     //FrameGraph _frame_graph;
 
-    std::vector<GPUResourceHandle> cmdbuffs;
+    std::vector<Handle<RenderPass>> rpasses;
+    uint32_t frame_index{0};
 };
 
 }

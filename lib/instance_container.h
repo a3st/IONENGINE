@@ -22,10 +22,10 @@ public:
 
     Handle<Type> push(Type const& element) {
 
-        const uint32_t cur_offset = _offset;
+        const size_t cur_offset = _offset;
         _instances.emplace(cur_offset, element);
         ++_offset;
-        return Handle<Type>(cur_offset);
+        return Handle<Type>(static_cast<uint32_t>(cur_offset));
     }
 
     void erase(Handle<Type> const& handle) {

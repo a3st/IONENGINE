@@ -20,13 +20,13 @@ public:
 
     Handle& operator=(Handle const& other) {
 
-        _id = other.id;
+        _id = other._id;
         return *this;
     }
 
     Handle& operator=(Handle&& other) noexcept {
 
-        _id = other.id;
+        _id = other._id;
         return *this;
     }
 

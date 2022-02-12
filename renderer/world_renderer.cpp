@@ -7,52 +7,31 @@ using namespace ionengine::renderer;
 
 WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
 
-
+    rpasses.resize(2);
 }
 
 void WorldRenderer::update() {
 
-    
+    Handle<Texture> texture = _backend->begin_frame();
 
-    /*struct BasicPassData {
-        FGResourceHandle swapchain;
-        FGResourceHandle rtv_0;
-    };
+    if(rpasses[frame_index] == Handle<RenderPass>()) {
+        rpasses[frame_index] = _backend->create_render_pass(
+            { texture },
+            { RenderPassColorDesc { RenderPassLoadOp::Clear, RenderPassStoreOp::Store } },
+            {}, {}
+        );
+    }
 
-    GPUResourceHandle swapchain_handle;
+    _backend->set_viewport(0, 0, 800, 600);
+    _backend->set_scissor(0, 0, 800, 600);
+    _backend->barrier(texture, MemoryState::Present, MemoryState::RenderTarget);
+    _backend->begin_render_pass(rpasses[frame_index], { Color(0.2f, 0.1f, 0.3f, 1.0f) }, {});
+    _backend->end_render_pass();
+    _backend->barrier(texture, MemoryState::RenderTarget, MemoryState::Present);
 
-    FGTaskHandle task_1 = _frame_graph.add_task<BasicPassData>(
-        FGTaskType::RenderPass,
-        [&](FrameGraphBuilder& builder, BasicPassData& data) {
-            data.swapchain = builder.create(FGResourceType::SwapchainAttachment, swapchain_handle);
-        },
-        [=](FrameGraphContext& context, BasicPassData const& data) {
-            
-        }
-    );
+    _backend->end_frame();
 
-    FGTaskHandle task_2 = _frame_graph.add_task<BasicPassData>(
-        FGTaskType::AsyncComputePass,
-        [&](FrameGraphBuilder& builder, BasicPassData& data) {
-            
-        },
-        [=](FrameGraphContext& context, BasicPassData const& data) {
+    frame_index = (frame_index + 1) % 2;
 
-        }
-    );
-
-    _frame_graph.wait_until(task_2);
-
-    FGTaskHandle task_3 = _frame_graph.add_task<BasicPassData>(
-        FGTaskType::RenderPass,
-        [&](FrameGraphBuilder& builder, BasicPassData& data) {
-            //auto basic_pass_data = _frame_graph.get_data<BasicPassData>(task_1);
-            
-        },
-        [=](FrameGraphContext& context, BasicPassData const& data) {
-
-        }
-    );
-
-    _frame_graph.execute();*/
+    std::cout << "frame end" << std::endl;
 }

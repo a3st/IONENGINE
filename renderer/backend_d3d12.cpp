@@ -200,8 +200,11 @@ struct Buffer {
     DescriptorAllocInfo descriptor_alloc_info;
 };
 
-struct Pipeline {
+struct DescriptorLayout {
+    ComPtr<ID3D12RootSignature> root_signature;
+};
 
+struct Pipeline {
     ComPtr<ID3D12PipelineState> pipeline_state;
 };
 
@@ -236,7 +239,9 @@ struct Backend::Impl {
         ComPtr<ID3D12CommandAllocator> command_allocator;
         ComPtr<ID3D12GraphicsCommandList4> command_list;
 
-        uint64_t fence_value;  
+        uint64_t fence_value;
+
+        Handle<Texture> texture;  
     };
 
     std::vector<Frame> frames;
@@ -255,6 +260,7 @@ struct Backend::Impl {
     InstanceContainer<Pipeline> pipelines;
     InstanceContainer<Shader> shaders;
     InstanceContainer<RenderPass> render_passes;
+    InstanceContainer<DescriptorLayout> descriptor_layouts;
 };
 
 Backend::Backend(uint32_t const adapter_index, platform::Window* const window, uint32_t const frame_count) : _impl(std::make_unique<Impl>()) {
@@ -280,14 +286,14 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
     THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->compute_queue.GetAddressOf())));
 
-    /*_impl->descriptor_pools.rtv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 64);
-    _impl->descriptor_pools.dsv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 16);
-    _impl->descriptor_pools.sampler = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 64);
-    _impl->descriptor_pools.srv = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128);
+    _impl->rtv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 64);
+    _impl->dsv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 16);
+    _impl->sampler_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 64);
+    _impl->srv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128);
     
-    _impl->mem_pools.default_tex = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 256);
-    _impl->mem_pools.upload_stage = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_UPLOAD, 1024 * 1024 * 64);
-    */
+    _impl->texture_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 256);
+    _impl->buffer_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 64);
+    
     platform::Size window_size = window->get_size();
 
     auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
@@ -301,7 +307,7 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
     swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 
     THROW_IF_FAILED(_impl->factory->CreateSwapChainForHwnd(
-        _impl->queues.direct.Get(), 
+        _impl->direct_queue.Get(), 
         reinterpret_cast<HWND>(window->get_handle()), 
         &swapchain_desc, 
         nullptr, 
@@ -309,6 +315,7 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
         reinterpret_cast<IDXGISwapChain1**>(_impl->swapchain.GetAddressOf()))
     );
 
+    _impl->frames.reserve(frame_count);
     for(uint32_t i = 0; i < frame_count; ++i) {
         ComPtr<ID3D12Resource> resource;
         THROW_IF_FAILED(_impl->swapchain->GetBuffer(i, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource.GetAddressOf())));
@@ -317,29 +324,41 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
         view_desc.Format = swapchain_desc.Format;
         view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-        DescriptorAllocInfo descriptor_alloc_info = _impl->descriptor_pools.rtv.allocate();
+        DescriptorAllocInfo descriptor_alloc_info = _impl->rtv_descriptor.allocate();
 
+        const uint32_t rtv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
         D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
             descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-            _impl->descriptor_sizes.rtv * // Device descriptor size
+            rtv_size * // Device descriptor size
             descriptor_alloc_info.offset // Allocation offset
         };
         _impl->device->CreateRenderTargetView(resource.Get(), &view_desc, cpu_handle);
 
-        _impl->swap_indices.emplace_back(
-            static_cast<uint16_t>(_impl->handles.textures.push(
-                Backend::Impl::TextureData {
-                    resource,
-                    {},
-                    descriptor_alloc_info,
-                    true
-                }
-            ))
-        ); // Add swap indices to vector. Using it for get swap textures in future
+        auto frame = Backend::Impl::Frame {}; 
+        frame.texture = _impl->textures.push(Texture {
+            resource,
+            {},
+            descriptor_alloc_info
+        });
 
-        THROW_IF_FAILED(_impl->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), reinterpret_cast<void**>(_impl->fences[i].GetAddressOf())));
+        THROW_IF_FAILED(_impl->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), reinterpret_cast<void**>(frame.fence.GetAddressOf())));
+        ++frame.fence_value;
 
-        ++_impl->fence_values[i];
+        THROW_IF_FAILED(_impl->device->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_DIRECT, 
+            __uuidof(ID3D12CommandAllocator), 
+            reinterpret_cast<void**>(frame.command_allocator.GetAddressOf()))
+        );
+        
+        THROW_IF_FAILED(_impl->device->CreateCommandList1(
+            0, 
+            D3D12_COMMAND_LIST_TYPE_DIRECT, 
+            D3D12_COMMAND_LIST_FLAG_NONE,
+            __uuidof(ID3D12GraphicsCommandList4),
+            reinterpret_cast<void**>(frame.command_list.GetAddressOf()))
+        );
+
+        _impl->frames.emplace_back(frame);
     }
 
     _impl->wait_event = CreateEvent(nullptr, false, false, nullptr);
@@ -636,115 +655,118 @@ Handle<RenderPass> Backend::create_render_pass(
     });
 }
 
-Handle<Shader> Backend::create_shader(
-    std::span<char8_t> const shader_data,
-    ShaderFlags const flags
+Handle<Sampler> Backend::create_sampler(
+    Filter const filter,
+    AddressMode const address_u,
+    AddressMode const address_v,
+    AddressMode const address_w,
+    uint16_t const aniso,
+    CompareOp const compare_op
 ) {
+
+    return Handle<Sampler>();
+}
+
+Handle<Shader> Backend::create_shader(std::span<char8_t> const shader_data, ResourceFlags const flags) {
 
     std::vector<char8_t> data(shader_data.size());
     std::copy(shader_data.begin(), shader_data.end(), data.begin());
     
-    D3D12_SHADER_VISIBILITY visibility;
+    D3D12_SHADER_VISIBILITY type;
     switch(flags) {
-        case ShaderFlags::Vertex: visibility = D3D12_SHADER_VISIBILITY_VERTEX; break;
-        case ShaderFlags::Pixel: visibility = D3D12_SHADER_VISIBILITY_VERTEX; break;
-        case ShaderFlags::Geometry: visibility = D3D12_SHADER_VISIBILITY_GEOMETRY; break;
-        case ShaderFlags::Domain: visibility = D3D12_SHADER_VISIBILITY_DOMAIN; break;
-        case ShaderFlags::Hull: visibility = D3D12_SHADER_VISIBILITY_HULL; break;
+        case ResourceFlags::VertexShader: type = D3D12_SHADER_VISIBILITY_VERTEX; break;
+        case ResourceFlags::PixelShader: type = D3D12_SHADER_VISIBILITY_VERTEX; break;
+        case ResourceFlags::GeometryShader: type = D3D12_SHADER_VISIBILITY_GEOMETRY; break;
+        case ResourceFlags::DomainShader: type = D3D12_SHADER_VISIBILITY_DOMAIN; break;
+        case ResourceFlags::HullShader: type = D3D12_SHADER_VISIBILITY_HULL; break;
         default: assert(false && "Shader visibility is unsupported"); break;
     }
 
-    size_t handle_id = _impl->handles.shaders.push(
-        Backend::Impl::ShaderData {
-            data,
-            visibility
-        }
-    );
-    return GPUResourceHandle(GPUResourceType::Shader, static_cast<uint16_t>(handle_id));
+    return _impl->shaders.push(Shader { 
+        data, 
+        type 
+    });
 }
 
-GPUResourceHandle Backend::create_pipeline(
-    std::vector<ShaderBindDesc> const& shader_bindings,
+Handle<DescriptorLayout> Backend::create_descriptor_layout(std::vector<DescriptorBindDesc> const& bindings) {
+
+    std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
+    ranges.reserve(bindings.size());
+
+    std::vector<D3D12_ROOT_PARAMETER> parameters;
+    parameters.reserve(bindings.size());
+
+    auto get_descriptor_range_type = [&](DescriptorBindType const bind_type) -> D3D12_DESCRIPTOR_RANGE_TYPE {
+        switch(bind_type) {
+            case DescriptorBindType::ShaderResource: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+            case DescriptorBindType::ConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+            case DescriptorBindType::Sampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+            case DescriptorBindType::UnorderedAccess: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+        }
+        return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+    };
+
+    auto get_shader_visibility = [&](ResourceFlags const flags) -> D3D12_SHADER_VISIBILITY {
+        switch(flags) {
+            case ResourceFlags::VertexShader: return D3D12_SHADER_VISIBILITY_VERTEX;
+            case ResourceFlags::PixelShader: return D3D12_SHADER_VISIBILITY_VERTEX;
+            case ResourceFlags::GeometryShader: return D3D12_SHADER_VISIBILITY_GEOMETRY;
+            case ResourceFlags::DomainShader: return D3D12_SHADER_VISIBILITY_DOMAIN;
+            case ResourceFlags::HullShader: return D3D12_SHADER_VISIBILITY_HULL;
+            default: return D3D12_SHADER_VISIBILITY_ALL;
+        }
+        return D3D12_SHADER_VISIBILITY_ALL;
+    };
+
+    for(auto& binding : bindings) {
+        auto range = D3D12_DESCRIPTOR_RANGE {};
+        range.RangeType = get_descriptor_range_type(binding.bind_type);
+        range.NumDescriptors = binding.count;
+        range.BaseShaderRegister = binding.index;
+        range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+        ranges.emplace_back(range);
+
+        auto parameter = D3D12_ROOT_PARAMETER {};
+        parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        parameter.DescriptorTable.pDescriptorRanges = &ranges.back();
+        parameter.DescriptorTable.NumDescriptorRanges = 1;
+        parameter.ShaderVisibility = get_shader_visibility(binding.flags);
+
+        parameters.emplace_back(parameter);
+    }
+
+    auto root_desc = D3D12_ROOT_SIGNATURE_DESC {};
+    root_desc.pParameters = parameters.data();
+    root_desc.NumParameters = static_cast<uint32_t>(parameters.size());
+    root_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ComPtr<ID3DBlob> serialized_data;
+    THROW_IF_FAILED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, serialized_data.GetAddressOf(), nullptr));
+
+    ComPtr<ID3D12RootSignature> signature;
+    THROW_IF_FAILED(_impl->device->CreateRootSignature(
+        0,
+        serialized_data->GetBufferPointer(), 
+        serialized_data->GetBufferSize(), 
+        __uuidof(ID3D12RootSignature), 
+        reinterpret_cast<void**>(signature.GetAddressOf())
+    ));
+
+    return _impl->descriptor_layouts.push(DescriptorLayout {
+        signature
+    });
+}
+
+Handle<Pipeline> Backend::create_pipeline(
+    Handle<DescriptorLayout> const& layout_handle,
     std::vector<VertexInputDesc> const& vertex_inputs,
-    std::vector<GPUResourceHandle> const& shader_handles,
+    std::vector<Handle<Shader>> const& shader_handles,
     RasterizerDesc const& rasterizer,
     DepthStencilDesc const& depth_stencil,
     BlendDesc const& blend,
-    GPUResourceHandle const& render_pass_handle
+    Handle<RenderPass> const& render_pass_handle
 ) {
-    uint16_t signature_index;
-    auto it = _impl->signature_cache.find(shader_bindings);
-    if(it != _impl->signature_cache.end()) {
-        signature_index = it->second;
-    } else {
-        std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
-        ranges.reserve(shader_bindings.size());
-
-        std::vector<D3D12_ROOT_PARAMETER> parameters;
-        parameters.reserve(shader_bindings.size());
-
-        auto get_descriptor_range_type = [&](ShaderBindType const bind_type) -> D3D12_DESCRIPTOR_RANGE_TYPE {
-            switch(bind_type) {
-                case ShaderBindType::ShaderResource: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-                case ShaderBindType::ConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-                case ShaderBindType::Sampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-                case ShaderBindType::UnorderedAccess: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
-            }
-            return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-        };
-
-        auto get_shader_visibility = [&](ShaderFlags const shader_flags) -> D3D12_SHADER_VISIBILITY {
-            switch(shader_flags) {
-                case ShaderFlags::Vertex: return D3D12_SHADER_VISIBILITY_VERTEX;
-                case ShaderFlags::Pixel: return D3D12_SHADER_VISIBILITY_VERTEX;
-                case ShaderFlags::Geometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
-                case ShaderFlags::Domain: return D3D12_SHADER_VISIBILITY_DOMAIN;
-                case ShaderFlags::Hull: return D3D12_SHADER_VISIBILITY_HULL;
-                case ShaderFlags::All: return D3D12_SHADER_VISIBILITY_ALL;
-            }
-            return D3D12_SHADER_VISIBILITY_ALL;
-        };
-
-        for(auto& binding : shader_bindings) {
-            auto range = D3D12_DESCRIPTOR_RANGE {};
-            range.RangeType = get_descriptor_range_type(binding.bind_type);
-            range.NumDescriptors = binding.count;
-            range.BaseShaderRegister = binding.index;
-            range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-            ranges.emplace_back(range);
-
-            auto parameter = D3D12_ROOT_PARAMETER {};
-            parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-            parameter.DescriptorTable.pDescriptorRanges = &ranges.back();
-            parameter.DescriptorTable.NumDescriptorRanges = 1;
-            parameter.ShaderVisibility = get_shader_visibility(binding.shader_flags);
-
-            parameters.emplace_back(parameter);
-        }
-
-        auto root_desc = D3D12_ROOT_SIGNATURE_DESC {};
-        root_desc.pParameters = parameters.data();
-        root_desc.NumParameters = static_cast<uint32_t>(parameters.size());
-        root_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-        ComPtr<ID3DBlob> serialized_data;
-        THROW_IF_FAILED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, serialized_data.GetAddressOf(), nullptr));
-
-        ComPtr<ID3D12RootSignature> signature;
-        THROW_IF_FAILED(_impl->device->CreateRootSignature(
-            0,
-            serialized_data->GetBufferPointer(), 
-            serialized_data->GetBufferSize(), 
-            __uuidof(ID3D12RootSignature), 
-            reinterpret_cast<void**>(signature.GetAddressOf())
-        ));
-
-        _impl->signatures.emplace_back(signature);
-        signature_index = static_cast<uint16_t>(_impl->signatures.size()) - 1;
-    }
-
-    auto& signature_data = _impl->signatures[signature_index];
     
     auto get_fill_mode = [&](FillMode const fill_mode) {
         switch(fill_mode) {
@@ -806,8 +828,10 @@ GPUResourceHandle Backend::create_pipeline(
         return DXGI_FORMAT_R32G32B32_FLOAT;
     };
 
+    auto& signature = _impl->descriptor_layouts.get(layout_handle);
+
     auto pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {};
-    pipeline_desc.pRootSignature = signature_data.Get();
+    pipeline_desc.pRootSignature = signature.root_signature.Get();
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> input_elements;
     input_elements.reserve(vertex_inputs.size());
@@ -838,13 +862,13 @@ GPUResourceHandle Backend::create_pipeline(
     pipeline_desc.RasterizerState = rasterizer_desc;
 
     for(auto& shader_handle : shader_handles) {
-        auto& shader_data = _impl->handles.shaders[shader_handle._id & 0xffff];
+        auto& shader = _impl->shaders.get(shader_handle);
 
         auto bytecode = D3D12_SHADER_BYTECODE {};
-        bytecode.pShaderBytecode = shader_data.data.data();
-        bytecode.BytecodeLength = shader_data.data.size();
+        bytecode.pShaderBytecode = shader.bytecode.data();
+        bytecode.BytecodeLength = shader.bytecode.size();
         
-        switch(shader_data.visibility) {
+        switch(shader.type) {
             case D3D12_SHADER_VISIBILITY_VERTEX: pipeline_desc.VS = bytecode; break;
             case D3D12_SHADER_VISIBILITY_PIXEL: pipeline_desc.PS = bytecode; break;
             case D3D12_SHADER_VISIBILITY_GEOMETRY: pipeline_desc.GS = bytecode; break;
@@ -883,14 +907,14 @@ GPUResourceHandle Backend::create_pipeline(
     render_target_blend_desc.BlendOpAlpha = get_blend_func(blend.blend_op_alpha);
     render_target_blend_desc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-    auto render_pass_data = _impl->handles.render_passes[render_pass_handle._id & 0xffff];
+    auto render_pass = _impl->render_passes.get(render_pass_handle);
 
-    for(size_t i = 0; i < render_pass_data.rtvs.size(); ++i) {
+    for(size_t i = 0; i < render_pass.colors.size(); ++i) {
         blend_desc.RenderTarget[i] = render_target_blend_desc;
-        pipeline_desc.RTVFormats[i] = render_pass_data.rtvs[i].BeginningAccess.Clear.ClearValue.Format;
+        pipeline_desc.RTVFormats[i] = render_pass.colors[i].BeginningAccess.Clear.ClearValue.Format;
     }
-    pipeline_desc.DSVFormat = render_pass_data.dsv.has_value() ? render_pass_data.dsv.value().DepthBeginningAccess.Clear.ClearValue.Format : DXGI_FORMAT_UNKNOWN;
-    pipeline_desc.NumRenderTargets = static_cast<uint32_t>(render_pass_data.rtvs.size());
+    pipeline_desc.DSVFormat = render_pass.depth_stencil.has_value() ? render_pass.depth_stencil.value().DepthBeginningAccess.Clear.ClearValue.Format : DXGI_FORMAT_UNKNOWN;
+    pipeline_desc.NumRenderTargets = static_cast<uint32_t>(render_pass.colors.size());
     
     pipeline_desc.BlendState = blend_desc;
 
@@ -906,119 +930,48 @@ GPUResourceHandle Backend::create_pipeline(
         reinterpret_cast<void**>(pipeline_state.GetAddressOf())
     ));
 
-    size_t handle_id = _impl->handles.pipelines.push(
-        Backend::Impl::PipelineData { 
-            signature_index,
-            pipeline_state
-        }
-    );
-    return GPUResourceHandle(GPUResourceType::Pipeline, static_cast<uint16_t>(handle_id));
+    return _impl->pipelines.push(Pipeline {
+        pipeline_state
+    });
 }
 
-GPUResourceHandle Backend::create_command_buffer(QueueType const queue_type) {
+void Backend::bind_descriptor_set(
+    Handle<DescriptorLayout> const& handle, 
+    uint32_t const offset, 
+    std::span<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> const data
+) {
 
-    auto get_command_list_type = [&](QueueType const queue_type) -> D3D12_COMMAND_LIST_TYPE {
-        switch(queue_type) {
-            case QueueType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
-            case QueueType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
-            case QueueType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        }
-        return D3D12_COMMAND_LIST_TYPE_DIRECT; 
-    };
-
-    ComPtr<ID3D12CommandAllocator> allocator;
-    THROW_IF_FAILED(_impl->device->CreateCommandAllocator(
-        get_command_list_type(queue_type), 
-        __uuidof(ID3D12CommandAllocator), 
-        reinterpret_cast<void**>(allocator.GetAddressOf())
-    ));
-
-    ComPtr<ID3D12GraphicsCommandList4> command_list;
-    THROW_IF_FAILED(_impl->device->CreateCommandList1(
-        0, 
-        get_command_list_type(queue_type),
-        D3D12_COMMAND_LIST_FLAG_NONE,
-        __uuidof(ID3D12GraphicsCommandList4), 
-        reinterpret_cast<void**>(command_list.GetAddressOf())
-    ));
-
-    return GPUResourceHandle(GPUResourceType::CommandBuffer, 
-        static_cast<uint16_t>(_impl->handles.commands.push(
-            Backend::Impl::CommandListData { 
-                command_list,
-                allocator
-            }
-        ))
-    );
 }
 
-CommandGenerator Backend::create_command_generator(GPUResourceHandle const& handle) {
+Handle<Texture> Backend::begin_frame() {
 
-    return CommandGenerator(*this, handle._id & 0xffff);
+    THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_allocator->Reset());
+    THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_list->Reset(_impl->frames[_impl->frame_index].command_allocator.Get(), nullptr));
+
+    return _impl->frames[_impl->frame_index].texture;
 }
 
-void Backend::execute_command_buffers(QueueType const queue_type, std::vector<GPUResourceHandle> const& handles) {
+void Backend::end_frame() {
 
-    for(auto& handle : handles) {
+    THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_list->Close());
 
-        _impl->queues.direct->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(_impl->handles.commands[handle._id & 0xffff].first.GetAddressOf()));
-    }
-}
+    _impl->direct_queue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(_impl->frames[_impl->frame_index].command_list.GetAddressOf()));
 
-GPUResourceHandle Backend::get_swap_texture() const {
+    const uint64_t value = _impl->frames[_impl->frame_index].fence_value;
+    THROW_IF_FAILED(_impl->direct_queue->Signal(_impl->frames[_impl->frame_index].fence.Get(), value));
 
-    return GPUResourceHandle(GPUResourceType::Texture, _impl->swap_indices[_impl->frame_index]);
-}
-
-void Backend::swap_buffers() {
-
-    const uint64_t value = _impl->fence_values[_impl->frame_index];
-    THROW_IF_FAILED(_impl->queues.direct->Signal(_impl->fences[_impl->frame_index].Get(), value));
-
-    if(_impl->fences[_impl->frame_index]->GetCompletedValue() < value) {
-        THROW_IF_FAILED(_impl->fences[_impl->frame_index]->SetEventOnCompletion(value, _impl->wait_event));
+    if(_impl->frames[_impl->frame_index].fence->GetCompletedValue() < value) {
+        THROW_IF_FAILED(_impl->frames[_impl->frame_index].fence->SetEventOnCompletion(value, _impl->wait_event));
         WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
     }
-    ++_impl->fence_values[_impl->frame_index];
+    ++_impl->frames[_impl->frame_index].fence_value;
 
     _impl->swapchain->Present(0, 0);
 
-    _impl->frame_index = (_impl->frame_index + 1) % _impl->frame_count;
+    _impl->frame_index = (_impl->frame_index + 1) % _impl->frames.size();
 }
 
-void Backend::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
-
-    for(uint32_t i = 0; i < _impl->frame_count; ++i) {
-        const uint64_t value = _impl->fence_values[i];
-        THROW_IF_FAILED(_impl->queues.direct->Signal(_impl->fences[i].Get(), value));
-
-        if(_impl->fences[i]->GetCompletedValue() < value) {
-            THROW_IF_FAILED(_impl->fences[i]->SetEventOnCompletion(value, _impl->wait_event));
-            WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
-        }
-        ++_impl->fence_values[i];
-    }
-    
-    auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
-    _impl->swapchain->GetDesc1(&swapchain_desc);
-    _impl->swapchain->ResizeBuffers(buffer_count, width, height, swapchain_desc.Format, swapchain_desc.Flags);
-
-    _impl->frame_index = (_impl->frame_index + 1) % _impl->frame_count;
-}
-
-CommandGenerator::CommandGenerator(Backend& backend, uint16_t const cmd_index) : _backend(&backend), _cmd_index(cmd_index) {
-
-    auto& command_data = _backend->_impl->handles.commands[_cmd_index];
-    THROW_IF_FAILED(command_data.first->Reset(command_data.second.Get(), nullptr));
-}
-
-CommandGenerator::~CommandGenerator() {
-
-    auto& command_data = _backend->_impl->handles.commands[_cmd_index];
-    command_data.first->Close();
-}
-
-CommandGenerator& CommandGenerator::set_viewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height) {
+void Backend::set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height) {
 
     auto viewport = D3D12_VIEWPORT {};
     viewport.TopLeftX = static_cast<float>(x);
@@ -1028,12 +981,10 @@ CommandGenerator& CommandGenerator::set_viewport(const uint32_t x, const uint32_
     viewport.MinDepth = D3D12_MIN_DEPTH;
     viewport.MaxDepth = D3D12_MAX_DEPTH;
 
-    auto& command_data = _backend->_impl->handles.commands[_cmd_index];
-    command_data.first->RSSetViewports(1, &viewport);
-    return *this;
+    _impl->frames[_impl->frame_index].command_list->RSSetViewports(1, &viewport);
 }
 
-CommandGenerator& CommandGenerator::set_scissor(const uint32_t left, const uint32_t top, const uint32_t right, const uint32_t bottom) {
+void Backend::set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom) {
 
     auto rect = D3D12_RECT {};
     rect.top = static_cast<LONG>(top);
@@ -1041,27 +992,23 @@ CommandGenerator& CommandGenerator::set_scissor(const uint32_t left, const uint3
     rect.left = static_cast<LONG>(left);
     rect.right = static_cast<LONG>(right);
 
-    auto& command_data = _backend->_impl->handles.commands[_cmd_index];
-    command_data.first->RSSetScissorRects(1, &rect);
-    return *this;
+    _impl->frames[_impl->frame_index].command_list->RSSetScissorRects(1, &rect);
 }
 
-CommandGenerator& CommandGenerator::bind_pipeline(GPUResourceHandle const& handle) {
-
-    auto& command_data = _backend->_impl->handles.commands[_cmd_index];
-    command_data.first->SetPipelineState(nullptr);
-    return *this;
-}
-
-CommandGenerator& CommandGenerator::barrier(GPUResourceHandle const& handle, MemoryState const before, MemoryState const after) {
+void Backend::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handle, MemoryState const before, MemoryState const after) {
 
     auto resource_barrier = D3D12_RESOURCE_BARRIER {};
     resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    if(static_cast<uint16_t>((handle._id >> 16) & 0xffff) == static_cast<uint16_t>(GPUResourceType::Texture)) {
-        resource_barrier.Transition.pResource = _backend->_impl->handles.textures[handle._id & 0xffff].resource.Get();  
-    } else {
-        // TO DO
-    }
+
+    std::visit([&](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, Handle<Texture>>)
+            resource_barrier.Transition.pResource = _impl->textures.get(arg).resource.Get();
+        else if constexpr (std::is_same_v<T, Handle<Buffer>>)
+            resource_barrier.Transition.pResource = _impl->buffers.get(arg).resource.Get();
+        else
+            static_assert(always_false_v<T>, "non-exhaustive visitor!");
+    }, handle);
 
     auto get_memory_state = [&](MemoryState const state) -> D3D12_RESOURCE_STATES {
         switch(state) {
@@ -1078,78 +1025,60 @@ CommandGenerator& CommandGenerator::barrier(GPUResourceHandle const& handle, Mem
     resource_barrier.Transition.StateBefore = get_memory_state(before);
     resource_barrier.Transition.StateAfter = get_memory_state(after);
 
-    auto& command_data = _backend->_impl->handles.commands[_cmd_index];
-    command_data.first->ResourceBarrier(1, &resource_barrier);
-    return *this;
+    _impl->frames[_impl->frame_index].command_list->ResourceBarrier(1, &resource_barrier);
 }
-    
-CommandGenerator& CommandGenerator::begin_render_pass(
-    uint16_t const rtv_count,
-    std::array<GPUResourceHandle, 8> const& rtv_handles,
-    std::array<RenderPassColorDesc, 8> const& rtv_ops,
-    std::array<Color, 8> const& rtv_clears,
-    GPUResourceHandle dsv_handle,
-    RenderPassDepthStencilDesc dsv_op,
-    std::pair<float, uint8_t> dsv_clear
-) {
 
-    auto get_render_pass_begin_type = [&](RenderPassLoadOp const load_op) {
-        switch (load_op) {
-    	    case RenderPassLoadOp::Load: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
-    	    case RenderPassLoadOp::Clear: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
-		    case RenderPassLoadOp::DontCare: return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
-        }
-        return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
-    };
-    
-    auto get_render_pass_end_type = [&](RenderPassStoreOp const store_op) {
-        switch (store_op) {
-    	    case RenderPassStoreOp::Store: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
-    	    case RenderPassStoreOp::DontCare: return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
-        }
-        return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
-    };
+void Backend::begin_render_pass(Handle<RenderPass> const& handle, std::vector<Color> const& rtv_clears, std::pair<float, uint8_t> dsv_clear) {
 
-    std::array<D3D12_RENDER_PASS_RENDER_TARGET_DESC, 8> render_pass_rtvs; 
+    auto& render_pass = _impl->render_passes.get(handle);
 
-    for(uint16_t i = 0; i < rtv_count; ++i) {
-        auto& texture_data = _backend->_impl->handles.textures[rtv_handles[i]._id & 0xffff];
-
-        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
-            texture_data.descriptor_alloc.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-            _backend->_impl->descriptor_sizes.rtv * // Device descriptor size
-            texture_data.descriptor_alloc.offset // Allocation offset
-        };
-
-        auto begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
-        begin.Type = get_render_pass_begin_type(rtv_ops[i].load_op);
-
-        begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
-        std::memcpy(begin.Clear.ClearValue.Color, &rtv_clears[i], sizeof(Color));
-
-        auto end = D3D12_RENDER_PASS_ENDING_ACCESS {};
-        end.Type = get_render_pass_end_type(rtv_ops[i].store_op);
-
-        render_pass_rtvs[i].BeginningAccess = begin;
-        render_pass_rtvs[i].EndingAccess = end;
-        render_pass_rtvs[i].cpuDescriptor = cpu_handle;
+    for(uint16_t i = 0; i < rtv_clears.size(); ++i) {
+        std::memcpy(render_pass.colors[i].BeginningAccess.Clear.ClearValue.Color, &rtv_clears[i], sizeof(Color));
     }
 
-    auto render_pass_dsv = D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {};
-    auto& command_data = _backend->_impl->handles.commands[_cmd_index];
-    if(dsv_handle != GPUResourceHandle()) {
-        // TO DO
+    if(render_pass.depth_stencil.has_value()) {
+        _impl->frames[_impl->frame_index].command_list->BeginRenderPass(
+            static_cast<uint32_t>(render_pass.colors.size()), 
+            render_pass.colors.data(), 
+            &render_pass.depth_stencil.value(), 
+            D3D12_RENDER_PASS_FLAG_NONE
+        );
     } else {
-        command_data.first->BeginRenderPass(static_cast<uint32_t>(rtv_count), render_pass_rtvs.data(), nullptr, D3D12_RENDER_PASS_FLAG_NONE);
+        _impl->frames[_impl->frame_index].command_list->BeginRenderPass(
+            static_cast<uint32_t>(render_pass.colors.size()), 
+            render_pass.colors.data(), 
+            nullptr, 
+            D3D12_RENDER_PASS_FLAG_NONE
+        );
     }
-
-    command_data.first->EndRenderPass();
-    return *this;
 }
 
-CommandGenerator& CommandGenerator::end_render_pass() {
+void Backend::end_render_pass() {
 
-    auto& command_data = _backend->_impl->handles.commands[_cmd_index];
-    command_data.first->EndRenderPass();
-    return *this;
+    _impl->frames[_impl->frame_index].command_list->EndRenderPass();
+}
+
+void Backend::resize_frame(uint32_t const width, uint32_t const height, uint32_t const frame_count) {
+
+    /*for(uint32_t i = 0; i < _impl->frame_count; ++i) {
+        const uint64_t value = _impl->fence_values[i];
+        THROW_IF_FAILED(_impl->queues.direct->Signal(_impl->fences[i].Get(), value));
+
+        if(_impl->fences[i]->GetCompletedValue() < value) {
+            THROW_IF_FAILED(_impl->fences[i]->SetEventOnCompletion(value, _impl->wait_event));
+            WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
+        }
+        ++_impl->fence_values[i];
+    }
+    
+    auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
+    _impl->swapchain->GetDesc1(&swapchain_desc);
+    _impl->swapchain->ResizeBuffers(buffer_count, width, height, swapchain_desc.Format, swapchain_desc.Flags);
+
+    _impl->frame_index = (_impl->frame_index + 1) % _impl->frame_count;*/
+}
+
+void Backend::bind_pipeline(Handle<Pipeline> const& handle) {
+
+    
 }

@@ -14,6 +14,7 @@ struct Pipeline;
 struct Shader;
 struct RenderPass;
 struct Sampler;
+struct DescriptorLayout;
 
 enum class Dimension {
     _1D,
@@ -71,7 +72,7 @@ enum class RenderPassStoreOp {
     DontCare
 };
 
-enum class ShaderBindType {
+enum class DescriptorBindType {
     ShaderResource,
     ConstantBuffer,
     UnorderedAccess,
@@ -140,15 +141,11 @@ struct RenderPassDepthStencilDesc {
     RenderPassStoreOp stencil_store_op;
 };
 
-struct ShaderBindDesc {
-    ShaderBindType bind_type;
+struct DescriptorBindDesc {
+    DescriptorBindType bind_type;
     uint32_t index;
     uint32_t count;
-    ShaderFlags shader_flags;
-
-    bool operator<(ShaderBindDesc const& other) const {
-        return std::tie(bind_type, index, count, shader_flags) < std::tie(other.bind_type, other.index, other.count, other.shader_flags);
-    }
+    ResourceFlags flags;
 };
 
 struct VertexInputDesc {
@@ -178,8 +175,6 @@ struct BlendDesc {
     Blend blend_dst_alpha;
     BlendOp blend_op_alpha;
 };
-
-using GPUResourceHandle = std::variant<Handle<Texture>, Handle<Buffer>>;
 
 class Backend {
 public:
@@ -219,17 +214,16 @@ public:
         AddressMode const address_u,
         AddressMode const address_v,
         AddressMode const address_w,
-        uint32_t const anisotropy,
+        uint16_t const aniso,
         CompareOp const compare_op
     );
 
-    Handle<Shader> create_shader(
-        std::vector<ShaderBindDesc> const& bindings,
-        std::span<char8_t> const data, 
-        ResourceFlags const flags
-    );
+    Handle<Shader> create_shader(std::span<char8_t> const data, ResourceFlags const flags);
+
+    Handle<DescriptorLayout> create_descriptor_layout(std::vector<DescriptorBindDesc> const& bindings);
 
     Handle<Pipeline> create_pipeline(
+        Handle<DescriptorLayout> const& layout_handle,
         std::vector<VertexInputDesc> const& vertex_inputs,
         std::vector<Handle<Shader>> const& shader_handles,
         RasterizerDesc const& rasterizer,
@@ -238,15 +232,21 @@ public:
         Handle<RenderPass> const& render_pass_handle
     );
 
-    void barrier(GPUResourceHandle const& handle, MemoryState const before, MemoryState const after);
+    void bind_descriptor_set(
+        Handle<DescriptorLayout> const& handle, 
+        uint32_t const offset, 
+        std::span<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> const data
+    );
+
+    void barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handle, MemoryState const before, MemoryState const after);
 
     void bind_pipeline(Handle<Pipeline> const& handle);
 
-    void set_viewport(const uint32_t x, const uint32_t y, const uint32_t width, const uint32_t height);
+    void set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
 
-    void set_scissor(const uint32_t left, const uint32_t top, const uint32_t right, const uint32_t bottom);
+    void set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
 
-    void begin_render_pass(Handle<RenderPass> const& handle);
+    void begin_render_pass(Handle<RenderPass> const& handle, std::vector<Color> const& rtv_clears, std::pair<float, uint8_t> dsv_clear);
 
     void end_render_pass();
 
