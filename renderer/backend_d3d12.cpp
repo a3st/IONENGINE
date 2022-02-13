@@ -162,7 +162,7 @@ public:
 
     DescriptorPool& operator=(DescriptorPool&&) = default;
 
-    DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const heap_size);
+    DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const heap_size, bool const shader_visible);
 
     DescriptorAllocInfo allocate();
     void deallocate(DescriptorAllocInfo const& alloc_info);
@@ -173,11 +173,12 @@ private:
     uint32_t _heap_size;
 };
 
-DescriptorPool::DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const heap_size) : _heap_size(heap_size) {
+DescriptorPool::DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const heap_size, bool const shader_visible) : _heap_size(heap_size) {
 
     D3D12_DESCRIPTOR_HEAP_DESC heap_desc{};
     heap_desc.NumDescriptors = heap_size;
     heap_desc.Type = heap_type;
+    heap_desc.Flags = shader_visible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
     ComPtr<ID3D12DescriptorHeap> heap;
     THROW_IF_FAILED(device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(heap.GetAddressOf())));
@@ -284,20 +285,27 @@ struct Backend::Impl {
 
         uint64_t fence_value;
 
-        Handle<Texture> texture;  
+        Handle<Texture> texture;
+
+        std::vector<DescriptorAllocInfo> srv_descriptors;
+        uint32_t srv_bind_value;
+        std::vector<DescriptorAllocInfo> sampler_descriptors;
+        uint32_t sampler_bind_value;
     };
 
     std::vector<Frame> frames;
     uint16_t frame_index;
 
-    MemoryPool buffer_memory;
-    MemoryPool texture_memory;
+    MemoryPool local_memory;
     MemoryPool host_visible_memory;
 
     DescriptorPool rtv_descriptor;
     DescriptorPool sampler_descriptor;
     DescriptorPool srv_descriptor;
     DescriptorPool dsv_descriptor;
+
+    DescriptorPool srv_shader_descriptor;
+    DescriptorPool sampler_shader_descriptor;
 
     InstanceContainer<Texture> textures;
     InstanceContainer<Buffer> buffers;
@@ -330,14 +338,16 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
     queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
     THROW_IF_FAILED(_impl->device->CreateCommandQueue(&queue_desc, __uuidof(ID3D12CommandQueue), reinterpret_cast<void**>(_impl->compute_queue.GetAddressOf())));
 
-    _impl->rtv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 64);
-    _impl->dsv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 16);
-    _impl->sampler_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 64);
-    _impl->srv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128);
+    _impl->rtv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 64, false);
+    _impl->dsv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 16, false);
+    _impl->sampler_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 64, false);
+    _impl->srv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, false);
     
-    _impl->texture_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 256);
-    _impl->buffer_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 64);
+    _impl->local_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 64);
     _impl->host_visible_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_UPLOAD, 1024 * 1024 * 32);
+
+    _impl->srv_shader_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
+    _impl->sampler_shader_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
     
     platform::Size window_size = window->get_size();
 
@@ -403,6 +413,16 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
             reinterpret_cast<void**>(frame.command_list.GetAddressOf()))
         );
 
+        frame.srv_descriptors.reserve(256);
+        for(uint32_t i = 0; i < 256; ++i) {
+            frame.srv_descriptors.emplace_back(_impl->srv_shader_descriptor.allocate());
+        }
+
+        frame.sampler_descriptors.reserve(128);
+        for(uint32_t i = 0; i < 128; ++i) {
+            frame.sampler_descriptors.emplace_back(_impl->sampler_shader_descriptor.allocate());
+        }
+
         _impl->frames.emplace_back(frame);
     }
 
@@ -440,7 +460,7 @@ Handle<Texture> Backend::create_texture(
     resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
     D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
-    MemoryAllocInfo mem_alloc_info = _impl->texture_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+    MemoryAllocInfo mem_alloc_info = _impl->local_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
 
     ComPtr<ID3D12Resource> resource;
     THROW_IF_FAILED(_impl->device->CreatePlacedResource(
@@ -577,7 +597,7 @@ Handle<Buffer> Backend::create_buffer(size_t const size, ResourceFlags const fla
         mem_alloc_info = _impl->host_visible_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
         initial_state = D3D12_RESOURCE_STATE_GENERIC_READ;
     } else {
-        mem_alloc_info = _impl->buffer_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+        mem_alloc_info = _impl->local_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
         initial_state = D3D12_RESOURCE_STATE_COMMON;
     }
 
