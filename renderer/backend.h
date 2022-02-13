@@ -41,8 +41,11 @@ enum class ResourceFlags : uint16_t {
     DomainShader = 1 << 7,
     PixelShader = 1 << 8,
     ComputeShader = 1 << 9,
-    HullShader = 1 << 10
+    HullShader = 1 << 10,
+    HostVisible = 1 << 11
 };
+
+DECLARE_ENUM_CLASS_BIT_FLAG(ResourceFlags)
 
 enum class QueueType {
     Graphics,
@@ -238,6 +241,12 @@ public:
         std::span<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> const data
     );
 
+    void copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offset, std::span<char8_t> const data);
+
+    void bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& handle);
+
+    void bind_index_buffer(Handle<Buffer> const& handle, Format const format);
+
     void barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handle, MemoryState const before, MemoryState const after);
 
     void bind_pipeline(Handle<Pipeline> const& handle);
@@ -249,6 +258,8 @@ public:
     void begin_render_pass(Handle<RenderPass> const& handle, std::vector<Color> const& rtv_clears, std::pair<float, uint8_t> dsv_clear);
 
     void end_render_pass();
+
+    void draw(uint32_t const vertex_index, uint32_t const vertex_count);
 
     Handle<Texture> begin_frame();
 

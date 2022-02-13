@@ -31,6 +31,11 @@ private:
     //FrameGraph _frame_graph;
 
     std::vector<Handle<RenderPass>> rpasses;
+    std::vector<Handle<Pipeline>> pipelines;
+    std::vector<Handle<Shader>> shaders;
+    Handle<DescriptorLayout> desc_layout;
+    Handle<Buffer> buffer_vertex;
+    Handle<Buffer> constant_buffer;
     uint32_t frame_index{0};
 };
 

@@ -81,9 +81,10 @@ public:
 private:
 
     std::list<MemoryHeap> _heaps;
+    size_t _heap_size;
 };
 
-MemoryPool::MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, size_t const heap_size) {
+MemoryPool::MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, size_t const heap_size) : _heap_size(heap_size) {
 
     D3D12_HEAP_DESC heap_desc{};
     heap_desc.SizeInBytes = heap_size;
@@ -97,13 +98,55 @@ MemoryPool::MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, s
 
 MemoryAllocInfo MemoryPool::allocate(size_t const size) {
 
-    // TO DO
-    return MemoryAllocInfo { nullptr, 0, 0 };
+    auto get_align_size = [&](size_t const size) -> size_t {
+        return size < 1048576 ? 1048576 : (size % 1048576) > 0 ? (size / 1048576 + 1) * 1048576 : size;
+    };
+
+    auto memory_alloc_info = MemoryAllocInfo {};
+
+    size_t align_size = get_align_size(size);
+
+    for(auto& heap : _heaps) {
+        if(heap.offset + align_size > _heap_size) {
+            continue;
+        } else {
+            size_t alloc_size = 0;
+            for(uint64_t i = 0; i < static_cast<uint64_t>(heap.blocks.size()); ++i) {
+                if(alloc_size == align_size) {
+                    std::memset(heap.blocks.data() + memory_alloc_info.offset / 1048576, 0x1, sizeof(uint8_t) * align_size / 1048576);
+                    break;
+                }
+
+                if(alloc_size == 0) {
+                    memory_alloc_info.heap = &heap;
+                    memory_alloc_info.offset = i * 1048576;
+                    memory_alloc_info.size = align_size;
+                }
+
+                alloc_size = heap.blocks[i] == 0x0 ? alloc_size + 1048576 : 0;
+            }
+            if(alloc_size != align_size) {
+                memory_alloc_info.heap = nullptr;
+                memory_alloc_info.offset = 0;
+                memory_alloc_info.size = 0;
+            }
+        }
+        if(memory_alloc_info.heap) {
+            break;
+        }
+    }
+
+    if(!memory_alloc_info.heap) {
+
+    }
+
+    return memory_alloc_info;
 }
 
 void MemoryPool::deallocate(MemoryAllocInfo const& alloc_info) {
 
-    // TO DO
+    std::memset(alloc_info.heap->blocks.data() + alloc_info.offset / 1048576, 0x0, sizeof(uint8_t) * alloc_info.size / 1048576);
+    --alloc_info.heap->offset;
 }
 
 class DescriptorPool {
@@ -249,6 +292,7 @@ struct Backend::Impl {
 
     MemoryPool buffer_memory;
     MemoryPool texture_memory;
+    MemoryPool host_visible_memory;
 
     DescriptorPool rtv_descriptor;
     DescriptorPool sampler_descriptor;
@@ -293,6 +337,7 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
     
     _impl->texture_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 256);
     _impl->buffer_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 64);
+    _impl->host_visible_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_UPLOAD, 1024 * 1024 * 32);
     
     platform::Size window_size = window->get_size();
 
@@ -522,39 +567,47 @@ Handle<Buffer> Backend::create_buffer(size_t const size, ResourceFlags const fla
     resource_desc.DepthOrArraySize = 1;
     resource_desc.SampleDesc.Count = 1;
     resource_desc.Format = DXGI_FORMAT_UNKNOWN;
-    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
     D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
-    MemoryAllocInfo mem_alloc_info = _impl->buffer_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+    MemoryAllocInfo mem_alloc_info;
+    D3D12_RESOURCE_STATES initial_state;
+
+    if(flags & ResourceFlags::HostVisible) {
+        mem_alloc_info = _impl->host_visible_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+        initial_state = D3D12_RESOURCE_STATE_GENERIC_READ;
+    } else {
+        mem_alloc_info = _impl->buffer_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+        initial_state = D3D12_RESOURCE_STATE_COMMON;
+    }
 
     ComPtr<ID3D12Resource> resource;
     THROW_IF_FAILED(_impl->device->CreatePlacedResource(
         mem_alloc_info.heap->heap.Get(),
         mem_alloc_info.offset,
         &resource_desc,
-        D3D12_RESOURCE_STATE_COMMON,
+        initial_state,
         nullptr,
         __uuidof(ID3D12Resource), 
         reinterpret_cast<void**>(resource.GetAddressOf())
     ));
 
     auto descriptor_alloc_info = DescriptorAllocInfo {};
-    switch(flags) {
-        case ResourceFlags::ConstantBuffer: {
-            auto view_desc = D3D12_CONSTANT_BUFFER_VIEW_DESC {};
-            view_desc.BufferLocation = resource->GetGPUVirtualAddress();
-            view_desc.SizeInBytes = static_cast<uint32_t>(size);
+    
+    if(flags & ResourceFlags::ConstantBuffer) {
+        auto view_desc = D3D12_CONSTANT_BUFFER_VIEW_DESC {};
+        view_desc.BufferLocation = resource->GetGPUVirtualAddress();
+        view_desc.SizeInBytes = static_cast<uint32_t>(size);
 
-            descriptor_alloc_info = _impl->srv_descriptor.allocate();
+        descriptor_alloc_info = _impl->srv_descriptor.allocate();
 
-            const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
-                descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                srv_size * // Device descriptor size
-                descriptor_alloc_info.offset // Allocation offset
-            };
-            _impl->device->CreateConstantBufferView(&view_desc, cpu_handle);
-        } break;
+        const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
+            descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+            srv_size * // Device descriptor size
+            descriptor_alloc_info.offset // Allocation offset
+        };
+        _impl->device->CreateConstantBufferView(&view_desc, cpu_handle);
     }
 
     return _impl->buffers.push(Buffer {
@@ -675,7 +728,7 @@ Handle<Shader> Backend::create_shader(std::span<char8_t> const shader_data, Reso
     D3D12_SHADER_VISIBILITY type;
     switch(flags) {
         case ResourceFlags::VertexShader: type = D3D12_SHADER_VISIBILITY_VERTEX; break;
-        case ResourceFlags::PixelShader: type = D3D12_SHADER_VISIBILITY_VERTEX; break;
+        case ResourceFlags::PixelShader: type = D3D12_SHADER_VISIBILITY_PIXEL; break;
         case ResourceFlags::GeometryShader: type = D3D12_SHADER_VISIBILITY_GEOMETRY; break;
         case ResourceFlags::DomainShader: type = D3D12_SHADER_VISIBILITY_DOMAIN; break;
         case ResourceFlags::HullShader: type = D3D12_SHADER_VISIBILITY_HULL; break;
@@ -842,6 +895,7 @@ Handle<Pipeline> Backend::create_pipeline(
         element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
         element_desc.Format = get_dxgi_format(input.format);
         element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+        input_elements.emplace_back(element_desc);
     }
     pipeline_desc.InputLayout.pInputElementDescs = input_elements.data();
     pipeline_desc.InputLayout.NumElements = static_cast<uint32_t>(input_elements.size());
@@ -918,6 +972,8 @@ Handle<Pipeline> Backend::create_pipeline(
     
     pipeline_desc.BlendState = blend_desc;
 
+    pipeline_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
     pipeline_desc.SampleMask = std::numeric_limits<uint32_t>::max();
 
     // TODO
@@ -941,6 +997,9 @@ void Backend::bind_descriptor_set(
     std::span<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> const data
 ) {
 
+    auto& descriptor_layout = _impl->descriptor_layouts.get(handle);
+
+    _impl->frames[_impl->frame_index].command_list->SetGraphicsRootSignature(descriptor_layout.root_signature.Get());
 }
 
 Handle<Texture> Backend::begin_frame() {
@@ -1080,5 +1139,53 @@ void Backend::resize_frame(uint32_t const width, uint32_t const height, uint32_t
 
 void Backend::bind_pipeline(Handle<Pipeline> const& handle) {
 
-    
+    auto& pipeline = _impl->pipelines.get(handle);
+
+    _impl->frames[_impl->frame_index].command_list->SetPipelineState(pipeline.pipeline_state.Get());
+    _impl->frames[_impl->frame_index].command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+void Backend::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& handle) {
+
+    auto& buffer = _impl->buffers.get(handle);
+
+    auto vertex_view = D3D12_VERTEX_BUFFER_VIEW {};
+    vertex_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
+    vertex_view.SizeInBytes = buffer.resource->GetDesc().Width;
+    // TO DO
+    vertex_view.StrideInBytes = sizeof(float) * 3;
+
+    _impl->frames[_impl->frame_index].command_list->IASetVertexBuffers(index, 1, &vertex_view);
+}
+
+void Backend::bind_index_buffer(Handle<Buffer> const& handle, Format const format) {
+
+    auto& buffer = _impl->buffers.get(handle);
+
+    auto index_view = D3D12_INDEX_BUFFER_VIEW {};
+    index_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
+    index_view.SizeInBytes = buffer.resource->GetDesc().Width;
+    // TO DO
+    index_view.Format = DXGI_FORMAT_R32_UINT;
+
+    _impl->frames[_impl->frame_index].command_list->IASetIndexBuffer(&index_view);
+}
+
+void Backend::draw(uint32_t const vertex_index, uint32_t const vertex_count) {
+
+    _impl->frames[_impl->frame_index].command_list->DrawInstanced(vertex_count, 1, vertex_index, 0);
+}
+
+void Backend::copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offset, std::span<char8_t> const data) {
+
+    auto& buffer = _impl->buffers.get(handle);
+
+    if(buffer.memory_alloc_info.heap->heap->GetDesc().Properties.Type == D3D12_HEAP_TYPE_UPLOAD) {
+
+        auto range = D3D12_RANGE {};
+        char8_t* ptr;
+        THROW_IF_FAILED(buffer.resource->Map(0, &range, reinterpret_cast<void**>(&ptr)));
+        std::memcpy(ptr + offset, data.data(), data.size());
+        buffer.resource->Unmap(0, &range);
+    }
 }
