@@ -248,6 +248,17 @@ struct DescriptorLayout {
     ComPtr<ID3D12RootSignature> root_signature;
 };
 
+struct DescriptorSet {
+
+    struct DescriptorInfo {
+        uint32_t offset;
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
+    };
+
+    std::vector<DescriptorInfo> srv;
+    std::vector<DescriptorInfo> sampler;
+};
+
 struct Pipeline {
     ComPtr<ID3D12PipelineState> pipeline_state;
 };
@@ -313,6 +324,7 @@ struct Backend::Impl {
     InstanceContainer<Shader> shaders;
     InstanceContainer<RenderPass> render_passes;
     InstanceContainer<DescriptorLayout> descriptor_layouts;
+    InstanceContainer<DescriptorSet> descriptor_sets;
 };
 
 Backend::Backend(uint32_t const adapter_index, platform::Window* const window, uint32_t const frame_count) : _impl(std::make_unique<Impl>()) {
@@ -1011,15 +1023,20 @@ Handle<Pipeline> Backend::create_pipeline(
     });
 }
 
-void Backend::bind_descriptor_set(
-    Handle<DescriptorLayout> const& handle, 
-    uint32_t const offset, 
-    std::span<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> const data
-) {
+Handle<DescriptorSet> Backend::create_descriptor_set(Handle<DescriptorLayout> const& handle) {
 
-    auto& descriptor_layout = _impl->descriptor_layouts.get(handle);
+}
 
-    _impl->frames[_impl->frame_index].command_list->SetGraphicsRootSignature(descriptor_layout.root_signature.Get());
+void Backend::update_descriptor_set(Handle<DescriptorSet> const& handle, std::vector<DescriptorUpdateDesc> const& updates) {
+
+
+}
+
+void Backend::bind_descriptor_set(Handle<DescriptorSet> const& handle) {
+
+    //auto& descriptor_layout = _impl->descriptor_layouts.get(handle);
+
+    //_impl->frames[_impl->frame_index].command_list->SetGraphicsRootSignature(descriptor_layout.root_signature.Get());
 }
 
 Handle<Texture> Backend::begin_frame() {

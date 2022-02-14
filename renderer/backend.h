@@ -15,6 +15,7 @@ struct Shader;
 struct RenderPass;
 struct Sampler;
 struct DescriptorLayout;
+struct DescriptorSet;
 
 enum class Dimension {
     _1D,
@@ -151,6 +152,11 @@ struct DescriptorBindDesc {
     ResourceFlags flags;
 };
 
+struct DescriptorUpdateDesc {
+    uint32_t index;
+    std::span<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> data;
+};
+
 struct VertexInputDesc {
     std::string semantic;
     uint32_t index;
@@ -225,6 +231,8 @@ public:
 
     Handle<DescriptorLayout> create_descriptor_layout(std::vector<DescriptorBindDesc> const& bindings);
 
+    Handle<DescriptorSet> create_descriptor_set(Handle<DescriptorLayout> const& handle);
+
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& layout_handle,
         std::vector<VertexInputDesc> const& vertex_inputs,
@@ -235,11 +243,7 @@ public:
         Handle<RenderPass> const& render_pass_handle
     );
 
-    void bind_descriptor_set(
-        Handle<DescriptorLayout> const& handle, 
-        uint32_t const offset, 
-        std::span<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> const data
-    );
+    void update_descriptor_set(Handle<DescriptorSet> const& handle, std::vector<DescriptorUpdateDesc> const& updates);
 
     void copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offset, std::span<char8_t> const data);
 
@@ -250,6 +254,8 @@ public:
     void barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handle, MemoryState const before, MemoryState const after);
 
     void bind_pipeline(Handle<Pipeline> const& handle);
+
+    void bind_descriptor_set(Handle<DescriptorSet> const& handle);
 
     void set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
 

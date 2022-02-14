@@ -36,6 +36,7 @@ private:
     Handle<DescriptorLayout> desc_layout;
     Handle<Buffer> buffer_vertex;
     Handle<Buffer> constant_buffer;
+    Handle<DescriptorSet> descriptor_set;
     uint32_t frame_index{0};
 };
 
