@@ -250,13 +250,14 @@ struct DescriptorLayout {
 
 struct DescriptorSet {
 
+    ComPtr<ID3D12RootSignature> root_signature;
+
     struct DescriptorInfo {
         uint32_t offset;
-        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle;
+        DescriptorAllocInfo descriptor_alloc_info;
     };
 
-    std::vector<DescriptorInfo> srv;
-    std::vector<DescriptorInfo> sampler;
+    std::vector<DescriptorInfo> descriptor_infos;
 };
 
 struct Pipeline {
@@ -359,7 +360,7 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
     _impl->host_visible_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_UPLOAD, 1024 * 1024 * 32);
 
     _impl->srv_shader_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
-    _impl->sampler_shader_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
+    _impl->sampler_shader_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024, true);
     
     platform::Size window_size = window->get_size();
 
@@ -1025,24 +1026,87 @@ Handle<Pipeline> Backend::create_pipeline(
 
 Handle<DescriptorSet> Backend::create_descriptor_set(Handle<DescriptorLayout> const& handle) {
 
+    auto& descriptor_layout = _impl->descriptor_layouts.get(handle);
+
+    return _impl->descriptor_sets.push(DescriptorSet {
+        descriptor_layout.root_signature
+    });
 }
 
 void Backend::update_descriptor_set(Handle<DescriptorSet> const& handle, std::vector<DescriptorUpdateDesc> const& updates) {
 
+    auto& descriptor_set = _impl->descriptor_sets.get(handle);
 
+    descriptor_set.descriptor_infos.clear();
+
+    for(auto& update : updates) {
+
+        auto& buffer = _impl->buffers.get(std::get<Handle<Buffer>>(update.data.front()));
+
+        descriptor_set.descriptor_infos.emplace_back(DescriptorSet::DescriptorInfo {
+            update.index,
+            buffer.descriptor_alloc_info
+        });
+    }
 }
 
 void Backend::bind_descriptor_set(Handle<DescriptorSet> const& handle) {
 
-    //auto& descriptor_layout = _impl->descriptor_layouts.get(handle);
+    auto& descriptor_set = _impl->descriptor_sets.get(handle);
 
-    //_impl->frames[_impl->frame_index].command_list->SetGraphicsRootSignature(descriptor_layout.root_signature.Get());
+    _impl->frames[_impl->frame_index].command_list->SetGraphicsRootSignature(descriptor_set.root_signature.Get());
+
+    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> cpu_descriptors;
+    for(auto& desc : descriptor_set.descriptor_infos) {
+        const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
+            desc.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+            srv_size * // Device descriptor size
+            desc.descriptor_alloc_info.offset // Allocation offset
+        };
+
+        cpu_descriptors.emplace_back(cpu_handle);
+    }
+
+    const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    D3D12_CPU_DESCRIPTOR_HANDLE dst = {
+        _impl->frames[_impl->frame_index].srv_descriptors[0].heap->heap->GetCPUDescriptorHandleForHeapStart().ptr +
+        srv_size *
+        _impl->frames[_impl->frame_index].srv_descriptors[0].offset
+    };
+
+    const uint32_t count_ = 1;
+
+    const uint32_t count2_ = cpu_descriptors.size();
+
+    _impl->device->CopyDescriptors(
+        1, &dst, &count_, 
+        1, cpu_descriptors.data(), &count2_,
+        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+    );
+
+    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle = {
+        _impl->frames[_impl->frame_index].srv_descriptors[0].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr +
+        srv_size *
+        _impl->frames[_impl->frame_index].srv_descriptors[0].offset
+    };
+
+    _impl->frames[_impl->frame_index].command_list->SetGraphicsRootDescriptorTable(0, gpu_handle);
 }
 
 Handle<Texture> Backend::begin_frame() {
 
     THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_allocator->Reset());
     THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_list->Reset(_impl->frames[_impl->frame_index].command_allocator.Get(), nullptr));
+
+    std::array<ID3D12DescriptorHeap*, 2> heaps = { 
+        _impl->frames[_impl->frame_index].srv_descriptors[0].heap->heap.Get(), 
+        _impl->frames[_impl->frame_index].sampler_descriptors[0].heap->heap.Get() 
+    };
+    _impl->frames[_impl->frame_index].command_list->SetDescriptorHeaps(2, heaps.data());
+
+    _impl->frames[_impl->frame_index].srv_bind_value = 0;
+    _impl->frames[_impl->frame_index].sampler_bind_value = 0;
 
     return _impl->frames[_impl->frame_index].texture;
 }

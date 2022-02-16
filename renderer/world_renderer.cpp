@@ -3,6 +3,8 @@
 #include <precompiled.h>
 #include <renderer/world_renderer.h>
 
+#include <lib/math/matrix.h>
+
 using namespace ionengine::renderer;
 
 WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
@@ -49,6 +51,20 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
     constant_buffer = _backend->create_buffer(65536, ResourceFlags::HostVisible | ResourceFlags::ConstantBuffer);
 
+    struct WorldBuffer {
+        Matrixf m;
+        Matrixf v;
+        Matrixf p;
+    };
+
+    auto world_buffer = WorldBuffer {
+        Matrixf::Identity(),
+        Matrixf::Identity(),
+        Matrixf::Identity()
+    };
+
+    _backend->copy_buffer_data(constant_buffer, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(&world_buffer), sizeof(world_buffer)));
+
     descriptor_set = _backend->create_descriptor_set(desc_layout);
 
     std::vector<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> data = { constant_buffer };
@@ -85,8 +101,8 @@ void WorldRenderer::update() {
     _backend->set_scissor(0, 0, 800, 600);
     _backend->barrier(texture, MemoryState::Present, MemoryState::RenderTarget);
     _backend->begin_render_pass(rpasses[frame_index], { Color(0.2f, 0.1f, 0.3f, 1.0f) }, {});
-    _backend->bind_descriptor_set(descriptor_set);
     _backend->bind_pipeline(pipelines[frame_index]);
+    _backend->bind_descriptor_set(descriptor_set);
     _backend->bind_vertex_buffer(0, buffer_vertex);
     _backend->draw(0, 3);
     _backend->end_render_pass();
