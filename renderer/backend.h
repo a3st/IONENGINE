@@ -31,7 +31,7 @@ enum class Format {
     RGB32
 };
 
-enum class ResourceFlags : uint16_t {
+enum class BackendFlags : uint16_t {
     None = 1 << 0,
     RenderTarget = 1 << 1,
     DepthStencil = 1 << 2,
@@ -46,7 +46,7 @@ enum class ResourceFlags : uint16_t {
     HostVisible = 1 << 11
 };
 
-DECLARE_ENUM_CLASS_BIT_FLAG(ResourceFlags)
+DECLARE_ENUM_CLASS_BIT_FLAG(BackendFlags)
 
 enum class QueueType {
     Graphics,
@@ -76,7 +76,7 @@ enum class RenderPassStoreOp {
     DontCare
 };
 
-enum class DescriptorBindType {
+enum class DescriptorRangeType {
     ShaderResource,
     ConstantBuffer,
     UnorderedAccess,
@@ -145,16 +145,16 @@ struct RenderPassDepthStencilDesc {
     RenderPassStoreOp stencil_store_op;
 };
 
-struct DescriptorBindDesc {
-    DescriptorBindType bind_type;
+struct DescriptorRangeDesc {
+    DescriptorRangeType range_type;
     uint32_t index;
     uint32_t count;
-    ResourceFlags flags;
+    BackendFlags flags;
 };
 
-struct DescriptorUpdateDesc {
+struct DescriptorWriteDesc {
     uint32_t index;
-    std::span<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> data;
+    std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>> data;
 };
 
 struct VertexInputDesc {
@@ -206,10 +206,10 @@ public:
         uint16_t const mip_levels,
         uint16_t const array_layers,
         Format const format,
-        ResourceFlags const flags
+        BackendFlags const flags
     );
 
-    Handle<Buffer> create_buffer(size_t const size, ResourceFlags const flags);
+    Handle<Buffer> create_buffer(size_t const size, BackendFlags const flags);
 
     Handle<RenderPass> create_render_pass(
         std::vector<Handle<Texture>> const& rtv_handles,
@@ -227,23 +227,23 @@ public:
         CompareOp const compare_op
     );
 
-    Handle<Shader> create_shader(std::span<char8_t> const data, ResourceFlags const flags);
+    Handle<Shader> create_shader(std::span<char8_t> const data, BackendFlags const flags);
 
-    Handle<DescriptorLayout> create_descriptor_layout(std::vector<DescriptorBindDesc> const& bindings);
+    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorRangeDesc> const ranges);
 
     Handle<DescriptorSet> create_descriptor_set(Handle<DescriptorLayout> const& handle);
 
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& layout_handle,
-        std::vector<VertexInputDesc> const& vertex_inputs,
-        std::vector<Handle<Shader>> const& shader_handles,
+        std::span<VertexInputDesc> const vertex_inputs,
+        std::span<Handle<Shader>> const shader_handles,
         RasterizerDesc const& rasterizer,
         DepthStencilDesc const& depth_stencil,
         BlendDesc const& blend,
         Handle<RenderPass> const& render_pass_handle
     );
 
-    void update_descriptor_set(Handle<DescriptorSet> const& handle, std::vector<DescriptorUpdateDesc> const& updates);
+    void write_descriptor_set(Handle<DescriptorSet> const& handle, std::span<DescriptorWriteDesc> const writes);
 
     void copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offset, std::span<char8_t> const data);
 

@@ -13,14 +13,13 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     pipelines.resize(2);
     shaders.resize(2);
 
-    desc_layout = _backend->create_descriptor_layout({
-        DescriptorBindDesc {
-            DescriptorBindType::ConstantBuffer,
-            0,
-            1,
-            ResourceFlags::VertexShader
-        }
-    });
+    std::vector<DescriptorRangeDesc> ranges = {
+        DescriptorRangeDesc { DescriptorRangeType::ConstantBuffer, 0, 3, BackendFlags::VertexShader },
+        DescriptorRangeDesc { DescriptorRangeType::ConstantBuffer, 4, 3, BackendFlags::PixelShader },
+        DescriptorRangeDesc { DescriptorRangeType::ShaderResource, 0, 5, BackendFlags::PixelShader }
+    };
+
+    desc_layout = _backend->create_descriptor_layout(ranges);
 
     auto load_file = [&](std::filesystem::path const& path) -> std::vector<char8_t> {
 
@@ -40,16 +39,16 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     auto shader_vert = load_file("shaders/basic_vert.bin");
     auto shader_frag = load_file("shaders/basic_frag.bin");
 
-    shaders[0] = _backend->create_shader(shader_vert, ResourceFlags::VertexShader);
-    shaders[1] = _backend->create_shader(shader_frag, ResourceFlags::PixelShader);
+    shaders[0] = _backend->create_shader(shader_vert, BackendFlags::VertexShader);
+    shaders[1] = _backend->create_shader(shader_frag, BackendFlags::PixelShader);
 
-    buffer_vertex = _backend->create_buffer(65536, ResourceFlags::HostVisible);
+    buffer_vertex = _backend->create_buffer(65536, BackendFlags::HostVisible);
 
     std::vector<float> vertex = { -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f,  0.5f, 0.0f };
 
     _backend->copy_buffer_data(buffer_vertex, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(vertex.data()), vertex.size() * sizeof(float)));
 
-    constant_buffer = _backend->create_buffer(65536, ResourceFlags::HostVisible | ResourceFlags::ConstantBuffer);
+    constant_buffer = _backend->create_buffer(65536, BackendFlags::HostVisible | BackendFlags::ConstantBuffer);
 
     struct WorldBuffer {
         Matrixf m;
@@ -67,12 +66,11 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
     descriptor_set = _backend->create_descriptor_set(desc_layout);
 
-    std::vector<std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>> data = { constant_buffer };
+    std::vector<DescriptorWriteDesc> write_desc = { 
+        DescriptorWriteDesc { 0, constant_buffer }
+    };
     
-    _backend->update_descriptor_set(
-        descriptor_set,
-        { { 0, data } }
-    );
+    _backend->write_descriptor_set(descriptor_set, write_desc);
 }
 
 void WorldRenderer::update() {
@@ -101,10 +99,10 @@ void WorldRenderer::update() {
     _backend->set_scissor(0, 0, 800, 600);
     _backend->barrier(texture, MemoryState::Present, MemoryState::RenderTarget);
     _backend->begin_render_pass(rpasses[frame_index], { Color(0.2f, 0.1f, 0.3f, 1.0f) }, {});
-    _backend->bind_pipeline(pipelines[frame_index]);
-    _backend->bind_descriptor_set(descriptor_set);
-    _backend->bind_vertex_buffer(0, buffer_vertex);
-    _backend->draw(0, 3);
+    //_backend->bind_pipeline(pipelines[frame_index]);
+    //_backend->bind_descriptor_set(descriptor_set);
+    //_backend->bind_vertex_buffer(0, buffer_vertex);
+    //_backend->draw(0, 3);
     _backend->end_render_pass();
     _backend->barrier(texture, MemoryState::RenderTarget, MemoryState::Present);
 
