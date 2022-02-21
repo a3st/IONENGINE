@@ -84,10 +84,14 @@ void WorldRenderer::update() {
             {}, {}
         );
 
+        std::vector<VertexInputDesc> vertex_inputs = {
+            { VertexInputDesc { "POSITION", 0, Format::RGB32, 0, 0 } }
+        };
+
         pipelines[frame_index] = _backend->create_pipeline(
             desc_layout,
-            { VertexInputDesc { "POSITION", 0, Format::RGB32, 0, 0 } },
-            { shaders[0], shaders[1] },
+            vertex_inputs,
+            shaders,
             { FillMode::Solid, CullMode::Front },
             { CompareOp::Always, false },
             { false, Blend::One, Blend::Zero, BlendOp::Add, Blend::One, Blend::Zero, BlendOp::Add },
@@ -99,10 +103,10 @@ void WorldRenderer::update() {
     _backend->set_scissor(0, 0, 800, 600);
     _backend->barrier(texture, MemoryState::Present, MemoryState::RenderTarget);
     _backend->begin_render_pass(rpasses[frame_index], { Color(0.2f, 0.1f, 0.3f, 1.0f) }, {});
-    //_backend->bind_pipeline(pipelines[frame_index]);
-    //_backend->bind_descriptor_set(descriptor_set);
-    //_backend->bind_vertex_buffer(0, buffer_vertex);
-    //_backend->draw(0, 3);
+    _backend->bind_pipeline(pipelines[frame_index]);
+    _backend->bind_descriptor_set(descriptor_set);
+    _backend->bind_vertex_buffer(0, buffer_vertex);
+    _backend->draw(0, 3);
     _backend->end_render_pass();
     _backend->barrier(texture, MemoryState::RenderTarget, MemoryState::Present);
 

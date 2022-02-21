@@ -76,6 +76,7 @@ public:
     MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, size_t const heap_size);
 
     MemoryAllocInfo allocate(size_t const size);
+
     void deallocate(MemoryAllocInfo const& alloc_info);
 
 private:
@@ -165,6 +166,7 @@ public:
     DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const heap_size, bool const shader_visible);
 
     DescriptorAllocInfo allocate();
+    
     void deallocate(DescriptorAllocInfo const& alloc_info);
 
 private:
@@ -242,6 +244,10 @@ struct Buffer {
     DescriptorAllocInfo descriptor_alloc_info;
 };
 
+struct Sampler {
+    DescriptorAllocInfo descriptor_alloc_info;
+};
+
 struct DescriptorLayout {
     ComPtr<ID3D12RootSignature> root_signature;
     std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges;
@@ -249,6 +255,7 @@ struct DescriptorLayout {
 
 struct DescriptorSet {
     ComPtr<ID3D12RootSignature> root_signature;
+    std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges;
     std::vector<DescriptorAllocInfo> descriptor_alloc_infos;
 };
 
@@ -303,8 +310,12 @@ struct Backend::Impl {
     DescriptorPool srv_shader_pool;
     DescriptorPool sampler_shader_pool;
 
+    DescriptorAllocInfo null_srv_descriptor_alloc_info;
+    DescriptorAllocInfo null_sampler_descriptor_alloc_info;
+
     InstanceContainer<Texture> textures;
     InstanceContainer<Buffer> buffers;
+    InstanceContainer<Sampler> samplers;
     InstanceContainer<Pipeline> pipelines;
     InstanceContainer<Shader> shaders;
     InstanceContainer<RenderPass> render_passes;
@@ -345,6 +356,9 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
 
     _impl->srv_shader_pool = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
     _impl->sampler_shader_pool = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024, true);
+
+    _impl->null_srv_descriptor_alloc_info = _impl->srv_shader_pool.allocate();
+    _impl->null_sampler_descriptor_alloc_info = _impl->sampler_shader_pool.allocate();
     
     platform::Size window_size = window->get_size();
 
@@ -998,70 +1012,116 @@ Handle<DescriptorSet> Backend::create_descriptor_set(Handle<DescriptorLayout> co
     auto& descriptor_layout = _impl->descriptor_layouts.get(handle);
 
     std::vector<DescriptorAllocInfo> descriptor_alloc_infos;
-    descriptor_alloc_infos.reserve()
-
-    return _impl->descriptor_sets.push(DescriptorSet { descriptor_layout.root_signature });
+    
+    for(auto& range : descriptor_layout.descriptor_ranges) {
+        
+        for(uint32_t i = 0; i < range.NumDescriptors; ++i) {
+            
+            DescriptorAllocInfo descriptor_alloc_info;
+            switch(range.RangeType) {
+                case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+                case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+                case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: descriptor_alloc_info = _impl->srv_shader_pool.allocate(); break;
+                case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: descriptor_alloc_info = _impl->sampler_shader_pool.allocate(); break;
+            }
+            descriptor_alloc_infos.emplace_back(descriptor_alloc_info);
+        }
+    }
+    return _impl->descriptor_sets.push(DescriptorSet { descriptor_layout.root_signature, descriptor_layout.descriptor_ranges, descriptor_alloc_infos });
 }
 
 void Backend::write_descriptor_set(Handle<DescriptorSet> const& handle, std::span<DescriptorWriteDesc> const writes) {
 
-    /*auto& descriptor_set = _impl->descriptor_sets.get(handle);
+    auto& descriptor_set = _impl->descriptor_sets.get(handle);
 
-    descriptor_set.descriptor_infos.clear();
+    for(auto& write : writes) {
 
-    for(auto& update : updates) {
-
-        auto& buffer = _impl->buffers.get(std::get<Handle<Buffer>>(update.data.front()));
-
-        descriptor_set.descriptor_infos.emplace_back(DescriptorSet::DescriptorInfo {
-            update.index,
-            buffer.descriptor_alloc_info
-        });
-    }*/
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, Handle<Texture>>) {
+                auto& texture = _impl->textures.get(arg);
+                const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                    texture.descriptor_alloc_info.heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    srv_size * // Device descriptor size
+                    texture.descriptor_alloc_info.offset // Allocation offset
+                };
+                auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    srv_size * // Device descriptor size
+                    descriptor_set.descriptor_alloc_infos[write.index].offset // Allocation offset
+                };
+                _impl->device->CopyDescriptorsSimple(1, dst_cpu_handle, src_cpu_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            } else if constexpr (std::is_same_v<T, Handle<Buffer>>) {
+                auto& buffer = _impl->buffers.get(arg);
+                const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                    buffer.descriptor_alloc_info.heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    srv_size * // Device descriptor size
+                    buffer.descriptor_alloc_info.offset // Allocation offset
+                };
+                auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    srv_size * // Device descriptor size
+                    descriptor_set.descriptor_alloc_infos[write.index].offset // Allocation offset
+                };
+                _impl->device->CopyDescriptorsSimple(1, dst_cpu_handle, src_cpu_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            }
+            else if constexpr (std::is_same_v<T, Handle<Sampler>>) {
+                auto& sampler = _impl->samplers.get(arg);
+                const uint32_t sampler_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                    sampler.descriptor_alloc_info.heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    sampler_size * // Device descriptor size
+                    sampler.descriptor_alloc_info.offset // Allocation offset
+                };
+                auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    sampler_size * // Device descriptor size
+                    descriptor_set.descriptor_alloc_infos[write.index].offset // Allocation offset
+                };
+                _impl->device->CopyDescriptorsSimple(1, dst_cpu_handle, src_cpu_handle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+            } else {
+                static_assert(always_false_v<T>, "non-exhaustive visitor!");
+            }
+        }, write.data); 
+    }
 }
 
 void Backend::bind_descriptor_set(Handle<DescriptorSet> const& handle) {
 
-    /*auto& descriptor_set = _impl->descriptor_sets.get(handle);
+    auto& descriptor_set = _impl->descriptor_sets.get(handle);
 
     _impl->frames[_impl->frame_index].command_list->SetGraphicsRootSignature(descriptor_set.root_signature.Get());
 
-    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> cpu_descriptors;
-    for(auto& desc : descriptor_set.descriptor_infos) {
-        const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
-            desc.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-            srv_size * // Device descriptor size
-            desc.descriptor_alloc_info.offset // Allocation offset
-        };
+    size_t binding = 0;
+    for(uint32_t i = 0; i < descriptor_set.descriptor_ranges.size(); ++i) {
 
-        cpu_descriptors.emplace_back(cpu_handle);
+        D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
+        switch(descriptor_set.descriptor_ranges[i].RangeType) {
+            case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+            case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+            case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
+                const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                gpu_handle = D3D12_GPU_DESCRIPTOR_HANDLE {
+                    descriptor_set.descriptor_alloc_infos[binding].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    srv_size * // Device descriptor size
+                    descriptor_set.descriptor_alloc_infos[binding].offset // Allocation offset
+                };
+            } break;
+            case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: {
+                const uint32_t sampler_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                gpu_handle = D3D12_GPU_DESCRIPTOR_HANDLE {
+                    descriptor_set.descriptor_alloc_infos[binding].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    sampler_size * // Device descriptor size
+                    descriptor_set.descriptor_alloc_infos[binding].offset // Allocation offset
+                };
+            } break;
+        }
+
+        binding += descriptor_set.descriptor_ranges[i].NumDescriptors;
+        _impl->frames[_impl->frame_index].command_list->SetGraphicsRootDescriptorTable(i, gpu_handle);     
     }
-
-    const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    D3D12_CPU_DESCRIPTOR_HANDLE dst = {
-        _impl->frames[_impl->frame_index].srv_descriptors[0].heap->heap->GetCPUDescriptorHandleForHeapStart().ptr +
-        srv_size *
-        _impl->frames[_impl->frame_index].srv_descriptors[0].offset
-    };
-
-    const uint32_t count_ = 1;
-
-    const uint32_t count2_ = cpu_descriptors.size();
-
-    _impl->device->CopyDescriptors(
-        1, &dst, &count_, 
-        1, cpu_descriptors.data(), &count2_,
-        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-    );
-
-    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle = {
-        _impl->frames[_impl->frame_index].srv_descriptors[0].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr +
-        srv_size *
-        _impl->frames[_impl->frame_index].srv_descriptors[0].offset
-    };
-
-    _impl->frames[_impl->frame_index].command_list->SetGraphicsRootDescriptorTable(0, gpu_handle);*/
 }
 
 Handle<Texture> Backend::begin_frame() {
@@ -1069,9 +1129,9 @@ Handle<Texture> Backend::begin_frame() {
     THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_allocator->Reset());
     THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_list->Reset(_impl->frames[_impl->frame_index].command_allocator.Get(), nullptr));
 
-    std::array<ID3D12DescriptorHeap*, 2> heaps = { 
-        _impl->frames[_impl->frame_index].srv_descriptors[0].heap->heap.Get(), 
-        _impl->frames[_impl->frame_index].sampler_descriptors[0].heap->heap.Get() 
+    auto heaps = std::array<ID3D12DescriptorHeap*, 2> { 
+        _impl->null_srv_descriptor_alloc_info.heap->heap.Get(), 
+        _impl->null_sampler_descriptor_alloc_info.heap->heap.Get() 
     };
     _impl->frames[_impl->frame_index].command_list->SetDescriptorHeaps(2, heaps.data());
 
