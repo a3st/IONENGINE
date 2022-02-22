@@ -56,10 +56,12 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
         Matrixf p;
     };
 
+    Matrixf m = Matrixf{}.identity();
+
     auto world_buffer = WorldBuffer {
-        Matrixf::Identity(),
-        Matrixf::Identity(),
-        Matrixf::Identity()
+        m,
+        m,
+        m
     };
 
     _backend->copy_buffer_data(constant_buffer, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(&world_buffer), sizeof(world_buffer)));

@@ -4,104 +4,88 @@
 
 namespace ionengine {
 
-template<typename T>
+template<typename Type>
 struct Matrix {
 
-	T m00, m01, m02, m03;
-	T m10, m11, m12, m13;
-	T m20, m21, m22, m23;
-	T m30, m31, m32, m33;
+	Type m00, m01, m02, m03;
+	Type m10, m11, m12, m13;
+	Type m20, m21, m22, m23;
+	Type m30, m31, m32, m33;
 
-	Matrix() : 
-		m00(0), m01(0), m02(0), m03(0),
-		m10(0), m11(0), m12(0), m13(0),
-		m20(0), m21(0), m22(0), m23(0),
-		m30(0), m31(0), m32(0), m33(0) {
-	}
+	Matrix() = default;
 
 	Matrix(
-		const T _m00, const T _m01, const T _m02, const T _m03,
-		const T _m10, const T _m11, const T _m12, const T _m13,
-		const T _m20, const T _m21, const T _m22, const T _m23,
-		const T _m30, const T _m31, const T _m32, const T _m33
+		Type const _m00, Type const _m01, Type const _m02, Type const _m03,
+		Type const _m10, Type const _m11, Type const _m12, Type const _m13,
+		Type const _m20, Type const _m21, Type const _m22, Type const _m23,
+		Type const _m30, Type const _m31, Type const _m32, Type const _m33
 	) :  
 		m00(_m00), m01(_m01), m02(_m02), m03(_m03),
 		m10(_m10), m11(_m11), m12(_m12), m13(_m13),
 		m20(_m20), m21(_m21), m22(_m22), m23(_m23),
-		m30(_m30), m31(_m31), m32(_m32), m33(_m33) {
-	}
+		m30(_m30), m31(_m31), m32(_m32), m33(_m33) { }
 
-	Matrix(const Matrix& rhs) : 
-		m00(rhs.m00), m01(rhs.m01), m02(rhs.m02), m03(rhs.m03),
-		m10(rhs.m10), m11(rhs.m11), m12(rhs.m12), m13(rhs.m13),
-		m20(rhs.m20), m21(rhs.m21), m22(rhs.m22), m23(rhs.m23),
-		m30(rhs.m30), m31(rhs.m31), m32(rhs.m32), m33(rhs.m33) {
-	}
+	Matrix(Matrix const& other) : 
+		m00(other.m00), m01(other.m01), m02(other.m02), m03(other.m03),
+		m10(other.m10), m11(other.m11), m12(other.m12), m13(other.m13),
+		m20(other.m20), m21(other.m21), m22(other.m22), m23(other.m23),
+		m30(other.m30), m31(other.m31), m32(other.m32), m33(other.m33) { }
 
-	Matrix(Matrix&& rhs) noexcept :
-		m00(rhs.m00), m01(rhs.m01), m02(rhs.m02), m03(rhs.m03),
-		m10(rhs.m10), m11(rhs.m11), m12(rhs.m12), m13(rhs.m13),
-		m20(rhs.m20), m21(rhs.m21), m22(rhs.m22), m23(rhs.m23),
-		m30(rhs.m30), m31(rhs.m31), m32(rhs.m32), m33(rhs.m33) {
-	}
+	Matrix(Matrix&& other) noexcept :
+		m00(other.m00), m01(other.m01), m02(other.m02), m03(other.m03),
+		m10(other.m10), m11(other.m11), m12(other.m12), m13(other.m13),
+		m20(other.m20), m21(other.m21), m22(other.m22), m23(other.m23),
+		m30(other.m30), m31(other.m31), m32(other.m32), m33(other.m33) { }
 
-	Matrix& operator=(const Matrix& rhs) {
+	Matrix& operator=(Matrix const& other) {
 
-		m00 = rhs.m00;
-		m01 = rhs.m01;
-		m02 = rhs.m02;
-		m03 = rhs.m03;
-		m10 = rhs.m10;
-		m11 = rhs.m11;
-		m12 = rhs.m12;
-		m13 = rhs.m13;
-		m20 = rhs.m20;
-		m21 = rhs.m21;
-		m22 = rhs.m22;
-		m23 = rhs.m23;
-		m30 = rhs.m30;
-		m31 = rhs.m31;
-		m32 = rhs.m32;
-		m33 = rhs.m33;
+		m00 = other.m00;
+		m01 = other.m01;
+		m02 = other.m02;
+		m03 = other.m03;
+		m10 = other.m10;
+		m11 = other.m11;
+		m12 = other.m12;
+		m13 = other.m13;
+		m20 = other.m20;
+		m21 = other.m21;
+		m22 = other.m22;
+		m23 = other.m23;
+		m30 = other.m30;
+		m31 = other.m31;
+		m32 = other.m32;
+		m33 = other.m33;
 		return *this;
 	}
 
-	Matrix& operator=(Matrix&& rhs) noexcept {
+	Matrix& operator=(Matrix&& other) noexcept {
 
-		m00 = rhs.m00;
-		m01 = rhs.m01;
-		m02 = rhs.m02;
-		m03 = rhs.m03;
-		m10 = rhs.m10;
-		m11 = rhs.m11;
-		m12 = rhs.m12;
-		m13 = rhs.m13;
-		m20 = rhs.m20;
-		m21 = rhs.m21;
-		m22 = rhs.m22;
-		m23 = rhs.m23;
-		m30 = rhs.m30;
-		m31 = rhs.m31;
-		m32 = rhs.m32;
-		m33 = rhs.m33;
+		m00 = other.m00;
+		m01 = other.m01;
+		m02 = other.m02;
+		m03 = other.m03;
+		m10 = other.m10;
+		m11 = other.m11;
+		m12 = other.m12;
+		m13 = other.m13;
+		m20 = other.m20;
+		m21 = other.m21;
+		m22 = other.m22;
+		m23 = other.m23;
+		m30 = other.m30;
+		m31 = other.m31;
+		m32 = other.m32;
+		m33 = other.m33;
 		return *this;
 	}
 
-	inline const T* GetData() const {
+	const Type* data() const { return &m00; }
 
-		return &m00;
-	}
+	size_t size() const { return 16; }
 
-	inline size_t GetSize() const {
+	Matrix& transpose() {
 
-		return 16;
-	}
-
-	void Transpose() {
-
-		Matrix mat{};
-		mat = *this;
-
+		Matrix mat = *this;
 		m00 = mat.m00;
 		m01 = mat.m10;
 		m02 = mat.m20;
@@ -117,12 +101,13 @@ struct Matrix {
 		m30 = mat.m03;
 		m31 = mat.m13;
 		m32 = mat.m23;
-		m33 = mat.m33;	
+		m33 = mat.m33;
+		return *this;
 	}
 
-	Matrix operator*(const Matrix& rhs) const {
+	Matrix operator*(Matrix const& other) const {
 
-		Matrix mat{};
+		auto mat = Matrix {};
 		mat.m00 = m00 * rhs.m00 + m01 * rhs.m10 + m02 * rhs.m20 + m03 * rhs.m30;
 		mat.m01 = m00 * rhs.m01 + m01 * rhs.m11 + m02 * rhs.m21 + m03 * rhs.m31;
 		mat.m02 = m00 * rhs.m02 + m01 * rhs.m12 + m02 * rhs.m22 + m03 * rhs.m32;
@@ -164,80 +149,79 @@ struct Matrix {
 		return mat;
 	}*/
 
-	Matrix operator*(const T rhs) const {
+	Matrix operator*(Type const other) const {
 
-		Matrix mat{};
-		mat.m00 = m00 * rhs;
-		mat.m01 = m01 * rhs;
-		mat.m02 = m02 * rhs;
-		mat.m03 = m03 * rhs;
-		mat.m10 = m10 * rhs;
-		mat.m11 = m11 * rhs;
-		mat.m12 = m12 * rhs;
-		mat.m13 = m13 * rhs;
-		mat.m20 = m20 * rhs;
-		mat.m21 = m21 * rhs;
-		mat.m22 = m22 * rhs;
-		mat.m23 = m23 * rhs;
-		mat.m30 = m30 * rhs;
-		mat.m31 = m31 * rhs;
-		mat.m32 = m32 * rhs;
-		mat.m33 = m33 * rhs;
+		auto mat = Matrix {};
+		mat.m00 = m00 * other;
+		mat.m01 = m01 * other;
+		mat.m02 = m02 * other;
+		mat.m03 = m03 * other;
+		mat.m10 = m10 * other;
+		mat.m11 = m11 * other;
+		mat.m12 = m12 * other;
+		mat.m13 = m13 * other;
+		mat.m20 = m20 * other;
+		mat.m21 = m21 * other;
+		mat.m22 = m22 * other;
+		mat.m23 = m23 * other;
+		mat.m30 = m30 * other;
+		mat.m31 = m31 * other;
+		mat.m32 = m32 * other;
+		mat.m33 = m33 * other;
 		return mat;
 	}
 
-	Matrix operator+(const Matrix& rhs) const {
+	Matrix operator+(Matrix const& other) const {
 
-		Matrix mat{};
-		mat.m00 = m00 + rhs.m00;
-		mat.m01 = m01 + rhs.m01;
-		mat.m02 = m02 + rhs.m02;
-		mat.m03 = m03 + rhs.m03;
-		mat.m10 = m10 + rhs.m10;
-		mat.m11 = m11 + rhs.m11;
-		mat.m12 = m12 + rhs.m12;
-		mat.m13 = m13 + rhs.m13;
-		mat.m20 = m20 + rhs.m20;
-		mat.m21 = m21 + rhs.m21;
-		mat.m22 = m22 + rhs.m22;
-		mat.m23 = m23 + rhs.m23;
-		mat.m30 = m30 + rhs.m30;
-		mat.m31 = m31 + rhs.m31;
-		mat.m32 = m32 + rhs.m32;
-		mat.m33 = m33 + rhs.m33;
+		auto mat = Matrix {};
+		mat.m00 = m00 + other.m00;
+		mat.m01 = m01 + other.m01;
+		mat.m02 = m02 + other.m02;
+		mat.m03 = m03 + other.m03;
+		mat.m10 = m10 + other.m10;
+		mat.m11 = m11 + other.m11;
+		mat.m12 = m12 + other.m12;
+		mat.m13 = m13 + other.m13;
+		mat.m20 = m20 + other.m20;
+		mat.m21 = m21 + other.m21;
+		mat.m22 = m22 + other.m22;
+		mat.m23 = m23 + other.m23;
+		mat.m30 = m30 + other.m30;
+		mat.m31 = m31 + other.m31;
+		mat.m32 = m32 + other.m32;
+		mat.m33 = m33 + other.m33;
 		return mat;
 	}
 
-	Matrix operator-(const Matrix& rhs) const {
+	Matrix operator-(Matrix const& other) const {
 
-		Matrix mat{};
-		mat.m00 = m00 - rhs.m00;
-		mat.m01 = m01 - rhs.m01;
-		mat.m02 = m02 - rhs.m02;
-		mat.m03 = m03 - rhs.m03;
-		mat.m10 = m10 - rhs.m10;
-		mat.m11 = m11 - rhs.m11;
-		mat.m12 = m12 - rhs.m12;
-		mat.m13 = m13 - rhs.m13;
-		mat.m20 = m20 - rhs.m20;
-		mat.m21 = m21 - rhs.m21;
-		mat.m22 = m22 - rhs.m22;
-		mat.m23 = m23 - rhs.m23;
-		mat.m30 = m30 - rhs.m30;
-		mat.m31 = m31 - rhs.m31;
-		mat.m32 = m32 - rhs.m32;
-		mat.m33 = m33 - rhs.m33;
+		auto mat = Matrix {};
+		mat.m00 = m00 - other.m00;
+		mat.m01 = m01 - other.m01;
+		mat.m02 = m02 - other.m02;
+		mat.m03 = m03 - other.m03;
+		mat.m10 = m10 - other.m10;
+		mat.m11 = m11 - other.m11;
+		mat.m12 = m12 - other.m12;
+		mat.m13 = m13 - other.m13;
+		mat.m20 = m20 - other.m20;
+		mat.m21 = m21 - other.m21;
+		mat.m22 = m22 - other.m22;
+		mat.m23 = m23 - other.m23;
+		mat.m30 = m30 - other.m30;
+		mat.m31 = m31 - other.m31;
+		mat.m32 = m32 - other.m32;
+		mat.m33 = m33 - other.m33;
 		return mat;
 	}
 
-	static Matrix Identity() {
+	Matrix& identity() {
 
-		Matrix mat{};
-		mat.m00 = 1;
-		mat.m11 = 1;
-		mat.m22 = 1;
-		mat.m33 = 1;
-		return mat;
+		m00 = 1;
+		m11 = 1;
+		m22 = 1;
+		m33 = 1;
+		return *this;
 	}
 
 	/*static Matrix Translate(const Vector3<T>& rhs) {
@@ -258,31 +242,30 @@ struct Matrix {
 		return mat;
 	}*/
 
-	static Matrix Perspective(const T fovy, const T aspect, const T near_dst, const T far_dst) {
+	Matrix& perspective(Type const fovy, Type const aspect, Type const near_dst, Type const far_dst) {
 
-		Matrix mat{};
-		mat.m00 = 1 / (std::tan(fovy / 2) * aspect);
-		mat.m11 = 1 / std::tan(fovy / 2);
-		mat.m22 = (far_dst + near_dst) / (near_dst - far_dst);
-		mat.m23 = -1;
-		mat.m32 = (2 * near_dst * far_dst) / (near_dst - far_dst);
-		return mat;
+		m00 = 1 / (std::tan(fovy / 2) * aspect);
+		m11 = 1 / std::tan(fovy / 2);
+		m22 = (far_dst + near_dst) / (near_dst - far_dst);
+		m23 = -1;
+		m32 = (2 * near_dst * far_dst) / (near_dst - far_dst);
+		return *this;
 	}
 
-	static Matrix Orthographic(
-		const T left, const T right,
-		const T bottom, const T top,
-		const T near_dst, const T far_dst) {
+	Matrix& orthographic(
+		Type const left, Type const right,
+		Type const bottom, Type const top,
+		Type const near_dst, Type const far_dst
+	) {
 
-		Matrix mat{};
-		mat.m00 = 2 / (right - left);
-		mat.m11 = 2 / (top - bottom);
-		mat.m22 = -2 / (far_dst - near_dst);
-		mat.m30 = -(right + left) / (right - left);
-		mat.m31 = -(top + bottom) / (top - bottom);
-		mat.m32 = -(far_dst + near_dst) / (far_dst - near_dst);
-		mat.m33 = 1;
-		return mat;
+		m00 = 2 / (right - left);
+		m11 = 2 / (top - bottom);
+		m22 = -2 / (far_dst - near_dst);
+		m30 = -(right + left) / (right - left);
+		m31 = -(top + bottom) / (top - bottom);
+		m32 = -(far_dst + near_dst) / (far_dst - near_dst);
+		m33 = 1;
+		return *this;
 	}
 
 	/*static Matrix LookAt(const Vector3<T>& eye, const Vector3<T>& target, const Vector3<T>& up) {
@@ -311,22 +294,16 @@ struct Matrix {
 		return mat;
 	}*/
 
-	bool operator==(const Matrix& rhs) const {
+	bool operator==(Matrix const& other) const {
 
-		return 
-			m00 == rhs.m00 && m01 == rhs.m01 && m02 == rhs.m02 && m03 == rhs.m03 &&
-			m10 == rhs.m10 && m11 == rhs.m11 && m12 == rhs.m12 && m13 == rhs.m13 &&
-			m20 == rhs.m20 && m21 == rhs.m21 && m22 == rhs.m22 && m23 == rhs.m23 &&
-			m30 == rhs.m30 && m31 == rhs.m31 && m32 == rhs.m32 && m33 == rhs.m33;
+		return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) == 
+			std::tie(other.m00, other.m01, other.m02, other.m03, other.m10, other.m11, other.m12, other.m13, other.m20, other.m21, other.m22, other.m23, other.m30, other.m31, other.m32, other.m33);
 	}
 
-	bool operator!=(const Matrix& rhs) const {
+	bool operator!=(Matrix const& other) const {
 
-		return 
-			m00 != rhs.m00 || m01 != rhs.m01 || m02 != rhs.m02 || m03 != rhs.m03 ||
-			m10 != rhs.m10 || m11 != rhs.m11 || m12 != rhs.m12 || m13 != rhs.m13 ||
-			m20 != rhs.m20 || m21 != rhs.m21 || m22 != rhs.m22 || m23 != rhs.m23 ||
-			m30 != rhs.m30 || m31 != rhs.m31 || m32 != rhs.m32 || m33 != rhs.m33;
+		return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) != 
+			std::tie(other.m00, other.m01, other.m02, other.m03, other.m10, other.m11, other.m12, other.m13, other.m20, other.m21, other.m22, other.m23, other.m30, other.m31, other.m32, other.m33);
 	}
 };
 
