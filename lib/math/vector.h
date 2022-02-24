@@ -12,7 +12,7 @@ struct Vector2 {
 
 	Vector2() = default;
 
-	Vector2(T const _x, Type const _y, Type const _z) : x(_x), y(_y) { }
+	Vector2(Type const _x, Type const _y) : x(_x), y(_y) { }
 
 	Vector2(Vector2 const& other) : x(other.x), y(other.y) { }
 
@@ -153,7 +153,7 @@ struct Vector3 {
 		return std::sqrt(x * x + y * y + z * z);
 	}
     
-	Vector3 operator*(T const other) const {
+	Vector3 operator*(Type const other) const {
 
 		return Vector3 { x * other, y * other, z * other };
 	}
@@ -163,7 +163,7 @@ struct Vector3 {
 		return Vector3 { x - other.x, y - other.y, z - other.z };
 	}
 
-	Vector3 operator-(T const other) const {
+	Vector3 operator-(Type const other) const {
 
 		return Vector3 { x - other, y - other, z - other };
 	}
@@ -178,12 +178,12 @@ struct Vector3 {
 		return Vector3 { x + other.x, y + other.y, z + other.z };
 	}
 
-	Vector3 operator+(T const other) const {
+	Vector3 operator+(Type const other) const {
 
 		return Vector3 { x + other, y + other, z + other };
 	}
 
-	Vector3 operator/(T const other) const {
+	Vector3 operator/(Type const other) const {
 
 		return Vector3 { x / other, y / other, z / other };
 	}
@@ -207,7 +207,7 @@ struct Vector3 {
 
 		x = y * other.z - z * other.y;
 		y = z * other.x - x * other.z;
-		z = x * other.y - y * other.x
+		z = x * other.y - y * other.x;
 		return *this;
 	}
 };
@@ -255,7 +255,7 @@ struct Vector4 {
         return *this;
     }
 
-	const T* data() const { return &x; }
+	const Type* data() const { return &x; }
 
 	inline size_t size() const { return 4; }
 
@@ -274,7 +274,7 @@ struct Vector4 {
 		return std::sqrt(x * x + y * y + z * z + w * w);
 	}
 
-	Vector4 operator*(T const other) const {
+	Vector4 operator*(Type const other) const {
 
 		return Vector4 { x * other, y * other, z * other, w * other };
 	}
@@ -284,7 +284,7 @@ struct Vector4 {
 		return Vector4 { x - other.x, y - other.y, z - other.z, w - other.w };
 	}
 
-	Vector4 operator-(T const other) const {
+	Vector4 operator-(Type const other) const {
 
 		return Vector4 { x - other, y - other, z - other, w - other };
 	}
@@ -299,19 +299,19 @@ struct Vector4 {
 		return Vector4 { x + other.x, y + other.y, z + other.z, w + other.w };
 	}
 
-	Vector4 operator+(T const other) const {
+	Vector4 operator+(Type const other) const {
 
 		return Vector4 { x + other, y + other, z + other, w + other };
 	}
 
-	Vector4 operator/(T const other) const {
+	Vector4 operator/(Type const other) const {
 
 		return Vector4 { x / other, y / other, z / other, w / other };
 	}
 
 	bool operator==(Vector4 const& other) const {
 
-		return std::tie(x, y, z) != std::tie(other.x, other.y, other.z, other.w);
+		return std::tie(x, y, z) == std::tie(other.x, other.y, other.z, other.w);
 	}
 
 	bool operator!=(Vector4 const& other) const {

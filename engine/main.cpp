@@ -36,7 +36,7 @@ int main(int*, char*) {
             }
         );
 
-        //backend.wait_for_idle_device();
+        backend.wait_for_idle_device();
 
     } catch(Exception& e) {
         std::cerr << std::format("[Exception] {}", e.what()) << std::endl;

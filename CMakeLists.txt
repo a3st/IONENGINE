@@ -20,6 +20,7 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 add_executable(Runtime-Win32
 
     engine/main.cpp
+    engine/obj_loader.cpp
     lib/thread_pool.cpp
 
     platform/window_win32.cpp

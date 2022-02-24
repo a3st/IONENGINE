@@ -23,7 +23,7 @@ public:
     Handle<Type> push(Type const& element) {
 
         const size_t cur_offset = _offset;
-        _instances.emplace(cur_offset, element);
+        _instances[static_cast<uint32_t>(cur_offset)] = element;
         ++_offset;
         return Handle<Type>(static_cast<uint32_t>(cur_offset));
     }

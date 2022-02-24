@@ -22,5 +22,6 @@
 #include <variant>
 #include <span>
 #include <string_view>
+#include <charconv>
 
 #include "cxx_helpers.h"

@@ -261,6 +261,7 @@ struct DescriptorSet {
 
 struct Pipeline {
     ComPtr<ID3D12PipelineState> pipeline_state;
+    std::vector<uint32_t> vertex_strides;
 };
 
 struct Shader {
@@ -321,6 +322,8 @@ struct Backend::Impl {
     InstanceContainer<RenderPass> render_passes;
     InstanceContainer<DescriptorLayout> descriptor_layouts;
     InstanceContainer<DescriptorSet> descriptor_sets;
+
+    Handle<Pipeline> current_pipeline;
 };
 
 Backend::Backend(uint32_t const adapter_index, platform::Window* const window, uint32_t const frame_count) : _impl(std::make_unique<Impl>()) {
@@ -739,7 +742,20 @@ Handle<Sampler> Backend::create_sampler(
     CompareOp const compare_op
 ) {
 
-    return Handle<Sampler>();
+    auto sampler_desc = D3D12_SAMPLER_DESC {};
+    
+    DescriptorAllocInfo descriptor_alloc_info = _impl->sampler_descriptor.allocate();
+
+    const uint32_t sampler_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+        descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+        sampler_size * // Device descriptor size
+        descriptor_alloc_info.offset // Allocation offset
+    };
+
+    _impl->device->CreateSampler(&sampler_desc, cpu_handle);
+
+    return _impl->samplers.push(Sampler { descriptor_alloc_info });
 }
 
 Handle<Shader> Backend::create_shader(std::span<char8_t> const shader_data, BackendFlags const flags) {
@@ -906,14 +922,19 @@ Handle<Pipeline> Backend::create_pipeline(
     std::vector<D3D12_INPUT_ELEMENT_DESC> input_elements;
     input_elements.reserve(vertex_inputs.size());
 
+    std::vector<uint32_t> vertex_strides;
+    vertex_strides.resize(15);
+
     for(auto const& input : vertex_inputs) {
         auto element_desc = D3D12_INPUT_ELEMENT_DESC {};
         element_desc.SemanticName = input.semantic.c_str();
-        element_desc.InputSlot = input.index;
+        element_desc.InputSlot = input.slot;
         element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
         element_desc.Format = get_dxgi_format(input.format);
         element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
         input_elements.emplace_back(element_desc);
+
+        vertex_strides[input.slot] += input.stride;
     }
     pipeline_desc.InputLayout.pInputElementDescs = input_elements.data();
     pipeline_desc.InputLayout.NumElements = static_cast<uint32_t>(input_elements.size());
@@ -1004,7 +1025,7 @@ Handle<Pipeline> Backend::create_pipeline(
         reinterpret_cast<void**>(pipeline_state.GetAddressOf())
     ));
 
-    return _impl->pipelines.push(Pipeline { pipeline_state });
+    return _impl->pipelines.push(Pipeline { pipeline_state, vertex_strides });
 }
 
 Handle<DescriptorSet> Backend::create_descriptor_set(Handle<DescriptorLayout> const& handle) {
@@ -1027,6 +1048,7 @@ Handle<DescriptorSet> Backend::create_descriptor_set(Handle<DescriptorLayout> co
             descriptor_alloc_infos.emplace_back(descriptor_alloc_info);
         }
     }
+    
     return _impl->descriptor_sets.push(DescriptorSet { descriptor_layout.root_signature, descriptor_layout.descriptor_ranges, descriptor_alloc_infos });
 }
 
@@ -1215,15 +1237,19 @@ void Backend::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handl
     _impl->frames[_impl->frame_index].command_list->ResourceBarrier(1, &resource_barrier);
 }
 
-void Backend::begin_render_pass(Handle<RenderPass> const& handle, std::vector<Color> const& rtv_clears, std::pair<float, uint8_t> dsv_clear) {
+void Backend::begin_render_pass(Handle<RenderPass> const& handle, std::span<Color> const rtv_clears, float const depth_clear, uint8_t const stencil_clear) {
 
     auto& render_pass = _impl->render_passes.get(handle);
 
-    for(uint16_t i = 0; i < rtv_clears.size(); ++i) {
+    for(uint32_t i = 0; i < rtv_clears.size(); ++i) {
         std::memcpy(render_pass.colors[i].BeginningAccess.Clear.ClearValue.Color, &rtv_clears[i], sizeof(Color));
     }
 
     if(render_pass.depth_stencil.has_value()) {
+
+        render_pass.depth_stencil.value().DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = depth_clear;
+        render_pass.depth_stencil.value().StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = stencil_clear;
+
         _impl->frames[_impl->frame_index].command_list->BeginRenderPass(
             static_cast<uint32_t>(render_pass.colors.size()), 
             render_pass.colors.data(), 
@@ -1269,6 +1295,8 @@ void Backend::bind_pipeline(Handle<Pipeline> const& handle) {
 
     auto& pipeline = _impl->pipelines.get(handle);
 
+    _impl->current_pipeline = handle;
+
     _impl->frames[_impl->frame_index].command_list->SetPipelineState(pipeline.pipeline_state.Get());
     _impl->frames[_impl->frame_index].command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
@@ -1276,12 +1304,12 @@ void Backend::bind_pipeline(Handle<Pipeline> const& handle) {
 void Backend::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& handle) {
 
     auto& buffer = _impl->buffers.get(handle);
+    auto& pipeline = _impl->pipelines.get(_impl->current_pipeline);
 
     auto vertex_view = D3D12_VERTEX_BUFFER_VIEW {};
     vertex_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
-    vertex_view.SizeInBytes = buffer.resource->GetDesc().Width;
-    // TO DO
-    vertex_view.StrideInBytes = sizeof(float) * 3;
+    vertex_view.SizeInBytes = static_cast<uint32_t>(buffer.resource->GetDesc().Width);
+    vertex_view.StrideInBytes = pipeline.vertex_strides[index];
 
     _impl->frames[_impl->frame_index].command_list->IASetVertexBuffers(index, 1, &vertex_view);
 }
@@ -1292,8 +1320,7 @@ void Backend::bind_index_buffer(Handle<Buffer> const& handle, Format const forma
 
     auto index_view = D3D12_INDEX_BUFFER_VIEW {};
     index_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
-    index_view.SizeInBytes = buffer.resource->GetDesc().Width;
-    // TO DO
+    index_view.SizeInBytes = static_cast<uint32_t>(buffer.resource->GetDesc().Width);
     index_view.Format = DXGI_FORMAT_R32_UINT;
 
     _impl->frames[_impl->frame_index].command_list->IASetIndexBuffer(&index_view);
@@ -1317,3 +1344,8 @@ void Backend::copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offs
         buffer.resource->Unmap(0, &range);
     }
 }
+
+void Backend::wait_for_idle_device() {
+
+}
+

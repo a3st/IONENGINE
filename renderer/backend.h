@@ -121,11 +121,14 @@ enum class BlendOp {
 };
 
 enum class Filter {
-
+    Anisotropic,
+    MinMagMipLinear,
+    ComparisonMinMagMipLinear
 };
 
 enum class AddressMode {
-    
+    Wrap,
+    Clamp
 };
 
 struct Extent2D {
@@ -261,7 +264,7 @@ public:
 
     void set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
 
-    void begin_render_pass(Handle<RenderPass> const& handle, std::vector<Color> const& rtv_clears, std::pair<float, uint8_t> dsv_clear);
+    void begin_render_pass(Handle<RenderPass> const& handle, std::span<Color> const rtv_clears, float const depth_clear, uint8_t const stencil_clear);
 
     void end_render_pass();
 
