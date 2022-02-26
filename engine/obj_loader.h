@@ -14,10 +14,15 @@ struct ObjMesh {
 class ObjLoader {
 public:
 
-    ObjLoader(std::span<char8_t> const data);
+    ObjLoader() = default;
+
+    bool parse(std::span<char8_t> const data);
+
+    const std::vector<ObjMesh>& get_meshes() const;
 
 private:
 
+    std::vector<ObjMesh> _meshes;
 };
 
 }

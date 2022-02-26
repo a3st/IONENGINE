@@ -5,9 +5,9 @@
 
 using namespace ionengine;
 
-ObjLoader::ObjLoader(std::span<char8_t> const data) {
+bool ObjLoader::parse(std::span<char8_t> const data) {
 
-    auto get_line = [](std::string_view const buffer, size_t offset, std::string_view& line, char const delimeter) -> size_t {
+    auto get_line = [](std::string_view const buffer, size_t& offset, std::string_view& line, char const delimeter) -> size_t {
         size_t read_bytes = 0;
         for(size_t i = offset; i < buffer.size(); ++i) {
             ++read_bytes;
@@ -16,6 +16,10 @@ ObjLoader::ObjLoader(std::span<char8_t> const data) {
                 break;
             }
         }
+        if(read_bytes + offset == buffer.size()) {
+            line = std::string_view(buffer.data() + offset, buffer.data() + buffer.size());
+        }
+        offset += read_bytes;
         return read_bytes;
     };
 
@@ -28,7 +32,6 @@ ObjLoader::ObjLoader(std::span<char8_t> const data) {
     auto mesh = ObjMesh {};
     
     for(size_t read_bytes = 0; (read_bytes = get_line(buffer, offset, str, '\n')) > 0; ) {
-        offset += read_bytes;
 
         // vertices
         if(str.contains("v ")) {
@@ -38,34 +41,13 @@ ObjLoader::ObjLoader(std::span<char8_t> const data) {
 
             // v space
             substr_read_bytes = get_line(str, substr_offset, substr, ' ');
-            substr_offset += substr_read_bytes;
 
             // v coords
             std::array<float, 3> coords;
             for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
-                substr_offset += substr_read_bytes;
                 auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coords[i]);
             }
             mesh.vertices.emplace_back(Vector3f(coords[0], coords[1], coords[2]));
-        }
-
-        // normals
-        if(str.contains("vn ")) {
-            std::string_view substr;
-            size_t substr_offset = 0;
-            size_t substr_read_bytes = 0;
-
-            // vn space
-            substr_read_bytes = get_line(str, substr_offset, substr, ' ');
-            substr_offset += substr_read_bytes;
-
-            // vn coords
-            std::array<float, 3> coords;
-            for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
-                substr_offset += substr_read_bytes;
-                auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coords[i]);
-            }
-            mesh.normals.emplace_back(Vector3f(coords[0], coords[1], coords[2]));
         }
 
         // vt
@@ -76,15 +58,30 @@ ObjLoader::ObjLoader(std::span<char8_t> const data) {
 
             // vt space
             substr_read_bytes = get_line(str, substr_offset, substr, ' ');
-            substr_offset += substr_read_bytes;
 
             // vt coords
             std::array<float, 2> coords;
             for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
-                substr_offset += substr_read_bytes;
                 auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coords[i]);
             }
             mesh.uvs.emplace_back(Vector2f(coords[0], coords[1]));
+        }
+
+        // normals
+        if(str.contains("vn ")) {
+            std::string_view substr;
+            size_t substr_offset = 0;
+            size_t substr_read_bytes = 0;
+
+            // vn space
+            substr_read_bytes = get_line(str, substr_offset, substr, ' ');
+
+            // vn coords
+            std::array<float, 3> coords;
+            for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
+                auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coords[i]);
+            }
+            mesh.normals.emplace_back(Vector3f(coords[0], coords[1], coords[2]));
         }
         
         if(str.contains("f ")) {
@@ -96,9 +93,30 @@ ObjLoader::ObjLoader(std::span<char8_t> const data) {
 
             // f space
             substr_read_bytes = get_line(str, substr_offset, substr, ' ');
-            substr_offset += substr_read_bytes;
 
-            
+            // v coords
+            std::array<uint32_t, 9> indices;
+
+            for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
+
+                std::string_view substr_2;
+                size_t substr_offset_2 = 0;
+                size_t substr_read_bytes_2 = 0;
+
+                for(size_t substr_read_bytes_2 = 0, j = 0; (substr_read_bytes_2 = get_line(substr, substr_offset_2, substr_2, '/')) > 0; ++j) {
+                    auto result = std::from_chars(substr_2.data(), substr_2.data() + substr_2.size(), indices[i + (j * 3)]);
+                }
+            }
+
+            mesh.indices.insert(mesh.indices.end(), indices.begin(), indices.end());
         }
     }
+
+    meshes.emplace_back(mesh);
+    return true;
+}
+
+const std::vector<ObjMesh>& ObjLoader::get_meshes() const {
+
+    return _meshes;
 }
