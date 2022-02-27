@@ -28,7 +28,8 @@ enum class Format {
     Unknown,
     RGBA8Unorm,
     RGBA32,
-    RGB32
+    RGB32,
+    RG32
 };
 
 enum class BackendFlags : uint16_t {

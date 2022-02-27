@@ -27,8 +27,6 @@ bool ObjLoader::parse(std::span<char8_t> const data) {
     std::string_view str;
     size_t offset = 0;
 
-    std::vector<ObjMesh> meshes;
-
     auto mesh = ObjMesh {};
     
     for(size_t read_bytes = 0; (read_bytes = get_line(buffer, offset, str, '\n')) > 0; ) {
@@ -112,11 +110,6 @@ bool ObjLoader::parse(std::span<char8_t> const data) {
         }
     }
 
-    meshes.emplace_back(mesh);
+    _meshes.emplace_back(mesh);
     return true;
-}
-
-const std::vector<ObjMesh>& ObjLoader::get_meshes() const {
-
-    return _meshes;
 }

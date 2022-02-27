@@ -27,8 +27,12 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
     auto mesh_data = load_file("objects/cube.obj");
 
-    ObjLoader obj_loader(std::span<char8_t>(reinterpret_cast<char8_t*>(mesh_data.data()), mesh_data.size()));
-    
+    ObjLoader obj_loader;
+    obj_loader.parse(std::span<char8_t>(reinterpret_cast<char8_t*>(mesh_data.data()), mesh_data.size()));
+
+    for(auto it = obj_loader.begin(); it != obj_loader.end(); ++it) {
+        std::cout << "Mesh loaded" << std::endl;
+    }
 
     rpasses.resize(2);
     pipelines.resize(2);
@@ -49,10 +53,16 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     shaders[1] = _backend->create_shader(shader_frag, BackendFlags::PixelShader);
 
     buffer_vertex = _backend->create_buffer(65536, BackendFlags::HostVisible);
+    buffer_index = _backend->create_buffer(65536, BackendFlags::HostVisible);
 
-    std::vector<float> vertex = { -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f,  0.5f, 0.0f };
+    //std::vector<float> vertex = { -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f,  0.5f, 0.0f };
+    //_backend->copy_buffer_data(buffer_vertex, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(vertex.data()), vertex.size() * sizeof(float)));
 
-    _backend->copy_buffer_data(buffer_vertex, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(vertex.data()), vertex.size() * sizeof(float)));
+    _backend->copy_buffer_data(buffer_vertex, 0, 
+        std::span<char8_t>(reinterpret_cast<char8_t*>(obj_loader.begin()->vertices.data()), obj_loader.begin()->vertices.size() * sizeof(float)));
+
+    _backend->copy_buffer_data(buffer_index, 0, 
+        std::span<char8_t>(reinterpret_cast<char8_t*>(obj_loader.begin()->indices.data()), obj_loader.begin()->indices.size() * sizeof(uint32_t)));
 
     constant_buffer = _backend->create_buffer(65536, BackendFlags::HostVisible | BackendFlags::ConstantBuffer);
 
@@ -87,7 +97,10 @@ void WorldRenderer::update() {
         );
 
         std::vector<VertexInputDesc> vertex_inputs = {
-            { VertexInputDesc { "POSITION", 0, Format::RGB32, 0, sizeof(float) * 3 } }
+            VertexInputDesc { "POSITION", 0, Format::RGB32, 0, sizeof(float) * 3 },
+            VertexInputDesc { "TEXCOORD0", 1, Format::RG32, 0, sizeof(float) * 2 },
+            VertexInputDesc { "NORMAL", 2, Format::RGB32, 0, sizeof(float) * 3 },
+            VertexInputDesc { "TANGENT", 2, Format::RGB32, 0, sizeof(float) * 3 }
         };
 
         pipelines[frame_index] = _backend->create_pipeline(
