@@ -324,3 +324,24 @@ using Vector4f = Vector4<float>;
 using Vector4d = Vector4<double>;
 
 }
+
+namespace std {
+
+    template<typename Type> struct hash<ionengine::Vector2<Type>> {
+        size_t operator()(ionengine::Vector2<Type> const& other) const {
+            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y);
+        }
+    };
+
+	template<typename Type> struct hash<ionengine::Vector3<Type>> {
+        size_t operator()(ionengine::Vector3<Type> const& other) const {
+            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z);
+        }
+    };
+
+	template<typename Type> struct hash<ionengine::Vector4<Type>> {
+        size_t operator()(ionengine::Vector4<Type> const& other) const {
+            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^ std::hash<Type>()(other.w);
+        }
+    };
+}

@@ -461,8 +461,9 @@ Handle<Texture> Backend::create_texture(
     switch(format) {
         case Format::Unknown: resource_desc.Format = DXGI_FORMAT_UNKNOWN;
         case Format::RGBA8Unorm: resource_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        case Format::BC1: resource_desc.Format = DXGI_FORMAT_BC1_UNORM;
     }
-    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+    resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
     D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
     MemoryAllocInfo mem_alloc_info = _impl->local_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
@@ -554,7 +555,6 @@ Handle<Texture> Backend::create_texture(
                 case Dimension::_2D: {
                     view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
                     view_desc.Texture2D.MipLevels = mip_levels;
-                    view_desc.Texture2D.PlaneSlice = array_layers;
                 } break;
                 case Dimension::_3D: {
                     view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
@@ -575,11 +575,7 @@ Handle<Texture> Backend::create_texture(
         } break;
     }
 
-    return _impl->textures.push(Texture {
-        resource,
-        mem_alloc_info,
-        descriptor_alloc_info
-    });
+    return _impl->textures.push(Texture { resource, mem_alloc_info, descriptor_alloc_info });
 }
 
 Handle<Buffer> Backend::create_buffer(size_t const size, BackendFlags const flags) {
@@ -742,7 +738,45 @@ Handle<Sampler> Backend::create_sampler(
     CompareOp const compare_op
 ) {
 
+    auto get_filter = [&](Filter const filter) -> D3D12_FILTER {
+        switch(filter) {
+            case Filter::Anisotropic: return D3D12_FILTER_ANISOTROPIC;
+            case Filter::MinMagMipLinear: return D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+            case Filter::ComparisonMinMagMipLinear: return D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+        }
+        return D3D12_FILTER_ANISOTROPIC;
+    };
+
+    auto get_address_mode = [&](AddressMode const address_mode) -> D3D12_TEXTURE_ADDRESS_MODE {
+        switch(address_mode) {
+            case AddressMode::Wrap: return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+            case AddressMode::Clamp: return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        }
+        return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    };
+
+    auto get_comparison_func = [&](CompareOp const compare_op) {
+        switch(compare_op) {
+            case CompareOp::Always: return D3D12_COMPARISON_FUNC_ALWAYS;
+            case CompareOp::Equal: return D3D12_COMPARISON_FUNC_EQUAL;
+            case CompareOp::Greater: return D3D12_COMPARISON_FUNC_GREATER;
+            case CompareOp::GreaterEqual: return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+            case CompareOp::Less: return D3D12_COMPARISON_FUNC_LESS;
+            case CompareOp::LessEqual: return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+            case CompareOp::Never: return D3D12_COMPARISON_FUNC_NEVER;
+            case CompareOp::NotEqual: return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+        }
+        return D3D12_COMPARISON_FUNC_ALWAYS;
+    };
+
     auto sampler_desc = D3D12_SAMPLER_DESC {};
+    sampler_desc.Filter = get_filter(filter);
+    sampler_desc.AddressU = get_address_mode(address_u);
+    sampler_desc.AddressV = get_address_mode(address_v);
+    sampler_desc.AddressW = get_address_mode(address_w);
+    sampler_desc.ComparisonFunc = get_comparison_func(compare_op);
+    sampler_desc.MaxAnisotropy = aniso;
+    sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
     
     DescriptorAllocInfo descriptor_alloc_info = _impl->sampler_descriptor.allocate();
 
@@ -797,22 +831,29 @@ Handle<DescriptorLayout> Backend::create_descriptor_layout(std::span<DescriptorR
     auto get_shader_visibility = [&](BackendFlags const flags) -> D3D12_SHADER_VISIBILITY {
         switch(flags) {
             case BackendFlags::VertexShader: return D3D12_SHADER_VISIBILITY_VERTEX;
-            case BackendFlags::PixelShader: return D3D12_SHADER_VISIBILITY_VERTEX;
+            case BackendFlags::PixelShader: return D3D12_SHADER_VISIBILITY_PIXEL;
             case BackendFlags::GeometryShader: return D3D12_SHADER_VISIBILITY_GEOMETRY;
             case BackendFlags::DomainShader: return D3D12_SHADER_VISIBILITY_DOMAIN;
             case BackendFlags::HullShader: return D3D12_SHADER_VISIBILITY_HULL;
-            default: return D3D12_SHADER_VISIBILITY_ALL;
+            case BackendFlags::AllShader: return D3D12_SHADER_VISIBILITY_ALL;
         }
         return D3D12_SHADER_VISIBILITY_ALL;
     };
+
+    std::map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> index_ranges;
+    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_CBV] = 0;
+    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SRV] = 0;
+    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_UAV] = 0;
+    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER] = 0;
 
     for(auto& range : ranges) {
         auto _range = D3D12_DESCRIPTOR_RANGE {};
         _range.RangeType = get_descriptor_range_type(range.range_type);
         _range.NumDescriptors = range.count;
-        _range.BaseShaderRegister = range.index;
+        _range.BaseShaderRegister = index_ranges[_range.RangeType];
         _range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
+        index_ranges[_range.RangeType] += _range.NumDescriptors;
         _ranges.emplace_back(_range);
 
         auto parameter = D3D12_ROOT_PARAMETER {};
@@ -910,6 +951,7 @@ Handle<Pipeline> Backend::create_pipeline(
         switch(format) {
             case Format::RGB32: return DXGI_FORMAT_R32G32B32_FLOAT;
             case Format::RGBA32: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+            case Format::RG32: return DXGI_FORMAT_R32G32_FLOAT;
         }
         return DXGI_FORMAT_R32G32B32_FLOAT;
     };
@@ -1064,12 +1106,12 @@ void Backend::write_descriptor_set(Handle<DescriptorSet> const& handle, std::spa
                 auto& texture = _impl->textures.get(arg);
                 const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    texture.descriptor_alloc_info.heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    texture.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     srv_size * // Device descriptor size
                     texture.descriptor_alloc_info.offset // Allocation offset
                 };
                 auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     srv_size * // Device descriptor size
                     descriptor_set.descriptor_alloc_infos[write.index].offset // Allocation offset
                 };
@@ -1078,12 +1120,12 @@ void Backend::write_descriptor_set(Handle<DescriptorSet> const& handle, std::spa
                 auto& buffer = _impl->buffers.get(arg);
                 const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
                 auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    buffer.descriptor_alloc_info.heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    buffer.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     srv_size * // Device descriptor size
                     buffer.descriptor_alloc_info.offset // Allocation offset
                 };
                 auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     srv_size * // Device descriptor size
                     descriptor_set.descriptor_alloc_infos[write.index].offset // Allocation offset
                 };
@@ -1093,12 +1135,12 @@ void Backend::write_descriptor_set(Handle<DescriptorSet> const& handle, std::spa
                 auto& sampler = _impl->samplers.get(arg);
                 const uint32_t sampler_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
                 auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    sampler.descriptor_alloc_info.heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    sampler.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     sampler_size * // Device descriptor size
                     sampler.descriptor_alloc_info.offset // Allocation offset
                 };
                 auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     sampler_size * // Device descriptor size
                     descriptor_set.descriptor_alloc_infos[write.index].offset // Allocation offset
                 };
@@ -1301,27 +1343,34 @@ void Backend::bind_pipeline(Handle<Pipeline> const& handle) {
     _impl->frames[_impl->frame_index].command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-void Backend::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& handle) {
+void Backend::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& handle, uint64_t const offset) {
 
     auto& buffer = _impl->buffers.get(handle);
     auto& pipeline = _impl->pipelines.get(_impl->current_pipeline);
 
     auto vertex_view = D3D12_VERTEX_BUFFER_VIEW {};
-    vertex_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
+    vertex_view.BufferLocation = buffer.resource->GetGPUVirtualAddress() + offset;
     vertex_view.SizeInBytes = static_cast<uint32_t>(buffer.resource->GetDesc().Width);
     vertex_view.StrideInBytes = pipeline.vertex_strides[index];
 
     _impl->frames[_impl->frame_index].command_list->IASetVertexBuffers(index, 1, &vertex_view);
 }
 
-void Backend::bind_index_buffer(Handle<Buffer> const& handle, Format const format) {
+void Backend::bind_index_buffer(Format const format, Handle<Buffer> const& handle, uint64_t const offset) {
+
+    auto get_dxgi_format = [&](Format const format) {
+        switch(format) {
+            case Format::R32: return DXGI_FORMAT_R32_UINT;
+        }
+        return DXGI_FORMAT_R32_UINT;
+    }; 
 
     auto& buffer = _impl->buffers.get(handle);
 
     auto index_view = D3D12_INDEX_BUFFER_VIEW {};
-    index_view.BufferLocation = buffer.resource->GetGPUVirtualAddress();
+    index_view.BufferLocation = buffer.resource->GetGPUVirtualAddress() + offset;
     index_view.SizeInBytes = static_cast<uint32_t>(buffer.resource->GetDesc().Width);
-    index_view.Format = DXGI_FORMAT_R32_UINT;
+    index_view.Format = get_dxgi_format(format);
 
     _impl->frames[_impl->frame_index].command_list->IASetIndexBuffer(&index_view);
 }
@@ -1329,6 +1378,11 @@ void Backend::bind_index_buffer(Handle<Buffer> const& handle, Format const forma
 void Backend::draw(uint32_t const vertex_index, uint32_t const vertex_count) {
 
     _impl->frames[_impl->frame_index].command_list->DrawInstanced(vertex_count, 1, vertex_index, 0);
+}
+
+void Backend::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) {
+
+    _impl->frames[_impl->frame_index].command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
 }
 
 void Backend::copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offset, std::span<char8_t> const data) {

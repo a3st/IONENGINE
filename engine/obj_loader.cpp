@@ -93,8 +93,7 @@ bool ObjLoader::parse(std::span<char8_t> const data) {
             substr_read_bytes = get_line(str, substr_offset, substr, ' ');
 
             // v coords
-            std::array<uint32_t, 9> indices;
-
+            std::array<uint32_t, 3> indices;
             for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
 
                 std::string_view substr_2;
@@ -102,11 +101,14 @@ bool ObjLoader::parse(std::span<char8_t> const data) {
                 size_t substr_read_bytes_2 = 0;
 
                 for(size_t substr_read_bytes_2 = 0, j = 0; (substr_read_bytes_2 = get_line(substr, substr_offset_2, substr_2, '/')) > 0; ++j) {
-                    auto result = std::from_chars(substr_2.data(), substr_2.data() + substr_2.size(), indices[i + (j * 3)]);
+                    auto result = std::from_chars(substr_2.data(), substr_2.data() + substr_2.size(), indices[j]); // i + (j * 3) replaced by j
+                    indices[j] -= 1; // reduce to 1 index because obj index start is 1
                 }
-            }
 
-            mesh.indices.insert(mesh.indices.end(), indices.begin(), indices.end());
+                auto index = ObjIndex {};
+                std::memcpy(&index, indices.data(), sizeof(ObjIndex));
+                mesh.indices.emplace_back(index);
+            }
         }
     }
 

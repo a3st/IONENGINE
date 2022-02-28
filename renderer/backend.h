@@ -29,7 +29,9 @@ enum class Format {
     RGBA8Unorm,
     RGBA32,
     RGB32,
-    RG32
+    RG32,
+    R32,
+    BC1
 };
 
 enum class BackendFlags : uint16_t {
@@ -44,7 +46,8 @@ enum class BackendFlags : uint16_t {
     PixelShader = 1 << 8,
     ComputeShader = 1 << 9,
     HullShader = 1 << 10,
-    HostVisible = 1 << 11
+    HostVisible = 1 << 11,
+    AllShader = VertexShader | GeometryShader | DomainShader | ComputeShader | HullShader | PixelShader
 };
 
 DECLARE_ENUM_CLASS_BIT_FLAG(BackendFlags)
@@ -251,9 +254,9 @@ public:
 
     void copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offset, std::span<char8_t> const data);
 
-    void bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& handle);
+    void bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& handle, uint64_t const offset);
 
-    void bind_index_buffer(Handle<Buffer> const& handle, Format const format);
+    void bind_index_buffer(Format const format, Handle<Buffer> const& handle, uint64_t const offset);
 
     void barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handle, MemoryState const before, MemoryState const after);
 
@@ -270,6 +273,8 @@ public:
     void end_render_pass();
 
     void draw(uint32_t const vertex_index, uint32_t const vertex_count);
+
+    void draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
 
     Handle<Texture> begin_frame();
 

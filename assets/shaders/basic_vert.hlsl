@@ -4,7 +4,7 @@ struct VSInput {
 	float3 position : POSITION;
 	float2 uv : TEXCOORD0;
 	float3 normal : NORMAL;
-	float3 tangent : TANGENT;
+	//float3 tangent : TANGENT;
 };
 
 cbuffer WorldBuffer : register(b0) {
@@ -15,6 +15,8 @@ cbuffer WorldBuffer : register(b0) {
 
 struct VSOutput {
 	float4 position : SV_POSITION;
+	float2 uv : TEXCOORD0;
+	float3 normal : NORMAL;
 };
 
 VSOutput main(VSInput input) {
@@ -28,6 +30,8 @@ VSOutput main(VSInput input) {
 	newPosition = mul(newPosition, proj);
 
 	output.position = newPosition;
+	output.uv = input.uv;
+	output.normal = input.normal;
 
 	return output;
 }

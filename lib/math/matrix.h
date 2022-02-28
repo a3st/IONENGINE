@@ -273,7 +273,7 @@ struct Matrix {
 	Matrix& look_at(Vector3<Type> const& eye, Vector3<Type> const& target, Vector3<Type> const& up) {
 
 		Vector3<Type> z = (eye - target).normalize();
-		Vector3<Type> x = up.cross(z).normalize();
+		Vector3<Type> x = Vector3(up).cross(z).normalize();
 		Vector3<Type> y = Vector3(z).cross(x);
 
 		identity();

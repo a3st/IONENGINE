@@ -4,11 +4,17 @@
 
 namespace ionengine {
 
+struct ObjIndex {
+    uint32_t vertex;
+    uint32_t uv;
+    uint32_t normal;
+};
+
 struct ObjMesh {
     std::vector<Vector3f> vertices;
     std::vector<Vector3f> normals;
     std::vector<Vector2f> uvs;
-    std::vector<uint32_t> indices;
+    std::vector<ObjIndex> indices;
 };
 
 class ObjLoader {
