@@ -2,7 +2,7 @@
 
 :: Settings
 set COMPILER_PATH=C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.22000.0\x64
-set OUTPUT_PATH=E:\GitHub\ionengine_ops\build\Debug\shaders
+set OUTPUT_PATH=..\..\build\Debug\shaders
 
 echo Start of compiling shaders (D3D12)
 

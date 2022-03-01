@@ -6,6 +6,7 @@
 #include <lib/math/matrix.h>
 #include <lib/math/vector.h>
 #include <engine/obj_loader.h>
+#include <engine/dds_loader.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -36,9 +37,9 @@ namespace std {
 
 WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
 
-    auto load_file = [&](std::filesystem::path const& path) -> std::vector<char8_t> {
+    auto load_file = [&](std::filesystem::path const& path, std::ios::openmode const ios) -> std::vector<char8_t> {
 
-        std::ifstream ifs(path);
+        std::ifstream ifs(path, ios);
         if(!ifs.is_open()) {
             throw std::runtime_error("Can't open shader!");
         }
@@ -51,7 +52,7 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
         return buf;
     };
 
-    auto mesh_data = load_file("objects/house.obj");
+    auto mesh_data = load_file("objects/house.obj", std::ios::beg);
 
     std::unordered_map<Vertex, uint32_t> uniq_vertices;
 
@@ -83,6 +84,12 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
     index_count = static_cast<uint32_t>(indices.size());
 
+    auto texture_data = load_file("textures/base_tex.dds", std::ios::binary);
+
+    DDSLoader dds_loader;
+    dds_loader.parse(texture_data);
+
+
     rpasses.resize(2);
     pipelines.resize(2);
     shaders.resize(2);
@@ -95,8 +102,8 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
     desc_layout = _backend->create_descriptor_layout(ranges);
 
-    auto shader_vert = load_file("shaders/basic_vert.bin");
-    auto shader_frag = load_file("shaders/basic_frag.bin");
+    auto shader_vert = load_file("shaders/basic_vert.bin", std::ios::binary);
+    auto shader_frag = load_file("shaders/basic_frag.bin", std::ios::binary);
 
     shaders[0] = _backend->create_shader(shader_vert, BackendFlags::VertexShader);
     shaders[1] = _backend->create_shader(shader_frag, BackendFlags::PixelShader);

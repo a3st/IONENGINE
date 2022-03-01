@@ -21,6 +21,7 @@ add_executable(Runtime-Win32
 
     engine/main.cpp
     engine/obj_loader.cpp
+    engine/dds_loader.cpp
     lib/thread_pool.cpp
 
     platform/window_win32.cpp
