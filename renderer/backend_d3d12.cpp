@@ -185,13 +185,7 @@ DescriptorPool::DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE
     ComPtr<ID3D12DescriptorHeap> heap;
     THROW_IF_FAILED(device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(heap.GetAddressOf())));
 
-    _heaps.emplace_back(
-        DescriptorHeap { 
-            heap, 
-            std::vector<uint8_t>(heap_size, 0x0), 
-            0 
-        }
-    );
+    _heaps.emplace_back(DescriptorHeap { heap, std::vector<uint8_t>(heap_size, 0x0), 0 });
 }
 
 DescriptorAllocInfo DescriptorPool::allocate() {
@@ -290,12 +284,35 @@ struct Backend::Impl {
 
     HANDLE wait_event;
 
-    struct Frame {
-        ComPtr<ID3D12Fence> fence;
+    struct CommandBuffer {
         ComPtr<ID3D12CommandAllocator> command_allocator;
         ComPtr<ID3D12GraphicsCommandList4> command_list;
+        Handle<Pipeline> current_pipeline;
+    };
+
+    struct Fence {
+        ComPtr<ID3D12Fence> fence;
         uint64_t fence_value;
+    };
+
+    struct StageBuffer {
+        ComPtr<ID3D12Resource> resource;
+        MemoryAllocInfo memory_alloc_info;
+        uint64_t offset;
+    };
+
+    struct Frame {
+        Fence direct_fence;
+        Fence copy_fence;
+        Fence compute_fence;
+        
+        CommandBuffer direct_buffer;
+        CommandBuffer copy_buffer;
+        CommandBuffer compute_buffer;
+        
         Handle<Texture> texture;
+
+        StageBuffer stage_buffer;
     };
 
     std::vector<Frame> frames;
@@ -323,7 +340,7 @@ struct Backend::Impl {
     InstanceContainer<DescriptorLayout> descriptor_layouts;
     InstanceContainer<DescriptorSet> descriptor_sets;
 
-    Handle<Pipeline> current_pipeline;
+    CommandBuffer* current_buffer;
 };
 
 Backend::Backend(uint32_t const adapter_index, platform::Window* const window, uint32_t const frame_count) : _impl(std::make_unique<Impl>()) {
@@ -354,8 +371,8 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
     _impl->sampler_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 64, false);
     _impl->srv_descriptor = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 128, false);
     
-    _impl->local_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 64);
-    _impl->host_visible_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_UPLOAD, 1024 * 1024 * 32);
+    _impl->local_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_DEFAULT, 1024 * 1024 * 256);
+    _impl->host_visible_memory = MemoryPool(_impl->device.Get(), D3D12_HEAP_TYPE_UPLOAD, 1024 * 1024 * 128);
 
     _impl->srv_shader_pool = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024, true);
     _impl->sampler_shader_pool = DescriptorPool(_impl->device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024, true);
@@ -405,19 +422,21 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
         _impl->device->CreateRenderTargetView(resource.Get(), &view_desc, cpu_handle);
 
         auto frame = Backend::Impl::Frame {}; 
-        frame.texture = _impl->textures.push(Texture {
-            resource,
-            {},
-            descriptor_alloc_info
-        });
+        frame.texture = _impl->textures.push(Texture { resource, {}, descriptor_alloc_info });
 
-        THROW_IF_FAILED(_impl->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), reinterpret_cast<void**>(frame.fence.GetAddressOf())));
-        ++frame.fence_value;
+        THROW_IF_FAILED(_impl->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), reinterpret_cast<void**>(frame.direct_fence.fence.GetAddressOf())));
+        ++frame.direct_fence.fence_value;
+
+        THROW_IF_FAILED(_impl->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), reinterpret_cast<void**>(frame.copy_fence.fence.GetAddressOf())));
+        ++frame.copy_fence.fence_value;
+
+        THROW_IF_FAILED(_impl->device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), reinterpret_cast<void**>(frame.compute_fence.fence.GetAddressOf())));
+        ++frame.compute_fence.fence_value;
 
         THROW_IF_FAILED(_impl->device->CreateCommandAllocator(
             D3D12_COMMAND_LIST_TYPE_DIRECT, 
             __uuidof(ID3D12CommandAllocator), 
-            reinterpret_cast<void**>(frame.command_allocator.GetAddressOf()))
+            reinterpret_cast<void**>(frame.direct_buffer.command_allocator.GetAddressOf()))
         );
         
         THROW_IF_FAILED(_impl->device->CreateCommandList1(
@@ -425,8 +444,58 @@ Backend::Backend(uint32_t const adapter_index, platform::Window* const window, u
             D3D12_COMMAND_LIST_TYPE_DIRECT, 
             D3D12_COMMAND_LIST_FLAG_NONE,
             __uuidof(ID3D12GraphicsCommandList4),
-            reinterpret_cast<void**>(frame.command_list.GetAddressOf()))
+            reinterpret_cast<void**>(frame.direct_buffer.command_list.GetAddressOf()))
         );
+
+        THROW_IF_FAILED(_impl->device->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_COPY, 
+            __uuidof(ID3D12CommandAllocator), 
+            reinterpret_cast<void**>(frame.copy_buffer.command_allocator.GetAddressOf()))
+        );
+        
+        THROW_IF_FAILED(_impl->device->CreateCommandList1(
+            0, 
+            D3D12_COMMAND_LIST_TYPE_COPY, 
+            D3D12_COMMAND_LIST_FLAG_NONE,
+            __uuidof(ID3D12GraphicsCommandList4),
+            reinterpret_cast<void**>(frame.copy_buffer.command_list.GetAddressOf()))
+        );
+
+        THROW_IF_FAILED(_impl->device->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_COMPUTE, 
+            __uuidof(ID3D12CommandAllocator), 
+            reinterpret_cast<void**>(frame.compute_buffer.command_allocator.GetAddressOf()))
+        );
+        
+        THROW_IF_FAILED(_impl->device->CreateCommandList1(
+            0, 
+            D3D12_COMMAND_LIST_TYPE_COMPUTE, 
+            D3D12_COMMAND_LIST_FLAG_NONE,
+            __uuidof(ID3D12GraphicsCommandList4),
+            reinterpret_cast<void**>(frame.compute_buffer.command_list.GetAddressOf()))
+        );
+
+        auto resource_desc = D3D12_RESOURCE_DESC {};
+        resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+        resource_desc.Width = 1024 * 1024 * 32;
+        resource_desc.Height = 1;
+        resource_desc.MipLevels = 1;
+        resource_desc.DepthOrArraySize = 1;
+        resource_desc.SampleDesc.Count = 1;
+        resource_desc.Format = DXGI_FORMAT_UNKNOWN;
+        resource_desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+        frame.stage_buffer.memory_alloc_info = _impl->host_visible_memory.allocate(resource_desc.Width);
+
+        THROW_IF_FAILED(_impl->device->CreatePlacedResource(
+            frame.stage_buffer.memory_alloc_info.heap->heap.Get(),
+            frame.stage_buffer.memory_alloc_info.offset,
+            &resource_desc,
+            D3D12_RESOURCE_STATE_GENERIC_READ,
+            nullptr,
+            __uuidof(ID3D12Resource), 
+            reinterpret_cast<void**>(frame.stage_buffer.resource.GetAddressOf())
+        ));
 
         _impl->frames.emplace_back(frame);
     }
@@ -459,9 +528,12 @@ Handle<Texture> Backend::create_texture(
     resource_desc.DepthOrArraySize = array_layers;
     resource_desc.SampleDesc.Count = 1;
     switch(format) {
-        case Format::Unknown: resource_desc.Format = DXGI_FORMAT_UNKNOWN;
-        case Format::RGBA8Unorm: resource_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        case Format::BC1: resource_desc.Format = DXGI_FORMAT_BC1_UNORM;
+        case Format::Unknown: resource_desc.Format = DXGI_FORMAT_UNKNOWN; break;
+        case Format::RGBA8Unorm: resource_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; break;
+        case Format::BGRA8: resource_desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM; break;
+        case Format::BGR8: resource_desc.Format = DXGI_FORMAT_B8G8R8X8_UNORM; break;
+        case Format::BC1: resource_desc.Format = DXGI_FORMAT_BC1_UNORM; break;
+        case Format::BC5: resource_desc.Format = DXGI_FORMAT_BC5_UNORM; break;
     }
     resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
@@ -723,10 +795,7 @@ Handle<RenderPass> Backend::create_render_pass(
         dsv_opt = dsv;
     }
 
-    return _impl->render_passes.push(RenderPass {
-        rtvs,
-        dsv_opt
-    });
+    return _impl->render_passes.push(RenderPass { rtvs, dsv_opt });
 }
 
 Handle<Sampler> Backend::create_sampler(
@@ -1156,7 +1225,7 @@ void Backend::bind_descriptor_set(Handle<DescriptorSet> const& handle) {
 
     auto& descriptor_set = _impl->descriptor_sets.get(handle);
 
-    _impl->frames[_impl->frame_index].command_list->SetGraphicsRootSignature(descriptor_set.root_signature.Get());
+    _impl->current_buffer->command_list->SetGraphicsRootSignature(descriptor_set.root_signature.Get());
 
     size_t binding = 0;
     for(uint32_t i = 0; i < descriptor_set.descriptor_ranges.size(); ++i) {
@@ -1184,38 +1253,25 @@ void Backend::bind_descriptor_set(Handle<DescriptorSet> const& handle) {
         }
 
         binding += descriptor_set.descriptor_ranges[i].NumDescriptors;
-        _impl->frames[_impl->frame_index].command_list->SetGraphicsRootDescriptorTable(i, gpu_handle);     
+        _impl->current_buffer->command_list->SetGraphicsRootDescriptorTable(i, gpu_handle);     
     }
 }
 
-Handle<Texture> Backend::begin_frame() {
-
-    THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_allocator->Reset());
-    THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_list->Reset(_impl->frames[_impl->frame_index].command_allocator.Get(), nullptr));
-
-    auto heaps = std::array<ID3D12DescriptorHeap*, 2> { 
-        _impl->null_srv_descriptor_alloc_info.heap->heap.Get(), 
-        _impl->null_sampler_descriptor_alloc_info.heap->heap.Get() 
-    };
-    _impl->frames[_impl->frame_index].command_list->SetDescriptorHeaps(2, heaps.data());
+Handle<Texture> Backend::get_current_buffer() const {
 
     return _impl->frames[_impl->frame_index].texture;
 }
 
-void Backend::end_frame() {
+void Backend::swap_buffers() {
 
-    THROW_IF_FAILED(_impl->frames[_impl->frame_index].command_list->Close());
+    const uint64_t value = _impl->frames[_impl->frame_index].direct_fence.fence_value;
+    THROW_IF_FAILED(_impl->direct_queue->Signal(_impl->frames[_impl->frame_index].direct_fence.fence.Get(), value));
 
-    _impl->direct_queue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(_impl->frames[_impl->frame_index].command_list.GetAddressOf()));
-
-    const uint64_t value = _impl->frames[_impl->frame_index].fence_value;
-    THROW_IF_FAILED(_impl->direct_queue->Signal(_impl->frames[_impl->frame_index].fence.Get(), value));
-
-    if(_impl->frames[_impl->frame_index].fence->GetCompletedValue() < value) {
-        THROW_IF_FAILED(_impl->frames[_impl->frame_index].fence->SetEventOnCompletion(value, _impl->wait_event));
+    if(_impl->frames[_impl->frame_index].direct_fence.fence->GetCompletedValue() < value) {
+        THROW_IF_FAILED(_impl->frames[_impl->frame_index].direct_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
         WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
     }
-    ++_impl->frames[_impl->frame_index].fence_value;
+    ++_impl->frames[_impl->frame_index].direct_fence.fence_value;
 
     _impl->swapchain->Present(0, 0);
 
@@ -1232,7 +1288,7 @@ void Backend::set_viewport(uint32_t const x, uint32_t const y, uint32_t const wi
     viewport.MinDepth = D3D12_MIN_DEPTH;
     viewport.MaxDepth = D3D12_MAX_DEPTH;
 
-    _impl->frames[_impl->frame_index].command_list->RSSetViewports(1, &viewport);
+    _impl->current_buffer->command_list->RSSetViewports(1, &viewport);
 }
 
 void Backend::set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom) {
@@ -1243,7 +1299,7 @@ void Backend::set_scissor(uint32_t const left, uint32_t const top, uint32_t cons
     rect.left = static_cast<LONG>(left);
     rect.right = static_cast<LONG>(right);
 
-    _impl->frames[_impl->frame_index].command_list->RSSetScissorRects(1, &rect);
+    _impl->current_buffer->command_list->RSSetScissorRects(1, &rect);
 }
 
 void Backend::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handle, MemoryState const before, MemoryState const after) {
@@ -1266,9 +1322,10 @@ void Backend::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handl
 		    case MemoryState::Common: return D3D12_RESOURCE_STATE_COMMON;
 		    case MemoryState::RenderTarget: return D3D12_RESOURCE_STATE_RENDER_TARGET;
 		    case MemoryState::Present: return D3D12_RESOURCE_STATE_PRESENT;
-		    // case MemoryState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
-		    // case MemoryState::CopySource: return D3D12_RESOURCE_STATE_COPY_SOURCE;
-		    // case MemoryState::CopyDest: return D3D12_RESOURCE_STATE_COPY_DEST;
+		    //case MemoryState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
+		    case MemoryState::CopySrc: return D3D12_RESOURCE_STATE_COPY_SOURCE;
+		    case MemoryState::CopyDst: return D3D12_RESOURCE_STATE_COPY_DEST;
+            case MemoryState::PixelShaderResource: return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
         }
         return D3D12_RESOURCE_STATE_COMMON;
     };
@@ -1276,7 +1333,7 @@ void Backend::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handl
     resource_barrier.Transition.StateBefore = get_memory_state(before);
     resource_barrier.Transition.StateAfter = get_memory_state(after);
 
-    _impl->frames[_impl->frame_index].command_list->ResourceBarrier(1, &resource_barrier);
+    _impl->current_buffer->command_list->ResourceBarrier(1, &resource_barrier);
 }
 
 void Backend::begin_render_pass(Handle<RenderPass> const& handle, std::span<Color> const rtv_clears, float const depth_clear, uint8_t const stencil_clear) {
@@ -1292,14 +1349,14 @@ void Backend::begin_render_pass(Handle<RenderPass> const& handle, std::span<Colo
         render_pass.depth_stencil.value().DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = depth_clear;
         render_pass.depth_stencil.value().StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = stencil_clear;
 
-        _impl->frames[_impl->frame_index].command_list->BeginRenderPass(
+        _impl->current_buffer->command_list->BeginRenderPass(
             static_cast<uint32_t>(render_pass.colors.size()), 
             render_pass.colors.data(), 
             &render_pass.depth_stencil.value(), 
             D3D12_RENDER_PASS_FLAG_NONE
         );
     } else {
-        _impl->frames[_impl->frame_index].command_list->BeginRenderPass(
+        _impl->current_buffer->command_list->BeginRenderPass(
             static_cast<uint32_t>(render_pass.colors.size()), 
             render_pass.colors.data(), 
             nullptr, 
@@ -1310,10 +1367,10 @@ void Backend::begin_render_pass(Handle<RenderPass> const& handle, std::span<Colo
 
 void Backend::end_render_pass() {
 
-    _impl->frames[_impl->frame_index].command_list->EndRenderPass();
+    _impl->current_buffer->command_list->EndRenderPass();
 }
 
-void Backend::resize_frame(uint32_t const width, uint32_t const height, uint32_t const frame_count) {
+void Backend::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
 
     /*for(uint32_t i = 0; i < _impl->frame_count; ++i) {
         const uint64_t value = _impl->fence_values[i];
@@ -1337,23 +1394,23 @@ void Backend::bind_pipeline(Handle<Pipeline> const& handle) {
 
     auto& pipeline = _impl->pipelines.get(handle);
 
-    _impl->current_pipeline = handle;
+    _impl->current_buffer->current_pipeline = handle;
 
-    _impl->frames[_impl->frame_index].command_list->SetPipelineState(pipeline.pipeline_state.Get());
-    _impl->frames[_impl->frame_index].command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    _impl->current_buffer->command_list->SetPipelineState(pipeline.pipeline_state.Get());
+    _impl->current_buffer->command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
 void Backend::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& handle, uint64_t const offset) {
 
     auto& buffer = _impl->buffers.get(handle);
-    auto& pipeline = _impl->pipelines.get(_impl->current_pipeline);
+    auto& pipeline = _impl->pipelines.get(_impl->current_buffer->current_pipeline);
 
     auto vertex_view = D3D12_VERTEX_BUFFER_VIEW {};
     vertex_view.BufferLocation = buffer.resource->GetGPUVirtualAddress() + offset;
     vertex_view.SizeInBytes = static_cast<uint32_t>(buffer.resource->GetDesc().Width);
     vertex_view.StrideInBytes = pipeline.vertex_strides[index];
 
-    _impl->frames[_impl->frame_index].command_list->IASetVertexBuffers(index, 1, &vertex_view);
+    _impl->current_buffer->command_list->IASetVertexBuffers(index, 1, &vertex_view);
 }
 
 void Backend::bind_index_buffer(Format const format, Handle<Buffer> const& handle, uint64_t const offset) {
@@ -1372,17 +1429,64 @@ void Backend::bind_index_buffer(Format const format, Handle<Buffer> const& handl
     index_view.SizeInBytes = static_cast<uint32_t>(buffer.resource->GetDesc().Width);
     index_view.Format = get_dxgi_format(format);
 
-    _impl->frames[_impl->frame_index].command_list->IASetIndexBuffer(&index_view);
+    _impl->current_buffer->command_list->IASetIndexBuffer(&index_view);
 }
 
 void Backend::draw(uint32_t const vertex_index, uint32_t const vertex_count) {
 
-    _impl->frames[_impl->frame_index].command_list->DrawInstanced(vertex_count, 1, vertex_index, 0);
+    _impl->current_buffer->command_list->DrawInstanced(vertex_count, 1, vertex_index, 0);
 }
 
 void Backend::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) {
 
-    _impl->frames[_impl->frame_index].command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
+    _impl->current_buffer->command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
+}
+
+void Backend::copy_texture_data(Handle<Texture> const& dst, std::span<char8_t const> const data) {
+
+    auto& texture = _impl->textures.get(dst);
+    D3D12_RESOURCE_DESC resource_desc = texture.resource->GetDesc();
+
+    std::array<D3D12_PLACED_SUBRESOURCE_FOOTPRINT, 16> footprints;
+    std::array<uint32_t, 16> num_rows;
+    std::array<uint64_t, 16> row_sizes;
+
+    size_t total_bytes = 0;
+
+    _impl->device->GetCopyableFootprints(
+        &resource_desc,
+        0,
+        1,
+        0,
+        footprints.data(),
+        num_rows.data(),
+        row_sizes.data(),
+        &total_bytes
+    );
+
+    auto range = D3D12_RANGE {};
+    char8_t* ptr;
+
+    auto& stage_buffer = _impl->frames[_impl->frame_index].stage_buffer;
+
+    // auto& layout = footprints[0];
+    // const uint64_t subresource_pitch = layout.Footprint.RowPitch + (~layout.Footprint.RowPitch & D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+
+    THROW_IF_FAILED(stage_buffer.resource->Map(0, &range, reinterpret_cast<void**>(&ptr)));
+    std::memcpy(ptr + stage_buffer.offset, data.data(), data.size());
+    stage_buffer.resource->Unmap(0, &range);
+
+    auto dst_location = D3D12_TEXTURE_COPY_LOCATION {};
+    dst_location.pResource = texture.resource.Get();
+    dst_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dst_location.SubresourceIndex = 0;
+ 
+    auto src_location = D3D12_TEXTURE_COPY_LOCATION {};
+    src_location.pResource = stage_buffer.resource.Get();
+    src_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    src_location.PlacedFootprint = footprints[0];
+
+    _impl->current_buffer->command_list->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 }
 
 void Backend::copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offset, std::span<char8_t> const data) {
@@ -1401,5 +1505,79 @@ void Backend::copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offs
 
 void Backend::wait_for_idle_device() {
 
+
 }
 
+void Backend::begin_context(ContextType const context_type) {
+
+    switch(context_type) {
+        case ContextType::Graphics: {
+            _impl->current_buffer = &_impl->frames[_impl->frame_index].direct_buffer; 
+
+            THROW_IF_FAILED(_impl->current_buffer->command_allocator->Reset());
+            THROW_IF_FAILED(_impl->current_buffer->command_list->Reset(_impl->current_buffer->command_allocator.Get(), nullptr));
+
+            auto heaps = std::array<ID3D12DescriptorHeap*, 2> { 
+                _impl->null_srv_descriptor_alloc_info.heap->heap.Get(), 
+                _impl->null_sampler_descriptor_alloc_info.heap->heap.Get() 
+            };
+            _impl->current_buffer->command_list->SetDescriptorHeaps(2, heaps.data());
+        } break;
+        case ContextType::Copy: {
+            _impl->current_buffer = &_impl->frames[_impl->frame_index].copy_buffer; 
+
+            THROW_IF_FAILED(_impl->current_buffer->command_allocator->Reset());
+            THROW_IF_FAILED(_impl->current_buffer->command_list->Reset(_impl->current_buffer->command_allocator.Get(), nullptr));
+        } break;
+        case ContextType::Compute: {
+            _impl->current_buffer = &_impl->frames[_impl->frame_index].copy_buffer; 
+
+            THROW_IF_FAILED(_impl->current_buffer->command_allocator->Reset());
+            THROW_IF_FAILED(_impl->current_buffer->command_list->Reset(_impl->current_buffer->command_allocator.Get(), nullptr));
+        } break;
+    }
+}
+
+void Backend::end_context() {
+
+    THROW_IF_FAILED(_impl->current_buffer->command_list->Close());
+    _impl->current_buffer = nullptr;
+}
+
+void Backend::execute_context(ContextType const context_type) {
+
+    switch(context_type) {
+        case ContextType::Graphics: {
+            _impl->direct_queue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(_impl->frames[_impl->frame_index].direct_buffer.command_list.GetAddressOf()));
+        } break;
+        case ContextType::Copy: {
+            _impl->copy_queue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(_impl->frames[_impl->frame_index].copy_buffer.command_list.GetAddressOf()));
+        } break;
+        case ContextType::Compute: {
+            _impl->compute_queue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(_impl->frames[_impl->frame_index].compute_buffer.command_list.GetAddressOf()));
+        } break;
+    }
+}
+
+void Backend::wait_context(ContextType const context_type) {
+
+    switch(context_type) {
+
+        case ContextType::Copy: {
+            const uint64_t value = _impl->frames[_impl->frame_index].copy_fence.fence_value;
+            THROW_IF_FAILED(_impl->copy_queue->Signal(_impl->frames[_impl->frame_index].copy_fence.fence.Get(), value));
+
+            ++_impl->frames[_impl->frame_index].copy_fence.fence_value;
+
+            if(_impl->frames[_impl->frame_index].copy_fence.fence->GetCompletedValue() < value) {
+                THROW_IF_FAILED(_impl->frames[_impl->frame_index].copy_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
+                WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
+            }
+        } break;
+    }
+}
+
+bool Backend::is_finished_context(ContextType const context_type) {
+
+    return true;
+}

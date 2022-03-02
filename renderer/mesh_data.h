@@ -2,10 +2,24 @@
 
 #pragma once
 
+#include <renderer/backend.h>
+#include <lib/math/vector.h>
+
 namespace ionengine::renderer {
 
 struct MeshData {
+    uint32_t positions_count;
+    uint32_t uv_normals_count;
+    uint32_t indices_count;
+    std::vector<float> positions;
+    std::vector<float> uv_normals;
+    std::vector<uint32_t> indices;
 
+    inline static std::vector<VertexInputDesc> vertex_declaration = {
+        VertexInputDesc { "POSITION", 0, Format::RGB32, 0, sizeof(float) * 3 },
+        VertexInputDesc { "TEXCOORD", 1, Format::RG32, 1, sizeof(float) * 2 },
+        VertexInputDesc { "NORMAL", 2, Format::RGB32, 1, sizeof(float) * 3 }
+    };
 };
 
 }

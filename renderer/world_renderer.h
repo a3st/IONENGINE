@@ -28,8 +28,6 @@ private:
     Backend* _backend;
     ThreadPool* _thread_pool;
 
-    //FrameGraph _frame_graph;
-
     std::vector<Handle<RenderPass>> rpasses;
     std::vector<Handle<Pipeline>> pipelines;
     std::vector<Handle<Shader>> shaders;
@@ -40,10 +38,9 @@ private:
     Handle<Buffer> constant_buffer;
     Handle<Sampler> sampler;
     Handle<Texture> texture_base;
-
     Handle<DescriptorSet> descriptor_set;
-    uint32_t frame_index{0};
 
+    uint32_t frame_index{0};
     uint32_t index_count;
 };
 

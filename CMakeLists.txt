@@ -20,6 +20,9 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 add_executable(Runtime-Win32
 
     engine/main.cpp
+    engine/asset.cpp
+    engine/asset_manager.cpp
+    engine/asset_compiler.cpp
     engine/obj_loader.cpp
     engine/dds_loader.cpp
     lib/thread_pool.cpp
@@ -29,6 +32,7 @@ add_executable(Runtime-Win32
 
     renderer/backend_d3d12.cpp
     renderer/world_renderer.cpp
+    renderer/mesh_data.cpp
     #renderer/frame_graph.cpp
     renderer/color.cpp
 )

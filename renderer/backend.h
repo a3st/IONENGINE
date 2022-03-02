@@ -26,12 +26,15 @@ enum class Dimension {
 
 enum class Format {
     Unknown,
+    BGRA8,
+    BGR8,
     RGBA8Unorm,
     RGBA32,
     RGB32,
     RG32,
     R32,
-    BC1
+    BC1,
+    BC5
 };
 
 enum class BackendFlags : uint16_t {
@@ -52,7 +55,7 @@ enum class BackendFlags : uint16_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(BackendFlags)
 
-enum class QueueType {
+enum class ContextType {
     Graphics,
     Copy,
     Compute
@@ -72,7 +75,10 @@ enum class RenderPassLoadOp {
 enum class MemoryState {
     Common,
     Present,
-    RenderTarget
+    RenderTarget,
+    CopySrc,
+    CopyDst,
+    PixelShaderResource
 };
 
 enum class RenderPassStoreOp {
@@ -250,7 +256,19 @@ public:
         Handle<RenderPass> const& render_pass_handle
     );
 
+    void begin_context(ContextType const context_type);
+
+    void end_context();
+
+    void execute_context(ContextType const context_type);
+
+    void wait_context(ContextType const context_type);
+
+    bool is_finished_context(ContextType const context_type);
+
     void write_descriptor_set(Handle<DescriptorSet> const& handle, std::span<DescriptorWriteDesc> const writes);
+
+    void copy_texture_data(Handle<Texture> const& dst, std::span<char8_t const> const data);
 
     void copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offset, std::span<char8_t> const data);
 
@@ -276,11 +294,11 @@ public:
 
     void draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
 
-    Handle<Texture> begin_frame();
+    Handle<Texture> get_current_buffer() const;
 
-    void end_frame();
+    void swap_buffers();
 
-    void resize_frame(uint32_t const width, uint32_t const height, uint32_t const frame_count);
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
 
     void wait_for_idle_device();
 

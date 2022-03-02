@@ -9,6 +9,8 @@
 #include <renderer/backend.h>
 #include <renderer/world_renderer.h>
 
+#include <engine/asset_compiler.h>
+
 using namespace ionengine;
 
 int main(int*, char*) {
@@ -21,6 +23,21 @@ int main(int*, char*) {
 
         renderer::Backend backend(0, &window, 2);
         renderer::WorldRenderer world_renderer(&backend, &thread_pool);
+
+        // Gameplay start
+        AssetCompiler compiler;
+        if(compiler.compile("objects/cube.obj")) {
+            std::cout << "Asset 'objects/cube.obj' was compiled!" << std::endl;
+        }
+
+        std::cout << std::get<renderer::MeshData>(compiler.data()->data).indices.size() << std::endl;
+
+        for(auto& element : std::get<renderer::MeshData>(compiler.data()->data).uv_normals) {
+            std::cout << std::format("{}", std::to_string(element)) << " "; 
+        }
+        std::cout << std::endl;
+
+        // Gameplay end
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
@@ -29,7 +46,7 @@ int main(int*, char*) {
                 
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
-                    case platform::WindowEventType::Updated: { 
+                    case platform::WindowEventType::Updated: {
                         world_renderer.update();
                     } break;
                 }
