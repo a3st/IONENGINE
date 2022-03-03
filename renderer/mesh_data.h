@@ -8,9 +8,6 @@
 namespace ionengine::renderer {
 
 struct MeshData {
-    uint32_t positions_count;
-    uint32_t uv_normals_count;
-    uint32_t indices_count;
     std::vector<float> positions;
     std::vector<float> uv_normals;
     std::vector<uint32_t> indices;

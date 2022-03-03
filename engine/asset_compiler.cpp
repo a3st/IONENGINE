@@ -126,7 +126,12 @@ bool AssetCompiler::compile(std::filesystem::path const& file) {
         mesh_data.indices.resize(out_indices.size());
         std::memcpy(mesh_data.indices.data(), out_indices.data(), out_indices.size());
 
-        _asset.data = mesh_data;
+        auto mesh_file = MeshFile {};
+        mesh_file.magic = ((uint32_t)(uint8_t)'M') | ((uint32_t)(uint8_t)'E' << 8) | ((uint32_t)(uint8_t)'S' << 16) | ((uint32_t)(uint8_t)'H' << 24);
+        mesh_file.positions_count = static_cast<uint32_t>(mesh_data.positions.size());
+        mesh_file.positions_offset = 0;
+
+        //_asset.data = mesh_data;
     }
 
     return true;

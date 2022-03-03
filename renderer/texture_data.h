@@ -2,10 +2,13 @@
 
 #pragma once
 
+#include <renderer/backend.h>
+
 namespace ionengine::renderer {
 
 struct TextureData {
-    
+    Format format;
+    //std::vector<
 };
 
 }
