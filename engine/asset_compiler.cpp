@@ -129,9 +129,14 @@ bool AssetCompiler::compile(std::filesystem::path const& file) {
         auto mesh_file = MeshFile {};
         mesh_file.magic = ((uint32_t)(uint8_t)'M') | ((uint32_t)(uint8_t)'E' << 8) | ((uint32_t)(uint8_t)'S' << 16) | ((uint32_t)(uint8_t)'H' << 24);
         mesh_file.positions_count = static_cast<uint32_t>(mesh_data.positions.size());
-        mesh_file.positions_offset = 0;
+        mesh_file.positions_offset = sizeof(MeshFile) - sizeof(renderer::MeshData);
+        mesh_file.uv_normals_count = static_cast<uint32_t>(mesh_data.uv_normals.size());
+        mesh_file.indices_offset = mesh_file.positions_offset + static_cast<uint32_t>(mesh_data.positions.size()) * sizeof(float);
+        mesh_file.indices_count = static_cast<uint32_t>(mesh_data.indices.size());
+        mesh_file.indices_offset = mesh_file.uv_normals_offset + static_cast<uint32_t>(mesh_data.uv_normals.size()) * sizeof(float);
+        mesh_file.data = mesh_data;
 
-        //_asset.data = mesh_data;
+        _asset.data = mesh_data;
     }
 
     return true;

@@ -18,6 +18,11 @@ struct MeshFile {
     renderer::MeshData data;
 };
 
+struct TextureFile {
+    uint32_t magic;
+    
+};
+
 struct Asset {
     std::variant<renderer::MeshData, renderer::TextureData> data;
 };
