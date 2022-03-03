@@ -30,12 +30,15 @@ int main(int*, char*) {
             std::cout << "Asset 'objects/cube.obj' was compiled!" << std::endl;
         }
 
-        std::cout << std::get<renderer::MeshData>(compiler.data()->data).indices.size() << std::endl;
+        std::vector<char8_t> serialized_data;
+        compiler.serialize(serialized_data);
 
-        for(auto& element : std::get<renderer::MeshData>(compiler.data()->data).uv_normals) {
-            std::cout << std::format("{}", std::to_string(element)) << " "; 
+        auto save_to_file = [&](std::filesystem::path const& path) {
+            std::ofstream ofs(path);
+            if(!ofs.is_open()) {
+                throw std::runtime_error("Can't open file!");
+            }
         }
-        std::cout << std::endl;
 
         // Gameplay end
     

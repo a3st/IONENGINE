@@ -13,11 +13,13 @@ public:
 
     bool compile(std::filesystem::path const& file);
 
-    const Asset* data() const { return &_asset; }
+    size_t serialize(std::vector<char8_t>& data);
+
+    const std::variant<MeshFile, TextureFile>* data() const { return &_file; }
 
 private:
 
-    Asset _asset;
+    std::variant<MeshFile, TextureFile> _file;
 };
 
 }

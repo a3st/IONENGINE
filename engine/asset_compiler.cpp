@@ -136,8 +136,43 @@ bool AssetCompiler::compile(std::filesystem::path const& file) {
         mesh_file.indices_offset = mesh_file.uv_normals_offset + static_cast<uint32_t>(mesh_data.uv_normals.size()) * sizeof(float);
         mesh_file.data = mesh_data;
 
-        _asset.data = mesh_data;
+        _file = mesh_file;
     }
 
     return true;
+}
+
+size_t AssetCompiler::serialize(std::vector<char8_t>& data) {
+
+    uint64_t offset = 0;
+    std::visit([&](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, MeshFile>) {
+            size_t const header_size = sizeof(MeshFile) - sizeof(renderer::MeshData);
+            size_t const positions_size = arg.data.positions.size() * sizeof(float);
+            size_t const uv_normals_size = arg.data.uv_normals.size() * sizeof(float);
+            size_t const indices_size = arg.data.indices.size() * sizeof(uint32_t);
+            size_t const total_bytes = 
+                header_size + // Header size
+                positions_size + // MeshData positions size
+                uv_normals_size + // MeshData uv normals size
+                indices_size // MeshData indices size 
+            ;
+            data.resize(total_bytes);
+            std::memcpy(data.data(), &arg, header_size);
+            offset += header_size;
+            std::memcpy(data.data(), arg.data.positions.data(), positions_size);
+            offset += positions_size;
+            std::memcpy(data.data(), arg.data.uv_normals.data(), uv_normals_size);
+            offset += uv_normals_size;
+            std::memcpy(data.data(), arg.data.indices.data(), indices_size);
+            offset += indices_size;
+        } else if constexpr (std::is_same_v<T, TextureFile>) {
+            // TO DO
+        } else {
+            static_assert(always_false_v<T>, "non-exhaustive visitor!");
+        }
+    }, _file);
+
+    return offset;
 }
