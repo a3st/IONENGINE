@@ -11,7 +11,7 @@ bool DDSLoader::parse(std::span<char8_t> const data) {
         size_t read_bytes = 0;
         if(offset + size <= src.size()) {
             read_bytes = size;
-            dst = std::span<char8_t>(src.data() + offset, src.data() + size);
+            dst = std::span<char8_t>(src.data() + offset, size);
         }
         offset += read_bytes;
         return read_bytes;

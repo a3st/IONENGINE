@@ -124,14 +124,14 @@ bool AssetCompiler::compile(std::filesystem::path const& file) {
         }
 
         mesh_data.indices.resize(out_indices.size());
-        std::memcpy(mesh_data.indices.data(), out_indices.data(), out_indices.size());
+        std::memcpy(mesh_data.indices.data(), out_indices.data(), out_indices.size() * sizeof(uint32_t));
 
         auto mesh_file = MeshFile {};
-        mesh_file.magic = ((uint32_t)(uint8_t)'M') | ((uint32_t)(uint8_t)'E' << 8) | ((uint32_t)(uint8_t)'S' << 16) | ((uint32_t)(uint8_t)'H' << 24);
+        mesh_file.magic = static_cast<uint32_t>(Asset::MeshMagic);
         mesh_file.positions_count = static_cast<uint32_t>(mesh_data.positions.size());
         mesh_file.positions_offset = sizeof(MeshFile) - sizeof(renderer::MeshData);
         mesh_file.uv_normals_count = static_cast<uint32_t>(mesh_data.uv_normals.size());
-        mesh_file.indices_offset = mesh_file.positions_offset + static_cast<uint32_t>(mesh_data.positions.size()) * sizeof(float);
+        mesh_file.uv_normals_offset = mesh_file.positions_offset + static_cast<uint32_t>(mesh_data.positions.size()) * sizeof(float);
         mesh_file.indices_count = static_cast<uint32_t>(mesh_data.indices.size());
         mesh_file.indices_offset = mesh_file.uv_normals_offset + static_cast<uint32_t>(mesh_data.uv_normals.size()) * sizeof(float);
         mesh_file.data = mesh_data;
@@ -145,6 +145,7 @@ bool AssetCompiler::compile(std::filesystem::path const& file) {
 size_t AssetCompiler::serialize(std::vector<char8_t>& data) {
 
     uint64_t offset = 0;
+
     std::visit([&](auto&& arg) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<T, MeshFile>) {
@@ -156,16 +157,17 @@ size_t AssetCompiler::serialize(std::vector<char8_t>& data) {
                 header_size + // Header size
                 positions_size + // MeshData positions size
                 uv_normals_size + // MeshData uv normals size
-                indices_size // MeshData indices size 
+                indices_size // MeshData indices size
             ;
+
             data.resize(total_bytes);
             std::memcpy(data.data(), &arg, header_size);
             offset += header_size;
-            std::memcpy(data.data(), arg.data.positions.data(), positions_size);
+            std::memcpy(data.data() + offset, arg.data.positions.data(), positions_size);
             offset += positions_size;
-            std::memcpy(data.data(), arg.data.uv_normals.data(), uv_normals_size);
+            std::memcpy(data.data() + offset, arg.data.uv_normals.data(), uv_normals_size);
             offset += uv_normals_size;
-            std::memcpy(data.data(), arg.data.indices.data(), indices_size);
+            std::memcpy(data.data() + offset, arg.data.indices.data(), indices_size);
             offset += indices_size;
         } else if constexpr (std::is_same_v<T, TextureFile>) {
             // TO DO
@@ -175,4 +177,71 @@ size_t AssetCompiler::serialize(std::vector<char8_t>& data) {
     }, _file);
 
     return offset;
+}
+
+bool AssetCompiler::deserialize(std::vector<char8_t> const& data) {
+
+    auto read_bytes = [&](std::span<char8_t const> const src, uint64_t& offset, std::span<char8_t const>& dst, uint64_t const size) -> size_t {
+        size_t read_bytes = 0;
+        if(offset + size <= src.size()) {
+            read_bytes = size;
+            dst = std::span<char8_t const>(src.data() + offset, size);
+        }
+        offset += read_bytes;
+        return read_bytes;
+    };
+
+    std::span<char8_t const> buffer;
+    uint64_t offset = 0;
+
+    uint32_t magic = 0;
+
+    if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
+        std::memcpy(&magic, buffer.data(), buffer.size());
+    } else {
+        return false;
+    }
+
+    offset = 0;
+
+    switch(magic) {
+        case static_cast<uint32_t>(Asset::MeshMagic): {
+            auto model_file = MeshFile {};
+
+            if(read_bytes(data, offset, buffer, sizeof(MeshFile) - sizeof(renderer::MeshData)) > 0) {
+                std::memcpy(&model_file, buffer.data(), buffer.size());
+            } else {
+                return false;
+            }
+
+            if(read_bytes(data, offset, buffer, model_file.positions_count * sizeof(float)) > 0) {
+                model_file.data.positions.resize(model_file.positions_count);
+                std::memcpy(model_file.data.positions.data(), buffer.data(), buffer.size());
+            } else {
+                return false;
+            }
+
+            if(read_bytes(data, offset, buffer, model_file.uv_normals_count * sizeof(float)) > 0) {
+                model_file.data.uv_normals.resize(model_file.uv_normals_count);
+                std::memcpy(model_file.data.uv_normals.data(), buffer.data(), buffer.size());
+            } else {
+                return false;
+            }
+
+            if(read_bytes(data, offset, buffer, model_file.indices_count * sizeof(uint32_t)) > 0) {
+                model_file.data.indices.resize(model_file.indices_count);
+                std::memcpy(model_file.data.indices.data(), buffer.data(), buffer.size());
+            } else {
+                return false;
+            }
+
+            std::cout << "AssetType: Model" << std::endl;
+        } break;
+        case static_cast<uint32_t>(Asset::TextureMagic): {
+
+            std::cout << "AssetType: Texture" << std::endl;
+        } break;
+    }
+    
+    return true;
 }

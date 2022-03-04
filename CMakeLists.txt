@@ -35,6 +35,8 @@ add_executable(Runtime-Win32
     renderer/mesh_data.cpp
     #renderer/frame_graph.cpp
     renderer/color.cpp
+
+    project/world_controller.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

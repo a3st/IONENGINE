@@ -3,10 +3,17 @@
 #pragma once
 
 #include <renderer/backend.h>
-//#include <renderer/frame_graph.h>
+#include <renderer/mesh_data.h>
 #include <lib/thread_pool.h>
+#include <lib/math/matrix.h>
 
 namespace ionengine::renderer {
+
+struct WorldBuffer {
+    Matrixf model;
+    Matrixf view;
+    Matrixf projection;
+};
 
 class WorldRenderer {
 public:
@@ -22,6 +29,10 @@ public:
     WorldRenderer& operator=(WorldRenderer&&) = delete;
 
     void update();
+
+    void draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model);
+
+    void set_projection_view(Matrixf const& projection, Matrixf const& view);
 
 private:
 
@@ -42,6 +53,9 @@ private:
 
     uint32_t frame_index{0};
     uint32_t index_count;
+
+    std::vector<MeshData const*> _meshes;
+    std::vector<uint32_t> _draw_indices;
 };
 
 }

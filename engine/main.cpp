@@ -8,8 +8,7 @@
 
 #include <renderer/backend.h>
 #include <renderer/world_renderer.h>
-
-#include <engine/asset_compiler.h>
+#include <project/world_controller.h>
 
 using namespace ionengine;
 
@@ -23,30 +22,15 @@ int main(int*, char*) {
 
         renderer::Backend backend(0, &window, 2);
         renderer::WorldRenderer world_renderer(&backend, &thread_pool);
+        project::WorldController world_controller;
 
-        // Gameplay start
-        AssetCompiler compiler;
-        if(compiler.compile("objects/cube.obj")) {
-            std::cout << "Asset 'objects/cube.obj' was compiled!" << std::endl;
+        if(!world_controller.initialize()) {
+            throw Exception(u8"Error during initialize world controller");
         }
-
-        std::vector<char8_t> serialized_data;
-        compiler.serialize(serialized_data);
-
-        auto save_to_file = [&](std::filesystem::path const& path) {
-            std::ofstream ofs(path);
-            if(!ofs.is_open()) {
-                throw std::runtime_error("Can't open file!");
-            }
-        }
-
-        // Gameplay end
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
-
                 flow = platform::WindowEventFlow::Poll;
-                
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: {

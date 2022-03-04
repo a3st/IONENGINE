@@ -2,21 +2,11 @@
 
 #include <precompiled.h>
 #include <renderer/world_renderer.h>
-#include <renderer/mesh_data.h>
 
-#include <lib/math/matrix.h>
 #include <lib/math/vector.h>
-#include <engine/obj_loader.h>
-#include <engine/dds_loader.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
-
-struct WorldBuffer {
-    Matrixf m;
-    Matrixf v;
-    Matrixf p;
-};
 
 WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
 
@@ -137,4 +127,9 @@ void WorldRenderer::update() {
     _backend->swap_buffers();
 
     frame_index = (frame_index + 1) % 2;
+}
+
+void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data) {
+
+    _meshes[sort_index] = mesh_data;
 }
