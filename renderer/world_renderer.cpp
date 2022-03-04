@@ -11,12 +11,10 @@ using namespace ionengine::renderer;
 WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
 
     auto load_file = [&](std::filesystem::path const& path, std::ios::openmode const ios) -> std::vector<char8_t> {
-
         std::ifstream ifs(path, ios);
         if(!ifs.is_open()) {
-            throw std::runtime_error("Can't open file!");
+            throw std::runtime_error("Can not open file");
         }
-
         ifs.seekg(0, std::ios::end);
         size_t size = ifs.tellg();
         ifs.seekg(0, std::ios::beg);
@@ -25,17 +23,16 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
         return buf;
     };
 
-    rpasses.resize(2);
-    pipelines.resize(2);
-    shaders.resize(2);
+    _render_passes.resize(2);
+    _pipelines.resize(2);
+    _shaders.resize(2);
 
-    std::vector<DescriptorRangeDesc> ranges = {
+    auto ranges = std::vector<DescriptorRangeDesc> {
         DescriptorRangeDesc { DescriptorRangeType::ConstantBuffer, 0, 1, BackendFlags::VertexShader },
         DescriptorRangeDesc { DescriptorRangeType::ShaderResource, 1, 1, BackendFlags::PixelShader },
         DescriptorRangeDesc { DescriptorRangeType::Sampler, 2, 1, BackendFlags::PixelShader }
     };
-
-    desc_layout = _backend->create_descriptor_layout(ranges);
+    _pbr_layout = _backend->create_descriptor_layout(ranges);
 
     auto shader_vert = load_file("shaders/basic_vert.bin", std::ios::binary);
     auto shader_frag = load_file("shaders/basic_frag.bin", std::ios::binary);
@@ -129,7 +126,13 @@ void WorldRenderer::update() {
     frame_index = (frame_index + 1) % 2;
 }
 
-void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data) {
+void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model) {
 
     _meshes[sort_index] = mesh_data;
+}
+
+void WorldRenderer::set_projection_view(Matrixf const& projection, Matrixf const& view) {
+
+    _world_buffer.projection = Matrixf(projection).transpose();
+    _world_buffer.view = Matrixf(view).transpose();
 }

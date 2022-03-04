@@ -39,23 +39,29 @@ private:
     Backend* _backend;
     ThreadPool* _thread_pool;
 
-    std::vector<Handle<RenderPass>> rpasses;
-    std::vector<Handle<Pipeline>> pipelines;
-    std::vector<Handle<Shader>> shaders;
+    struct Frame {
+        Handle<Buffer> vertex_buffer;
+        Handle<Buffer> index_buffer;
+    };
 
-    Handle<DescriptorLayout> desc_layout;
-    Handle<Buffer> buffer_vertex;
-    Handle<Buffer> buffer_index;
-    Handle<Buffer> constant_buffer;
-    Handle<Sampler> sampler;
-    Handle<Texture> texture_base;
-    Handle<DescriptorSet> descriptor_set;
+    std::vector<Handle<RenderPass>> _render_passes;
+    std::vector<Handle<Pipeline>> _pipelines;
+    std::vector<Handle<Shader>> _shaders;
+    std::vector<Handle<DescriptorSet>> _descriptor_sets;
+    std::vector<Handle<Buffer>> _constant_buffers;
 
+    Handle<DescriptorLayout> _pbr_layout;
+
+    Handle<Sampler> _sampler;
+    Handle<Texture> _texture;
+
+    std::vector<Frame> _frames;
     uint32_t frame_index{0};
-    uint32_t index_count;
 
     std::vector<MeshData const*> _meshes;
     std::vector<uint32_t> _draw_indices;
+
+    WorldBuffer _world_buffer;
 };
 
 }
