@@ -17,6 +17,8 @@ struct MeshData {
         VertexInputDesc { "TEXCOORD", 1, Format::RG32, 1, sizeof(float) * 2 },
         VertexInputDesc { "NORMAL", 2, Format::RGB32, 1, sizeof(float) * 3 }
     };
+
+    
 };
 
 }

@@ -10,7 +10,7 @@ using namespace ionengine::renderer;
 
 WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
 
-    auto load_file = [&](std::filesystem::path const& path, std::ios::openmode const ios) -> std::vector<char8_t> {
+    auto load_file = [&](std::filesystem::path const& path, std::ios::openmode const ios = std::ios::beg) -> std::vector<char8_t> {
         std::ifstream ifs(path, ios);
         if(!ifs.is_open()) {
             throw std::runtime_error("Can not open file");
