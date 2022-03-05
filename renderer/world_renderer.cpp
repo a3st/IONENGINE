@@ -37,15 +37,20 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     auto shader_vert = load_file("shaders/basic_vert.bin", std::ios::binary);
     auto shader_frag = load_file("shaders/basic_frag.bin", std::ios::binary);
 
-    shaders[0] = _backend->create_shader(shader_vert, BackendFlags::VertexShader);
-    shaders[1] = _backend->create_shader(shader_frag, BackendFlags::PixelShader);
+    _shaders[0] = _backend->create_shader(shader_vert, BackendFlags::VertexShader);
+    _shaders[1] = _backend->create_shader(shader_frag, BackendFlags::PixelShader);
 
-    buffer_vertex = _backend->create_buffer(65536, BackendFlags::HostVisible);
-    buffer_index = _backend->create_buffer(65536, BackendFlags::HostVisible);
+    _frames.reserve(2);
+    for(uint32_t i = 0; i < 2; ++i) {
+        auto frame = WorldRenderer::Frame {};
+        frame.vertex_buffer = _backend->create_buffer(65536, BackendFlags::HostVisible);
+        frame.index_buffer = _backend->create_buffer(65536, BackendFlags::HostVisible);
 
-    sampler = _backend->create_sampler(Filter::MinMagMipLinear, AddressMode::Wrap, AddressMode::Wrap, AddressMode::Wrap, 1, CompareOp::Always);
-    
-    texture_base = _backend->create_texture(Dimension::_2D, Extent2D { 1024, 1024 }, 1, 1, Format::BC1, BackendFlags::None);
+        _frames.emplace_back(frame);
+    }
+
+    _sampler = _backend->create_sampler(Filter::MinMagMipLinear, AddressMode::Wrap, AddressMode::Wrap, AddressMode::Wrap, 1, CompareOp::Always);
+    _texture = _backend->create_texture(Dimension::_2D, Extent2D { 1024, 1024 }, 1, 1, Format::BC1, BackendFlags::None);
 
     /*_backend->begin_context(ContextType::Copy);
     _backend->barrier(texture_base, MemoryState::Common, MemoryState::CopyDst);
@@ -59,9 +64,12 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     _backend->copy_buffer_data(buffer_vertex, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(vertices.data()), vertices.size() * sizeof(Vertex)));
     _backend->copy_buffer_data(buffer_index, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(indices.data()), indices.size() * sizeof(uint32_t)));*/
 
-    constant_buffer = _backend->create_buffer(65536, BackendFlags::HostVisible | BackendFlags::ConstantBuffer);
+    _constant_buffers.reserve(2);
+    for(uint32_t i = 0; i < 2; ++i) {
+        _constant_buffers.emplace_back(_backend->create_buffer(65536, BackendFlags::HostVisible | BackendFlags::ConstantBuffer));
+    }
 
-    auto world_buffer = WorldBuffer { 
+    /*auto world_buffer = WorldBuffer { 
         Matrixf{}.translate(Vector3f(0.0f, 0.1f, 0.4f)).scale(Vector3f(1.0f, 1.0f, 1.0f)).transpose(), 
         Matrixf{}.translate(Vector3f(0.0f, -0.0f, -3.5f)).transpose(), 
         Matrixf{}.perspective(1.3f, 4 / 3, 0.0f, 100.0f).transpose()
@@ -73,57 +81,33 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
     std::vector<DescriptorWriteDesc> write_desc = { 
         DescriptorWriteDesc { 0, constant_buffer },
-        DescriptorWriteDesc { 1, texture_base },
-        DescriptorWriteDesc { 2, sampler }
+        DescriptorWriteDesc { 1, _texture },
+        DescriptorWriteDesc { 2, _sampler }
     };
     
-    _backend->write_descriptor_set(descriptor_set, write_desc);
+    _backend->write_descriptor_set(descriptor_set, write_desc);*/
+
+    _frame_graph
+        .render_pass()
+        .render_pass()
+        .build(*_backend);
 }
 
 void WorldRenderer::update() {
 
-    Handle<Texture> texture = _backend->get_current_buffer();
-
-    if(rpasses[frame_index] == Handle<RenderPass>()) {
-        rpasses[frame_index] = _backend->create_render_pass(
-            { texture },
-            { RenderPassColorDesc { RenderPassLoadOp::Clear, RenderPassStoreOp::Store } },
-            {}, {}
-        );
-
-        pipelines[frame_index] = _backend->create_pipeline(
-            desc_layout,
-            MeshData::vertex_declaration,
-            shaders,
-            RasterizerDesc { FillMode::Solid, CullMode::Back },
-            DepthStencilDesc { CompareOp::Always, false },
-            BlendDesc { false, Blend::One, Blend::Zero, BlendOp::Add, Blend::One, Blend::Zero, BlendOp::Add },
-            rpasses[frame_index]
-        );
-    }
-
-    _backend->begin_context(ContextType::Graphics);
-    _backend->set_viewport(0, 0, 800, 600);
-    _backend->set_scissor(0, 0, 800, 600);
-    _backend->barrier(texture, MemoryState::Present, MemoryState::RenderTarget);
-    _backend->barrier(texture_base, MemoryState::Common, MemoryState::PixelShaderResource);
-    std::vector<Color> rtv_clears = { Color(0.2f, 0.1f, 0.3f, 1.0f) };
-    _backend->begin_render_pass(rpasses[frame_index], rtv_clears, 0.0f, 0x0);
-    /*_backend->bind_pipeline(pipelines[frame_index]);
-    _backend->bind_descriptor_set(descriptor_set);
-    _backend->bind_vertex_buffer(0, buffer_vertex, 0);
-    _backend->bind_index_buffer(Format::R32, buffer_index, 0);
-    _backend->draw_indexed(index_count, 1, 0);*/
-    _backend->end_render_pass();
-    _backend->barrier(texture, MemoryState::RenderTarget, MemoryState::Present);
-    _backend->barrier(texture_base, MemoryState::PixelShaderResource, MemoryState::Common);
-    _backend->end_context();
-
-    _backend->execute_context(ContextType::Graphics);
-
-    _backend->swap_buffers();
+    _frame_graph.execute(*_backend);
 
     frame_index = (frame_index + 1) % 2;
+}
+
+void WorldRenderer::resize(uint32_t const width, uint32_t const height) {
+
+    _frame_graph.reset(*_backend);
+
+    _frame_graph
+        .render_pass()
+        .render_pass()
+        .build(*_backend);
 }
 
 void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model) {
@@ -132,6 +116,8 @@ void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const m
 }
 
 void WorldRenderer::set_projection_view(Matrixf const& projection, Matrixf const& view) {
+
+    _prev_world_buffer = _world_buffer;
 
     _world_buffer.projection = Matrixf(projection).transpose();
     _world_buffer.view = Matrixf(view).transpose();

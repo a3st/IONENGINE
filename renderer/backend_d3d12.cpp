@@ -1505,7 +1505,17 @@ void Backend::copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offs
 
 void Backend::wait_for_idle_device() {
 
+    for(uint32_t i = 0; i < static_cast<uint32_t>(_impl->frames.size()); ++i) {
+        const uint64_t value = _impl->frames[i].direct_fence.fence_value;
+        THROW_IF_FAILED(_impl->direct_queue->Signal(_impl->frames[i].direct_fence.fence.Get(), value));
 
+        ++_impl->frames[i].direct_fence.fence_value;
+
+        if(_impl->frames[i].direct_fence.fence->GetCompletedValue() < value) {
+            THROW_IF_FAILED(_impl->frames[i].direct_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
+            WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
+        }
+    }
 }
 
 void Backend::begin_context(ContextType const context_type) {
@@ -1559,10 +1569,20 @@ void Backend::execute_context(ContextType const context_type) {
     }
 }
 
-void Backend::wait_context(ContextType const context_type) {
+void Backend::wait_for_context(ContextType const context_type) {
 
     switch(context_type) {
+        case ContextType::Graphics: {
+            const uint64_t value = _impl->frames[_impl->frame_index].direct_fence.fence_value;
+            THROW_IF_FAILED(_impl->direct_queue->Signal(_impl->frames[_impl->frame_index].direct_fence.fence.Get(), value));
 
+            ++_impl->frames[_impl->frame_index].direct_fence.fence_value;
+
+            if(_impl->frames[_impl->frame_index].direct_fence.fence->GetCompletedValue() < value) {
+                THROW_IF_FAILED(_impl->frames[_impl->frame_index].direct_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
+                WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
+            }
+        } break;
         case ContextType::Copy: {
             const uint64_t value = _impl->frames[_impl->frame_index].copy_fence.fence_value;
             THROW_IF_FAILED(_impl->copy_queue->Signal(_impl->frames[_impl->frame_index].copy_fence.fence.Get(), value));

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <renderer/backend.h>
+#include <renderer/frame_graph.h>
 #include <renderer/mesh_data.h>
 #include <lib/thread_pool.h>
 #include <lib/math/matrix.h>
@@ -30,6 +31,8 @@ public:
 
     void update();
 
+    void resize(uint32_t const width, uint32_t const height);
+
     void draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model);
 
     void set_projection_view(Matrixf const& projection, Matrixf const& view);
@@ -38,6 +41,8 @@ private:
 
     Backend* _backend;
     ThreadPool* _thread_pool;
+
+    FrameGraph _frame_graph;
 
     struct Frame {
         Handle<Buffer> vertex_buffer;
@@ -62,6 +67,7 @@ private:
     std::vector<uint32_t> _draw_indices;
 
     WorldBuffer _world_buffer;
+    WorldBuffer _prev_world_buffer;
 };
 
 }

@@ -38,6 +38,7 @@ bool WorldController::initialize() {
     std::vector<char8_t> serialized_data;
     compiler.serialize(serialized_data);
     compiler.deserialize(serialized_data);
+    // compiler.data() -> std::variant<MeshFile, TextureFile>*
 
     return true;
 }

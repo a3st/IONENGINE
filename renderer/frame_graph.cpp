@@ -5,36 +5,60 @@
 
 using namespace ionengine::renderer;
 
+FrameGraph& FrameGraph::render_pass() {
 
-FrameGraphBuilder::FrameGraphBuilder(FrameGraph& frame_graph) : _frame_graph(&frame_graph) {
-
+    return *this;
 }
 
-FGResourceHandle FrameGraphBuilder::create(FGResourceType const res_type, GPUResourceHandle const& handle) {
+FrameGraph& FrameGraph::build(Backend& backend) {
 
-    size_t offset = _frame_graph->_resources.push(
-        FGResource {
-            res_type,
-            handle
-        }
-    );
-    std::cout << std::format("FG: Created resource (ID: {})", offset) << std::endl;
-    return FGResourceHandle { static_cast<uint32_t>(offset) };
+    return *this;
 }
 
-void FrameGraph::wait_until(FGTaskHandle const& handle) {
+void FrameGraph::reset(Backend& backend) {
 
+    
 }
 
-void FrameGraph::execute() {
+void FrameGraph::execute(Backend& backend) {
 
-    //for(uint32_t i = 0; i < tasks_.size(); ++i) {
+    Handle<Texture> texture = backend.get_current_buffer();
 
-        //std::cout << std::format("task {}, creates {}, writes {}", i, tasks_[i].creates.size(), tasks_[i].writes.size()) << std::endl;
-    //}
+    /*if(rpasses[frame_index] == Handle<RenderPass>()) {
+        rpasses[frame_index] = _backend->create_render_pass(
+            { texture },
+            { RenderPassColorDesc { RenderPassLoadOp::Clear, RenderPassStoreOp::Store } },
+            {}, {}
+        );
 
-    //tasks_.clear();
-    //resources_.clear();
+        pipelines[frame_index] = _backend->create_pipeline(
+            desc_layout,
+            MeshData::vertex_declaration,
+            shaders,
+            RasterizerDesc { FillMode::Solid, CullMode::Back },
+            DepthStencilDesc { CompareOp::Always, false },
+            BlendDesc { false, Blend::One, Blend::Zero, BlendOp::Add, Blend::One, Blend::Zero, BlendOp::Add },
+            rpasses[frame_index]
+        );
+    }
 
-    _resources.clear();
+    _backend->begin_context(ContextType::Graphics);
+    _backend->set_viewport(0, 0, 800, 600);
+    _backend->set_scissor(0, 0, 800, 600);
+    _backend->barrier(texture, MemoryState::Present, MemoryState::RenderTarget);
+    
+    std::vector<Color> rtv_clears = { Color(0.2f, 0.1f, 0.3f, 1.0f) };
+    _backend->begin_render_pass(rpasses[frame_index], rtv_clears, 0.0f, 0x0);
+    _backend->bind_pipeline(pipelines[frame_index]);
+    _backend->bind_descriptor_set(descriptor_set);
+    _backend->bind_vertex_buffer(0, buffer_vertex, 0);
+    _backend->bind_index_buffer(Format::R32, buffer_index, 0);
+    _backend->draw_indexed(index_count, 1, 0);
+    _backend->end_render_pass();
+    _backend->barrier(texture, MemoryState::RenderTarget, MemoryState::Present);
+    _backend->end_context();
+
+    _backend->execute_context(ContextType::Graphics);*/
+
+    backend.swap_buffers();
 }

@@ -262,7 +262,7 @@ public:
 
     void execute_context(ContextType const context_type);
 
-    void wait_context(ContextType const context_type);
+    void wait_for_context(ContextType const context_type);
 
     bool is_finished_context(ContextType const context_type);
 
