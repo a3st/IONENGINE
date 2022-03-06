@@ -28,7 +28,7 @@ enum class Format {
     Unknown,
     BGRA8,
     BGR8,
-    RGBA8Unorm,
+    RGBA8,
     RGBA32,
     RGB32,
     RG32,
@@ -225,8 +225,8 @@ public:
     Handle<Buffer> create_buffer(size_t const size, BackendFlags const flags);
 
     Handle<RenderPass> create_render_pass(
-        std::vector<Handle<Texture>> const& rtv_handles,
-        std::vector<RenderPassColorDesc> const& rtv_ops,
+        std::span<Handle<Texture>> const& rtv_handles,
+        std::span<RenderPassColorDesc> const& rtv_ops,
         Handle<Texture> const& dsv_handle,
         RenderPassDepthStencilDesc const& dsv_op
     );

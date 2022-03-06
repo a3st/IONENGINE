@@ -8,6 +8,14 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
+enum class RenderPasses : uint32_t {
+    Main
+};
+
+enum class Colors : uint32_t {
+    Swapchain
+};
+
 WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
 
     auto load_file = [&](std::filesystem::path const& path, std::ios::openmode const ios = std::ios::beg) -> std::vector<char8_t> {
@@ -88,14 +96,24 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     _backend->write_descriptor_set(descriptor_set, write_desc);*/
 
     _frame_graph
-        .render_pass()
-        .render_pass()
+        .external_attachment(static_cast<uint32_t>(Colors::Swapchain), Format::RGBA8, MemoryState::RenderTarget, MemoryState::Present)
+        .render_pass(
+            static_cast<uint32_t>(RenderPasses::Main), 
+            RenderPassDesc{}
+                .name("MainPass")
+                .color(static_cast<uint32_t>(Colors::Swapchain), RenderPassLoadOp::Clear, Color(0.3f, 0.1f, 0.3f, 1.0f)),
+            [&]() {
+                
+            }
+        )
         .build(*_backend);
 }
 
 void WorldRenderer::update() {
 
-    _frame_graph.execute(*_backend);
+    _frame_graph
+        .bind_external_attachment(static_cast<uint32_t>(Colors::Swapchain), _backend->get_current_buffer())
+        .execute(*_backend);
 
     frame_index = (frame_index + 1) % 2;
 }
@@ -104,10 +122,10 @@ void WorldRenderer::resize(uint32_t const width, uint32_t const height) {
 
     _frame_graph.reset(*_backend);
 
-    _frame_graph
-        .render_pass()
+    /*_frame_graph
         .render_pass()
         .build(*_backend);
+    */
 }
 
 void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model) {

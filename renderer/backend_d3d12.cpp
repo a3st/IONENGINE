@@ -529,7 +529,7 @@ Handle<Texture> Backend::create_texture(
     resource_desc.SampleDesc.Count = 1;
     switch(format) {
         case Format::Unknown: resource_desc.Format = DXGI_FORMAT_UNKNOWN; break;
-        case Format::RGBA8Unorm: resource_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; break;
+        case Format::RGBA8: resource_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; break;
         case Format::BGRA8: resource_desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM; break;
         case Format::BGR8: resource_desc.Format = DXGI_FORMAT_B8G8R8X8_UNORM; break;
         case Format::BC1: resource_desc.Format = DXGI_FORMAT_BC1_UNORM; break;
@@ -711,8 +711,8 @@ Handle<Buffer> Backend::create_buffer(size_t const size, BackendFlags const flag
 }
 
 Handle<RenderPass> Backend::create_render_pass(
-    std::vector<Handle<Texture>> const& rtv_handles,
-    std::vector<RenderPassColorDesc> const& rtv_ops,
+    std::span<Handle<Texture>> const& rtv_handles,
+    std::span<RenderPassColorDesc> const& rtv_ops,
     Handle<Texture> const& dsv_handle,
     RenderPassDepthStencilDesc const& dsv_op
 ) {

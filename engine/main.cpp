@@ -12,7 +12,7 @@
 
 using namespace ionengine;
 
-int main(int*, char*) {
+int main(int* argc, char** agrv) {
 
     ThreadPool thread_pool(3);
     
