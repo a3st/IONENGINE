@@ -49,11 +49,13 @@ public:
     FrameGraph& render_pass(uint32_t const id, RenderPassDesc const& desc, std::function<void()> const& func);
     FrameGraph& bind_external_attachment(uint32_t const id, Handle<Texture> const& handle);
 
-    void build(Backend& backend);
+    void build(Backend& backend, uint32_t const flight_frames);
     void reset(Backend& backend);
     void execute(Backend& backend);
 
 private:
+
+    void create_render_pass(Backend& backend, RenderPass const& desc);
 
     struct RenderPass {
         RenderPassDesc desc;
@@ -85,6 +87,12 @@ private:
     using Op = std::pair<OpType, uint32_t>;
 
     std::vector<Op> _ops;
+
+    std::unordered_set<uint32_t> _external_render_passes_ids;
+    std::unordered_map<uint32_t, uint32_t> _external_attachments_ids;
+
+    uint32_t _flight_frame_index{0};
+    uint32_t _flight_frames{0};
 };
 
 }

@@ -101,12 +101,12 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
             static_cast<uint32_t>(RenderPasses::Main), 
             RenderPassDesc{}
                 .name("MainPass")
-                .color(static_cast<uint32_t>(Colors::Swapchain), RenderPassLoadOp::Clear, Color(0.3f, 0.1f, 0.3f, 1.0f)),
+                .color(static_cast<uint32_t>(Colors::Swapchain), RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f)),
             [&]() {
                 
             }
         )
-        .build(*_backend);
+        .build(*_backend, 2);
 }
 
 void WorldRenderer::update() {
