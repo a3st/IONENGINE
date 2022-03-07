@@ -18,10 +18,15 @@ namespace ionengine {
 namespace ionengine::renderer {
 
 struct RenderPassDesc {
+    using AttachmentInfo = std::pair<uint32_t, RenderPassLoadOp>;
+
     std::string _name;
-    std::array<Color, 8> _colors;
-    std::array<std::pair<uint32_t, RenderPassLoadOp>, 8> _color_ids;
+    std::array<Color, 8> _clear_colors;
+    std::array<AttachmentInfo, 8> color_infos;
     uint32_t color_count{0};
+    AttachmentInfo depth_stencil_info;
+    float _clear_depth;
+    uint8_t _clear_stencil;
 
     RenderPassDesc& name(std::string const& name_) {
         _name = name_;
@@ -29,13 +34,16 @@ struct RenderPassDesc {
     }
 
     RenderPassDesc& color(uint32_t const id, RenderPassLoadOp const load_op, Color const& clear_color) {
-        _colors[color_count] = clear_color;
-        _color_ids[color_count] = { id, load_op };
+        _clear_colors[color_count] = clear_color;
+        color_infos[color_count] = AttachmentInfo { id, load_op };
         ++color_count;
         return *this;
     }
 
     RenderPassDesc& depth_stencil(uint32_t const id, RenderPassLoadOp const load_op, float const clear_depth, uint8_t const clear_stencil) {
+        _clear_depth = clear_depth;
+        _clear_stencil = clear_stencil;
+        depth_stencil_info = AttachmentInfo { id, load_op };
         return *this;
     }
 };
@@ -45,6 +53,7 @@ public:
 
     FrameGraph() = default;
 
+    FrameGraph& attachment(uint32_t const id, Format const format, Extent2D extent);
     FrameGraph& external_attachment(uint32_t const id, Format const format, MemoryState const before, MemoryState const after);
     FrameGraph& render_pass(uint32_t const id, RenderPassDesc const& desc, std::function<void()> const& func);
     FrameGraph& bind_external_attachment(uint32_t const id, Handle<Texture> const& handle);
@@ -55,8 +64,6 @@ public:
 
 private:
 
-    void create_render_pass(Backend& backend, RenderPass const& desc);
-
     struct RenderPass {
         RenderPassDesc desc;
         Handle<renderer::RenderPass> render_pass;
@@ -64,6 +71,8 @@ private:
     };
 
     struct InternalAttachment {
+        Format format;
+        Extent2D extent;
         Handle<Texture> target;
     };
 
@@ -93,6 +102,8 @@ private:
 
     uint32_t _flight_frame_index{0};
     uint32_t _flight_frames{0};
+
+    Handle<renderer::RenderPass> create_render_pass(Backend& backend, RenderPass const& desc);
 };
 
 }

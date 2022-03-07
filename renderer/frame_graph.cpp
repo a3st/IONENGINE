@@ -3,7 +3,19 @@
 #include <precompiled.h>
 #include <renderer/frame_graph.h>
 
+using ionengine::Handle;
 using namespace ionengine::renderer;
+
+FrameGraph& FrameGraph::attachment(uint32_t const id, Format const format, Extent2D extent) {
+
+    auto attachment = InternalAttachment {
+        format,
+        extent,
+        Handle<Texture>()
+    };
+    _attachments[{id, 0}] = attachment;
+    return *this;
+}
 
 FrameGraph& FrameGraph::external_attachment(uint32_t const id, Format const format, MemoryState const before, MemoryState const after) {
 
@@ -68,11 +80,23 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frames) {
                     }, _attachments[{render_pass.desc._color_ids[i].first, 0}]);
                 }
 
+                for(auto& [key, value] : _attachments) {
+                    std::visit([&](auto&& arg) {
+                        using T = std::decay_t<decltype(arg)>;
+                        if constexpr (std::is_same_v<T, ExternalAttachment>) {
+                            
+                        } else if constexpr (std::is_same_v<T, InternalAttachment>) {
+                            arg.target = backend.create_texture(Dimension::_2D, arg.extent, 1, 1, arg.format, BackendFlags::RenderTarget);
+                        } else {
+                            static_assert(always_false_v<T>, "non-exhaustive visitor!");
+                        }
+                    }, value);
+
+                    std::cout << std::format("InternalAttachment (id: {}, frame: {}) created!", key.first, key.second) << std::endl;
+                }
+
                 if(has_external_attachment) {
                     _external_render_passes_ids.emplace(op.second);
-                } else {
-                    // create attachments for all flight frames
-                    // build render pass
                 }
 
             } break;
@@ -126,31 +150,7 @@ void FrameGraph::execute(Backend& backend) {
 
                     auto& render_pass = _render_passes[{ op.second, _flight_frame_index }];
                     
-                    std::array<Handle<Texture>, 8> colors;
-                    std::array<RenderPassColorDesc, 8> color_descs;
-
-                    for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
-                        std::visit([&](auto&& arg) {
-                            using T = std::decay_t<decltype(arg)>;
-                            if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                                colors[i] = arg.target;
-                            } else if constexpr (std::is_same_v<T, InternalAttachment>) {
-                                colors[i] = arg.target;
-                            } else {
-                                static_assert(always_false_v<T>, "non-exhaustive visitor!");
-                            }
-                        }, _attachments[{render_pass.desc._color_ids[i].first, _flight_frame_index}]);
-
-                        color_descs[i] = RenderPassColorDesc { render_pass.desc._color_ids[i].second, RenderPassStoreOp::Store };
-                    }
-
-                    // create render_pass if not created and try cache it
-                    render_pass.render_pass = backend.create_render_pass(
-                        std::span<Handle<Texture>>(colors.data(), render_pass.desc.color_count),
-                        std::span<RenderPassColorDesc>(color_descs.data(), render_pass.desc.color_count),
-                        {},
-                        {}
-                    );
+                    
 
                     _external_render_passes_ids.erase(op.second);
 
@@ -211,4 +211,35 @@ FrameGraph& FrameGraph::bind_external_attachment(uint32_t const id, Handle<Textu
         _external_render_passes_ids.emplace(_external_attachments_ids[id]);
     }
     return *this;
+}
+
+Handle<ionengine::renderer::RenderPass> FrameGraph::create_render_pass(Backend& backend, RenderPass const& desc) {
+
+    std::array<Handle<Texture>, 8> colors;
+    std::array<RenderPassColorDesc, 8> color_descs;
+
+    /*for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, ExternalAttachment>) {
+                                colors[i] = arg.target;
+            } else if constexpr (std::is_same_v<T, InternalAttachment>) {
+                                colors[i] = arg.target;
+                            } else {
+                                static_assert(always_false_v<T>, "non-exhaustive visitor!");
+                            }
+                        }, _attachments[{render_pass.desc._color_ids[i].first, _flight_frame_index}]);
+
+                        color_descs[i] = RenderPassColorDesc { render_pass.desc._color_ids[i].second, RenderPassStoreOp::Store };
+                    }
+
+                    // create render_pass if not created and try cache it
+                    render_pass.render_pass = backend.create_render_pass(
+                        std::span<Handle<Texture>>(colors.data(), render_pass.desc.color_count),
+                        std::span<RenderPassColorDesc>(color_descs.data(), render_pass.desc.color_count),
+                        {},
+                        {}
+                    );
+                    */
+    return Handle<ionengine::renderer::RenderPass>();
 }

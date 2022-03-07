@@ -536,6 +536,9 @@ Handle<Texture> Backend::create_texture(
         case Format::BC5: resource_desc.Format = DXGI_FORMAT_BC5_UNORM; break;
     }
     resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    switch(flags) {
+        case BackendFlags::RenderTarget: resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; break;
+    }
 
     D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
     MemoryAllocInfo mem_alloc_info = _impl->local_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
@@ -563,8 +566,8 @@ Handle<Texture> Backend::create_texture(
                 } break;
                 case Dimension::_2D: {
                     view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-                    view_desc.Texture2D.MipSlice = mip_levels;
-                    view_desc.Texture2D.PlaneSlice = array_layers;
+                    view_desc.Texture2D.MipSlice = mip_levels - 1;
+                    // view_desc.Texture2D.PlaneSlice = array_layers;
                 } break;
                 case Dimension::_3D: {
                     view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;

@@ -13,7 +13,8 @@ enum class RenderPasses : uint32_t {
 };
 
 enum class Colors : uint32_t {
-    Swapchain
+    Swapchain,
+    Blit
 };
 
 WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
@@ -96,6 +97,7 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     _backend->write_descriptor_set(descriptor_set, write_desc);*/
 
     _frame_graph
+        .attachment(static_cast<uint32_t>(Colors::Blit), Format::RGBA8, Extent2D { 800, 600 })
         .external_attachment(static_cast<uint32_t>(Colors::Swapchain), Format::RGBA8, MemoryState::RenderTarget, MemoryState::Present)
         .render_pass(
             static_cast<uint32_t>(RenderPasses::Main), 
