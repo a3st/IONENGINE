@@ -37,6 +37,15 @@ enum class Format {
     BC5
 };
 
+enum class TextureFlags : uint16_t {
+    ShaderResource = 1 << 0,
+    RenderTarget = 1 << 1,
+    DepthStencil = 1 << 2,
+    UnorderedAccess = 1 << 3,
+};
+
+DECLARE_ENUM_CLASS_BIT_FLAG(TextureFlags)
+
 enum class BackendFlags : uint16_t {
     None = 1 << 0,
     RenderTarget = 1 << 1,
@@ -78,7 +87,7 @@ enum class MemoryState {
     RenderTarget,
     CopySrc,
     CopyDst,
-    PixelShaderResource
+    ShaderRead
 };
 
 enum class RenderPassStoreOp {
@@ -219,7 +228,7 @@ public:
         uint16_t const mip_levels,
         uint16_t const array_layers,
         Format const format,
-        BackendFlags const flags
+        TextureFlags const flags
     );
 
     Handle<Buffer> create_buffer(size_t const size, BackendFlags const flags);
@@ -255,6 +264,10 @@ public:
         BlendDesc const& blend,
         Handle<RenderPass> const& render_pass_handle
     );
+
+    void delete_render_pass(Handle<RenderPass> const& handle);
+
+    void delete_texture(Handle<Texture> const& handle);
 
     void begin_context(ContextType const context_type);
 

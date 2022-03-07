@@ -96,6 +96,8 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     
     _backend->write_descriptor_set(descriptor_set, write_desc);*/
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     _frame_graph
         .attachment(static_cast<uint32_t>(Colors::Blit), Format::RGBA8, Extent2D { 800, 600 })
         .external_attachment(static_cast<uint32_t>(Colors::Swapchain), Format::RGBA8, MemoryState::RenderTarget, MemoryState::Present)
@@ -103,12 +105,18 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
             static_cast<uint32_t>(RenderPasses::Main), 
             RenderPassDesc{}
                 .name("MainPass")
-                .color(static_cast<uint32_t>(Colors::Swapchain), RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f)),
-            [&]() {
+                .color(static_cast<uint32_t>(Colors::Swapchain), RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f))
+                .input(static_cast<uint32_t>(Colors::Blit)),
+            [&](Handle<renderer::RenderPass> const& render_pass, RenderPassResources const& resources) {
                 
+
             }
         )
         .build(*_backend, 2);
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::cout << std::format("FrameGraph: Creation completed in {} microsec", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) << std::endl;
 }
 
 void WorldRenderer::update() {

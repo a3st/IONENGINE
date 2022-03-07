@@ -27,9 +27,12 @@ struct RenderPassDesc {
     AttachmentInfo depth_stencil_info;
     float _clear_depth;
     uint8_t _clear_stencil;
+    bool has_depth_stencil{false};
+    std::array<uint32_t, 16> inputs;
+    uint32_t input_count{0};
 
-    RenderPassDesc& name(std::string const& name_) {
-        _name = name_;
+    RenderPassDesc& name(std::string const& name) {
+        _name = name;
         return *this;
     }
 
@@ -40,13 +43,42 @@ struct RenderPassDesc {
         return *this;
     }
 
+    RenderPassDesc& input(uint32_t const id) {
+
+        inputs[input_count] = id;
+        ++input_count;
+        return *this;
+    }
+
     RenderPassDesc& depth_stencil(uint32_t const id, RenderPassLoadOp const load_op, float const clear_depth, uint8_t const clear_stencil) {
         _clear_depth = clear_depth;
         _clear_stencil = clear_stencil;
         depth_stencil_info = AttachmentInfo { id, load_op };
+        has_depth_stencil = true;
         return *this;
     }
+
+    bool operator<(RenderPassDesc const& other) const {
+
+        return std::tie(color_infos, color_count, depth_stencil_info, has_depth_stencil) < std::tie(other.color_infos, other.color_count, other.depth_stencil_info, other.has_depth_stencil);
+    }
 };
+
+class RenderPassResources {
+public:
+
+    RenderPassResources() = default;
+
+    Handle<Texture> get(uint32_t const id) const { return _attachments.find(id)->second; }
+
+private:
+
+    friend class FrameGraph;
+
+    std::unordered_map<uint32_t, Handle<Texture>> _attachments;
+};
+
+using RenderPassFunc = std::function<void(Handle<renderer::RenderPass> const&, RenderPassResources const&)>;
 
 class FrameGraph {
 public:
@@ -55,7 +87,7 @@ public:
 
     FrameGraph& attachment(uint32_t const id, Format const format, Extent2D extent);
     FrameGraph& external_attachment(uint32_t const id, Format const format, MemoryState const before, MemoryState const after);
-    FrameGraph& render_pass(uint32_t const id, RenderPassDesc const& desc, std::function<void()> const& func);
+    FrameGraph& render_pass(uint32_t const id, RenderPassDesc const& desc, RenderPassFunc const& func);
     FrameGraph& bind_external_attachment(uint32_t const id, Handle<Texture> const& handle);
 
     void build(Backend& backend, uint32_t const flight_frames);
@@ -67,7 +99,8 @@ private:
     struct RenderPass {
         RenderPassDesc desc;
         Handle<renderer::RenderPass> render_pass;
-        std::function<void()> func;
+        RenderPassFunc func;
+        bool is_compiled;
     };
 
     struct InternalAttachment {
@@ -88,6 +121,7 @@ private:
 
     std::unordered_map<FrameId, RenderPass, pair_hash> _render_passes;
     std::unordered_map<FrameId, Attachment, pair_hash> _attachments;
+    std::unordered_map<FrameId, RenderPassResources, pair_hash> _render_pass_resources;
 
     enum class OpType : uint32_t {
         RenderPass
@@ -103,7 +137,7 @@ private:
     uint32_t _flight_frame_index{0};
     uint32_t _flight_frames{0};
 
-    Handle<renderer::RenderPass> create_render_pass(Backend& backend, RenderPass const& desc);
+    Handle<renderer::RenderPass> create_render_pass(Backend& backend, RenderPassDesc const& desc);
 };
 
 }

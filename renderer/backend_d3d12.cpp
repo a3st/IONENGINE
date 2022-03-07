@@ -10,8 +10,6 @@
 #include <dxgi1_4.h>
 #include <wrl/client.h>
 
-#define NOMINMAX
-
 #ifndef THROW_IF_FAILED
 #define THROW_IF_FAILED(Result) if(FAILED(Result)) throw ionengine::Exception(hresult_to_string(Result));
 #endif
@@ -20,138 +18,24 @@ using Microsoft::WRL::ComPtr;
 using ionengine::Handle;
 using namespace ionengine::renderer;
 
-struct MemoryHeap {
-    ComPtr<ID3D12Heap> heap;
-    std::vector<uint8_t> blocks;
-    uint64_t offset;
-};
 
-struct DescriptorHeap {
-    ComPtr<ID3D12DescriptorHeap> heap;
-    std::vector<uint8_t> blocks;
-    uint32_t offset;
-};
-
-struct MemoryAllocInfo {
-    MemoryHeap* heap;
-    size_t size;
-    uint64_t offset;
-};
 
 struct DescriptorAllocInfo {
-    DescriptorHeap* heap;
-    uint32_t offset;
+    DescriptorHeap* _heap;
+    uint32_t _offset;
+
+    ID3D12DescriptorHeap* heap() const { return _heap->heap.Get(); }
+    uint32_t offset() const { return _offset; }
 };
-
-std::u8string hresult_to_string(HRESULT const result) {
-
-	switch(result) {
-		case E_FAIL: return u8"Attempted to create a device with the debug layer enabled and the layer is not installed";
-		case E_INVALIDARG: return u8"An invalid parameter was passed to the returning function";
-		case E_OUTOFMEMORY: return u8"Direct3D could not allocate sufficient memory to complete the call";
-		case E_NOTIMPL: return u8"The method call isn't implemented with the passed parameter combination";
-		case S_FALSE: return u8"Alternate success value, indicating a successful but nonstandard completion";
-		case S_OK: return u8"No error occurred";
-		case D3D12_ERROR_ADAPTER_NOT_FOUND: return u8"The specified cached PSO was created on a different adapter and cannot be reused on the current adapter";
-		case D3D12_ERROR_DRIVER_VERSION_MISMATCH: return u8"The specified cached PSO was created on a different driver version and cannot be reused on the current adapter";
-		case DXGI_ERROR_INVALID_CALL: return u8"The method call is invalid. For example, a method's parameter may not be a valid pointer";
-		case DXGI_ERROR_WAS_STILL_DRAWING: return u8"The previous blit operation that is transferring information to or from this surface is incomplete";
-	}
-    return u8"An unknown error has occurred";
-}
-
-class MemoryPool {
-public:
-
-    MemoryPool() = default;
-
-    MemoryPool(MemoryPool const&) = delete;
-    
-    MemoryPool(MemoryPool&&) = default;
-
-    MemoryPool& operator=(MemoryPool const&) = delete;
-
-    MemoryPool& operator=(MemoryPool&&) noexcept = default;
-
-    MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, size_t const heap_size);
-
-    MemoryAllocInfo allocate(size_t const size);
-
-    void deallocate(MemoryAllocInfo const& alloc_info);
-
-private:
-
-    std::list<MemoryHeap> _heaps;
-    size_t _heap_size;
-};
-
-MemoryPool::MemoryPool(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, size_t const heap_size) : _heap_size(heap_size) {
-
-    D3D12_HEAP_DESC heap_desc{};
-    heap_desc.SizeInBytes = heap_size;
-    heap_desc.Properties.Type = heap_type;
-
-    ComPtr<ID3D12Heap> heap;
-    THROW_IF_FAILED(device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(heap.GetAddressOf())));
-
-    _heaps.emplace_back(MemoryHeap { heap, std::vector<uint8_t>(heap_size / 1048576, 0x0), 0 });
-}
-
-MemoryAllocInfo MemoryPool::allocate(size_t const size) {
-
-    auto get_align_size = [&](size_t const size) -> size_t {
-        return size < 1048576 ? 1048576 : (size % 1048576) > 0 ? (size / 1048576 + 1) * 1048576 : size;
-    };
-
-    auto memory_alloc_info = MemoryAllocInfo {};
-
-    size_t align_size = get_align_size(size);
-
-    for(auto& heap : _heaps) {
-        if(heap.offset + align_size > _heap_size) {
-            continue;
-        } else {
-            size_t alloc_size = 0;
-            for(uint64_t i = 0; i < static_cast<uint64_t>(heap.blocks.size()); ++i) {
-                if(alloc_size == align_size) {
-                    std::memset(heap.blocks.data() + memory_alloc_info.offset / 1048576, 0x1, sizeof(uint8_t) * align_size / 1048576);
-                    break;
-                }
-
-                if(alloc_size == 0) {
-                    memory_alloc_info.heap = &heap;
-                    memory_alloc_info.offset = i * 1048576;
-                    memory_alloc_info.size = align_size;
-                }
-
-                alloc_size = heap.blocks[i] == 0x0 ? alloc_size + 1048576 : 0;
-            }
-            if(alloc_size != align_size) {
-                memory_alloc_info.heap = nullptr;
-                memory_alloc_info.offset = 0;
-                memory_alloc_info.size = 0;
-            }
-        }
-        if(memory_alloc_info.heap) {
-            break;
-        }
-    }
-
-    if(!memory_alloc_info.heap) {
-
-    }
-
-    return memory_alloc_info;
-}
-
-void MemoryPool::deallocate(MemoryAllocInfo const& alloc_info) {
-
-    std::memset(alloc_info.heap->blocks.data() + alloc_info.offset / 1048576, 0x0, sizeof(uint8_t) * alloc_info.size / 1048576);
-    --alloc_info.heap->offset;
-}
 
 class DescriptorPool {
 public:
+
+    struct DescriptorHeap {
+        ComPtr<ID3D12DescriptorHeap> heap;
+        std::vector<uint8_t> blocks;
+        uint32_t offset;
+    };
 
     DescriptorPool() = default;
 
@@ -514,7 +398,7 @@ Handle<Texture> Backend::create_texture(
     uint16_t const mip_levels,
     uint16_t const array_layers,
     Format const format,
-    BackendFlags const flags
+    TextureFlags const flags
 ) {
     auto resource_desc = D3D12_RESOURCE_DESC {};
     switch(dimension) {
@@ -534,19 +418,27 @@ Handle<Texture> Backend::create_texture(
         case Format::BGR8: resource_desc.Format = DXGI_FORMAT_B8G8R8X8_UNORM; break;
         case Format::BC1: resource_desc.Format = DXGI_FORMAT_BC1_UNORM; break;
         case Format::BC5: resource_desc.Format = DXGI_FORMAT_BC5_UNORM; break;
+        default: assert(false && "invalid format specified"); break;
     }
     resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-    switch(flags) {
-        case BackendFlags::RenderTarget: resource_desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; break;
+
+    if(flags & TextureFlags::DepthStencil) {
+        resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    }
+    if(flags & TextureFlags::RenderTarget) {
+        resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+    }
+    if(flags & TextureFlags::UnorderedAccess) {
+        resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 
-    D3D12_RESOURCE_ALLOCATION_INFO res_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
-    MemoryAllocInfo mem_alloc_info = _impl->local_memory.allocate(res_alloc_info.SizeInBytes + res_alloc_info.Alignment);
+    D3D12_RESOURCE_ALLOCATION_INFO resource_alloc_info = _impl->device->GetResourceAllocationInfo(0, 1, &resource_desc);
+    MemoryAllocInfo memory_alloc_info = _impl->local_memory.allocate(resource_alloc_info.SizeInBytes + resource_alloc_info.Alignment);
 
     ComPtr<ID3D12Resource> resource;
     THROW_IF_FAILED(_impl->device->CreatePlacedResource(
-        mem_alloc_info.heap->heap.Get(),
-        mem_alloc_info.offset,
+        memory_alloc_info.heap->heap.Get(),
+        memory_alloc_info.offset,
         &resource_desc,
         D3D12_RESOURCE_STATE_COMMON,
         nullptr,
@@ -1328,7 +1220,7 @@ void Backend::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handl
 		    //case MemoryState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
 		    case MemoryState::CopySrc: return D3D12_RESOURCE_STATE_COPY_SOURCE;
 		    case MemoryState::CopyDst: return D3D12_RESOURCE_STATE_COPY_DEST;
-            case MemoryState::PixelShaderResource: return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            case MemoryState::ShaderRead: return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
         }
         return D3D12_RESOURCE_STATE_COMMON;
     };
@@ -1603,4 +1495,12 @@ void Backend::wait_for_context(ContextType const context_type) {
 bool Backend::is_finished_context(ContextType const context_type) {
 
     return true;
+}
+
+void Backend::delete_render_pass(Handle<RenderPass> const& handle) {
+
+}
+
+void Backend::delete_texture(Handle<Texture> const& handle) {
+    
 }
