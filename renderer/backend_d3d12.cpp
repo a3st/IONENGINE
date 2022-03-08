@@ -76,6 +76,9 @@ struct Backend::Impl {
         uint64_t offset;
     };
 
+    d3d12::MemoryAllocator memory_allocator;
+    d3d12::DescriptorAllocator descriptor_allocator;
+
     ComPtr<IDXGIFactory4> factory;
     ComPtr<ID3D12Debug> debug;
     ComPtr<IDXGIAdapter1> adapter;
@@ -86,30 +89,23 @@ struct Backend::Impl {
     ComPtr<ID3D12CommandQueue> copy_queue;
     ComPtr<ID3D12CommandQueue> compute_queue;
 
-    HANDLE wait_event;
+    HANDLE fence_event;
 
-    struct Frame {
-        Fence direct_fence;
-        Fence copy_fence;
-        Fence compute_fence;
-        
-        CommandList direct_list;
-        CommandList copy_list;
-        CommandList compute_list;
+    std::vector<CommandList> direct_lists;
+    std::vector<CommandList> copy_lists;
+    std::vector<CommandList> compute_lists;
 
-        UploadBuffer upload_buffer;
-        
-        Handle<Texture> texture;
-    };
+    std::vector<Fence> direct_fences;
+    std::vector<Fence> copy_fences;
+    std::vector<Fence> compute_fences;
 
-    std::vector<Frame> frames;
-    uint16_t frame_index;
+    std::vector<UploadBuffer> upload_buffers;
 
-    MemoryPool local_memory;
-    MemoryPool host_visible_memory;
+    std::vector<uint32_t> swap_indices;
+    uint16_t swap_index;
 
-    DescriptorAllocInfo null_srv_descriptor_alloc_info;
-    DescriptorAllocInfo null_sampler_descriptor_alloc_info;
+    d3d12::DescriptorAllocInfo null_srv_descriptor_alloc_info;
+    d3d12::DescriptorAllocInfo null_sampler_descriptor_alloc_info;
 
     InstanceContainer<Texture> textures;
     InstanceContainer<Buffer> buffers;
