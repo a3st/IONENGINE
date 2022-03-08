@@ -2,128 +2,31 @@
 
 #include <precompiled.h>
 #include <renderer/backend.h>
-#include <lib/instance_container.h>
+#include <renderer/d3d12/d3d12_shared.h>
+#include <renderer/d3d12/memory_allocator.h>
+#include <renderer/d3d12/descriptor_allocator.h>
 #include <platform/window.h>
 #include <lib/exception.h>
 
-#include <d3d12.h>
-#include <dxgi1_4.h>
-#include <wrl/client.h>
-
-#ifndef THROW_IF_FAILED
-#define THROW_IF_FAILED(Result) if(FAILED(Result)) throw ionengine::Exception(hresult_to_string(Result));
-#endif
-
-using Microsoft::WRL::ComPtr;
 using ionengine::Handle;
 using namespace ionengine::renderer;
-
-
-
-struct DescriptorAllocInfo {
-    DescriptorHeap* _heap;
-    uint32_t _offset;
-
-    ID3D12DescriptorHeap* heap() const { return _heap->heap.Get(); }
-    uint32_t offset() const { return _offset; }
-};
-
-class DescriptorPool {
-public:
-
-    struct DescriptorHeap {
-        ComPtr<ID3D12DescriptorHeap> heap;
-        std::vector<uint8_t> blocks;
-        uint32_t offset;
-    };
-
-    DescriptorPool() = default;
-
-    DescriptorPool(DescriptorPool const&) = delete;
-
-    DescriptorPool(DescriptorPool&&) noexcept = default;
-
-    DescriptorPool& operator=(DescriptorPool const&) = delete;
-
-    DescriptorPool& operator=(DescriptorPool&&) = default;
-
-    DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const heap_size, bool const shader_visible);
-
-    DescriptorAllocInfo allocate();
-    
-    void deallocate(DescriptorAllocInfo const& alloc_info);
-
-private:
-
-    std::list<DescriptorHeap> _heaps;
-    uint32_t _heap_size;
-};
-
-DescriptorPool::DescriptorPool(ID3D12Device4* device, D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const heap_size, bool const shader_visible) : _heap_size(heap_size) {
-
-    D3D12_DESCRIPTOR_HEAP_DESC heap_desc{};
-    heap_desc.NumDescriptors = heap_size;
-    heap_desc.Type = heap_type;
-    heap_desc.Flags = shader_visible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-    ComPtr<ID3D12DescriptorHeap> heap;
-    THROW_IF_FAILED(device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(heap.GetAddressOf())));
-
-    _heaps.emplace_back(DescriptorHeap { heap, std::vector<uint8_t>(heap_size, 0x0), 0 });
-}
-
-DescriptorAllocInfo DescriptorPool::allocate() {
-
-    DescriptorAllocInfo alloc_info{};
-
-    for(auto& heap : _heaps) {
-        if(heap.offset + 1 > _heap_size) {     
-            continue;
-        } else {
-            for(uint32_t i = 0; i < heap.blocks.size(); ++i) {
-                if(heap.blocks[i] == 0x0) {
-                    alloc_info.heap = &heap;
-                    alloc_info.offset = i;
-                    heap.blocks[i] = 0x1;
-                    ++heap.offset;
-                    break;
-                }
-            }
-        }
-        if(alloc_info.heap) {
-            break;
-        }
-    }
-
-    if(!alloc_info.heap) {
-
-    }
-
-    return alloc_info;
-}
-
-void DescriptorPool::deallocate(DescriptorAllocInfo const& alloc_info) {
-
-    alloc_info.heap->blocks[alloc_info.offset] = 0x0;
-    --alloc_info.heap->offset;
-}
 
 namespace ionengine::renderer {
 
 struct Texture {
     ComPtr<ID3D12Resource> resource;
-    MemoryAllocInfo memory_alloc_info;
-    DescriptorAllocInfo descriptor_alloc_info;
+    d3d12::MemoryAllocInfo memory_alloc_info;
+    std::array<d3d12::DescriptorAllocInfo, 2> descriptor_alloc_infos;
 };
 
 struct Buffer {
     ComPtr<ID3D12Resource> resource;
-    MemoryAllocInfo memory_alloc_info;
-    DescriptorAllocInfo descriptor_alloc_info;
+    d3d12::MemoryAllocInfo memory_alloc_info;
+    d3d12::DescriptorAllocInfo descriptor_alloc_info;
 };
 
 struct Sampler {
-    DescriptorAllocInfo descriptor_alloc_info;
+    d3d12::DescriptorAllocInfo descriptor_alloc_info;
 };
 
 struct DescriptorLayout {
@@ -132,29 +35,46 @@ struct DescriptorLayout {
 };
 
 struct DescriptorSet {
-    ComPtr<ID3D12RootSignature> root_signature;
-    std::vector<D3D12_DESCRIPTOR_RANGE> descriptor_ranges;
-    std::vector<DescriptorAllocInfo> descriptor_alloc_infos;
+    DescriptorLayout* descriptor_layout;
+    std::vector<d3d12::DescriptorAllocInfo> descriptor_alloc_infos;
 };
 
 struct Pipeline {
     ComPtr<ID3D12PipelineState> pipeline_state;
-    std::vector<uint32_t> vertex_strides;
+    std::array<uint32_t, 16> vertex_strides;
 };
 
 struct Shader {
-    std::vector<char8_t> bytecode;
-    D3D12_SHADER_VISIBILITY type;
+    D3D12_SHADER_BYTECODE shader_bytecode;
+    D3D12_SHADER_VISIBILITY shader_visibility;
+    std::vector<char8_t> data;
 };
 
 struct RenderPass {
-    std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> colors;
-    std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> depth_stencil;
+    std::array<D3D12_RENDER_PASS_RENDER_TARGET_DESC, 8> render_target_descs;
+    uint32_t render_target_count;
+    D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depth_stencil_desc;
+    bool has_depth_stencil;
 };
 
 }
 
 struct Backend::Impl {
+
+    struct CommandList {
+        ComPtr<ID3D12CommandAllocator> command_allocator;
+        ComPtr<ID3D12GraphicsCommandList4> command_list;
+        Pipeline* pipeline;
+        DescriptorSet* descriptor_set;
+    };
+
+    using Fence = std::pair<ComPtr<ID3D12Fence>, uint64_t>;
+
+    struct UploadBuffer {
+        ComPtr<ID3D12Resource> resource;
+        d3d12::MemoryAllocInfo memory_alloc_info;
+        uint64_t offset;
+    };
 
     ComPtr<IDXGIFactory4> factory;
     ComPtr<ID3D12Debug> debug;
@@ -168,35 +88,18 @@ struct Backend::Impl {
 
     HANDLE wait_event;
 
-    struct CommandBuffer {
-        ComPtr<ID3D12CommandAllocator> command_allocator;
-        ComPtr<ID3D12GraphicsCommandList4> command_list;
-        Handle<Pipeline> current_pipeline;
-    };
-
-    struct Fence {
-        ComPtr<ID3D12Fence> fence;
-        uint64_t fence_value;
-    };
-
-    struct StageBuffer {
-        ComPtr<ID3D12Resource> resource;
-        MemoryAllocInfo memory_alloc_info;
-        uint64_t offset;
-    };
-
     struct Frame {
         Fence direct_fence;
         Fence copy_fence;
         Fence compute_fence;
         
-        CommandBuffer direct_buffer;
-        CommandBuffer copy_buffer;
-        CommandBuffer compute_buffer;
+        CommandList direct_list;
+        CommandList copy_list;
+        CommandList compute_list;
+
+        UploadBuffer upload_buffer;
         
         Handle<Texture> texture;
-
-        StageBuffer stage_buffer;
     };
 
     std::vector<Frame> frames;
@@ -204,13 +107,6 @@ struct Backend::Impl {
 
     MemoryPool local_memory;
     MemoryPool host_visible_memory;
-
-    DescriptorPool rtv_descriptor;
-    DescriptorPool sampler_descriptor;
-    DescriptorPool srv_descriptor;
-    DescriptorPool dsv_descriptor;
-    DescriptorPool srv_shader_pool;
-    DescriptorPool sampler_shader_pool;
 
     DescriptorAllocInfo null_srv_descriptor_alloc_info;
     DescriptorAllocInfo null_sampler_descriptor_alloc_info;

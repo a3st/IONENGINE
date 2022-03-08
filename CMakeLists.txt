@@ -31,6 +31,7 @@ add_executable(Runtime-Win32
     platform/window_loop_win32.cpp
     
     renderer/d3d12/memory_allocator.cpp
+    renderer/d3d12/descriptor_allocator.cpp
 
     renderer/backend_d3d12.cpp
     renderer/world_renderer.cpp

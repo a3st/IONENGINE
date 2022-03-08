@@ -5,116 +5,165 @@
 
 using namespace ionengine::renderer::d3d12;
 
-void MemoryAllocator::create_memory_pools(ID3D12Device4* device) {
+void MemoryAllocator::create_memory_pool(ID3D12Device4* const device, D3D12_HEAP_TYPE const heap_type) {
+
+    auto create_heap = [&](ID3D12Device4* const device, D3D12_HEAP_TYPE const heap_type, size_t const size, ID3D12Heap** heap) -> HRESULT {
+        auto heap_desc = D3D12_HEAP_DESC {};
+        heap_desc.SizeInBytes = size;
+        heap_desc.Properties.Type = heap_type;
+        return device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(heap));
+    };
 
     auto memory_heap = MemoryHeap {};
 
-    auto heap_desc = D3D12_HEAP_DESC {};
-    heap_desc.SizeInBytes = 256 * 1024 * 1024;
-    heap_desc.Properties.Type = D3D12_HEAP_TYPE_DEFAULT;
+    size_t block_size;
+    size_t heap_size;
 
-    memory_heap.blocks.resize(heap_desc.SizeInBytes / 1048576);
+    switch(heap_type) {
+        case D3D12_HEAP_TYPE_DEFAULT: {
 
-    THROW_IF_FAILED(device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(memory_heap.heap.GetAddressOf())));
+            HRESULT result;
+            result = create_heap(device, heap_type, static_cast<size_t>(HeapSize::_256mb), memory_heap.heap.GetAddressOf());
+            block_size = static_cast<size_t>(BlockSize::_256kb);
+            heap_size = static_cast<size_t>(HeapSize::_256mb);
+            if(result == E_OUTOFMEMORY) {
+                result = create_heap(device, heap_type, static_cast<size_t>(HeapSize::_128mb), memory_heap.heap.GetAddressOf());
+                block_size = static_cast<size_t>(BlockSize::_256kb);
+                heap_size = static_cast<size_t>(HeapSize::_128mb);
+            }
+            if(result == E_OUTOFMEMORY) {
+                result = create_heap(device, heap_type, static_cast<size_t>(HeapSize::_64mb), memory_heap.heap.GetAddressOf());
+                block_size = static_cast<size_t>(BlockSize::_128kb);
+                heap_size = static_cast<size_t>(HeapSize::_64mb);
+            }
+            THROW_IF_FAILED(result);
+        } break;
+        case D3D12_HEAP_TYPE_UPLOAD: {
 
-    _pools[static_cast<size_t>(HeapTypeIndex::Default)].first.emplace_back(memory_heap);
-    _pools[static_cast<size_t>(HeapTypeIndex::Default)].second = 256 * 1024 * 1024;
+            HRESULT result;
+            result = create_heap(device, heap_type, static_cast<size_t>(HeapSize::_128mb), memory_heap.heap.GetAddressOf());
+            block_size = static_cast<size_t>(BlockSize::_256kb);
+            heap_size = static_cast<size_t>(HeapSize::_128mb);
+            if(result == E_OUTOFMEMORY) {
+                result = create_heap(device, heap_type, static_cast<size_t>(HeapSize::_64mb), memory_heap.heap.GetAddressOf());
+                block_size = static_cast<size_t>(BlockSize::_128kb);
+                heap_size = static_cast<size_t>(HeapSize::_64mb);
+            }
+            if(result == E_OUTOFMEMORY) {
+                result = create_heap(device, heap_type, static_cast<size_t>(HeapSize::_32mb), memory_heap.heap.GetAddressOf());
+                block_size = static_cast<size_t>(BlockSize::_64kb);
+                heap_size = static_cast<size_t>(HeapSize::_32mb);
+            }
+            THROW_IF_FAILED(result);
+        } break;
+        case D3D12_HEAP_TYPE_READBACK: {
 
-    memory_heap = MemoryHeap {};
-
-    heap_desc = D3D12_HEAP_DESC {};
-    heap_desc.SizeInBytes = 128 * 1024 * 1024;
-    heap_desc.Properties.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-    memory_heap.blocks.resize(heap_desc.SizeInBytes / 1048576);
-
-    THROW_IF_FAILED(device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(memory_heap.heap.GetAddressOf())));
-
-    _pools[static_cast<size_t>(HeapTypeIndex::Upload)].first.emplace_back(memory_heap);
-    _pools[static_cast<size_t>(HeapTypeIndex::Upload)].second = 128 * 1024 * 1024;
-
-    memory_heap = MemoryHeap {};
-
-    heap_desc = D3D12_HEAP_DESC {};
-    heap_desc.SizeInBytes = 64 * 1024 * 1024;
-    heap_desc.Properties.Type = D3D12_HEAP_TYPE_READBACK;
-
-    memory_heap.blocks.resize(heap_desc.SizeInBytes / 1048576);
-
-    THROW_IF_FAILED(device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(memory_heap.heap.GetAddressOf())));
-
-    _pools[static_cast<size_t>(HeapTypeIndex::Readback)].first.emplace_back(memory_heap);
-    _pools[static_cast<size_t>(HeapTypeIndex::Readback)].second = 64 * 1024 * 1024;
-
-    // TODO! Custom Heap not supported yet
-}
-
-MemoryAllocInfo MemoryAllocator::allocate(ID3D12Device4* device, D3D12_HEAP_TYPE const heap_type, size_t const size) {
-
-    if(!_is_allocated) {
-        create_memory_pools(device);
+            HRESULT result;
+            result = create_heap(device, heap_type, static_cast<size_t>(HeapSize::_64mb), memory_heap.heap.GetAddressOf());
+            block_size = static_cast<size_t>(BlockSize::_128kb);
+            heap_size = static_cast<size_t>(HeapSize::_64mb);
+            if(result == E_OUTOFMEMORY) {
+                result = create_heap(device, heap_type, static_cast<size_t>(HeapSize::_32mb), memory_heap.heap.GetAddressOf());
+                block_size = static_cast<size_t>(BlockSize::_64kb);
+                heap_size = static_cast<size_t>(HeapSize::_32mb);
+            }
+            if(result == E_OUTOFMEMORY) {
+                result = create_heap(device, heap_type, static_cast<size_t>(HeapSize::_16mb), memory_heap.heap.GetAddressOf());
+                block_size = static_cast<size_t>(BlockSize::_64kb);
+                heap_size = static_cast<size_t>(HeapSize::_16mb);
+            }
+            THROW_IF_FAILED(result);
+        } break;
+        case D3D12_HEAP_TYPE_CUSTOM: {
+            assert(false && "custom heap not supported yet");
+        } break;
     }
 
-    /*D3D12_HEAP_DESC heap_desc{};
-    heap_desc.SizeInBytes = heap_size;
-    heap_desc.Properties.Type = heap_type;
+    memory_heap.blocks.resize(heap_size / block_size);
+    memory_heap.heap_size = heap_size;
+    memory_heap.block_size = block_size;
 
-    ComPtr<ID3D12Heap> heap;
-    THROW_IF_FAILED(device->CreateHeap(&heap_desc, __uuidof(ID3D12Heap), reinterpret_cast<void**>(heap.GetAddressOf())));
+    _pools[heap_type].first.emplace_back(memory_heap);
+    _pools[heap_type].second += heap_size;
+}
 
-    _heaps.emplace_back(MemoryHeap { heap, std::vector<uint8_t>(heap_size / 1048576, 0x0), 0 });*/
+MemoryAllocInfo MemoryAllocator::get_free_block(ID3D12Device4* const device, D3D12_HEAP_TYPE const heap_type, size_t const size) {
 
-    /*auto get_align_size = [&](size_t const size) -> size_t {
-        return size < 1048576 ? 1048576 : (size % 1048576) > 0 ? (size / 1048576 + 1) * 1048576 : size;
+    auto align_block_size = [&](size_t const block_size, size_t const size) -> size_t {
+        return size < block_size ? block_size : (size % block_size) > 0 ? (size / block_size + 1) * block_size : size;
     };
 
     auto memory_alloc_info = MemoryAllocInfo {};
 
-    size_t align_size = get_align_size(size);
-
-    for(auto& heap : _heaps) {
-        if(heap.offset + align_size > _heap_size) {
+    for(auto& heap : _pools[heap_type].first) {
+        size_t align_size = align_block_size(heap.block_size, size);
+        if(heap.offset + align_size > heap.heap_size) {
             continue;
         } else {
+            memory_alloc_info._heap = &heap;
+            memory_alloc_info._size = align_size;
+
             size_t alloc_size = 0;
-            for(uint64_t i = 0; i < static_cast<uint64_t>(heap.blocks.size()); ++i) {
+            for(size_t i = 0; i < heap.blocks.size(); ++i) {
                 if(alloc_size == align_size) {
-                    std::memset(heap.blocks.data() + memory_alloc_info.offset / 1048576, 0x1, sizeof(uint8_t) * align_size / 1048576);
+                    std::memset(heap.blocks.data() + memory_alloc_info._offset / heap.block_size, 0x1, sizeof(uint8_t) * alloc_size / heap.block_size);
+                    heap.offset = memory_alloc_info._offset + alloc_size;
                     break;
                 }
-
                 if(alloc_size == 0) {
-                    memory_alloc_info.heap = &heap;
-                    memory_alloc_info.offset = i * 1048576;
-                    memory_alloc_info.size = align_size;
+                    memory_alloc_info._offset = i * heap.block_size;
                 }
-
-                alloc_size = heap.blocks[i] == 0x0 ? alloc_size + 1048576 : 0;
+                alloc_size = heap.blocks[i] == 0x0 ? alloc_size + heap.block_size : 0;
             }
+
             if(alloc_size != align_size) {
-                memory_alloc_info.heap = nullptr;
-                memory_alloc_info.offset = 0;
-                memory_alloc_info.size = 0;
+                memory_alloc_info._heap = nullptr;
             }
         }
-        if(memory_alloc_info.heap) {
+
+        if(memory_alloc_info._heap && memory_alloc_info._size > 0) {
             break;
         }
     }
 
-    if(!memory_alloc_info.heap) {
+    if(!memory_alloc_info._heap) {
 
+        create_memory_pool(device, heap_type);
+        
+        MemoryHeap& heap = _pools[heap_type].first.back();
+
+        size_t align_size = align_block_size(heap.block_size, size);
+
+        heap.offset = align_size;
+        std::memset(heap.blocks.data(), 0x1, sizeof(uint8_t) * align_size / heap.block_size);
+        
+        memory_alloc_info._heap = &heap;
+        memory_alloc_info._size = align_size;
+        memory_alloc_info._offset = 0;
     }
 
-    return memory_alloc_info;*/
+    return memory_alloc_info;
+}
+
+MemoryAllocInfo MemoryAllocator::allocate(ID3D12Device4* const device, D3D12_HEAP_TYPE const heap_type, size_t const size) {
+
+    return get_free_block(device, heap_type, size);
 }
 
 void MemoryAllocator::deallocate(MemoryAllocInfo const& alloc_info) {
 
-    //std::memset(alloc_info.heap->blocks.data() + alloc_info.offset / 1048576, 0x0, sizeof(uint8_t) * alloc_info.size / 1048576);
-    //--alloc_info.heap->offset;
+    MemoryHeap& heap = *alloc_info._heap;
+
+    heap.offset = alloc_info._offset;
+
+    std::memset(heap.blocks.data() + alloc_info._offset / heap.block_size, 0x0, sizeof(uint8_t) * alloc_info._size / heap.block_size);
 }
 
 void MemoryAllocator::reset() {
-    
+
+    for(uint32_t i = 0; i < _pools.size(); ++i) {
+
+        _pools[i].first.clear();
+        _pools[i].second = 0;
+    }
 }

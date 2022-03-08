@@ -6,8 +6,16 @@
 
 namespace ionengine::renderer::d3d12 {
 
+struct MemoryHeap {
+    size_t heap_size;
+    size_t block_size;
+    ComPtr<ID3D12Heap> heap;
+    std::vector<uint8_t> blocks;
+    uint64_t offset;
+};
+
 struct MemoryAllocInfo {
-    MemoryAllocator::MemoryHeap* _heap;
+    MemoryHeap* _heap;
     size_t _size;
     uint64_t _offset;
 
@@ -17,12 +25,6 @@ struct MemoryAllocInfo {
 
 class MemoryAllocator {
 public:
-
-    struct MemoryHeap {
-        ComPtr<ID3D12Heap> heap;
-        std::vector<uint8_t> blocks;
-        uint64_t offset;
-    };
 
     MemoryAllocator() = default;
 
@@ -45,17 +47,31 @@ private:
     using MemoryPool = std::pair<std::list<MemoryHeap>, size_t>;
 
     enum class HeapTypeIndex : uint16_t {
-        Default,
-        Upload,
-        Readback,
-        Custom
+        Default = 1,
+        Upload = 2,
+        Readback = 3,
+        Custom = 4
     };
 
     std::array<MemoryPool, 4> _pools;
 
-    bool _is_allocated{false};
+    enum class BlockSize : size_t {
+        _256kb = 256 * 1024,
+        _128kb = 128 * 1024,
+        _64kb = 64 * 1024
+    };
 
-    void create_memory_pools(ID3D12Device4* device);
+    enum class HeapSize : size_t {
+        _256mb = 256 * 1024 * 1024,
+        _128mb = 128 * 1024 * 1024,
+        _64mb = 64 * 1024 * 1024,
+        _32mb = 32 * 1024 * 1024,
+        _16mb = 16 * 1024 * 1024
+    };
+
+    void create_memory_pool(ID3D12Device4* const device, D3D12_HEAP_TYPE const heap_type);
+
+    MemoryAllocInfo get_free_block(ID3D12Device4* const device, D3D12_HEAP_TYPE const heap_type, size_t const size);
 };
 
 }
