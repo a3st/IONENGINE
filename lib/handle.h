@@ -4,7 +4,8 @@
 
 namespace ionengine {
 
-template<class Type> class InstanceContainer;
+template<class Type> 
+class HandleAllocator;
 
 template<class Type>
 class Handle {
@@ -38,7 +39,11 @@ private:
 
     uint32_t _id{std::numeric_limits<uint32_t>::max()};
 
-    friend class InstanceContainer<Type>;
+    friend class HandleAllocator<Type>;
 };
 
 }
+
+#ifndef INVALID_HANDLE
+#define INVALID_HANDLE(Type) ionengine::Handle<Type>()
+#endif

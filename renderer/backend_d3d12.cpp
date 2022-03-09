@@ -7,6 +7,7 @@
 #include <renderer/d3d12/descriptor_allocator.h>
 #include <platform/window.h>
 #include <lib/exception.h>
+#include <lib/handle_allocator.h>
 
 using ionengine::Handle;
 using namespace ionengine::renderer;
@@ -107,16 +108,16 @@ struct Backend::Impl {
     d3d12::DescriptorAllocInfo null_srv_descriptor_alloc_info;
     d3d12::DescriptorAllocInfo null_sampler_descriptor_alloc_info;
 
-    InstanceContainer<Texture> textures;
-    InstanceContainer<Buffer> buffers;
-    InstanceContainer<Sampler> samplers;
-    InstanceContainer<Pipeline> pipelines;
-    InstanceContainer<Shader> shaders;
-    InstanceContainer<RenderPass> render_passes;
-    InstanceContainer<DescriptorLayout> descriptor_layouts;
-    InstanceContainer<DescriptorSet> descriptor_sets;
+    HandleAllocator<Texture> texture_allocator;
+    HandleAllocator<Buffer> buffer_allocator;
+    HandleAllocator<Sampler> sampler_allocator;
+    HandleAllocator<Pipeline> pipeline_allocator;
+    HandleAllocator<Shader> shader_allocator;
+    HandleAllocator<RenderPass> render_pass_allocator;
+    HandleAllocator<DescriptorLayout> descriptor_layout_allocator;
+    HandleAllocator<DescriptorSet> descriptor_set_allocator;
 
-    CommandBuffer* current_buffer;
+    CommandList* current_list;
 };
 
 Backend::Backend(uint32_t const adapter_index, platform::Window* const window, uint32_t const frame_count) : _impl(std::make_unique<Impl>()) {

@@ -7,20 +7,20 @@
 namespace ionengine {
 
 template<class Type>
-class InstanceContainer {
+class HandleAllocator {
 public:
 
-    InstanceContainer() = default;
+    HandleAllocator() = default;
 
-    InstanceContainer(InstanceContainer const&) = delete;
+    HandleAllocator(HandleAllocator const&) = delete;
 
-    InstanceContainer(InstanceContainer&&) noexcept = delete;
+    HandleAllocator(HandleAllocator&&) noexcept = delete;
 
-    InstanceContainer& operator=(InstanceContainer const&) = delete;
+    HandleAllocator& operator=(HandleAllocator const&) = delete;
 
-    InstanceContainer& operator=(InstanceContainer&&) noexcept = delete;
+    HandleAllocator& operator=(HandleAllocator&&) noexcept = delete;
 
-    Handle<Type> push(Type const& element) {
+    Handle<Type> allocate(Type const& element) {
 
         const size_t cur_offset = _offset;
         _instances[static_cast<uint32_t>(cur_offset)] = element;
@@ -28,13 +28,13 @@ public:
         return Handle<Type>(static_cast<uint32_t>(cur_offset));
     }
 
-    void erase(Handle<Type> const& handle) {
+    void deallocate(Handle<Type> const& handle) {
 
         auto it = _instances.find(handle._id);
         _instances.erase(it);
     }
 
-    void clear() {
+    void reset() {
         
         _instances.clear();
     }
