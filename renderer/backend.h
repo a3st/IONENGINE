@@ -205,6 +205,10 @@ struct BlendDesc {
     BlendOp blend_op_alpha;
 };
 
+struct AdapterDesc {
+    std::u8string name;
+};
+
 class Backend {
 public:
 
@@ -309,29 +313,36 @@ public:
 
     Backend& bind_index_buffer(Format const format, Handle<Buffer> const& buffer, uint64_t const offset);
 
-    Backend& barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handle, MemoryState const before, MemoryState const after);
+    Backend& barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after);
 
-    void bind_pipeline(Handle<Pipeline> const& handle);
+    Backend& bind_pipeline(Handle<Pipeline> const& pipeline);
 
-    void bind_descriptor_set(Handle<DescriptorSet> const& handle);
+    Backend& bind_descriptor_set(Handle<DescriptorSet> const& descriptor_set);
 
-    void set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
+    Backend& set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
 
-    void set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
+    Backend& set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
 
-    void begin_render_pass(Handle<RenderPass> const& handle, std::span<Color> const rtv_clears, float const depth_clear, uint8_t const stencil_clear);
+    Backend& begin_render_pass(
+        Handle<RenderPass> const& render_pass, 
+        std::span<Color> const clear_colors, 
+        float const clear_depth = 0.0f,
+        uint8_t const clear_stencil = 0x0
+    );
 
-    void end_render_pass();
+    Backend& end_render_pass();
 
-    void draw(uint32_t const vertex_index, uint32_t const vertex_count);
+    Backend& draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
 
-    void draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
-
-    Handle<Texture> get_current_buffer() const;
+    Backend& draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
 
     void swap_buffers();
 
     void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
+
+    Handle<Texture> swap_buffer() const;
+
+    AdapterDesc const& adapter() const;
 
 private:
 
