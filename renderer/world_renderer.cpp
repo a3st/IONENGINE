@@ -99,7 +99,7 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     auto start = std::chrono::high_resolution_clock::now();
 
     _frame_graph
-        .attachment(static_cast<uint32_t>(Colors::Blit), Format::RGBA8, Extent2D { 800, 600 })
+        .attachment(static_cast<uint32_t>(Colors::Blit), Format::RGBA8, 800, 600)
         .external_attachment(static_cast<uint32_t>(Colors::Swapchain), Format::RGBA8, MemoryState::RenderTarget, MemoryState::Present)
         .render_pass(
             static_cast<uint32_t>(RenderPasses::Main), 
@@ -121,8 +121,10 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
 void WorldRenderer::update() {
 
+    Backend& backend = *_backend;
+
     _frame_graph
-        .bind_external_attachment(static_cast<uint32_t>(Colors::Swapchain), _backend->get_current_buffer())
+        .bind_external_attachment(static_cast<uint32_t>(Colors::Swapchain), backend.swap_buffer())
         .execute(*_backend);
 
     frame_index = (frame_index + 1) % 2;
@@ -130,12 +132,16 @@ void WorldRenderer::update() {
 
 void WorldRenderer::resize(uint32_t const width, uint32_t const height) {
 
+    Backend& backend = *_backend;
+
     _frame_graph.reset(*_backend);
 
     /*_frame_graph
         .render_pass()
         .build(*_backend);
     */
+
+    backend.resize_buffers(width, height, 2);
 }
 
 void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model) {

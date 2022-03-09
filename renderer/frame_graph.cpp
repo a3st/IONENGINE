@@ -6,12 +6,13 @@
 using ionengine::Handle;
 using namespace ionengine::renderer;
 
-FrameGraph& FrameGraph::attachment(uint32_t const id, Format const format, Extent2D extent) {
+FrameGraph& FrameGraph::attachment(uint32_t const id, Format const format, uint32_t const width, uint32_t const height) {
 
-    auto attachment = InternalAttachment {
+    auto attachment = FrameGraph::InternalAttachment {
         format,
-        extent,
-        Handle<Texture>()
+        width,
+        height,
+        INVALID_HANDLE(Texture)
     };
     _attachments[{ id, 0 }] = attachment;
     return *this;
@@ -19,11 +20,11 @@ FrameGraph& FrameGraph::attachment(uint32_t const id, Format const format, Exten
 
 FrameGraph& FrameGraph::external_attachment(uint32_t const id, Format const format, MemoryState const before, MemoryState const after) {
 
-    auto attachment = ExternalAttachment {
+    auto attachment = FrameGraph::ExternalAttachment {
         format,
         before,
         after,
-        Handle<Texture>()
+        INVALID_HANDLE(Texture)
     };
     _attachments[{id, 0}] = attachment;
     return *this;
@@ -31,9 +32,9 @@ FrameGraph& FrameGraph::external_attachment(uint32_t const id, Format const form
 
 FrameGraph& FrameGraph::render_pass(uint32_t const id, RenderPassDesc const& desc, RenderPassFunc const& func) {
 
-    auto render_pass = RenderPass {
+    auto render_pass = FrameGraph::RenderPass {
         desc,
-        Handle<renderer::RenderPass>(),
+        INVALID_HANDLE(renderer::RenderPass),
         func
     };
     _render_passes[{ id, 0 }] = render_pass;

@@ -85,7 +85,7 @@ public:
 
     FrameGraph() = default;
 
-    FrameGraph& attachment(uint32_t const id, Format const format, Extent2D extent);
+    FrameGraph& attachment(uint32_t const id, Format const format, uint32_t const width, uint32_t const height);
     FrameGraph& external_attachment(uint32_t const id, Format const format, MemoryState const before, MemoryState const after);
     FrameGraph& render_pass(uint32_t const id, RenderPassDesc const& desc, RenderPassFunc const& func);
     FrameGraph& bind_external_attachment(uint32_t const id, Handle<Texture> const& handle);
@@ -105,7 +105,8 @@ private:
 
     struct InternalAttachment {
         Format format;
-        Extent2D extent;
+        uint32_t width;
+        uint32_t height;
         Handle<Texture> target;
     };
 
@@ -116,10 +117,10 @@ private:
         Handle<Texture> target;
     };
 
-    using Attachment = std::variant<InternalAttachment, ExternalAttachment>;
+    using Attachment = std::variant<FrameGraph::InternalAttachment, FrameGraph::ExternalAttachment>;
     using FrameId = std::pair<uint32_t, uint32_t>;
 
-    std::unordered_map<FrameId, RenderPass, pair_hash> _render_passes;
+    std::unordered_map<FrameId, FrameGraph::RenderPass, pair_hash> _render_passes;
     std::unordered_map<FrameId, Attachment, pair_hash> _attachments;
     std::unordered_map<FrameId, RenderPassResources, pair_hash> _render_pass_resources;
 
@@ -127,7 +128,7 @@ private:
         RenderPass
     };
 
-    using Op = std::pair<OpType, uint32_t>;
+    using Op = std::pair<FrameGraph::OpType, uint32_t>;
 
     std::vector<Op> _ops;
 

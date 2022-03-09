@@ -36,7 +36,7 @@ struct DescriptorLayout {
 };
 
 struct DescriptorSet {
-    DescriptorLayout* descriptor_layout;
+    DescriptorLayout descriptor_layout;
     std::vector<d3d12::DescriptorAllocInfo> descriptor_alloc_infos;
 };
 
@@ -48,7 +48,7 @@ struct Pipeline {
 struct Shader {
     D3D12_SHADER_BYTECODE shader_bytecode;
     D3D12_SHADER_VISIBILITY shader_visibility;
-    std::vector<char8_t> data;
+    std::vector<char8_t> shader_data;
 };
 
 struct RenderPass {
@@ -88,15 +88,15 @@ struct Backend::Impl {
 
     HANDLE fence_event;
 
-    std::vector<CommandList> direct_lists;
-    std::vector<CommandList> copy_lists;
-    std::vector<CommandList> compute_lists;
+    std::vector<Impl::CommandList> direct_lists;
+    std::vector<Impl::CommandList> copy_lists;
+    std::vector<Impl::CommandList> compute_lists;
 
-    std::vector<Fence> direct_fences;
-    std::vector<Fence> copy_fences;
-    std::vector<Fence> compute_fences;
+    std::vector<Impl::Fence> direct_fences;
+    std::vector<Impl::Fence> copy_fences;
+    std::vector<Impl::Fence> compute_fences;
 
-    std::vector<UploadBuffer> upload_buffers;
+    std::vector<Impl::UploadBuffer> upload_buffers;
 
     std::vector<Handle<Texture>> swap_buffers;
     uint32_t swap_index;
@@ -120,7 +120,11 @@ struct Backend::Impl {
     Handle<Buffer> create_buffer(size_t const size, BufferFlags const flags);
     Handle<RenderPass> create_render_pass(std::span<Handle<Texture>> const& colors, std::span<RenderPassColorDesc> const& color_descs, Handle<Texture> const& depth_stencil, RenderPassDepthStencilDesc const& depth_stencil_desc);
     Handle<Sampler> create_sampler(Filter const filter, AddressMode const address_u, AddressMode const address_v, AddressMode const address_w, uint16_t const anisotropic, CompareOp const compare_op);
-
+    Handle<Shader> create_shader(std::span<char8_t const> const data, ShaderFlags const flags);
+    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorRangeDesc> const ranges);
+    Handle<Pipeline> create_pipeline(Handle<DescriptorLayout> const& descriptor_layout, std::span<VertexInputDesc> const vertex_descs, std::span<Handle<Shader>> const shaders, RasterizerDesc const& rasterizer_desc, DepthStencilDesc const& depth_stencil_desc, BlendDesc const& blend_desc, Handle<RenderPass> const& render_pass);
+    Handle<DescriptorSet> create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout);
+    void write_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc> const write_descs);
     Handle<Texture> swap_buffer() const;
 };
 
@@ -749,70 +753,34 @@ Handle<Sampler> Backend::Impl::create_sampler(
     return sampler_allocator.allocate(sampler);
 }
 
-Handle<Texture> Backend::Impl::swap_buffer() const {
+Handle<Shader> Backend::Impl::create_shader(std::span<char8_t const> const data, ShaderFlags const flags) {
 
-    return swap_buffers[swap_index];
-}
+    auto get_shader_visibility = [&](ShaderFlags const flags) -> D3D12_SHADER_VISIBILITY {
+        switch(flags) {
+            case ShaderFlags::Vertex: return D3D12_SHADER_VISIBILITY_VERTEX;
+            case ShaderFlags::Pixel: return D3D12_SHADER_VISIBILITY_PIXEL;
+            case ShaderFlags::Geometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
+            case ShaderFlags::Domain: return D3D12_SHADER_VISIBILITY_DOMAIN;
+            case ShaderFlags::Hull: return D3D12_SHADER_VISIBILITY_HULL;
+            case ShaderFlags::Compute: return D3D12_SHADER_VISIBILITY_ALL;
+            case ShaderFlags::All: return D3D12_SHADER_VISIBILITY_ALL;
+        }
+        return D3D12_SHADER_VISIBILITY_ALL;
+    };
 
-Handle<Texture> Backend::create_texture(
-    Dimension const dimension,
-    uint32_t const width,
-    uint32_t const height,
-    uint16_t const mip_levels,
-    uint16_t const array_layers,
-    Format const format,
-    TextureFlags const flags
-) {
+    std::vector<char8_t> shader_data;
+    shader_data.resize(data.size());
+    std::memcpy(shader_data.data(), data.data(), sizeof(char8_t) * shader_data.size());
     
-    return _impl->create_texture(dimension, width, height, mip_levels, array_layers, format, flags);
+    auto shader = Shader {};
+    shader.shader_data = shader_data;
+    shader.shader_visibility = get_shader_visibility(flags);
+    shader.shader_bytecode = D3D12_SHADER_BYTECODE { shader.shader_data.data(), shader.shader_data.size() };
+
+    return shader_allocator.allocate(shader);
 }
 
-Handle<Buffer> Backend::create_buffer(size_t const size, BufferFlags const flags) {
-
-    return _impl->create_buffer(size, flags); 
-}
-
-Handle<RenderPass> Backend::create_render_pass(
-    std::span<Handle<Texture>> const& colors, 
-    std::span<RenderPassColorDesc> const& color_descs, 
-    Handle<Texture> const& depth_stencil, 
-    RenderPassDepthStencilDesc const& depth_stencil_desc
-) {
-
-    return _impl->create_render_pass(colors, color_descs, depth_stencil, depth_stencil_desc);
-}
-
-Handle<Sampler> Backend::create_sampler(
-    Filter const filter, 
-    AddressMode const address_u, 
-    AddressMode const address_v, 
-    AddressMode const address_w, 
-    uint16_t const anisotropic, 
-    CompareOp const compare_op
-) {
-
-    _impl->create_sampler(filter, address_u, address_v, address_w, anisotropic, compare_op);
-}
-
-Handle<Shader> Backend::create_shader(std::span<char8_t> const shader_data, BackendFlags const flags) {
-
-    std::vector<char8_t> data(shader_data.size());
-    std::copy(shader_data.begin(), shader_data.end(), data.begin());
-    
-    D3D12_SHADER_VISIBILITY type;
-    switch(flags) {
-        case BackendFlags::VertexShader: type = D3D12_SHADER_VISIBILITY_VERTEX; break;
-        case BackendFlags::PixelShader: type = D3D12_SHADER_VISIBILITY_PIXEL; break;
-        case BackendFlags::GeometryShader: type = D3D12_SHADER_VISIBILITY_GEOMETRY; break;
-        case BackendFlags::DomainShader: type = D3D12_SHADER_VISIBILITY_DOMAIN; break;
-        case BackendFlags::HullShader: type = D3D12_SHADER_VISIBILITY_HULL; break;
-        default: assert(false && "Shader visibility is unsupported"); break;
-    }
-
-    return _impl->shaders.push(Shader { data, type });
-}
-
-Handle<DescriptorLayout> Backend::create_descriptor_layout(std::span<DescriptorRangeDesc> const ranges) {
+Handle<DescriptorLayout> Backend::Impl::create_descriptor_layout(std::span<DescriptorRangeDesc> const ranges) {
 
     std::vector<D3D12_DESCRIPTOR_RANGE> _ranges;
     _ranges.reserve(ranges.size());
@@ -830,19 +798,20 @@ Handle<DescriptorLayout> Backend::create_descriptor_layout(std::span<DescriptorR
         return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     };
 
-    auto get_shader_visibility = [&](BackendFlags const flags) -> D3D12_SHADER_VISIBILITY {
+    auto get_shader_visibility = [&](ShaderFlags const flags) -> D3D12_SHADER_VISIBILITY {
         switch(flags) {
-            case BackendFlags::VertexShader: return D3D12_SHADER_VISIBILITY_VERTEX;
-            case BackendFlags::PixelShader: return D3D12_SHADER_VISIBILITY_PIXEL;
-            case BackendFlags::GeometryShader: return D3D12_SHADER_VISIBILITY_GEOMETRY;
-            case BackendFlags::DomainShader: return D3D12_SHADER_VISIBILITY_DOMAIN;
-            case BackendFlags::HullShader: return D3D12_SHADER_VISIBILITY_HULL;
-            case BackendFlags::AllShader: return D3D12_SHADER_VISIBILITY_ALL;
+            case ShaderFlags::Vertex: return D3D12_SHADER_VISIBILITY_VERTEX;
+            case ShaderFlags::Pixel: return D3D12_SHADER_VISIBILITY_PIXEL;
+            case ShaderFlags::Geometry: return D3D12_SHADER_VISIBILITY_GEOMETRY;
+            case ShaderFlags::Domain: return D3D12_SHADER_VISIBILITY_DOMAIN;
+            case ShaderFlags::Hull: return D3D12_SHADER_VISIBILITY_HULL;
+            case ShaderFlags::All: return D3D12_SHADER_VISIBILITY_ALL;
         }
         return D3D12_SHADER_VISIBILITY_ALL;
     };
 
     std::map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> index_ranges;
+
     index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_CBV] = 0;
     index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SRV] = 0;
     index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_UAV] = 0;
@@ -873,10 +842,12 @@ Handle<DescriptorLayout> Backend::create_descriptor_layout(std::span<DescriptorR
     root_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
     ComPtr<ID3DBlob> serialized_data;
+
     THROW_IF_FAILED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, serialized_data.GetAddressOf(), nullptr));
 
     ComPtr<ID3D12RootSignature> signature;
-    THROW_IF_FAILED(_impl->device->CreateRootSignature(
+
+    THROW_IF_FAILED(device->CreateRootSignature(
         0,
         serialized_data->GetBufferPointer(), 
         serialized_data->GetBufferSize(), 
@@ -884,19 +855,23 @@ Handle<DescriptorLayout> Backend::create_descriptor_layout(std::span<DescriptorR
         reinterpret_cast<void**>(signature.GetAddressOf())
     ));
 
-    return _impl->descriptor_layouts.push(DescriptorLayout { signature, _ranges });
+    auto descriptor_layout = DescriptorLayout {};
+    descriptor_layout.root_signature = signature;
+    descriptor_layout.descriptor_ranges = _ranges;
+
+    return descriptor_layout_allocator.allocate(descriptor_layout);
 }
 
-Handle<Pipeline> Backend::create_pipeline(
-    Handle<DescriptorLayout> const& layout_handle,
-    std::span<VertexInputDesc> const vertex_inputs,
-    std::span<Handle<Shader>> const shader_handles,
-    RasterizerDesc const& rasterizer,
-    DepthStencilDesc const& depth_stencil,
-    BlendDesc const& blend,
-    Handle<RenderPass> const& render_pass_handle
+Handle<Pipeline> Backend::Impl::create_pipeline(
+    Handle<DescriptorLayout> const& descriptor_layout,
+    std::span<VertexInputDesc> const vertex_descs,
+    std::span<Handle<Shader>> const shaders,
+    RasterizerDesc const& rasterizer_desc,
+    DepthStencilDesc const& depth_stencil_desc,
+    BlendDesc const& blend_desc,
+    Handle<RenderPass> const& render_pass
 ) {
-    
+
     auto get_fill_mode = [&](FillMode const fill_mode) {
         switch(fill_mode) {
             case FillMode::Solid: return D3D12_FILL_MODE_SOLID;
@@ -958,69 +933,65 @@ Handle<Pipeline> Backend::create_pipeline(
         return DXGI_FORMAT_R32G32B32_FLOAT;
     };
 
-    auto& signature = _impl->descriptor_layouts.get(layout_handle);
+    auto& signature = descriptor_layout_allocator.get(descriptor_layout);
 
     auto pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {};
     pipeline_desc.pRootSignature = signature.root_signature.Get();
 
-    std::vector<D3D12_INPUT_ELEMENT_DESC> input_elements;
-    input_elements.reserve(vertex_inputs.size());
+    std::vector<D3D12_INPUT_ELEMENT_DESC> input_element_descs;
+    input_element_descs.reserve(vertex_descs.size());
 
-    std::vector<uint32_t> vertex_strides;
-    vertex_strides.resize(15);
+    std::array<uint32_t, 16> vertex_strides;
 
-    for(auto const& input : vertex_inputs) {
-        auto element_desc = D3D12_INPUT_ELEMENT_DESC {};
-        element_desc.SemanticName = input.semantic.c_str();
-        element_desc.InputSlot = input.slot;
-        element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-        element_desc.Format = get_dxgi_format(input.format);
-        element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
-        input_elements.emplace_back(element_desc);
+    for(auto const& input : vertex_descs) {
+        auto input_element_desc = D3D12_INPUT_ELEMENT_DESC {};
+        input_element_desc.SemanticName = input.semantic.c_str();
+        input_element_desc.InputSlot = input.slot;
+        input_element_desc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        input_element_desc.Format = get_dxgi_format(input.format);
+        input_element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
+        input_element_descs.emplace_back(input_element_desc);
 
         vertex_strides[input.slot] += input.stride;
     }
-    pipeline_desc.InputLayout.pInputElementDescs = input_elements.data();
-    pipeline_desc.InputLayout.NumElements = static_cast<uint32_t>(input_elements.size());
 
-    auto rasterizer_desc = D3D12_RASTERIZER_DESC {};
-    rasterizer_desc.FillMode = get_fill_mode(rasterizer.fill_mode);
-    rasterizer_desc.CullMode = get_cull_mode(rasterizer.cull_mode);
-    rasterizer_desc.FrontCounterClockwise = false;
-    rasterizer_desc.DepthBias = 0;
-    rasterizer_desc.DepthBiasClamp = 0.0f;
-    rasterizer_desc.SlopeScaledDepthBias = 0.0f;
-    rasterizer_desc.DepthClipEnable = true;
-    rasterizer_desc.MultisampleEnable = false;
-    rasterizer_desc.AntialiasedLineEnable = false;
-    rasterizer_desc.ForcedSampleCount = 0;
-    rasterizer_desc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+    pipeline_desc.InputLayout.pInputElementDescs = input_element_descs.data();
+    pipeline_desc.InputLayout.NumElements = static_cast<uint32_t>(input_element_descs.size());
 
-    pipeline_desc.RasterizerState = rasterizer_desc;
+    auto _rasterizer_desc = D3D12_RASTERIZER_DESC {};
+    _rasterizer_desc.FillMode = get_fill_mode(rasterizer_desc.fill_mode);
+    _rasterizer_desc.CullMode = get_cull_mode(rasterizer_desc.cull_mode);
+    _rasterizer_desc.FrontCounterClockwise = false;
+    _rasterizer_desc.DepthBias = 0;
+    _rasterizer_desc.DepthBiasClamp = 0.0f;
+    _rasterizer_desc.SlopeScaledDepthBias = 0.0f;
+    _rasterizer_desc.DepthClipEnable = true;
+    _rasterizer_desc.MultisampleEnable = false;
+    _rasterizer_desc.AntialiasedLineEnable = false;
+    _rasterizer_desc.ForcedSampleCount = 0;
+    _rasterizer_desc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
-    for(auto& shader_handle : shader_handles) {
-        auto& shader = _impl->shaders.get(shader_handle);
+    pipeline_desc.RasterizerState = _rasterizer_desc;
 
-        auto bytecode = D3D12_SHADER_BYTECODE {};
-        bytecode.pShaderBytecode = shader.bytecode.data();
-        bytecode.BytecodeLength = shader.bytecode.size();
+    for(auto& shader : shaders) {
+        auto& _shader = shader_allocator.get(shader);
         
-        switch(shader.type) {
-            case D3D12_SHADER_VISIBILITY_VERTEX: pipeline_desc.VS = bytecode; break;
-            case D3D12_SHADER_VISIBILITY_PIXEL: pipeline_desc.PS = bytecode; break;
-            case D3D12_SHADER_VISIBILITY_GEOMETRY: pipeline_desc.GS = bytecode; break;
-            case D3D12_SHADER_VISIBILITY_DOMAIN: pipeline_desc.DS = bytecode; break;
-            case D3D12_SHADER_VISIBILITY_HULL: pipeline_desc.HS = bytecode; break;
+        switch(_shader.shader_visibility) {
+            case D3D12_SHADER_VISIBILITY_VERTEX: pipeline_desc.VS = _shader.shader_bytecode; break;
+            case D3D12_SHADER_VISIBILITY_PIXEL: pipeline_desc.PS = _shader.shader_bytecode; break;
+            case D3D12_SHADER_VISIBILITY_GEOMETRY: pipeline_desc.GS = _shader.shader_bytecode; break;
+            case D3D12_SHADER_VISIBILITY_DOMAIN: pipeline_desc.DS = _shader.shader_bytecode; break;
+            case D3D12_SHADER_VISIBILITY_HULL: pipeline_desc.HS = _shader.shader_bytecode; break;
         }
     }
 
-    auto depth_stencil_desc = D3D12_DEPTH_STENCIL_DESC {};
-    depth_stencil_desc.DepthFunc = get_comparison_func(depth_stencil.depth_func);
-    depth_stencil_desc.DepthEnable = depth_stencil.write_enable;
-    depth_stencil_desc.StencilEnable = depth_stencil.write_enable;
-    depth_stencil_desc.DepthWriteMask = depth_stencil.write_enable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
-    depth_stencil_desc.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
-    depth_stencil_desc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+    auto _depth_stencil_desc = D3D12_DEPTH_STENCIL_DESC {};
+    _depth_stencil_desc.DepthFunc = get_comparison_func(depth_stencil_desc.depth_func);
+    _depth_stencil_desc.DepthEnable = depth_stencil_desc.write_enable;
+    _depth_stencil_desc.StencilEnable = depth_stencil_desc.write_enable;
+    _depth_stencil_desc.DepthWriteMask = depth_stencil_desc.write_enable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+    _depth_stencil_desc.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+    _depth_stencil_desc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
 
     auto depth_stencil_face = D3D12_DEPTH_STENCILOP_DESC {};
     depth_stencil_face.StencilFailOp = D3D12_STENCIL_OP_KEEP;
@@ -1028,130 +999,234 @@ Handle<Pipeline> Backend::create_pipeline(
     depth_stencil_face.StencilPassOp = D3D12_STENCIL_OP_KEEP;
     depth_stencil_face.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 
-    depth_stencil_desc.FrontFace = depth_stencil_face;
-    depth_stencil_desc.BackFace = depth_stencil_face;
+    _depth_stencil_desc.FrontFace = depth_stencil_face;
+    _depth_stencil_desc.BackFace = depth_stencil_face;
 
-    pipeline_desc.DepthStencilState = depth_stencil_desc;
+    pipeline_desc.DepthStencilState = _depth_stencil_desc;
 
-    auto blend_desc = D3D12_BLEND_DESC {};
+    auto _blend_desc = D3D12_BLEND_DESC {};
     auto render_target_blend_desc = D3D12_RENDER_TARGET_BLEND_DESC {};
-    render_target_blend_desc.BlendEnable = blend.blend_enable;
-    render_target_blend_desc.SrcBlend = get_blend(blend.blend_src);
-    render_target_blend_desc.DestBlend = get_blend(blend.blend_dst);
-    render_target_blend_desc.BlendOp = get_blend_func(blend.blend_op);
-    render_target_blend_desc.SrcBlendAlpha = get_blend(blend.blend_src_alpha);
-    render_target_blend_desc.DestBlendAlpha = get_blend(blend.blend_dst_alpha);
-    render_target_blend_desc.BlendOpAlpha = get_blend_func(blend.blend_op_alpha);
+    render_target_blend_desc.BlendEnable = blend_desc.blend_enable;
+    render_target_blend_desc.SrcBlend = get_blend(blend_desc.blend_src);
+    render_target_blend_desc.DestBlend = get_blend(blend_desc.blend_dst);
+    render_target_blend_desc.BlendOp = get_blend_func(blend_desc.blend_op);
+    render_target_blend_desc.SrcBlendAlpha = get_blend(blend_desc.blend_src_alpha);
+    render_target_blend_desc.DestBlendAlpha = get_blend(blend_desc.blend_dst_alpha);
+    render_target_blend_desc.BlendOpAlpha = get_blend_func(blend_desc.blend_op_alpha);
     render_target_blend_desc.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
-    auto render_pass = _impl->render_passes.get(render_pass_handle);
+    auto _render_pass = render_pass_allocator.get(render_pass);
 
-    for(size_t i = 0; i < render_pass.colors.size(); ++i) {
-        blend_desc.RenderTarget[i] = render_target_blend_desc;
-        pipeline_desc.RTVFormats[i] = render_pass.colors[i].BeginningAccess.Clear.ClearValue.Format;
+    for(uint32_t i = 0; i < _render_pass.render_target_count; ++i) {
+        _blend_desc.RenderTarget[i] = render_target_blend_desc;
+        pipeline_desc.RTVFormats[i] = _render_pass.render_target_descs[i].BeginningAccess.Clear.ClearValue.Format;
     }
-    pipeline_desc.DSVFormat = render_pass.depth_stencil.has_value() ? render_pass.depth_stencil.value().DepthBeginningAccess.Clear.ClearValue.Format : DXGI_FORMAT_UNKNOWN;
-    pipeline_desc.NumRenderTargets = static_cast<uint32_t>(render_pass.colors.size());
-    
-    pipeline_desc.BlendState = blend_desc;
 
+    pipeline_desc.DSVFormat = _render_pass.has_depth_stencil ? _render_pass.depth_stencil_desc.DepthBeginningAccess.Clear.ClearValue.Format : DXGI_FORMAT_UNKNOWN;
+    pipeline_desc.NumRenderTargets = _render_pass.render_target_count;
+    pipeline_desc.BlendState = _blend_desc;
     pipeline_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-
     pipeline_desc.SampleMask = std::numeric_limits<uint32_t>::max();
 
-    // TODO
+    // TODO!
     pipeline_desc.SampleDesc.Count = 1;
 
     ComPtr<ID3D12PipelineState> pipeline_state;
-    THROW_IF_FAILED(_impl->device->CreateGraphicsPipelineState(
-        &pipeline_desc, 
+
+    THROW_IF_FAILED(device->CreateGraphicsPipelineState(
+        &pipeline_desc,
         __uuidof(ID3D12PipelineState), 
         reinterpret_cast<void**>(pipeline_state.GetAddressOf())
     ));
 
-    return _impl->pipelines.push(Pipeline { pipeline_state, vertex_strides });
+    auto pipeline = Pipeline {};
+    pipeline.pipeline_state = pipeline_state;
+    pipeline.vertex_strides = vertex_strides;
+
+    return pipeline_allocator.allocate(pipeline);
 }
 
-Handle<DescriptorSet> Backend::create_descriptor_set(Handle<DescriptorLayout> const& handle) {
+Handle<DescriptorSet> Backend::Impl::create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout) {
 
-    auto& descriptor_layout = _impl->descriptor_layouts.get(handle);
+    auto& _descriptor_layout = descriptor_layout_allocator.get(descriptor_layout);
 
-    std::vector<DescriptorAllocInfo> descriptor_alloc_infos;
+    std::vector<d3d12::DescriptorAllocInfo> descriptor_alloc_infos;
     
-    for(auto& range : descriptor_layout.descriptor_ranges) {
-        
+    for(auto& range : _descriptor_layout.descriptor_ranges) {
+
         for(uint32_t i = 0; i < range.NumDescriptors; ++i) {
-            
-            DescriptorAllocInfo descriptor_alloc_info;
+
+            d3d12::DescriptorAllocInfo descriptor_alloc_info;
+
             switch(range.RangeType) {
                 case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                 case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
-                case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: descriptor_alloc_info = _impl->srv_shader_pool.allocate(); break;
-                case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: descriptor_alloc_info = _impl->sampler_shader_pool.allocate(); break;
+                case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
+                    descriptor_alloc_info = descriptor_allocator.allocate(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+                } break;
+                case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: {
+                    descriptor_alloc_info = descriptor_allocator.allocate(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, true);
+                }break;
             }
+
             descriptor_alloc_infos.emplace_back(descriptor_alloc_info);
         }
     }
+
+    auto descriptor_set = DescriptorSet {};
+    descriptor_set.descriptor_layout = _descriptor_layout;
+    descriptor_set.descriptor_alloc_infos = descriptor_alloc_infos;
     
-    return _impl->descriptor_sets.push(DescriptorSet { descriptor_layout.root_signature, descriptor_layout.descriptor_ranges, descriptor_alloc_infos });
+    return descriptor_set_allocator.allocate(descriptor_set);
 }
 
-void Backend::write_descriptor_set(Handle<DescriptorSet> const& handle, std::span<DescriptorWriteDesc> const writes) {
+void Backend::Impl::write_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc> const write_descs) {
 
-    auto& descriptor_set = _impl->descriptor_sets.get(handle);
+    auto& _descriptor_set = descriptor_set_allocator.get(descriptor_set);
 
-    for(auto& write : writes) {
+    for(auto& write : write_descs) {
 
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, Handle<Texture>>) {
-                auto& texture = _impl->textures.get(arg);
-                const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        auto write_visitor = make_visitor(
+            [&](Handle<Texture>& texture) {
+
+                auto& _texture = texture_allocator.get(texture);
+
+                const uint32_t srv_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
                 auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    texture.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    _texture.descriptor_alloc_infos[0].heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     srv_size * // Device descriptor size
-                    texture.descriptor_alloc_info.offset // Allocation offset
+                    _texture.descriptor_alloc_infos[0].offset() // Allocation offset
+                };
+
+                auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                    _descriptor_set.descriptor_alloc_infos[write.index].heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    srv_size * // Device descriptor size
+                    _descriptor_set.descriptor_alloc_infos[write.index].offset() // Allocation offset
+                };
+
+                device->CopyDescriptorsSimple(1, dst_cpu_handle, src_cpu_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            },
+            [&](Handle<Buffer>& buffer) {
+
+                auto& _buffer = buffer_allocator.get(buffer);
+
+                const uint32_t srv_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
+                    _buffer.descriptor_alloc_info.heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    srv_size * // Device descriptor size
+                    _buffer.descriptor_alloc_info.offset() // Allocation offset
                 };
                 auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    _descriptor_set.descriptor_alloc_infos[write.index].heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     srv_size * // Device descriptor size
-                    descriptor_set.descriptor_alloc_infos[write.index].offset // Allocation offset
+                    _descriptor_set.descriptor_alloc_infos[write.index].offset() // Allocation offset
                 };
-                _impl->device->CopyDescriptorsSimple(1, dst_cpu_handle, src_cpu_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            } else if constexpr (std::is_same_v<T, Handle<Buffer>>) {
-                auto& buffer = _impl->buffers.get(arg);
-                const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+                device->CopyDescriptorsSimple(1, dst_cpu_handle, src_cpu_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+            },
+            [&](Handle<Sampler>& sampler) {
+
+                auto& _sampler = sampler_allocator.get(sampler);
+
+                const uint32_t sampler_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
                 auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    buffer.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                    srv_size * // Device descriptor size
-                    buffer.descriptor_alloc_info.offset // Allocation offset
-                };
-                auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                    srv_size * // Device descriptor size
-                    descriptor_set.descriptor_alloc_infos[write.index].offset // Allocation offset
-                };
-                _impl->device->CopyDescriptorsSimple(1, dst_cpu_handle, src_cpu_handle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-            }
-            else if constexpr (std::is_same_v<T, Handle<Sampler>>) {
-                auto& sampler = _impl->samplers.get(arg);
-                const uint32_t sampler_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-                auto src_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    sampler.descriptor_alloc_info.heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    _sampler.descriptor_alloc_info.heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     sampler_size * // Device descriptor size
-                    sampler.descriptor_alloc_info.offset // Allocation offset
+                    _sampler.descriptor_alloc_info.offset() // Allocation offset
                 };
+
                 auto dst_cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
-                    descriptor_set.descriptor_alloc_infos[write.index].heap->heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    _descriptor_set.descriptor_alloc_infos[write.index].heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     sampler_size * // Device descriptor size
-                    descriptor_set.descriptor_alloc_infos[write.index].offset // Allocation offset
+                    _descriptor_set.descriptor_alloc_infos[write.index].offset() // Allocation offset
                 };
-                _impl->device->CopyDescriptorsSimple(1, dst_cpu_handle, src_cpu_handle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-            } else {
-                static_assert(always_false_v<T>, "non-exhaustive visitor!");
+
+                device->CopyDescriptorsSimple(1, dst_cpu_handle, src_cpu_handle, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
             }
-        }, write.data); 
+        );
+
+        std::visit(write_visitor, write.data); 
     }
+}
+
+Handle<Texture> Backend::Impl::swap_buffer() const {
+
+    return swap_buffers[swap_index];
+}
+
+Handle<Texture> Backend::create_texture(
+    Dimension const dimension,
+    uint32_t const width,
+    uint32_t const height,
+    uint16_t const mip_levels,
+    uint16_t const array_layers,
+    Format const format,
+    TextureFlags const flags
+) {
+    
+    return _impl->create_texture(dimension, width, height, mip_levels, array_layers, format, flags);
+}
+
+Handle<Buffer> Backend::create_buffer(size_t const size, BufferFlags const flags) {
+
+    return _impl->create_buffer(size, flags); 
+}
+
+Handle<RenderPass> Backend::create_render_pass(
+    std::span<Handle<Texture>> const& colors, 
+    std::span<RenderPassColorDesc> const& color_descs, 
+    Handle<Texture> const& depth_stencil, 
+    RenderPassDepthStencilDesc const& depth_stencil_desc
+) {
+
+    return _impl->create_render_pass(colors, color_descs, depth_stencil, depth_stencil_desc);
+}
+
+Handle<Sampler> Backend::create_sampler(
+    Filter const filter, 
+    AddressMode const address_u, 
+    AddressMode const address_v, 
+    AddressMode const address_w, 
+    uint16_t const anisotropic, 
+    CompareOp const compare_op
+) {
+
+    return _impl->create_sampler(filter, address_u, address_v, address_w, anisotropic, compare_op);
+}
+
+Handle<Shader> Backend::create_shader(std::span<char8_t const> const data, ShaderFlags const flags) {
+
+    return _impl->create_shader(data, flags);
+}
+
+Handle<DescriptorLayout> Backend::create_descriptor_layout(std::span<DescriptorRangeDesc> const ranges) {
+
+    return _impl->create_descriptor_layout(ranges);
+}
+
+Handle<Pipeline> Backend::create_pipeline(
+    Handle<DescriptorLayout> const& descriptor_layout,
+    std::span<VertexInputDesc> const vertex_descs,
+    std::span<Handle<Shader>> const shaders,
+    RasterizerDesc const& rasterizer_desc,
+    DepthStencilDesc const& depth_stencil_desc,
+    BlendDesc const& blend_desc,
+    Handle<RenderPass> const& render_pass
+) {
+    
+    return _impl->create_pipeline(descriptor_layout, vertex_descs, shaders, rasterizer_desc, depth_stencil_desc, blend_desc, render_pass);
+}
+
+Handle<DescriptorSet> Backend::create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout) {
+
+    return _impl->create_descriptor_set(descriptor_layout);
+}
+
+void Backend::write_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc> const write_descs) {
+
+    _impl->write_descriptor_set(descriptor_set, write_descs);
 }
 
 void Backend::bind_descriptor_set(Handle<DescriptorSet> const& handle) {
