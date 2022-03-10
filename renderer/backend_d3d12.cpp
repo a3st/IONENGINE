@@ -125,6 +125,10 @@ struct Backend::Impl {
     Handle<Pipeline> create_pipeline(Handle<DescriptorLayout> const& descriptor_layout, std::span<VertexInputDesc> const vertex_descs, std::span<Handle<Shader>> const shaders, RasterizerDesc const& rasterizer_desc, DepthStencilDesc const& depth_stencil_desc, BlendDesc const& blend_desc, Handle<RenderPass> const& render_pass);
     Handle<DescriptorSet> create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout);
     void write_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc> const write_descs);
+    void bind_descriptor_set(Handle<DescriptorSet> const& descriptor_set);
+    void set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
+    void set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
+    void barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after);
     Handle<Texture> swap_buffer() const;
 };
 
@@ -1151,6 +1155,106 @@ void Backend::Impl::write_descriptor_set(Handle<DescriptorSet> const& descriptor
     }
 }
 
+void Backend::Impl::bind_descriptor_set(Handle<DescriptorSet> const& descriptor_set) {
+
+    auto& _descriptor_set = descriptor_set_allocator.get(descriptor_set);
+    auto& _descriptor_layout = _descriptor_set.descriptor_layout;
+
+    current_list->command_list->SetGraphicsRootSignature(_descriptor_layout.root_signature.Get());
+
+    size_t binding = 0;
+
+    for(uint32_t i = 0; i < _descriptor_layout.descriptor_ranges.size(); ++i) {
+
+        D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
+        
+        switch(_descriptor_layout.descriptor_ranges[i].RangeType) {
+            case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+            case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+            case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
+                const uint32_t srv_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                gpu_handle = D3D12_GPU_DESCRIPTOR_HANDLE {
+                    _descriptor_set.descriptor_alloc_infos[binding].heap()->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    srv_size * // Device descriptor size
+                    _descriptor_set.descriptor_alloc_infos[binding].offset() // Allocation offset
+                };
+            } break;
+            case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: {
+                const uint32_t sampler_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                gpu_handle = D3D12_GPU_DESCRIPTOR_HANDLE {
+                    _descriptor_set.descriptor_alloc_infos[binding].heap()->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    sampler_size * // Device descriptor size
+                    _descriptor_set.descriptor_alloc_infos[binding].offset() // Allocation offset
+                };
+            } break;
+        }
+
+        binding += _descriptor_layout.descriptor_ranges[i].NumDescriptors;
+
+        current_list->command_list->SetGraphicsRootDescriptorTable(i, gpu_handle);     
+    }
+}
+
+void Backend::Impl::set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height) {
+
+    auto viewport = D3D12_VIEWPORT {};
+    viewport.TopLeftX = static_cast<float>(x);
+    viewport.TopLeftY = static_cast<float>(y);
+    viewport.Width = static_cast<float>(width);
+    viewport.Height = static_cast<float>(height);
+    viewport.MinDepth = D3D12_MIN_DEPTH;
+    viewport.MaxDepth = D3D12_MAX_DEPTH;
+
+    current_list->command_list->RSSetViewports(1, &viewport);
+}
+
+void Backend::Impl::set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom) {
+
+    auto rect = D3D12_RECT {};
+    rect.top = static_cast<LONG>(top);
+    rect.bottom = static_cast<LONG>(bottom);
+    rect.left = static_cast<LONG>(left);
+    rect.right = static_cast<LONG>(right);
+
+    current_list->command_list->RSSetScissorRects(1, &rect);
+}
+
+void Backend::Impl::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after) {
+
+    auto get_memory_state = [&](MemoryState const state) -> D3D12_RESOURCE_STATES {
+        switch(state) {
+		    case MemoryState::Common: return D3D12_RESOURCE_STATE_COMMON;
+		    case MemoryState::RenderTarget: return D3D12_RESOURCE_STATE_RENDER_TARGET;
+		    case MemoryState::Present: return D3D12_RESOURCE_STATE_PRESENT;
+		    //case MemoryState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
+		    case MemoryState::CopySource: return D3D12_RESOURCE_STATE_COPY_SOURCE;
+		    case MemoryState::CopyDest: return D3D12_RESOURCE_STATE_COPY_DEST;
+            case MemoryState::ShaderRead: return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+            case MemoryState::VertexConstantBufferRead: return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+            case MemoryState::IndexBufferRead: return D3D12_RESOURCE_STATE_INDEX_BUFFER;
+        }
+        return D3D12_RESOURCE_STATE_COMMON;
+    };
+
+    auto resource_barrier = D3D12_RESOURCE_BARRIER {};
+    resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    resource_barrier.Transition.StateBefore = get_memory_state(before);
+    resource_barrier.Transition.StateAfter = get_memory_state(after);
+
+    auto barrier_visitor = make_visitor(
+        [&](Handle<Texture> const& texture) {
+            resource_barrier.Transition.pResource = texture_allocator.get(texture).resource.Get();
+        },
+        [&](Handle<Buffer> const& buffer) {
+            resource_barrier.Transition.pResource = buffer_allocator.get(buffer).resource.Get();
+        }
+    );
+
+    std::visit(barrier_visitor, target);
+
+    current_list->command_list->ResourceBarrier(1, &resource_barrier);
+}
+
 Handle<Texture> Backend::Impl::swap_buffer() const {
 
     return swap_buffers[swap_index];
@@ -1229,40 +1333,28 @@ void Backend::write_descriptor_set(Handle<DescriptorSet> const& descriptor_set, 
     _impl->write_descriptor_set(descriptor_set, write_descs);
 }
 
-void Backend::bind_descriptor_set(Handle<DescriptorSet> const& handle) {
+Backend& Backend::bind_descriptor_set(Handle<DescriptorSet> const& descriptor_set) {
 
-    auto& descriptor_set = _impl->descriptor_sets.get(handle);
+    _impl->bind_descriptor_set(descriptor_set);
+    return *this;
+}
 
-    _impl->current_buffer->command_list->SetGraphicsRootSignature(descriptor_set.root_signature.Get());
+Backend& Backend::set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height) {
 
-    size_t binding = 0;
-    for(uint32_t i = 0; i < descriptor_set.descriptor_ranges.size(); ++i) {
+    _impl->set_viewport(x, y, width, height);
+    return *this;
+}
 
-        D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle;
-        switch(descriptor_set.descriptor_ranges[i].RangeType) {
-            case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
-            case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
-            case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
-                const uint32_t srv_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                gpu_handle = D3D12_GPU_DESCRIPTOR_HANDLE {
-                    descriptor_set.descriptor_alloc_infos[binding].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                    srv_size * // Device descriptor size
-                    descriptor_set.descriptor_alloc_infos[binding].offset // Allocation offset
-                };
-            } break;
-            case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: {
-                const uint32_t sampler_size = _impl->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-                gpu_handle = D3D12_GPU_DESCRIPTOR_HANDLE {
-                    descriptor_set.descriptor_alloc_infos[binding].heap->heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                    sampler_size * // Device descriptor size
-                    descriptor_set.descriptor_alloc_infos[binding].offset // Allocation offset
-                };
-            } break;
-        }
+Backend& Backend::set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom) {
 
-        binding += descriptor_set.descriptor_ranges[i].NumDescriptors;
-        _impl->current_buffer->command_list->SetGraphicsRootDescriptorTable(i, gpu_handle);     
-    }
+    _impl->set_scissor(left, top, right, bottom);
+    return *this;
+}
+
+Backend& Backend::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after) {
+
+    _impl->barrier(target, before, after);
+    return *this;
 }
 
 Handle<Texture> Backend::swap_buffer() const {
@@ -1284,64 +1376,6 @@ void Backend::swap_buffers() {
     _impl->swapchain->Present(0, 0);
 
     _impl->frame_index = (_impl->frame_index + 1) % _impl->frames.size();
-}
-
-void Backend::set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height) {
-
-    auto viewport = D3D12_VIEWPORT {};
-    viewport.TopLeftX = static_cast<float>(x);
-    viewport.TopLeftY = static_cast<float>(y);
-    viewport.Width = static_cast<float>(width);
-    viewport.Height = static_cast<float>(height);
-    viewport.MinDepth = D3D12_MIN_DEPTH;
-    viewport.MaxDepth = D3D12_MAX_DEPTH;
-
-    _impl->current_buffer->command_list->RSSetViewports(1, &viewport);
-}
-
-void Backend::set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom) {
-
-    auto rect = D3D12_RECT {};
-    rect.top = static_cast<LONG>(top);
-    rect.bottom = static_cast<LONG>(bottom);
-    rect.left = static_cast<LONG>(left);
-    rect.right = static_cast<LONG>(right);
-
-    _impl->current_buffer->command_list->RSSetScissorRects(1, &rect);
-}
-
-void Backend::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& handle, MemoryState const before, MemoryState const after) {
-
-    auto resource_barrier = D3D12_RESOURCE_BARRIER {};
-    resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-
-    std::visit([&](auto&& arg) {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, Handle<Texture>>)
-            resource_barrier.Transition.pResource = _impl->textures.get(arg).resource.Get();
-        else if constexpr (std::is_same_v<T, Handle<Buffer>>)
-            resource_barrier.Transition.pResource = _impl->buffers.get(arg).resource.Get();
-        else
-            static_assert(always_false_v<T>, "non-exhaustive visitor!");
-    }, handle);
-
-    auto get_memory_state = [&](MemoryState const state) -> D3D12_RESOURCE_STATES {
-        switch(state) {
-		    case MemoryState::Common: return D3D12_RESOURCE_STATE_COMMON;
-		    case MemoryState::RenderTarget: return D3D12_RESOURCE_STATE_RENDER_TARGET;
-		    case MemoryState::Present: return D3D12_RESOURCE_STATE_PRESENT;
-		    //case MemoryState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
-		    case MemoryState::CopySrc: return D3D12_RESOURCE_STATE_COPY_SOURCE;
-		    case MemoryState::CopyDst: return D3D12_RESOURCE_STATE_COPY_DEST;
-            case MemoryState::ShaderRead: return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
-        }
-        return D3D12_RESOURCE_STATE_COMMON;
-    };
-    
-    resource_barrier.Transition.StateBefore = get_memory_state(before);
-    resource_barrier.Transition.StateAfter = get_memory_state(after);
-
-    _impl->current_buffer->command_list->ResourceBarrier(1, &resource_barrier);
 }
 
 void Backend::begin_render_pass(Handle<RenderPass> const& handle, std::span<Color> const rtv_clears, float const depth_clear, uint8_t const stencil_clear) {
