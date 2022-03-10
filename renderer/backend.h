@@ -311,7 +311,7 @@ public:
 
     Backend& bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
 
-    Backend& bind_index_buffer(Format const format, Handle<Buffer> const& buffer, uint64_t const offset);
+    Backend& bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const offset);
 
     Backend& barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after);
 

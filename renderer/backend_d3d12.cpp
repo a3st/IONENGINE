@@ -129,6 +129,11 @@ struct Backend::Impl {
     void set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
     void set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
     void barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after);
+    void begin_render_pass(Handle<RenderPass> const& render_pass, std::span<Color> const clear_colors, float const clear_depth = 0.0f, uint8_t const clear_stencil = 0x0);
+    void end_render_pass();
+    void bind_pipeline(Handle<Pipeline> const& pipeline);
+    void bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
+    void bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const offset);
     Handle<Texture> swap_buffer() const;
 };
 
@@ -1255,6 +1260,80 @@ void Backend::Impl::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const&
     current_list->command_list->ResourceBarrier(1, &resource_barrier);
 }
 
+void Backend::Impl::begin_render_pass(
+    Handle<RenderPass> const& render_pass, 
+    std::span<Color> const clear_colors, 
+    float const clear_depth, 
+    uint8_t const clear_stencil
+) {
+
+    auto& _render_pass = render_pass_allocator.get(render_pass);
+
+    for(uint32_t i = 0; i < _render_pass.render_target_count; ++i) {
+        std::memcpy(_render_pass.render_target_descs[i].BeginningAccess.Clear.ClearValue.Color, &clear_colors[i], sizeof(Color));
+    }
+
+    if(_render_pass.has_depth_stencil) {
+
+        _render_pass.depth_stencil_desc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = clear_depth;
+        _render_pass.depth_stencil_desc.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = clear_stencil;
+
+        current_list->command_list->BeginRenderPass(
+            _render_pass.render_target_count, 
+            _render_pass.render_target_descs.data(), 
+            &_render_pass.depth_stencil_desc, 
+            D3D12_RENDER_PASS_FLAG_NONE
+        );
+    } else {
+        current_list->command_list->BeginRenderPass(
+            _render_pass.render_target_count, 
+            _render_pass.render_target_descs.data(), 
+            nullptr, 
+            D3D12_RENDER_PASS_FLAG_NONE
+        );
+    }
+}
+
+void Backend::Impl::end_render_pass() {
+
+    current_list->command_list->EndRenderPass();
+}
+
+void Backend::Impl::bind_pipeline(Handle<Pipeline> const& pipeline) {
+
+    auto& _pipeline = pipeline_allocator.get(pipeline);
+
+    current_list->pipeline = &_pipeline;
+
+    current_list->command_list->SetPipelineState(_pipeline.pipeline_state.Get());
+    current_list->command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+void Backend::Impl::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset) {
+
+    auto& _buffer = buffer_allocator.get(buffer);
+    auto& pipeline = *current_list->pipeline;
+
+    auto vertex_view = D3D12_VERTEX_BUFFER_VIEW {};
+    vertex_view.BufferLocation = _buffer.resource->GetGPUVirtualAddress() + offset;
+    vertex_view.SizeInBytes = static_cast<uint32_t>(_buffer.resource->GetDesc().Width);
+    vertex_view.StrideInBytes = pipeline.vertex_strides[index];
+
+    current_list->command_list->IASetVertexBuffers(index, 1, &vertex_view);
+}
+
+void Backend::Impl::bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const offset) {
+
+    auto& _buffer = buffer_allocator.get(buffer);
+
+    auto index_view = D3D12_INDEX_BUFFER_VIEW {};
+    index_view.BufferLocation = _buffer.resource->GetGPUVirtualAddress() + offset;
+    index_view.SizeInBytes = static_cast<uint32_t>(_buffer.resource->GetDesc().Width);
+    index_view.Format = DXGI_FORMAT_R32_UINT;
+
+    current_list->command_list->IASetIndexBuffer(&index_view);
+}
+
 Handle<Texture> Backend::Impl::swap_buffer() const {
 
     return swap_buffers[swap_index];
@@ -1357,6 +1436,41 @@ Backend& Backend::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& t
     return *this;
 }
 
+Backend& Backend::begin_render_pass(
+    Handle<RenderPass> const& render_pass, 
+    std::span<Color> const clear_colors, 
+    float const clear_depth, 
+    uint8_t const clear_stencil
+) {
+
+    _impl->begin_render_pass(render_pass, clear_colors, clear_depth, clear_stencil);
+    return *this;
+}
+
+Backend& Backend::end_render_pass() {
+
+    _impl->end_render_pass();
+    return *this;
+}
+
+Backend& Backend::bind_pipeline(Handle<Pipeline> const& pipeline) {
+
+    _impl->bind_pipeline(pipeline);
+    return *this;
+}
+
+Backend& Backend::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset) {
+
+    _impl->bind_vertex_buffer(index, buffer, offset);
+    return *this;
+}
+
+Backend& Backend::bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const offset) {
+
+    _impl->bind_index_buffer(buffer, offset);
+    return *this;
+}
+
 Handle<Texture> Backend::swap_buffer() const {
 
     return _impl->swap_buffer();
@@ -1378,100 +1492,9 @@ void Backend::swap_buffers() {
     _impl->frame_index = (_impl->frame_index + 1) % _impl->frames.size();
 }
 
-void Backend::begin_render_pass(Handle<RenderPass> const& handle, std::span<Color> const rtv_clears, float const depth_clear, uint8_t const stencil_clear) {
-
-    auto& render_pass = _impl->render_passes.get(handle);
-
-    for(uint32_t i = 0; i < rtv_clears.size(); ++i) {
-        std::memcpy(render_pass.colors[i].BeginningAccess.Clear.ClearValue.Color, &rtv_clears[i], sizeof(Color));
-    }
-
-    if(render_pass.depth_stencil.has_value()) {
-
-        render_pass.depth_stencil.value().DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = depth_clear;
-        render_pass.depth_stencil.value().StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = stencil_clear;
-
-        _impl->current_buffer->command_list->BeginRenderPass(
-            static_cast<uint32_t>(render_pass.colors.size()), 
-            render_pass.colors.data(), 
-            &render_pass.depth_stencil.value(), 
-            D3D12_RENDER_PASS_FLAG_NONE
-        );
-    } else {
-        _impl->current_buffer->command_list->BeginRenderPass(
-            static_cast<uint32_t>(render_pass.colors.size()), 
-            render_pass.colors.data(), 
-            nullptr, 
-            D3D12_RENDER_PASS_FLAG_NONE
-        );
-    }
-}
-
-void Backend::end_render_pass() {
-
-    _impl->current_buffer->command_list->EndRenderPass();
-}
 
 void Backend::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
 
-    /*for(uint32_t i = 0; i < _impl->frame_count; ++i) {
-        const uint64_t value = _impl->fence_values[i];
-        THROW_IF_FAILED(_impl->queues.direct->Signal(_impl->fences[i].Get(), value));
-
-        if(_impl->fences[i]->GetCompletedValue() < value) {
-            THROW_IF_FAILED(_impl->fences[i]->SetEventOnCompletion(value, _impl->wait_event));
-            WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
-        }
-        ++_impl->fence_values[i];
-    }
-    
-    auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
-    _impl->swapchain->GetDesc1(&swapchain_desc);
-    _impl->swapchain->ResizeBuffers(buffer_count, width, height, swapchain_desc.Format, swapchain_desc.Flags);
-
-    _impl->frame_index = (_impl->frame_index + 1) % _impl->frame_count;*/
-}
-
-void Backend::bind_pipeline(Handle<Pipeline> const& handle) {
-
-    auto& pipeline = _impl->pipelines.get(handle);
-
-    _impl->current_buffer->current_pipeline = handle;
-
-    _impl->current_buffer->command_list->SetPipelineState(pipeline.pipeline_state.Get());
-    _impl->current_buffer->command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-}
-
-void Backend::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& handle, uint64_t const offset) {
-
-    auto& buffer = _impl->buffers.get(handle);
-    auto& pipeline = _impl->pipelines.get(_impl->current_buffer->current_pipeline);
-
-    auto vertex_view = D3D12_VERTEX_BUFFER_VIEW {};
-    vertex_view.BufferLocation = buffer.resource->GetGPUVirtualAddress() + offset;
-    vertex_view.SizeInBytes = static_cast<uint32_t>(buffer.resource->GetDesc().Width);
-    vertex_view.StrideInBytes = pipeline.vertex_strides[index];
-
-    _impl->current_buffer->command_list->IASetVertexBuffers(index, 1, &vertex_view);
-}
-
-void Backend::bind_index_buffer(Format const format, Handle<Buffer> const& handle, uint64_t const offset) {
-
-    auto get_dxgi_format = [&](Format const format) {
-        switch(format) {
-            case Format::R32: return DXGI_FORMAT_R32_UINT;
-        }
-        return DXGI_FORMAT_R32_UINT;
-    }; 
-
-    auto& buffer = _impl->buffers.get(handle);
-
-    auto index_view = D3D12_INDEX_BUFFER_VIEW {};
-    index_view.BufferLocation = buffer.resource->GetGPUVirtualAddress() + offset;
-    index_view.SizeInBytes = static_cast<uint32_t>(buffer.resource->GetDesc().Width);
-    index_view.Format = get_dxgi_format(format);
-
-    _impl->current_buffer->command_list->IASetIndexBuffer(&index_view);
 }
 
 void Backend::draw(uint32_t const vertex_index, uint32_t const vertex_count) {
