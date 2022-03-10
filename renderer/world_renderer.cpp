@@ -109,7 +109,7 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
                 .input(static_cast<uint32_t>(Colors::Blit)),
             [&](Handle<renderer::RenderPass> const& render_pass, RenderPassResources const& resources) {
                 
-
+                
             }
         )
         .build(*_backend, 2);

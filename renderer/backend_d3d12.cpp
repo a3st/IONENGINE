@@ -134,6 +134,16 @@ struct Backend::Impl {
     void bind_pipeline(Handle<Pipeline> const& pipeline);
     void bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
     void bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const offset);
+    void draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
+    void draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
+    void _swap_buffers();
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
+    void copy_buffer_region(Handle<Buffer> const& dest, uint64_t const dest_offset, Handle<Buffer> const& source, uint64_t const source_offset, size_t const size);
+    void begin_context(ContextType const context_type);
+    void end_context();
+    void wait_for_context(ContextType const context_type);
+    bool is_finished_context(ContextType const context_type);
+    void execute_context(ContextType const context_type);
     Handle<Texture> swap_buffer() const;
 };
 
@@ -1334,6 +1344,117 @@ void Backend::Impl::bind_index_buffer(Handle<Buffer> const& buffer, uint64_t con
     current_list->command_list->IASetIndexBuffer(&index_view);
 }
 
+void Backend::Impl::draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset) {
+
+    current_list->command_list->DrawInstanced(vertex_count, instance_count, vertex_offset, 0);
+}
+
+void Backend::Impl::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) {
+
+    current_list->command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
+}
+
+void Backend::Impl::_swap_buffers() {
+
+    const uint64_t value = _impl->frames[_impl->frame_index].direct_fence.fence_value;
+    THROW_IF_FAILED(_impl->direct_queue->Signal(_impl->frames[_impl->frame_index].direct_fence.fence.Get(), value));
+
+    if(_impl->frames[_impl->frame_index].direct_fence.fence->GetCompletedValue() < value) {
+        THROW_IF_FAILED(_impl->frames[_impl->frame_index].direct_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
+        WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
+    }
+    ++_impl->frames[_impl->frame_index].direct_fence.fence_value;
+
+    swapchain->Present(0, 0);
+
+    _impl->frame_index = (_impl->frame_index + 1) % _impl->frames.size();
+}
+
+void Backend::Impl::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
+
+}
+
+void Backend::Impl::copy_buffer_region(
+    Handle<Buffer> const& dest, 
+    uint64_t const dest_offset, 
+    Handle<Buffer> const& source, 
+    uint64_t const source_offset,
+    size_t const size
+) {
+
+    auto& dest_buffer = buffer_allocator.get(dest);
+    auto& source_buffer = buffer_allocator.get(source);
+
+    current_list->command_list->CopyBufferRegion(
+        dest_buffer.resource.Get(), 
+        dest_offset,
+        source_buffer.resource.Get(),
+        source_offset,
+        size
+    );
+}
+
+void Backend::Impl::begin_context(ContextType const context_type) {
+
+    switch(context_type) {
+        case ContextType::Graphics: {
+            current_list = &direct_lists[swap_index];
+
+            std::array<ID3D12DescriptorHeap*, 2> heaps;
+            heaps[0] = null_srv_descriptor_alloc_info.heap();
+            heaps[1] = null_sampler_descriptor_alloc_info.heap();
+
+            current_list->command_list->SetDescriptorHeaps(2, heaps.data());
+        } break;
+        case ContextType::Copy: {
+            current_list = &copy_lists[swap_index];
+        } break;
+        case ContextType::Compute: {
+            current_list = &compute_lists[swap_index];
+            // TODO!
+        } break;
+    }
+
+    THROW_IF_FAILED(current_list->command_allocator->Reset());
+    THROW_IF_FAILED(current_list->command_list->Reset(current_list->command_allocator.Get(), nullptr));
+}
+
+void Backend::Impl::end_context() {
+
+    THROW_IF_FAILED(current_list->command_list->Close());
+    current_list = nullptr;
+}
+
+void Backend::Impl::wait_for_context(ContextType const context_type) {
+
+
+}
+
+bool Backend::Impl::is_finished_context(ContextType const context_type) {
+
+
+}
+
+void Backend::Impl::execute_context(ContextType const context_type) {
+
+    ID3D12CommandList* const* batch_command_list;
+
+    switch(context_type) {
+        case ContextType::Graphics: {
+            batch_command_list = reinterpret_cast<ID3D12CommandList* const*>(direct_lists[swap_index].command_list.GetAddressOf());
+            direct_queue->ExecuteCommandLists(1, batch_command_list);
+        } break;
+        case ContextType::Copy: {
+            batch_command_list = reinterpret_cast<ID3D12CommandList* const*>(copy_lists[swap_index].command_list.GetAddressOf());
+            copy_queue->ExecuteCommandLists(1, batch_command_list);
+        } break;
+        case ContextType::Compute: {
+            batch_command_list = reinterpret_cast<ID3D12CommandList* const*>(compute_lists[swap_index].command_list.GetAddressOf());
+            compute_queue->ExecuteCommandLists(1, batch_command_list);
+        } break;
+    }
+}
+
 Handle<Texture> Backend::Impl::swap_buffer() const {
 
     return swap_buffers[swap_index];
@@ -1459,6 +1580,18 @@ Backend& Backend::bind_pipeline(Handle<Pipeline> const& pipeline) {
     return *this;
 }
 
+Backend& Backend::copy_buffer_region(
+    Handle<Buffer> const& dest, 
+    uint64_t const dest_offset, 
+    Handle<Buffer> const& source, 
+    uint64_t const source_offset,
+    size_t const size
+) {
+
+    _impl->copy_buffer_region(dest, dest_offset, source, source_offset, size);
+    return *this;
+}
+
 Backend& Backend::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset) {
 
     _impl->bind_vertex_buffer(index, buffer, offset);
@@ -1471,6 +1604,72 @@ Backend& Backend::bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const
     return *this;
 }
 
+Backend& Backend::draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset) {
+
+    _impl->draw(vertex_count, instance_count, vertex_offset);
+    return *this;    
+}
+
+Backend& Backend::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) {
+
+    _impl->draw_indexed(index_count, instance_count, instance_offset);
+    return *this;
+}
+
+Backend& Backend::begin_context(ContextType const context_type) {
+
+    _impl->begin_context(context_type);
+    return *this;
+}
+
+void Backend::end_context() {
+
+    _impl->end_context();
+}
+
+void Backend::execute_context(ContextType const context_type) {
+
+    _impl->execute_context(context_type);
+}
+
+void Backend::wait_for_context(ContextType const context_type) {
+
+    _impl->wait_for_context(context_type);
+}
+
+bool Backend::is_finished_context(ContextType const context_type) {
+
+    return _impl->is_finished_context(context_type);
+}
+
+void Backend::wait_for_context(ContextType const context_type) {
+
+    switch(context_type) {
+        case ContextType::Graphics: {
+            const uint64_t value = _impl->frames[_impl->frame_index].direct_fence.fence_value;
+            THROW_IF_FAILED(_impl->direct_queue->Signal(_impl->frames[_impl->frame_index].direct_fence.fence.Get(), value));
+
+            ++_impl->frames[_impl->frame_index].direct_fence.fence_value;
+
+            if(_impl->frames[_impl->frame_index].direct_fence.fence->GetCompletedValue() < value) {
+                THROW_IF_FAILED(_impl->frames[_impl->frame_index].direct_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
+                WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
+            }
+        } break;
+        case ContextType::Copy: {
+            const uint64_t value = _impl->frames[_impl->frame_index].copy_fence.fence_value;
+            THROW_IF_FAILED(_impl->copy_queue->Signal(_impl->frames[_impl->frame_index].copy_fence.fence.Get(), value));
+
+            ++_impl->frames[_impl->frame_index].copy_fence.fence_value;
+
+            if(_impl->frames[_impl->frame_index].copy_fence.fence->GetCompletedValue() < value) {
+                THROW_IF_FAILED(_impl->frames[_impl->frame_index].copy_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
+                WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
+            }
+        } break;
+    }
+}
+
 Handle<Texture> Backend::swap_buffer() const {
 
     return _impl->swap_buffer();
@@ -1478,33 +1677,12 @@ Handle<Texture> Backend::swap_buffer() const {
 
 void Backend::swap_buffers() {
 
-    const uint64_t value = _impl->frames[_impl->frame_index].direct_fence.fence_value;
-    THROW_IF_FAILED(_impl->direct_queue->Signal(_impl->frames[_impl->frame_index].direct_fence.fence.Get(), value));
-
-    if(_impl->frames[_impl->frame_index].direct_fence.fence->GetCompletedValue() < value) {
-        THROW_IF_FAILED(_impl->frames[_impl->frame_index].direct_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
-        WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
-    }
-    ++_impl->frames[_impl->frame_index].direct_fence.fence_value;
-
-    _impl->swapchain->Present(0, 0);
-
-    _impl->frame_index = (_impl->frame_index + 1) % _impl->frames.size();
+    _impl->_swap_buffers();
 }
 
 
 void Backend::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
 
-}
-
-void Backend::draw(uint32_t const vertex_index, uint32_t const vertex_count) {
-
-    _impl->current_list->command_list->DrawInstanced(vertex_count, 1, vertex_index, 0);
-}
-
-void Backend::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) {
-
-    _impl->current_buffer->command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
 }
 
 void Backend::copy_texture_data(Handle<Texture> const& dst, std::span<char8_t const> const data) {
@@ -1554,20 +1732,6 @@ void Backend::copy_texture_data(Handle<Texture> const& dst, std::span<char8_t co
     _impl->current_buffer->command_list->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);
 }
 
-void Backend::copy_buffer_data(Handle<Buffer> const& handle, uint64_t const offset, std::span<char8_t> const data) {
-
-    auto& buffer = _impl->buffers.get(handle);
-
-    if(buffer.memory_alloc_info.heap->heap->GetDesc().Properties.Type == D3D12_HEAP_TYPE_UPLOAD) {
-
-        auto range = D3D12_RANGE {};
-        char8_t* ptr;
-        THROW_IF_FAILED(buffer.resource->Map(0, &range, reinterpret_cast<void**>(&ptr)));
-        std::memcpy(ptr + offset, data.data(), data.size());
-        buffer.resource->Unmap(0, &range);
-    }
-}
-
 void Backend::wait_for_idle_device() {
 
     for(uint32_t i = 0; i < static_cast<uint32_t>(_impl->frames.size()); ++i) {
@@ -1583,89 +1747,9 @@ void Backend::wait_for_idle_device() {
     }
 }
 
-void Backend::begin_context(ContextType const context_type) {
 
-    switch(context_type) {
-        case ContextType::Graphics: {
-            _impl->current_buffer = &_impl->frames[_impl->frame_index].direct_buffer; 
 
-            THROW_IF_FAILED(_impl->current_buffer->command_allocator->Reset());
-            THROW_IF_FAILED(_impl->current_buffer->command_list->Reset(_impl->current_buffer->command_allocator.Get(), nullptr));
 
-            auto heaps = std::array<ID3D12DescriptorHeap*, 2> { 
-                _impl->null_srv_descriptor_alloc_info.heap->heap.Get(), 
-                _impl->null_sampler_descriptor_alloc_info.heap->heap.Get() 
-            };
-            _impl->current_buffer->command_list->SetDescriptorHeaps(2, heaps.data());
-        } break;
-        case ContextType::Copy: {
-            _impl->current_buffer = &_impl->frames[_impl->frame_index].copy_buffer; 
-
-            THROW_IF_FAILED(_impl->current_buffer->command_allocator->Reset());
-            THROW_IF_FAILED(_impl->current_buffer->command_list->Reset(_impl->current_buffer->command_allocator.Get(), nullptr));
-        } break;
-        case ContextType::Compute: {
-            _impl->current_buffer = &_impl->frames[_impl->frame_index].copy_buffer; 
-
-            THROW_IF_FAILED(_impl->current_buffer->command_allocator->Reset());
-            THROW_IF_FAILED(_impl->current_buffer->command_list->Reset(_impl->current_buffer->command_allocator.Get(), nullptr));
-        } break;
-    }
-}
-
-void Backend::end_context() {
-
-    THROW_IF_FAILED(_impl->current_buffer->command_list->Close());
-    _impl->current_buffer = nullptr;
-}
-
-void Backend::execute_context(ContextType const context_type) {
-
-    switch(context_type) {
-        case ContextType::Graphics: {
-            _impl->direct_queue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(_impl->frames[_impl->frame_index].direct_buffer.command_list.GetAddressOf()));
-        } break;
-        case ContextType::Copy: {
-            _impl->copy_queue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(_impl->frames[_impl->frame_index].copy_buffer.command_list.GetAddressOf()));
-        } break;
-        case ContextType::Compute: {
-            _impl->compute_queue->ExecuteCommandLists(1, reinterpret_cast<ID3D12CommandList* const*>(_impl->frames[_impl->frame_index].compute_buffer.command_list.GetAddressOf()));
-        } break;
-    }
-}
-
-void Backend::wait_for_context(ContextType const context_type) {
-
-    switch(context_type) {
-        case ContextType::Graphics: {
-            const uint64_t value = _impl->frames[_impl->frame_index].direct_fence.fence_value;
-            THROW_IF_FAILED(_impl->direct_queue->Signal(_impl->frames[_impl->frame_index].direct_fence.fence.Get(), value));
-
-            ++_impl->frames[_impl->frame_index].direct_fence.fence_value;
-
-            if(_impl->frames[_impl->frame_index].direct_fence.fence->GetCompletedValue() < value) {
-                THROW_IF_FAILED(_impl->frames[_impl->frame_index].direct_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
-                WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
-            }
-        } break;
-        case ContextType::Copy: {
-            const uint64_t value = _impl->frames[_impl->frame_index].copy_fence.fence_value;
-            THROW_IF_FAILED(_impl->copy_queue->Signal(_impl->frames[_impl->frame_index].copy_fence.fence.Get(), value));
-
-            ++_impl->frames[_impl->frame_index].copy_fence.fence_value;
-
-            if(_impl->frames[_impl->frame_index].copy_fence.fence->GetCompletedValue() < value) {
-                THROW_IF_FAILED(_impl->frames[_impl->frame_index].copy_fence.fence->SetEventOnCompletion(value, _impl->wait_event));
-                WaitForSingleObjectEx(_impl->wait_event, INFINITE, false);
-            }
-        } break;
-    }
-}
-
-bool Backend::is_finished_context(ContextType const context_type) {
-
-    return true;
-}
 
 void Backend::delete_render_pass(Handle<RenderPass> const& handle) {
 

@@ -20,7 +20,7 @@ int main(int* argc, char** agrv) {
         platform::WindowLoop loop;
         platform::Window window(u8"IONENGINE", 800, 600, false, loop);
 
-        renderer::Backend backend(0, &window, 2);
+        renderer::Backend backend(0, &window, 1, 2);
         renderer::WorldRenderer world_renderer(&backend, &thread_pool);
         project::WorldController world_controller;
 
