@@ -45,12 +45,12 @@ private:
     using DescriptorPool = std::pair<std::list<DescriptorHeap>, uint32_t>;
 
     enum class HeapTypeIndex : uint16_t {
-        SRV_CBV_UAV = 1,
+        SRV_CBV_UAV = 0,
+        Sampler = 1,
         RTV = 2,
         DSV = 3,
-        Sampler = 4,
-        SRV_CBV_UAV_Shader = 5,
-        Sampler_Shader = 6
+        SRV_CBV_UAV_Shader = 4,
+        Sampler_Shader = 5
     };
 
     std::array<DescriptorPool, 6> _pools;

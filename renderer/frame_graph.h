@@ -28,29 +28,38 @@ struct RenderPassDesc {
     float _clear_depth;
     uint8_t _clear_stencil;
     bool has_depth_stencil{false};
-    std::array<uint32_t, 16> inputs;
-    uint32_t input_count{0};
+    std::vector<uint32_t> inputs;
+    uint32_t width;
+    uint32_t height;
 
     RenderPassDesc& name(std::string const& name) {
+        
         _name = name;
         return *this;
     }
 
     RenderPassDesc& color(uint32_t const id, RenderPassLoadOp const load_op, Color const& clear_color) {
+        
         _clear_colors[color_count] = clear_color;
         color_infos[color_count] = AttachmentInfo { id, load_op };
         ++color_count;
         return *this;
     }
 
-    RenderPassDesc& input(uint32_t const id) {
+    RenderPassDesc& rect(uint32_t const _width, uint32_t const _height) {
+        width = _width;
+        height = _height;
+        return *this;
+    }
 
-        inputs[input_count] = id;
-        ++input_count;
+    RenderPassDesc& input(uint32_t const id) {
+        
+        inputs.emplace_back(id);
         return *this;
     }
 
     RenderPassDesc& depth_stencil(uint32_t const id, RenderPassLoadOp const load_op, float const clear_depth, uint8_t const clear_stencil) {
+        
         _clear_depth = clear_depth;
         _clear_stencil = clear_stencil;
         depth_stencil_info = AttachmentInfo { id, load_op };
@@ -59,7 +68,7 @@ struct RenderPassDesc {
     }
 
     bool operator<(RenderPassDesc const& other) const {
-
+        
         return std::tie(color_infos, color_count, depth_stencil_info, has_depth_stencil) < std::tie(other.color_infos, other.color_count, other.depth_stencil_info, other.has_depth_stencil);
     }
 };

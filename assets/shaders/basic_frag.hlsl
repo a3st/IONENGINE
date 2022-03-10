@@ -6,11 +6,11 @@ struct PSInput {
 	float3 normal : NORMAL;
 };
 
-Texture2D texture_base : register(t0);
-SamplerState sampleWrap : register(s0);
+//Texture2D texture_base : register(t0);
+//SamplerState sampleWrap : register(s0);
 
 float4 main(PSInput input) : SV_TARGET {
     
-	float4 diffuse_color = texture_base.Sample(sampleWrap, input.uv);
-	return diffuse_color;
+	//float4 diffuse_color = texture_base.Sample(sampleWrap, input.uv);
+	return float4(0.2f, 0.1f, 0.5f, 1.0f);
 }

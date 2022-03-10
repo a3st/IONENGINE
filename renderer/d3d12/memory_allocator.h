@@ -47,10 +47,10 @@ private:
     using MemoryPool = std::pair<std::list<MemoryHeap>, size_t>;
 
     enum class HeapTypeIndex : uint16_t {
-        Default = 1,
-        Upload = 2,
-        Readback = 3,
-        Custom = 4
+        Default = 0,
+        Upload = 1,
+        Readback = 2,
+        Custom = 3
     };
 
     std::array<MemoryPool, 4> _pools;

@@ -37,29 +37,29 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     _shaders.resize(2);
 
     auto ranges = std::vector<DescriptorRangeDesc> {
-        DescriptorRangeDesc { DescriptorRangeType::ConstantBuffer, 0, 1, BackendFlags::VertexShader },
-        DescriptorRangeDesc { DescriptorRangeType::ShaderResource, 1, 1, BackendFlags::PixelShader },
-        DescriptorRangeDesc { DescriptorRangeType::Sampler, 2, 1, BackendFlags::PixelShader }
+        DescriptorRangeDesc { DescriptorRangeType::ConstantBuffer, 0, 1, ShaderFlags::Vertex }
+        //DescriptorRangeDesc { DescriptorRangeType::ShaderResource, 1, 1, ShaderFlags::Pixel },
+        //DescriptorRangeDesc { DescriptorRangeType::Sampler, 2, 1, ShaderFlags::Pixel }
     };
     _pbr_layout = _backend->create_descriptor_layout(ranges);
 
     auto shader_vert = load_file("shaders/basic_vert.bin", std::ios::binary);
     auto shader_frag = load_file("shaders/basic_frag.bin", std::ios::binary);
 
-    _shaders[0] = _backend->create_shader(shader_vert, BackendFlags::VertexShader);
-    _shaders[1] = _backend->create_shader(shader_frag, BackendFlags::PixelShader);
+    _shaders[0] = _backend->create_shader(shader_vert, ShaderFlags::Vertex);
+    _shaders[1] = _backend->create_shader(shader_frag, ShaderFlags::Pixel);
 
     _frames.reserve(2);
     for(uint32_t i = 0; i < 2; ++i) {
         auto frame = WorldRenderer::Frame {};
-        frame.vertex_buffer = _backend->create_buffer(65536, BackendFlags::HostVisible);
-        frame.index_buffer = _backend->create_buffer(65536, BackendFlags::HostVisible);
+        frame.vertex_buffer = _backend->create_buffer(65536, BufferFlags::HostWrite | BufferFlags::VertexBuffer);
+        frame.index_buffer = _backend->create_buffer(65536, BufferFlags::HostWrite | BufferFlags::IndexBuffer);
 
         _frames.emplace_back(frame);
     }
 
     _sampler = _backend->create_sampler(Filter::MinMagMipLinear, AddressMode::Wrap, AddressMode::Wrap, AddressMode::Wrap, 1, CompareOp::Always);
-    _texture = _backend->create_texture(Dimension::_2D, Extent2D { 1024, 1024 }, 1, 1, Format::BC1, BackendFlags::None);
+    _texture = _backend->create_texture(Dimension::_2D, 1024, 1024, 1, 1, Format::BC1, TextureFlags::ShaderResource);
 
     /*_backend->begin_context(ContextType::Copy);
     _backend->barrier(texture_base, MemoryState::Common, MemoryState::CopyDst);
@@ -75,7 +75,7 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
     _constant_buffers.reserve(2);
     for(uint32_t i = 0; i < 2; ++i) {
-        _constant_buffers.emplace_back(_backend->create_buffer(65536, BackendFlags::HostVisible | BackendFlags::ConstantBuffer));
+        _constant_buffers.emplace_back(_backend->create_buffer(65536, BufferFlags::HostWrite | BufferFlags::ConstantBuffer));
     }
 
     /*auto world_buffer = WorldBuffer { 
@@ -99,17 +99,32 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     auto start = std::chrono::high_resolution_clock::now();
 
     _frame_graph
-        .attachment(static_cast<uint32_t>(Colors::Blit), Format::RGBA8, 800, 600)
+        .attachment(static_cast<uint32_t>(Colors::Blit), Format::RGBA8, 768, 522)
         .external_attachment(static_cast<uint32_t>(Colors::Swapchain), Format::RGBA8, MemoryState::RenderTarget, MemoryState::Present)
         .render_pass(
             static_cast<uint32_t>(RenderPasses::Main), 
             RenderPassDesc{}
                 .name("MainPass")
+                .rect(800, 600)
                 .color(static_cast<uint32_t>(Colors::Swapchain), RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f))
-                .input(static_cast<uint32_t>(Colors::Blit)),
+                .color(static_cast<uint32_t>(Colors::Blit), RenderPassLoadOp::Clear, Color(0.2f, 0.4f, 0.3f, 1.0f)),
             [&](Handle<renderer::RenderPass> const& render_pass, RenderPassResources const& resources) {
                 
-                
+                if(_pipelines[frame_index] == INVALID_HANDLE(Pipeline)) {
+                    _pipelines[frame_index] = _backend->create_pipeline(
+                        _pbr_layout,
+                        MeshData::vertex_declaration,
+                        _shaders,
+                        RasterizerDesc { FillMode::Solid, CullMode::Back },
+                        DepthStencilDesc { CompareOp::Always, false },
+                        BlendDesc { false, Blend::One, Blend::Zero, BlendOp::Add, Blend::One, Blend::Zero, BlendOp::Add },
+                        render_pass
+                    );
+                }
+
+                _backend->bind_pipeline(_pipelines[frame_index]);
+                _backend->bind_vertex_buffer(0, _frames[frame_index].vertex_buffer, 0);
+                _backend->bind_vertex_buffer(1, _frames[frame_index].vertex_buffer, 128);
             }
         )
         .build(*_backend, 2);

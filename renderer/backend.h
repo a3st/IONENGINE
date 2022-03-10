@@ -298,9 +298,6 @@ public:
 
     void write_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc> const write_descs);
 
-    // TODO! copy_texture_region
-    Backend& copy_texture_region();
-
     Backend& copy_buffer_region(
         Handle<Buffer> const& dest, 
         uint64_t const dest_offset, 
@@ -308,6 +305,9 @@ public:
         uint64_t const source_offset,
         size_t const size
     );
+
+    // TODO! copy_texture_region
+    Backend& copy_texture_region();
 
     Backend& bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
 

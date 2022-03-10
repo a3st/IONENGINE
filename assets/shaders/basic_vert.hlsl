@@ -25,9 +25,9 @@ VSOutput main(VSInput input) {
 
 	float4 newPosition = float4(input.position, 1.0f);
 
-	newPosition = mul(newPosition, model);
+	/*newPosition = mul(newPosition, model);
 	newPosition = mul(newPosition, view);
-	newPosition = mul(newPosition, proj);
+	newPosition = mul(newPosition, proj);*/
 
 	output.position = newPosition;
 	output.uv = input.uv;

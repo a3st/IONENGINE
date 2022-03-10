@@ -18,6 +18,7 @@ void MemoryAllocator::create_memory_pool(ID3D12Device4* const device, D3D12_HEAP
 
     size_t block_size;
     size_t heap_size;
+    uint32_t heap_index = heap_type - 1;
 
     switch(heap_type) {
         case D3D12_HEAP_TYPE_DEFAULT: {
@@ -83,8 +84,8 @@ void MemoryAllocator::create_memory_pool(ID3D12Device4* const device, D3D12_HEAP
     memory_heap.heap_size = heap_size;
     memory_heap.block_size = block_size;
 
-    _pools[heap_type].first.emplace_back(memory_heap);
-    _pools[heap_type].second += heap_size;
+    _pools[heap_index].first.emplace_back(memory_heap);
+    _pools[heap_index].second += heap_size;
 }
 
 MemoryAllocInfo MemoryAllocator::get_free_block(ID3D12Device4* const device, D3D12_HEAP_TYPE const heap_type, size_t const size) {
@@ -93,9 +94,11 @@ MemoryAllocInfo MemoryAllocator::get_free_block(ID3D12Device4* const device, D3D
         return size < block_size ? block_size : (size % block_size) > 0 ? (size / block_size + 1) * block_size : size;
     };
 
+    uint32_t heap_index = heap_type - 1;
+
     auto memory_alloc_info = MemoryAllocInfo {};
 
-    for(auto& heap : _pools[heap_type].first) {
+    for(auto& heap : _pools[heap_index].first) {
         size_t align_size = align_block_size(heap.block_size, size);
         if(heap.offset + align_size > heap.heap_size) {
             continue;
@@ -130,7 +133,7 @@ MemoryAllocInfo MemoryAllocator::get_free_block(ID3D12Device4* const device, D3D
 
         create_memory_pool(device, heap_type);
         
-        MemoryHeap& heap = _pools[heap_type].first.back();
+        MemoryHeap& heap = _pools[heap_index].first.back();
 
         size_t align_size = align_block_size(heap.block_size, size);
 
