@@ -61,18 +61,6 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     _sampler = _backend->create_sampler(Filter::MinMagMipLinear, AddressMode::Wrap, AddressMode::Wrap, AddressMode::Wrap, 1, CompareOp::Always);
     _texture = _backend->create_texture(Dimension::_2D, 1024, 1024, 1, 1, Format::BC1, TextureFlags::ShaderResource);
 
-    /*_backend->begin_context(ContextType::Copy);
-    _backend->barrier(texture_base, MemoryState::Common, MemoryState::CopyDst);
-    _backend->copy_texture_data(texture_base, std::span<char8_t const>(dds_loader.data()->data.data(), dds_loader.data()->data.size()));
-    _backend->barrier(texture_base, MemoryState::CopyDst, MemoryState::Common);
-    _backend->end_context();
-
-    _backend->execute_context(ContextType::Copy);
-    _backend->wait_context(ContextType::Copy);
-
-    _backend->copy_buffer_data(buffer_vertex, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(vertices.data()), vertices.size() * sizeof(Vertex)));
-    _backend->copy_buffer_data(buffer_index, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(indices.data()), indices.size() * sizeof(uint32_t)));*/
-
     _constant_buffers.reserve(2);
     for(uint32_t i = 0; i < 2; ++i) {
         _constant_buffers.emplace_back(_backend->create_buffer(65536, BufferFlags::HostWrite | BufferFlags::ConstantBuffer));

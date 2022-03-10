@@ -6,7 +6,7 @@
 using ionengine::Handle;
 using namespace ionengine::renderer;
 
-FrameGraph& FrameGraph::attachment(uint32_t const id, Format const format, uint32_t const width, uint32_t const height) {
+FrameGraph& FrameGraph::attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height) {
 
     auto attachment = FrameGraph::InternalAttachment {
         format,
@@ -18,7 +18,7 @@ FrameGraph& FrameGraph::attachment(uint32_t const id, Format const format, uint3
     return *this;
 }
 
-FrameGraph& FrameGraph::external_attachment(uint32_t const id, Format const format, MemoryState const before, MemoryState const after) {
+FrameGraph& FrameGraph::external_attachment(AttachmentId const id, Format const format, MemoryState const before, MemoryState const after) {
 
     auto attachment = FrameGraph::ExternalAttachment {
         format,
@@ -30,7 +30,7 @@ FrameGraph& FrameGraph::external_attachment(uint32_t const id, Format const form
     return *this;
 }
 
-FrameGraph& FrameGraph::render_pass(uint32_t const id, RenderPassDesc const& desc, RenderPassFunc const& func) {
+FrameGraph& FrameGraph::render_pass(RenderPassId const id, RenderPassDesc const& desc, RenderPassFunc const& func) {
 
     auto render_pass = FrameGraph::RenderPass {
         desc,
@@ -42,9 +42,9 @@ FrameGraph& FrameGraph::render_pass(uint32_t const id, RenderPassDesc const& des
     return *this;
 }
 
-void FrameGraph::build(Backend& backend, uint32_t const flight_frames) {
+void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
 
-    _flight_frames = flight_frames;
+    _flight_frame_count = flight_frame_count;
 
     for(auto& op : _ops) {
 
@@ -279,15 +279,15 @@ void FrameGraph::execute(Backend& backend) {
 
     backend.swap_buffers();
 
-    _flight_frame_index = (_flight_frame_index + 1) % _flight_frames;
+    _flight_frame_index = (_flight_frame_index + 1) % _flight_frame_count;
 }
 
-FrameGraph& FrameGraph::bind_external_attachment(uint32_t const id, Handle<Texture> const& handle) {
+FrameGraph& FrameGraph::bind_external_attachment(AttachmentId const id, Handle<Texture> const& target) {
 
     auto& attachment = std::get<ExternalAttachment>(_attachments[{id, _flight_frame_index}]);
-    if(attachment.target != handle) {
-        attachment.target = handle;
-        _render_passes[{_external_attachments_ids[id], _flight_frame_index}].is_compiled = false;
+    if(attachment.target != target) {
+        attachment.target = target;
+        _render_passes[{ _external_attachments[id], _flight_frame_index }].is_compiled = false;
     }
     return *this;
 }
@@ -298,39 +298,45 @@ Handle<ionengine::renderer::RenderPass> FrameGraph::create_render_pass(Backend& 
     std::array<RenderPassColorDesc, 8> color_descs;
 
     for(uint32_t i = 0; i < desc.color_count; ++i) {
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                colors[i] = arg.target;
-            } else if constexpr (std::is_same_v<T, InternalAttachment>) {
-                colors[i] = arg.target;
-            } else {
-                static_assert(always_false_v<T>, "non-exhaustive visitor!");
-            }
-        }, _attachments[{ desc.color_infos[i].first, _flight_frame_index }]);
 
-        color_descs[i] = RenderPassColorDesc { desc.color_infos[i].second, RenderPassStoreOp::Store };
+        auto attachment_visitor = make_visitor(
+            [&](ExternalAttachment& attachment) {
+                colors[i] = attachment.target;
+            },
+            [&](InternalAttachment& attachment) {
+                colors[i] = attachment.target;
+            }
+        );
+
+        std::visit(attachment_visitor, _attachments[{ desc.color_infos[i].first, _flight_frame_index }]);
+
+        auto color_desc = RenderPassColorDesc {};
+        color_desc.load_op = desc.color_infos[i].second;
+        color_desc.store_op = RenderPassStoreOp::Store;
+
+        color_descs[i] = color_desc;
     }
 
     Handle<Texture> depth_stencil;
-    RenderPassDepthStencilDesc depth_stencil_desc;
+    auto depth_stencil_desc = RenderPassDepthStencilDesc {};
 
     if(desc.has_depth_stencil) {
-        std::visit([&](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                depth_stencil = arg.target;
-            } else if constexpr (std::is_same_v<T, InternalAttachment>) {
-                depth_stencil = arg.target;
-            } else {
-                static_assert(always_false_v<T>, "non-exhaustive visitor!");
-            }
-        }, _attachments[{ desc.depth_stencil_info.first, _flight_frame_index }]);
 
-        depth_stencil_desc = RenderPassDepthStencilDesc { 
-            desc.depth_stencil_info.second, RenderPassStoreOp::Store,
-            desc.depth_stencil_info.second, RenderPassStoreOp::Store 
-        };
+        auto attachment_visitor = make_visitor(
+            [&](ExternalAttachment& attachment) {
+                depth_stencil = attachment.target;
+            },
+            [&](InternalAttachment& attachment) {
+                depth_stencil = attachment.target;
+            }
+        );
+
+        std::visit(attachment_visitor, _attachments[{ desc.depth_stencil_info.first, _flight_frame_index }]);
+
+        depth_stencil_desc.depth_load_op = desc.depth_stencil_info.second;
+        depth_stencil_desc.depth_store_op = RenderPassStoreOp::Store;
+        depth_stencil_desc.stencil_load_op = desc.depth_stencil_info.second;
+        depth_stencil_desc.stencil_store_op = RenderPassStoreOp::Store;
     }
 
     return backend.create_render_pass(
