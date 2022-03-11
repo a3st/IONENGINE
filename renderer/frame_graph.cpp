@@ -66,6 +66,7 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
         auto attachment_visitor = make_visitor(
             [&](ExternalAttachment& attachment) {
                 attachment.target = INVALID_HANDLE(Texture);
+                _memory_states[key.first].first = attachment.before;
             },
             [&](InternalAttachment& attachment) {
                 attachment.target = backend.create_texture(
@@ -77,12 +78,11 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                     attachment.format,
                     TextureFlags::RenderTarget | TextureFlags::ShaderResource
                 );
+                _memory_states[key.first].first = MemoryState::Common;
             }
         );
 
         std::visit(attachment_visitor, value);
-
-        _memory_states[key.first].first = MemoryState::Common;
     }
 
     for(uint32_t i = 0; i < flight_frame_count; ++i) {
@@ -146,8 +146,7 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                                 _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
                             },
                             [&](InternalAttachment& attachment) {
-                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = 
-                                    attachment.target;
+                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = attachment.target;
                             }
                         );
 
@@ -175,7 +174,16 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
 
     for(auto& [key, value] : _attachments) {
 
-        _memory_states[key.first].first = MemoryState::Common;
+        auto attachment_visitor = make_visitor(
+            [&](ExternalAttachment& attachment) {
+                _memory_states[key.first].first = attachment.before;
+            },
+            [&](InternalAttachment& attachment) {
+                _memory_states[key.first].first = MemoryState::Common;
+            }
+        );
+
+        std::visit(attachment_visitor, value);
     }
 }
 
@@ -234,22 +242,22 @@ void FrameGraph::execute(Backend& backend) {
                         }
                         
                         render_pass.render_pass = create_render_pass(backend, render_pass.desc);
-                        render_pass.is_compiled = true;
-
-                        for(auto& [key, value] : _render_pass_resources[{ op.second, _flight_frame_index }])
 
                         for(auto& [key, value] : _render_pass_resources[{ op.second, _flight_frame_index }]._attachments) {
-                            std::visit([&](auto&& arg) {
-                                using T = std::decay_t<decltype(arg)>;
-                                if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                                    value = arg.target;
-                                } else if constexpr (std::is_same_v<T, InternalAttachment>) {
-                                    value = arg.target;
-                                } else {
-                                    static_assert(always_false_v<T>, "non-exhaustive visitor!");
+
+                            auto attachment_visitor = make_visitor(
+                                [&](ExternalAttachment& attachment) {
+                                    value = attachment.target;
+                                },
+                                [&](InternalAttachment& attachment) {
+                                    value = attachment.target;
                                 }
-                            }, _attachments[{ key, _flight_frame_index }]);
+                            );
+
+                            std::visit(attachment_visitor, _attachments[{ key, _flight_frame_index }]);
                         }
+
+                        render_pass.is_compiled = true;
                     }
                 }
 
@@ -258,35 +266,50 @@ void FrameGraph::execute(Backend& backend) {
                 backend.set_viewport(0, 0, render_pass.desc.width, render_pass.desc.height);
                 backend.set_scissor(0, 0, render_pass.desc.width, render_pass.desc.height);
 
-                // barriers
+                // Color Barriers
                 for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
-                    std::visit([&](auto&& arg) {
-                        using T = std::decay_t<decltype(arg)>;
-                        if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                            backend.barrier(arg.target, arg.after, arg.before);
-                        } else if constexpr (std::is_same_v<T, InternalAttachment>) {
-                            backend.barrier(arg.target, MemoryState::Common, MemoryState::RenderTarget);
-                        } else {
-                            static_assert(always_false_v<T>, "non-exhaustive visitor!");
-                        }
-                    }, _attachments[{render_pass.desc.color_infos[i].first, _flight_frame_index}]);
+
+                    AttachmentId attachment_id = render_pass.desc.color_infos[i].first;
+
+                    if(_memory_states[attachment_id].second.find(op.second) != _memory_states[attachment_id].second.end()) {
+
+                        auto attachment_visitor = make_visitor(
+                            [&](ExternalAttachment& attachment) {
+                                backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
+                                _memory_states[attachment_id].first = MemoryState::RenderTarget;
+                            },
+                            [&](InternalAttachment& attachment) {
+                                backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
+                                _memory_states[attachment_id].first = MemoryState::RenderTarget;
+                            }
+                        );
+
+                        std::visit(attachment_visitor, _attachments[{ attachment_id, _flight_frame_index }]);
+                    }
                 }
 
-                // barrier inputs
-                for(size_t i = 0; i < render_pass.desc.inputs.size(); ++i) {
-                    std::visit([&](auto&& arg) {
-                        using T = std::decay_t<decltype(arg)>;
-                        if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                            backend.barrier(arg.target, arg.after, arg.before);
-                        } else if constexpr (std::is_same_v<T, InternalAttachment>) {
-                            backend.barrier(arg.target, MemoryState::Common, MemoryState::ShaderRead);
-                        } else {
-                            static_assert(always_false_v<T>, "non-exhaustive visitor!");
-                        }
-                    }, _attachments[{ render_pass.desc.inputs[i], _flight_frame_index }]);
+                // Input Barriers
+                for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
+
+                    AttachmentId attachment_id = render_pass.desc.color_infos[i].first;
+
+                    if(_memory_states[attachment_id].second.find(op.second) != _memory_states[attachment_id].second.end()) {
+
+                        auto attachment_visitor = make_visitor(
+                            [&](ExternalAttachment& attachment) {
+                                backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
+                                _memory_states[attachment_id].first = MemoryState::ShaderRead;
+                            },
+                            [&](InternalAttachment& attachment) {
+                                backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
+                                _memory_states[attachment_id].first = MemoryState::ShaderRead;
+                            }
+                        );
+
+                        std::visit(attachment_visitor, _attachments[{ attachment_id, _flight_frame_index }]);
+                    }
                 }
 
-                // render_pass
                 backend.begin_render_pass(
                     render_pass.render_pass, 
                     std::span<Color>(render_pass.desc._clear_colors.data(), render_pass.desc.color_count), 
@@ -297,36 +320,24 @@ void FrameGraph::execute(Backend& backend) {
                 render_pass.func(render_pass.render_pass, _render_pass_resources[{ op.second, _flight_frame_index }]);
 
                 backend.end_render_pass();
-
-                // barriers
-                for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
-                    std::visit([&](auto&& arg) {
-                        using T = std::decay_t<decltype(arg)>;
-                        if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                            backend.barrier(arg.target, arg.before, arg.after);
-                        } else if constexpr (std::is_same_v<T, InternalAttachment>) {
-                            backend.barrier(arg.target, MemoryState::RenderTarget, MemoryState::Common);
-                        } else {
-                            static_assert(always_false_v<T>, "non-exhaustive visitor!");
-                        }
-                    }, _attachments[{render_pass.desc.color_infos[i].first, _flight_frame_index}]);
-                }
-
-                // barrier inputs
-                for(size_t i = 0; i < render_pass.desc.inputs.size(); ++i) {
-                    std::visit([&](auto&& arg) {
-                        using T = std::decay_t<decltype(arg)>;
-                        if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                            backend.barrier(arg.target, arg.after, arg.before);
-                        } else if constexpr (std::is_same_v<T, InternalAttachment>) {
-                            backend.barrier(arg.target, MemoryState::ShaderRead, MemoryState::Common);
-                        } else {
-                            static_assert(always_false_v<T>, "non-exhaustive visitor!");
-                        }
-                    }, _attachments[{ render_pass.desc.inputs[i], _flight_frame_index }]);
-                }
             } break;
         }
+    }
+
+    // Final
+    for(auto& [key, value] : _external_attachments) {
+        
+        auto attachment_visitor = make_visitor(
+            [&](ExternalAttachment& attachment) {
+                backend.barrier(attachment.target, _memory_states[key].first, attachment.after);
+                _memory_states[key].first = attachment.after;
+            },
+            [&](InternalAttachment& attachment) {
+                // Internal Attachments has not final state
+            }
+        );
+
+        std::visit(attachment_visitor, _attachments[{ key, _flight_frame_index }]);
     }
 
     backend.end_context();

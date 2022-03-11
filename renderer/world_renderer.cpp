@@ -88,7 +88,7 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
     _frame_graph
         .attachment(static_cast<uint32_t>(Colors::Blit), Format::RGBA8, 768, 522)
-        .external_attachment(static_cast<uint32_t>(Colors::Swapchain), Format::RGBA8, MemoryState::RenderTarget, MemoryState::Present)
+        .external_attachment(static_cast<uint32_t>(Colors::Swapchain), Format::RGBA8, MemoryState::Present, MemoryState::Present)
         .render_pass(
             static_cast<uint32_t>(RenderPasses::Main), 
             RenderPassDesc{}

@@ -87,13 +87,13 @@ public:
 
     RenderPassResources() = default;
 
-    Handle<Texture> get(uint32_t const id) const { return _attachments.find(id)->second; }
+    Handle<Texture> get(AttachmentId const id) const { return _attachments.find(id)->second; }
 
 private:
 
     friend class FrameGraph;
 
-    std::unordered_map<uint32_t, Handle<Texture>> _attachments;
+    std::unordered_map<AttachmentId, Handle<Texture>> _attachments;
 };
 
 using RenderPassId = uint32_t;
@@ -145,7 +145,7 @@ private:
     using AttachmentFrameId = std::pair<AttachmentId, uint32_t>;
 
     std::unordered_map<RenderPassFrameId, FrameGraph::RenderPass, pair_hash> _render_passes;
-    std::unordered_map<AttachmentFrameId, Attachment, pair_hash> _attachments;
+    std::unordered_map<AttachmentFrameId, FrameGraph::Attachment, pair_hash> _attachments;
     std::unordered_map<RenderPassFrameId, RenderPassResources, pair_hash> _render_pass_resources;
 
     using MemoryStateInfo = std::pair<MemoryState, std::unordered_set<RenderPassId>>;
