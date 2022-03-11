@@ -22,7 +22,7 @@ using AttachmentId = uint32_t;
 struct RenderPassDesc {
     using AttachmentInfo = std::pair<AttachmentId, RenderPassLoadOp>;
 
-    std::string _name;
+    std::u8string _name;
     std::array<Color, 8> _clear_colors;
     std::array<AttachmentInfo, 8> color_infos;
     uint32_t color_count{0};
@@ -34,7 +34,7 @@ struct RenderPassDesc {
     uint32_t width;
     uint32_t height;
 
-    RenderPassDesc& name(std::string const& name) {
+    RenderPassDesc& name(std::u8string const& name) {
         
         _name = name;
         return *this;
@@ -76,6 +76,12 @@ struct RenderPassDesc {
     }
 };
 
+struct ComputePassDesc {
+
+    std::u8string _name;
+
+};
+
 class RenderPassResources {
 public:
 
@@ -92,6 +98,8 @@ private:
 
 using RenderPassId = uint32_t;
 using RenderPassFunc = std::function<void(Handle<renderer::RenderPass> const&, RenderPassResources const&)>;
+using ComputePassId = uint32_t;
+using ComputePassFunc = std::function<void(RenderPassResources const&)>;
 
 class FrameGraph {
 public:
@@ -101,6 +109,7 @@ public:
     FrameGraph& attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height);
     FrameGraph& external_attachment(uint32_t const id, Format const format, MemoryState const before, MemoryState const after);
     FrameGraph& render_pass(RenderPassId const id, RenderPassDesc const& desc, RenderPassFunc const& func);
+    FrameGraph& compute_pass(ComputePassId const id, ComputePassDesc const& desc, ComputePassFunc const& func);
     FrameGraph& bind_external_attachment(uint32_t const id, Handle<Texture> const& target);
 
     void build(Backend& backend, uint32_t const flight_frame_count);
@@ -138,7 +147,7 @@ private:
     std::unordered_map<RenderPassFrameId, FrameGraph::RenderPass, pair_hash> _render_passes;
     std::unordered_map<AttachmentFrameId, Attachment, pair_hash> _attachments;
     std::unordered_map<RenderPassFrameId, RenderPassResources, pair_hash> _render_pass_resources;
-    
+
     std::unordered_map<AttachmentId, std::unordered_set<RenderPassId>> _memory_states;
 
     std::unordered_set<RenderPassId> _external_render_passes;

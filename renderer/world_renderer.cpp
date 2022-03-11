@@ -92,7 +92,7 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
         .render_pass(
             static_cast<uint32_t>(RenderPasses::Main), 
             RenderPassDesc{}
-                .name("MainPass")
+                .name(u8"MainPass")
                 .rect(800, 600)
                 .color(static_cast<uint32_t>(Colors::Swapchain), RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f))
                 .color(static_cast<uint32_t>(Colors::Blit), RenderPassLoadOp::Clear, Color(0.2f, 0.4f, 0.3f, 1.0f)),

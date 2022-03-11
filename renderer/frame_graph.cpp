@@ -50,29 +50,28 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
 
         switch(op.first) {
             case OpType::RenderPass: {
-
-                bool has_external_attachment = false;
-
                 auto& render_pass = _render_passes[{ op.second, 0 }];
 
                 for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
-                    std::visit([&](auto&& arg) {
-                        using T = std::decay_t<decltype(arg)>;
-                        if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                            has_external_attachment = true;
-                            _external_attachments_ids[render_pass.desc.color_infos[i].first] = op.second;
+
+                    auto attachment_visitor = make_visitor(
+                        [&](ExternalAttachment const& attachment) {
+                            _external_render_passes.emplace(op.second);
+                            _external_attachments[render_pass.desc.color_infos[i].first] = op.second;
                             _render_pass_resources[{ op.second, 0 }]._attachments[render_pass.desc.color_infos[i].first] = INVALID_HANDLE(Texture);
-                        } else if constexpr (std::is_same_v<T, InternalAttachment>) {
+                        },
+                        [&](InternalAttachment const& attachment) {
                             _render_pass_resources[{ op.second, 0 }]._attachments[render_pass.desc.color_infos[i].first] = INVALID_HANDLE(Texture);
-                        } else {
-                            static_assert(always_false_v<T>, "non-exhaustive visitor!");
                         }
-                    }, _attachments[{render_pass.desc.color_infos[i].first, 0}]);
+                    );
+
+                    std::visit(attachment_visitor, _attachments[{ render_pass.desc.color_infos[i].first, 0 }]);
                 }
 
-                for(uint32_t i = 0; i < flight_frames; ++i) {
-                    auto& render_pass = _render_passes[{ op.second, i }];
-                    render_pass = _render_passes[{ op.second, 0 }];
+                // Flight resources
+                for(uint32_t i = 0; i < flight_frame_count; ++i) {
+                    _render_passes[{ op.second, i }] = _render_passes[{ op.second, 0 }];
+                    _render_pass_resources[{ op.second, i }] = _render_pass_resources[{ op.second, 0 }];
 
                     for(auto& [id, func] : render_pass.desc.color_infos) {
                         _attachments[{ id, i }] = _attachments[{ id, 0 }];
@@ -81,40 +80,23 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                     for(auto& id : render_pass.desc.inputs) {
                         _attachments[{ id, i }] = _attachments[{ id, 0 }];
                     }
-
-                    _render_pass_resources[{ op.second, i }] = _render_pass_resources[{ op.second, 0 }];
-                }
-                
-                for(auto& [key, value] : _attachments) {
-                    std::visit([&](auto&& arg) {
-                        using T = std::decay_t<decltype(arg)>;
-                        if constexpr (std::is_same_v<T, ExternalAttachment>) {
-                            
-                        } else if constexpr (std::is_same_v<T, InternalAttachment>) {
-                            arg.target = backend.create_texture(Dimension::_2D, arg.width, arg.height, 1, 1, arg.format, TextureFlags::RenderTarget | TextureFlags::ShaderResource);
-                        } else {
-                            static_assert(always_false_v<T>, "non-exhaustive visitor!");
-                        }
-                    }, value);
                 }
 
-                for(uint32_t i = 0; i < flight_frames; ++i) {
+                // Create temp resources
+                for(uint32_t i = 0; i < flight_frame_count; ++i) {
                     for(auto& [key, value] : _render_pass_resources[{ op.second, i }]._attachments) {
                         std::visit([&](auto&& arg) {
                             using T = std::decay_t<decltype(arg)>;
                             if constexpr (std::is_same_v<T, ExternalAttachment>) {
                                 value = arg.target;
                             } else if constexpr (std::is_same_v<T, InternalAttachment>) {
+                                arg.target = backend.create_texture(Dimension::_2D, arg.width, arg.height, 1, 1, arg.format, TextureFlags::RenderTarget | TextureFlags::ShaderResource);
                                 value = arg.target;
                             } else {
                                 static_assert(always_false_v<T>, "non-exhaustive visitor!");
                             }
                         }, _attachments[{ key, i }]);
                     }
-                }
-
-                if(has_external_attachment) {
-                    _external_render_passes_ids.emplace(op.second);
                 }
 
             } break;
@@ -153,8 +135,8 @@ void FrameGraph::reset(Backend& backend) {
 
     _ops.clear();
 
-    _external_render_passes_ids.clear();
-    _external_attachments_ids.clear();
+    _external_render_passes.clear();
+    _external_attachments.clear();
 }
 
 void FrameGraph::execute(Backend& backend) {
@@ -166,7 +148,7 @@ void FrameGraph::execute(Backend& backend) {
             case OpType::RenderPass: {
 
                 // build external render pass
-                if(_external_render_passes_ids.find(op.second) != _external_render_passes_ids.end()) {
+                if(_external_render_passes.find(op.second) != _external_render_passes.end()) {
 
                     auto& render_pass = _render_passes[{ op.second, _flight_frame_index }];     
                     if(!render_pass.is_compiled) {
