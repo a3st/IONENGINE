@@ -81,6 +81,8 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
         );
 
         std::visit(attachment_visitor, value);
+
+        _memory_states[key.first].first = MemoryState::Common;
     }
 
     for(uint32_t i = 0; i < flight_frame_count; ++i) {
@@ -92,17 +94,77 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                     bool is_external_render_pass = false;
 
                     for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
+                        AttachmentId attachment_id = render_pass.desc.color_infos[i].first;
+
                         auto attachment_visitor = make_visitor(
-                            [&](ExternalAttachment const& attachment) {
-                                _external_attachments[render_pass.desc.color_infos[i].first] = op.second;
-                                _render_pass_resources[{ op.second, 0 }]._attachments[render_pass.desc.color_infos[i].first] = INVALID_HANDLE(Texture);
+                            [&](ExternalAttachment& attachment) {
+                                is_external_render_pass = true;
+                                _external_attachments[attachment_id].emplace(op.second);
+                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
                             },
-                            [&](InternalAttachment const& attachment) {
-                                _render_pass_resources[{ op.second, 0 }]._attachments[render_pass.desc.color_infos[i].first] = INVALID_HANDLE(Texture);
+                            [&](InternalAttachment& attachment) {
+                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = 
+                                    attachment.target;
                             }
                         );
+
+                        std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
+
+                        if(_memory_states[attachment_id].first != MemoryState::RenderTarget) {
+                            _memory_states[attachment_id].first = MemoryState::RenderTarget;
+                            _memory_states[attachment_id].second.emplace(op.second);
+                        }
                     }
-                } break; 
+
+                    if(render_pass.desc.has_depth_stencil) {
+                        AttachmentId attachment_id = render_pass.desc.depth_stencil_info.first;
+
+                        auto attachment_visitor = make_visitor(
+                            [&](ExternalAttachment& attachment) {
+                                is_external_render_pass = true;
+                                _external_attachments[attachment_id].emplace(op.second);
+                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
+                            },
+                            [&](InternalAttachment& attachment) {
+                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = 
+                                    attachment.target;
+                            }
+                        );
+
+                        std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
+
+                        // TODO!
+                    }
+
+                    for(size_t i = 0; i < render_pass.desc.inputs.size(); ++i) {
+                        AttachmentId attachment_id = render_pass.desc.inputs[i];
+
+                        auto attachment_visitor = make_visitor(
+                            [&](ExternalAttachment& attachment) {
+                                is_external_render_pass = true;
+                                _external_attachments[attachment_id].emplace(op.second);
+                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
+                            },
+                            [&](InternalAttachment& attachment) {
+                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = 
+                                    attachment.target;
+                            }
+                        );
+
+                        std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
+
+                        if(_memory_states[attachment_id].first != MemoryState::ShaderRead) {
+                            _memory_states[attachment_id].first = MemoryState::ShaderRead;
+                            _memory_states[attachment_id].second.emplace(op.second);
+                        }
+                    }
+
+                    if(is_external_render_pass) {
+                        _external_render_passes.emplace(op.second);
+                    } else {
+                        render_pass.render_pass = create_render_pass(backend, render_pass.desc);
+                    }
+                } break;
                 case FrameGraph::OpType::ComputePass: {
 
 
@@ -110,33 +172,10 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
             }
         }
     }
-    for(auto& op : _ops) {
 
-        switch(op.first) {
-            case FrameGraph::OpType::RenderPass: {
-                auto& render_pass = _render_passes[{ op.second, 0 }];
+    for(auto& [key, value] : _attachments) {
 
-                for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
-
-                    auto attachment_visitor = make_visitor(
-                        [&](ExternalAttachment const& attachment) {
-                            _external_render_passes.emplace(op.second);
-                            _external_attachments[render_pass.desc.color_infos[i].first] = op.second;
-                            _render_pass_resources[{ op.second, 0 }]._attachments[render_pass.desc.color_infos[i].first] = INVALID_HANDLE(Texture);
-                        },
-                        [&](InternalAttachment const& attachment) {
-                            _render_pass_resources[{ op.second, 0 }]._attachments[render_pass.desc.color_infos[i].first] = INVALID_HANDLE(Texture);
-                        }
-                    );
-
-                    std::visit(attachment_visitor, _attachments[{ render_pass.desc.color_infos[i].first, 0 }]);
-                }
-
-            } break;
-            case FrameGraph::OpType::ComputePass: {
-                // TODO!
-            } break;
-        }
+        _memory_states[key.first].first = MemoryState::Common;
     }
 }
 
@@ -144,7 +183,7 @@ void FrameGraph::reset(Backend& backend) {
 
     backend.wait_for_idle_device();
 
-    for(auto& [key, value] : _render_passes) {
+    /*for(auto& [key, value] : _render_passes) {
 
         backend.delete_render_pass(value.render_pass);
     }
@@ -172,7 +211,7 @@ void FrameGraph::reset(Backend& backend) {
     _ops.clear();
 
     _external_render_passes.clear();
-    _external_attachments.clear();
+    _external_attachments.clear();*/
 }
 
 void FrameGraph::execute(Backend& backend) {
@@ -183,20 +222,21 @@ void FrameGraph::execute(Backend& backend) {
         switch(op.first) {
             case OpType::RenderPass: {
 
-                // build external render pass
+                // Build external render pass
                 if(_external_render_passes.find(op.second) != _external_render_passes.end()) {
 
-                    auto& render_pass = _render_passes[{ op.second, _flight_frame_index }];     
+                    auto& render_pass = _render_passes[{ op.second, _flight_frame_index }];
+
                     if(!render_pass.is_compiled) {
-                        if(render_pass.render_pass != Handle<renderer::RenderPass>()) {
+
+                        if(render_pass.render_pass != INVALID_HANDLE(renderer::RenderPass)) {
                             backend.delete_render_pass(render_pass.render_pass);
-                            //std::cout << "FrameGraph: RenderPass was deleted" << std::endl;
                         }
                         
                         render_pass.render_pass = create_render_pass(backend, render_pass.desc);
                         render_pass.is_compiled = true;
 
-                        //std::cout << "FrameGraph: RenderPass was created" << std::endl;
+                        for(auto& [key, value] : _render_pass_resources[{ op.second, _flight_frame_index }])
 
                         for(auto& [key, value] : _render_pass_resources[{ op.second, _flight_frame_index }]._attachments) {
                             std::visit([&](auto&& arg) {
@@ -210,8 +250,6 @@ void FrameGraph::execute(Backend& backend) {
                                 }
                             }, _attachments[{ key, _flight_frame_index }]);
                         }
-
-                        //std::cout << "FrameGraph: Resources was cached" << std::endl;
                     }
                 }
 
@@ -305,7 +343,9 @@ FrameGraph& FrameGraph::bind_external_attachment(AttachmentId const id, Handle<T
     auto& attachment = std::get<ExternalAttachment>(_attachments[{id, _flight_frame_index}]);
     if(attachment.target != target) {
         attachment.target = target;
-        _render_passes[{ _external_attachments[id], _flight_frame_index }].is_compiled = false;
+        for(auto& _id : _external_attachments[id]) {
+            _render_passes[{ _id, _flight_frame_index }].is_compiled = false;
+        }
     }
     return *this;
 }

@@ -148,7 +148,9 @@ private:
     std::unordered_map<AttachmentFrameId, Attachment, pair_hash> _attachments;
     std::unordered_map<RenderPassFrameId, RenderPassResources, pair_hash> _render_pass_resources;
 
-    std::unordered_map<AttachmentId, std::unordered_set<RenderPassId>> _memory_states;
+    using MemoryStateInfo = std::pair<MemoryState, std::unordered_set<RenderPassId>>;
+
+    std::unordered_map<AttachmentId, MemoryStateInfo> _memory_states;
 
     std::unordered_set<RenderPassId> _external_render_passes;
     std::unordered_map<AttachmentId, std::unordered_set<RenderPassId>> _external_attachments;
