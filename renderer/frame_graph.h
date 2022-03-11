@@ -151,10 +151,11 @@ private:
     std::unordered_map<AttachmentId, std::unordered_set<RenderPassId>> _memory_states;
 
     std::unordered_set<RenderPassId> _external_render_passes;
-    std::unordered_map<AttachmentId, RenderPassId> _external_attachments;
+    std::unordered_map<AttachmentId, std::unordered_set<RenderPassId>> _external_attachments;
 
     enum class OpType : uint32_t {
-        RenderPass
+        RenderPass,
+        ComputePass
     };
 
     using Op = std::pair<FrameGraph::OpType, uint32_t>;
