@@ -84,8 +84,6 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     
     _backend->write_descriptor_set(descriptor_set, write_desc);*/
 
-    auto start = std::chrono::high_resolution_clock::now();
-
     _frame_graph
         .attachment(static_cast<uint32_t>(Colors::Blit), Format::RGBA8, 768, 522)
         .external_attachment(static_cast<uint32_t>(Colors::Swapchain), Format::RGBA8, MemoryState::Present, MemoryState::Present)
@@ -96,9 +94,9 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
                 .rect(800, 600)
                 .color(static_cast<uint32_t>(Colors::Swapchain), RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f))
                 .color(static_cast<uint32_t>(Colors::Blit), RenderPassLoadOp::Clear, Color(0.2f, 0.4f, 0.3f, 1.0f)),
-            [&](Handle<renderer::RenderPass> const& render_pass, RenderPassResources const& resources) {
+            [&](Handle<RenderPass> const& render_pass, RenderPassResources const& resources) {
                 
-                if(_pipelines[frame_index] == INVALID_HANDLE(Pipeline)) {
+                /*if(_pipelines[frame_index] == INVALID_HANDLE(Pipeline)) {
                     _pipelines[frame_index] = _backend->create_pipeline(
                         _pbr_layout,
                         MeshData::vertex_declaration,
@@ -112,14 +110,10 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
                 _backend->bind_pipeline(_pipelines[frame_index]);
                 _backend->bind_vertex_buffer(0, _frames[frame_index].vertex_buffer, 0);
-                _backend->bind_vertex_buffer(1, _frames[frame_index].vertex_buffer, 128);
+                _backend->bind_vertex_buffer(1, _frames[frame_index].vertex_buffer, 128);*/
             }
         )
         .build(*_backend, 2);
-
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::cout << std::format("FrameGraph: Creation completed in {} microsec", std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()) << std::endl;
 }
 
 void WorldRenderer::update() {
@@ -128,7 +122,7 @@ void WorldRenderer::update() {
 
     _frame_graph
         .bind_external_attachment(static_cast<uint32_t>(Colors::Swapchain), backend.swap_buffer())
-        .execute(*_backend);
+        .execute(backend);
 
     frame_index = (frame_index + 1) % 2;
 }
@@ -137,14 +131,12 @@ void WorldRenderer::resize(uint32_t const width, uint32_t const height) {
 
     Backend& backend = *_backend;
 
-    _frame_graph.reset(*_backend);
-
-    /*_frame_graph
-        .render_pass()
-        .build(*_backend);
-    */
+    _frame_graph.reset(backend);
 
     backend.resize_buffers(width, height, 2);
+
+    _frame_graph
+        .build(backend, 2);
 }
 
 void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model) {

@@ -7,12 +7,13 @@
 
 namespace ionengine {
 
-    struct pair_hash {
-        template<typename TypeFirst, typename TypeSecond> 
-        size_t operator()(std::pair<TypeFirst, TypeSecond> const& other) const {
-            return std::hash<TypeFirst>()(other.first) ^ std::hash<TypeSecond>()(other.second);
-        }
-    };
+struct pair_hash {
+    template<typename TypeFirst, typename TypeSecond> 
+    size_t operator()(std::pair<TypeFirst, TypeSecond> const& other) const {
+        return std::hash<TypeFirst>()(other.first) ^ std::hash<TypeSecond>()(other.second);
+    }
+};
+
 }
 
 namespace ionengine::renderer {
@@ -76,10 +77,11 @@ struct RenderPassDesc {
     }
 };
 
+using BufferId = uint32_t;
+
 struct ComputePassDesc {
-
     std::u8string _name;
-
+    // TODO!
 };
 
 class RenderPassResources {
@@ -96,10 +98,24 @@ private:
     std::unordered_map<AttachmentId, Handle<Texture>> _attachments;
 };
 
+class ComputePassResources {
+public:
+
+    ComputePassResources() = default;
+
+    Handle<Buffer> get(BufferId const id) const { return _buffers.find(id)->second; }
+
+private:
+
+    friend class FrameGraph;
+
+    std::unordered_map<BufferId, Handle<Buffer>> _buffers;
+};
+
 using RenderPassId = uint32_t;
 using RenderPassFunc = std::function<void(Handle<renderer::RenderPass> const&, RenderPassResources const&)>;
 using ComputePassId = uint32_t;
-using ComputePassFunc = std::function<void(RenderPassResources const&)>;
+using ComputePassFunc = std::function<void(ComputePassResources const&)>;
 
 class FrameGraph {
 public:
@@ -107,7 +123,7 @@ public:
     FrameGraph() = default;
 
     FrameGraph& attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height);
-    FrameGraph& external_attachment(uint32_t const id, Format const format, MemoryState const before, MemoryState const after);
+    FrameGraph& external_attachment(AttachmentId const id, Format const format, MemoryState const before, MemoryState const after);
     FrameGraph& render_pass(RenderPassId const id, RenderPassDesc const& desc, RenderPassFunc const& func);
     FrameGraph& compute_pass(ComputePassId const id, ComputePassDesc const& desc, ComputePassFunc const& func);
     FrameGraph& bind_external_attachment(uint32_t const id, Handle<Texture> const& target);

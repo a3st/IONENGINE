@@ -35,9 +35,11 @@ public:
 
     bool operator!=(Handle const& other) { return _id != other._id; }
 
+    uint32_t _id{std::numeric_limits<uint32_t>::max()};
+
 private:
 
-    uint32_t _id{std::numeric_limits<uint32_t>::max()};
+    // uint32_t _id{std::numeric_limits<uint32_t>::max()};
 
     friend class HandleAllocator<Type>;
 };
