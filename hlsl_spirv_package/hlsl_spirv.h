@@ -11,7 +11,7 @@ enum class HLSL_SPIRV_Flags : uint32_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(HLSL_SPIRV_Flags)
 
-const uint32_t HLSL_SPIRV_Magic = ((uint32_t)(uint8_t)'H') | ((uint32_t)(uint8_t)'L' << 8) | ((uint32_t)(uint8_t)'S' << 16) | ((uint32_t)(uint8_t)'V' << 24);
+uint32_t const HLSL_SPIRV_Magic = ((uint32_t)(uint8_t)'H') | ((uint32_t)(uint8_t)'L' << 8) | ((uint32_t)(uint8_t)'S' << 16) | ((uint32_t)(uint8_t)'V' << 24);
 
 struct HLSL_SPIRV_Header {
     uint32_t flags;

@@ -3,7 +3,7 @@
 :: Settings
 set HLSL_SPIRV_PACKAGE_PATH=E:\GitHub\ionengine_ops\assets\shaders
 set COMPILER_PATH=C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.22000.0\x64
-set OUTPUT_PATH=..\..\build\Debug\shaders
+set OUTPUT_PATH=..\..\build\Debug
 
 echo Start of compiling shaders (D3D12)
 
@@ -19,7 +19,7 @@ for /r %%i in (*_pixel.hlsl) do (
 
 echo End of compiling shaders (D3D12)
 
-echo Start of packaging (HLSL)
+echo Start of packaging
 
 :: HLSL BIN shaders
 for /r %%i in (%OUTPUT_PATH%/*.hlsl_bin) do (
@@ -33,6 +33,18 @@ for /r %%i in (%OUTPUT_PATH%/*.spirv_bin) do (
 
 %HLSL_SPIRV_PACKAGE_PATH%/hlsl_spirv_package.exe -o "%OUTPUT_PATH%/shader_package.hlsv"%Params%
 
-echo End of packaging (HLSL)
+echo End of packaging
+
+echo Delete temp files (HLSL)
+
+:: Vertex shaders
+for /r %%i in (%OUTPUT_PATH%/*_vertex.hlsl_bin) do (
+    erase "%OUTPUT_PATH%\%%~ni.hlsl_bin"
+)
+
+:: Pixel shaders
+for /r %%i in (%OUTPUT_PATH%/*_pixel.hlsl_bin) do (
+    erase "%OUTPUT_PATH%\%%~ni.hlsl_bin"
+)
 
 pause

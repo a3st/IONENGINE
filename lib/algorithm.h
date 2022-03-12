@@ -4,6 +4,20 @@
 
 namespace ionengine {
 
+inline size_t read_bytes(std::span<char8_t const> const source, uint64_t& offset, std::span<char8_t>& dest, size_t const size) {
+    
+    size_t read_bytes = 0;
+
+    if(offset + size <= source.size()) {
+        read_bytes = size;
+        dest = std::span<char8_t>(const_cast<char8_t* const>(source.data()) + offset, size);
+    }
+
+    offset += read_bytes;
+
+    return read_bytes;
+};
+
 inline size_t get_file_size(std::filesystem::path const& file_path, std::ios::openmode const ios = std::ios::beg) {
 
     std::ifstream ifs(file_path, ios);

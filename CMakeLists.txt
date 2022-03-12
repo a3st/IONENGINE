@@ -17,21 +17,29 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 
 add_executable(Runtime-Win32
 
+    # Engine
     engine/main.cpp
     engine/asset.cpp
     engine/asset_manager.cpp
     engine/asset_compiler.cpp
+
+    # Loaders
     engine/obj_loader.cpp
     engine/dds_loader.cpp
-    engine/shpk_loader.cpp
+    engine/hlsv_loader.cpp
+
+    # Lib
     lib/thread_pool.cpp
 
+    # Platform
     platform/window_win32.cpp
     platform/window_loop_win32.cpp
     
+    # API
     renderer/d3d12/memory_allocator.cpp
     renderer/d3d12/descriptor_allocator.cpp
 
+    # Renderer
     renderer/backend_d3d12.cpp
     renderer/world_renderer.cpp
     renderer/frame_graph.cpp
@@ -39,6 +47,7 @@ add_executable(Runtime-Win32
     renderer/shader_graph.cpp
     renderer/material_manager.cpp
 
+    # Project
     project/world_controller.cpp
 )
 
@@ -71,6 +80,7 @@ target_link_directories(Runtime-Win32 PRIVATE
 # Preprocessor
 target_compile_definitions(Runtime-Win32 PRIVATE 
     IONENGINE_PLATFORM_WIN32
+    IONENGINE_BACKEND_D3D12
 )
 
 #[[

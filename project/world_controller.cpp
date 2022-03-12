@@ -5,40 +5,27 @@
 
 #include <engine/asset_compiler.h>
 
+#include <lib/algorithm.h>
+
 using namespace project;
 
 bool WorldController::initialize() {
 
-    auto save_bytes_to_file = [&](std::filesystem::path const& path, std::vector<char8_t> const& data, std::ios::openmode const open_mode = std::ios::beg) {
-        std::ofstream ofs(path, open_mode);
-        if(!ofs.is_open()) {
-            throw std::runtime_error("Can't open file!");
-        }
-        ofs.write(reinterpret_cast<char const*>(data.data()), data.size());
-    };
+    ionengine::AssetFile asset_file;
 
-    auto load_file = [&](std::filesystem::path const& path, std::ios::openmode const ios = std::ios::beg) -> std::vector<char8_t> {
-        std::ifstream ifs(path, ios);
-        if(!ifs.is_open()) {
-            throw std::runtime_error("Can't open file!");
-        }
-        ifs.seekg(0, std::ios::end);
-        size_t size = ifs.tellg();
-        ifs.seekg(0, std::ios::beg);
-        std::vector<char8_t> buf(size);
-        ifs.read(reinterpret_cast<char*>(buf.data()), buf.size());
-        return buf;
-    };
+    std::filesystem::path file_path = "shader_package.hlsv";
 
     ionengine::AssetCompiler compiler;
-    if(compiler.compile("shaders/shader_blob.shpk")) {
-        std::cout << "Asset was compiled!" << std::endl;
+    if(compiler.compile(file_path, asset_file)) {
+        std::cout << std::format("Asset '{}' is compiled to ShaderFile (IONENGINE) Asset", file_path.string()) << std::endl;
     }
 
-    //std::vector<char8_t> serialized_data;
-    //compiler.serialize(serialized_data);
-    //compiler.deserialize(serialized_data);
-    // compiler.data() -> std::variant<MeshFile, TextureFile>*
+    std::vector<char8_t> serialized_data;
+    compiler.serialize(serialized_data, asset_file);
+
+    ionengine::save_bytes_to_file("shader_package.asset", serialized_data, std::ios::binary);
+    
+    
 
     return true;
 }

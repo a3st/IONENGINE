@@ -47,7 +47,7 @@ int main(int* argc, char** agrv) {
         std::exit(EXIT_FAILURE);
     }
 
-    std::cout << "Exit app" << std::endl;
+    std::cout << "Application (IONENGINE Runtime) is closed" << std::endl;
 
     thread_pool.join();
     return EXIT_SUCCESS;
