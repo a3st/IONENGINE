@@ -23,7 +23,15 @@ public:
     Handle<Type> allocate(Type const& element) {
 
         const size_t cur_offset = _offset;
-        _instances[static_cast<uint32_t>(cur_offset)] = element;
+        _instances.emplace(static_cast<uint32_t>(cur_offset), element);
+        ++_offset;
+        return Handle<Type>(static_cast<uint32_t>(cur_offset));
+    }
+
+    Handle<Type> allocate(Type&& element) {
+
+        const size_t cur_offset = _offset;
+        _instances.emplace(static_cast<uint32_t>(cur_offset), std::move(element));
         ++_offset;
         return Handle<Type>(static_cast<uint32_t>(cur_offset));
     }

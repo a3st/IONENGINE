@@ -2,32 +2,29 @@
 
 #pragma once
 
-#include <lib/lockfree_queue.h>
+#include <lib/concurrent_queue.h>
 #include <lib/exception.h>
+#include <lib/handle_allocator.h>
 
 namespace ionengine {
 
-class JobHandle {
-public:
-
-    JobHandle() = default;
-    JobHandle(uint32_t const id) : _id(id) { }
-
-private:
-    
-    friend class ThreadPool;
-    uint32_t _id;
+struct Job {
+    std::function<void()> func;
+    uint16_t id;
+    uint8_t finished;
 };
 
 class ThreadPool {
 public:
 
-    ThreadPool(uint16_t const thread_count);
+    enum { MaxJobs = 256 };
+
+    ThreadPool(uint32_t const thread_count);
     
     template<class Func, class... Args>
-    JobHandle push(Func&& func, Args&&... args) {
+    Handle<Job> push(Func&& func, Args&&... args) {
 
-        auto it = _workers.begin();
+        /*auto it = _workers.begin();
         std::advance(it, thread_current);
 
         uint32_t job_id = (static_cast<uint32_t>(thread_current) << 16) + it->current_job;
@@ -49,12 +46,14 @@ public:
         ++_active_job_count;
 
         _cond_jobs.notify_one();
-        return JobHandle { job_id };
+        return JobHandle { job_id };*/
+
+        return INVALID_HANDLE(Job);
     }
 
-    bool is_finished(JobHandle const& handle);
+    bool is_finished(Handle<Job> const& job);
 
-    void wait(JobHandle const& handle);
+    void wait(Handle<Job> const& job);
 
     void wait_all();
 
@@ -62,20 +61,14 @@ public:
 
 private:
 
-    enum { MaxActiveJobs = 256 };
-
-    struct Job {
-        std::function<void()> func;
-        uint16_t id;
-        uint8_t finished;
-    };
-
     struct Worker {
         std::thread thread;
         uint16_t current_job;
-        ConcurrentQueue<Job, MaxActiveJobs> active_jobs;
-        std::array<Job, MaxActiveJobs> finished_jobs;
+        ConcurrentQueue<Job, MaxJobs> active_jobs;
+        std::array<Job, MaxJobs> finished_jobs;
     };
+
+    HandleAllocator<Job> _job_allocator;
 
     std::mutex _mutex;
     std::condition_variable _cond_jobs;

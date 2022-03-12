@@ -3,8 +3,11 @@
 #include <precompiled.h>
 #include <platform/window.h>
 
+#include <engine/asset_manager.h>
+
 #include <lib/thread_pool.h>
 #include <lib/exception.h>
+#include <lib/hash/crc32.h>
 
 #include <renderer/backend.h>
 #include <renderer/world_renderer.h>
@@ -21,12 +24,21 @@ int main(int* argc, char** agrv) {
         platform::Window window(u8"IONENGINE", 800, 600, false, loop);
 
         renderer::Backend backend(0, &window, 1, 2);
+
+        AssetManager asset_manager(thread_pool);
+
         renderer::WorldRenderer world_renderer(&backend, &thread_pool);
         project::WorldController world_controller;
 
         if(!world_controller.initialize()) {
             throw Exception(u8"Error during initialize world controller");
         }
+
+        Handle<AssetData> asset_data;
+        asset_manager.load_asset_data<ShaderFile>("shader_package.asset"_hash, asset_data);
+
+        auto& data = asset_manager.get_asset_data(asset_data);
+        std::cout << data.file_path().string() << std::endl;
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {

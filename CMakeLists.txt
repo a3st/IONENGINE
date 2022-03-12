@@ -19,7 +19,6 @@ add_executable(Runtime-Win32
 
     # Engine
     engine/main.cpp
-    engine/asset.cpp
     engine/asset_manager.cpp
     engine/asset_compiler.cpp
 

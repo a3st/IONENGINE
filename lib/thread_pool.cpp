@@ -4,9 +4,9 @@
 
 using namespace ionengine;
 
-ThreadPool::ThreadPool(uint16_t const thread_count) {
+ThreadPool::ThreadPool(uint32_t const thread_count) {
 
-    _workers.resize(thread_count);
+    /*_workers.resize(thread_count);
     for(auto& worker : _workers) {
         worker.thread = std::thread([&]() {
             while(_exec) {
@@ -24,19 +24,20 @@ ThreadPool::ThreadPool(uint16_t const thread_count) {
                 }
             }
         });
-    }
+    }*/
 }
 
-bool ThreadPool::is_finished(JobHandle const& handle) {
+bool ThreadPool::is_finished(Handle<Job> const& job) {
     
-    auto it = _workers.begin();
+    /*auto it = _workers.begin();
     std::advance(it, (handle._id >> 16) & 0xffff);
-    return it->finished_jobs[handle._id & 0xffff].finished == 0x1;
+    return it->finished_jobs[handle._id & 0xffff].finished == 0x1;*/
+    return false;
 }
 
-void ThreadPool::wait(JobHandle const& handle) {
+void ThreadPool::wait(Handle<Job> const& job) {
 
-    if(!_exec) {
+    /*if(!_exec) {
         throw Exception(u8"Unable to wait for the thread pool task");
     }
 
@@ -45,26 +46,26 @@ void ThreadPool::wait(JobHandle const& handle) {
 
     while(it->finished_jobs[handle._id & 0xffff].finished == 0x0) {
         std::this_thread::sleep_for(std::chrono::nanoseconds(1));
-    }
+    }*/
 }
 
 void ThreadPool::wait_all() {
 
-    if(!_exec) {
+    /*if(!_exec) {
         throw Exception(u8"Unable to wait for the thread pool tasks");
     }
 
     while(_active_job_count > 0) {
         std::this_thread::sleep_for(std::chrono::nanoseconds(1));
-    }
+    }*/
 }
 
 void ThreadPool::join() {
 
-    _exec = false;
+    /*_exec = false;
     _cond_jobs.notify_all();
     
     for(auto& worker : _workers) {
         worker.thread.join();
-    }
+    }*/
 }
