@@ -3,8 +3,11 @@
 #include <precompiled.h>
 #include <engine/asset_compiler.h>
 
+#include <lib/algorithm.h>
+
 #include <engine/obj_loader.h>
 #include <engine/dds_loader.h>
+#include <engine/shpk_loader.h>
 
 using namespace ionengine;
 
@@ -26,24 +29,11 @@ namespace std {
     };
 }
 
-bool AssetCompiler::compile(std::filesystem::path const& file) {
+bool AssetCompiler::compile(std::filesystem::path const& file_path, AssetFile& asset_file) {
 
-    auto load_file = [&](std::filesystem::path const& path, std::ios::openmode const ios = std::ios::beg) -> std::vector<char8_t> {
-        std::ifstream ifs(path, ios);
-        if(!ifs.is_open()) {
-            throw std::runtime_error("Can't open file!");
-        }
-        ifs.seekg(0, std::ios::end);
-        size_t size = ifs.tellg();
-        ifs.seekg(0, std::ios::beg);
-        std::vector<char8_t> buf(size);
-        ifs.read(reinterpret_cast<char*>(buf.data()), buf.size());
-        return buf;
-    };
+    if(file_path.extension() == ".dds") {
 
-    if(file.extension() == ".dds") {
-
-        auto dds_data = load_file(file, std::ios::binary);
+        /*auto dds_data = load_file(file, std::ios::binary);
 
         DDSLoader dds_loader;
         if(!dds_loader.parse(dds_data)) {
@@ -73,11 +63,11 @@ bool AssetCompiler::compile(std::filesystem::path const& file) {
                 std::cout << "format: dxt5, ";
             }
         }
-        std::cout << ")" << std::endl;
+        std::cout << ")" << std::endl;*/
 
-    } else if(file.extension() == ".obj") {
+    } else if(file_path.extension() == ".obj") {
 
-        std::vector<char8_t> obj_data = load_file(file);
+        /*std::vector<char8_t> obj_data = load_file(file);
 
         std::unordered_map<ObjVertex, uint32_t> unique_vertices;
 
@@ -136,7 +126,25 @@ bool AssetCompiler::compile(std::filesystem::path const& file) {
         mesh_file.indices_offset = mesh_file.uv_normals_offset + static_cast<uint32_t>(mesh_data.uv_normals.size()) * sizeof(float);
         mesh_file.data = mesh_data;
 
-        _file = mesh_file;
+        _file = mesh_file;*/
+
+    } else if(file_path.extension() == ".shpk") {
+
+        std::vector<char8_t> buffer;
+
+        size_t file_size = get_file_size(file_path);
+        buffer.resize(file_size);
+
+        if(!load_bytes_from_file(file_path, buffer, std::ios::binary)) {
+            return false;
+        }
+
+        ShpkLoader shpk_loader;
+        if(!shpk_loader.parse(buffer)) {
+            return false;
+        }
+
+        shpk_loader.data()->
     }
 
     return true;
@@ -146,7 +154,7 @@ size_t AssetCompiler::serialize(std::vector<char8_t>& data) {
 
     uint64_t offset = 0;
 
-    std::visit([&](auto&& arg) {
+    /*std::visit([&](auto&& arg) {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<T, MeshFile>) {
             size_t const header_size = sizeof(MeshFile) - sizeof(renderer::MeshData);
@@ -171,17 +179,19 @@ size_t AssetCompiler::serialize(std::vector<char8_t>& data) {
             offset += indices_size;
         } else if constexpr (std::is_same_v<T, TextureFile>) {
             // TO DO
+        } else if constexpr (std::is_same_v<T, ShaderFile>) {
+
         } else {
             static_assert(always_false_v<T>, "non-exhaustive visitor!");
         }
-    }, _file);
+    }, _file);*/
 
     return offset;
 }
 
 bool AssetCompiler::deserialize(std::vector<char8_t> const& data) {
 
-    auto read_bytes = [&](std::span<char8_t const> const src, uint64_t& offset, std::span<char8_t const>& dst, uint64_t const size) -> size_t {
+    /*auto read_bytes = [&](std::span<char8_t const> const src, uint64_t& offset, std::span<char8_t const>& dst, uint64_t const size) -> size_t {
         size_t read_bytes = 0;
         if(offset + size <= src.size()) {
             read_bytes = size;
@@ -241,7 +251,7 @@ bool AssetCompiler::deserialize(std::vector<char8_t> const& data) {
 
             std::cout << "AssetType: Texture" << std::endl;
         } break;
-    }
+    }*/
     
     return true;
 }

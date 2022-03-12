@@ -6,9 +6,15 @@
 
 namespace ionengine::renderer {
 
-struct TextureData {
-    Format format;
-    //std::vector<
+class MaterialManager {
+public:
+
+
+
+
+private:
+
+    
 };
 
 }

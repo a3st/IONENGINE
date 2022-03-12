@@ -4,37 +4,15 @@
 #include <renderer/world_renderer.h>
 
 #include <lib/math/vector.h>
+#include <lib/algorithm.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-enum class RenderPasses : uint32_t {
-    Main
-};
-
-enum class Colors : uint32_t {
-    Swapchain,
-    Blit
-};
-
 WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
-
-    auto load_file = [&](std::filesystem::path const& path, std::ios::openmode const ios = std::ios::beg) -> std::vector<char8_t> {
-        std::ifstream ifs(path, ios);
-        if(!ifs.is_open()) {
-            throw std::runtime_error("Can not open file");
-        }
-        ifs.seekg(0, std::ios::end);
-        size_t size = ifs.tellg();
-        ifs.seekg(0, std::ios::beg);
-        std::vector<char8_t> buf(size);
-        ifs.read(reinterpret_cast<char*>(buf.data()), buf.size());
-        return buf;
-    };
 
     _render_passes.resize(2);
     _pipelines.resize(2);
-    _shaders.resize(2);
 
     auto ranges = std::vector<DescriptorRangeDesc> {
         DescriptorRangeDesc { DescriptorRangeType::ConstantBuffer, 0, 1, ShaderFlags::Vertex }
@@ -43,74 +21,61 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     };
     _pbr_layout = _backend->create_descriptor_layout(ranges);
 
-    auto shader_vert = load_file("shaders/basic_vert.bin", std::ios::binary);
-    auto shader_frag = load_file("shaders/basic_frag.bin", std::ios::binary);
+    size_t shader_vert_size = get_file_size("shaders/basic_vert.bin");
 
-    _shaders[0] = _backend->create_shader(shader_vert, ShaderFlags::Vertex);
-    _shaders[1] = _backend->create_shader(shader_frag, ShaderFlags::Pixel);
+    std::vector<char8_t> shader_vert;
+    shader_vert.resize(shader_vert_size);
 
-    _frames.reserve(2);
-    for(uint32_t i = 0; i < 2; ++i) {
-        auto frame = WorldRenderer::Frame {};
-        frame.vertex_buffer = _backend->create_buffer(65536, BufferFlags::HostWrite | BufferFlags::VertexBuffer);
-        frame.index_buffer = _backend->create_buffer(65536, BufferFlags::HostWrite | BufferFlags::IndexBuffer);
+    size_t shader_frag_size = get_file_size("shaders/basic_frag.bin");
 
-        _frames.emplace_back(frame);
-    }
+    std::vector<char8_t> shader_frag;
+    shader_frag.resize(shader_frag_size);
 
-    _sampler = _backend->create_sampler(Filter::MinMagMipLinear, AddressMode::Wrap, AddressMode::Wrap, AddressMode::Wrap, 1, CompareOp::Always);
-    _texture = _backend->create_texture(Dimension::_2D, 1024, 1024, 1, 1, Format::BC1, TextureFlags::ShaderResource);
+    load_bytes_from_file("shaders/basic_vert.bin", shader_vert, std::ios::binary);
+    load_bytes_from_file("shaders/basic_frag.bin", shader_frag, std::ios::binary);
 
-    _constant_buffers.reserve(2);
-    for(uint32_t i = 0; i < 2; ++i) {
-        _constant_buffers.emplace_back(_backend->create_buffer(65536, BufferFlags::HostWrite | BufferFlags::ConstantBuffer));
-    }
-
-    /*auto world_buffer = WorldBuffer { 
-        Matrixf{}.translate(Vector3f(0.0f, 0.1f, 0.4f)).scale(Vector3f(1.0f, 1.0f, 1.0f)).transpose(), 
-        Matrixf{}.translate(Vector3f(0.0f, -0.0f, -3.5f)).transpose(), 
-        Matrixf{}.perspective(1.3f, 4 / 3, 0.0f, 100.0f).transpose()
+    auto shader_datas = std::vector<ShaderData> {
+        { u8"basic_vert", ShaderFlags::Vertex, shader_vert },
+        { u8"basic_frag", ShaderFlags::Pixel, shader_frag }
     };
 
-    _backend->copy_buffer_data(constant_buffer, 0, std::span<char8_t>(reinterpret_cast<char8_t*>(&world_buffer), sizeof(world_buffer)));
+    auto result_desc = ShaderResultDesc {};
+    result_desc.domain = ShaderDomain::Surface;
+    result_desc.blend_mode = ShaderBlendMode::Opaque;
+    result_desc.shader_high = 0;
+    result_desc.shader_low = 0;
+    result_desc.cull_mode = CullMode::Back;
+    result_desc.fill_mode = FillMode::Solid;
 
-    descriptor_set = _backend->create_descriptor_set(desc_layout);
+    ShaderTemplate shader_template;
 
-    std::vector<DescriptorWriteDesc> write_desc = { 
-        DescriptorWriteDesc { 0, constant_buffer },
-        DescriptorWriteDesc { 1, _texture },
-        DescriptorWriteDesc { 2, _sampler }
-    };
-    
-    _backend->write_descriptor_set(descriptor_set, write_desc);*/
+    ShaderGraph shader_graph;
+    shader_graph
+        .input(0 /* NodeInputId */, ShaderInput<Vector3f> { u8"color", Vector3f(0.2f, 0.1f, 0.3f) })
+        .input(1 /* NodeInputId */, ShaderInput<float> { u8"power", 1.0f, { -1.0f, 2.0f } })
+        .shader(
+            0, // NodeOutputId
+            0, // Pass index
+            ShaderDesc{}
+                .name(u8"basic") // Shader name
+                .shaders(shader_datas) // Shader data
+                .input(0 /* NodeInputId */, 0 /* Index */)
+        )
+        .build(*_backend, result_desc, shader_template);
 
     _frame_graph
-        .attachment(static_cast<uint32_t>(Colors::Blit), Format::RGBA8, 768, 522)
-        .external_attachment(static_cast<uint32_t>(Colors::Swapchain), Format::RGBA8, MemoryState::Present, MemoryState::Present)
+        .attachment(std::to_underlying(AttachmentIds::Blit), Format::RGBA8, 768, 522)
+        .external_attachment(std::to_underlying(AttachmentIds::Swapchain), Format::RGBA8, MemoryState::Present, MemoryState::Present)
         .render_pass(
-            static_cast<uint32_t>(RenderPasses::Main), 
+            std::to_underlying(RenderPassIds::Main), 
             RenderPassDesc{}
                 .name(u8"MainPass")
                 .rect(800, 600)
-                .color(static_cast<uint32_t>(Colors::Swapchain), RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f))
-                .color(static_cast<uint32_t>(Colors::Blit), RenderPassLoadOp::Clear, Color(0.2f, 0.4f, 0.3f, 1.0f)),
+                .color(std::to_underlying(AttachmentIds::Swapchain), RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f))
+                .color(std::to_underlying(AttachmentIds::Blit), RenderPassLoadOp::Clear, Color(0.2f, 0.4f, 0.3f, 1.0f)),
             [&](Handle<RenderPass> const& render_pass, RenderPassResources const& resources) {
                 
-                /*if(_pipelines[frame_index] == INVALID_HANDLE(Pipeline)) {
-                    _pipelines[frame_index] = _backend->create_pipeline(
-                        _pbr_layout,
-                        MeshData::vertex_declaration,
-                        _shaders,
-                        RasterizerDesc { FillMode::Solid, CullMode::Back },
-                        DepthStencilDesc { CompareOp::Always, false },
-                        BlendDesc { false, Blend::One, Blend::Zero, BlendOp::Add, Blend::One, Blend::Zero, BlendOp::Add },
-                        render_pass
-                    );
-                }
 
-                _backend->bind_pipeline(_pipelines[frame_index]);
-                _backend->bind_vertex_buffer(0, _frames[frame_index].vertex_buffer, 0);
-                _backend->bind_vertex_buffer(1, _frames[frame_index].vertex_buffer, 128);*/
             }
         )
         .build(*_backend, 2);
@@ -121,7 +86,7 @@ void WorldRenderer::update() {
     Backend& backend = *_backend;
 
     _frame_graph
-        .bind_external_attachment(static_cast<uint32_t>(Colors::Swapchain), backend.swap_buffer())
+        .bind_external_attachment(std::to_underlying(AttachmentIds::Swapchain), backend.swap_buffer())
         .execute(backend);
 
     frame_index = (frame_index + 1) % 2;
@@ -151,3 +116,18 @@ void WorldRenderer::set_projection_view(Matrixf const& projection, Matrixf const
     _world_buffer.projection = Matrixf(projection).transpose();
     _world_buffer.view = Matrixf(view).transpose();
 }
+
+
+/*
+
+                    _backend->create_pipeline(
+                        _pbr_layout,
+                        MeshData::vertex_declaration,
+                        _shaders,
+                        RasterizerDesc { FillMode::Solid, CullMode::Back },
+                        DepthStencilDesc { CompareOp::Always, false },
+                        BlendDesc { false, Blend::One, Blend::Zero, BlendOp::Add, Blend::One, Blend::Zero, BlendOp::Add },
+                        render_pass
+                    );
+
+*/

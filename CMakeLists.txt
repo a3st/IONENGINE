@@ -12,9 +12,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DNDEBUG")
 include_directories(${PROJECT_SOURCE_DIR}/)
 
 #[[
-
     Runtime-Win32 Build Target
-
 #]]
 
 add_executable(Runtime-Win32
@@ -25,6 +23,7 @@ add_executable(Runtime-Win32
     engine/asset_compiler.cpp
     engine/obj_loader.cpp
     engine/dds_loader.cpp
+    engine/shpk_loader.cpp
     lib/thread_pool.cpp
 
     platform/window_win32.cpp
@@ -37,6 +36,8 @@ add_executable(Runtime-Win32
     renderer/world_renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp
+    renderer/shader_graph.cpp
+    renderer/material_manager.cpp
 
     project/world_controller.cpp
 )
@@ -45,13 +46,13 @@ target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
 
 # Build Output
 set_target_properties(Runtime-Win32 PROPERTIES 
-    OUTPUT_NAME "IONENGINE-Runtime"
+    OUTPUT_NAME "project"
     COMPILE_FLAGS "${COMPILE_FLAGS}"
 )
 
-# Include dirs
+# Include Dirs
 target_include_directories(Runtime-Win32 PRIVATE
-    
+
 )
 
 # Link Libs
@@ -62,7 +63,7 @@ target_link_libraries(Runtime-Win32
     dxguid.lib
 )
 
-# Link Libs
+# Link Dirs
 target_link_directories(Runtime-Win32 PRIVATE
 
 )
@@ -73,76 +74,19 @@ target_compile_definitions(Runtime-Win32 PRIVATE
 )
 
 #[[
-
-    Runtime-Win32-VK Build Target
-
+    HLSL SPIRV Package Build Target
 #]]
 
-add_executable(Runtime-Win32VK engine/main.cpp)
-target_precompile_headers(Runtime-Win32VK PRIVATE precompiled.h)
+add_executable(HLSL_SPIRV_Package hlsl_spirv_package/main.cpp)
+target_precompile_headers(HLSL_SPIRV_Package PRIVATE precompiled.h)
 
 # Build Output
-set_target_properties(Runtime-Win32VK PROPERTIES 
-    OUTPUT_NAME "IONENGINE-Runtime-VK"
+set_target_properties(HLSL_SPIRV_Package PROPERTIES
+    OUTPUT_NAME "hlsl_spirv_package" 
     COMPILE_FLAGS "${COMPILE_FLAGS}"
 )
 
-# Include dirs
-target_include_directories(Runtime-Win32VK PRIVATE
-    ${PROJECT_SOURCE_DIR}/runtime
-    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/um"
-    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/winrt"
-    "C:/Program Files (x86)/Windows Kits/10/Include/10.0.18362.0/"
-    "C:/VulkanSDK/1.2.189.2/Include"
-)
-
-# Link Libs
-target_link_directories(Runtime-Win32VK PRIVATE
-    "C:/VulkanSDK/1.2.189.2/Lib"
-    "lgfx/build/Debug"
-)
-
-# Link Libs
-target_link_libraries(Runtime-Win32VK
-    ${Runtime-Win32VK}
-)
-
-# Preprocessor
-target_compile_definitions(Runtime-Win32VK PRIVATE 
-    IONENGINE_PLATFORM_WIN32
-    IONENGINE_GFX_VK
-    VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
-    VK_NO_PROTOTYPES
-)
-
-#[[
-
-    Runtime-Android Build Target
-
-#]]
-
-add_library(Runtime-Android SHARED engine/main.cpp)
-
-# Build Output
-set_target_properties(Runtime-Android PROPERTIES 
-    OUTPUT_NAME "IONENGINE-Android"
-)
-
-# Include dirs
-#target_include_directories(Runtime-Android PRIVATE
-#    ${Runtime-Android}
-#)
-
-#find_library(Runtime-Android
-#    log
-#)
-
-# Link Libs
-#target_link_libraries(Runtime-Android
-#    ${Runtime-Android}
-#)
-
-# Preprocessor
-target_compile_definitions(Runtime-Android PRIVATE 
-    IONENGINE_PLATFORM_ANDROID
+# Include Dirs
+target_include_directories(HLSL_SPIRV_Package PRIVATE
+    ${PROJECT_SOURCE_DIR}/thirdparty/tclap/include
 )

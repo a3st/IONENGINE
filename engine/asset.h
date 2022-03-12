@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include <renderer/texture_data.h>
-#include <renderer/mesh_data.h>
+#include <renderer/data.h>
 
 namespace ionengine {
 

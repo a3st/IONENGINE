@@ -4,11 +4,25 @@
 
 #include <renderer/backend.h>
 #include <renderer/frame_graph.h>
-#include <renderer/mesh_data.h>
+#include <renderer/shader_graph.h>
+#include <renderer/data.h>
 #include <lib/thread_pool.h>
 #include <lib/math/matrix.h>
 
 namespace ionengine::renderer {
+
+enum class ShaderTemplateIds : uint32_t {
+    Basic
+};
+
+enum class RenderPassIds : uint32_t {
+    Main
+};
+
+enum class AttachmentIds : uint32_t {
+    Swapchain,
+    Blit
+};
 
 struct WorldBuffer {
     Matrixf model;
@@ -44,23 +58,13 @@ private:
 
     FrameGraph _frame_graph;
 
-    struct Frame {
-        Handle<Buffer> vertex_buffer;
-        Handle<Buffer> index_buffer;
-    };
-
     std::vector<Handle<RenderPass>> _render_passes;
     std::vector<Handle<Pipeline>> _pipelines;
-    std::vector<Handle<Shader>> _shaders;
     std::vector<Handle<DescriptorSet>> _descriptor_sets;
     std::vector<Handle<Buffer>> _constant_buffers;
 
     Handle<DescriptorLayout> _pbr_layout;
 
-    Handle<Sampler> _sampler;
-    Handle<Texture> _texture;
-
-    std::vector<Frame> _frames;
     uint32_t frame_index{0};
 
     std::vector<MeshData const*> _meshes;
@@ -68,6 +72,9 @@ private:
 
     WorldBuffer _world_buffer;
     WorldBuffer _prev_world_buffer;
+
+
+    std::unordered_map<uint32_t, ShaderTemplate> _shader_templates;
 };
 
 }

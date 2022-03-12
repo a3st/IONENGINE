@@ -31,13 +31,13 @@ bool WorldController::initialize() {
     };
 
     ionengine::AssetCompiler compiler;
-    if(compiler.compile("objects/cube.obj")) {
-        std::cout << "Asset 'objects/cube.obj' was compiled!" << std::endl;
+    if(compiler.compile("shaders/shader_blob.shpk")) {
+        std::cout << "Asset was compiled!" << std::endl;
     }
 
-    std::vector<char8_t> serialized_data;
-    compiler.serialize(serialized_data);
-    compiler.deserialize(serialized_data);
+    //std::vector<char8_t> serialized_data;
+    //compiler.serialize(serialized_data);
+    //compiler.deserialize(serialized_data);
     // compiler.data() -> std::variant<MeshFile, TextureFile>*
 
     return true;
