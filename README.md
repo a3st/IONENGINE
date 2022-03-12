@@ -19,4 +19,3 @@ Lightweight renderer project for exploring and learning Graphics API
 - [x] Graphics Backend (D3D12)
 - [x] HLSL-SPIRV Package Tool
 - [ ] Asset Cache System
-- [ ] ...
