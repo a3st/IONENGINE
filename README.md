@@ -1,18 +1,22 @@
-# IONENGINE    [![Windows](https://github.com/a3st/ionengine_ops/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/a3st/ionengine_ops/actions/workflows/windows.yml)
+# IONENGINE
 ## Realtime Renderer Project
-Lightweight renderer project for exploring and learning graphics api. This project is still development
+Lightweight renderer project for exploring and learning Graphics API
 
 ## Features
 
 - Module architecture
-- Uses modern C++17 features, no legacy code, no raw pointers
-- Renderer uses gfx library (D3D12/Vulkan low level wrapper)
+- C++latest
+- Graphics Multi-Api (Lightweight Backend)
 - Minimum third-party dependinices
-- Cross-platform (Linux/Windows/Android)
+- Cross-platform (Windows/Linux not yet)
 
-## Roadmap development
+## Tasks
 
-- [x] gfx/d3d12
-- [x] platform/wnd/win32
-- [x] math
-- [ ] rendersystem/framegraph
+- [x] Cross-platform Windowing
+- [x] Math Library
+- [x] Thread Pool
+- [x] Frame Graph
+- [x] Graphics Backend (D3D12)
+- [x] HLSL-SPIRV Package Tool
+- [ ] Asset Cache System
+- [ ] ...
