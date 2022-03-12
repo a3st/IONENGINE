@@ -1,5 +1,5 @@
 # <p align="center"> IONENGINE </p>
-## Realtime Renderer Project
+## <p align="center"> Realtime Renderer Project </p>
 Lightweight renderer project for exploring and learning Graphics API
 
 ## Features
