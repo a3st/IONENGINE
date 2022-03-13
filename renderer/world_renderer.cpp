@@ -79,6 +79,27 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
             }
         )
         .build(*_backend, 2);
+
+    /*Encoder encoder_graphics(*_backend, EncoderType::Graphics);
+    encoder_graphics
+        .set_viewport(0, 0, 800, 600)
+        .set_scissor(0, 0, 800, 600)
+        // ...
+    ;
+
+    Device device_graphics(*_backend, EncoderType::Graphics);
+    FenceResultInfo result = device_graphics.submit(std::span<Encoder const>(&encoder_graphics, 1));
+    device_graphics.wait(result);
+
+    if(device_graphics.is_completed(result)) {
+        encoder_graphics
+            .set_viewport(0, 0, 800, 600)
+            .set_scissor(0, 0, 800, 600)
+            // ...
+        ;
+    }
+
+    _backend->swap_buffers();*/
 }
 
 void WorldRenderer::update() {

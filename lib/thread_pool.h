@@ -4,7 +4,6 @@
 
 #include <lib/concurrent_queue.h>
 #include <lib/handle.h>
-#include <lib/exception.h>
 
 namespace ionengine {
 
@@ -46,9 +45,7 @@ public:
 
         bool result = _workers[_current_thread].pending_jobs.try_push(std::move(pending_job));
 
-        if(!result) {
-            throw Exception(u8"An error occurred while adding a new task to the thread pool");
-        }
+        assert(result && "An error occurred while adding a new task to the thread pool");
 
         _last_pending_jobs[_current_thread] = (_last_pending_jobs[_current_thread] + 1) % MaxJobsPerWorker;
         

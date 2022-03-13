@@ -54,9 +54,7 @@ bool ThreadPool::is_finished(Handle<Job> const& job) const {
 
 void ThreadPool::wait(Handle<Job> const& job) const {
 
-    if(!_exec) {
-        throw Exception(u8"An error occurred while waiting for the completion of task in the thread pool");
-    }
+    assert(_exec && "An error occurred while waiting for the completion of task in the thread pool");
 
     uint16_t const hiword = (job.id() >> 16) & 0xffff;
     uint16_t const loword = job.id() & 0xffff;
@@ -72,9 +70,7 @@ void ThreadPool::wait(Handle<Job> const& job) const {
 
 void ThreadPool::wait_all() const {
 
-    if(!_exec) {
-        throw Exception(u8"An error occurred while waiting for the completion of tasks in the thread pool");
-    }
+    assert(_exec && "An error occurred while waiting for the completion of tasks in the thread pool");
 
     while(_pending_jobs_count > 0) {
 

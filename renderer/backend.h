@@ -17,6 +17,19 @@ struct Sampler;
 struct DescriptorLayout;
 struct DescriptorSet;
 
+enum class BackendLimits : uint32_t {
+    RenderPassCount = 256,
+    PipelineCount = 256,
+    ShaderCount = 512,
+    DescriptorLayoutCount = 4,
+    TextureCount = 4096,
+    SamplerCount = 1024,
+    DescriptorSetCount = 512,
+    BufferCount = 512,
+    EncoderCount = 24,
+    DeviceCount = 3
+};
+
 enum class Dimension {
     _1D,
     _2D,
@@ -69,7 +82,7 @@ enum class ShaderFlags : uint16_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(ShaderFlags)
 
-enum class ContextType {
+enum class EncoderType {
     Graphics,
     Copy,
     Compute
@@ -209,6 +222,10 @@ struct AdapterDesc {
     std::u8string name;
 };
 
+struct FenceResultInfo {
+    uint64_t value;
+};
+
 class Backend {
 public:
 
@@ -284,21 +301,50 @@ public:
 
     void delete_pipeline(Handle<Pipeline> const& pipeline);
 
-    Backend& begin_context(ContextType const context_type);
+    void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc> const write_descs);
 
-    void end_context();
+    void swap_buffers();
 
-    void execute_context(ContextType const context_type);
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count);
 
-    void wait_for_context(ContextType const context_type);
+    Handle<Texture> swap_buffer() const;
 
-    void wait_for_idle_device();
+    AdapterDesc const& adapter() const;
 
-    bool is_finished_context(ContextType const context_type);
+private:
 
-    void write_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc> const write_descs);
+    struct Impl;
+    std::unique_ptr<Impl> _impl;
 
-    Backend& copy_buffer_region(
+    friend class Encoder;
+    friend class Device;
+};
+
+class Encoder {
+public:
+
+    Encoder() = default;
+
+    Encoder(Backend& backend, EncoderType const encoder_type);
+
+    ~Encoder();
+
+    Encoder(Encoder const&) = delete;
+
+    Encoder(Encoder&& other) noexcept {
+
+        std::swap(_impl, other._impl);
+    }
+
+    Encoder& operator=(Encoder const&) = delete;
+
+    Encoder& operator=(Encoder&& other) noexcept {
+
+        std::swap(_impl, other._impl);
+        return *this;
+    }
+
+    Encoder& copy_buffer_region(
         Handle<Buffer> const& dest, 
         uint64_t const dest_offset, 
         Handle<Buffer> const& source, 
@@ -306,43 +352,59 @@ public:
         size_t const size
     );
 
-    // TODO! copy_texture_region
-    Backend& copy_texture_region();
+    Encoder& copy_texture_region();
 
-    Backend& bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
+    Encoder& bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
 
-    Backend& bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const offset);
+    Encoder& bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const offset);
 
-    Backend& barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after);
+    Encoder& barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after);
 
-    Backend& bind_pipeline(Handle<Pipeline> const& pipeline);
+    Encoder& bind_pipeline(Handle<Pipeline> const& pipeline);
 
-    Backend& bind_descriptor_set(Handle<DescriptorSet> const& descriptor_set);
+    Encoder& bind_descriptor_set(Handle<DescriptorSet> const& descriptor_set);
 
-    Backend& set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
+    Encoder& set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
 
-    Backend& set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
+    Encoder& set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
 
-    Backend& begin_render_pass(
+    Encoder& begin_render_pass(
         Handle<RenderPass> const& render_pass, 
         std::span<Color> const clear_colors, 
         float const clear_depth = 0.0f,
         uint8_t const clear_stencil = 0x0
     );
 
-    Backend& end_render_pass();
+    Encoder& end_render_pass();
 
-    Backend& draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
+    Encoder& draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
 
-    Backend& draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
+    Encoder& draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
 
-    void swap_buffers();
+private:
 
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
+    struct Impl;
+    std::unique_ptr<Impl> _impl;
+};
 
-    Handle<Texture> swap_buffer() const;
+class Device {
+public:
 
-    AdapterDesc const& adapter() const;
+    Device() = default;
+
+    Device(Backend& backend, EncoderType const encoder_type);
+
+    ~Device();
+
+    FenceResultInfo submit(std::span<Encoder const> const encoders);
+
+    FenceResultInfo sumbit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after);
+
+    void wait(FenceResultInfo const& result_info);
+
+    bool is_completed(FenceResultInfo const& result_info);
+
+    void wait_for_idle();
 
 private:
 

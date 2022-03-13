@@ -187,7 +187,7 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
 
 void FrameGraph::reset(Backend& backend) {
 
-    backend.wait_for_idle_device();
+    // backend.wait_for_idle_device();
 
     for(auto& [key, value] : _render_passes) {
         backend.delete_render_pass(value.render_pass);
@@ -220,7 +220,7 @@ void FrameGraph::reset(Backend& backend) {
 
 void FrameGraph::execute(Backend& backend) {
 
-    backend.begin_context(ContextType::Graphics);
+    //backend.begin_context(ContextType::Graphics);
 
     for(auto& op : _ops) {
         switch(op.first) {
@@ -259,8 +259,8 @@ void FrameGraph::execute(Backend& backend) {
 
                 auto& render_pass = _render_passes[{ op.second, _flight_frame_index }];
 
-                backend.set_viewport(0, 0, render_pass.desc.width, render_pass.desc.height);
-                backend.set_scissor(0, 0, render_pass.desc.width, render_pass.desc.height);
+                //backend.set_viewport(0, 0, render_pass.desc.width, render_pass.desc.height);
+                //backend.set_scissor(0, 0, render_pass.desc.width, render_pass.desc.height);
 
                 // Color Barriers
                 for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
@@ -271,11 +271,11 @@ void FrameGraph::execute(Backend& backend) {
 
                         auto attachment_visitor = make_visitor(
                             [&](ExternalAttachment& attachment) {
-                                backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
+                                //backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
                                 _memory_states[attachment_id].first = MemoryState::RenderTarget;
                             },
                             [&](InternalAttachment& attachment) {
-                                backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
+                                //backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
                                 _memory_states[attachment_id].first = MemoryState::RenderTarget;
                             }
                         );
@@ -293,11 +293,11 @@ void FrameGraph::execute(Backend& backend) {
 
                         auto attachment_visitor = make_visitor(
                             [&](ExternalAttachment& attachment) {
-                                backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
+                                //backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
                                 _memory_states[attachment_id].first = MemoryState::ShaderRead;
                             },
                             [&](InternalAttachment& attachment) {
-                                backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
+                                //backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
                                 _memory_states[attachment_id].first = MemoryState::ShaderRead;
                             }
                         );
@@ -306,7 +306,7 @@ void FrameGraph::execute(Backend& backend) {
                     }
                 }
 
-                backend.begin_render_pass(
+                /*backend.begin_render_pass(
                     render_pass.render_pass, 
                     std::span<Color>(render_pass.desc._clear_colors.data(), render_pass.desc.color_count), 
                     render_pass.desc._clear_depth,
@@ -315,7 +315,7 @@ void FrameGraph::execute(Backend& backend) {
 
                 render_pass.func(render_pass.render_pass, _render_pass_resources[{ op.second, _flight_frame_index }]);
 
-                backend.end_render_pass();
+                backend.end_render_pass();*/
             } break;
         }
     }
@@ -329,11 +329,11 @@ void FrameGraph::execute(Backend& backend) {
         
         auto attachment_visitor = make_visitor(
             [&](ExternalAttachment& attachment) {
-                backend.barrier(attachment.target, _memory_states[key.first].first, attachment.after);
+                //backend.barrier(attachment.target, _memory_states[key.first].first, attachment.after);
                 _memory_states[key.first].first = attachment.after;
             },
             [&](InternalAttachment& attachment) {
-                backend.barrier(attachment.target, _memory_states[key.first].first, MemoryState::Common);
+                //backend.barrier(attachment.target, _memory_states[key.first].first, MemoryState::Common);
                 _memory_states[key.first].first = MemoryState::Common;
             }
         );
@@ -341,9 +341,9 @@ void FrameGraph::execute(Backend& backend) {
         std::visit(attachment_visitor, value);
     }
 
-    backend.end_context();
+    /*backend.end_context();
 
-    backend.execute_context(ContextType::Graphics);
+    backend.execute_context(ContextType::Graphics);*/
 
     backend.swap_buffers();
 
