@@ -37,8 +37,8 @@ int main(int* argc, char** agrv) {
         Handle<AssetData> asset_data;
         asset_manager.load_asset_data<ShaderFile>("shader_package.asset"_hash, asset_data);
 
-        auto& data = asset_manager.get_asset_data(asset_data);
-        std::cout << data.file_path().string() << std::endl;
+        //auto& data = asset_manager.get_asset_data(asset_data);
+        //std::cout << data.file_path().string() << std::endl;
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {

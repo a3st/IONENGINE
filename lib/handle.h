@@ -4,12 +4,10 @@
 
 namespace ionengine {
 
-template<class Type> 
-class HandleAllocator;
-
 template<class Type>
-class Handle {
-public:
+struct Handle {
+
+    uint32_t _id{std::numeric_limits<uint32_t>::max()};
 
     Handle() = default;
 
@@ -35,11 +33,7 @@ public:
 
     bool operator!=(Handle const& other) { return _id != other._id; }
 
-private:
-
-    uint32_t _id{std::numeric_limits<uint32_t>::max()};
-
-    friend class HandleAllocator<Type>;
+    uint32_t id() const { return _id; }
 };
 
 }

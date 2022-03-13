@@ -4,6 +4,8 @@
 
 namespace ionengine {
 
+namespace detail {
+
 inline static constexpr uint32_t crc_table[256] = {
 
     0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
@@ -70,12 +72,14 @@ inline constexpr uint32_t crc32(const char * str, size_t idx) {
     return combine_crc32(str[idx], idx ? crc32(str, idx - 1) : 0xFFFFFFFF);
 }
 
-inline constexpr uint32_t ctcrc32(const char* str, size_t len) {
-
-    return crc32(str, len) ^ 0xFFFFFFFF;
 }
 
-uint32_t constexpr operator "" _hash(const char* str, size_t len) {
+inline constexpr uint32_t ctcrc32(const char* str, size_t len) {
+
+    return detail::crc32(str, len) ^ 0xFFFFFFFF;
+}
+
+inline uint32_t constexpr operator "" _hash(const char* str, size_t len) {
 
     return ctcrc32(str, len);
 }

@@ -4,7 +4,6 @@
 
 #include <engine/asset_data.h>
 
-#include <lib/handle_allocator.h>
 #include <lib/thread_pool.h>
 
 namespace ionengine {
@@ -27,7 +26,7 @@ public:
         
         if(it != _asset_data_ids.end()) {
 
-            auto& _asset_data = _asset_data_allocator.get(it->second);
+            /*auto& _asset_data = _asset_data_allocator.get(it->second);
             
             if(!_asset_data.is_loaded()) {
 
@@ -39,8 +38,8 @@ public:
                         
                     },
                     std::ref(_asset_data)
-                );*/
-            }
+                );
+            }*/
 
         } else {
 
@@ -48,22 +47,21 @@ public:
             _asset_data.file.emplace<AssetType>();
             _asset_data._file_path = _asset_paths[id];
             
-            asset_data = _asset_data_allocator.allocate(std::move(_asset_data));
+            //asset_data = _asset_data_allocator.allocate(std::move(_asset_data));
         }
 
         return INVALID_HANDLE(Job);
     }
 
-    AssetData const& get_asset_data(Handle<AssetData> const& asset_data) const {
+    /*AssetData const& get_asset_data(Handle<AssetData> const& asset_data) const {
 
-        return _asset_data_allocator.get(asset_data);
-    }
+        return false;
+    }*/
 
 private:
 
     ThreadPool* _thread_pool;
 
-    HandleAllocator<AssetData> _asset_data_allocator;
 
     std::unordered_map<AssetDataId, Handle<AssetData>> _asset_data_ids;
 
