@@ -28,7 +28,8 @@ public:
         assert(size == ChunkSize && "Allocation size must be equal to chunk size");
         assert(!_free_data.empty() && "The pool allocator is full");
 
-        Pointer ptr = _free_data.pop_front();
+        Pointer ptr = _free_data.front();
+        _free_data.pop_front();
         return reinterpret_cast<void*>(ptr);
     }
 

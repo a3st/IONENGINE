@@ -51,8 +51,6 @@ int main(int* argc, char** agrv) {
             }
         );
 
-        backend.wait_for_idle_device();
-
     } catch(Exception& e) {
         std::cerr << std::format("[Exception] {}", e.what()) << std::endl;
         std::exit(EXIT_FAILURE);

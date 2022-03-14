@@ -259,7 +259,7 @@ public:
 
     Handle<RenderPass> create_render_pass(
         std::span<Handle<Texture>> const& colors,
-        std::span<RenderPassColorDesc> const& color_descs,
+        std::span<RenderPassColorDesc const> const& color_descs,
         Handle<Texture> const& depth_stencil,
         RenderPassDepthStencilDesc const& depth_stencil_desc
     );
@@ -281,7 +281,7 @@ public:
 
     void delete_shader(Handle<Shader> const& shader);
 
-    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorRangeDesc> const ranges);
+    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorRangeDesc const> const ranges);
 
     void delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout);
 
@@ -291,7 +291,7 @@ public:
 
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& descriptor_layout,
-        std::span<VertexInputDesc> const vertex_descs,
+        std::span<VertexInputDesc const> const vertex_descs,
         std::span<Handle<Shader>> const shaders,
         RasterizerDesc const& rasterizer_desc,
         DepthStencilDesc const& depth_stencil_desc,
@@ -301,7 +301,7 @@ public:
 
     void delete_pipeline(Handle<Pipeline> const& pipeline);
 
-    void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc> const write_descs);
+    void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
     void swap_buffers();
 
@@ -314,7 +314,8 @@ public:
 private:
 
     struct Impl;
-    std::unique_ptr<Impl> _impl;
+    struct impl_deleter { void operator()(Impl* ptr) const; };
+    std::unique_ptr<Impl, impl_deleter> _impl;
 
     friend class Encoder;
     friend class Device;
@@ -384,7 +385,10 @@ public:
 private:
 
     struct Impl;
-    std::unique_ptr<Impl> _impl;
+    struct impl_deleter { void operator()(Impl* ptr) const; };
+    std::unique_ptr<Impl, impl_deleter> _impl;
+
+    friend class Device;
 };
 
 class Device {
@@ -396,9 +400,24 @@ public:
 
     ~Device();
 
+    Device(Device const&) = delete;
+
+    Device(Device&& other) noexcept {
+
+        std::swap(_impl, other._impl);
+    }
+
+    Device& operator=(Device const&) = delete;
+
+    Device& operator=(Device&& other) noexcept {
+
+        std::swap(_impl, other._impl);
+        return *this;
+    }
+
     FenceResultInfo submit(std::span<Encoder const> const encoders);
 
-    FenceResultInfo sumbit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after);
+    FenceResultInfo submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after);
 
     void wait(FenceResultInfo const& result_info);
 
@@ -409,7 +428,8 @@ public:
 private:
 
     struct Impl;
-    std::unique_ptr<Impl> _impl;
+    struct impl_deleter { void operator()(Impl* ptr) const; };
+    std::unique_ptr<Impl, impl_deleter> _impl;
 };
 
 }

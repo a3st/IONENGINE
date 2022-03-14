@@ -104,25 +104,21 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
 
 void WorldRenderer::update() {
 
-    Backend& backend = *_backend;
-
-    _frame_graph
-        .bind_external_attachment(std::to_underlying(AttachmentIds::Swapchain), backend.swap_buffer())
-        .execute(backend);
+    //_frame_graph
+    //    .bind_external_attachment(std::to_underlying(AttachmentIds::Swapchain), backend.swap_buffer())
+    //    .execute(backend);
 
     frame_index = (frame_index + 1) % 2;
 }
 
 void WorldRenderer::resize(uint32_t const width, uint32_t const height) {
 
-    Backend& backend = *_backend;
+    _frame_graph.reset(*_backend);
 
-    _frame_graph.reset(backend);
-
-    backend.resize_buffers(width, height, 2);
+    _backend->resize_buffers(width, height, 2);
 
     _frame_graph
-        .build(backend, 2);
+        .build(*_backend, 2);
 }
 
 void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model) {

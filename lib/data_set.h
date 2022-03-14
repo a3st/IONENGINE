@@ -17,7 +17,8 @@ public:
         
         assert(!_ids.empty() && "The data set is full");
 
-        uint32_t const index = _ids.pop_front();
+        uint32_t const index = _ids.front();
+        _ids.pop_front();
         _data[index] = element;
         return index;
     }
@@ -26,7 +27,8 @@ public:
 
         assert(!_ids.empty() && "The data set is full");
 
-        uint32_t const index = _ids.pop_front();
+        uint32_t const index = _ids.front();
+        _ids.pop_front();
         _data[index] = std::move(element);
         return index;
     }
