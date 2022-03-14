@@ -1,16 +1,17 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <engine/asset_compiler.h>
+#include <asset_compiler/asset_compiler.h>
 
 #include <lib/algorithm.h>
 #include <lib/math/vector.h>
 
 //#include <engine/obj_loader.h>
 //#include <engine/dds_loader.h>
-#include <engine/hlsv_loader.h>
+#include <asset_compiler/hlsv_loader.h>
 
 using namespace ionengine;
+using namespace ionengine::tools;
 
 struct ObjVertex {
     Vector3f position;

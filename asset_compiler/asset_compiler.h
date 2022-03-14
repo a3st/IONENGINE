@@ -4,7 +4,7 @@
 
 #include <engine/asset_data.h>
 
-namespace ionengine {
+namespace ionengine::tools {
 
 class AssetCompiler {
 public:

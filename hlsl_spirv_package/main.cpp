@@ -7,8 +7,8 @@
 
 using namespace hlsl_spirv_package;
 
-const uint32_t MAJOR_VERSION = 1;
-const uint32_t MINOR_VERSION = 0;
+uint32_t const MAJOR_VERSION = 1;
+uint32_t const MINOR_VERSION = 0;
 
 int main(int argc, char** argv) {
 

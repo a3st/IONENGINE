@@ -20,12 +20,6 @@ add_executable(Runtime-Win32
     # Engine
     engine/main.cpp
     engine/asset_manager.cpp
-    engine/asset_compiler.cpp
-
-    # Loaders
-    engine/obj_loader.cpp
-    engine/dds_loader.cpp
-    engine/hlsv_loader.cpp
 
     # Lib
     lib/thread_pool.cpp
@@ -97,5 +91,32 @@ set_target_properties(HLSL_SPIRV_Package PROPERTIES
 
 # Include Dirs
 target_include_directories(HLSL_SPIRV_Package PRIVATE
+    ${PROJECT_SOURCE_DIR}/thirdparty/tclap/include
+)
+
+#[[
+    Asset Compiler Build Target
+#]]
+
+add_executable(AssetCompiler
+
+    asset_compiler/main.cpp
+    asset_compiler/asset_compiler.cpp
+
+    #asset_compiler/obj_loader.cpp
+    #asset_compiler/dds_loader.cpp
+    asset_compiler/hlsv_loader.cpp
+)
+
+target_precompile_headers(AssetCompiler PRIVATE precompiled.h)
+
+# Build Output
+set_target_properties(AssetCompiler PROPERTIES
+    OUTPUT_NAME "asset_compiler" 
+    COMPILE_FLAGS "${COMPILE_FLAGS}"
+)
+
+# Include Dirs
+target_include_directories(AssetCompiler PRIVATE
     ${PROJECT_SOURCE_DIR}/thirdparty/tclap/include
 )

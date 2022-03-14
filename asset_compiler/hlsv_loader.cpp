@@ -1,7 +1,7 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <engine/hlsv_loader.h>
+#include <asset_compiler/hlsv_loader.h>
 
 #include <lib/algorithm.h>
 
