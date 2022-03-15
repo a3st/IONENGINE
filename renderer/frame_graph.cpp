@@ -345,7 +345,7 @@ void FrameGraph::execute(Backend& backend) {
 
     backend.execute_context(ContextType::Graphics);*/
 
-    backend.swap_buffers();
+    //backend.swap_buffers();
 
     _flight_frame_index = (_flight_frame_index + 1) % _flight_frame_count;
 }

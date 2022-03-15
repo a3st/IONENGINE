@@ -2,9 +2,9 @@
 
 #include <precompiled.h>
 #include <renderer/backend.h>
-#include <renderer/d3d12/d3d12_shared.h>
+#include <renderer/d3d12/d3d12x.h>
 #include <renderer/d3d12/memory_allocator.h>
-#include <renderer/d3d12/descriptor_allocator.h>
+#include <renderer/d3d12/d3d12_desc_pool.h>
 #include <platform/window.h>
 #include <lib/exception.h>
 #include <lib/pool_allocator.h>
@@ -72,7 +72,9 @@ struct EncoderData {
 struct DeviceData {
     ComPtr<ID3D12CommandQueue> queue;
     ComPtr<ID3D12Fence> fence;
-    std::vector<uint64_t> fence_values;
+    std::array<uint64_t, std::to_underlying(BackendLimits::BufferedSwapCount)> fence_values;
+    ComPtr<IDXGISwapChain3> swapchain;
+    bool is_swapchain_created{false};
 };
 
 }
@@ -82,13 +84,16 @@ struct Backend::Impl {
     using UploadBuffer = std::pair<Handle<Buffer>, uint64_t>;
 
     d3d12::MemoryAllocator memory_allocator;
-    d3d12::DescriptorAllocator descriptor_allocator;
+
+    d3d12::DescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, std::to_underlying(BackendLimits::TextureCount)> cbv_srv_uav_pool;
+    d3d12::DescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 128> rtv_pool;
+    d3d12::DescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 2> dsv_pool;
+    d3d12::DescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, std::to_underlying(BackendLimits::SamplerCount)> sampler_pool;
 
     ComPtr<IDXGIFactory4> factory;
     ComPtr<ID3D12Debug> debug;
     ComPtr<IDXGIAdapter1> adapter;
     ComPtr<ID3D12Device4> device;
-    ComPtr<IDXGISwapChain3> swapchain;
 
     HANDLE fence_event;
 
@@ -103,9 +108,6 @@ struct Backend::Impl {
     DataSet<EncoderData, std::to_underlying(BackendLimits::EncoderCount)> encoders;
     DataSet<DeviceData, std::to_underlying(BackendLimits::DeviceCount)> devices;
 
-    std::vector<Handle<Texture>> swap_buffers;
-    uint32_t swap_index;
-
     Texture default_texture;
     Buffer default_cbv_buffer;
     Sampler default_sampler;
@@ -113,7 +115,7 @@ struct Backend::Impl {
 
     std::vector<Impl::UploadBuffer> upload_buffers;
 
-    void initialize(uint32_t const adapter_index, platform::Window* const window, uint16_t const samples_count, uint32_t const swap_buffers_count);
+    void initialize(uint32_t const adapter_index);
 
     void deinitialize();
 
@@ -124,8 +126,8 @@ struct Backend::Impl {
     uint32_t create_device(EncoderType const encoder_type);
 
     void delete_device(uint32_t const device_index);
-    
-    void create_swapchain_resources(uint32_t const swap_buffers_count);
+
+    void create_swapchain(ID3D12CommandQueue* queue, platform::Window* const window, uint32_t const swap_buffers_count, IDXGISwapChain3** swapchain);
     
     Handle<Texture> create_texture(
         Dimension const dimension, 
@@ -188,12 +190,6 @@ struct Backend::Impl {
     void delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set);
     
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
-    
-    void _swap_buffers();
-    
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count);
-    
-    Handle<Texture> swap_buffer() const;
 
     AdapterDesc const& _adapter() const;
 };
@@ -265,9 +261,12 @@ struct Device::Impl {
     Backend::Impl* backend;
     DeviceData* device;
 
+    std::vector<Handle<Texture>> swap_buffers;
+    uint32_t swap_index;
+
     uint32_t id{std::numeric_limits<uint32_t>::max()};
 
-    void initialize(Backend& backend, EncoderType const encoder_type);
+    void initialize(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc);
 
     void deinitialize();
 
@@ -280,6 +279,12 @@ struct Device::Impl {
     bool is_completed(FenceResultInfo const& result_info);
 
     void wait_for_idle();
+
+    void _swap_buffers();
+    
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count);
+    
+    Handle<Texture> swap_buffer() const;
 };
 
 void Device::impl_deleter::operator()(Impl* ptr) const {
@@ -295,7 +300,7 @@ void Device::impl_deleter::operator()(Impl* ptr) const {
 //
 //===========================================================
 
-void Backend::Impl::initialize(uint32_t const adapter_index, platform::Window* const window, uint16_t const samples_count, uint32_t const swap_buffers_count) {
+void Backend::Impl::initialize(uint32_t const adapter_index) {
 
     THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(debug.GetAddressOf())));
     debug->EnableDebugLayer();
@@ -306,39 +311,21 @@ void Backend::Impl::initialize(uint32_t const adapter_index, platform::Window* c
 
     THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(device.GetAddressOf())));
 
-    platform::Size window_size = window->get_size();
-
-    /*auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
-    swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapchain_desc.Width = window_size.width;
-    swapchain_desc.Height = window_size.height;
-    swapchain_desc.BufferCount = swap_buffers_count;
-    swapchain_desc.SampleDesc.Count = 1;
-    swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-
-    THROW_IF_FAILED(factory->CreateSwapChainForHwnd(
-        direct_queue.Get(), 
-        reinterpret_cast<HWND>(window->get_handle()), 
-        &swapchain_desc, 
-        nullptr, 
-        nullptr, 
-        reinterpret_cast<IDXGISwapChain1**>(swapchain.GetAddressOf()))
-    );*/
+    descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
     fence_event = CreateEvent(nullptr, false, false, nullptr);
 
     if(!fence_event) {
         THROW_IF_FAILED(HRESULT_FROM_WIN32(GetLastError()));
     }
-
-    //swap_index = swapchain->GetCurrentBackBufferIndex();
 }
 
 void Backend::Impl::deinitialize() {
 
-
+    CloseHandle(fence_event);
 }
 
 uint32_t Backend::Impl::create_encoder(EncoderType const encoder_type) {
@@ -414,7 +401,29 @@ void Backend::Impl::delete_device(uint32_t const device_index) {
     devices.erase(device_index);
 }
 
-void Backend::Impl::create_swapchain_resources(uint32_t const swap_buffers_count) {
+void Backend::Impl::create_swapchain(ID3D12CommandQueue* queue, platform::Window* const window, uint32_t const swap_buffers_count, IDXGISwapChain3** swapchain) {
+
+    platform::Size window_size = window->get_size();
+
+    auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
+    swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    swapchain_desc.Width = window_size.width;
+    swapchain_desc.Height = window_size.height;
+    swapchain_desc.BufferCount = swap_buffers_count;
+    swapchain_desc.SampleDesc.Count = 1;
+    swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+
+    THROW_IF_FAILED(factory->CreateSwapChainForHwnd(
+        queue, 
+        reinterpret_cast<HWND>(window->get_handle()), 
+        &swapchain_desc, 
+        nullptr, 
+        nullptr, 
+        reinterpret_cast<IDXGISwapChain1**>(swapchain))
+    );
+}
 
     /*
 
@@ -456,7 +465,6 @@ void Backend::Impl::create_swapchain_resources(uint32_t const swap_buffers_count
         upload_buffers[i].first = create_buffer(64 * 1024 * 1024, BufferFlags::HostWrite);\
         upload_buffers[i].second = 0;
     }*/
-}
 
 Handle<Texture> Backend::Impl::create_texture(
     Dimension const dimension,
@@ -552,7 +560,7 @@ Handle<Texture> Backend::Impl::create_texture(
             } break;
         }
 
-        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = descriptor_allocator.allocate(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false);
+        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = dsv_pool.allocate(device.Get());
 
         auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
             texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV].heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
@@ -583,7 +591,7 @@ Handle<Texture> Backend::Impl::create_texture(
             } break;
         }
 
-        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = descriptor_allocator.allocate(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
+        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = rtv_pool.allocate(device.Get());
 
         auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
             texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV].heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
@@ -617,7 +625,7 @@ Handle<Texture> Backend::Impl::create_texture(
             } break;
         }
 
-        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = descriptor_allocator.allocate(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, false);
+        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = cbv_srv_uav_pool.allocate(device.Get());
 
         auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
             texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV].heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
@@ -639,16 +647,16 @@ void Backend::Impl::delete_texture(Handle<Texture> const& texture) {
     D3D12_RESOURCE_DESC resource_desc = texture_data.resource->GetDesc();
 
     if(resource_desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) {
-        descriptor_allocator.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+        rtv_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
     }
     if(resource_desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) {
-        descriptor_allocator.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV]);
+        dsv_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV]);
     }
     if(resource_desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) {
-        descriptor_allocator.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+        cbv_srv_uav_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
     }
     if(!(resource_desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)) {
-        descriptor_allocator.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+        cbv_srv_uav_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
     }
 
     memory_allocator.deallocate(texture_data.memory_alloc_info);
@@ -700,7 +708,7 @@ Handle<Buffer> Backend::Impl::create_buffer(size_t const size, BufferFlags const
         view_desc.BufferLocation = buffer_data.resource->GetGPUVirtualAddress();
         view_desc.SizeInBytes = static_cast<uint32_t>(size);
 
-        buffer_data.descriptor_alloc_info = descriptor_allocator.allocate(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, false);
+        buffer_data.descriptor_alloc_info = cbv_srv_uav_pool.allocate(device.Get());
 
         auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
             buffer_data.descriptor_alloc_info.heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
@@ -717,7 +725,7 @@ Handle<Buffer> Backend::Impl::create_buffer(size_t const size, BufferFlags const
         view_desc.Format = resource_desc.Format;
         // TODO!
 
-        buffer_data.descriptor_alloc_info = descriptor_allocator.allocate(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, false);
+        buffer_data.descriptor_alloc_info = cbv_srv_uav_pool.allocate(device.Get());
 
         auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE { 
             buffer_data.descriptor_alloc_info.heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
@@ -736,7 +744,7 @@ void Backend::Impl::delete_buffer(Handle<Buffer> const& buffer) {
 
     auto& buffer_data = buffers[buffer.id()];
     
-    descriptor_allocator.deallocate(buffer_data.descriptor_alloc_info);
+    cbv_srv_uav_pool.deallocate(buffer_data.descriptor_alloc_info);
     memory_allocator.deallocate(buffer_data.memory_alloc_info);
 
     buffers.erase(buffer.id());
@@ -885,7 +893,7 @@ Handle<Sampler> Backend::Impl::create_sampler(
     sampler_desc.MaxAnisotropy = anisotropic;
     sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
     
-    sampler_data.alloc_info = descriptor_allocator.allocate(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, false);
+    sampler_data.alloc_info = sampler_pool.allocate(device.Get());
 
     auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {
         sampler_data.alloc_info.heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
@@ -902,7 +910,7 @@ Handle<Sampler> Backend::Impl::create_sampler(
 void Backend::Impl::delete_sampler(Handle<Sampler> const& sampler) {
 
     auto& sampler_data = samplers[sampler.id()];
-    descriptor_allocator.deallocate(sampler_data.alloc_info);
+    sampler_pool.deallocate(sampler_data.alloc_info);
     samplers.erase(sampler.id());
 }
 
@@ -1307,37 +1315,6 @@ void Backend::Impl::update_descriptor_set(Handle<DescriptorSet> const& descripto
     }*/
 }
 
-void Backend::Impl::_swap_buffers() {
-
-    swapchain->Present(0, 0);
-    swap_index = swapchain->GetCurrentBackBufferIndex();
-}
-
-/*
-
-    uint64_t const current_value = direct_fence.second[swap_index];
-
-    THROW_IF_FAILED(direct_queue->Signal(direct_fence.first.Get(), current_value));
-
-    if(direct_fence.first->GetCompletedValue() < direct_fence.second[swap_index]) {
-        THROW_IF_FAILED(direct_fence.first->SetEventOnCompletion(direct_fence.second[swap_index], fence_event));
-        WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
-    }
-
-    direct_fence.second[swap_index] = current_value + 1;
-
-*/
-
-void Backend::Impl::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count) {
-
-
-}
-
-Handle<Texture> Backend::Impl::swap_buffer() const {
-
-    return swap_buffers[swap_index];
-}
-
 AdapterDesc const& Backend::Impl::_adapter() const {
 
     return {};
@@ -1351,10 +1328,10 @@ AdapterDesc const& Backend::Impl::_adapter() const {
 //
 //===========================================================
 
-Backend::Backend(uint32_t const adapter_index, platform::Window* const window, uint16_t const samples_count, uint32_t const swap_buffers_count) : 
+Backend::Backend(uint32_t const adapter_index) : 
     _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
 
-    _impl->initialize(adapter_index, window, samples_count, swap_buffers_count);
+    _impl->initialize(adapter_index);
 }
 
 Backend::~Backend() {
@@ -1473,21 +1450,6 @@ void Backend::delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set)
 void Backend::update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs) {
 
     _impl->update_descriptor_set(descriptor_set, write_descs);
-}
-
-void Backend::swap_buffers() {
-
-    _impl->_swap_buffers();
-}
-
-void Backend::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count) {
-    
-    _impl->resize_buffers(width, height, buffers_count);
-}
-
-Handle<Texture> Backend::swap_buffer() const {
-
-    return _impl->swap_buffer();
 }
 
 AdapterDesc const& Backend::adapter() const {
@@ -1966,9 +1928,17 @@ Encoder& Encoder::draw_indexed(uint32_t const index_count, uint32_t const instan
 //
 //===========================================================
 
-void Device::Impl::initialize(Backend& backend, EncoderType const encoder_type) {
+void Device::Impl::initialize(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc) {
 
-    
+    this->backend = backend._impl.get();
+    id = this->backend->create_device(encoder_type);
+    device = &this->backend->devices[id];
+
+    if(encoder_type == EncoderType::Graphics) {
+
+        this->backend->create_swapchain(device->queue.Get(), swapchain_desc.window, swapchain_desc.buffers_count, device->swapchain.GetAddressOf());
+        device->is_swapchain_created = true;
+    }
 }
 
 void Device::Impl::deinitialize() {
@@ -2000,6 +1970,38 @@ void Device::Impl::wait_for_idle() {
 
 }
 
+void Device::Impl::_swap_buffers() {
+
+    device->swapchain->Present(0, 0);
+
+    swap_index = device->swapchain->GetCurrentBackBufferIndex();
+}
+
+/*
+
+    uint64_t const current_value = direct_fence.second[swap_index];
+
+    THROW_IF_FAILED(direct_queue->Signal(direct_fence.first.Get(), current_value));
+
+    if(direct_fence.first->GetCompletedValue() < direct_fence.second[swap_index]) {
+        THROW_IF_FAILED(direct_fence.first->SetEventOnCompletion(direct_fence.second[swap_index], fence_event));
+        WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
+    }
+
+    direct_fence.second[swap_index] = current_value + 1;
+
+*/
+
+void Device::Impl::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count) {
+
+
+}
+
+Handle<Texture> Device::Impl::swap_buffer() const {
+
+    return swap_buffers[swap_index];
+}
+
 //===========================================================
 //
 //
@@ -2008,10 +2010,10 @@ void Device::Impl::wait_for_idle() {
 //
 //===========================================================
 
-Device::Device(Backend& backend, EncoderType const encoder_type) :
+Device::Device(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc) :
     _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
 
-    _impl->initialize(backend, encoder_type);
+    _impl->initialize(backend, encoder_type, swapchain_desc);
 }
 
 Device::~Device() {
@@ -2041,6 +2043,21 @@ bool Device::is_completed(FenceResultInfo const& result_info) {
 
 void Device::wait_for_idle() {
     
+}
+
+void Device::swap_buffers() {
+
+    _impl->_swap_buffers();
+}
+
+void Device::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count) {
+    
+    _impl->resize_buffers(width, height, buffers_count);
+}
+
+Handle<Texture> Device::swap_buffer() const {
+
+    return _impl->swap_buffer();
 }
 
 /*

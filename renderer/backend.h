@@ -23,11 +23,12 @@ enum class BackendLimits : uint32_t {
     ShaderCount = 512,
     DescriptorLayoutCount = 4,
     TextureCount = 4096,
-    SamplerCount = 1024,
+    SamplerCount = 128,
     DescriptorSetCount = 512,
     BufferCount = 512,
     EncoderCount = 24,
-    DeviceCount = 3
+    DeviceCount = 3,
+    BufferedSwapCount = 3
 };
 
 enum class Dimension {
@@ -226,10 +227,16 @@ struct FenceResultInfo {
     uint64_t value;
 };
 
+struct SwapchainDesc {
+    platform::Window* window;
+    uint16_t samples_count;
+    uint32_t buffers_count;
+};
+
 class Backend {
 public:
 
-    Backend(uint32_t const adapter_index, platform::Window* const window, uint16_t const samples_count, uint32_t const swap_buffers_count);
+    Backend(uint32_t const adapter_index);
 
     ~Backend();
 
@@ -302,12 +309,6 @@ public:
     void delete_pipeline(Handle<Pipeline> const& pipeline);
 
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
-
-    void swap_buffers();
-
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count);
-
-    Handle<Texture> swap_buffer() const;
 
     AdapterDesc const& adapter() const;
 
@@ -396,7 +397,7 @@ public:
 
     Device() = default;
 
-    Device(Backend& backend, EncoderType const encoder_type);
+    Device(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc = {});
 
     ~Device();
 
@@ -424,6 +425,12 @@ public:
     bool is_completed(FenceResultInfo const& result_info);
 
     void wait_for_idle();
+
+    void swap_buffers();
+
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count);
+
+    Handle<Texture> swap_buffer() const;
 
 private:
 

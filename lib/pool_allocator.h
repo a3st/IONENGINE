@@ -18,6 +18,14 @@ public:
         fill_free_data();
     }
 
+    PoolAllocator(PoolAllocator const&) = delete;
+
+    PoolAllocator(PoolAllocator&&) noexcept = delete;
+
+    PoolAllocator& operator=(PoolAllocator const&) = delete;
+
+    PoolAllocator& operator=(PoolAllocator&&) = delete;
+
     ~PoolAllocator() {
 
         free(_ptr);

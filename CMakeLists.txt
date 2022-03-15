@@ -30,7 +30,6 @@ add_executable(Runtime-Win32
     
     # API
     renderer/d3d12/memory_allocator.cpp
-    renderer/d3d12/descriptor_allocator.cpp
 
     # Renderer
     renderer/backend_d3d12.cpp

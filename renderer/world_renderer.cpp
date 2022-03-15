@@ -115,7 +115,7 @@ void WorldRenderer::resize(uint32_t const width, uint32_t const height) {
 
     _frame_graph.reset(*_backend);
 
-    _backend->resize_buffers(width, height, 2);
+    //_backend->resize_buffers(width, height, 2);
 
     _frame_graph
         .build(*_backend, 2);

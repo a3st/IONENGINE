@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <renderer/d3d12/d3d12_shared.h>
+#include <renderer/d3d12/d3d12x.h>
 
 namespace ionengine::renderer::d3d12 {
 
