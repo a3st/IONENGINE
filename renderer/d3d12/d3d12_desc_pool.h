@@ -11,6 +11,7 @@ struct DescriptorAllocInfo {
     uint32_t _offset;
 
     ID3D12DescriptorHeap* heap() const { return _heap; }
+    
     uint32_t offset() const { return _offset; }
 };
 
@@ -29,7 +30,7 @@ public:
 
     DescriptorPool& operator=(DescriptorPool const&) = delete;
 
-    DescriptorPool& operator=(DescriptorPool&&) = delete;
+    DescriptorPool& operator=(DescriptorPool&&) noexcept = delete;
 
     DescriptorAllocInfo allocate(ID3D12Device4* device) {
 

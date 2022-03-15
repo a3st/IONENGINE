@@ -5,6 +5,7 @@
 #include <renderer/d3d12/d3d12x.h>
 #include <renderer/d3d12/memory_allocator.h>
 #include <renderer/d3d12/d3d12_desc_pool.h>
+#include <renderer/d3d12/d3d12_gpu_desc_pool.h>
 #include <platform/window.h>
 #include <lib/exception.h>
 #include <lib/pool_allocator.h>
@@ -36,11 +37,13 @@ struct Sampler {
 struct DescriptorLayout {
     ComPtr<ID3D12RootSignature> root_signature;
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
+    std::unordered_map<uint32_t, uint32_t> range_indices;
     bool is_compute;
 };
 
 struct DescriptorSet {
     DescriptorLayout* descriptor_layout;
+
     std::vector<d3d12::DescriptorAllocInfo> alloc_infos;
     std::vector<uint8_t> update_indices;
 };
@@ -1321,7 +1324,7 @@ void Backend::Impl::map_buffer(Handle<Buffer> const& buffer, uint64_t const offs
 
     D3D12_HEAP_DESC heap_desc = buffer_data.memory_alloc_info.heap()->GetDesc();
 
-    if(heap_desc.Properties.Type == (D3D12_HEAP_TYPE_UPLOAD || D3D12_HEAP_TYPE_READBACK)) {
+    if(heap_desc.Properties.Type == D3D12_HEAP_TYPE_UPLOAD || heap_desc.Properties.Type == D3D12_HEAP_TYPE_READBACK) {
 
         char8_t* bytes;
         auto range = D3D12_RANGE {};
