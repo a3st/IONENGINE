@@ -81,8 +81,6 @@ struct DeviceData {
 
 struct Backend::Impl {
 
-    using UploadBuffer = std::pair<Handle<Buffer>, uint64_t>;
-
     d3d12::MemoryAllocator memory_allocator;
 
     d3d12::DescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, std::to_underlying(BackendLimits::TextureCount)> cbv_srv_uav_pool;
@@ -94,6 +92,8 @@ struct Backend::Impl {
     ComPtr<ID3D12Debug> debug;
     ComPtr<IDXGIAdapter1> adapter;
     ComPtr<ID3D12Device4> device;
+
+    
 
     HANDLE fence_event;
 
@@ -112,8 +112,6 @@ struct Backend::Impl {
     Buffer default_cbv_buffer;
     Sampler default_sampler;
     Buffer default_uav_buffer;
-
-    std::vector<Impl::UploadBuffer> upload_buffers;
 
     void initialize(uint32_t const adapter_index);
 
@@ -190,6 +188,8 @@ struct Backend::Impl {
     void delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set);
     
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
+
+    void map_buffer(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
 
     AdapterDesc const& _adapter() const;
 };
@@ -1315,6 +1315,25 @@ void Backend::Impl::update_descriptor_set(Handle<DescriptorSet> const& descripto
     }*/
 }
 
+void Backend::Impl::map_buffer(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data) {
+
+    auto& buffer_data = buffers[buffer.id()];
+
+    D3D12_HEAP_DESC heap_desc = buffer_data.memory_alloc_info.heap()->GetDesc();
+
+    if(heap_desc.Properties.Type == (D3D12_HEAP_TYPE_UPLOAD || D3D12_HEAP_TYPE_READBACK)) {
+
+        char8_t* bytes;
+        auto range = D3D12_RANGE {};
+
+        THROW_IF_FAILED(buffer_data.resource->Map(0, &range, reinterpret_cast<void**>(&bytes)));
+        std::memcpy(bytes + offset, data.data(), data.size());
+        buffer_data.resource->Unmap(0, &range);
+    } else {
+        assert(false && "invalid buffer");
+    }
+}
+
 AdapterDesc const& Backend::Impl::_adapter() const {
 
     return {};
@@ -1450,6 +1469,11 @@ void Backend::delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set)
 void Backend::update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs) {
 
     _impl->update_descriptor_set(descriptor_set, write_descs);
+}
+
+void Backend::map_buffer(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data) {
+
+    _impl->map_buffer(buffer, offset, data);
 }
 
 AdapterDesc const& Backend::adapter() const {

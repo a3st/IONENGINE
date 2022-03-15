@@ -15,9 +15,10 @@ WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_po
     _pipelines.resize(2);
 
     auto ranges = std::vector<DescriptorRangeDesc> {
-        DescriptorRangeDesc { DescriptorRangeType::ConstantBuffer, 0, 1, ShaderFlags::Vertex }
-        //DescriptorRangeDesc { DescriptorRangeType::ShaderResource, 1, 1, ShaderFlags::Pixel },
-        //DescriptorRangeDesc { DescriptorRangeType::Sampler, 2, 1, ShaderFlags::Pixel }
+        DescriptorRangeDesc { DescriptorRangeType::ConstantBuffer, 0, 2, ShaderFlags::Vertex },
+        DescriptorRangeDesc { DescriptorRangeType::ShaderResource, 2, 2, ShaderFlags::Vertex },
+        DescriptorRangeDesc { DescriptorRangeType::ShaderResource, 4, 1, ShaderFlags::Pixel },
+        DescriptorRangeDesc { DescriptorRangeType::Sampler, 5, 1, ShaderFlags::Pixel }
     };
     _pbr_layout = _backend->create_descriptor_layout(ranges);
 

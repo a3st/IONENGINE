@@ -310,6 +310,8 @@ public:
 
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
+    void map_buffer(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
+
     AdapterDesc const& adapter() const;
 
 private:
