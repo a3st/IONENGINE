@@ -30,9 +30,6 @@
 *.exe
 *.out
 *.app
-/.vscode/*
 /build/*
 /.idea/*
 /.gradle/*
-/lgfx/build/*
-/lgfx/.vscode/*
