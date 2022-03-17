@@ -229,8 +229,8 @@ struct FenceResultInfo {
 
 struct SwapchainDesc {
     platform::Window* window;
-    uint16_t samples_count;
-    uint32_t buffers_count;
+    uint16_t sample_count;
+    uint32_t buffer_count;
 };
 
 class Backend {
@@ -310,7 +310,7 @@ public:
 
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void map_buffer(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
+    void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
 
     AdapterDesc const& adapter() const;
 
@@ -430,7 +430,7 @@ public:
 
     void swap_buffers();
 
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count);
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
 
     Handle<Texture> swap_buffer() const;
 

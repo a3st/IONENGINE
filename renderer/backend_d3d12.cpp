@@ -8,13 +8,9 @@
 #include <renderer/d3d12/d3d12_gpu_desc_pool.h>
 #include <platform/window.h>
 #include <lib/exception.h>
-#include <lib/pool_allocator.h>
-#include <lib/data_set.h>
 
 using ionengine::Handle;
 using namespace ionengine::renderer;
-
-std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32_t> descriptor_sizes;
 
 namespace ionengine::renderer {
 
@@ -66,21 +62,76 @@ struct RenderPass {
     bool has_depth_stencil;
 };
 
-struct EncoderData {
-    ComPtr<ID3D12CommandAllocator> command_allocator;
-    ComPtr<ID3D12GraphicsCommandList4> command_list;
-    Pipeline* binded_pipeline;
-};
-
-struct DeviceData {
-    ComPtr<ID3D12CommandQueue> queue;
-    ComPtr<ID3D12Fence> fence;
-    std::array<uint64_t, std::to_underlying(BackendLimits::BufferedSwapCount)> fence_values;
-    ComPtr<IDXGISwapChain3> swapchain;
-    bool is_swapchain_created{false};
-};
-
 }
+
+template<class Type, size_t Size>
+class ResourceSet {
+public:
+
+    ResourceSet() {
+
+       fill_data();
+    }
+
+    uint32_t push(Type const& element) {
+        
+        assert(!_ids.empty() && "The data set is full");
+
+        uint32_t const index = _ids.front();
+        _ids.pop_front();
+        _data[index] = element;
+        return index;
+    }
+
+    uint32_t push(Type&& element) {
+
+        assert(!_ids.empty() && "The data set is full");
+
+        uint32_t const index = _ids.front();
+        _ids.pop_front();
+        _data[index] = std::move(element);
+        return index;
+    }
+
+    void erase(uint32_t const index) {
+
+        _ids.emplace_back(index);
+        _data[index] = Type {};
+    }
+
+    void clear() {
+
+        _data.clear();
+        _ids.clear();
+
+        fill_data();
+    }
+
+    Type const& operator[](uint32_t const index) const {
+
+        return _data[index];
+    }
+
+    Type& operator[](uint32_t const index) {
+
+        return _data[index];
+    }
+
+private:
+
+    std::vector<Type> _data;
+    std::list<uint32_t> _ids;
+
+    void fill_data() {
+
+        _data.resize(Size);
+
+        for(uint32_t i = 0; i < Size; ++i) {
+
+            _ids.emplace_back(i);
+        }
+    }
+};
 
 struct Backend::Impl {
 
@@ -104,16 +155,14 @@ struct Backend::Impl {
     std::vector<d3d12::GPUDescriptorHeap*> gpu_cbv_srv_uav_heaps;
     std::vector<d3d12::GPUDescriptorHeap*> gpu_sampler_heaps;
 
-    DataSet<Texture, std::to_underlying(BackendLimits::TextureCount)> textures;
-    DataSet<Buffer, std::to_underlying(BackendLimits::BufferCount)> buffers;
-    DataSet<Sampler, std::to_underlying(BackendLimits::SamplerCount)> samplers;
-    DataSet<DescriptorLayout, std::to_underlying(BackendLimits::DescriptorLayoutCount)> descriptor_layouts;
-    DataSet<DescriptorSet, std::to_underlying(BackendLimits::DescriptorSetCount)> descriptor_sets;
-    DataSet<Pipeline, std::to_underlying(BackendLimits::PipelineCount)> pipelines;
-    DataSet<Shader, std::to_underlying(BackendLimits::ShaderCount)> shaders;
-    DataSet<RenderPass, std::to_underlying(BackendLimits::RenderPassCount)> render_passes;
-    DataSet<EncoderData, std::to_underlying(BackendLimits::EncoderCount)> encoders;
-    DataSet<DeviceData, std::to_underlying(BackendLimits::DeviceCount)> devices;
+    ResourceSet<Texture, std::to_underlying(BackendLimits::TextureCount)> textures;
+    ResourceSet<Buffer, std::to_underlying(BackendLimits::BufferCount)> buffers;
+    ResourceSet<Sampler, std::to_underlying(BackendLimits::SamplerCount)> samplers;
+    ResourceSet<DescriptorLayout, std::to_underlying(BackendLimits::DescriptorLayoutCount)> descriptor_layouts;
+    ResourceSet<DescriptorSet, std::to_underlying(BackendLimits::DescriptorSetCount)> descriptor_sets;
+    ResourceSet<Pipeline, std::to_underlying(BackendLimits::PipelineCount)> pipelines;
+    ResourceSet<Shader, std::to_underlying(BackendLimits::ShaderCount)> shaders;
+    ResourceSet<RenderPass, std::to_underlying(BackendLimits::RenderPassCount)> render_passes;
 
     Texture default_texture;
     Buffer default_cbv_buffer;
@@ -123,16 +172,6 @@ struct Backend::Impl {
     void initialize(uint32_t const adapter_index);
 
     void deinitialize();
-
-    uint32_t create_encoder(EncoderType const encoder_type);
-
-    void delete_encoder(uint32_t const encoder_index);
-
-    uint32_t create_device(EncoderType const encoder_type);
-
-    void delete_device(uint32_t const device_index);
-
-    void create_swapchain(ID3D12CommandQueue* queue, platform::Window* const window, uint32_t const swap_buffers_count, IDXGISwapChain3** swapchain);
     
     Handle<Texture> create_texture(
         Dimension const dimension, 
@@ -196,7 +235,7 @@ struct Backend::Impl {
     
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void map_buffer(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
+    void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
 
     AdapterDesc const& _adapter() const;
 };
@@ -209,14 +248,14 @@ void Backend::impl_deleter::operator()(Impl* ptr) const {
 struct Encoder::Impl {
 
     Backend::Impl* backend;
-    EncoderData* encoder;
+    
+    ComPtr<ID3D12CommandAllocator> command_allocator;
+    ComPtr<ID3D12GraphicsCommandList4> command_list;
+    Pipeline* binded_pipeline;
 
-    uint32_t id{std::numeric_limits<uint32_t>::max()};
     bool is_reset{false};
 
     void initialize(Backend& backend, EncoderType const encoder_type);
-
-    void deinitialize();
 
     void reset();
 
@@ -266,16 +305,17 @@ void Encoder::impl_deleter::operator()(Impl* ptr) const {
 struct Device::Impl {
 
     Backend::Impl* backend;
-    DeviceData* device;
+
+    ComPtr<IDXGISwapChain3> swapchain;
+    ComPtr<ID3D12CommandQueue> queue;
+    ComPtr<ID3D12Fence> fence;
+
+    std::vector<uint64_t> fence_values;
 
     std::vector<Handle<Texture>> swap_buffers;
     uint32_t swap_index;
 
-    uint32_t id{std::numeric_limits<uint32_t>::max()};
-
-    void initialize(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc);
-
-    void deinitialize();
+    void initialize(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc = {});
 
     FenceResultInfo submit(std::span<Encoder const> const encoders);
 
@@ -289,7 +329,7 @@ struct Device::Impl {
 
     void _swap_buffers();
     
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count);
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
     
     Handle<Texture> swap_buffer() const;
 };
@@ -315,13 +355,8 @@ void Backend::Impl::initialize(uint32_t const adapter_index) {
     THROW_IF_FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, __uuidof(IDXGIFactory4), reinterpret_cast<void**>(factory.GetAddressOf())));
 
     THROW_IF_FAILED(factory->EnumAdapters1(adapter_index, adapter.GetAddressOf()));
-
+    
     THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(device.GetAddressOf())));
-
-    descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-    descriptor_sizes[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
     for(uint32_t i = 0; i < 3; ++i) {
 
@@ -339,103 +374,6 @@ void Backend::Impl::initialize(uint32_t const adapter_index) {
 void Backend::Impl::deinitialize() {
 
     CloseHandle(fence_event);
-}
-
-uint32_t Backend::Impl::create_encoder(EncoderType const encoder_type) {
-
-    auto get_command_list_type = [&](EncoderType const encoder_type) -> D3D12_COMMAND_LIST_TYPE {
-        switch(encoder_type) {
-            case EncoderType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
-            case EncoderType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
-            case EncoderType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        }
-        return D3D12_COMMAND_LIST_TYPE_DIRECT;
-    };
-
-    auto encoder_data = EncoderData {};
-    
-    THROW_IF_FAILED(device->CreateCommandAllocator(
-        get_command_list_type(encoder_type), 
-        __uuidof(ID3D12CommandAllocator), 
-        reinterpret_cast<void**>(encoder_data.command_allocator.GetAddressOf()))
-    );
-        
-    THROW_IF_FAILED(device->CreateCommandList1(
-        0, 
-        get_command_list_type(encoder_type), 
-        D3D12_COMMAND_LIST_FLAG_NONE,
-        __uuidof(ID3D12GraphicsCommandList4),
-        reinterpret_cast<void**>(encoder_data.command_list.GetAddressOf()))
-    );
-    
-    return encoders.push(std::move(encoder_data));
-}
-
-void Backend::Impl::delete_encoder(uint32_t const encoder_index) {
-
-    encoders.erase(encoder_index);
-}
-
-uint32_t Backend::Impl::create_device(EncoderType const encoder_type) {
-
-    auto get_command_list_type = [&](EncoderType const encoder_type) -> D3D12_COMMAND_LIST_TYPE {
-        switch(encoder_type) {
-            case EncoderType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
-            case EncoderType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
-            case EncoderType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        }
-        return D3D12_COMMAND_LIST_TYPE_DIRECT;
-    };
-
-    auto device_data = DeviceData {};
-
-    auto queue_desc = D3D12_COMMAND_QUEUE_DESC {};
-    queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-    queue_desc.Type = get_command_list_type(encoder_type);
-
-    THROW_IF_FAILED(device->CreateCommandQueue(
-        &queue_desc,
-        __uuidof(ID3D12CommandQueue), 
-        reinterpret_cast<void**>(device_data.queue.GetAddressOf()))
-    );
-
-    THROW_IF_FAILED(device->CreateFence(
-        0, 
-        D3D12_FENCE_FLAG_NONE, 
-        __uuidof(ID3D12Fence), 
-        reinterpret_cast<void**>(device_data.fence.GetAddressOf()))
-    );
-
-    return devices.push(std::move(device_data));
-}
-
-void Backend::Impl::delete_device(uint32_t const device_index) {
-
-    devices.erase(device_index);
-}
-
-void Backend::Impl::create_swapchain(ID3D12CommandQueue* queue, platform::Window* const window, uint32_t const swap_buffers_count, IDXGISwapChain3** swapchain) {
-
-    platform::Size window_size = window->get_size();
-
-    auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
-    swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapchain_desc.Width = window_size.width;
-    swapchain_desc.Height = window_size.height;
-    swapchain_desc.BufferCount = swap_buffers_count;
-    swapchain_desc.SampleDesc.Count = 1;
-    swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-
-    THROW_IF_FAILED(factory->CreateSwapChainForHwnd(
-        queue, 
-        reinterpret_cast<HWND>(window->get_handle()), 
-        &swapchain_desc, 
-        nullptr, 
-        nullptr, 
-        reinterpret_cast<IDXGISwapChain1**>(swapchain))
-    );
 }
 
     /*
@@ -1274,7 +1212,7 @@ void Backend::Impl::update_descriptor_set(Handle<DescriptorSet> const& descripto
     }*/
 }
 
-void Backend::Impl::map_buffer(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data) {
+void Backend::Impl::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data) {
 
     auto& buffer_data = buffers[buffer.id()];
 
@@ -1430,9 +1368,9 @@ void Backend::update_descriptor_set(Handle<DescriptorSet> const& descriptor_set,
     _impl->update_descriptor_set(descriptor_set, write_descs);
 }
 
-void Backend::map_buffer(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data) {
+void Backend::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data) {
 
-    _impl->map_buffer(buffer, offset, data);
+    _impl->upload_buffer_data(buffer, offset, data);
 }
 
 AdapterDesc const& Backend::adapter() const {
@@ -1450,39 +1388,51 @@ AdapterDesc const& Backend::adapter() const {
 
 void Encoder::Impl::initialize(Backend& backend, EncoderType const encoder_type) {
 
+    auto get_command_list_type = [&](EncoderType const encoder_type) -> D3D12_COMMAND_LIST_TYPE {
+        switch(encoder_type) {
+            case EncoderType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
+            case EncoderType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
+            case EncoderType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        }
+        return D3D12_COMMAND_LIST_TYPE_DIRECT;
+    };
+
     this->backend = backend._impl.get();
-    id = this->backend->create_encoder(encoder_type);
-    encoder = &this->backend->encoders[id];
-}
-
-void Encoder::Impl::deinitialize() {
-
-    backend->delete_encoder(id);
+    
+    THROW_IF_FAILED(this->backend->device->CreateCommandAllocator(
+        get_command_list_type(encoder_type), 
+        __uuidof(ID3D12CommandAllocator), 
+        reinterpret_cast<void**>(command_allocator.GetAddressOf()))
+    );
+        
+    THROW_IF_FAILED(this->backend->device->CreateCommandList1(
+        0, 
+        get_command_list_type(encoder_type), 
+        D3D12_COMMAND_LIST_FLAG_NONE,
+        __uuidof(ID3D12GraphicsCommandList4),
+        reinterpret_cast<void**>(command_list.GetAddressOf()))
+    );
 }
 
 void Encoder::Impl::reset() {
 
     assert(!is_reset && "Encoder has already been reset");
 
-    THROW_IF_FAILED(encoder->command_allocator->Reset());
+    THROW_IF_FAILED(command_allocator->Reset());
 
-    THROW_IF_FAILED(encoder->command_list->Reset(encoder->command_allocator.Get(), nullptr));
+    THROW_IF_FAILED(command_list->Reset(command_allocator.Get(), nullptr));
+
+    if(command_list->GetType() == D3D12_COMMAND_LIST_TYPE_DIRECT || command_list->GetType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
+
+        std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
+        descriptor_heaps[0] =  .heap();
+        descriptor_heaps[1] = null_sampler_descriptor_alloc_info.heap();
+
+        current_list->command_list->SetDescriptorHeaps(2, heaps.data());
+    }
 
     is_reset = true;
 }
-
-/*
-    if(!current_list->is_descriptor_heaps_set) {
-        
-        std::array<ID3D12DescriptorHeap*, 2> heaps;
-        heaps[0] = null_srv_descriptor_alloc_info.heap();
-        heaps[1] = null_sampler_descriptor_alloc_info.heap();
-
-        current_list->command_list->SetDescriptorHeaps(2, heaps.data());
-
-        current_list->is_descriptor_heaps_set = true;
-    }
-*/
 
 void Encoder::Impl::bind_descriptor_set(Handle<DescriptorSet> const& descriptor_set) {
 
@@ -1542,7 +1492,7 @@ void Encoder::Impl::set_viewport(uint32_t const x, uint32_t const y, uint32_t co
     viewport.MinDepth = D3D12_MIN_DEPTH;
     viewport.MaxDepth = D3D12_MAX_DEPTH;
 
-    encoder->command_list->RSSetViewports(1, &viewport);
+    command_list->RSSetViewports(1, &viewport);
 }
 
 void Encoder::Impl::set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom) {
@@ -1558,7 +1508,7 @@ void Encoder::Impl::set_scissor(uint32_t const left, uint32_t const top, uint32_
     rect.left = static_cast<LONG>(left);
     rect.right = static_cast<LONG>(right);
 
-    encoder->command_list->RSSetScissorRects(1, &rect);
+    command_list->RSSetScissorRects(1, &rect);
 }
 
 void Encoder::Impl::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after) {
@@ -1598,7 +1548,7 @@ void Encoder::Impl::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const&
 
     std::visit(barrier_visitor, target);
 
-    encoder->command_list->ResourceBarrier(1, &resource_barrier);
+    command_list->ResourceBarrier(1, &resource_barrier);
 }
 
 void Encoder::Impl::begin_render_pass(
@@ -1624,14 +1574,14 @@ void Encoder::Impl::begin_render_pass(
         render_pass_data.depth_stencil_desc.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = clear_depth;
         render_pass_data.depth_stencil_desc.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = clear_stencil;
 
-        encoder->command_list->BeginRenderPass(
+        command_list->BeginRenderPass(
             render_pass_data.render_target_count, 
             render_pass_data.render_target_descs.data(), 
             &render_pass_data.depth_stencil_desc, 
             D3D12_RENDER_PASS_FLAG_NONE
         );
     } else {
-        encoder->command_list->BeginRenderPass(
+        command_list->BeginRenderPass(
             render_pass_data.render_target_count, 
             render_pass_data.render_target_descs.data(), 
             nullptr, 
@@ -1647,7 +1597,7 @@ void Encoder::Impl::end_render_pass() {
         reset();
     }
 
-    encoder->command_list->EndRenderPass();
+    command_list->EndRenderPass();
 }
 
 void Encoder::Impl::bind_pipeline(Handle<Pipeline> const& pipeline) {
@@ -1659,10 +1609,10 @@ void Encoder::Impl::bind_pipeline(Handle<Pipeline> const& pipeline) {
 
     auto& pipeline_data = backend->pipelines[pipeline.id()];
 
-    encoder->binded_pipeline = &pipeline_data;
+    binded_pipeline = &pipeline_data;
 
-    encoder->command_list->SetPipelineState(pipeline_data.pipeline_state.Get());
-    encoder->command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    command_list->SetPipelineState(pipeline_data.pipeline_state.Get());
+    command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
 void Encoder::Impl::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset) {
@@ -1677,9 +1627,9 @@ void Encoder::Impl::bind_vertex_buffer(uint32_t const index, Handle<Buffer> cons
     auto vertex_view = D3D12_VERTEX_BUFFER_VIEW {};
     vertex_view.BufferLocation = buffer_data.resource->GetGPUVirtualAddress() + offset;
     vertex_view.SizeInBytes = static_cast<uint32_t>(buffer_data.resource->GetDesc().Width);
-    vertex_view.StrideInBytes = encoder->binded_pipeline->vertex_strides[index];
+    vertex_view.StrideInBytes = binded_pipeline->vertex_strides[index];
 
-    encoder->command_list->IASetVertexBuffers(index, 1, &vertex_view);
+    command_list->IASetVertexBuffers(index, 1, &vertex_view);
 }
 
 void Encoder::Impl::bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const offset) {
@@ -1696,7 +1646,7 @@ void Encoder::Impl::bind_index_buffer(Handle<Buffer> const& buffer, uint64_t con
     index_view.SizeInBytes = static_cast<uint32_t>(buffer_data.resource->GetDesc().Width);
     index_view.Format = DXGI_FORMAT_R32_UINT;
 
-    encoder->command_list->IASetIndexBuffer(&index_view);
+    command_list->IASetIndexBuffer(&index_view);
 }
 
 void Encoder::Impl::copy_texture_region() {
@@ -1767,7 +1717,7 @@ void Encoder::Impl::copy_buffer_region(
     auto& dest_buffer = backend->buffers[dest.id()];
     auto& source_buffer = backend->buffers[source.id()];
 
-    encoder->command_list->CopyBufferRegion(
+    command_list->CopyBufferRegion(
         dest_buffer.resource.Get(), 
         dest_offset,
         source_buffer.resource.Get(),
@@ -1783,7 +1733,7 @@ void Encoder::Impl::draw(uint32_t const vertex_count, uint32_t const instance_co
         reset();
     }
 
-    encoder->command_list->DrawInstanced(vertex_count, instance_count, vertex_offset, 0);
+    command_list->DrawInstanced(vertex_count, instance_count, vertex_offset, 0);
 }
 
 void Encoder::Impl::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) {
@@ -1793,7 +1743,7 @@ void Encoder::Impl::draw_indexed(uint32_t const index_count, uint32_t const inst
         reset();
     }
 
-    encoder->command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
+    command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
 }
 
 //===========================================================
@@ -1810,10 +1760,7 @@ Encoder::Encoder(Backend& backend, EncoderType const encoder_type) :
     _impl->initialize(backend, encoder_type);
 }
 
-Encoder::~Encoder() {
-
-    _impl->deinitialize();
-}
+Encoder::~Encoder() = default;
 
 Encoder& Encoder::bind_descriptor_set(Handle<DescriptorSet> const& descriptor_set) {
 
@@ -1913,20 +1860,57 @@ Encoder& Encoder::draw_indexed(uint32_t const index_count, uint32_t const instan
 
 void Device::Impl::initialize(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc) {
 
+    auto get_command_list_type = [&](EncoderType const encoder_type) -> D3D12_COMMAND_LIST_TYPE {
+        switch(encoder_type) {
+            case EncoderType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
+            case EncoderType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
+            case EncoderType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        }
+        return D3D12_COMMAND_LIST_TYPE_DIRECT;
+    };
+
     this->backend = backend._impl.get();
-    id = this->backend->create_device(encoder_type);
-    device = &this->backend->devices[id];
+    
+    auto queue_desc = D3D12_COMMAND_QUEUE_DESC {};
+    queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    queue_desc.Type = get_command_list_type(encoder_type);
+
+    THROW_IF_FAILED(this->backend->device->CreateCommandQueue(
+        &queue_desc,
+        __uuidof(ID3D12CommandQueue), 
+        reinterpret_cast<void**>(queue.GetAddressOf()))
+    );
+
+    THROW_IF_FAILED(this->backend->device->CreateFence(
+        0, 
+        D3D12_FENCE_FLAG_NONE, 
+        __uuidof(ID3D12Fence), 
+        reinterpret_cast<void**>(fence.GetAddressOf()))
+    );
 
     if(encoder_type == EncoderType::Graphics) {
 
-        this->backend->create_swapchain(device->queue.Get(), swapchain_desc.window, swapchain_desc.buffers_count, device->swapchain.GetAddressOf());
-        device->is_swapchain_created = true;
+        platform::Size window_size = swapchain_desc.window->get_size();
+
+        auto _swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
+        _swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        _swapchain_desc.Width = window_size.width;
+        _swapchain_desc.Height = window_size.height;
+        _swapchain_desc.BufferCount = swapchain_desc.buffer_count;
+        _swapchain_desc.SampleDesc.Count = swapchain_desc.sample_count;
+        _swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        _swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        _swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+
+        THROW_IF_FAILED(this->backend->factory->CreateSwapChainForHwnd(
+            queue.Get(), 
+            reinterpret_cast<HWND>(swapchain_desc.window->get_handle()), 
+            &_swapchain_desc, 
+            nullptr, 
+            nullptr, 
+            reinterpret_cast<IDXGISwapChain1**>(swapchain.GetAddressOf()))
+        );
     }
-}
-
-void Device::Impl::deinitialize() {
-
-    // TO DO!
 }
 
 FenceResultInfo Device::Impl::submit(std::span<Encoder const> const encoders) {
@@ -1955,9 +1939,9 @@ void Device::Impl::wait_for_idle() {
 
 void Device::Impl::_swap_buffers() {
 
-    device->swapchain->Present(0, 0);
+    swapchain->Present(0, 0);
 
-    swap_index = device->swapchain->GetCurrentBackBufferIndex();
+    swap_index = swapchain->GetCurrentBackBufferIndex();
 }
 
 /*
@@ -1975,7 +1959,7 @@ void Device::Impl::_swap_buffers() {
 
 */
 
-void Device::Impl::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count) {
+void Device::Impl::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
 
 
 }
@@ -1996,13 +1980,10 @@ Handle<Texture> Device::Impl::swap_buffer() const {
 Device::Device(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc) :
     _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
 
-    _impl->initialize(backend, encoder_type, swapchain_desc);
+    _impl->initialize(backend, encoder_type);
 }
 
-Device::~Device() {
-
-    _impl->deinitialize();
-}
+Device::~Device() = default;
 
 FenceResultInfo Device::submit(std::span<Encoder const> const encoders) {
 
@@ -2016,7 +1997,7 @@ FenceResultInfo Device::submit_after(std::span<Encoder const> const encoders, Fe
 
 void Device::wait(FenceResultInfo const& result_info) {
 
-
+    _impl->wait(result_info);
 }
 
 bool Device::is_completed(FenceResultInfo const& result_info) {
@@ -2026,6 +2007,7 @@ bool Device::is_completed(FenceResultInfo const& result_info) {
 
 void Device::wait_for_idle() {
     
+    _impl->wait_for_idle();
 }
 
 void Device::swap_buffers() {
@@ -2033,9 +2015,9 @@ void Device::swap_buffers() {
     _impl->_swap_buffers();
 }
 
-void Device::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffers_count) {
+void Device::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
     
-    _impl->resize_buffers(width, height, buffers_count);
+    _impl->resize_buffers(width, height, buffer_count);
 }
 
 Handle<Texture> Device::swap_buffer() const {
