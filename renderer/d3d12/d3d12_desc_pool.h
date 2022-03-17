@@ -7,12 +7,40 @@
 namespace ionengine::renderer::d3d12 {
 
 struct DescriptorAllocInfo {
-    ID3D12DescriptorHeap* _heap;
-    uint32_t _offset;
+    ID3D12DescriptorHeap* heap;
+    uint32_t offset;
+    uint32_t descriptor_size;
 
-    ID3D12DescriptorHeap* heap() const { return _heap; }
-    
-    uint32_t offset() const { return _offset; }
+    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle() const {
+
+        return D3D12_CPU_DESCRIPTOR_HANDLE { 
+            heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+            descriptor_size * // Device descriptor size
+            offset // Allocation offset
+        };
+    }
+
+    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle() const {
+        
+        return D3D12_GPU_DESCRIPTOR_HANDLE { 
+            heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+            descriptor_size * // Device descriptor size
+            offset // Allocation offset
+        };
+    }
+};
+
+class DescriptorHeap {
+public:
+
+    DescriptorHeap(ID3D12DescriptorHeap* const heap, uint32_t const descriptor_size, uint32_t const offset, uint32_t const count) {
+
+        
+    }
+
+private:
+
+
 };
 
 template<D3D12_DESCRIPTOR_HEAP_TYPE HeapType, size_t Size>
@@ -36,6 +64,7 @@ public:
 
         if(!_is_initialized) {
             create_heap(device);
+            _descriptor_size = device->GetDescriptorHandleIncrementSize(HeapType);
             _is_initialized = true;
         }
 
@@ -45,14 +74,14 @@ public:
         _free_indices.pop_front();
 
         auto alloc_info = DescriptorAllocInfo {};
-        alloc_info._heap = _heap.Get();
-        alloc_info._offset = index;
+        alloc_info.heap = _heap.Get();
+        alloc_info.offset = index;
         return alloc_info;
     }
     
     void deallocate(DescriptorAllocInfo const& alloc_info) {
 
-        _free_indices.emplace_back(alloc_info._offset);
+        _free_indices.emplace_back(alloc_info.offset);
     }
 
     void reset() {
@@ -69,6 +98,8 @@ private:
     ComPtr<ID3D12DescriptorHeap> _heap;
 
     std::list<uint32_t> _free_indices;
+
+    uint32_t _descriptor_size{0};
 
     void create_heap(ID3D12Device4* device) {
 
