@@ -76,20 +76,20 @@ bool AssetCompiler::compile_shader(std::filesystem::path const& file_path, Shade
         }
 #endif
 
-        shader_file.data[index]._name = it->name;
+        shader_file.data[index].name = it->name;
 
         if(it->name.contains(u8"_vertex")) {
-            shader_file.data[index]._flags = renderer::ShaderFlags::Vertex;
+            shader_file.data[index].flags = renderer::ShaderFlags::Vertex;
         } else if(it->name.contains(u8"_pixel")) {
-            shader_file.data[index]._flags = renderer::ShaderFlags::Pixel;
+            shader_file.data[index].flags = renderer::ShaderFlags::Pixel;
         } else if(it->name.contains(u8"_geometry")) {
-            shader_file.data[index]._flags = renderer::ShaderFlags::Geometry;
+            shader_file.data[index].flags = renderer::ShaderFlags::Geometry;
         } else if(it->name.contains(u8"_domain")) {
-            shader_file.data[index]._flags = renderer::ShaderFlags::Domain;
+            shader_file.data[index].flags = renderer::ShaderFlags::Domain;
         } else if(it->name.contains(u8"_hull")) {
-            shader_file.data[index]._flags = renderer::ShaderFlags::Hull;
+            shader_file.data[index].flags = renderer::ShaderFlags::Hull;
         } else if(it->name.contains(u8"_compute")) {
-            shader_file.data[index]._flags = renderer::ShaderFlags::Compute;
+            shader_file.data[index].flags = renderer::ShaderFlags::Compute;
         }
 
         shader_file.data[index].data.resize(it->data.size());
@@ -258,9 +258,9 @@ size_t AssetCompiler::serialize_shader(std::vector<char8_t>& data, ShaderFile co
     offset += sizeof(uint32_t);
 
     for(uint32_t i = 0; i < shader_file.count; ++i) {
-        std::memcpy(data.data() + offset, shader_file.data[i]._name.data(), shader_file.data[i]._name.size());
+        std::memcpy(data.data() + offset, shader_file.data[i].name.data(), shader_file.data[i].name.size());
         offset += sizeof(char8_t) * 48;
-        std::memcpy(data.data() + offset, &shader_file.data[i]._flags, sizeof(uint32_t));
+        std::memcpy(data.data() + offset, &shader_file.data[i].flags, sizeof(uint32_t));
         offset += sizeof(uint32_t);
         size_t const data_size = shader_file.data[i].data.size();
         std::memcpy(data.data() + offset, &data_size, sizeof(size_t));
@@ -325,10 +325,10 @@ bool AssetCompiler::deserialize_shader(std::vector<char8_t> const& data, ShaderF
             return false;
         }
 
-        shader_file.data[i]._name = std::u8string(name);
+        shader_file.data[i].name = std::u8string(name);
         
         if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
-            std::memcpy(&shader_file.data[i]._flags, buffer.data(), buffer.size());
+            std::memcpy(&shader_file.data[i].flags, buffer.data(), buffer.size());
         } else {
             return false;
         }

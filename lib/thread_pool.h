@@ -59,6 +59,8 @@ public:
         return Handle<Job>(job_id);
     }
 
+    uint32_t size() const { return static_cast<uint32_t>(_workers.size()); }
+
     bool is_finished(Handle<Job> const& job) const;
 
     void wait(Handle<Job> const& job) const;

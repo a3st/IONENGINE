@@ -23,11 +23,10 @@ int main(int* argc, char** agrv) {
         platform::WindowLoop loop;
         platform::Window window(u8"IONENGINE", 800, 600, false, loop);
 
+        AssetManager asset_manager(thread_pool);
         renderer::Backend backend(0, renderer::SwapchainDesc { &window, 1, 2 });
 
-        AssetManager asset_manager(thread_pool);
-
-        renderer::WorldRenderer world_renderer(backend, window, thread_pool);
+        renderer::WorldRenderer world_renderer(backend, thread_pool, {});
         project::WorldController world_controller;
 
         if(!world_controller.initialize()) {

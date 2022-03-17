@@ -110,7 +110,9 @@ enum class MemoryState {
     CopyDest,
     ShaderRead,
     VertexConstantBufferRead,
-    IndexBufferRead
+    IndexBufferRead,
+    DepthRead,
+    DepthWrite
 };
 
 enum class DescriptorRangeType {

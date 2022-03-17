@@ -6,12 +6,13 @@
 using ionengine::Handle;
 using namespace ionengine::renderer;
 
-FrameGraph& FrameGraph::attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height) {
+FrameGraph& FrameGraph::attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height, TextureFlags const flags) {
 
     auto attachment = FrameGraph::InternalAttachment {
         format,
         width,
         height,
+        flags,
         INVALID_HANDLE(Texture)
     };
     _attachments[{ id, 0 }] = attachment;
@@ -76,7 +77,7 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                     1, 
                     1, 
                     attachment.format,
-                    TextureFlags::RenderTarget | TextureFlags::ShaderResource
+                    attachment.flags | TextureFlags::ShaderResource
                 );
                 _memory_states[key.first].first = MemoryState::Common;
             }
@@ -131,7 +132,10 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
 
                         std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
 
-                        // TODO!
+                        if(_memory_states[attachment_id].first != MemoryState::DepthWrite) {
+                            _memory_states[attachment_id].first = MemoryState::DepthWrite;
+                            _memory_states[attachment_id].second.emplace(op.second);
+                        }
                     }
 
                     for(uint32_t i = 0; i < static_cast<uint32_t>(render_pass.desc.inputs.size()); ++i) {
@@ -187,7 +191,7 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
 
 void FrameGraph::reset(Backend& backend) {
 
-    // backend.wait_for_idle_device();
+    backend.wait_for_idle(EncoderFlags::Graphics);
 
     for(auto& [key, value] : _render_passes) {
         backend.delete_render_pass(value.render_pass);
@@ -283,6 +287,9 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                     }
                 }
 
+                // Depth Stencil Barriers
+
+
                 // Input Barriers
                 for(uint32_t i = 0; i < static_cast<uint32_t>(render_pass.desc.inputs.size()); ++i) {
 
@@ -292,11 +299,11 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
 
                         auto attachment_visitor = make_visitor(
                             [&](ExternalAttachment& attachment) {
-                                //backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
+                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
                                 _memory_states[attachment_id].first = MemoryState::ShaderRead;
                             },
                             [&](InternalAttachment& attachment) {
-                                //backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
+                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
                                 _memory_states[attachment_id].first = MemoryState::ShaderRead;
                             }
                         );

@@ -122,7 +122,7 @@ public:
 
     FrameGraph() = default;
 
-    FrameGraph& attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height);
+    FrameGraph& attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height, TextureFlags const flags);
     FrameGraph& external_attachment(AttachmentId const id, Format const format, MemoryState const before, MemoryState const after);
     FrameGraph& render_pass(RenderPassId const id, RenderPassDesc const& desc, RenderPassFunc const& func);
     FrameGraph& compute_pass(ComputePassId const id, ComputePassDesc const& desc, ComputePassFunc const& func);
@@ -146,6 +146,7 @@ private:
         Format format;
         uint32_t width;
         uint32_t height;
+        TextureFlags flags;
         Handle<Texture> target;
     };
 

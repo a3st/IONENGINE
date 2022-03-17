@@ -12,47 +12,23 @@ struct MaterialData {
 };
 
 struct ShaderData {
-    std::u8string _name;
-    ShaderFlags _flags;
+    std::u8string name;
+    ShaderFlags flags;
     std::vector<char8_t> data;
-
-    std::u8string const& name() const { return _name; }
-
-    ShaderFlags flags() const { return _flags; }
 };
 
 struct TextureData {
-    Dimension _dimension;
-    Format _format;
-    uint32_t _width;
-    uint32_t _height;
-    uint16_t _mip_levels;
-    uint16_t _array_layers;
-    Filter _filter;
-    AddressMode _address_u;
-    AddressMode _address_v;
-    AddressMode _address_w;
+    Dimension dimension;
+    Format format;
+    uint32_t width;
+    uint32_t height;
+    uint16_t mip_levels;
+    uint16_t array_layers;
+    Filter filter;
+    AddressMode address_u;
+    AddressMode address_v;
+    AddressMode address_w;
     std::vector<char8_t> data;
-
-    Dimension dimension() const { return _dimension; }
-
-    Format format() const { return _format; }
-
-    uint32_t width() const { return _width; }
-
-    uint32_t height() const { return _height; }
-
-    uint16_t mip_levels() const { return _mip_levels; }
-
-    uint16_t array_layers() const { return _array_layers; }
-
-    Filter filter() const { return _filter; }
-
-    AddressMode address_u() const { return _address_u; }
-    
-    AddressMode address_v() const { return _address_v; }
-
-    AddressMode address_w() const { return _address_w; }
 };
 
 struct MeshData {

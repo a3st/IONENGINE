@@ -11,19 +11,6 @@
 
 namespace ionengine::renderer {
 
-enum class ShaderTemplateIds : uint32_t {
-    Basic
-};
-
-enum class RenderPassIds : uint32_t {
-    Main
-};
-
-enum class AttachmentIds : uint32_t {
-    Swapchain,
-    Blit
-};
-
 struct WorldBuffer {
     Matrixf model;
     Matrixf view;
@@ -33,7 +20,7 @@ struct WorldBuffer {
 class WorldRenderer {
 public:
 
-    WorldRenderer(Backend& backend, platform::Window& window, ThreadPool& thread_pool);
+    WorldRenderer(Backend& backend, ThreadPool& thread_pool, std::span<ShaderData const> const shaders);
 
     WorldRenderer(WorldRenderer const&) = delete;
 
@@ -62,12 +49,13 @@ private:
     std::vector<Handle<Pipeline>> _pipelines;
     std::vector<Handle<DescriptorSet>> _descriptor_sets;
     std::vector<Handle<Buffer>> _constant_buffers;
-    std::vector<Encoder> encoders;
+
+    std::vector<Encoder> _graphics_encoders;
     std::vector<FenceResultInfo> fence_results;
 
     Handle<DescriptorLayout> _pbr_layout;
 
-    uint32_t frame_index{0};
+    uint32_t _frame_index{0};
 
     std::vector<MeshData const*> _meshes;
     std::vector<uint32_t> _draw_indices;
@@ -75,8 +63,11 @@ private:
     WorldBuffer _world_buffer;
     WorldBuffer _prev_world_buffer;
 
-
     std::unordered_map<uint32_t, ShaderTemplate> _shader_templates;
+
+    void initialize_shaders(std::span<ShaderData const> const shaders);
+    void initialize_descriptor_layouts();
+    void build_frame_graph(uint32_t const width, uint32_t const height, uint16_t const sample_count, uint32_t const buffer_count);
 };
 
 }
