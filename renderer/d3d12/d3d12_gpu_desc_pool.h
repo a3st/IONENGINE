@@ -85,6 +85,8 @@ public:
         }
     }
 
+    ID3D12DescriptorHeap* const get_heap() const { return _heap; }
+
 private:
 
     struct ArenaBlock {

@@ -27,7 +27,7 @@ int main(int* argc, char** agrv) {
 
         AssetManager asset_manager(thread_pool);
 
-        renderer::WorldRenderer world_renderer(&backend, &thread_pool);
+        renderer::WorldRenderer world_renderer(backend, window, thread_pool);
         project::WorldController world_controller;
 
         if(!world_controller.initialize()) {

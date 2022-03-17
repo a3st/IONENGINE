@@ -224,6 +224,7 @@ struct AdapterDesc {
 };
 
 struct FenceResultInfo {
+    Device* device;
     uint64_t value;
 };
 
@@ -312,7 +313,9 @@ public:
 
     void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
 
-    AdapterDesc const& adapter() const;
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
+
+    Handle<Texture> get_swapchain_texture() const;
 
 private:
 
@@ -428,11 +431,7 @@ public:
 
     void wait_for_idle();
 
-    void swap_buffers();
-
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
-
-    Handle<Texture> swap_buffer() const;
+    void present();
 
 private:
 

@@ -146,6 +146,7 @@ struct Backend::Impl {
     d3d12::GPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024> gpu_sampler_pool;
 
     ComPtr<IDXGIFactory4> factory;
+    ComPtr<IDXGISwapChain3> swapchain;
     ComPtr<ID3D12Debug> debug;
     ComPtr<IDXGIAdapter1> adapter;
     ComPtr<ID3D12Device4> device;
@@ -168,6 +169,8 @@ struct Backend::Impl {
     Buffer default_cbv_buffer;
     Sampler default_sampler;
     Buffer default_uav_buffer;
+
+    std::vector<Handle<Texture>> swap_textures;
 
     void initialize(uint32_t const adapter_index);
 
@@ -236,8 +239,10 @@ struct Backend::Impl {
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
     void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
-
-    AdapterDesc const& _adapter() const;
+    
+    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
+    
+    Handle<Texture> get_swapchain_texture() const;
 };
 
 void Backend::impl_deleter::operator()(Impl* ptr) const {
@@ -306,14 +311,7 @@ struct Device::Impl {
 
     Backend::Impl* backend;
 
-    ComPtr<IDXGISwapChain3> swapchain;
     ComPtr<ID3D12CommandQueue> queue;
-    ComPtr<ID3D12Fence> fence;
-
-    std::vector<uint64_t> fence_values;
-
-    std::vector<Handle<Texture>> swap_buffers;
-    uint32_t swap_index;
 
     void initialize(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc = {});
 
@@ -327,11 +325,7 @@ struct Device::Impl {
 
     void wait_for_idle();
 
-    void _swap_buffers();
-    
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
-    
-    Handle<Texture> swap_buffer() const;
+    void present();
 };
 
 void Device::impl_deleter::operator()(Impl* ptr) const {
@@ -1231,9 +1225,15 @@ void Backend::Impl::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t co
     }
 }
 
-AdapterDesc const& Backend::Impl::_adapter() const {
+void Backend::Impl::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
 
-    return {};
+
+}
+
+Handle<Texture> Backend::Impl::get_swapchain_texture() const {
+
+    uint32_t const swap_index = swapchain->GetCurrentBackBufferIndex();
+    return swap_textures[swap_index];
 }
 
 //===========================================================
@@ -1373,9 +1373,14 @@ void Backend::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const of
     _impl->upload_buffer_data(buffer, offset, data);
 }
 
-AdapterDesc const& Backend::adapter() const {
+void Backend::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
+    
+    _impl->resize_buffers(width, height, buffer_count);
+}
 
-    return _impl->_adapter();
+Handle<Texture> Backend::get_swapchain_texture() const {
+
+    return _impl->get_swapchain_texture();
 }
 
 //===========================================================
@@ -1424,11 +1429,13 @@ void Encoder::Impl::reset() {
 
     if(command_list->GetType() == D3D12_COMMAND_LIST_TYPE_DIRECT || command_list->GetType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
 
-        std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
-        descriptor_heaps[0] =  .heap();
-        descriptor_heaps[1] = null_sampler_descriptor_alloc_info.heap();
+        uint32_t const swap_index = backend->swapchain->GetCurrentBackBufferIndex();
 
-        current_list->command_list->SetDescriptorHeaps(2, heaps.data());
+        std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
+        descriptor_heaps[0] = backend->gpu_cbv_srv_uav_heaps[swap_index]->get_heap();
+        descriptor_heaps[1] = backend->gpu_sampler_heaps[swap_index]->get_heap();
+
+        command_list->SetDescriptorHeaps(2, descriptor_heaps.data());
     }
 
     is_reset = true;
@@ -1875,7 +1882,7 @@ void Device::Impl::initialize(Backend& backend, EncoderType const encoder_type, 
     queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
     queue_desc.Type = get_command_list_type(encoder_type);
 
-    THROW_IF_FAILED(this->backend->device->CreateCommandQueue(
+    /*THROW_IF_FAILED(this->backend->device->CreateCommandQueue(
         &queue_desc,
         __uuidof(ID3D12CommandQueue), 
         reinterpret_cast<void**>(queue.GetAddressOf()))
@@ -1886,11 +1893,11 @@ void Device::Impl::initialize(Backend& backend, EncoderType const encoder_type, 
         D3D12_FENCE_FLAG_NONE, 
         __uuidof(ID3D12Fence), 
         reinterpret_cast<void**>(fence.GetAddressOf()))
-    );
+    );*/
 
     if(encoder_type == EncoderType::Graphics) {
 
-        platform::Size window_size = swapchain_desc.window->get_size();
+        /*platform::Size window_size = swapchain_desc.window->get_size();
 
         auto _swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
         _swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -1908,8 +1915,8 @@ void Device::Impl::initialize(Backend& backend, EncoderType const encoder_type, 
             &_swapchain_desc, 
             nullptr, 
             nullptr, 
-            reinterpret_cast<IDXGISwapChain1**>(swapchain.GetAddressOf()))
-        );
+            reinterpret_cast<IDXGISwapChain1**>(this->backend->swapchain.GetAddressOf()))
+        );*/
     }
 }
 
@@ -1937,11 +1944,9 @@ void Device::Impl::wait_for_idle() {
 
 }
 
-void Device::Impl::_swap_buffers() {
+void Device::Impl::present() {
 
-    swapchain->Present(0, 0);
-
-    swap_index = swapchain->GetCurrentBackBufferIndex();
+    backend->swapchain->Present(0, 0);
 }
 
 /*
@@ -1959,15 +1964,7 @@ void Device::Impl::_swap_buffers() {
 
 */
 
-void Device::Impl::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
 
-
-}
-
-Handle<Texture> Device::Impl::swap_buffer() const {
-
-    return swap_buffers[swap_index];
-}
 
 //===========================================================
 //
@@ -1980,7 +1977,7 @@ Handle<Texture> Device::Impl::swap_buffer() const {
 Device::Device(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc) :
     _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
 
-    _impl->initialize(backend, encoder_type);
+    _impl->initialize(backend, encoder_type, swapchain_desc);
 }
 
 Device::~Device() = default;
@@ -2010,19 +2007,9 @@ void Device::wait_for_idle() {
     _impl->wait_for_idle();
 }
 
-void Device::swap_buffers() {
+void Device::present() {
 
-    _impl->_swap_buffers();
-}
-
-void Device::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
-    
-    _impl->resize_buffers(width, height, buffer_count);
-}
-
-Handle<Texture> Device::swap_buffer() const {
-
-    return _impl->swap_buffer();
+    _impl->present();
 }
 
 /*

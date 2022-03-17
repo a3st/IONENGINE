@@ -33,7 +33,7 @@ struct WorldBuffer {
 class WorldRenderer {
 public:
 
-    WorldRenderer(Backend* const backend, ThreadPool* const thread_pool);
+    WorldRenderer(Backend& backend, platform::Window& window, ThreadPool& thread_pool);
 
     WorldRenderer(WorldRenderer const&) = delete;
 
@@ -55,6 +55,8 @@ private:
 
     Backend* _backend;
     ThreadPool* _thread_pool;
+
+    std::unordered_map<EncoderType, Device> _devices;
 
     FrameGraph _frame_graph;
 

@@ -9,7 +9,14 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-WorldRenderer::WorldRenderer(Backend* const backend, ThreadPool* const thread_pool) : _backend(backend), _thread_pool(thread_pool) {
+WorldRenderer::WorldRenderer(Backend& backend, platform::Window& window, ThreadPool& thread_pool) 
+    : _backend(&backend), _thread_pool(&thread_pool) {
+
+    Device graphics_device(backend, EncoderType::Graphics, SwapchainDesc { &window, 1, 2 });
+    _devices[EncoderType::Graphics] = std::move(graphics_device);
+
+    Device copy_device(backend, EncoderType::Copy);
+    _devices[EncoderType::Copy] = std::move(copy_device);
 
     _render_passes.resize(2);
     _pipelines.resize(2);
