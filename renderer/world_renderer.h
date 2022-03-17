@@ -56,14 +56,14 @@ private:
     Backend* _backend;
     ThreadPool* _thread_pool;
 
-    std::unordered_map<EncoderType, Device> _devices;
-
     FrameGraph _frame_graph;
 
     std::vector<Handle<RenderPass>> _render_passes;
     std::vector<Handle<Pipeline>> _pipelines;
     std::vector<Handle<DescriptorSet>> _descriptor_sets;
     std::vector<Handle<Buffer>> _constant_buffers;
+    std::vector<Encoder> encoders;
+    std::vector<FenceResultInfo> fence_results;
 
     Handle<DescriptorLayout> _pbr_layout;
 

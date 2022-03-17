@@ -218,9 +218,7 @@ void FrameGraph::reset(Backend& backend) {
     _ops.clear();
 }
 
-void FrameGraph::execute(Backend& backend) {
-
-    //backend.begin_context(ContextType::Graphics);
+FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
 
     for(auto& op : _ops) {
         switch(op.first) {
@@ -259,8 +257,9 @@ void FrameGraph::execute(Backend& backend) {
 
                 auto& render_pass = _render_passes[{ op.second, _flight_frame_index }];
 
-                //backend.set_viewport(0, 0, render_pass.desc.width, render_pass.desc.height);
-                //backend.set_scissor(0, 0, render_pass.desc.width, render_pass.desc.height);
+                encoder
+                    .set_viewport(0, 0, render_pass.desc.width, render_pass.desc.height)
+                    .set_scissor(0, 0, render_pass.desc.width, render_pass.desc.height);
 
                 // Color Barriers
                 for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
@@ -271,11 +270,11 @@ void FrameGraph::execute(Backend& backend) {
 
                         auto attachment_visitor = make_visitor(
                             [&](ExternalAttachment& attachment) {
-                                //backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
+                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
                                 _memory_states[attachment_id].first = MemoryState::RenderTarget;
                             },
                             [&](InternalAttachment& attachment) {
-                                //backend.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
+                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
                                 _memory_states[attachment_id].first = MemoryState::RenderTarget;
                             }
                         );
@@ -306,7 +305,7 @@ void FrameGraph::execute(Backend& backend) {
                     }
                 }
 
-                /*backend.begin_render_pass(
+                encoder.begin_render_pass(
                     render_pass.render_pass, 
                     std::span<Color>(render_pass.desc._clear_colors.data(), render_pass.desc.color_count), 
                     render_pass.desc._clear_depth,
@@ -315,7 +314,7 @@ void FrameGraph::execute(Backend& backend) {
 
                 render_pass.func(render_pass.render_pass, _render_pass_resources[{ op.second, _flight_frame_index }]);
 
-                backend.end_render_pass();*/
+                encoder.end_render_pass();
             } break;
         }
     }
@@ -329,11 +328,11 @@ void FrameGraph::execute(Backend& backend) {
         
         auto attachment_visitor = make_visitor(
             [&](ExternalAttachment& attachment) {
-                //backend.barrier(attachment.target, _memory_states[key.first].first, attachment.after);
+                encoder.barrier(attachment.target, _memory_states[key.first].first, attachment.after);
                 _memory_states[key.first].first = attachment.after;
             },
             [&](InternalAttachment& attachment) {
-                //backend.barrier(attachment.target, _memory_states[key.first].first, MemoryState::Common);
+                encoder.barrier(attachment.target, _memory_states[key.first].first, MemoryState::Common);
                 _memory_states[key.first].first = MemoryState::Common;
             }
         );
@@ -341,13 +340,12 @@ void FrameGraph::execute(Backend& backend) {
         std::visit(attachment_visitor, value);
     }
 
-    /*backend.end_context();
-
-    backend.execute_context(ContextType::Graphics);*/
-
-    //backend.swap_buffers();
+    FenceResultInfo result_info = backend.submit(std::span<Encoder const>(&encoder, 1), EncoderFlags::Graphics);
+    backend.present();
 
     _flight_frame_index = (_flight_frame_index + 1) % _flight_frame_count;
+
+    return result_info;
 }
 
 FrameGraph& FrameGraph::bind_external_attachment(AttachmentId const id, Handle<Texture> const& target) {

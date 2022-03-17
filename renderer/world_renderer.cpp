@@ -12,11 +12,12 @@ using namespace ionengine::renderer;
 WorldRenderer::WorldRenderer(Backend& backend, platform::Window& window, ThreadPool& thread_pool) 
     : _backend(&backend), _thread_pool(&thread_pool) {
 
-    Device graphics_device(backend, EncoderType::Graphics, SwapchainDesc { &window, 1, 2 });
-    _devices[EncoderType::Graphics] = std::move(graphics_device);
+    Encoder encoder(backend, EncoderFlags::Graphics);
+    encoders.push_back(std::move(encoder));
+    Encoder encoder_2(backend, EncoderFlags::Graphics);
+    encoders.push_back(std::move(encoder_2));
 
-    Device copy_device(backend, EncoderType::Copy);
-    _devices[EncoderType::Copy] = std::move(copy_device);
+    fence_results.resize(2);
 
     _render_passes.resize(2);
     _pipelines.resize(2);
@@ -87,34 +88,18 @@ WorldRenderer::WorldRenderer(Backend& backend, platform::Window& window, ThreadP
             }
         )
         .build(*_backend, 2);
-
-    /*Encoder encoder_graphics(*_backend, EncoderType::Graphics);
-    encoder_graphics
-        .set_viewport(0, 0, 800, 600)
-        .set_scissor(0, 0, 800, 600)
-        // ...
-    ;
-
-    Device device_graphics(*_backend, EncoderType::Graphics);
-    FenceResultInfo result = device_graphics.submit(std::span<Encoder const>(&encoder_graphics, 1));
-    device_graphics.wait(result);
-
-    if(device_graphics.is_completed(result)) {
-        encoder_graphics
-            .set_viewport(0, 0, 800, 600)
-            .set_scissor(0, 0, 800, 600)
-            // ...
-        ;
-    }
-
-    _backend->swap_buffers();*/
 }
 
 void WorldRenderer::update() {
 
-    //_frame_graph
-    //    .bind_external_attachment(std::to_underlying(AttachmentIds::Swapchain), backend.swap_buffer())
-    //    .execute(backend);
+    Handle<Texture> swapchain_texture = _backend->acquire_next_texture();
+
+    _backend->wait(fence_results[frame_index]);
+
+    _frame_graph
+        .bind_external_attachment(std::to_underlying(AttachmentIds::Swapchain), swapchain_texture);
+
+    fence_results[frame_index] = _frame_graph.execute(*_backend, encoders[frame_index]);
 
     frame_index = (frame_index + 1) % 2;
 }

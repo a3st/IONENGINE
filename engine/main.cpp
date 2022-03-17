@@ -23,7 +23,7 @@ int main(int* argc, char** agrv) {
         platform::WindowLoop loop;
         platform::Window window(u8"IONENGINE", 800, 600, false, loop);
 
-        renderer::Backend backend(0);
+        renderer::Backend backend(0, renderer::SwapchainDesc { &window, 1, 2 });
 
         AssetManager asset_manager(thread_pool);
 

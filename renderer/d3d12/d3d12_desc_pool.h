@@ -76,6 +76,7 @@ public:
         auto alloc_info = DescriptorAllocInfo {};
         alloc_info.heap = _heap.Get();
         alloc_info.offset = index;
+        alloc_info.descriptor_size = _descriptor_size;
         return alloc_info;
     }
     

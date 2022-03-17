@@ -83,11 +83,13 @@ enum class ShaderFlags : uint16_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(ShaderFlags)
 
-enum class EncoderType {
-    Graphics,
-    Copy,
-    Compute
+enum class EncoderFlags : uint32_t {
+    Graphics = 1 << 0,
+    Copy = 1 << 1,
+    Compute = 1 << 2
 };
+
+DECLARE_ENUM_CLASS_BIT_FLAG(EncoderFlags)
 
 enum class RenderPassLoadOp {
     Load,
@@ -224,7 +226,7 @@ struct AdapterDesc {
 };
 
 struct FenceResultInfo {
-    Device* device;
+    EncoderFlags flags;
     uint64_t value;
 };
 
@@ -235,9 +237,13 @@ struct SwapchainDesc {
 };
 
 class Backend {
+private:
+
+    friend class Encoder;
+
 public:
 
-    Backend(uint32_t const adapter_index);
+    Backend(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc);
 
     ~Backend();
 
@@ -313,26 +319,39 @@ public:
 
     void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
 
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
+    void present();
 
-    Handle<Texture> get_swapchain_texture() const;
+    Handle<Texture> acquire_next_texture();
+
+    void recreate_swapchain(uint32_t const width, uint32_t const height, SwapchainDesc const& swapchain_desc = {});
+
+    FenceResultInfo submit(std::span<Encoder const> const encoders, EncoderFlags const flags);
+
+    FenceResultInfo submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after, EncoderFlags const flags);
+
+    void wait(FenceResultInfo const& result_info);
+
+    bool is_completed(FenceResultInfo const& result_info) const;
+
+    void wait_for_idle(EncoderFlags const flags);
 
 private:
 
     struct Impl;
     struct impl_deleter { void operator()(Impl* ptr) const; };
     std::unique_ptr<Impl, impl_deleter> _impl;
-
-    friend class Encoder;
-    friend class Device;
 };
 
 class Encoder {
+private:
+
+    friend class Backend;
+
 public:
 
     Encoder() = default;
 
-    Encoder(Backend& backend, EncoderType const encoder_type);
+    Encoder(Backend& backend, EncoderFlags const flags);
 
     ~Encoder();
 
@@ -387,51 +406,6 @@ public:
     Encoder& draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
 
     Encoder& draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
-
-private:
-
-    struct Impl;
-    struct impl_deleter { void operator()(Impl* ptr) const; };
-    std::unique_ptr<Impl, impl_deleter> _impl;
-
-    friend class Device;
-};
-
-class Device {
-public:
-
-    Device() = default;
-
-    Device(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc = {});
-
-    ~Device();
-
-    Device(Device const&) = delete;
-
-    Device(Device&& other) noexcept {
-
-        std::swap(_impl, other._impl);
-    }
-
-    Device& operator=(Device const&) = delete;
-
-    Device& operator=(Device&& other) noexcept {
-
-        std::swap(_impl, other._impl);
-        return *this;
-    }
-
-    FenceResultInfo submit(std::span<Encoder const> const encoders);
-
-    FenceResultInfo submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after);
-
-    void wait(FenceResultInfo const& result_info);
-
-    bool is_completed(FenceResultInfo const& result_info);
-
-    void wait_for_idle();
-
-    void present();
 
 private:
 

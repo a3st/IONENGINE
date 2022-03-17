@@ -145,16 +145,21 @@ struct Backend::Impl {
     d3d12::GPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4096> gpu_cbv_srv_uav_pool;
     d3d12::GPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024> gpu_sampler_pool;
 
+    std::vector<d3d12::GPUDescriptorHeap*> gpu_cbv_srv_uav_heaps;
+    std::vector<d3d12::GPUDescriptorHeap*> gpu_sampler_heaps;
+
     ComPtr<IDXGIFactory4> factory;
-    ComPtr<IDXGISwapChain3> swapchain;
     ComPtr<ID3D12Debug> debug;
     ComPtr<IDXGIAdapter1> adapter;
     ComPtr<ID3D12Device4> device;
+    ComPtr<IDXGISwapChain3> swapchain;
+    std::vector<ComPtr<ID3D12CommandQueue>> queues;
+    std::vector<ComPtr<ID3D12Fence>> fences;
+    std::vector<ID3D12CommandList*> batches;
+
+    std::vector<uint64_t> fence_values;
 
     HANDLE fence_event;
-
-    std::vector<d3d12::GPUDescriptorHeap*> gpu_cbv_srv_uav_heaps;
-    std::vector<d3d12::GPUDescriptorHeap*> gpu_sampler_heaps;
 
     ResourceSet<Texture, std::to_underlying(BackendLimits::TextureCount)> textures;
     ResourceSet<Buffer, std::to_underlying(BackendLimits::BufferCount)> buffers;
@@ -170,9 +175,10 @@ struct Backend::Impl {
     Sampler default_sampler;
     Buffer default_uav_buffer;
 
-    std::vector<Handle<Texture>> swap_textures;
+    std::vector<Handle<Texture>> swapchain_textures;
+    uint32_t swapchain_index{0};
 
-    void initialize(uint32_t const adapter_index);
+    void initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc);
 
     void deinitialize();
     
@@ -240,9 +246,21 @@ struct Backend::Impl {
 
     void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
     
-    void resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count);
-    
-    Handle<Texture> get_swapchain_texture() const;
+    void present();
+
+    Handle<Texture> acquire_next_texture();
+
+    void recreate_swapchain(uint32_t const width, uint32_t const height, SwapchainDesc const& swapchain_desc = {});
+
+    FenceResultInfo submit(std::span<Encoder const> const encoders, EncoderFlags const flags);
+
+    FenceResultInfo submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after, EncoderFlags const flags);
+
+    void wait(FenceResultInfo const& result_info);
+
+    bool is_completed(FenceResultInfo const& result_info) const;
+
+    void wait_for_idle(EncoderFlags const flags);
 };
 
 void Backend::impl_deleter::operator()(Impl* ptr) const {
@@ -253,14 +271,13 @@ void Backend::impl_deleter::operator()(Impl* ptr) const {
 struct Encoder::Impl {
 
     Backend::Impl* backend;
-    
     ComPtr<ID3D12CommandAllocator> command_allocator;
     ComPtr<ID3D12GraphicsCommandList4> command_list;
     Pipeline* binded_pipeline;
 
     bool is_reset{false};
 
-    void initialize(Backend& backend, EncoderType const encoder_type);
+    void initialize(Backend& backend, EncoderFlags const flags);
 
     void reset();
 
@@ -307,32 +324,6 @@ void Encoder::impl_deleter::operator()(Impl* ptr) const {
     delete ptr;
 }
 
-struct Device::Impl {
-
-    Backend::Impl* backend;
-
-    ComPtr<ID3D12CommandQueue> queue;
-
-    void initialize(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc = {});
-
-    FenceResultInfo submit(std::span<Encoder const> const encoders);
-
-    FenceResultInfo submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after);
-
-    void wait(FenceResultInfo const& result_info);
-
-    bool is_completed(FenceResultInfo const& result_info);
-
-    void wait_for_idle();
-
-    void present();
-};
-
-void Device::impl_deleter::operator()(Impl* ptr) const {
-
-    delete ptr;
-}
-
 //===========================================================
 //
 //
@@ -341,7 +332,7 @@ void Device::impl_deleter::operator()(Impl* ptr) const {
 //
 //===========================================================
 
-void Backend::Impl::initialize(uint32_t const adapter_index) {
+void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc) {
 
     THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(debug.GetAddressOf())));
     debug->EnableDebugLayer();
@@ -351,65 +342,119 @@ void Backend::Impl::initialize(uint32_t const adapter_index) {
     THROW_IF_FAILED(factory->EnumAdapters1(adapter_index, adapter.GetAddressOf()));
     
     THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(device.GetAddressOf())));
+    
+    queues.resize(3);
+    fences.resize(3);
 
-    for(uint32_t i = 0; i < 3; ++i) {
+    auto queue_desc = D3D12_COMMAND_QUEUE_DESC {};
+    queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-        gpu_cbv_srv_uav_heaps.push_back(gpu_cbv_srv_uav_pool.allocate(device.Get(), 1024));
-        gpu_sampler_heaps.push_back(gpu_sampler_pool.allocate(device.Get(), 256));
-    }
+    THROW_IF_FAILED(device->CreateCommandQueue(
+        &queue_desc,
+        __uuidof(ID3D12CommandQueue), 
+        reinterpret_cast<void**>(queues[0].GetAddressOf()))
+    );
+
+    THROW_IF_FAILED(device->CreateFence(
+        0, 
+        D3D12_FENCE_FLAG_NONE, 
+        __uuidof(ID3D12Fence), 
+        reinterpret_cast<void**>(fences[0].GetAddressOf()))
+    );
+
+    queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+
+    THROW_IF_FAILED(device->CreateCommandQueue(
+        &queue_desc,
+        __uuidof(ID3D12CommandQueue), 
+        reinterpret_cast<void**>(queues[1].GetAddressOf()))
+    );
+
+    THROW_IF_FAILED(device->CreateFence(
+        0, 
+        D3D12_FENCE_FLAG_NONE, 
+        __uuidof(ID3D12Fence), 
+        reinterpret_cast<void**>(fences[1].GetAddressOf()))
+    );
+
+    queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+
+    THROW_IF_FAILED(device->CreateCommandQueue(
+        &queue_desc,
+        __uuidof(ID3D12CommandQueue), 
+        reinterpret_cast<void**>(queues[2].GetAddressOf()))
+    );
+
+    THROW_IF_FAILED(device->CreateFence(
+        0, 
+        D3D12_FENCE_FLAG_NONE, 
+        __uuidof(ID3D12Fence), 
+        reinterpret_cast<void**>(fences[2].GetAddressOf()))
+    );
+
+    fence_values.resize(3);
 
     fence_event = CreateEvent(nullptr, false, false, nullptr);
 
     if(!fence_event) {
         THROW_IF_FAILED(HRESULT_FROM_WIN32(GetLastError()));
     }
-}
 
-void Backend::Impl::deinitialize() {
+    platform::Size window_size = _swapchain_desc.window->get_size();
 
-    CloseHandle(fence_event);
-}
+    auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
+    swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    swapchain_desc.Width = window_size.width;
+    swapchain_desc.Height = window_size.height;
+    swapchain_desc.BufferCount = _swapchain_desc.buffer_count;
+    swapchain_desc.SampleDesc.Count = _swapchain_desc.sample_count;
+    swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+    swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 
-    /*
+    THROW_IF_FAILED(factory->CreateSwapChainForHwnd(
+        queues[0].Get(), 
+        reinterpret_cast<HWND>(_swapchain_desc.window->get_handle()), 
+        &swapchain_desc, 
+        nullptr, 
+        nullptr, 
+        reinterpret_cast<IDXGISwapChain1**>(swapchain.GetAddressOf()))
+    );
 
-    for(uint32_t i = 0; i < swap_buffers_count; ++i) {
+    for(uint32_t i = 0; i < _swapchain_desc.buffer_count; ++i) {
+
+        gpu_cbv_srv_uav_heaps.push_back(gpu_cbv_srv_uav_pool.allocate(device.Get(), 1024));
+        gpu_sampler_heaps.push_back(gpu_sampler_pool.allocate(device.Get(), 256));
 
         // Render Target from swapchain resource
         {
             ComPtr<ID3D12Resource> resource;
             THROW_IF_FAILED(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource.GetAddressOf())));
 
-            auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
-            swapchain->GetDesc1(&swapchain_desc);
-
             auto view_desc = D3D12_RENDER_TARGET_VIEW_DESC {};
             view_desc.Format = swapchain_desc.Format;
             view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-            d3d12::DescriptorAllocInfo descriptor_alloc_info = descriptor_allocator.allocate(device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
-
-            const uint32_t rtv_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-            D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle = { 
-                descriptor_alloc_info.heap()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                rtv_size * // Device descriptor size
-                descriptor_alloc_info.offset() // Allocation offset
-            };
-            device->CreateRenderTargetView(resource.Get(), &view_desc, cpu_handle);
+            d3d12::DescriptorAllocInfo alloc_info = rtv_pool.allocate(device.Get());
+            device->CreateRenderTargetView(resource.Get(), &view_desc, alloc_info.cpu_handle());
 
             auto texture = Texture {};
             texture.resource = resource;
-            texture.rtv_descriptor_alloc_info = descriptor_alloc_info;
+            texture.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = alloc_info;
 
-            swap_buffers[i] = texture_allocator.allocate(texture);
+            uint32_t id = textures.push(std::move(texture));
+            swapchain_textures.emplace_back(id);
         }
+    }
+}
 
-        ++direct_fence.second[i];
-        ++copy_fence.second[i];
-        ++compute_fence.second[i];
+void Backend::Impl::deinitialize() {
 
-        upload_buffers[i].first = create_buffer(64 * 1024 * 1024, BufferFlags::HostWrite);\
-        upload_buffers[i].second = 0;
-    }*/
+    wait_for_idle(EncoderFlags::Graphics | EncoderFlags::Copy | EncoderFlags::Compute);
+
+    CloseHandle(fence_event);
+}
 
 Handle<Texture> Backend::Impl::create_texture(
     Dimension const dimension,
@@ -1225,15 +1270,148 @@ void Backend::Impl::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t co
     }
 }
 
-void Backend::Impl::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
+Handle<Texture> Backend::Impl::acquire_next_texture() {
+
+    swapchain_index = swapchain->GetCurrentBackBufferIndex();
+    return swapchain_textures[swapchain_index];
+}
+
+void Backend::Impl::present() {
+
+    swapchain->Present(0, 0);
+}
+
+void Backend::Impl::recreate_swapchain(uint32_t const width, uint32_t const height, SwapchainDesc const& swapchain_desc) {
 
 
 }
 
-Handle<Texture> Backend::Impl::get_swapchain_texture() const {
+FenceResultInfo Backend::Impl::submit(std::span<Encoder const> const encoders, EncoderFlags const flags) {
 
-    uint32_t const swap_index = swapchain->GetCurrentBackBufferIndex();
-    return swap_textures[swap_index];
+    auto get_queue_index = [&](EncoderFlags const encoder_flags) {
+        switch(encoder_flags) {
+            case EncoderFlags::Graphics: return 0;
+            case EncoderFlags::Copy: return 1;
+            case EncoderFlags::Compute: return 2;
+        }
+        return 0;
+    };
+
+    batches.clear();
+
+    for(auto& encoder : encoders) {
+        encoder._impl->command_list->Close();
+        encoder._impl->is_reset = false;
+        batches.push_back(reinterpret_cast<ID3D12CommandList* const>(encoder._impl->command_list.Get()));
+    }
+
+    queues[get_queue_index(flags)]->ExecuteCommandLists(static_cast<uint32_t>(batches.size()), batches.data());
+
+    uint64_t& fence_value = fence_values[get_queue_index(flags)];
+
+    auto result_info = FenceResultInfo {};
+    result_info.flags = flags;
+    result_info.value = fence_value;
+
+    THROW_IF_FAILED(queues[get_queue_index(flags)]->Signal(fences[get_queue_index(flags)].Get(), fence_value));
+
+    ++fence_value;
+    return result_info;
+}
+
+FenceResultInfo Backend::Impl::submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after, EncoderFlags const flags) {
+    
+    auto get_queue_index = [&](EncoderFlags const encoder_flags) {
+        switch(encoder_flags) {
+            case EncoderFlags::Graphics: return 0;
+            case EncoderFlags::Copy: return 1;
+            case EncoderFlags::Compute: return 2;
+        }
+        return 0;
+    };
+
+    batches.clear();
+
+    for(auto& encoder : encoders) {
+        encoder._impl->command_list->Close();
+        encoder._impl->is_reset = false;
+        batches.push_back(reinterpret_cast<ID3D12CommandList* const>(encoder._impl->command_list.GetAddressOf()));
+    }
+
+    THROW_IF_FAILED(queues[get_queue_index(flags)]->Wait(fences[get_queue_index(result_info_after.flags)].Get(), result_info_after.value));
+    queues[get_queue_index(flags)]->ExecuteCommandLists(static_cast<uint32_t>(batches.size()), batches.data());
+
+    uint64_t& fence_value = fence_values[get_queue_index(flags)];
+
+    auto result_info = FenceResultInfo {};
+    result_info.flags = flags;
+    result_info.value = fence_value;
+
+    THROW_IF_FAILED(queues[get_queue_index(flags)]->Signal(fences[get_queue_index(flags)].Get(), fence_value));
+
+    ++fence_value;
+    return result_info;
+}
+
+void Backend::Impl::wait(FenceResultInfo const& result_info) {
+    
+    auto get_queue_index = [&](EncoderFlags const encoder_flags) {
+        switch(encoder_flags) {
+            case EncoderFlags::Graphics: return 0;
+            case EncoderFlags::Copy: return 1;
+            case EncoderFlags::Compute: return 2;
+        }
+        return 0;
+    };
+
+    if(fences[get_queue_index(result_info.flags)]->GetCompletedValue() < result_info.value) {
+        THROW_IF_FAILED(fences[get_queue_index(result_info.flags)]->SetEventOnCompletion(result_info.value, fence_event));
+        WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
+    }
+}
+
+bool Backend::Impl::is_completed(FenceResultInfo const& result_info) const {
+    
+    return fences[static_cast<uint32_t>(result_info.flags)]->GetCompletedValue() >= result_info.value;
+}
+
+void Backend::Impl::wait_for_idle(EncoderFlags const flags) {
+
+    if(flags & EncoderFlags::Graphics) {
+
+        uint64_t& fence_value = fence_values[0];
+
+        THROW_IF_FAILED(queues[0]->Signal(fences[0].Get(), fence_value));
+        THROW_IF_FAILED(fences[0]->SetEventOnCompletion(fence_value, fence_event));
+
+        WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
+        
+        ++fence_value;
+    }
+
+    if(flags & EncoderFlags::Copy) {
+
+        uint64_t& fence_value = fence_values[1];
+
+        THROW_IF_FAILED(queues[1]->Signal(fences[1].Get(), fence_value));
+        THROW_IF_FAILED(fences[1]->SetEventOnCompletion(fence_value, fence_event));
+
+        WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
+        
+        ++fence_value;
+    }
+
+    if(flags & EncoderFlags::Compute) {
+
+        uint64_t& fence_value = fence_values[2];
+
+        THROW_IF_FAILED(queues[2]->Signal(fences[2].Get(), fence_value));
+        THROW_IF_FAILED(fences[2]->SetEventOnCompletion(fence_value, fence_event));
+
+        WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
+        
+        ++fence_value;
+    }
 }
 
 //===========================================================
@@ -1244,10 +1422,10 @@ Handle<Texture> Backend::Impl::get_swapchain_texture() const {
 //
 //===========================================================
 
-Backend::Backend(uint32_t const adapter_index) : 
+Backend::Backend(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc) : 
     _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
 
-    _impl->initialize(adapter_index);
+    _impl->initialize(adapter_index, swapchain_desc);
 }
 
 Backend::~Backend() {
@@ -1373,14 +1551,44 @@ void Backend::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const of
     _impl->upload_buffer_data(buffer, offset, data);
 }
 
-void Backend::resize_buffers(uint32_t const width, uint32_t const height, uint32_t const buffer_count) {
-    
-    _impl->resize_buffers(width, height, buffer_count);
+void Backend::present() {
+
+    _impl->present();
 }
 
-Handle<Texture> Backend::get_swapchain_texture() const {
+Handle<Texture> Backend::acquire_next_texture() {
 
-    return _impl->get_swapchain_texture();
+    return _impl->acquire_next_texture();
+}
+
+void Backend::recreate_swapchain(uint32_t const width, uint32_t const height, SwapchainDesc const& swapchain_desc) {
+    
+    _impl->recreate_swapchain(width, height, swapchain_desc);
+}
+
+FenceResultInfo Backend::submit(std::span<Encoder const> const encoders, EncoderFlags const flags) {
+
+    return _impl->submit(encoders, flags);
+}
+
+FenceResultInfo Backend::submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after, EncoderFlags const flags) {
+    
+    return _impl->submit_after(encoders, result_info_after, flags);
+}
+
+void Backend::wait(FenceResultInfo const& result_info) {
+    
+    return _impl->wait(result_info);
+}
+
+bool Backend::is_completed(FenceResultInfo const& result_info) const {
+    
+    return _impl->is_completed(result_info);
+}
+
+void Backend::wait_for_idle(EncoderFlags const flags) {
+    
+    return _impl->wait_for_idle(flags);
 }
 
 //===========================================================
@@ -1391,13 +1599,13 @@ Handle<Texture> Backend::get_swapchain_texture() const {
 //
 //===========================================================
 
-void Encoder::Impl::initialize(Backend& backend, EncoderType const encoder_type) {
+void Encoder::Impl::initialize(Backend& backend, EncoderFlags const flags) {
 
-    auto get_command_list_type = [&](EncoderType const encoder_type) -> D3D12_COMMAND_LIST_TYPE {
-        switch(encoder_type) {
-            case EncoderType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
-            case EncoderType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
-            case EncoderType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+    auto get_command_list_type = [&](EncoderFlags const encoder_flags) -> D3D12_COMMAND_LIST_TYPE {
+        switch(encoder_flags) {
+            case EncoderFlags::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
+            case EncoderFlags::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
+            case EncoderFlags::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
         }
         return D3D12_COMMAND_LIST_TYPE_DIRECT;
     };
@@ -1405,14 +1613,14 @@ void Encoder::Impl::initialize(Backend& backend, EncoderType const encoder_type)
     this->backend = backend._impl.get();
     
     THROW_IF_FAILED(this->backend->device->CreateCommandAllocator(
-        get_command_list_type(encoder_type), 
+        get_command_list_type(flags), 
         __uuidof(ID3D12CommandAllocator), 
         reinterpret_cast<void**>(command_allocator.GetAddressOf()))
     );
         
     THROW_IF_FAILED(this->backend->device->CreateCommandList1(
         0, 
-        get_command_list_type(encoder_type), 
+        get_command_list_type(flags), 
         D3D12_COMMAND_LIST_FLAG_NONE,
         __uuidof(ID3D12GraphicsCommandList4),
         reinterpret_cast<void**>(command_list.GetAddressOf()))
@@ -1427,9 +1635,9 @@ void Encoder::Impl::reset() {
 
     THROW_IF_FAILED(command_list->Reset(command_allocator.Get(), nullptr));
 
-    if(command_list->GetType() == D3D12_COMMAND_LIST_TYPE_DIRECT || command_list->GetType() == D3D12_COMMAND_LIST_TYPE_COMPUTE) {
+    if(command_list->GetType() == D3D12_COMMAND_LIST_TYPE_DIRECT) {
 
-        uint32_t const swap_index = backend->swapchain->GetCurrentBackBufferIndex();
+        uint32_t const swap_index = backend->swapchain_index;
 
         std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
         descriptor_heaps[0] = backend->gpu_cbv_srv_uav_heaps[swap_index]->get_heap();
@@ -1761,10 +1969,10 @@ void Encoder::Impl::draw_indexed(uint32_t const index_count, uint32_t const inst
 //
 //===========================================================
 
-Encoder::Encoder(Backend& backend, EncoderType const encoder_type) : 
+Encoder::Encoder(Backend& backend, EncoderFlags const flags) : 
     _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
 
-    _impl->initialize(backend, encoder_type);
+    _impl->initialize(backend, flags);
 }
 
 Encoder::~Encoder() = default;
@@ -1856,244 +2064,3 @@ Encoder& Encoder::draw_indexed(uint32_t const index_count, uint32_t const instan
     _impl->draw_indexed(index_count, instance_count, instance_offset);
     return *this;
 }
-
-//===========================================================
-//
-//
-//          Device Implementation
-//
-//
-//===========================================================
-
-void Device::Impl::initialize(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc) {
-
-    auto get_command_list_type = [&](EncoderType const encoder_type) -> D3D12_COMMAND_LIST_TYPE {
-        switch(encoder_type) {
-            case EncoderType::Graphics: return D3D12_COMMAND_LIST_TYPE_DIRECT;
-            case EncoderType::Copy: return D3D12_COMMAND_LIST_TYPE_COPY;
-            case EncoderType::Compute: return D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        }
-        return D3D12_COMMAND_LIST_TYPE_DIRECT;
-    };
-
-    this->backend = backend._impl.get();
-    
-    auto queue_desc = D3D12_COMMAND_QUEUE_DESC {};
-    queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-    queue_desc.Type = get_command_list_type(encoder_type);
-
-    /*THROW_IF_FAILED(this->backend->device->CreateCommandQueue(
-        &queue_desc,
-        __uuidof(ID3D12CommandQueue), 
-        reinterpret_cast<void**>(queue.GetAddressOf()))
-    );
-
-    THROW_IF_FAILED(this->backend->device->CreateFence(
-        0, 
-        D3D12_FENCE_FLAG_NONE, 
-        __uuidof(ID3D12Fence), 
-        reinterpret_cast<void**>(fence.GetAddressOf()))
-    );*/
-
-    if(encoder_type == EncoderType::Graphics) {
-
-        /*platform::Size window_size = swapchain_desc.window->get_size();
-
-        auto _swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
-        _swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        _swapchain_desc.Width = window_size.width;
-        _swapchain_desc.Height = window_size.height;
-        _swapchain_desc.BufferCount = swapchain_desc.buffer_count;
-        _swapchain_desc.SampleDesc.Count = swapchain_desc.sample_count;
-        _swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        _swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-        _swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-
-        THROW_IF_FAILED(this->backend->factory->CreateSwapChainForHwnd(
-            queue.Get(), 
-            reinterpret_cast<HWND>(swapchain_desc.window->get_handle()), 
-            &_swapchain_desc, 
-            nullptr, 
-            nullptr, 
-            reinterpret_cast<IDXGISwapChain1**>(this->backend->swapchain.GetAddressOf()))
-        );*/
-    }
-}
-
-FenceResultInfo Device::Impl::submit(std::span<Encoder const> const encoders) {
-
-    return {};
-}
-
-FenceResultInfo Device::Impl::submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after) {
-
-    return {};
-}
-
-void Device::Impl::wait(FenceResultInfo const& result_info) {
-
-
-}
-
-bool Device::Impl::is_completed(FenceResultInfo const& result_info) {
-
-    return true;
-}
-
-void Device::Impl::wait_for_idle() {
-
-}
-
-void Device::Impl::present() {
-
-    backend->swapchain->Present(0, 0);
-}
-
-/*
-
-    uint64_t const current_value = direct_fence.second[swap_index];
-
-    THROW_IF_FAILED(direct_queue->Signal(direct_fence.first.Get(), current_value));
-
-    if(direct_fence.first->GetCompletedValue() < direct_fence.second[swap_index]) {
-        THROW_IF_FAILED(direct_fence.first->SetEventOnCompletion(direct_fence.second[swap_index], fence_event));
-        WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
-    }
-
-    direct_fence.second[swap_index] = current_value + 1;
-
-*/
-
-
-
-//===========================================================
-//
-//
-//          Device Pointer to Implementation
-//
-//
-//===========================================================
-
-Device::Device(Backend& backend, EncoderType const encoder_type, SwapchainDesc const& swapchain_desc) :
-    _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
-
-    _impl->initialize(backend, encoder_type, swapchain_desc);
-}
-
-Device::~Device() = default;
-
-FenceResultInfo Device::submit(std::span<Encoder const> const encoders) {
-
-    return _impl->submit(encoders);
-}
-
-FenceResultInfo Device::submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after) {
-
-    return _impl->submit_after(encoders, result_info_after);
-}
-
-void Device::wait(FenceResultInfo const& result_info) {
-
-    _impl->wait(result_info);
-}
-
-bool Device::is_completed(FenceResultInfo const& result_info) {
-
-    return _impl->is_completed(result_info);
-}
-
-void Device::wait_for_idle() {
-    
-    _impl->wait_for_idle();
-}
-
-void Device::present() {
-
-    _impl->present();
-}
-
-/*
-
-void Backend::Impl::end_context() {
-
-    THROW_IF_FAILED(current_list->command_list->Close());
-    current_list->is_descriptor_heaps_set = false;
-    current_list = nullptr;
-}
-
-void Backend::Impl::wait_for_context(ContextType const context_type) {
-
-    Fence* fence;
-    ID3D12CommandQueue* queue;
-
-    switch(context_type) {
-        case ContextType::Graphics: {
-            fence = &direct_fence;
-            queue = direct_queue.Get();
-        } break;
-        case ContextType::Copy: {
-            fence = &copy_fence;
-            queue = copy_queue.Get();
-        } break;
-        case ContextType::Compute: {
-            fence = &compute_fence;
-            queue = compute_queue.Get();
-        } break;
-    }
-
-    THROW_IF_FAILED(queue->Signal(fence->first.Get(), fence->second[swap_index]));
-
-    THROW_IF_FAILED(fence->first->SetEventOnCompletion(fence->second[swap_index], fence_event));
-
-    WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
-
-    ++fence->second[swap_index];
-}
-
-bool Backend::Impl::is_finished_context(ContextType const context_type) {
-
-    Fence* fence;
-
-    switch(context_type) {
-        case ContextType::Graphics: {
-            fence = &direct_fence;
-        } break;
-        case ContextType::Copy: {
-            fence = &copy_fence;
-        } break;
-        case ContextType::Compute: {
-            fence = &compute_fence;
-        } break;
-    }
-
-    return fence->first->GetCompletedValue() >= fence->second[swap_index];
-}
-
-void Backend::Impl::execute_context(ContextType const context_type) {
-
-    Fence* fence;
-    ID3D12CommandQueue* queue;
-    ID3D12CommandList* const* batch_command_list;
-
-    switch(context_type) {
-        case ContextType::Graphics: {
-            batch_command_list = reinterpret_cast<ID3D12CommandList* const*>(direct_lists[swap_index].command_list.GetAddressOf());
-            fence = &direct_fence;
-            queue = direct_queue.Get();
-        } break;
-        case ContextType::Copy: {
-            batch_command_list = reinterpret_cast<ID3D12CommandList* const*>(copy_lists[swap_index].command_list.GetAddressOf());
-            fence = &copy_fence;
-            queue = copy_queue.Get();
-        } break;
-        case ContextType::Compute: {
-            batch_command_list = reinterpret_cast<ID3D12CommandList* const*>(compute_lists[swap_index].command_list.GetAddressOf());
-            fence = &compute_fence;
-            queue = compute_queue.Get();
-        } break;
-    }
-
-    queue->ExecuteCommandLists(1, batch_command_list);
-
-    THROW_IF_FAILED(queue->Signal(fence->first.Get(), fence->second[swap_index]));
-}*/

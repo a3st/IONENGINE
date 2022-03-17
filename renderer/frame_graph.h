@@ -130,7 +130,8 @@ public:
 
     void build(Backend& backend, uint32_t const flight_frame_count);
     void reset(Backend& backend);
-    void execute(Backend& backend);
+    
+    FenceResultInfo execute(Backend& backend, Encoder& encoder);
 
 private:
 
