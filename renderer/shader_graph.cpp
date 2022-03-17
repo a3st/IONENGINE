@@ -56,5 +56,7 @@ void ShaderGraph::build(Backend& backend, ShaderResultDesc const& result, Shader
 
 void ShaderGraph::reset() {
 
-
+    _nodes.clear();
+    _node_inputs.clear();
+    _node_outputs.clear();
 }

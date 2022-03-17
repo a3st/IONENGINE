@@ -79,28 +79,34 @@ void WorldRenderer::set_projection_view(Matrixf const& projection, Matrixf const
 void WorldRenderer::initialize_shaders(std::span<ShaderData const> const shaders) {
 
     auto result_desc = ShaderResultDesc {};
-    result_desc.domain = ShaderDomain::Surface;
-    result_desc.blend_mode = ShaderBlendMode::Opaque;
-    result_desc.shader_high = 0;
-    result_desc.shader_low = 0;
-    result_desc.cull_mode = CullMode::Back;
-    result_desc.fill_mode = FillMode::Solid;
-
     ShaderTemplate shader_template;
-
     ShaderGraph shader_graph;
-    shader_graph
-        .input(0 /* NodeInputId */, ShaderInput<Vector3f> { u8"color", Vector3f(0.2f, 0.1f, 0.3f) })
-        .input(1 /* NodeInputId */, ShaderInput<float> { u8"power", 1.0f, { -1.0f, 2.0f } })
-        .shader(
-            0, // NodeOutputId
-            0, // Pass index
-            ShaderDesc{}
-                .name(u8"basic") // Shader name
-                .shaders({}) // Shader data
-                .input(0 /* NodeInputId */, 0 /* Index */)
-        )
-        .build(*_backend, result_desc, shader_template);
+
+    // Basic Shader
+    {
+        result_desc.domain = ShaderDomain::Surface;
+        result_desc.blend_mode = ShaderBlendMode::Opaque;
+        result_desc.shader_high = "shader_low_high"_hash;
+        result_desc.shader_low = "shader_low_high"_hash;
+        result_desc.cull_mode = CullMode::Back;
+        result_desc.fill_mode = FillMode::Solid;
+
+        shader_graph
+            .input("color_input"_hash, ShaderInput<Vector3f> { u8"color", Vector3f(0.2f, 0.1f, 0.3f) })
+            .input("power_input"_hash, ShaderInput<float> { u8"power", 1.0f, { -1.0f, 2.0f } })
+            .shader(
+                "shader_low_high"_hash,
+                0, // Pass index
+                ShaderDesc{}
+                    .name(u8"basic")
+                    .shaders({})
+                    .input("color_input"_hash, 0 /* Index */)
+            )
+            .build(*_backend, result_desc, shader_template);
+    }
+    shader_graph.reset();
+
+    // ...
 }
 
 void WorldRenderer::initialize_descriptor_layouts() {

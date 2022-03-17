@@ -13,6 +13,11 @@ cbuffer WorldBuffer : register(b0) {
 	float4x4 proj;
 };
 
+cbuffer MaterialData : register(b1) {
+	float3 color;
+	float power;
+};
+
 struct VSOutput {
 	float4 position : SV_POSITION;
 	float2 uv : TEXCOORD0;
