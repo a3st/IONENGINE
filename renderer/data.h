@@ -7,8 +7,7 @@
 namespace ionengine::renderer {
 
 struct MaterialData {
-
-    
+    uint32_t shader_template;
 };
 
 struct ShaderData {

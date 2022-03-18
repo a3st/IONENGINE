@@ -3,41 +3,37 @@
 #pragma once
 
 #include <renderer/d3d12/d3d12x.h>
-#include <renderer/d3d12/d3d12_desc_pool.h>
+#include <renderer/d3d12/d3d12_cpu_desc_pool.h>
 
 namespace ionengine::renderer::d3d12 {
 
-class GPUDescriptorHeap {
+class GPUDescriptorRange {
 public:
 
-    GPUDescriptorHeap() = default;
+    GPUDescriptorRange() = default;
 
-    GPUDescriptorHeap(GPUDescriptorHeap&& other) noexcept {
+    GPUDescriptorRange(GPUDescriptorRange&& other) noexcept {
 
         _heap = other._heap;
         _descriptor_size = other._descriptor_size;
         _count = other._count;
         _begin = other._begin;
-
         _arena_blocks = other._arena_blocks;
-        
         _alloc_index.store(other._alloc_index.load());
     }
 
-    GPUDescriptorHeap& operator=(GPUDescriptorHeap&& other) noexcept {
+    GPUDescriptorRange& operator=(GPUDescriptorRange&& other) noexcept {
 
         _heap = other._heap;
         _descriptor_size = other._descriptor_size;
         _count = other._count;
         _begin = other._begin;
-
         _arena_blocks = other._arena_blocks;
-        
         _alloc_index.store(other._alloc_index.load());
         return *this;
     }
 
-    GPUDescriptorHeap(ID3D12DescriptorHeap* const heap, uint32_t const descriptor_size, uint32_t const offset, uint32_t const count) : 
+    GPUDescriptorRange(ID3D12DescriptorHeap* const heap, uint32_t const descriptor_size, uint32_t const offset, uint32_t const count) : 
         _heap(heap), _begin(offset), _count(count) {
 
         uint32_t const arena_count = std::thread::hardware_concurrency();
@@ -70,7 +66,7 @@ public:
             
             _arena_blocks[cur_alloc_index].offset += descriptor_range.NumDescriptors;
         } else {
-            std::cerr << "[Error] GPUDescriptorHeap: Unable to allocate descriptors from the pool" << std::endl;
+            std::cerr << "[Error] GPUDescriptorRange: Unable to allocate descriptors from the pool" << std::endl;
         }
         return alloc_info;
     }
@@ -105,7 +101,7 @@ private:
     std::atomic<uint32_t> _alloc_index{0};
 };
 
-template<D3D12_DESCRIPTOR_HEAP_TYPE HeapType, size_t HeapSize>
+template<D3D12_DESCRIPTOR_HEAP_TYPE HeapType, uint32_t HeapSize>
 class GPUDescriptorPool {
 public:
 
@@ -113,13 +109,29 @@ public:
 
     GPUDescriptorPool(GPUDescriptorPool const&) = delete;
 
-    GPUDescriptorPool(GPUDescriptorPool&&) noexcept = delete;
+    GPUDescriptorPool(GPUDescriptorPool&& other) noexcept {
+
+        _is_initialized = other._is_initialized;
+        _heap.Swap(other._heap);
+        _descriptor_size = other._descriptor_size;
+        _offset = other._offset;
+        _alloc_ranges.swap(other._alloc_ranges);
+        return *this;
+    }
 
     GPUDescriptorPool& operator=(GPUDescriptorPool const&) = delete;
 
-    GPUDescriptorPool& operator=(GPUDescriptorPool&&) noexcept = delete;
+    GPUDescriptorPool& operator=(GPUDescriptorPool&& other) noexcept {
 
-    GPUDescriptorHeap* allocate(ID3D12Device4* const device, uint32_t const count) {
+        _is_initialized = other._is_initialized;
+        _heap.Swap(other._heap);
+        _descriptor_size = other._descriptor_size;
+        _offset = other._offset;
+        _alloc_ranges.swap(other._alloc_ranges);
+        return *this;
+    }
+
+    GPUDescriptorRange* allocate(ID3D12Device4* const device, uint32_t const count) {
 
         if(!_is_initialized) {
 
@@ -129,20 +141,22 @@ public:
         }
 
         if(_offset + count > HeapSize) {
-            std::cerr << "[Error] GPUDescriptorHeap: Unable to allocate descriptor heap from the pool" << std::endl;
+            std::cerr << "[Error] GPUDescriptorPool: Unable to allocate descriptor heap from the pool" << std::endl;
             return nullptr;
         }
 
-        _alloc_heaps.push_back(GPUDescriptorHeap(_heap.Get(), _descriptor_size, _offset, count));
+        _alloc_ranges.push_back(GPUDescriptorRange(_heap.Get(), _descriptor_size, _offset, count));
         _offset += count;
-        return &_alloc_heaps.back();
+        return &_alloc_ranges.back();
     }
 
     void reset() {
         
-        _alloc_heaps.clear();
+        _alloc_ranges.clear();
         _offset = 0;
     }
+
+    uint32_t space() const { return HeapSize - _offset; }
 
 private:
 
@@ -152,7 +166,7 @@ private:
     uint32_t _descriptor_size{0};
     uint32_t _offset{0};
 
-    std::list<GPUDescriptorHeap> _alloc_heaps;
+    std::list<GPUDescriptorRange> _alloc_ranges;
 
     void create_heap(ID3D12Device4* device) {
 

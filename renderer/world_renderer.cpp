@@ -79,11 +79,12 @@ void WorldRenderer::set_projection_view(Matrixf const& projection, Matrixf const
 void WorldRenderer::initialize_shaders(std::span<ShaderData const> const shaders) {
 
     auto result_desc = ShaderResultDesc {};
-    ShaderTemplate shader_template;
     ShaderGraph shader_graph;
 
     // Basic Shader
     {
+        ShaderTemplate shader_template;
+
         result_desc.domain = ShaderDomain::Surface;
         result_desc.blend_mode = ShaderBlendMode::Opaque;
         result_desc.shader_high = "shader_low_high"_hash;
@@ -98,15 +99,21 @@ void WorldRenderer::initialize_shaders(std::span<ShaderData const> const shaders
                 "shader_low_high"_hash,
                 0, // Pass index
                 ShaderDesc{}
-                    .name(u8"basic")
+                    // .name(u8"basic") -- no need
                     .shaders({})
                     .input("color_input"_hash, 0 /* Index */)
             )
             .build(*_backend, result_desc, shader_template);
+
+        // shader_templates["basic"_hash] = std::move(shader_template);
     }
     shader_graph.reset();
 
     // ...
+
+    // std::unordered_map<uint32_t, ShaderTemplate> shader_templates;
+    // std::unordered_map<
+
 }
 
 void WorldRenderer::initialize_descriptor_layouts() {
@@ -135,7 +142,17 @@ void WorldRenderer::build_frame_graph(uint32_t const width, uint32_t const heigh
                 .color("blit"_hash, RenderPassLoadOp::Clear, Color(0.2f, 0.4f, 0.3f, 1.0f)),
             [&](Handle<RenderPass> const& render_pass, RenderPassResources const& resources) {
                 
+                /*
 
+                Handle<Pipeline> pipeline = get_pipeline_data(
+                    shader_template, 
+                    render_pass, 
+                    index_pass
+                );
+
+                encoder.bind_pipeline(pipeline);
+                
+                */
             }
         )
         .build(*_backend, 2);

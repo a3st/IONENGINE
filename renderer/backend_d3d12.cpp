@@ -4,7 +4,7 @@
 #include <renderer/backend.h>
 #include <renderer/d3d12/d3d12x.h>
 #include <renderer/d3d12/memory_allocator.h>
-#include <renderer/d3d12/d3d12_desc_pool.h>
+#include <renderer/d3d12/d3d12_cpu_desc_pool.h>
 #include <renderer/d3d12/d3d12_gpu_desc_pool.h>
 #include <platform/window.h>
 #include <lib/exception.h>
@@ -14,20 +14,22 @@ using namespace ionengine::renderer;
 
 namespace ionengine::renderer {
 
+using DescriptorAllocInfo2 = std::pair<d3d12::DescriptorAllocInfo, uint32_t>;
+
 struct Texture {
     ComPtr<ID3D12Resource> resource;
     d3d12::MemoryAllocInfo memory_alloc_info;
-    std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, d3d12::DescriptorAllocInfo> descriptor_alloc_infos;
+    std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, DescriptorAllocInfo2> descriptor_alloc_infos;
 };
 
 struct Buffer {
     ComPtr<ID3D12Resource> resource;
     d3d12::MemoryAllocInfo memory_alloc_info;
-    d3d12::DescriptorAllocInfo descriptor_alloc_info;
+    DescriptorAllocInfo2 descriptor_alloc_info;
 };
 
 struct Sampler {
-    d3d12::DescriptorAllocInfo alloc_info;
+    DescriptorAllocInfo2 alloc_info;
 };
 
 struct DescriptorLayout {
@@ -137,16 +139,16 @@ struct Backend::Impl {
 
     d3d12::MemoryAllocator memory_allocator;
 
-    d3d12::DescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, std::to_underlying(BackendLimits::TextureCount)> cbv_srv_uav_pool;
-    d3d12::DescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 128> rtv_pool;
-    d3d12::DescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 2> dsv_pool;
-    d3d12::DescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, std::to_underlying(BackendLimits::SamplerCount)> sampler_pool;
+    std::vector<d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024>> cpu_cbv_srv_uav_pools;
+    d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 128> cpu_rtv_pool;
+    d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 2> cpu_dsv_pool;
+    d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024> cpu_sampler_pool;
 
     d3d12::GPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4096> gpu_cbv_srv_uav_pool;
-    d3d12::GPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024> gpu_sampler_pool;
+    d3d12::GPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 512> gpu_sampler_pool;
 
-    std::vector<d3d12::GPUDescriptorHeap*> gpu_cbv_srv_uav_heaps;
-    std::vector<d3d12::GPUDescriptorHeap*> gpu_sampler_heaps;
+    std::vector<d3d12::GPUDescriptorRange*> gpu_cbv_srv_uav_ranges;
+    std::vector<d3d12::GPUDescriptorRange*> gpu_sampler_ranges;
 
     ComPtr<IDXGIFactory4> factory;
     ComPtr<ID3D12Debug> debug;
@@ -177,6 +179,8 @@ struct Backend::Impl {
 
     std::vector<Handle<Texture>> swapchain_textures;
     uint32_t swapchain_index{0};
+
+    DescriptorAllocInfo2 allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type);
 
     void initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc);
 
@@ -332,6 +336,38 @@ void Encoder::impl_deleter::operator()(Impl* ptr) const {
 //
 //===========================================================
 
+DescriptorAllocInfo2 Backend::Impl::allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) {
+
+    auto alloc_info = d3d12::DescriptorAllocInfo {};
+    uint32_t pool_index = 0;
+
+    switch(heap_type) {
+        case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV: {
+            for(size_t i = 0; i < cpu_cbv_srv_uav_pools.size(); ++i) {
+                if(cpu_cbv_srv_uav_pools[i].space() > 0) {
+                    alloc_info = cpu_cbv_srv_uav_pools[i].allocate(device.Get());
+                    pool_index = static_cast<uint32_t>(i);
+                    break;
+                }
+            }
+        } break;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_RTV: {
+            alloc_info = cpu_rtv_pool.allocate(device.Get());
+        } break;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_DSV: {
+            alloc_info = cpu_dsv_pool.allocate(device.Get());
+        } break;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER: {
+            alloc_info = cpu_sampler_pool.allocate(device.Get());
+        } break;
+    }
+
+    if(!alloc_info.heap) {
+        throw ionengine::Exception(u8"Backend: Out of memory");
+    }
+    return { alloc_info, pool_index };
+}
+
 void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc) {
 
     THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(debug.GetAddressOf())));
@@ -343,6 +379,8 @@ void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const
     
     THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(device.GetAddressOf())));
     
+    cpu_cbv_srv_uav_pools.resize(4);
+
     queues.resize(3);
     fences.resize(3);
 
@@ -424,8 +462,8 @@ void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const
 
     for(uint32_t i = 0; i < _swapchain_desc.buffer_count; ++i) {
 
-        gpu_cbv_srv_uav_heaps.push_back(gpu_cbv_srv_uav_pool.allocate(device.Get(), 1024));
-        gpu_sampler_heaps.push_back(gpu_sampler_pool.allocate(device.Get(), 256));
+        gpu_cbv_srv_uav_ranges.push_back(gpu_cbv_srv_uav_pool.allocate(device.Get(), 1024));
+        gpu_sampler_ranges.push_back(gpu_sampler_pool.allocate(device.Get(), 256));
 
         // Render Target from swapchain resource
         {
@@ -436,8 +474,8 @@ void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const
             view_desc.Format = swapchain_desc.Format;
             view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-            d3d12::DescriptorAllocInfo alloc_info = rtv_pool.allocate(device.Get());
-            device->CreateRenderTargetView(resource.Get(), &view_desc, alloc_info.cpu_handle());
+            DescriptorAllocInfo2 alloc_info = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+            device->CreateRenderTargetView(resource.Get(), &view_desc, alloc_info.first.cpu_handle());
 
             auto texture = Texture {};
             texture.resource = resource;
@@ -550,8 +588,8 @@ Handle<Texture> Backend::Impl::create_texture(
             } break;
         }
 
-        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = dsv_pool.allocate(device.Get());
-        device->CreateDepthStencilView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV].cpu_handle());
+        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+        device->CreateDepthStencilView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV].first.cpu_handle());
     }
     if(flags & TextureFlags::RenderTarget) {
 
@@ -574,8 +612,8 @@ Handle<Texture> Backend::Impl::create_texture(
             } break;
         }
 
-        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = rtv_pool.allocate(device.Get());
-        device->CreateRenderTargetView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV].cpu_handle());
+        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+        device->CreateRenderTargetView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV].first.cpu_handle());
     }
     if(flags & TextureFlags::UnorderedAccess) {
         // TODO!
@@ -601,8 +639,8 @@ Handle<Texture> Backend::Impl::create_texture(
             } break;
         }
 
-        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = cbv_srv_uav_pool.allocate(device.Get());
-        device->CreateShaderResourceView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV].cpu_handle());
+        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        device->CreateShaderResourceView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV].first.cpu_handle());
     }
 
     uint32_t id = textures.push(std::move(texture_data));
@@ -616,16 +654,18 @@ void Backend::Impl::delete_texture(Handle<Texture> const& texture) {
     D3D12_RESOURCE_DESC resource_desc = texture_data.resource->GetDesc();
 
     if(resource_desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) {
-        rtv_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]);
+        cpu_rtv_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV].first);
     }
     if(resource_desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL) {
-        dsv_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV]);
+        cpu_dsv_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV].first);
     }
     if(resource_desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS) {
-        cbv_srv_uav_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+        auto& alloc_info = texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV];
+        cpu_cbv_srv_uav_pools[alloc_info.second].deallocate(alloc_info.first);
     }
     if(!(resource_desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE)) {
-        cbv_srv_uav_pool.deallocate(texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]);
+        auto& alloc_info = texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV];
+        cpu_cbv_srv_uav_pools[alloc_info.second].deallocate(alloc_info.first);
     }
 
     memory_allocator.deallocate(texture_data.memory_alloc_info);
@@ -677,8 +717,8 @@ Handle<Buffer> Backend::Impl::create_buffer(size_t const size, BufferFlags const
         view_desc.BufferLocation = buffer_data.resource->GetGPUVirtualAddress();
         view_desc.SizeInBytes = static_cast<uint32_t>(size);
 
-        buffer_data.descriptor_alloc_info = cbv_srv_uav_pool.allocate(device.Get());
-        device->CreateConstantBufferView(&view_desc, buffer_data.descriptor_alloc_info.cpu_handle());
+        buffer_data.descriptor_alloc_info = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        device->CreateConstantBufferView(&view_desc, buffer_data.descriptor_alloc_info.first.cpu_handle());
     }
     if(flags & BufferFlags::UnorderedAccess) {
 
@@ -687,8 +727,8 @@ Handle<Buffer> Backend::Impl::create_buffer(size_t const size, BufferFlags const
         view_desc.Format = resource_desc.Format;
         // TODO!
 
-        buffer_data.descriptor_alloc_info = cbv_srv_uav_pool.allocate(device.Get());
-        device->CreateUnorderedAccessView(buffer_data.resource.Get(), nullptr, &view_desc, buffer_data.descriptor_alloc_info.cpu_handle());
+        buffer_data.descriptor_alloc_info = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+        device->CreateUnorderedAccessView(buffer_data.resource.Get(), nullptr, &view_desc, buffer_data.descriptor_alloc_info.first.cpu_handle());
     }
 
     uint32_t id = buffers.push(std::move(buffer_data));
@@ -699,7 +739,7 @@ void Backend::Impl::delete_buffer(Handle<Buffer> const& buffer) {
 
     auto& buffer_data = buffers[buffer.id()];
     
-    cbv_srv_uav_pool.deallocate(buffer_data.descriptor_alloc_info);
+    cpu_cbv_srv_uav_pools[buffer_data.descriptor_alloc_info.second].deallocate(buffer_data.descriptor_alloc_info.first);
     memory_allocator.deallocate(buffer_data.memory_alloc_info);
 
     buffers.erase(buffer.id());
@@ -745,7 +785,7 @@ Handle<RenderPass> Backend::Impl::create_render_pass(
 
         render_pass_data.render_target_descs[i].BeginningAccess = begin;
         render_pass_data.render_target_descs[i].EndingAccess = end;
-        render_pass_data.render_target_descs[i].cpuDescriptor = texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV].cpu_handle();
+        render_pass_data.render_target_descs[i].cpuDescriptor = texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV].first.cpu_handle();
     }
 
     if(depth_stencil != INVALID_HANDLE(Texture)) {
@@ -770,7 +810,7 @@ Handle<RenderPass> Backend::Impl::create_render_pass(
         render_pass_data.depth_stencil_desc.StencilBeginningAccess = stencil_begin;
         render_pass_data.depth_stencil_desc.DepthEndingAccess = depth_end;
         render_pass_data.depth_stencil_desc.StencilEndingAccess = stencil_end;
-        render_pass_data.depth_stencil_desc.cpuDescriptor = texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV].cpu_handle();
+        render_pass_data.depth_stencil_desc.cpuDescriptor = texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV].first.cpu_handle();
 
         render_pass_data.has_depth_stencil = true;
     }
@@ -836,8 +876,8 @@ Handle<Sampler> Backend::Impl::create_sampler(
     sampler_desc.MaxAnisotropy = anisotropic;
     sampler_desc.MaxLOD = D3D12_FLOAT32_MAX;
     
-    sampler_data.alloc_info = sampler_pool.allocate(device.Get());
-    device->CreateSampler(&sampler_desc, sampler_data.alloc_info.cpu_handle());
+    sampler_data.alloc_info = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+    device->CreateSampler(&sampler_desc, sampler_data.alloc_info.first.cpu_handle());
 
     uint32_t id = samplers.push(std::move(sampler_data));
     return Handle<Sampler>(id);
@@ -846,7 +886,7 @@ Handle<Sampler> Backend::Impl::create_sampler(
 void Backend::Impl::delete_sampler(Handle<Sampler> const& sampler) {
 
     auto& sampler_data = samplers[sampler.id()];
-    sampler_pool.deallocate(sampler_data.alloc_info);
+    cpu_sampler_pool.deallocate(sampler_data.alloc_info.first);
     samplers.erase(sampler.id());
 }
 
@@ -1640,8 +1680,8 @@ void Encoder::Impl::reset() {
         uint32_t const swap_index = backend->swapchain_index;
 
         std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
-        descriptor_heaps[0] = backend->gpu_cbv_srv_uav_heaps[swap_index]->get_heap();
-        descriptor_heaps[1] = backend->gpu_sampler_heaps[swap_index]->get_heap();
+        descriptor_heaps[0] = backend->gpu_cbv_srv_uav_ranges[swap_index]->get_heap();
+        descriptor_heaps[1] = backend->gpu_sampler_ranges[swap_index]->get_heap();
 
         command_list->SetDescriptorHeaps(2, descriptor_heaps.data());
     }
