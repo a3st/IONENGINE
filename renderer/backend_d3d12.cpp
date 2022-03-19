@@ -8,6 +8,7 @@
 #include <renderer/d3d12/d3d12_gpu_desc_pool.h>
 #include <platform/window.h>
 #include <lib/exception.h>
+#include <lib/algorithm.h>
 
 using ionengine::Handle;
 using namespace ionengine::renderer;
@@ -180,9 +181,18 @@ struct Backend::Impl {
     std::vector<Handle<Texture>> swapchain_textures;
     uint32_t swapchain_index{0};
 
+    std::filesystem::path shader_cache_path = "";
+    uint32_t const SHADER_CACHE_MAGIC = ((uint32_t)(uint8_t)'D') | ((uint32_t)(uint8_t)'3' << 8) | ((uint32_t)(uint8_t)'D' << 16) | ((uint32_t)(uint8_t)'1' << 24);
+
+    std::unordered_map<PipelineCacheId, ComPtr<ID3DBlob>> shader_cache_data;
+
+    size_t serialize_shader_cache(std::vector<char8_t>& data);
+
+    bool deserialize_shader_cache(std::vector<char8_t> const& data);
+
     DescriptorAllocInfo2 allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type);
 
-    void initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc);
+    void initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc, std::filesystem::path const& shader_cache_path = "");
 
     void deinitialize();
     
@@ -237,7 +247,8 @@ struct Backend::Impl {
         RasterizerDesc const& rasterizer_desc, 
         DepthStencilDesc const& depth_stencil_desc, 
         BlendDesc const& blend_desc, 
-        Handle<RenderPass> const& render_pass
+        Handle<RenderPass> const& render_pass,
+        std::optional<PipelineCacheId> pipeline_cache = std::nullopt
     );
     
     void delete_pipeline(Handle<Pipeline> const& pipeline);
@@ -336,6 +347,52 @@ void Encoder::impl_deleter::operator()(Impl* ptr) const {
 //
 //===========================================================
 
+size_t Backend::Impl::serialize_shader_cache(std::vector<char8_t>& data) {
+
+    size_t total_bytes = 
+        sizeof(uint32_t) + // Magic size
+        sizeof(uint32_t) // Count size
+    ;
+
+    for(auto& [id, blob] : shader_cache_data) {
+
+        total_bytes =
+            total_bytes +
+            sizeof(uint32_t) + // PipelineCache id
+            sizeof(size_t) + // ShaderCache size
+            sizeof(char8_t) * blob->GetBufferSize() // ShaderCache bytes size
+        ;
+    }
+
+    data.resize(total_bytes);
+
+    uint64_t offset = 0;
+
+    std::memcpy(data.data(), &SHADER_CACHE_MAGIC, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    uint32_t const cache_count = static_cast<uint32_t>(shader_cache_data.size());
+    std::memcpy(data.data() + offset, &cache_count, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+
+    for(auto& [id, blob] : shader_cache_data) {
+
+        std::memcpy(data.data() + offset, &id, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+        size_t const blob_size = blob->GetBufferSize();
+        std::memcpy(data.data() + offset, &blob_size, sizeof(size_t));
+        offset += sizeof(size_t);
+        std::memcpy(data.data() + offset, blob->GetBufferPointer(), sizeof(char8_t) * blob->GetBufferSize());
+        offset += sizeof(char8_t) * blob->GetBufferSize();
+    }
+
+    return total_bytes;
+}
+    
+bool Backend::Impl::deserialize_shader_cache(std::vector<char8_t> const& data) {
+
+    return true;
+}
+
 DescriptorAllocInfo2 Backend::Impl::allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) {
 
     auto alloc_info = d3d12::DescriptorAllocInfo {};
@@ -368,7 +425,9 @@ DescriptorAllocInfo2 Backend::Impl::allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TY
     return { alloc_info, pool_index };
 }
 
-void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc) {
+void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc, std::filesystem::path const& shader_cache_path) {
+
+    this->shader_cache_path = shader_cache_path;
 
     THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(debug.GetAddressOf())));
     debug->EnableDebugLayer();
@@ -488,6 +547,17 @@ void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const
 }
 
 void Backend::Impl::deinitialize() {
+
+    if(!shader_cache_path.empty() && !shader_cache_data.empty()) {
+        std::vector<char8_t> data;
+        serialize_shader_cache(data);
+
+        if(!save_bytes_to_file(shader_cache_path, data, std::ios::binary)) {
+            std::cerr << "[Error] Backend: Unable to write shader cache to disk" << std::endl;
+        }
+    } else {
+        std::cerr << "[Warning] Backend: Shader caches not found to write to disk" << std::endl;
+    }
 
     wait_for_idle(EncoderFlags::Graphics | EncoderFlags::Copy | EncoderFlags::Compute);
 
@@ -997,7 +1067,8 @@ Handle<Pipeline> Backend::Impl::create_pipeline(
     RasterizerDesc const& rasterizer_desc,
     DepthStencilDesc const& depth_stencil_desc,
     BlendDesc const& blend_desc,
-    Handle<RenderPass> const& render_pass
+    Handle<RenderPass> const& render_pass,
+    std::optional<PipelineCacheId> pipeline_cache
 ) {
 
     auto get_fill_mode = [&](FillMode const fill_mode) {
@@ -1167,11 +1238,37 @@ Handle<Pipeline> Backend::Impl::create_pipeline(
     // TODO!
     pipeline_desc.SampleDesc.Count = 1;
 
+    bool is_cached = false;
+
+    if(pipeline_cache.has_value()) {
+        
+        auto it = shader_cache_data.find(pipeline_cache.value());
+
+        if(it != shader_cache_data.end()) {
+
+            auto cached_pso_state = D3D12_CACHED_PIPELINE_STATE {};
+            cached_pso_state.pCachedBlob = it->second->GetBufferPointer();
+            cached_pso_state.CachedBlobSizeInBytes = it->second->GetBufferSize();
+
+            pipeline_desc.CachedPSO = cached_pso_state;
+            is_cached = true;
+        }
+    }
+
     THROW_IF_FAILED(device->CreateGraphicsPipelineState(
         &pipeline_desc,
         __uuidof(ID3D12PipelineState), 
         reinterpret_cast<void**>(pipeline_data.pipeline_state.GetAddressOf())
     ));
+
+    if(!is_cached && pipeline_cache.has_value()) {
+
+        ComPtr<ID3DBlob> buffer;
+        pipeline_data.pipeline_state->GetCachedBlob(buffer.GetAddressOf());
+        
+        shader_cache_data[pipeline_cache.value()] = buffer;
+        is_cached = true;
+    }
 
     uint32_t id = pipelines.push(std::move(pipeline_data));
     return Handle<Pipeline>(id);
@@ -1462,10 +1559,10 @@ void Backend::Impl::wait_for_idle(EncoderFlags const flags) {
 //
 //===========================================================
 
-Backend::Backend(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc) : 
+Backend::Backend(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc, std::filesystem::path const& shader_cache_path) : 
     _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
 
-    _impl->initialize(adapter_index, swapchain_desc);
+    _impl->initialize(adapter_index, swapchain_desc, shader_cache_path);
 }
 
 Backend::~Backend() {
@@ -1560,7 +1657,8 @@ Handle<Pipeline> Backend::create_pipeline(
     RasterizerDesc const& rasterizer_desc,
     DepthStencilDesc const& depth_stencil_desc,
     BlendDesc const& blend_desc,
-    Handle<RenderPass> const& render_pass
+    Handle<RenderPass> const& render_pass,
+    std::optional<PipelineCacheId> pipeline_cache
 ) {
     
     return _impl->create_pipeline(descriptor_layout, vertex_descs, shaders, rasterizer_desc, depth_stencil_desc, blend_desc, render_pass);

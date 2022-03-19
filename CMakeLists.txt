@@ -17,6 +17,10 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 
 add_executable(Runtime-Win32
 
+    # AssetCompiler
+    asset_compiler/asset_compiler.cpp
+    asset_compiler/hlsv_loader.cpp
+
     # Engine
     engine/main.cpp
     engine/asset_manager.cpp

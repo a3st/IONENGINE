@@ -8,13 +8,9 @@ template<class Type, size_t Size>
 class ConcurrentQueue {
 public:
 
-    enum { 
-        Capacity = Size + 1 
-    };
-
     ConcurrentQueue() {
         
-        _data.resize(Capacity);
+        _data.resize(_capacity);
     }
 
     ConcurrentQueue(ConcurrentQueue const& other) {
@@ -50,7 +46,7 @@ public:
     bool try_push(Type const& element) {
         
         size_t const current = _tail.load();
-        size_t const next = (current + 1) % Capacity;
+        size_t const next = (current + 1) % _capacity;
 
         if(next != _head.load()) {
             _data[current] = element;
@@ -64,7 +60,7 @@ public:
     bool try_push(Type&& element) {
         
         size_t const current = _tail.load();
-        size_t const next = (current + 1) % Capacity;
+        size_t const next = (current + 1) % _capacity;
 
         if(next != _head.load()) {
             _data[current] = std::move(element);
@@ -83,8 +79,8 @@ public:
             return false;
         }
         
-        element = std::move(_data[current]);
-        _head.store((current + 1) % Capacity);
+        element = _data[current];
+        _head.store((current + 1) % _capacity);
         return true;
     }
 
@@ -101,6 +97,8 @@ public:
     }
 
 private:
+
+    size_t const _capacity = Size + 1;
 
     std::atomic<size_t> _tail{0};
     std::atomic<size_t> _head{0};

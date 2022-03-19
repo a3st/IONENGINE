@@ -2,7 +2,29 @@
 
 #pragma once
 
-#include <engine/asset_data.h>
+#include <renderer/data.h>
+
+namespace ionengine {
+
+struct MeshFile {
+    uint32_t magic;
+    // TODO!
+};
+
+struct TextureFile {
+    uint32_t magic;
+    // TODO!
+};
+
+struct ShaderFile {
+    uint32_t magic;
+    uint32_t count;
+    std::unique_ptr<renderer::ShaderData[]> data;
+};
+
+using AssetFile = std::variant<MeshFile, TextureFile, ShaderFile>;
+
+}
 
 namespace ionengine::tools {
 

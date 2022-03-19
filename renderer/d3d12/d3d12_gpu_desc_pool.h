@@ -145,7 +145,7 @@ public:
             return nullptr;
         }
 
-        _alloc_ranges.push_back(GPUDescriptorRange(_heap.Get(), _descriptor_size, _offset, count));
+        _alloc_ranges.emplace_back(_heap.Get(), _descriptor_size, _offset, count);
         _offset += count;
         return &_alloc_ranges.back();
     }

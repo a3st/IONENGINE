@@ -24,7 +24,13 @@ int main(int* argc, char** agrv) {
         platform::Window window(u8"IONENGINE", 800, 600, false, loop);
 
         AssetManager asset_manager(thread_pool);
-        renderer::Backend backend(0, renderer::SwapchainDesc { &window, 1, 2 });
+        renderer::Backend backend(0, renderer::SwapchainDesc { &window, 1, 2 }, "cache/shader_cache_d3d12.payload");
+
+        Handle<AssetData> shader_data;
+        Handle<JobData> load_asset_job = asset_manager.load_asset_from_file("shader_package.asset"_hash, shader_data);
+
+        
+        
 
         renderer::WorldRenderer world_renderer(backend, thread_pool, {});
         project::WorldController world_controller;
@@ -32,11 +38,6 @@ int main(int* argc, char** agrv) {
         if(!world_controller.initialize()) {
             throw Exception(u8"Error during initialize world controller");
         }
-
-        Handle<AssetData> asset_data;
-        asset_manager.load_asset_data<ShaderFile>("shader_package.asset"_hash, asset_data);
-
-        //std::cout << data.file_path().string() << std::endl;
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {

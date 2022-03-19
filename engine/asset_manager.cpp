@@ -2,13 +2,83 @@
 
 #include <precompiled.h>
 #include <engine/asset_manager.h>
-
+#include <asset_compiler/asset_compiler.h>
 #include <lib/hash/crc32.h>
+#include <lib/algorithm.h>
 
 using namespace ionengine;
 
-AssetManager::AssetManager(ThreadPool& thread_pool) {
+AssetManager::AssetManager(ThreadPool& thread_pool) : _thread_pool(&thread_pool) {
 
-    _asset_paths["shader_package.asset"_hash] = "shader_package.asset";
+    // Test TO DO File lists!
+    {
+        _asset_streams["shader_package.asset"_hash].path = "content/shader_package.asset";
+    }
 }
 
+Handle<JobData> AssetManager::load_asset_from_file(AssetDataId const id, Handle<AssetData>& asset_data) {
+
+    Handle<JobData> job_data;
+    auto it = _asset_streams.find(id);
+        
+    if(it != _asset_streams.end()) {
+
+        it->second.job_data = _thread_pool->push(
+            [&, this](AssetData& data, AssetStream& stream) {
+
+                tools::AssetCompiler asset_compiler;
+                bool result = false;
+
+                std::vector<char8_t> file_data;
+                size_t const file_size = get_file_size(stream.path, std::ios::binary);
+                file_data.resize(file_size);
+
+                if(!load_bytes_from_file(stream.path, file_data, std::ios::binary)) {
+                    return;
+                }
+
+                AssetFile asset_file;
+                result = asset_compiler.deserialize(file_data, asset_file);
+
+                auto asset_visitor = make_visitor(
+                    [&](ShaderFile const& shader_file) {
+                        
+                    },
+                    [&](MeshFile const& mesh_file) {
+
+
+                    },
+                    [&](TextureFile const& texture_file) {
+
+
+                    }
+                );
+
+                std::visit(asset_visitor, asset_file);
+
+                stream.is_loaded = result;
+            },
+            std::ref(_asset_datas[id]),
+            std::ref(_asset_streams[id])
+        );
+
+        asset_data = Handle<AssetData>(id);
+        job_data = it->second.job_data;
+
+    } else {
+        std::cerr << "[Error] AssetManager: The streaming asset was not found in the asset manager" << std::endl;
+    }
+
+    return job_data;
+}
+
+AssetData const& AssetManager::get_asset_data(Handle<AssetData> const& asset_data) {
+
+    auto& stream = _asset_streams[asset_data.id()];
+
+    if(!stream.is_loaded.load()) {
+        _thread_pool->wait(stream.job_data);
+    }
+
+    return _asset_datas[asset_data.id()];
+}

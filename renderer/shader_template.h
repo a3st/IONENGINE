@@ -21,7 +21,7 @@ struct ShaderTemplate {
     
     struct PassData {
         std::span<Handle<Shader> const> shaders;
-        std::unordered_map<uint32_t, uint32_t> descriptor_indices;    
+        std::unordered_map<uint32_t, uint32_t> descriptor_indices;
     };
 
     std::vector<Handle<Shader>> shaders;

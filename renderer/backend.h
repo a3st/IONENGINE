@@ -17,6 +17,8 @@ struct Sampler;
 struct DescriptorLayout;
 struct DescriptorSet;
 
+using PipelineCacheId = uint32_t;
+
 enum class BackendLimits : uint32_t {
     RenderPassCount = 256,
     PipelineCount = 256,
@@ -245,7 +247,7 @@ private:
 
 public:
 
-    Backend(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc);
+    Backend(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc, std::filesystem::path const& shader_cache_path = "");
 
     ~Backend();
 
@@ -312,7 +314,8 @@ public:
         RasterizerDesc const& rasterizer_desc,
         DepthStencilDesc const& depth_stencil_desc,
         BlendDesc const& blend_desc,
-        Handle<RenderPass> const& render_pass
+        Handle<RenderPass> const& render_pass,
+        std::optional<PipelineCacheId> pipeline_cache = std::nullopt
     );
 
     void delete_pipeline(Handle<Pipeline> const& pipeline);
