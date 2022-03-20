@@ -51,7 +51,7 @@ struct WorldBuffer {
 class WorldRenderer {
 public:
 
-    WorldRenderer(Backend& backend, ThreadPool& thread_pool, std::span<ShaderData const> const shaders);
+    WorldRenderer(Backend& backend, ThreadPool& thread_pool, ShaderPackageData const& shader_package_data);
 
     WorldRenderer(WorldRenderer const&) = delete;
 
@@ -65,7 +65,7 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model);
+    void draw_mesh(uint32_t const sort_index, MeshSurfaceData const* const mesh_data, Matrixf const& model);
 
     void set_projection_view(Matrixf const& projection, Matrixf const& view);
 
@@ -88,15 +88,9 @@ private:
 
     uint32_t _frame_index{0};
 
-    std::vector<MeshData const*> _meshes;
-    std::vector<uint32_t> _draw_indices;
-
-    WorldBuffer _world_buffer;
-    WorldBuffer _prev_world_buffer;
-
     std::unordered_map<uint32_t, ShaderTemplate> _shader_templates;
 
-    void initialize_shaders(std::span<ShaderData const> const shaders);
+    void initialize_shaders(ShaderPackageData const& shader_package_data);
     void initialize_descriptor_layouts();
     void build_frame_graph(uint32_t const width, uint32_t const height, uint16_t const sample_count, uint32_t const buffer_count);
 };

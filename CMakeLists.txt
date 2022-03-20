@@ -14,12 +14,12 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 #[[
     Runtime-Win32 Build Target
 #]]
-
 add_executable(Runtime-Win32
 
     # AssetCompiler
     asset_compiler/asset_compiler.cpp
     asset_compiler/hlsv_loader.cpp
+    asset_compiler/obj_loader.cpp
 
     # Engine
     engine/main.cpp
@@ -82,7 +82,6 @@ target_compile_definitions(Runtime-Win32 PRIVATE
 #[[
     HLSL SPIRV Package Build Target
 #]]
-
 add_executable(HLSL_SPIRV_Package hlsl_spirv_package/main.cpp)
 target_precompile_headers(HLSL_SPIRV_Package PRIVATE precompiled.h)
 
@@ -100,13 +99,12 @@ target_include_directories(HLSL_SPIRV_Package PRIVATE
 #[[
     Asset Compiler Build Target
 #]]
-
 add_executable(AssetCompiler
 
     asset_compiler/main.cpp
     asset_compiler/asset_compiler.cpp
 
-    #asset_compiler/obj_loader.cpp
+    asset_compiler/obj_loader.cpp
     #asset_compiler/dds_loader.cpp
     asset_compiler/hlsv_loader.cpp
 )

@@ -18,6 +18,27 @@ inline size_t read_bytes(std::span<char8_t const> const source, uint64_t& offset
     return read_bytes;
 };
 
+inline size_t get_line(std::string_view const buffer, size_t& offset, std::string_view& line, char const delimeter) {
+    
+    size_t read_bytes = 0;
+    
+    for(size_t i = offset; i < buffer.size(); ++i) {
+        ++read_bytes;
+        if(buffer[i] == delimeter) {
+            line = std::string_view(buffer.data() + offset, buffer.data() + i);
+            break;
+        }
+    }
+
+    if(read_bytes + offset == buffer.size()) {
+        line = std::string_view(buffer.data() + offset, buffer.data() + buffer.size());
+    }
+
+    offset += read_bytes;
+
+    return read_bytes;
+}
+
 inline size_t get_file_size(std::filesystem::path const& file_path, std::ios::openmode const ios = std::ios::beg) {
 
     std::ifstream ifs(file_path, ios);

@@ -72,8 +72,8 @@ int main(int argc, char** argv) {
 
     for(size_t i = 0; i < shader_files.size(); ++i) {
 
-        std::u8string file_path_u8string = shader_files[i].filename().u8string();
-        std::memcpy(shaders[i].name, file_path_u8string.data(), file_path_u8string.size() * sizeof(char8_t));
+        std::u8string file_name = shader_files[i].stem().u8string();
+        std::memcpy(shaders[i].name, file_name.data(), std::max<size_t>(file_name.size(), 48)  * sizeof(char8_t));
 
         if(shader_files[i].extension() == ".hlsl_bin") {
             shaders[i].flags = std::to_underlying(HLSL_SPIRV_Flags::HLSL);

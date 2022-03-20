@@ -6,32 +6,14 @@
 #include <lib/algorithm.h>
 #include <lib/math/vector.h>
 
-//#include <engine/obj_loader.h>
 //#include <engine/dds_loader.h>
 #include <asset_compiler/hlsv_loader.h>
+#include <asset_compiler/obj_loader.h>
 
 using namespace ionengine;
 using namespace ionengine::tools;
 
-struct ObjVertex {
-    Vector3f position;
-    Vector2f uv;
-    Vector3f normal;
-
-    bool operator==(ObjVertex const& other) const {
-        return std::tie(position, uv, normal) == std::tie(other.position, other.uv, other.normal);
-    }
-};
-
-namespace std {
-    template<> struct hash<ObjVertex> {
-        size_t operator()(ObjVertex const& other) const {
-            return hash<Vector3f>()(other.position) ^ hash<Vector2f>()(other.uv) ^ hash<Vector3f>()(other.normal);
-        }
-    };
-}
-
-bool AssetCompiler::compile_shader(std::filesystem::path const& file_path, ShaderFile& shader_file) {
+bool AssetCompiler::compile_shader_package(std::filesystem::path const& file_path, ShaderPackageFile& shader_package_file) {
 
     std::vector<char8_t> buffer;
     
@@ -48,54 +30,126 @@ bool AssetCompiler::compile_shader(std::filesystem::path const& file_path, Shade
         return false;
     }
 
-    shader_file.magic = SHADER_MAGIC;
+    shader_package_file.magic = SHADER_MAGIC;
 
-    uint32_t shader_count = 0;
+    uint32_t shader_data_count = 0;
 
     for(auto it = hlsv_loader.begin(); it != hlsv_loader.end(); ++it) {
 
-#ifdef IONENGINE_BACKEND_D3D12 
-        if(it->flags & HLSVFlags::SPIRV) {
-            continue;
-        }
-#endif
-
-        ++shader_count;
+        ++shader_data_count;
     }
 
-    shader_file.count = shader_count;
-    shader_file.data = std::make_unique<renderer::ShaderData[]>(shader_count);
-
-    uint32_t index = 0;
-
     for(auto it = hlsv_loader.begin(); it != hlsv_loader.end(); ++it) {
 
-#ifdef IONENGINE_BACKEND_D3D12 
-        if(it->flags & HLSVFlags::SPIRV) {
-            continue;
-        }
-#endif
-
-        shader_file.data[index].name = it->name;
+        renderer::ShaderFlags shader_flags = {};
 
         if(it->name.contains(u8"_vertex")) {
-            shader_file.data[index].flags = renderer::ShaderFlags::Vertex;
+            shader_flags = renderer::ShaderFlags::Vertex;
         } else if(it->name.contains(u8"_pixel")) {
-            shader_file.data[index].flags = renderer::ShaderFlags::Pixel;
+            shader_flags = renderer::ShaderFlags::Pixel;
         } else if(it->name.contains(u8"_geometry")) {
-            shader_file.data[index].flags = renderer::ShaderFlags::Geometry;
+            shader_flags = renderer::ShaderFlags::Geometry;
         } else if(it->name.contains(u8"_domain")) {
-            shader_file.data[index].flags = renderer::ShaderFlags::Domain;
+            shader_flags = renderer::ShaderFlags::Domain;
         } else if(it->name.contains(u8"_hull")) {
-            shader_file.data[index].flags = renderer::ShaderFlags::Hull;
+            shader_flags = renderer::ShaderFlags::Hull;
         } else if(it->name.contains(u8"_compute")) {
-            shader_file.data[index].flags = renderer::ShaderFlags::Compute;
+            shader_flags = renderer::ShaderFlags::Compute;
         }
 
-        shader_file.data[index].data.resize(it->data.size());
-        std::memcpy(shader_file.data[index].data.data(), it->data.data(), it->data.size());
+        shader_package_file.data.data[it->name] = renderer::ShaderPackageData::ShaderData { 
+            .flags = shader_flags,
+            .data = it->data
+        };
+    }
 
-        ++index;
+    return true;
+}
+
+struct ObjVertex {
+    Vector3f position;
+    Vector2f uv;
+    Vector3f normal;
+
+    bool operator==(ObjVertex const& other) const {
+        return std::tie(position, uv, normal) == std::tie(other.position, other.uv, other.normal);
+    }
+};
+
+namespace std {
+
+template<>
+struct hash<ObjVertex> {
+    size_t operator()(ObjVertex const& other) const {
+        return hash<Vector3f>()(other.position) ^ hash<Vector2f>()(other.uv) ^ hash<Vector3f>()(other.normal);
+    }
+};
+
+}
+
+bool AssetCompiler::compile_mesh_surface(std::filesystem::path const& file_path, MeshSurfaceFile& mesh_surface_file) {
+
+    std::vector<char8_t> buffer;
+    
+    size_t file_size = get_file_size(file_path);
+    buffer.resize(file_size);
+
+    if(!load_bytes_from_file(file_path, buffer)) {
+        return false;
+    }
+
+    OBJLoader obj_loader;
+    
+    if(!obj_loader.parse(buffer)) {
+        return false;
+    }
+
+    uint32_t material_count = 0;
+
+    for(auto& object : obj_loader.data().objects) {
+        material_count = std::max<uint32_t>(material_count, static_cast<uint32_t>(object.materials.size()));
+    }
+
+    std::unordered_map<ObjVertex, uint32_t> unique_vertices;
+    std::vector<ObjVertex> vertices;
+
+    mesh_surface_file.magic = MESH_SURFACE_MAGIC;
+    mesh_surface_file.data.material_infos.resize(material_count);
+
+    for(auto& object : obj_loader.data().objects) {
+
+        for(size_t i = 0; i < object.materials.size(); ++i) {
+
+            for(auto& index : object.materials[i].indices) {
+
+                auto vertex = ObjVertex {
+                    .position = Vector3f(obj_loader.data().vertices[3 * index.vertex + 0], obj_loader.data().vertices[3 * index.vertex + 1], obj_loader.data().vertices[3 * index.vertex + 2]),
+                    .uv = Vector2f(obj_loader.data().uvs[2 * index.uv + 0], obj_loader.data().uvs[2 * index.uv + 1]),
+                    .normal = Vector3f(obj_loader.data().normals[3 * index.normal + 0], obj_loader.data().normals[3 * index.normal + 1], obj_loader.data().normals[3 * index.normal + 2])
+                };
+
+                if(unique_vertices.count(vertex) == 0) {
+                    unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
+                    vertices.emplace_back(vertex);
+                }
+
+                mesh_surface_file.data.material_infos[i].name = object.materials[i].name;
+                mesh_surface_file.data.material_infos[i].indices.emplace_back(unique_vertices[vertex]);
+            }
+        }
+    }
+
+    for(auto& vertex : vertices) {
+
+        mesh_surface_file.data.positions.emplace_back(vertex.position.x);
+        mesh_surface_file.data.positions.emplace_back(vertex.position.y);
+        mesh_surface_file.data.positions.emplace_back(vertex.position.z);
+
+        mesh_surface_file.data.uv_normals.emplace_back(vertex.uv.x);
+        mesh_surface_file.data.uv_normals.emplace_back(vertex.uv.y);
+        mesh_surface_file.data.uv_normals.emplace_back(vertex.normal.x);
+        mesh_surface_file.data.uv_normals.emplace_back(vertex.normal.y);
+        mesh_surface_file.data.uv_normals.emplace_back(vertex.normal.z);
     }
 
     return true;
@@ -105,14 +159,27 @@ bool AssetCompiler::compile(std::filesystem::path const& file_path, AssetFile& a
 
     if(file_path.extension() == ".hlsv") {
 
-        ShaderFile shader_file;
+        ShaderPackageFile shader_package_file;
 
-        if(!compile_shader(file_path, shader_file)) {
+        if(!compile_shader_package(file_path, shader_package_file)) {
             std::cerr << std::format("[Error] AssetCompiler: The file '{}' cannot be compiled because it is corrupted", file_path.string()) << std::endl;
             return false;
         }
 
-        asset_file.emplace<ShaderFile>(std::forward<ShaderFile>(shader_file));
+        asset_file.emplace<ShaderPackageFile>(shader_package_file);
+        return true;
+    }
+
+    if(file_path.extension() == ".obj") {
+
+        MeshSurfaceFile mesh_surface_file;
+
+        if(!compile_mesh_surface(file_path, mesh_surface_file)) {
+            std::cerr << std::format("[Error] AssetCompiler: The file '{}' cannot be compiled because it is corrupted", file_path.string()) << std::endl;
+            return false;
+        }
+
+        asset_file.emplace<MeshSurfaceFile>(mesh_surface_file);
         return true;
     }
 
@@ -156,132 +223,135 @@ bool AssetCompiler::compile(std::filesystem::path const& file_path, AssetFile& a
             }
         }
         std::cout << ")" << std::endl;
-
-    } else if(file_path.extension() == ".obj") {
-
-        /*std::vector<char8_t> obj_data = load_file(file);
-
-        std::unordered_map<ObjVertex, uint32_t> unique_vertices;
-
-        std::vector<ObjVertex> out_vertices;
-        std::vector<uint32_t> out_indices;
-
-        ObjLoader obj_loader;
-        if(!obj_loader.parse(std::span<char8_t>(reinterpret_cast<char8_t*>(obj_data.data()), obj_data.size()))) {
-            return false;
-        }
-
-        for(auto it = obj_loader.begin(); it != obj_loader.end(); ++it) {
-            for(auto& index : it->indices) {
-                auto vertex = ObjVertex {
-                    Vector3f(it->vertices[index.vertex].x, it->vertices[index.vertex].y, it->vertices[index.vertex].z),
-                    Vector2f(it->uvs[index.uv].x, it->uvs[index.uv].y),
-                    Vector3f(it->normals[index.normal].x, it->normals[index.normal].y, it->normals[index.normal].z)
-                };
-
-                if(unique_vertices.count(vertex) == 0) {
-                    unique_vertices[vertex] = static_cast<uint32_t>(out_vertices.size());
-                    out_vertices.emplace_back(vertex);
-                }
-                out_indices.emplace_back(unique_vertices[vertex]);
-            }
-        }
-
-        auto mesh_data = renderer::MeshData {};
-        
-        mesh_data.positions.reserve(out_indices.size());
-        mesh_data.uv_normals.reserve(out_indices.size());
-
-        for(auto& vertex : out_vertices) {
-            mesh_data.positions.emplace_back(vertex.position.x);
-            mesh_data.positions.emplace_back(vertex.position.y);
-            mesh_data.positions.emplace_back(vertex.position.z);
-
-            mesh_data.uv_normals.emplace_back(vertex.uv.x);
-            mesh_data.uv_normals.emplace_back(vertex.uv.y);
-
-            mesh_data.uv_normals.emplace_back(vertex.normal.x);
-            mesh_data.uv_normals.emplace_back(vertex.normal.y);
-            mesh_data.uv_normals.emplace_back(vertex.normal.z);
-        }
-
-        mesh_data.indices.resize(out_indices.size());
-        std::memcpy(mesh_data.indices.data(), out_indices.data(), out_indices.size() * sizeof(uint32_t));
-
-        auto mesh_file = MeshFile {};
-        mesh_file.magic = static_cast<uint32_t>(Asset::MeshMagic);
-        mesh_file.positions_count = static_cast<uint32_t>(mesh_data.positions.size());
-        mesh_file.positions_offset = sizeof(MeshFile) - sizeof(renderer::MeshData);
-        mesh_file.uv_normals_count = static_cast<uint32_t>(mesh_data.uv_normals.size());
-        mesh_file.uv_normals_offset = mesh_file.positions_offset + static_cast<uint32_t>(mesh_data.positions.size()) * sizeof(float);
-        mesh_file.indices_count = static_cast<uint32_t>(mesh_data.indices.size());
-        mesh_file.indices_offset = mesh_file.uv_normals_offset + static_cast<uint32_t>(mesh_data.uv_normals.size()) * sizeof(float);
-        mesh_file.data = mesh_data;
-
-        _file = mesh_file;
-
-    } else if(file_path.extension() == ".shpk") {
-
-    }
-
     return true;
 }*/
 
-size_t AssetCompiler::serialize_shader(std::vector<char8_t>& data, ShaderFile const& shader_file) {
+size_t AssetCompiler::serialize_shader_package(std::span<char8_t>* const data, ShaderPackageFile const& shader_package_file) {
 
-    size_t total_shader_bytes = 0;
+    size_t total_bytes = 0;
 
-    for(uint32_t i = 0; i < shader_file.count; ++i) {
-        
-        total_shader_bytes = 
-            total_shader_bytes + // Previous shader size
+    for(auto& [name, _data] : shader_package_file.data.data) {
+
+        total_bytes = total_bytes +
             sizeof(char8_t) * 48 + // std::u8string to char8_t[48]
             sizeof(uint32_t) + // ShaderFlags to uint32_t
             sizeof(size_t) + // ShaderCode size
-            sizeof(char8_t) * shader_file.data[i].data.size() // ShaderCode bytes size
+            sizeof(char8_t) * _data.data.size() // ShaderCode bytes size
         ;
     }
 
-    size_t const total_bytes = 
+    total_bytes = total_bytes +
         sizeof(uint32_t) + // Magic size
-        sizeof(uint32_t) + // Count size
-        total_shader_bytes // ShaderData size
+        sizeof(uint32_t) // Count size
     ;
 
-    data.resize(total_bytes);
+    if(!data) {
+        return total_bytes;
+    }
 
     uint64_t offset = 0;
 
-    std::memcpy(data.data(), &shader_file.magic, sizeof(uint32_t));
-    offset += sizeof(uint32_t);
-    std::memcpy(data.data() + offset, &shader_file.count, sizeof(uint32_t));
+    std::memcpy(data->data(), &shader_package_file.magic, sizeof(uint32_t));
     offset += sizeof(uint32_t);
 
-    for(uint32_t i = 0; i < shader_file.count; ++i) {
-        std::memcpy(data.data() + offset, shader_file.data[i].name.data(), shader_file.data[i].name.size());
+    uint32_t const shader_data_count = static_cast<uint32_t>(shader_package_file.data.data.size());
+    std::memcpy(data->data() + offset, &shader_data_count, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+
+    for(auto& [name, _data] : shader_package_file.data.data) {
+
+        std::memcpy(data->data() + offset, name.data(), sizeof(char8_t) * std::max<size_t>(name.size(), 48));
         offset += sizeof(char8_t) * 48;
-        std::memcpy(data.data() + offset, &shader_file.data[i].flags, sizeof(uint32_t));
+
+        std::memcpy(data->data() + offset, &_data.flags, sizeof(uint32_t));
         offset += sizeof(uint32_t);
-        size_t const data_size = shader_file.data[i].data.size();
-        std::memcpy(data.data() + offset, &data_size, sizeof(size_t));
+
+        size_t const shader_data_size = _data.data.size();
+        std::memcpy(data->data() + offset, &shader_data_size, sizeof(size_t));
         offset += sizeof(size_t);
-        std::memcpy(data.data() + offset, shader_file.data[i].data.data(), sizeof(char8_t) * data_size);
-        offset += sizeof(char8_t) * data_size;
+
+        std::memcpy(data->data() + offset, _data.data.data(), sizeof(char8_t) * shader_data_size);
+        offset += sizeof(char8_t) * shader_data_size;
     }
 
     return total_bytes;
 }
 
-size_t AssetCompiler::serialize(std::vector<char8_t>& data, AssetFile const& asset_file) {
+size_t AssetCompiler::serialize_mesh_surface(std::span<char8_t>* const data, MeshSurfaceFile const& mesh_surface_file) {
+
+    size_t total_bytes = 0;
+
+    for(auto& material_info : mesh_surface_file.data.material_infos) {
+
+        total_bytes += total_bytes +
+            sizeof(char8_t) * 48 + // std::u8string to char8_t[48]
+            sizeof(uint32_t) + // Indices size
+            sizeof(uint32_t) * material_info.indices.size() // Indices bytes size
+        ;
+    }
+
+    total_bytes = total_bytes +
+        sizeof(uint32_t) + // Magic size
+        sizeof(uint32_t) + // Positions size
+        sizeof(float) * mesh_surface_file.data.positions.size() + // Positions bytes size
+        sizeof(uint32_t) + // Normals size
+        sizeof(float) * mesh_surface_file.data.uv_normals.size() + // Normals bytes size
+        sizeof(uint32_t) // Count size
+    ;
+
+    if(!data) {
+        return total_bytes;
+    }
+
+    uint64_t offset = 0;
+
+    std::memcpy(data->data(), &mesh_surface_file.magic, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+
+    uint32_t const positions_count = static_cast<uint32_t>(mesh_surface_file.data.positions.size());
+    std::memcpy(data->data() + offset, &positions_count, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+
+    std::memcpy(data->data() + offset, mesh_surface_file.data.positions.data(), sizeof(float) * positions_count);
+    offset += sizeof(float) * positions_count;
+
+    uint32_t const uv_normals_count = static_cast<uint32_t>(mesh_surface_file.data.uv_normals.size());
+    std::memcpy(data->data() + offset, &uv_normals_count, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+
+    std::memcpy(data->data() + offset, mesh_surface_file.data.uv_normals.data(), sizeof(float) * uv_normals_count);
+    offset += sizeof(float) * uv_normals_count;
+
+    uint32_t const material_info_count = static_cast<uint32_t>(mesh_surface_file.data.material_infos.size());
+    std::memcpy(data->data() + offset, &material_info_count, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+
+    for(auto& material_info : mesh_surface_file.data.material_infos) {
+
+        std::memcpy(data->data() + offset, material_info.name.data(), sizeof(char8_t) * std::max<size_t>(material_info.name.size(), 48));
+        offset += sizeof(char8_t) * 48;
+
+        uint32_t const indices_count = static_cast<uint32_t>(material_info.indices.size());
+        std::memcpy(data->data() + offset, &indices_count, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+
+        std::memcpy(data->data() + offset, material_info.indices.data(), sizeof(uint32_t) * indices_count);
+        offset += sizeof(uint32_t) * indices_count;
+    }
+
+    return total_bytes;
+}
+
+size_t AssetCompiler::serialize(std::span<char8_t>* const data, AssetFile const& asset_file) {
 
     size_t total_bytes = 0;
 
     auto asset_visitor = make_visitor(
-        [&](ShaderFile const& shader_file) {
-            total_bytes = serialize_shader(data, shader_file);
+        [&](ShaderPackageFile const& file) {
+            total_bytes = serialize_shader_package(data, file);
         },
-        [&](MeshFile const& mesh_file) {
-            // TODO!
+        [&](MeshSurfaceFile const& file) {
+            total_bytes = serialize_mesh_surface(data, file);
         },
         [&](TextureFile const& texture_file) {
             // TODO!
@@ -292,30 +362,30 @@ size_t AssetCompiler::serialize(std::vector<char8_t>& data, AssetFile const& ass
     return total_bytes;
 }
 
-bool AssetCompiler::deserialize_shader(std::vector<char8_t> const& data, ShaderFile& shader_file) {
+bool AssetCompiler::deserialize_shader_package(std::span<char8_t const> const data, ShaderPackageFile& shader_package_file) {
 
     std::span<char8_t> buffer;
     uint64_t offset = 0;
 
-    if(read_bytes(data, offset, buffer, sizeof(SHADER_MAGIC)) > 0) {
-        std::memcpy(&shader_file.magic, buffer.data(), buffer.size());
+    if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
+        std::memcpy(&shader_package_file.magic, buffer.data(), buffer.size());
     } else {
         return false;
     }
 
-    if(shader_file.magic != SHADER_MAGIC) {
+    if(shader_package_file.magic != SHADER_MAGIC) {
         return false;
     }
+
+    uint32_t shader_data_count = 0;
 
     if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
-        std::memcpy(&shader_file.count, buffer.data(), buffer.size());
+        std::memcpy(&shader_data_count, buffer.data(), buffer.size());
     } else {
         return false;
     }
 
-    shader_file.data = std::make_unique<renderer::ShaderData[]>(shader_file.count);
-
-    for(uint32_t i = 0; i < shader_file.count; ++i) {
+    for(uint32_t i = 0; i < shader_data_count; ++i) {
 
         char8_t name[48];
 
@@ -325,26 +395,119 @@ bool AssetCompiler::deserialize_shader(std::vector<char8_t> const& data, ShaderF
             return false;
         }
 
-        shader_file.data[i].name = std::u8string(name);
+        uint32_t shader_flags = 0;
         
         if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
-            std::memcpy(&shader_file.data[i].flags, buffer.data(), buffer.size());
+            std::memcpy(&shader_flags, buffer.data(), buffer.size());
         } else {
             return false;
         }
 
-        size_t data_size = 0; 
+        size_t shader_data_size = 0; 
 
         if(read_bytes(data, offset, buffer, sizeof(size_t)) > 0) {
-            std::memcpy(&data_size, buffer.data(), buffer.size());
+            std::memcpy(&shader_data_size, buffer.data(), buffer.size());
         } else {
             return false;
         }
 
-        shader_file.data[i].data.resize(data_size);
+        std::vector<char8_t> shader_data;
+        shader_data.resize(shader_data_size);
 
-        if(read_bytes(data, offset, buffer, data_size) > 0) {
-            std::memcpy(shader_file.data[i].data.data(), buffer.data(), buffer.size());
+        if(read_bytes(data, offset, buffer, shader_data_size) > 0) {
+            std::memcpy(shader_data.data(), buffer.data(), buffer.size());
+        } else {
+            return false;
+        }
+
+        shader_package_file.data.data[std::u8string(name)] = renderer::ShaderPackageData::ShaderData { 
+            .flags = static_cast<renderer::ShaderFlags>(shader_flags),
+            .data = std::move(shader_data)
+        };
+    }
+
+    return true;
+}
+
+bool AssetCompiler::deserialize_mesh_surface(std::span<char8_t const> const data, MeshSurfaceFile& mesh_surface_file) {
+
+    std::span<char8_t> buffer;
+    uint64_t offset = 0;
+
+    if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
+        std::memcpy(&mesh_surface_file.magic, buffer.data(), buffer.size());
+    } else {
+        return false;
+    }
+
+    if(mesh_surface_file.magic != MESH_SURFACE_MAGIC) {
+        return false;
+    }
+
+    uint32_t positions_count = 0;
+
+    if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
+        std::memcpy(&positions_count, buffer.data(), buffer.size());
+    } else {
+        return false;
+    }
+
+    mesh_surface_file.data.positions.resize(positions_count);
+
+    if(read_bytes(data, offset, buffer, positions_count * sizeof(float)) > 0) {
+        std::memcpy(mesh_surface_file.data.positions.data(), buffer.data(), buffer.size());
+    } else {
+        return false;
+    }
+
+    uint32_t uv_normals_count = 0;
+
+    if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
+        std::memcpy(&uv_normals_count, buffer.data(), buffer.size());
+    } else {
+        return false;
+    }
+
+    mesh_surface_file.data.uv_normals.resize(uv_normals_count);
+
+    if(read_bytes(data, offset, buffer, uv_normals_count * sizeof(float)) > 0) {
+        std::memcpy(mesh_surface_file.data.uv_normals.data(), buffer.data(), buffer.size());
+    } else {
+        return false;
+    }
+
+    uint32_t material_info_count = 0;
+
+    if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
+        std::memcpy(&material_info_count, buffer.data(), buffer.size());
+    } else {
+        return false;
+    }
+
+    mesh_surface_file.data.material_infos.resize(material_info_count);
+
+    for(auto& material_info : mesh_surface_file.data.material_infos) {
+
+        material_info.name.resize(48);
+
+        if(read_bytes(data, offset, buffer, sizeof(char8_t) * 48) > 0) {
+            std::memcpy(material_info.name.data(), buffer.data(), buffer.size());
+        } else {
+            return false;
+        }
+
+        uint32_t indices_count = 0;
+
+        if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
+            std::memcpy(&indices_count, buffer.data(), buffer.size());
+        } else {
+            return false;
+        }
+
+        material_info.indices.resize(indices_count);
+
+        if(read_bytes(data, offset, buffer, indices_count * sizeof(uint32_t)) > 0) {
+            std::memcpy(material_info.indices.data(), buffer.data(), buffer.size());
         } else {
             return false;
         }
@@ -353,7 +516,7 @@ bool AssetCompiler::deserialize_shader(std::vector<char8_t> const& data, ShaderF
     return true;
 }
 
-bool AssetCompiler::deserialize(std::vector<char8_t> const& data, AssetFile& asset_file) {
+bool AssetCompiler::deserialize(std::span<char8_t const> const data, AssetFile& asset_file) {
 
     bool result = false;
 
@@ -369,16 +532,17 @@ bool AssetCompiler::deserialize(std::vector<char8_t> const& data, AssetFile& ass
     }
 
     if(magic == SHADER_MAGIC) {
-
-        asset_file.emplace<ShaderFile>();
+        asset_file.emplace<ShaderPackageFile>();
+    } else if(magic == MESH_SURFACE_MAGIC) {
+        asset_file.emplace<MeshSurfaceFile>();
     }
 
     auto asset_visitor = make_visitor(
-        [&](ShaderFile& shader_file) {
-            result = deserialize_shader(data, shader_file);
+        [&](ShaderPackageFile& file) {
+            result = deserialize_shader_package(data, file);
         },
-        [&](MeshFile& mesh_file) {
-            // TODO!
+        [&](MeshSurfaceFile& file) {
+            result = deserialize_mesh_surface(data, file);
         },
         [&](TextureFile& texture_file) {
             // TODO!

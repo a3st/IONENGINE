@@ -8,23 +8,43 @@
 
 #include <lib/hash/crc32.h>
 
+#include <asset_compiler/obj_loader.h>
+#include <asset_compiler/asset_compiler.h>
+
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-WorldRenderer::WorldRenderer(Backend& backend, ThreadPool& thread_pool, std::span<ShaderData const> const shaders) 
+WorldRenderer::WorldRenderer(Backend& backend, ThreadPool& thread_pool, ShaderPackageData const& shader_package_data) 
     : _backend(&backend), _thread_pool(&thread_pool) {
 
     for(uint32_t i = 0; i < 3; ++i) {
         _graphics_encoders.emplace_back(backend, EncoderFlags::Graphics);
     }
     
-    initialize_shaders(shaders);
+    initialize_shaders(shader_package_data);
     initialize_descriptor_layouts();
     build_frame_graph(800, 600, 1, 2);
 
     fence_results.resize(2);
     _render_passes.resize(2);
     _pipelines.resize(2);
+
+    std::vector<char8_t> data;
+    size_t file_size = get_file_size("unpacked/objects/3_cubes.obj");
+    data.resize(file_size);
+    load_bytes_from_file("unpacked/objects/3_cubes.obj", data);
+
+    AssetFile asset_file;
+    tools::AssetCompiler asset_compiler;
+    asset_compiler.compile("unpacked/objects/3_cubes.obj", asset_file);
+
+    file_size = asset_compiler.serialize(nullptr, asset_file);
+
+    std::vector<char8_t> serialized_data;
+    serialized_data.resize(file_size);
+
+    std::span<char8_t> span_data = serialized_data;
+    asset_compiler.serialize(&span_data, asset_file);
 }
 
 void WorldRenderer::update() {
@@ -48,17 +68,14 @@ void WorldRenderer::resize(uint32_t const width, uint32_t const height) {
     build_frame_graph(width, height, 1, 2);
 }
 
-void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshData const* const mesh_data, Matrixf const& model) {
+void WorldRenderer::draw_mesh(uint32_t const sort_index, MeshSurfaceData const* const mesh_data, Matrixf const& model) {
 
-    _meshes[sort_index] = mesh_data;
+    
 }
 
 void WorldRenderer::set_projection_view(Matrixf const& projection, Matrixf const& view) {
 
-    _prev_world_buffer = _world_buffer;
-
-    _world_buffer.projection = Matrixf(projection).transpose();
-    _world_buffer.view = Matrixf(view).transpose();
+    
 }
 
 
@@ -76,7 +93,12 @@ void WorldRenderer::set_projection_view(Matrixf const& projection, Matrixf const
 
 */
 
-void WorldRenderer::initialize_shaders(std::span<ShaderData const> const shaders) {
+void WorldRenderer::initialize_shaders(ShaderPackageData const& shader_package_data) {
+
+    for(auto& [key, value] : shader_package_data.data) {
+
+        std::cout << std::format("{}", (char*)key.c_str()) << std::endl;
+    }
 
     auto result_desc = ShaderResultDesc {};
     ShaderGraph shader_graph;
@@ -100,7 +122,6 @@ void WorldRenderer::initialize_shaders(std::span<ShaderData const> const shaders
                 0, // Pass index
                 ShaderDesc{}
                     // .name(u8"basic") -- no need
-                    .shaders({})
                     .input("color_input"_hash, 0 /* Index */)
             )
             .build(*_backend, result_desc, shader_template);

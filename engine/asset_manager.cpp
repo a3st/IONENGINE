@@ -12,7 +12,8 @@ AssetManager::AssetManager(ThreadPool& thread_pool) : _thread_pool(&thread_pool)
 
     // Test TO DO File lists!
     {
-        _asset_streams["shader_package.asset"_hash].path = "content/shader_package.asset";
+        _asset_streams["shader_package.asset"_hash].file_path = "content/shader_package.asset";
+        _asset_streams["3_cubes.asset"_hash].file_path = "content/3_cubes.asset";
     }
 }
 
@@ -27,30 +28,27 @@ Handle<JobData> AssetManager::load_asset_from_file(AssetDataId const id, Handle<
             [&, this](AssetData& data, AssetStream& stream) {
 
                 tools::AssetCompiler asset_compiler;
-                bool result = false;
 
                 std::vector<char8_t> file_data;
-                size_t const file_size = get_file_size(stream.path, std::ios::binary);
+                size_t const file_size = get_file_size(stream.file_path, std::ios::binary);
                 file_data.resize(file_size);
 
-                if(!load_bytes_from_file(stream.path, file_data, std::ios::binary)) {
+                if(!load_bytes_from_file(stream.file_path, file_data, std::ios::binary)) {
                     return;
                 }
 
                 AssetFile asset_file;
-                result = asset_compiler.deserialize(file_data, asset_file);
+                bool result = asset_compiler.deserialize(file_data, asset_file);
 
                 auto asset_visitor = make_visitor(
-                    [&](ShaderFile const& shader_file) {
-                        
+                    [&](ShaderPackageFile const& file) {
+                        data = file.data;
                     },
-                    [&](MeshFile const& mesh_file) {
-
-
+                    [&](MeshSurfaceFile const& file) {
+                        data = file.data;
                     },
                     [&](TextureFile const& texture_file) {
-
-
+                        // TODO!
                     }
                 );
 

@@ -7,7 +7,7 @@
 
 namespace ionengine {
 
-using AssetData = std::variant<renderer::ShaderData>;
+using AssetData = std::variant<renderer::MeshSurfaceData, renderer::ShaderPackageData>;
 
 using AssetDataId = uint32_t;
 
@@ -27,7 +27,7 @@ public:
 private:
 
     struct AssetStream {
-        std::filesystem::path path;
+        std::filesystem::path file_path;
         Handle<JobData> job_data;
         std::atomic<bool> is_loaded;
     };

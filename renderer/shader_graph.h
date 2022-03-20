@@ -47,18 +47,11 @@ using ShaderInputDesc = std::variant<ShaderInput<float>, ShaderInput<Vector3f>, 
 
 struct ShaderDesc {
     std::u8string _name;
-    std::span<ShaderData const> _shaders;
     std::unordered_map<NodeInputId, uint32_t> _inputs;
     
     ShaderDesc& name(std::u8string const& name) {
         
         _name = name;
-        return *this;
-    }
-
-    ShaderDesc& shaders(std::span<ShaderData const> const shaders) {
-
-        _shaders = shaders;
         return *this;
     }
 

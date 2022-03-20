@@ -1,117 +1,128 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <engine/obj_loader.h>
+#include <asset_compiler/obj_loader.h>
+#include <lib/algorithm.h>
 
 using namespace ionengine;
 
-bool ObjLoader::parse(std::span<char8_t> const data) {
+bool OBJLoader::parse(std::span<char8_t const> const data) {
 
-    auto get_line = [](std::string_view const buffer, size_t& offset, std::string_view& line, char const delimeter) -> size_t {
-        size_t read_bytes = 0;
-        for(size_t i = offset; i < buffer.size(); ++i) {
-            ++read_bytes;
-            if(buffer[i] == delimeter) {
-                line = std::string_view(buffer.data() + offset, buffer.data() + i);
-                break;
-            }
-        }
-        if(read_bytes + offset == buffer.size()) {
-            line = std::string_view(buffer.data() + offset, buffer.data() + buffer.size());
-        }
-        offset += read_bytes;
-        return read_bytes;
-    };
-
-    std::string_view buffer(reinterpret_cast<char*>(data.data()), data.size());
+    std::string_view const buffer(reinterpret_cast<char const*>(data.data()), data.size());
     std::string_view str;
-    size_t offset = 0;
 
-    auto mesh = ObjMesh {};
+    uint64_t offset = 0;
+
+    std::map<std::u8string, uint32_t> material_indices;
+
+    uint32_t cur_object_index = 0;
+    uint32_t cur_material_index = 0;
     
     for(size_t read_bytes = 0; (read_bytes = get_line(buffer, offset, str, '\n')) > 0; ) {
 
-        // vertices
+        // Object
+        if(str.contains("o ")) {
+            std::string_view substr;
+            size_t substr_offset = 0;
+
+            size_t substr_read_bytes = get_line(str, substr_offset, substr, ' '); // Skip space
+
+            substr_read_bytes = get_line(str, substr_offset, substr, ' '); // Object name
+            
+            std::u8string object_name(reinterpret_cast<char8_t const*>(substr.data()), substr_read_bytes);
+
+            cur_object_index = static_cast<uint32_t>(_data.objects.size());
+            _data.objects.emplace_back(object_name);
+        }
+
+        // Vertices
         if(str.contains("v ")) {
             std::string_view substr;
             size_t substr_offset = 0;
-            size_t substr_read_bytes = 0;
 
-            // v space
-            substr_read_bytes = get_line(str, substr_offset, substr, ' ');
+            size_t substr_read_bytes = get_line(str, substr_offset, substr, ' '); // Skip space
 
-            // v coords
-            std::array<float, 3> coords;
+            // Vertices coordinates (float3)
             for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
-                auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coords[i]);
+                float coord = 0.0f;
+                auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coord);
+                _data.vertices.emplace_back(coord);
             }
-            mesh.vertices.emplace_back(Vector3f(coords[0], coords[1], coords[2]));
         }
 
-        // vt
+        // Vertex textures
         if(str.contains("vt ")) {
             std::string_view substr;
             size_t substr_offset = 0;
-            size_t substr_read_bytes = 0;
 
-            // vt space
-            substr_read_bytes = get_line(str, substr_offset, substr, ' ');
+            size_t substr_read_bytes = get_line(str, substr_offset, substr, ' '); // Skip space
 
-            // vt coords
-            std::array<float, 2> coords;
+            // Vertex textures coordinates (float2)
             for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
-                auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coords[i]);
-            }
-            mesh.uvs.emplace_back(Vector2f(coords[0], coords[1]));
+                float coord = 0.0f;
+                auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coord);
+                _data.uvs.emplace_back(coord);
+            }  
         }
 
-        // normals
+        // Vertex normals
         if(str.contains("vn ")) {
             std::string_view substr;
             size_t substr_offset = 0;
-            size_t substr_read_bytes = 0;
 
-            // vn space
-            substr_read_bytes = get_line(str, substr_offset, substr, ' ');
+            size_t substr_read_bytes = get_line(str, substr_offset, substr, ' '); // Skip space
 
-            // vn coords
-            std::array<float, 3> coords;
+            // Vertex normals coordinates
             for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
-                auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coords[i]);
+                float coord = 0.0f;
+                auto result = std::from_chars(substr.data(), substr.data() + substr.size(), coord);
+                _data.normals.emplace_back(coord);
             }
-            mesh.normals.emplace_back(Vector3f(coords[0], coords[1], coords[2]));
         }
         
-        if(str.contains("f ")) {
-
-            // TO DO
+        // Material
+        if(str.contains("usemtl ")) {
             std::string_view substr;
             size_t substr_offset = 0;
-            size_t substr_read_bytes = 0;
 
-            // f space
-            substr_read_bytes = get_line(str, substr_offset, substr, ' ');
+            size_t substr_read_bytes = get_line(str, substr_offset, substr, ' '); // Skip space
 
-            // v coords
-            std::array<uint32_t, 3> indices;
+            substr_read_bytes = get_line(str, substr_offset, substr, ' '); // Material name
+
+            std::u8string material_name(reinterpret_cast<char8_t const*>(substr.data()), substr_read_bytes);
+
+            auto it = material_indices.find(material_name);
+            if(it != material_indices.end()) {
+                cur_material_index = it->second;
+            } else {
+                cur_material_index = static_cast<uint32_t>(_data.objects[cur_object_index].materials.size());
+                _data.objects[cur_object_index].materials.emplace_back(material_name);
+                material_indices[material_name] = cur_material_index;
+            }
+        }
+
+        // Faces
+        if(str.contains("f ")) {
+
+            std::string_view substr;
+            size_t substr_offset = 0;
+
+            size_t substr_read_bytes = get_line(str, substr_offset, substr, ' '); // Skip space
+
             for(size_t substr_read_bytes = 0, i = 0; (substr_read_bytes = get_line(str, substr_offset, substr, ' ')) > 0; ++i) {
 
                 std::string_view substr_2;
                 size_t substr_offset_2 = 0;
-                size_t substr_read_bytes_2 = 0;
 
+                std::array<uint32_t, 3> indices;
                 for(size_t substr_read_bytes_2 = 0, j = 0; (substr_read_bytes_2 = get_line(substr, substr_offset_2, substr_2, '/')) > 0; ++j) {
-                    auto result = std::from_chars(substr_2.data(), substr_2.data() + substr_2.size(), indices[j]); // i + (j * 3) replaced by j
-                    indices[j] -= 1; // reduce to 1 index because obj index start is 1
+                    auto result = std::from_chars(substr_2.data(), substr_2.data() + substr_2.size(), indices[j]);
+                    --indices[j]; // Reduce to 1 index because index start is 1 in OBJ format
                 }
 
-                auto index = ObjIndex {};
-                std::memcpy(&index, indices.data(), sizeof(ObjIndex));
-                mesh.indices.emplace_back(index);
+                _data.objects[cur_object_index].materials[cur_material_index].indices.emplace_back(indices[0], indices[1], indices[2]);
             }
         }
     }
-
-    _meshes.emplace_back(mesh);
     return true;
 }

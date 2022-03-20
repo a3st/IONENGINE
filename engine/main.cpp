@@ -29,10 +29,9 @@ int main(int* argc, char** agrv) {
         Handle<AssetData> shader_data;
         Handle<JobData> load_asset_job = asset_manager.load_asset_from_file("shader_package.asset"_hash, shader_data);
 
-        
-        
+        auto& shader_package_data = std::get<renderer::ShaderPackageData>(asset_manager.get_asset_data(shader_data));
 
-        renderer::WorldRenderer world_renderer(backend, thread_pool, {});
+        renderer::WorldRenderer world_renderer(backend, thread_pool, shader_package_data);
         project::WorldController world_controller;
 
         if(!world_controller.initialize()) {
@@ -56,7 +55,7 @@ int main(int* argc, char** agrv) {
         std::exit(EXIT_FAILURE);
     }
 
-    std::cout << "Application (IONENGINE Runtime) is closed" << std::endl;
+    std::cout << "[Debug] Main: Exit" << std::endl;
 
     thread_pool.join();
     return EXIT_SUCCESS;

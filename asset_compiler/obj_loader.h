@@ -2,36 +2,43 @@
 
 #pragma once
 
-#include <lib/math/vector.h>
-
 namespace ionengine {
 
-struct ObjIndex {
+struct OBJIndex {
     uint32_t vertex;
     uint32_t uv;
     uint32_t normal;
 };
 
-struct ObjMesh {
-    std::vector<Vector3f> vertices;
-    std::vector<Vector3f> normals;
-    std::vector<Vector2f> uvs;
-    std::vector<ObjIndex> indices;
+struct OBJMaterial {
+    std::u8string name;
+    std::vector<OBJIndex> indices;
 };
 
-class ObjLoader {
+struct OBJObject {
+    std::u8string name;
+    std::vector<OBJMaterial> materials;
+};
+
+struct OBJData {
+    std::vector<float> vertices;
+    std::vector<float> normals;
+    std::vector<float> uvs;
+    std::vector<OBJObject> objects;
+};
+
+class OBJLoader {
 public:
 
-    ObjLoader() = default;
+    OBJLoader() = default;
 
-    bool parse(std::span<char8_t> const data);
+    bool parse(std::span<char8_t const> const data);
 
-    std::vector<ObjMesh>::const_iterator begin() const { return _meshes.begin(); }
-    std::vector<ObjMesh>::const_iterator end() const { return _meshes.end(); }
+    OBJData const& data() const { return _data; }
 
 private:
 
-    std::vector<ObjMesh> _meshes;
+    OBJData _data;
 };
 
 }
