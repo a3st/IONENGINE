@@ -10,8 +10,9 @@
 
 namespace ionengine::renderer {
 
-using NodeInputId = uint32_t;
-using NodeOutputId = uint32_t;
+using ShaderInputId = uint32_t;
+using ShaderId = uint32_t;
+using ShaderPassId = uint32_t;
 
 template<class Type>
 struct ShaderInput {
@@ -43,21 +44,29 @@ struct ShaderInput<Vector2f> {
     Vector2f value;
 };
 
-using ShaderInputDesc = std::variant<ShaderInput<float>, ShaderInput<Vector3f>, ShaderInput<Vector4f>, ShaderInput<Vector2f>>;
+template<>
+struct ShaderInput<Sampler> {
+    std::u8string name;
+};
 
-struct ShaderDesc {
-    std::u8string _name;
-    std::unordered_map<NodeInputId, uint32_t> _inputs;
-    
-    ShaderDesc& name(std::u8string const& name) {
-        
-        _name = name;
+using ShaderInputDesc = std::variant<ShaderInput<float>, ShaderInput<Vector3f>, ShaderInput<Vector4f>, ShaderInput<Vector2f>, ShaderInput<Sampler>>;
+
+struct ShaderPassDesc {
+
+    using ConstBufferInfo = std::pair<uint32_t, uint32_t>;
+
+    std::unordered_map<ShaderInputId, ConstBufferInfo> _const_buffers;
+    std::unordered_map<ShaderInputId, uint32_t> _samplers;
+
+    ShaderPassDesc& const_buffer(ShaderInputId const id, uint32_t const index, uint32_t const offset) {
+
+        _const_buffers[id] = { index, offset };
         return *this;
     }
 
-    ShaderDesc& input(NodeInputId const input_id, uint32_t const index) {
+    ShaderPassDesc& sampler(ShaderInputId const id, uint32_t const index) {
 
-        _inputs[input_id] = index;
+        _samplers[id] = index;
         return *this;
     }
 };
@@ -65,8 +74,8 @@ struct ShaderDesc {
 struct ShaderResultDesc {
     ShaderDomain domain;
     ShaderBlendMode blend_mode;
-    NodeOutputId shader_low;
-    NodeOutputId shader_high;
+    ShaderPassId shader_low;
+    ShaderPassId shader_high;
     CullMode cull_mode;
     FillMode fill_mode;
 };
@@ -76,8 +85,11 @@ public:
 
     ShaderGraph() = default;
 
-    ShaderGraph& input(NodeInputId const id, ShaderInputDesc const& input_desc);
-    ShaderGraph& shader(NodeOutputId const id, uint32_t pass_index, ShaderDesc const& shader_desc);
+    ShaderGraph& input(ShaderInputId const id, ShaderInputDesc const& input_desc);
+
+    ShaderGraph& shader(ShaderId const id, std::span<char8_t const> const data, ShaderFlags const flags);
+
+    ShaderGraph& shader_pass(ShaderPassId const id, uint32_t pass_index, ShaderPassDesc const& desc);
 
     void build(Backend& backend, ShaderResultDesc const& result, ShaderTemplate& output);
     void reset();
@@ -86,17 +98,17 @@ private:
 
     struct Shader {
         uint32_t pass_index;
-        ShaderDesc shader_desc;
+        ShaderPassDesc desc;
         std::vector<Handle<renderer::Shader>> shaders;
     };
 
-    using Node = std::variant<ShaderInputDesc, Shader>;
-    using NodeId = uint32_t;
+    //using Node = std::variant<ShaderInputDesc, Shader>;
+    //using NodeId = uint32_t;
 
-    std::unordered_map<NodeId, Node> _nodes;
+    //std::unordered_map<NodeId, Node> _nodes;
 
-    std::unordered_map<NodeInputId, NodeId> _node_inputs;
-    std::unordered_map<NodeOutputId, NodeId> _node_outputs;
+    //std::unordered_map<NodeInputId, NodeId> _node_inputs;
+    //std::unordered_map<NodeOutputId, NodeId> _node_outputs;
 
     uint32_t _node_index{0};
 };

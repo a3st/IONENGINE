@@ -57,7 +57,7 @@ bool AssetCompiler::compile_shader_package(std::filesystem::path const& file_pat
             shader_flags = renderer::ShaderFlags::Compute;
         }
 
-        shader_package_file.data.data[it->name] = renderer::ShaderPackageData::ShaderData { 
+        shader_package_file.data.data[it->name] = renderer::ShaderPackageData::ShaderInfo { 
             .flags = shader_flags,
             .data = it->data
         };
@@ -104,11 +104,15 @@ bool AssetCompiler::compile_mesh_surface(std::filesystem::path const& file_path,
         return false;
     }
 
-    uint32_t material_count = 0;
+    std::set<std::u8string> unique_materials;
 
     for(auto& object : obj_loader.data().objects) {
-        material_count = std::max<uint32_t>(material_count, static_cast<uint32_t>(object.materials.size()));
+        for(auto& material : object.materials) {
+            unique_materials.emplace(material.name);
+        }
     }
+
+    uint32_t const material_count = static_cast<uint32_t>(unique_materials.size());
 
     std::unordered_map<ObjVertex, uint32_t> unique_vertices;
     std::vector<ObjVertex> vertices;
@@ -420,7 +424,7 @@ bool AssetCompiler::deserialize_shader_package(std::span<char8_t const> const da
             return false;
         }
 
-        shader_package_file.data.data[std::u8string(name)] = renderer::ShaderPackageData::ShaderData { 
+        shader_package_file.data.data[std::u8string(name)] = renderer::ShaderPackageData::ShaderInfo { 
             .flags = static_cast<renderer::ShaderFlags>(shader_flags),
             .data = std::move(shader_data)
         };

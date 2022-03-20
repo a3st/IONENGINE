@@ -62,7 +62,7 @@ void ThreadPool::wait(Handle<JobData> const& job_data) const {
 
     auto const& job_stream = _workers[static_cast<uint32_t>(thread_index)].finished_jobs[static_cast<uint32_t>(loword)];
 
-    while(!job_stream.is_finished.load() && job_stream.gen.load() == static_cast<uint32_t>(generation_index)) {
+    while(!(job_stream.is_finished.load() && job_stream.gen.load() == static_cast<uint32_t>(generation_index))) {
         
         std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
     }

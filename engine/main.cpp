@@ -26,10 +26,9 @@ int main(int* argc, char** agrv) {
         AssetManager asset_manager(thread_pool);
         renderer::Backend backend(0, renderer::SwapchainDesc { &window, 1, 2 }, "cache/shader_cache_d3d12.payload");
 
-        Handle<AssetData> shader_data;
-        Handle<JobData> load_asset_job = asset_manager.load_asset_from_file("shader_package.asset"_hash, shader_data);
-
-        auto& shader_package_data = std::get<renderer::ShaderPackageData>(asset_manager.get_asset_data(shader_data));
+        Handle<AssetData> asset_data;
+        asset_manager.load_asset_from_file("shader_package.asset"_hash, asset_data);
+        auto& shader_package_data = std::get<renderer::ShaderPackageData>(asset_manager.get_asset_data(asset_data));
 
         renderer::WorldRenderer world_renderer(backend, thread_pool, shader_package_data);
         project::WorldController world_controller;

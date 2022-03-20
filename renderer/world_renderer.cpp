@@ -28,23 +28,6 @@ WorldRenderer::WorldRenderer(Backend& backend, ThreadPool& thread_pool, ShaderPa
     fence_results.resize(2);
     _render_passes.resize(2);
     _pipelines.resize(2);
-
-    std::vector<char8_t> data;
-    size_t file_size = get_file_size("unpacked/objects/3_cubes.obj");
-    data.resize(file_size);
-    load_bytes_from_file("unpacked/objects/3_cubes.obj", data);
-
-    AssetFile asset_file;
-    tools::AssetCompiler asset_compiler;
-    asset_compiler.compile("unpacked/objects/3_cubes.obj", asset_file);
-
-    file_size = asset_compiler.serialize(nullptr, asset_file);
-
-    std::vector<char8_t> serialized_data;
-    serialized_data.resize(file_size);
-
-    std::span<char8_t> span_data = serialized_data;
-    asset_compiler.serialize(&span_data, asset_file);
 }
 
 void WorldRenderer::update() {
@@ -117,12 +100,14 @@ void WorldRenderer::initialize_shaders(ShaderPackageData const& shader_package_d
         shader_graph
             .input("color_input"_hash, ShaderInput<Vector3f> { u8"color", Vector3f(0.2f, 0.1f, 0.3f) })
             .input("power_input"_hash, ShaderInput<float> { u8"power", 1.0f, { -1.0f, 2.0f } })
-            .shader(
-                "shader_low_high"_hash,
-                0, // Pass index
-                ShaderDesc{}
-                    // .name(u8"basic") -- no need
-                    .input("color_input"_hash, 0 /* Index */)
+            .shader("basic_vertex"_hash, shader_package_data.data.at(u8"basic_vertex").data, ShaderFlags::Vertex)
+            .shader("basic_pixel"_hash, shader_package_data.data.at(u8"basic_pixel").data, ShaderFlags::Pixel)
+            .shader_pass(
+                "shader_low_high"_hash, 
+                0, 
+                ShaderPassDesc{}
+                    .const_buffer("color_input"_hash, 0, 0)
+                    .const_buffer("power_input"_hash, 0, sizeof(Vector3f))
             )
             .build(*_backend, result_desc, shader_template);
 

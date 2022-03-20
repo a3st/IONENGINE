@@ -47,14 +47,14 @@ Handle<JobData> AssetManager::load_asset_from_file(AssetDataId const id, Handle<
                     [&](MeshSurfaceFile const& file) {
                         data = file.data;
                     },
-                    [&](TextureFile const& texture_file) {
+                    [&](TextureFile const& file) {
                         // TODO!
                     }
                 );
 
                 std::visit(asset_visitor, asset_file);
 
-                stream.is_loaded = result;
+                stream.is_loaded.store(result);
             },
             std::ref(_asset_datas[id]),
             std::ref(_asset_streams[id])

@@ -12,12 +12,12 @@ struct MaterialData {
 
 struct ShaderPackageData {
     
-    struct ShaderData {
+    struct ShaderInfo {
         ShaderFlags flags;
         std::vector<char8_t> data;
     };
 
-    std::map<std::u8string, ShaderData> data;
+    std::map<std::u8string, ShaderInfo> data;
 };
 
 struct TextureData {
