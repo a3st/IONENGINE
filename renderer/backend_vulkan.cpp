@@ -115,6 +115,7 @@ void Backend::Impl::deinitialize() {
         instance.destroyDebugUtilsMessengerEXT(debug_utils.value());
     }
 
+    device.destroy();
     instance.destroySurfaceKHR(surface);
     instance.destroy();
 }
