@@ -282,7 +282,6 @@ struct Backend::Impl {
 };
 
 void Backend::impl_deleter::operator()(Impl* ptr) const {
-
     delete ptr;
 }
 

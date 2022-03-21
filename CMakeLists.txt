@@ -29,9 +29,9 @@ add_executable(Runtime-Win32
     # Platform
     platform/window_win32.cpp
     platform/window_loop_win32.cpp
-    
+
     # API
-    renderer/d3d12/memory_allocator.cpp
+    # renderer/d3d12/memory_allocator.cpp
 
     # Renderer
     renderer/d3d12/backend_d3d12.cpp
@@ -48,32 +48,34 @@ add_executable(Runtime-Win32
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
 
 # Build Output
-set_target_properties(Runtime-Win32 PROPERTIES 
+set_target_properties(Runtime-Win32 PROPERTIES
     OUTPUT_NAME "project"
     COMPILE_FLAGS "${COMPILE_FLAGS}"
 )
 
 # Include Dirs
-target_include_directories(Runtime-Win32 PRIVATE
-
+target_include_directories(
+    Runtime-Win32 PRIVATE
+    C:/VulkanSDK/1.3.204.1/Include
 )
 
 # Link Libs
 target_link_libraries(Runtime-Win32
     ${Runtime-Win32}
-    d3d12.lib
-    dxgi.lib
-    dxguid.lib
+    C:/VulkanSDK/1.3.204.1/Lib/vulkan-1.lib
+    # d3d12.lib
+    # dxgi.lib
+    # dxguid.lib
 )
 
 # Link Dirs
 target_link_directories(Runtime-Win32 PRIVATE
-
 )
 
 # Preprocessor
-target_compile_definitions(Runtime-Win32 PRIVATE 
+target_compile_definitions(Runtime-Win32 PRIVATE
     IONENGINE_PLATFORM_WIN32
+    IONENGINE_BACKEND_D3D12
     IONENGINE_BACKEND_D3D12
 )
 
@@ -85,7 +87,7 @@ target_precompile_headers(HLSL_SPIRV_Package PRIVATE precompiled.h)
 
 # Build Output
 set_target_properties(HLSL_SPIRV_Package PROPERTIES
-    OUTPUT_NAME "hlsl_spirv_package" 
+    OUTPUT_NAME "hlsl_spirv_package"
     COMPILE_FLAGS "${COMPILE_FLAGS}"
 )
 
@@ -112,7 +114,7 @@ target_precompile_headers(AssetCompiler PRIVATE precompiled.h)
 
 # Build Output
 set_target_properties(AssetCompiler PROPERTIES
-    OUTPUT_NAME "asset_compiler" 
+    OUTPUT_NAME "asset_compiler"
     COMPILE_FLAGS "${COMPILE_FLAGS}"
 )
 
