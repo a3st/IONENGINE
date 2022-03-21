@@ -31,10 +31,10 @@ FrameGraph& FrameGraph::external_attachment(AttachmentId const id, Format const 
     return *this;
 }
 
-FrameGraph& FrameGraph::render_pass(RenderPassId const id, RenderPassDesc const& desc, RenderPassFunc const& func) {
+FrameGraph& FrameGraph::render_pass(RenderPassId const id, RenderPassDesc const& render_pass_desc, RenderPassFunc const& func) {
 
     auto render_pass = FrameGraph::RenderPass {
-        desc,
+        render_pass_desc,
         INVALID_HANDLE(renderer::RenderPass),
         func
     };
@@ -57,8 +57,8 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
             _render_passes[{ key.first, i }] = _render_passes[{ key.first, 0 }];
         }
 
-        for(auto& [key, value] : _render_pass_resources) {
-            _render_pass_resources[{ key.first, i }] = _render_pass_resources[{ key.first, 0 }];
+        for(auto& [key, value] : _render_pass_contexts) {
+            _render_pass_contexts[{ key.first, i }] = _render_pass_contexts[{ key.first, 0 }];
         }
     }
 
@@ -101,10 +101,10 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                             [&](ExternalAttachment& attachment) {
                                 is_external_render_pass = true;
                                 _external_attachments[attachment_id].emplace(op.second);
-                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
+                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
                             },
                             [&](InternalAttachment& attachment) {
-                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = attachment.target;
+                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = attachment.target;
                             }
                         );
 
@@ -123,10 +123,10 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                             [&](ExternalAttachment& attachment) {
                                 is_external_render_pass = true;
                                 _external_attachments[attachment_id].emplace(op.second);
-                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
+                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
                             },
                             [&](InternalAttachment& attachment) {
-                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = attachment.target;
+                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = attachment.target;
                             }
                         );
 
@@ -145,10 +145,10 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                             [&](ExternalAttachment& attachment) {
                                 is_external_render_pass = true;
                                 _external_attachments[attachment_id].emplace(op.second);
-                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
+                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
                             },
                             [&](InternalAttachment& attachment) {
-                                _render_pass_resources[{ op.second, i }]._attachments[attachment_id] = attachment.target;
+                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = attachment.target;
                             }
                         );
 
@@ -198,7 +198,7 @@ void FrameGraph::reset(Backend& backend) {
     }
 
     _render_passes.clear();
-    _render_pass_resources.clear();
+    _render_pass_contexts.clear();
 
     for(auto& [key, value] : _attachments) {
 
@@ -224,6 +224,8 @@ void FrameGraph::reset(Backend& backend) {
 
 FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
 
+    uint32_t pass_index = 0;
+
     for(auto& op : _ops) {
         switch(op.first) {
             case OpType::RenderPass: {
@@ -241,7 +243,7 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                         
                         render_pass.render_pass = create_render_pass(backend, render_pass.desc);
 
-                        for(auto& [key, value] : _render_pass_resources[{ op.second, _flight_frame_index }]._attachments) {
+                        for(auto& [key, value] : _render_pass_contexts[{ op.second, _flight_frame_index }]._attachments) {
 
                             auto attachment_visitor = make_visitor(
                                 [&](ExternalAttachment& attachment) {
@@ -314,14 +316,22 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
 
                 encoder.begin_render_pass(
                     render_pass.render_pass, 
-                    std::span<Color>(render_pass.desc._clear_colors.data(), render_pass.desc.color_count), 
-                    render_pass.desc._clear_depth,
-                    render_pass.desc._clear_stencil
+                    std::span<Color>(render_pass.desc.clear_colors.data(), render_pass.desc.color_count), 
+                    render_pass.desc.clear_depth,
+                    render_pass.desc.clear_stencil
                 );
 
-                render_pass.func(render_pass.render_pass, _render_pass_resources[{ op.second, _flight_frame_index }]);
+                auto& context = _render_pass_contexts[{ op.second, _flight_frame_index }];
+                context._render_pass = render_pass.render_pass;
+                context._encoder = &encoder;
+                context._pass_index = pass_index;
+                context._flight_frame_index = _flight_frame_index;
+
+                render_pass.func(context);
 
                 encoder.end_render_pass();
+
+                ++pass_index;
             } break;
         }
     }

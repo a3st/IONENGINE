@@ -4,7 +4,9 @@
 
 #include <renderer/backend.h>
 #include <renderer/frame_graph.h>
-#include <renderer/shader_graph.h>
+#include <renderer/material_manager.h>
+#include <renderer/texture_manager.h>
+#include <renderer/shader.h>
 #include <renderer/data.h>
 #include <lib/thread_pool.h>
 #include <lib/math/matrix.h>
@@ -75,6 +77,9 @@ private:
     ThreadPool* _thread_pool;
 
     FrameGraph _frame_graph;
+    MaterialManager _material_manager;
+
+    ShaderCache _shader_cache;
 
     std::vector<Handle<RenderPass>> _render_passes;
     std::vector<Handle<Pipeline>> _pipelines;
@@ -88,10 +93,10 @@ private:
 
     uint32_t _frame_index{0};
 
-    std::unordered_map<uint32_t, ShaderTemplate> _shader_templates;
-
     void initialize_shaders(ShaderPackageData const& shader_package_data);
+
     void initialize_descriptor_layouts();
+
     void build_frame_graph(uint32_t const width, uint32_t const height, uint16_t const sample_count, uint32_t const buffer_count);
 };
 

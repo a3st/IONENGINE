@@ -40,8 +40,9 @@ add_executable(Runtime-Win32
     renderer/world_renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp
-    renderer/shader_graph.cpp
     renderer/material_manager.cpp
+    renderer/texture_manager.cpp
+    renderer/shader.cpp
 
     # Project
     project/world_controller.cpp

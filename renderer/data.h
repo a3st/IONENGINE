@@ -10,16 +10,6 @@ struct MaterialData {
     uint32_t shader_template;
 };
 
-struct ShaderPackageData {
-    
-    struct ShaderInfo {
-        ShaderFlags flags;
-        std::vector<char8_t> data;
-    };
-
-    std::map<std::u8string, ShaderInfo> data;
-};
-
 struct TextureData {
     Dimension dimension;
     Format format;
@@ -32,6 +22,16 @@ struct TextureData {
     AddressMode address_v;
     AddressMode address_w;
     std::vector<char8_t> data;
+};
+
+struct ShaderPackageData {
+    
+    struct ShaderInfo {
+        ShaderFlags flags;
+        std::vector<char8_t> data;
+    };
+
+    std::map<std::u8string, ShaderInfo> data;
 };
 
 struct MeshSurfaceData {

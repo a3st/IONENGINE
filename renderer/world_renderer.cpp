@@ -3,13 +3,8 @@
 #include <precompiled.h>
 #include <renderer/world_renderer.h>
 
-#include <lib/math/vector.h>
 #include <lib/algorithm.h>
-
 #include <lib/hash/crc32.h>
-
-#include <asset_compiler/obj_loader.h>
-#include <asset_compiler/asset_compiler.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -78,48 +73,33 @@ void WorldRenderer::set_projection_view(Matrixf const& projection, Matrixf const
 
 void WorldRenderer::initialize_shaders(ShaderPackageData const& shader_package_data) {
 
-    for(auto& [key, value] : shader_package_data.data) {
+    _shader_cache.create_shader_effect(
+        *_backend, 
+        "basic"_hash, 
+        ShaderEffectDesc{}
+            .set_shader_code(u8"basic_vertex", shader_package_data.data.at(u8"basic_vertex"), ShaderFlags::Vertex)
+            .set_shader_code(u8"basic_pixel", shader_package_data.data.at(u8"basic_pixel"), ShaderFlags::Pixel)
+    );
 
-        std::cout << std::format("{}", (char*)key.c_str()) << std::endl;
-    }
+    /*auto build_desc = ShaderBuildDesc {};
+    build_desc.domain = ShaderDomain::Surface;
+    build_desc.blend_mode = ShaderBlendMode::Opaque;
+    build_desc.cull_mode = CullMode::Back;
+    build_desc.fill_mode = FillMode::Solid;
 
-    auto result_desc = ShaderResultDesc {};
-    ShaderGraph shader_graph;
+    std::vector<ShaderPassDesc> shader_pass_descs = {
+        ShaderPassDesc{}
+            .set_pass_index(0)
+            .set_quality(ShaderQuality::Low)
+            .set_shader_code(u8"basic_vertex", shader_package_data.data.at(u8"basic_vertex"), ShaderFlags::Vertex)
+            .set_shader_code(u8"basic_pixel", shader_package_data.data.at(u8"basic_pixel"), ShaderFlags::Pixel)
+    };
 
-    // Basic Shader
-    {
-        ShaderTemplate shader_template;
+    _shader_manager.build_shader_template(*_backend, "basic"_hash, shader_pass_descs, build_desc);*/
 
-        result_desc.domain = ShaderDomain::Surface;
-        result_desc.blend_mode = ShaderBlendMode::Opaque;
-        result_desc.shader_high = "shader_low_high"_hash;
-        result_desc.shader_low = "shader_low_high"_hash;
-        result_desc.cull_mode = CullMode::Back;
-        result_desc.fill_mode = FillMode::Solid;
 
-        shader_graph
-            .input("color_input"_hash, ShaderInput<Vector3f> { u8"color", Vector3f(0.2f, 0.1f, 0.3f) })
-            .input("power_input"_hash, ShaderInput<float> { u8"power", 1.0f, { -1.0f, 2.0f } })
-            .shader("basic_vertex"_hash, shader_package_data.data.at(u8"basic_vertex").data, ShaderFlags::Vertex)
-            .shader("basic_pixel"_hash, shader_package_data.data.at(u8"basic_pixel").data, ShaderFlags::Pixel)
-            .shader_pass(
-                "shader_low_high"_hash, 
-                0, 
-                ShaderPassDesc{}
-                    .const_buffer("color_input"_hash, 0, 0)
-                    .const_buffer("power_input"_hash, 0, sizeof(Vector3f))
-            )
-            .build(*_backend, result_desc, shader_template);
 
-        // shader_templates["basic"_hash] = std::move(shader_template);
-    }
-    shader_graph.reset();
-
-    // ...
-
-    // std::unordered_map<uint32_t, ShaderTemplate> shader_templates;
-    // std::unordered_map<
-
+    //.input_data(ShaderInputId const "mesh_color"_hash, ShaderInput<Vector3f> { u8"Mesh Color", Vector3f(0.2f, 0.1f, 0.5f) }, uint32_t const index = 0)
 }
 
 void WorldRenderer::initialize_descriptor_layouts() {
@@ -142,11 +122,13 @@ void WorldRenderer::build_frame_graph(uint32_t const width, uint32_t const heigh
         .render_pass(
             "main_pass"_hash, 
             RenderPassDesc{}
-                .name(u8"Main Render Pass")
-                .rect(800, 600)
-                .color("swapchain"_hash, RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f))
-                .color("blit"_hash, RenderPassLoadOp::Clear, Color(0.2f, 0.4f, 0.3f, 1.0f)),
-            [&](Handle<RenderPass> const& render_pass, RenderPassResources const& resources) {
+                .set_name(u8"Main Render Pass")
+                .set_rect(800, 600)
+                .set_color("swapchain"_hash, RenderPassLoadOp::Clear, Color(0.9f, 0.5f, 0.3f, 1.0f))
+                .set_color("blit"_hash, RenderPassLoadOp::Clear, Color(0.2f, 0.4f, 0.3f, 1.0f)),
+            [&](RenderPassContext const& context) {
+
+                
                 
                 /*
 
