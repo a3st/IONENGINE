@@ -79,27 +79,19 @@ void WorldRenderer::initialize_shaders(ShaderPackageData const& shader_package_d
         ShaderEffectDesc{}
             .set_shader_code(u8"basic_vertex", shader_package_data.data.at(u8"basic_vertex"), ShaderFlags::Vertex)
             .set_shader_code(u8"basic_pixel", shader_package_data.data.at(u8"basic_pixel"), ShaderFlags::Pixel)
+            .set_binding("world"_hash, 0, ShaderBinding<Buffer> { u8"World CBuffer" })
+            .set_binding("material"_hash, 1, ShaderBinding<Buffer> { u8"Material CBuffer" })
+            .set_binding("wrap_sampler"_hash, 2, ShaderBinding<Sampler> { u8"Sampler Wrap" })
     );
 
-    /*auto build_desc = ShaderBuildDesc {};
-    build_desc.domain = ShaderDomain::Surface;
-    build_desc.blend_mode = ShaderBlendMode::Opaque;
-    build_desc.cull_mode = CullMode::Back;
-    build_desc.fill_mode = FillMode::Solid;
+    auto shader_effect = _shader_cache.get_shader_effect("basic"_hash);
 
-    std::vector<ShaderPassDesc> shader_pass_descs = {
-        ShaderPassDesc{}
-            .set_pass_index(0)
-            .set_quality(ShaderQuality::Low)
-            .set_shader_code(u8"basic_vertex", shader_package_data.data.at(u8"basic_vertex"), ShaderFlags::Vertex)
-            .set_shader_code(u8"basic_pixel", shader_package_data.data.at(u8"basic_pixel"), ShaderFlags::Pixel)
-    };
-
-    _shader_manager.build_shader_template(*_backend, "basic"_hash, shader_pass_descs, build_desc);*/
-
-
-
-    //.input_data(ShaderInputId const "mesh_color"_hash, ShaderInput<Vector3f> { u8"Mesh Color", Vector3f(0.2f, 0.1f, 0.5f) }, uint32_t const index = 0)
+    ShaderEffectBinder binder(shader_effect);
+    binder
+        .bind("world"_hash, INVALID_HANDLE(Buffer))
+        .bind("material"_hash, INVALID_HANDLE(Buffer))
+        .bind("wrap_sampler"_hash, INVALID_HANDLE(Sampler))
+        .apply(_graphics_encoders[0], INVALID_HANDLE(DescriptorSet));
 }
 
 void WorldRenderer::initialize_descriptor_layouts() {

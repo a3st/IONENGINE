@@ -51,6 +51,20 @@ ShaderTemplate const& ShaderManager::get_shader_template(ShaderTemplateId const 
     return _shader_templates.at(id);
 }*/
 
+ShaderEffectBinder::ShaderEffectBinder(ShaderEffect& shader_effect) : _shader_effect(&shader_effect) {
+
+}
+
+ShaderEffectBinder& ShaderEffectBinder::bind(ShaderBindingId const id, std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>> const& target) {
+
+    
+    return *this;
+}
+
+void ShaderEffectBinder::apply(Encoder& encoder, Handle<DescriptorSet> const& descriptor_set) {
+
+}
+
 void ShaderCache::create_shader_effect(Backend& backend, ShaderEffectId const id, ShaderEffectDesc const& shader_effect_desc) {
 
     auto shader_effect = ShaderEffect {};
@@ -73,4 +87,9 @@ void ShaderCache::create_shader_effect(Backend& backend, ShaderEffectId const id
 ShaderEffect const& ShaderCache::get_shader_effect(ShaderEffectId const id) const {
 
     return _shader_effects.at(id);
+}
+
+ShaderEffect& ShaderCache::get_shader_effect(ShaderEffectId const id) {
+
+    return _shader_effects[id];
 }
