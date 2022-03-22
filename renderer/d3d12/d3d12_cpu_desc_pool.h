@@ -11,21 +11,21 @@ struct DescriptorAllocInfo {
     uint32_t offset;
     uint32_t descriptor_size;
 
-    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle() const {
+    D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle(uint32_t const index = 0) const {
 
         return D3D12_CPU_DESCRIPTOR_HANDLE { 
             heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
             descriptor_size * // Device descriptor size
-            offset // Allocation offset
+            offset + index // Allocation offset
         };
     }
 
-    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle() const {
+    D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(uint32_t const index = 0) const {
         
         return D3D12_GPU_DESCRIPTOR_HANDLE { 
             heap->GetGPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
             descriptor_size * // Device descriptor size
-            offset // Allocation offset
+            offset + index // Allocation offset
         };
     }
 };

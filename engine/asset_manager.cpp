@@ -72,11 +72,11 @@ Handle<JobData> AssetManager::load_asset_from_file(AssetDataId const id, Handle<
 
 AssetData const& AssetManager::get_asset_data(Handle<AssetData> const& asset_data) {
 
-    auto& stream = _asset_streams[asset_data.id()];
+    auto& stream = _asset_streams[asset_data.id];
 
     if(!stream.is_loaded.load()) {
         _thread_pool->wait(stream.job_data);
     }
 
-    return _asset_datas[asset_data.id()];
+    return _asset_datas[asset_data.id];
 }

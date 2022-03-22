@@ -91,7 +91,7 @@ void WorldRenderer::initialize_shaders(ShaderPackageData const& shader_package_d
         .bind("world"_hash, INVALID_HANDLE(Buffer))
         .bind("material"_hash, INVALID_HANDLE(Buffer))
         .bind("wrap_sampler"_hash, INVALID_HANDLE(Sampler))
-        .apply(_graphics_encoders[0], INVALID_HANDLE(DescriptorSet));
+        .update(*_backend, INVALID_HANDLE(DescriptorSet));
 }
 
 void WorldRenderer::initialize_descriptor_layouts() {
@@ -121,18 +121,6 @@ void WorldRenderer::build_frame_graph(uint32_t const width, uint32_t const heigh
             [&](RenderPassContext const& context) {
 
                 
-                
-                /*
-
-                Handle<Pipeline> pipeline = get_pipeline_data(
-                    shader_template, 
-                    render_pass, 
-                    index_pass
-                );
-
-                encoder.bind_pipeline(pipeline);
-                
-                */
             }
         )
         .build(*_backend, 2);

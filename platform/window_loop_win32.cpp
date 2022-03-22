@@ -11,7 +11,7 @@ using namespace ionengine::platform;
 
 void WindowLoop::run(std::function<void(WindowEvent const&, WindowEventFlow&)> const& run_func) {
 
-    MSG msg{};
+    auto msg = MSG {};
 
     while(true) {
 
@@ -33,9 +33,4 @@ void WindowLoop::run(std::function<void(WindowEvent const&, WindowEventFlow&)> c
         auto post_event = WindowEvent { WindowEventType::Updated };
         run_func(post_event, _flow);
     }
-}
-
-void WindowLoop::push_event(WindowEvent const& event) {
-
-    _events.emplace(event);
 }

@@ -42,12 +42,12 @@ public:
 
     void run(std::function<void(WindowEvent const&, WindowEventFlow&)> const& run_func);
 
-    void push_event(WindowEvent const& event);
-
 private:
 
     std::queue<WindowEvent> _events;
     WindowEventFlow _flow{WindowEventFlow::Unknown};
+
+    friend class Window;
 };
 
 }

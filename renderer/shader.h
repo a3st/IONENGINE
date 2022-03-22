@@ -54,6 +54,10 @@ struct ShaderEffectDesc {
 
 struct ShaderEffect {
 
+    using ShaderBindingInfo = std::pair<uint32_t, ShaderBindingDesc>;
+
+    std::unordered_map<ShaderBindingId, ShaderBindingInfo> bindings;
+
     std::unordered_map<ShaderFlags, Handle<Shader>> shaders;
 };
 
@@ -64,13 +68,14 @@ public:
 
     ShaderEffectBinder& bind(ShaderBindingId const id, std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>> const& target);
 
-    void apply(Encoder& encoder, Handle<DescriptorSet> const& descriptor_set);
+    void update(Backend& backend, Handle<DescriptorSet> const& descriptor_set);
 
 private:
 
     ShaderEffect* _shader_effect;
 
     std::array<DescriptorWriteDesc, 64> _descriptor_updates;
+    uint32_t _update_count{0};
 };
 
 class ShaderCache {
@@ -91,65 +96,3 @@ private:
 };
     
 }
-
-
-/*
-struct ShaderTemplate {
-    ShaderDomain domain;
-    ShaderBlendMode blend_mode;
-    CullMode cull_mode;
-    FillMode fill_mode;
-
-    struct PassData {
-        std::unordered_map<ShaderFlags, Handle<Shader>> shaders;
-    };
-
-    std::array<std::vector<PassData>, 2> pass_data;
-};*/
-
-/*
-struct ShaderBuildDesc {
-    ShaderDomain domain;
-    ShaderBlendMode blend_mode;
-    CullMode cull_mode;
-    FillMode fill_mode;
-};
-
-struct ShaderPassDesc {
-    uint32_t pass_index;
-    ShaderQuality shader_quality;
-
-    
-
-    ShaderPassDesc& set_pass_index(uint32_t const index) {
-
-        pass_index = index;
-        return *this;
-    }
-
-    ShaderPassDesc& set_quality(ShaderQuality const quality) {
-
-        shader_quality = quality;
-        return *this;
-    }
-
-    
-};*/
-
-/*
-enum class ShaderDomain {
-    Surface,
-    Decal,
-    PostProcess
-};
-
-enum class ShaderBlendMode {
-    Opaque,
-    Transparent
-};
-
-enum class ShaderQuality {
-    Low,
-    High
-};
-*/

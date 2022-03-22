@@ -21,16 +21,17 @@ public:
 
     Window& operator=(Window&&) = delete;
 
-    Size get_size() const;
+    Size client_size() const;
 
-    void* get_handle() const;
+    void* native_handle() const;
 
-    void set_label(std::u8string const& label);
+    void label(std::u8string const& label);
 
 private:
 
     struct Impl;
-    std::unique_ptr<Impl> _impl;
+    struct impl_deleter { void operator()(Impl* ptr) const; };
+    std::unique_ptr<Impl, impl_deleter> _impl;
 };
 
 }

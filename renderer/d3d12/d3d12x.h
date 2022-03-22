@@ -4,13 +4,15 @@
 
 #include <lib/exception.h>
 
+#define NOMINMAX
+#define UNICODE
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <wrl/client.h>
 
 #ifndef THROW_IF_FAILED
 #define THROW_IF_FAILED(Result) if(FAILED(Result)) throw ionengine::Exception(ionengine::renderer::d3d12::hresult_to_string(Result));
-#endif
+#endif // THROW_IF_FAILED
 
 using Microsoft::WRL::ComPtr;
 

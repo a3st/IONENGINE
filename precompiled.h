@@ -1,6 +1,7 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#define NOMINMAX
+#pragma once
+
 #define _USE_MATH_DEFINES
 
 #include <iostream>
@@ -26,4 +27,20 @@
 #include <set>
 #include <unordered_set>
 
-#include "cxx_helpers.h"
+#ifndef DECLARE_ENUM_CLASS_BIT_FLAG
+#define DECLARE_ENUM_CLASS_BIT_FLAG(EnumClass) \
+inline EnumClass operator|(const EnumClass lhs, const EnumClass rhs) { \
+	return static_cast<EnumClass>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs)); \
+} \
+inline bool operator&(const EnumClass lhs, const EnumClass rhs) { \
+	return static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs); \
+}
+#endif // DECLARE_ENUM_CLASS_BIT_FLAG
+
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+
+template <class... Ts>
+inline auto make_visitor(Ts... ts) {
+
+    return overloaded<Ts...>(ts...);
+}

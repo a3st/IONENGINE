@@ -30,6 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Folders
 /build/*
 /.idea/*
 /.gradle/*

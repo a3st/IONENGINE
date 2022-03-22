@@ -8,6 +8,22 @@
 
 namespace ionengine::renderer {
 
+enum class ShaderDomain {
+    Surface,
+    Decal,
+    PostProcess
+};
+
+enum class ShaderBlendMode {
+    Opaque,
+    Transparent
+};
+
+enum class ShaderQuality {
+    Low,
+    High
+};
+
 template<class Type>
 struct MaterialParameter {
     std::u8string name;

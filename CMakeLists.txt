@@ -36,7 +36,7 @@ add_executable(Runtime-Win32
     renderer/d3d12/memory_allocator.cpp
 
     # Renderer
-    renderer/backend_d3d12.cpp
+    renderer/d3d12/backend_d3d12.cpp
     renderer/world_renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp

@@ -42,8 +42,8 @@ bool ThreadPool::is_finished(Handle<JobData> const& job_data) const {
 
     assert(_exec && "An error occurred while waiting for the completion of task in the thread pool");
     
-    uint16_t const hiword = static_cast<uint16_t>(job_data.id() >> 16);
-    uint16_t const loword = static_cast<uint16_t>(job_data.id());
+    uint16_t const hiword = static_cast<uint16_t>(job_data.id >> 16);
+    uint16_t const loword = static_cast<uint16_t>(job_data.id);
     uint8_t const thread_index = static_cast<uint8_t>(hiword >> 8);
     uint8_t const generation_index = static_cast<uint8_t>(hiword);
 
@@ -55,8 +55,8 @@ void ThreadPool::wait(Handle<JobData> const& job_data) const {
 
     assert(_exec && "An error occurred while waiting for the completion of task in the thread pool");
 
-    uint16_t const hiword = static_cast<uint16_t>(job_data.id() >> 16);
-    uint16_t const loword = static_cast<uint16_t>(job_data.id());
+    uint16_t const hiword = static_cast<uint16_t>(job_data.id >> 16);
+    uint16_t const loword = static_cast<uint16_t>(job_data.id);
     uint8_t const thread_index = static_cast<uint8_t>(hiword >> 8);
     uint8_t const generation_index = static_cast<uint8_t>(hiword);
 
