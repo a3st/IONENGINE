@@ -2,7 +2,6 @@
 
 #include <precompiled.h>
 #include <project/world_controller.h>
-
 #include <lib/algorithm.h>
 
 using namespace project;
@@ -11,4 +10,9 @@ bool WorldController::initialize() {
 
 
     return true;
+}
+
+void WorldController::update() {
+
+
 }

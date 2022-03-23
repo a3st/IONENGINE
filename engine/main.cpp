@@ -24,6 +24,7 @@ int main(int* argc, char** agrv) {
         platform::Window window(u8"IONENGINE", 800, 600, false, loop);
 
         AssetManager asset_manager(thread_pool);
+        
         renderer::Backend backend(0, renderer::SwapchainDesc { &window, 1, 2 }, "cache/shader_cache_d3d12.payload");
 
         Handle<AssetData> asset_data;
@@ -31,6 +32,7 @@ int main(int* argc, char** agrv) {
         auto& shader_package_data = std::get<renderer::ShaderPackageData>(asset_manager.get_asset_data(asset_data));
 
         renderer::WorldRenderer world_renderer(backend, thread_pool, shader_package_data);
+
         project::WorldController world_controller;
 
         if(!world_controller.initialize()) {
@@ -43,6 +45,7 @@ int main(int* argc, char** agrv) {
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: {
+                        world_controller.update();
                         world_renderer.update();
                     } break;
                 }

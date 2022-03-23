@@ -77,6 +77,7 @@ private:
     ThreadPool* _thread_pool;
 
     FrameGraph _frame_graph;
+
     MaterialManager _material_manager;
 
     ShaderCache _shader_cache;

@@ -11,7 +11,11 @@ public:
 
     bool initialize();
 
+    void update();
+
 private:
+
+        
 };
 
 };

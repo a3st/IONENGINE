@@ -38,4 +38,8 @@ struct MaterialParameter<Vector2f> {
 
 using MaterialParameterDesc = std::variant<MaterialParameter<float>, MaterialParameter<Vector3f>, MaterialParameter<Vector4f>, MaterialParameter<Vector3f>>;
 
+struct Material {
+
+};
+
 }
