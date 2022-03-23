@@ -11,7 +11,19 @@ ShaderEffectBinder::ShaderEffectBinder(ShaderEffect& shader_effect) : _shader_ef
 
 ShaderEffectBinder& ShaderEffectBinder::bind(ShaderBindingId const id, std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>> const& target) {
 
-    _descriptor_updates[_update_count] = DescriptorWriteDesc { .index = _shader_effect->bindings[id].first, .data = target };
+    auto binding_visitor = make_visitor(
+        [&](ShaderBinding<Sampler> const& binding) {
+            _descriptor_updates[_update_count] = DescriptorWriteDesc { .index = binding.index, .data = target };
+        },
+        [&](ShaderBinding<Buffer> const& binding) {
+            _descriptor_updates[_update_count] = DescriptorWriteDesc { .index = binding.index, .data = target };
+        },
+        [&](ShaderBinding<Texture> const& binding) {
+            _descriptor_updates[_update_count] = DescriptorWriteDesc { .index = binding.index, .data = target };
+        }
+    );
+
+    std::visit(binding_visitor, _shader_effect->bindings[id]);
     ++_update_count;
     return *this;
 }
@@ -30,10 +42,10 @@ void ShaderCache::create_shader_effect(Backend& backend, ShaderEffectId const id
 
         auto it = _shader_cache.find(name);
         if(it != _shader_cache.end()) {
-            shader_effect.shaders[shader_info->flags] = it->second;
+            shader_effect.shaders.emplace_back(it->second);
         } else {
             Handle<Shader> shader = backend.create_shader(shader_info->data, shader_info->flags);
-            shader_effect.shaders[shader_info->flags] = shader;
+            shader_effect.shaders.emplace_back(shader);
             _shader_cache[name] = shader;
         }
     }
@@ -41,12 +53,12 @@ void ShaderCache::create_shader_effect(Backend& backend, ShaderEffectId const id
     _shader_effects[id] = std::move(shader_effect);
 }
 
-ShaderEffect const& ShaderCache::get_shader_effect(ShaderEffectId const id) const {
+ShaderEffect const& ShaderCache::shader_effect(ShaderEffectId const id) const {
 
     return _shader_effects.at(id);
 }
 
-ShaderEffect& ShaderCache::get_shader_effect(ShaderEffectId const id) {
+ShaderEffect& ShaderCache::shader_effect(ShaderEffectId const id) {
 
     return _shader_effects[id];
 }

@@ -13,7 +13,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/Debug",
             "environment": [],
-            "console": "internalConsole"
+            "console": "integratedTerminal"
         },
         {
             "name": "(Windows) Launch SPIRV HLSL Package",
@@ -24,7 +24,7 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/Debug",
             "environment": [],
-            "console": "internalConsole"
+            "console": "integratedTerminal"
         }
     ]
 }

@@ -83,7 +83,7 @@ public:
 
     RenderPassContext() = default;
 
-    Handle<Texture> get_attachment(AttachmentId const id) const { return _attachments.find(id)->second; }
+    Handle<Texture> attachment(AttachmentId const id) const { return _attachments.find(id)->second; }
 
     Handle<renderer::RenderPass> render_pass() const { return _render_pass; }
     
@@ -110,7 +110,7 @@ public:
 
     ComputePassContext() = default;
 
-    Handle<Buffer> get_buffer(BufferId const id) const { return _buffers.find(id)->second; }
+    Handle<Buffer> buffer(BufferId const id) const { return _buffers.find(id)->second; }
 
 private:
 

@@ -14,7 +14,7 @@ bool HLSVLoader::parse(std::span<char8_t const> const data) {
     std::span<char8_t> buffer;
     uint64_t offset = 0;
 
-    if(read_bytes(data, offset, buffer, sizeof(hlsl_spirv_package::HLSL_SPIRV_Magic)) > 0) {
+    if(read_bytes(data, offset, buffer, sizeof(uint32_t)) > 0) {
         std::memcpy(&hlsv_spirv_file.magic, buffer.data(), buffer.size());
     } else {
         std::cerr << "[Error] HLSVLoader: Data cannot be read because it is corrupted" << std::endl;
@@ -53,9 +53,8 @@ bool HLSVLoader::parse(std::span<char8_t const> const data) {
         return false;
     }
 
-    _shaders.reserve(hlsv_spirv_file.header.count);
-
-    offset = sizeof(hlsl_spirv_package::HLSL_SPIRV_Magic) + sizeof(hlsl_spirv_package::HLSL_SPIRV_Header) + shader_size;
+    _shaders.resize(hlsv_spirv_file.header.count);
+    offset = data.size() - data_size;
 
     for(uint32_t i = 0; i < hlsv_spirv_file.header.count; ++i) {
 
@@ -65,8 +64,9 @@ bool HLSVLoader::parse(std::span<char8_t const> const data) {
         
         hlsv_shader.data.resize(hlsv_spirv_file.shaders[i].size);
         std::memcpy(hlsv_shader.data.data(), data.data() + offset, hlsv_spirv_file.shaders[i].size);
+        offset += hlsv_spirv_file.shaders[i].size;
 
-        _shaders.emplace_back(hlsv_shader);
+        _shaders[i] = std::move(hlsv_shader);
     }
 
     return true;

@@ -10,21 +10,25 @@ namespace ionengine::renderer {
 
 template<class Type>
 struct ShaderBinding {
+    uint32_t index;
     std::u8string name;
 };
 
 template<>
 struct ShaderBinding<Sampler> {
+    uint32_t index;
     std::u8string name;
 };
 
 template<>
 struct ShaderBinding<Buffer> {
+    uint32_t index;
     std::u8string name;
 };
 
 template<>
 struct ShaderBinding<Texture> {
+    uint32_t index;
     std::u8string name;
 };
 
@@ -34,10 +38,11 @@ using ShaderEffectId = uint32_t;
 using ShaderBindingId = uint32_t;
 
 struct ShaderEffectDesc {
-    using ShaderBindingInfo = std::pair<uint32_t, ShaderBindingDesc>;
 
     std::map<std::u8string, ShaderPackageData::ShaderInfo const*> shader_infos;
-    std::unordered_map<ShaderBindingId, ShaderBindingInfo> shader_bindings;
+    std::unordered_map<ShaderBindingId, ShaderBindingDesc> shader_bindings;
+    
+    //ShaderEffectDesc& set_layout_ranges()
 
     ShaderEffectDesc& set_shader_code(std::u8string const& name, ShaderPackageData::ShaderInfo const& shader_info, ShaderFlags const flags) {
 
@@ -45,20 +50,18 @@ struct ShaderEffectDesc {
         return *this;
     }
 
-    ShaderEffectDesc& set_binding(ShaderBindingId const id, uint32_t const index, ShaderBindingDesc const& shader_binding_desc) {
+    ShaderEffectDesc& set_binding(ShaderBindingId const id, ShaderBindingDesc const& shader_binding_desc) {
 
-        shader_bindings[id] = { index, shader_binding_desc };
+        shader_bindings[id] = shader_binding_desc;
         return *this;
     }
 };
 
 struct ShaderEffect {
 
-    using ShaderBindingInfo = std::pair<uint32_t, ShaderBindingDesc>;
+    std::unordered_map<ShaderBindingId, ShaderBindingDesc> bindings;
 
-    std::unordered_map<ShaderBindingId, ShaderBindingInfo> bindings;
-
-    std::unordered_map<ShaderFlags, Handle<Shader>> shaders;
+    std::vector<Handle<Shader>> shaders;
 };
 
 class ShaderEffectBinder {
@@ -85,9 +88,9 @@ public:
 
     void create_shader_effect(Backend& backend, ShaderEffectId const id, ShaderEffectDesc const& shader_effect_desc);
 
-    ShaderEffect const& get_shader_effect(ShaderEffectId const id) const;
+    ShaderEffect const& shader_effect(ShaderEffectId const id) const;
 
-    ShaderEffect& get_shader_effect(ShaderEffectId const id);
+    ShaderEffect& shader_effect(ShaderEffectId const id);
 
 private:
 

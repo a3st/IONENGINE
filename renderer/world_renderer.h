@@ -81,13 +81,13 @@ private:
 
     ShaderCache _shader_cache;
 
-    std::vector<Handle<RenderPass>> _render_passes;
-    std::vector<Handle<Pipeline>> _pipelines;
     std::vector<Handle<DescriptorSet>> _descriptor_sets;
     std::vector<Handle<Buffer>> _constant_buffers;
 
     std::vector<Encoder> _graphics_encoders;
     std::vector<FenceResultInfo> fence_results;
+
+    Handle<Pipeline> _pipeline_test;
 
     Handle<DescriptorLayout> _pbr_layout;
 

@@ -150,8 +150,10 @@ struct Backend::Impl {
     std::vector<d3d12::GPUDescriptorRange*> gpu_cbv_srv_uav_ranges;
     std::vector<d3d12::GPUDescriptorRange*> gpu_sampler_ranges;
 
-    ComPtr<IDXGIFactory4> factory;
     ComPtr<ID3D12Debug> debug;
+    ComPtr<ID3D12InfoQueue> info_queue;
+
+    ComPtr<IDXGIFactory4> factory;
     ComPtr<IDXGIAdapter1> adapter;
     ComPtr<ID3D12Device4> device;
     ComPtr<IDXGISwapChain3> swapchain;
@@ -437,6 +439,20 @@ void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const
     
     THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(device.GetAddressOf())));
     
+    THROW_IF_FAILED(device->QueryInterface(info_queue.GetAddressOf()));
+
+    auto info_queue_filter = D3D12_INFO_QUEUE_FILTER {};
+    
+    std::array<D3D12_MESSAGE_SEVERITY, 2> severities = {
+        D3D12_MESSAGE_SEVERITY_ERROR,
+        D3D12_MESSAGE_SEVERITY_WARNING
+    };
+
+    info_queue_filter.AllowList.pSeverityList = severities.data();
+    info_queue_filter.AllowList.NumSeverities = static_cast<uint32_t>(severities.size());
+
+    info_queue->PushStorageFilter(&info_queue_filter);
+
     cpu_cbv_srv_uav_pools.resize(4);
 
     queues.resize(3);
@@ -1242,7 +1258,6 @@ Handle<Pipeline> Backend::Impl::create_pipeline(
     if(pipeline_cache.has_value()) {
         
         auto it = shader_cache_data.find(pipeline_cache.value());
-
         if(it != shader_cache_data.end()) {
 
             auto cached_pso_state = D3D12_CACHED_PIPELINE_STATE {};
@@ -1607,7 +1622,7 @@ Handle<Pipeline> Backend::create_pipeline(
     std::optional<PipelineCacheId> pipeline_cache
 ) {
     
-    return _impl->create_pipeline(descriptor_layout, vertex_descs, shaders, rasterizer_desc, depth_stencil_desc, blend_desc, render_pass);
+    return _impl->create_pipeline(descriptor_layout, vertex_descs, shaders, rasterizer_desc, depth_stencil_desc, blend_desc, render_pass, pipeline_cache);
 }
 
 void Backend::delete_pipeline(Handle<Pipeline> const& pipeline) {
@@ -1722,6 +1737,9 @@ void Encoder::Impl::reset() {
     if(command_list->GetType() == D3D12_COMMAND_LIST_TYPE_DIRECT) {
 
         uint32_t const swap_index = backend->swapchain_index;
+
+        backend->gpu_cbv_srv_uav_ranges[swap_index]->reset();
+        backend->gpu_sampler_ranges[swap_index]->reset();
 
         std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
         descriptor_heaps[0] = backend->gpu_cbv_srv_uav_ranges[swap_index]->get_heap();

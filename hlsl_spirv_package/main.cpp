@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     std::cout << std::format("[Info] Packaging {} shader files (FLAGS={})", shader_files.size(), flags) << std::endl;
 
     auto header = HLSL_SPIRV_Header {};
-    uint32_t magic = HLSL_SPIRV_Magic;
+    uint32_t const magic = HLSL_SPIRV_Magic;
     header.flags = std::to_underlying(_flags);
     header.count = static_cast<uint32_t>(shader_files.size());
 
@@ -72,8 +72,8 @@ int main(int argc, char** argv) {
 
     for(size_t i = 0; i < shader_files.size(); ++i) {
 
-        std::u8string file_name = shader_files[i].stem().u8string();
-        std::memcpy(shaders[i].name, file_name.data(), std::max<size_t>(file_name.size(), 48)  * sizeof(char8_t));
+        std::u8string const file_name = shader_files[i].stem().u8string();
+        std::memcpy(shaders[i].name, file_name.data(), std::min<size_t>(file_name.size(), 48)  * sizeof(char8_t));
 
         if(shader_files[i].extension() == ".hlsl_bin") {
             shaders[i].flags = std::to_underlying(HLSL_SPIRV_Flags::HLSL);
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
 
-        size_t file_size = ionengine::get_file_size(shader_files[i], std::ios::binary);
+        size_t const file_size = ionengine::get_file_size(shader_files[i], std::ios::binary);
         shader_data.resize(file_size);
 
         shaders[i].size = file_size;
@@ -98,8 +98,6 @@ int main(int argc, char** argv) {
         offset += file_size;
     }
 
-    std::vector<char8_t> final_data;
-
     size_t const header_size = sizeof(HLSL_SPIRV_Header);
     size_t const shader_size = sizeof(HLSL_SPIRV_Shader) * shader_files.size();
     size_t const data_size = offset;
@@ -109,6 +107,8 @@ int main(int argc, char** argv) {
         shader_size + // Shader size
         data_size // Data size
     ;
+
+    std::vector<char8_t> final_data;
     final_data.resize(total_bytes);
 
     offset = 0;
