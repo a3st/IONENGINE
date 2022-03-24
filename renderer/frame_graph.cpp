@@ -43,11 +43,11 @@ FrameGraph& FrameGraph::render_pass(RenderPassId const id, RenderPassDesc const&
     return *this;
 }
 
-void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
+void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
 
-    _flight_frame_count = flight_frame_count;
+    _frame_count = frame_count;
 
-    for(uint32_t i = 1; i < flight_frame_count; ++i) {
+    for(uint32_t i = 1; i < frame_count; ++i) {
 
         for(auto& [key, value] : _attachments) {
             _attachments[{ key.first, i }] = _attachments[{ key.first, 0 }];
@@ -86,7 +86,7 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
         std::visit(attachment_visitor, value);
     }
 
-    for(uint32_t i = 0; i < flight_frame_count; ++i) {
+    for(uint32_t i = 0; i < frame_count; ++i) {
         for(auto& op : _ops) {
             switch(op.first) {
                 case FrameGraph::OpType::RenderPass: {
@@ -163,7 +163,7 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                     if(is_external_render_pass) {
                         _external_render_passes.emplace(op.second);
                     } else {
-                        render_pass.render_pass = create_render_pass(backend, render_pass.desc);
+                        render_pass.render_pass = create_render_pass(backend, i, render_pass.desc);
                     }
                 } break;
                 case FrameGraph::OpType::ComputePass: {
@@ -230,10 +230,10 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
         switch(op.first) {
             case OpType::RenderPass: {
 
+                auto& render_pass = _render_passes[{ op.second, _frame_index }];
+
                 // Build external render pass
                 if(_external_render_passes.find(op.second) != _external_render_passes.end()) {
-
-                    auto& render_pass = _render_passes[{ op.second, _flight_frame_index }];
 
                     if(!render_pass.is_compiled) {
 
@@ -241,9 +241,9 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                             backend.delete_render_pass(render_pass.render_pass);
                         }
                         
-                        render_pass.render_pass = create_render_pass(backend, render_pass.desc);
+                        render_pass.render_pass = create_render_pass(backend, _frame_index, render_pass.desc);
 
-                        for(auto& [key, value] : _render_pass_contexts[{ op.second, _flight_frame_index }]._attachments) {
+                        for(auto& [key, value] : _render_pass_contexts[{ op.second, _frame_index }]._attachments) {
 
                             auto attachment_visitor = make_visitor(
                                 [&](ExternalAttachment& attachment) {
@@ -254,14 +254,12 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                                 }
                             );
 
-                            std::visit(attachment_visitor, _attachments[{ key, _flight_frame_index }]);
+                            std::visit(attachment_visitor, _attachments[{ key, _frame_index }]);
                         }
 
                         render_pass.is_compiled = true;
                     }
                 }
-
-                auto& render_pass = _render_passes[{ op.second, _flight_frame_index }];
 
                 encoder
                     .set_viewport(0, 0, render_pass.desc.width, render_pass.desc.height)
@@ -275,18 +273,18 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                     if(_memory_states[attachment_id].second.find(op.second) != _memory_states[attachment_id].second.end()) {
 
                         auto attachment_visitor = make_visitor(
-                            [&](ExternalAttachment& attachment) {
+                            [&](ExternalAttachment const& attachment) {
                                 encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
                                 _memory_states[attachment_id].first = MemoryState::RenderTarget;
                             },
-                            [&](InternalAttachment& attachment) {
-                                std::cout << std::format("({}) resource ({}) before {}, after {}", _flight_frame_index, attachment.target.id, (uint32_t)_memory_states[attachment_id].first, (uint32_t)MemoryState::RenderTarget) << std::endl;
+                            [&](InternalAttachment const& attachment) {
+                                //std::cout << std::format("(frame {}, pass_index {}) resource acquire ({}) before {}, after {}", _flight_frame_index, pass_index, attachment.target.id, (uint32_t)_memory_states[attachment_id].first, (uint32_t)MemoryState::RenderTarget) << std::endl;
                                 encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
                                 _memory_states[attachment_id].first = MemoryState::RenderTarget;
                             }
                         );
 
-                        std::visit(attachment_visitor, _attachments[{ attachment_id, _flight_frame_index }]);
+                        std::visit(attachment_visitor, _attachments.at({ attachment_id, _frame_index }));
                     }
                 }
 
@@ -306,7 +304,7 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                         }
                     );
 
-                    std::visit(attachment_visitor, _attachments[{ attachment_id, _flight_frame_index }]);
+                    std::visit(attachment_visitor, _attachments[{ attachment_id, _frame_index }]);
                 }
 
                 // Input Barriers
@@ -327,7 +325,7 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                             }
                         );
 
-                        std::visit(attachment_visitor, _attachments[{ attachment_id, _flight_frame_index }]);
+                        std::visit(attachment_visitor, _attachments[{ attachment_id, _frame_index }]);
                     }
                 }
 
@@ -338,11 +336,11 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                     render_pass.desc.clear_stencil
                 );
 
-                auto& context = _render_pass_contexts[{ op.second, _flight_frame_index }];
+                auto& context = _render_pass_contexts[{ op.second, _frame_index }];
                 context._render_pass = render_pass.render_pass;
                 context._encoder = &encoder;
                 context._pass_index = pass_index;
-                context._flight_frame_index = _flight_frame_index;
+                context._frame_index = _frame_index;
 
                 render_pass.func(context);
 
@@ -356,9 +354,11 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
     // Final Barriers
     for(auto& [key, value] : _attachments) {
 
-        if(key.second != _flight_frame_index) {
+        if(key.second != _frame_index) {
             continue;
         }
+
+        assert(_memory_states[key.first].first != MemoryState::Common && "error during framegraph execution. there are unused resources");
         
         auto attachment_visitor = make_visitor(
             [&](ExternalAttachment& attachment) {
@@ -366,6 +366,7 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                 _memory_states[key.first].first = attachment.after;
             },
             [&](InternalAttachment& attachment) {
+                //std::cout << std::format("(frame {}) resource release ({}) before {}, after {}", _flight_frame_index, attachment.target.id, (uint32_t)_memory_states[key.first].first, (uint32_t)MemoryState::Common) << std::endl;
                 encoder.barrier(attachment.target, _memory_states[key.first].first, MemoryState::Common);
                 _memory_states[key.first].first = MemoryState::Common;
             }
@@ -377,24 +378,24 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
     FenceResultInfo result_info = backend.submit(std::span<Encoder const>(&encoder, 1), EncoderFlags::Graphics);
     backend.present();
 
-    _flight_frame_index = (_flight_frame_index + 1) % _flight_frame_count;
+    _frame_index = (_frame_index + 1) % _frame_count;
 
     return result_info;
 }
 
 FrameGraph& FrameGraph::bind_external_attachment(AttachmentId const id, Handle<Texture> const& target) {
 
-    auto& attachment = std::get<ExternalAttachment>(_attachments[{id, _flight_frame_index}]);
+    auto& attachment = std::get<ExternalAttachment>(_attachments[{id, _frame_index}]);
     if(attachment.target != target) {
         attachment.target = target;
         for(auto& _id : _external_attachments[id]) {
-            _render_passes[{ _id, _flight_frame_index }].is_compiled = false;
+            _render_passes[{ _id, _frame_index }].is_compiled = false;
         }
     }
     return *this;
 }
 
-Handle<ionengine::renderer::RenderPass> FrameGraph::create_render_pass(Backend& backend, RenderPassDesc const& desc) {
+Handle<ionengine::renderer::RenderPass> FrameGraph::create_render_pass(Backend& backend, uint32_t const frame_index, RenderPassDesc const& desc) {
 
     std::array<Handle<Texture>, 8> colors;
     std::array<RenderPassColorDesc, 8> color_descs;
@@ -410,7 +411,7 @@ Handle<ionengine::renderer::RenderPass> FrameGraph::create_render_pass(Backend& 
             }
         );
 
-        std::visit(attachment_visitor, _attachments[{ desc.color_infos[i].first, _flight_frame_index }]);
+        std::visit(attachment_visitor, _attachments[{ desc.color_infos[i].first, frame_index }]);
 
         auto color_desc = RenderPassColorDesc {};
         color_desc.load_op = desc.color_infos[i].second;
@@ -433,7 +434,7 @@ Handle<ionengine::renderer::RenderPass> FrameGraph::create_render_pass(Backend& 
             }
         );
 
-        std::visit(attachment_visitor, _attachments[{ desc.depth_stencil_info.first, _flight_frame_index }]);
+        std::visit(attachment_visitor, _attachments[{ desc.depth_stencil_info.first, frame_index }]);
 
         depth_stencil_desc.depth_load_op = desc.depth_stencil_info.second;
         depth_stencil_desc.depth_store_op = RenderPassStoreOp::Store;

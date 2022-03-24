@@ -101,7 +101,10 @@ private:
     void build_frame_graph(uint32_t const width, uint32_t const height, uint16_t const sample_count, uint32_t const buffer_count);
 
     // TEST
-    Handle<Pipeline> _pipeline_test;
+    std::vector<Handle<Pipeline>> test_pipelines;
+    Handle<Buffer> test_vertex_triangle;
+    Handle<Buffer> test_index_triangle;
+    Handle<DescriptorSet> test_descriptor_set;
 };
 
 }

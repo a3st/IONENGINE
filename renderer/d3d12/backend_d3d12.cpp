@@ -40,13 +40,15 @@ struct DescriptorLayout {
 };
 
 struct DescriptorSet {
-    ComPtr<ID3D12RootSignature> root_signature;
+    ComPtr<ID3D12DescriptorHeap> cbv_srv_uav_heap;
+    ComPtr<ID3D12DescriptorHeap> sampler_heap;
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
     std::vector<d3d12::DescriptorAllocInfo> bindings;
     bool is_compute;
 };
 
 struct Pipeline {
+    ComPtr<ID3D12RootSignature> root_signature;
     ComPtr<ID3D12PipelineState> pipeline_state;
     std::array<uint32_t, 16> vertex_strides;
     bool is_compute;
@@ -637,6 +639,7 @@ Handle<Texture> Backend::Impl::create_texture(
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
 
+    D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON;
     D3D12_RESOURCE_ALLOCATION_INFO resource_alloc_info = device->GetResourceAllocationInfo(0, 1, &resource_desc);
 
     texture_data.memory_alloc_info = memory_allocator.allocate(
@@ -649,7 +652,7 @@ Handle<Texture> Backend::Impl::create_texture(
         texture_data.memory_alloc_info.heap(),
         texture_data.memory_alloc_info.offset(),
         &resource_desc,
-        D3D12_RESOURCE_STATE_COMMON,
+        initial_state,
         nullptr,
         __uuidof(ID3D12Resource), 
         reinterpret_cast<void**>(texture_data.resource.GetAddressOf())
@@ -1151,9 +1154,10 @@ Handle<Pipeline> Backend::Impl::create_pipeline(
     auto pipeline_data = Pipeline {};
 
     auto& descriptor_layout_data = descriptor_layouts[descriptor_layout.id];
+    pipeline_data.root_signature = descriptor_layout_data.root_signature;
 
     auto pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {};
-    pipeline_desc.pRootSignature = descriptor_layout_data.root_signature.Get();
+    pipeline_desc.pRootSignature = pipeline_data.root_signature.Get();
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> input_element_descs;
     input_element_descs.reserve(vertex_descs.size());
@@ -1299,16 +1303,65 @@ Handle<DescriptorSet> Backend::Impl::create_descriptor_set(Handle<DescriptorLayo
     auto descriptor_set_data = DescriptorSet {};
     auto& descriptor_layout_data = descriptor_layouts[descriptor_layout.id];
 
-    descriptor_set_data.root_signature = descriptor_layout_data.root_signature;
     descriptor_set_data.ranges = descriptor_layout_data.ranges;
     descriptor_set_data.is_compute = descriptor_layout_data.is_compute;
 
-    for(size_t i = 0; i < descriptor_layout_data.ranges.size(); ++i) {
+    std::map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> index_ranges;
+    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_CBV] = 0;
+    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SRV] = 0;
+    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_UAV] = 0;
+    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER] = 0;
 
-        auto& range = descriptor_layout_data.ranges[i];
-        for(uint32_t j = 0; j < range.NumDescriptors; ++j) {
+    for(auto& range : descriptor_layout_data.ranges) {
 
-            descriptor_set_data.bindings.emplace_back(d3d12::DescriptorAllocInfo {});
+        ++index_ranges[range.RangeType];
+    }
+
+    auto heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
+    heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    heap_desc.NumDescriptors = index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_CBV] + index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SRV] + index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_UAV];
+    
+    device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.cbv_srv_uav_heap.GetAddressOf()));
+
+    heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+    heap_desc.NumDescriptors = index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER];
+
+    device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.sampler_heap.GetAddressOf()));
+
+    std::map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32_t> index_bindings;
+    index_bindings[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = 0;
+    index_bindings[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] = 0;
+
+    for(auto& range : descriptor_layout_data.ranges) {
+
+        switch(range.RangeType) {
+
+            case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+            case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+            case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
+                
+                descriptor_set_data.bindings.emplace_back(
+                    d3d12::DescriptorAllocInfo { 
+                        .heap = descriptor_set_data.cbv_srv_uav_heap.Get(),
+                        .offset = index_bindings[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV],
+                        .descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
+                    }
+                );
+
+                index_bindings[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] += range.NumDescriptors;
+            } break;
+            case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:  {
+
+                descriptor_set_data.bindings.emplace_back(
+                    d3d12::DescriptorAllocInfo { 
+                        .heap = descriptor_set_data.cbv_srv_uav_heap.Get(),
+                        .offset = index_bindings[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER],
+                        .descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)
+                    }
+                );
+
+                index_bindings[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER] += range.NumDescriptors;
+            } break;
         }
     }
 
@@ -1761,19 +1814,12 @@ void Encoder::Impl::bind_descriptor_set(Handle<DescriptorSet> const& descriptor_
 
     auto& descriptor_set_data = backend->descriptor_sets[descriptor_set.id];
 
-    if(!descriptor_set_data.is_compute) {
-        command_list->SetGraphicsRootSignature(descriptor_set_data.root_signature.Get());
-    } else {
-        command_list->SetComputeRootSignature(descriptor_set_data.root_signature.Get());
-    }
-
-    uint32_t binding_count = 0;
-
     for(size_t i = 0; i < descriptor_set_data.ranges.size(); ++i) {
 
         auto alloc_info = d3d12::DescriptorAllocInfo {};
 
         auto& range = descriptor_set_data.ranges[i];
+
         switch(range.RangeType) {
             case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
             case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
@@ -1782,20 +1828,15 @@ void Encoder::Impl::bind_descriptor_set(Handle<DescriptorSet> const& descriptor_
             } break;
             case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: {
                 alloc_info = backend->gpu_sampler_ranges[backend->swapchain_index]->allocate(range);
-            }
+            } break;
         }
 
-        for(uint32_t i = 0; i < range.NumDescriptors; ++i) {
-
-            backend->device->CopyDescriptorsSimple(
-                1, 
-                alloc_info.cpu_handle(i), 
-                descriptor_set_data.bindings[binding_count + i].cpu_handle(), 
-                D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
-            );
-        }
-
-        binding_count += range.NumDescriptors;
+        backend->device->CopyDescriptorsSimple(
+            range.NumDescriptors, 
+            alloc_info.cpu_handle(), 
+            descriptor_set_data.bindings[i].cpu_handle(), 
+            D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+        );
 
         if(!descriptor_set_data.is_compute) {
             command_list->SetGraphicsRootDescriptorTable(static_cast<uint32_t>(i), alloc_info.gpu_handle());
@@ -1846,8 +1887,8 @@ void Encoder::Impl::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const&
         reset();
     }
 
-    auto get_memory_state = [&](MemoryState const state) -> D3D12_RESOURCE_STATES {
-        switch(state) {
+    auto get_memory_state = [&](MemoryState const memory_state) -> D3D12_RESOURCE_STATES {
+        switch(memory_state) {
 		    case MemoryState::Common: return D3D12_RESOURCE_STATE_COMMON;
 		    case MemoryState::RenderTarget: return D3D12_RESOURCE_STATE_RENDER_TARGET;
 		    case MemoryState::Present: return D3D12_RESOURCE_STATE_PRESENT;
@@ -1868,11 +1909,11 @@ void Encoder::Impl::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const&
     resource_barrier.Transition.StateAfter = get_memory_state(after);
 
     auto barrier_visitor = make_visitor(
-        [&](Handle<Texture> const& texture) {
-            resource_barrier.Transition.pResource = backend->textures[texture.id].resource.Get();
+        [&](Handle<Texture> const& target) {
+            resource_barrier.Transition.pResource = backend->textures[target.id].resource.Get();
         },
-        [&](Handle<Buffer> const& buffer) {
-            resource_barrier.Transition.pResource = backend->buffers[buffer.id].resource.Get();
+        [&](Handle<Buffer> const& target) {
+            resource_barrier.Transition.pResource = backend->buffers[target.id].resource.Get();
         }
     );
 
@@ -1943,6 +1984,12 @@ void Encoder::Impl::bind_pipeline(Handle<Pipeline> const& pipeline) {
 
     command_list->SetPipelineState(pipeline_data.pipeline_state.Get());
     command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    if(!pipeline_data.is_compute) {
+        command_list->SetGraphicsRootSignature(pipeline_data.root_signature.Get());
+    } else {
+        command_list->SetComputeRootSignature(pipeline_data.root_signature.Get());
+    }
 }
 
 void Encoder::Impl::bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset) {

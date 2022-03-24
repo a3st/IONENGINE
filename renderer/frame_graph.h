@@ -91,7 +91,7 @@ public:
 
     uint32_t pass_index() const { return _pass_index; }
 
-    uint32_t flight_frame_index() const { return _flight_frame_index; }
+    uint32_t frame_index() const { return _frame_index; }
 
 private:
 
@@ -102,7 +102,7 @@ private:
     Handle<renderer::RenderPass> _render_pass;
     Encoder* _encoder;
     uint32_t _pass_index;
-    uint32_t _flight_frame_index;
+    uint32_t _frame_index;
 };
 
 class ComputePassContext {
@@ -194,10 +194,10 @@ private:
 
     std::vector<Op> _ops;
 
-    uint32_t _flight_frame_index{0};
-    uint32_t _flight_frame_count{0};
+    uint32_t _frame_index{0};
+    uint32_t _frame_count{0};
 
-    Handle<renderer::RenderPass> create_render_pass(Backend& backend, RenderPassDesc const& desc);
+    Handle<renderer::RenderPass> create_render_pass(Backend& backend, uint32_t const frame_index, RenderPassDesc const& desc);
 };
 
 }
