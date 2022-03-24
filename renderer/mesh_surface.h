@@ -12,12 +12,11 @@ public:
 
     MeshSurface() = default;
 
-    void load_from_data(Backend& backend, MeshSurfaceData const& mesh_surface_data);
+    bool load_from_data(Backend& backend, MeshSurfaceData const& mesh_surface_data);
 
 private:
     
-    Handle<Buffer> _positions_buffer;
-    Handle<Buffer> _uv_normals_buffer;
+    Handle<Buffer> _vertices_buffer;
     Handle<Buffer> _indices_buffer;
 };
 

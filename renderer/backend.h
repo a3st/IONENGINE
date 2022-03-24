@@ -50,7 +50,8 @@ enum class Format {
     RG32,
     R32,
     BC1,
-    BC5
+    BC5,
+    D32
 };
 
 enum class TextureFlags : uint16_t {
@@ -310,7 +311,7 @@ public:
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& descriptor_layout,
         std::span<VertexInputDesc const> const vertex_descs,
-        std::span<Handle<Shader>> const shaders,
+        std::span<Handle<Shader> const> const shaders,
         RasterizerDesc const& rasterizer_desc,
         DepthStencilDesc const& depth_stencil_desc,
         BlendDesc const& blend_desc,
@@ -322,7 +323,7 @@ public:
 
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
+    void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t const> const data);
 
     void present();
 

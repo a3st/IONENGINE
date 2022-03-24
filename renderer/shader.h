@@ -41,8 +41,6 @@ struct ShaderEffectDesc {
 
     std::map<std::u8string, ShaderPackageData::ShaderInfo const*> shader_infos;
     std::unordered_map<ShaderBindingId, ShaderBindingDesc> shader_bindings;
-    
-    //ShaderEffectDesc& set_layout_ranges()
 
     ShaderEffectDesc& set_shader_code(std::u8string const& name, ShaderPackageData::ShaderInfo const& shader_info, ShaderFlags const flags) {
 
@@ -57,11 +55,22 @@ struct ShaderEffectDesc {
     }
 };
 
-struct ShaderEffect {
+class ShaderEffect {
+public:
 
-    std::unordered_map<ShaderBindingId, ShaderBindingDesc> bindings;
+    ShaderEffect() = default;
 
-    std::vector<Handle<Shader>> shaders;
+    std::span<Handle<Shader> const> shaders() const;
+
+    ShaderBindingDesc const& bindings(ShaderBindingId const id) const;
+
+private:
+
+    friend class ShaderEffectBinder;
+    friend class ShaderCache;
+
+    std::unordered_map<ShaderBindingId, ShaderBindingDesc> _bindings;
+    std::vector<Handle<Shader>> _shaders;
 };
 
 class ShaderEffectBinder {

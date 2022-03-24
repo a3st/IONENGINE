@@ -77,7 +77,7 @@ void FrameGraph::build(Backend& backend, uint32_t const flight_frame_count) {
                     1, 
                     1, 
                     attachment.format,
-                    attachment.flags | TextureFlags::ShaderResource
+                    attachment.flags
                 );
                 _memory_states[key.first].first = MemoryState::Common;
             }
@@ -280,6 +280,7 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                                 _memory_states[attachment_id].first = MemoryState::RenderTarget;
                             },
                             [&](InternalAttachment& attachment) {
+                                std::cout << std::format("({}) resource ({}) before {}, after {}", _flight_frame_index, attachment.target.id, (uint32_t)_memory_states[attachment_id].first, (uint32_t)MemoryState::RenderTarget) << std::endl;
                                 encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
                                 _memory_states[attachment_id].first = MemoryState::RenderTarget;
                             }
@@ -290,7 +291,23 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
                 }
 
                 // Depth Stencil Barriers
+                AttachmentId attachment_id = render_pass.desc.depth_stencil_info.first;
+                
+                if(_memory_states[attachment_id].second.find(op.second) != _memory_states[attachment_id].second.end()) {
 
+                    auto attachment_visitor = make_visitor(
+                        [&](ExternalAttachment& attachment) {
+                            encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::DepthWrite);
+                            _memory_states[attachment_id].first = MemoryState::DepthWrite;
+                        },
+                        [&](InternalAttachment& attachment) {
+                            encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::DepthWrite);
+                            _memory_states[attachment_id].first = MemoryState::DepthWrite;
+                        }
+                    );
+
+                    std::visit(attachment_visitor, _attachments[{ attachment_id, _flight_frame_index }]);
+                }
 
                 // Input Barriers
                 for(uint32_t i = 0; i < static_cast<uint32_t>(render_pass.desc.inputs.size()); ++i) {

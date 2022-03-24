@@ -41,7 +41,7 @@ struct RenderPassDesc {
         return *this;
     }
 
-    RenderPassDesc& set_color(AttachmentId const id, RenderPassLoadOp const load_op, Color const& clear_color) {
+    RenderPassDesc& set_color(AttachmentId const id, RenderPassLoadOp const load_op, Color const& clear_color = {}) {
         
         clear_colors[color_count] = clear_color;
         color_infos[color_count] = AttachmentInfo { id, load_op };
@@ -61,7 +61,7 @@ struct RenderPassDesc {
         return *this;
     }
 
-    RenderPassDesc& set_depth_stencil(AttachmentId const id, RenderPassLoadOp const load_op, float const _clear_depth, uint8_t const _clear_stencil) {
+    RenderPassDesc& set_depth_stencil(AttachmentId const id, RenderPassLoadOp const load_op, float const _clear_depth = 0, uint8_t const _clear_stencil = 0x0) {
         
         clear_depth = _clear_depth;
         clear_stencil = _clear_stencil;
@@ -130,12 +130,17 @@ public:
     FrameGraph() = default;
 
     FrameGraph& attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height, TextureFlags const flags);
+    
     FrameGraph& external_attachment(AttachmentId const id, Format const format, MemoryState const before, MemoryState const after);
+    
     FrameGraph& render_pass(RenderPassId const id, RenderPassDesc const& render_pass_desc, RenderPassFunc const& func);
+    
     FrameGraph& compute_pass(ComputePassId const id, ComputePassDesc const& compute_pass_desc, ComputePassFunc const& func);
+    
     FrameGraph& bind_external_attachment(uint32_t const id, Handle<Texture> const& target);
 
     void build(Backend& backend, uint32_t const flight_frame_count);
+    
     void reset(Backend& backend);
     
     FenceResultInfo execute(Backend& backend, Encoder& encoder);

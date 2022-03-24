@@ -4,6 +4,17 @@
 #include <renderer/shader.h>
 
 using namespace ionengine::renderer;
+using ionengine::Handle;
+
+std::span<Handle<Shader> const> ShaderEffect::shaders() const {
+
+    return _shaders;
+}
+
+ShaderBindingDesc const& ShaderEffect::bindings(ShaderBindingId const id) const {
+    
+    return _bindings.at(id); 
+}
 
 ShaderEffectBinder::ShaderEffectBinder(ShaderEffect& shader_effect) : _shader_effect(&shader_effect) {
 
@@ -23,7 +34,7 @@ ShaderEffectBinder& ShaderEffectBinder::bind(ShaderBindingId const id, std::vari
         }
     );
 
-    std::visit(binding_visitor, _shader_effect->bindings[id]);
+    std::visit(binding_visitor, _shader_effect->_bindings[id]);
     ++_update_count;
     return *this;
 }
@@ -42,10 +53,10 @@ void ShaderCache::create_shader_effect(Backend& backend, ShaderEffectId const id
 
         auto it = _shader_cache.find(name);
         if(it != _shader_cache.end()) {
-            shader_effect.shaders.emplace_back(it->second);
+            shader_effect._shaders.emplace_back(it->second);
         } else {
             Handle<Shader> shader = backend.create_shader(shader_info->data, shader_info->flags);
-            shader_effect.shaders.emplace_back(shader);
+            shader_effect._shaders.emplace_back(shader);
             _shader_cache[name] = shader;
         }
     }

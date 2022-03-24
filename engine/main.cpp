@@ -2,16 +2,12 @@
 
 #include <precompiled.h>
 #include <platform/window.h>
-
 #include <engine/asset_manager.h>
-
+#include <renderer/backend.h>
+#include <renderer/renderer.h>
 #include <lib/thread_pool.h>
 #include <lib/exception.h>
 #include <lib/hash/crc32.h>
-
-#include <renderer/backend.h>
-#include <renderer/world_renderer.h>
-#include <project/world_controller.h>
 
 using namespace ionengine;
 
@@ -31,13 +27,7 @@ int main(int* argc, char** agrv) {
         asset_manager.load_asset_from_file("shader_package.asset"_hash, asset_data);
         auto& shader_package_data = std::get<renderer::ShaderPackageData>(asset_manager.get_asset_data(asset_data));
 
-        renderer::WorldRenderer world_renderer(backend, thread_pool, shader_package_data);
-
-        project::WorldController world_controller;
-
-        if(!world_controller.initialize()) {
-            throw Exception(u8"Error during initialize world controller");
-        }
+        renderer::Renderer renderer(backend, thread_pool, shader_package_data);
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
@@ -45,8 +35,7 @@ int main(int* argc, char** agrv) {
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: {
-                        world_controller.update();
-                        world_renderer.update();
+                        renderer.update();
                     } break;
                 }
             }

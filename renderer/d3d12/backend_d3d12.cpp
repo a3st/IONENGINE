@@ -244,7 +244,7 @@ struct Backend::Impl {
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& descriptor_layout, 
         std::span<VertexInputDesc const> const vertex_descs, 
-        std::span<Handle<Shader>> const shaders, 
+        std::span<Handle<Shader> const> const shaders, 
         RasterizerDesc const& rasterizer_desc, 
         DepthStencilDesc const& depth_stencil_desc, 
         BlendDesc const& blend_desc, 
@@ -260,7 +260,7 @@ struct Backend::Impl {
     
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data);
+    void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t const> const data);
     
     void present();
 
@@ -606,6 +606,7 @@ Handle<Texture> Backend::Impl::create_texture(
             case Format::BGR8: return DXGI_FORMAT_B8G8R8X8_UNORM;
             case Format::BC1: return DXGI_FORMAT_BC1_UNORM;
             case Format::BC5: return DXGI_FORMAT_BC5_UNORM;
+            case Format::D32: return DXGI_FORMAT_D32_FLOAT;
             default: assert(false && "invalid format specified"); break;
         }
         return DXGI_FORMAT_UNKNOWN;
@@ -1078,7 +1079,7 @@ void Backend::Impl::delete_descriptor_layout(Handle<DescriptorLayout> const& des
 Handle<Pipeline> Backend::Impl::create_pipeline(
     Handle<DescriptorLayout> const& descriptor_layout,
     std::span<VertexInputDesc const> const vertex_descs,
-    std::span<Handle<Shader>> const shaders,
+    std::span<Handle<Shader> const> const shaders,
     RasterizerDesc const& rasterizer_desc,
     DepthStencilDesc const& depth_stencil_desc,
     BlendDesc const& blend_desc,
@@ -1349,7 +1350,7 @@ void Backend::Impl::update_descriptor_set(Handle<DescriptorSet> const& descripto
     }
 }
 
-void Backend::Impl::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data) {
+void Backend::Impl::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t const> const data) {
 
     auto& buffer_data = buffers[buffer.id];
 
@@ -1614,7 +1615,7 @@ void Backend::delete_descriptor_layout(Handle<DescriptorLayout> const& descripto
 Handle<Pipeline> Backend::create_pipeline(
     Handle<DescriptorLayout> const& descriptor_layout,
     std::span<VertexInputDesc const> const vertex_descs,
-    std::span<Handle<Shader>> const shaders,
+    std::span<Handle<Shader> const> const shaders,
     RasterizerDesc const& rasterizer_desc,
     DepthStencilDesc const& depth_stencil_desc,
     BlendDesc const& blend_desc,
@@ -1645,7 +1646,7 @@ void Backend::update_descriptor_set(Handle<DescriptorSet> const& descriptor_set,
     _impl->update_descriptor_set(descriptor_set, write_descs);
 }
 
-void Backend::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t> const data) {
+void Backend::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t const> const data) {
 
     _impl->upload_buffer_data(buffer, offset, data);
 }
@@ -1855,6 +1856,8 @@ void Encoder::Impl::barrier(std::variant<Handle<Texture>, Handle<Buffer>> const&
             case MemoryState::ShaderRead: return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
             case MemoryState::VertexConstantBufferRead: return D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
             case MemoryState::IndexBufferRead: return D3D12_RESOURCE_STATE_INDEX_BUFFER;
+            case MemoryState::DepthWrite: return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+            case MemoryState::DepthRead: return D3D12_RESOURCE_STATE_DEPTH_READ;
         }
         return D3D12_RESOURCE_STATE_COMMON;
     };

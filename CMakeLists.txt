@@ -37,7 +37,7 @@ add_executable(Runtime-Win32
 
     # Renderer
     renderer/d3d12/backend_d3d12.cpp
-    renderer/world_renderer.cpp
+    renderer/renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp
     renderer/material_manager.cpp
@@ -45,7 +45,6 @@ add_executable(Runtime-Win32
     renderer/shader.cpp
     renderer/camera.cpp
     renderer/mesh_surface.cpp
-    renderer/upload_manager.cpp
 
     # Project
     project/world_controller.cpp
@@ -98,6 +97,7 @@ set_target_properties(HLSL_SPIRV_Package PROPERTIES
 # Include Dirs
 target_include_directories(HLSL_SPIRV_Package PRIVATE
     ${PROJECT_SOURCE_DIR}/thirdparty/tclap/include
+    ${PROJECT_SOURCE_DIR}/thirdparty/inipp/include
 )
 
 #[[
