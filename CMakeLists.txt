@@ -43,6 +43,9 @@ add_executable(Runtime-Win32
     renderer/material_manager.cpp
     renderer/texture_manager.cpp
     renderer/shader.cpp
+    renderer/camera.cpp
+    renderer/mesh_surface.cpp
+    renderer/upload_manager.cpp
 
     # Project
     project/world_controller.cpp

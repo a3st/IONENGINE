@@ -7,11 +7,18 @@
 
 namespace ionengine::renderer {
 
-struct MeshSurface {
+class MeshSurface {
+public:
 
-    Handle<Buffer> vertex_positions_buffer;
-    Handle<Buffer> vertex_uv_normals_buffer;
-    Handle<Buffer> index_buffer;
+    MeshSurface() = default;
+
+    void load_from_data(Backend& backend, MeshSurfaceData const& mesh_surface_data);
+
+private:
+    
+    Handle<Buffer> _positions_buffer;
+    Handle<Buffer> _uv_normals_buffer;
+    Handle<Buffer> _indices_buffer;
 };
 
 }

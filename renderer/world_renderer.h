@@ -88,6 +88,8 @@ private:
     std::vector<Encoder> _graphics_encoders;
     std::vector<FenceResultInfo> fence_results;
 
+    std::vector<Handle<Buffer>> _upload_buffers;
+
     Handle<Pipeline> _pipeline_test;
 
     Handle<DescriptorLayout> _pbr_layout;
