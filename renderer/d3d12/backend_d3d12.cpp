@@ -1354,7 +1354,7 @@ Handle<DescriptorSet> Backend::Impl::create_descriptor_set(Handle<DescriptorLayo
 
                 descriptor_set_data.bindings.emplace_back(
                     d3d12::DescriptorAllocInfo { 
-                        .heap = descriptor_set_data.cbv_srv_uav_heap.Get(),
+                        .heap = descriptor_set_data.sampler_heap.Get(),
                         .offset = index_bindings[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER],
                         .descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)
                     }

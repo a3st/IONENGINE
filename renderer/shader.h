@@ -106,5 +106,7 @@ private:
     std::unordered_map<ShaderEffectId, ShaderEffect> _shader_effects;
     std::map<std::u8string, Handle<Shader>> _shader_cache;
 };
+
+
     
 }

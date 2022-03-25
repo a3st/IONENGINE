@@ -1,7 +1,7 @@
 @echo off
 
 :: Settings
-set HLSL_SPIRV_PACKAGE_PATH=E:\GitHub\ionengine_ops\assets\shaders
+set HLSL_SPIRV_PACKAGE_PATH=..\..\build\Debug
 set COMPILER_PATH=C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.22000.0\x64
 set OUTPUT_PATH=..\..\build\Debug\unpacked
 
@@ -31,7 +31,7 @@ for /r %%i in (%OUTPUT_PATH%/*.spirv_bin) do (
     call set "Params=%%Params%% "%OUTPUT_PATH%/%%~ni.spirv_bin""
 )
 
-%HLSL_SPIRV_PACKAGE_PATH%/hlsl_spirv_package.exe -o "%OUTPUT_PATH%/shader_package.hlsv"%Params%
+%HLSL_SPIRV_PACKAGE_PATH%\hlsl_spirv_package.exe -o "%OUTPUT_PATH%/shader_package.hlsv"%Params%
 
 echo End of packaging
 

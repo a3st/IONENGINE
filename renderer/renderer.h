@@ -11,43 +11,6 @@
 
 namespace ionengine::renderer {
 
-enum class TextureQuality : uint32_t {
-    Low,
-    Medium,
-    High,
-    Ultra
-};
-
-enum class MeshQuality : uint32_t {
-    Low,
-    Medium,
-    High
-};
-
-enum class ShadowQuality : uint32_t {
-    Low,
-    High
-};
-
-enum class MaterialQuality : uint32_t {
-    Low,
-    High
-};
-
-enum class AnisotropicQuality : uint32_t {
-    Linear
-};
-
-struct RendererQuality {
-
-};
-
-struct WorldBuffer {
-    Matrixf model;
-    Matrixf view;
-    Matrixf projection;
-};
-
 class Renderer {
 public:
 

@@ -30,7 +30,7 @@ Renderer::Renderer(Backend& backend, ThreadPool& thread_pool, ShaderPackageData 
 
     test_vertex_triangle = backend.create_buffer(65536, BufferFlags::VertexBuffer | BufferFlags::HostWrite);
     test_index_triangle = backend.create_buffer(65536, BufferFlags::IndexBuffer | BufferFlags::HostWrite);
-    test_descriptor_set = backend.create_descriptor_set(_layouts[LayoutType::GBuffer]);
+    //test_descriptor_set = backend.create_descriptor_set(_layouts[LayoutType::GBuffer]);
 
     backend.upload_buffer_data(test_vertex_triangle, 0, std::span<char8_t const>(reinterpret_cast<char8_t const*>(vertices.data()), vertices.size() * sizeof(float)));
     backend.upload_buffer_data(test_index_triangle, 0, std::span<char8_t const>(reinterpret_cast<char8_t const*>(indices.data()), indices.size() * sizeof(uint32_t)));
@@ -67,7 +67,6 @@ void Renderer::initialize_resources_per_frame() {
 
     _graphics_fence_results.resize(_frame_count);
     _copy_fence_results.resize(_frame_count);
-
 }
 
 void Renderer::initialize_shaders(ShaderPackageData const& shader_package_data) {

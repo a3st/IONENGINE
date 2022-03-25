@@ -38,10 +38,7 @@ add_executable(Runtime-Win32
     renderer/renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp
-    renderer/material_manager.cpp
-    renderer/texture_manager.cpp
     renderer/shader.cpp
-    renderer/camera.cpp
     renderer/mesh_surface.cpp
 
     # Project

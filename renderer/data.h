@@ -3,14 +3,13 @@
 #pragma once
 
 #include <renderer/backend.h>
-#include <renderer/material.h>
 
 namespace ionengine::renderer {
 
-struct MaterialData {
+/*struct MaterialData {
     std::u8string shader_name;
     std::map<std::u8string, MaterialParameterDesc> parameters;
-};
+};*/
 
 struct TextureData {
     Dimension dimension;
