@@ -26,6 +26,9 @@
 #include <charconv>
 #include <set>
 #include <unordered_set>
+#include <algorithm>
+#include <optional>
+#include <tuple>
 
 #ifndef DECLARE_ENUM_CLASS_BIT_FLAG
 #define DECLARE_ENUM_CLASS_BIT_FLAG(EnumClass) \
