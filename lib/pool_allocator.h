@@ -33,17 +33,16 @@ public:
 
     void* allocate(size_t const size, size_t const align) {
 
-        assert(size == ChunkSize && "Allocation size must be equal to chunk size");
         assert(!_free_data.empty() && "The pool allocator is full");
 
-        Pointer ptr = _free_data.front();
+        Chunk* ptr = _free_data.front();
         _free_data.pop_front();
         return reinterpret_cast<void*>(ptr);
     }
 
     void deallocate(void* ptr) {
 
-        _free_data.emplace_back(reinterpret_cast<Pointer>(ptr));
+        _free_data.emplace_back(reinterpret_cast<Chunk*>(ptr));
     }
 
     void reset() {
@@ -51,13 +50,16 @@ public:
         fill_free_data();
     }
 
+    size_t max_size() const { 
+        
+        return TotalSize / ChunkSize;
+    }
+
 private:
 
-    struct Chunk { };
+    struct Chunk;
     
-    std::list<Chunk> _free_data;
-
-    using Pointer = std::list<Chunk>::pointer;
+    std::list<Chunk*> _free_data;
 
     void* _ptr{nullptr};
 
@@ -67,8 +69,8 @@ private:
 
         for(uint32_t i = 0; i < chunk_count; ++i) {
             
-            uint64_t const address = _ptr + i * ChunkSize;
-            _free_data.emplace_back(reinterpret_cast<Pointer>(address));
+            uint64_t const address = reinterpret_cast<uint64_t>(_ptr) + i * ChunkSize;
+            _free_data.emplace_back(reinterpret_cast<Chunk*>(address));
         }
     }
 };

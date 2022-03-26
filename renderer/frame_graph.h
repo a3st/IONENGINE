@@ -21,7 +21,7 @@ namespace ionengine::renderer {
 using AttachmentId = uint32_t;
 
 struct RenderPassDesc {
-    using AttachmentInfo = std::pair<AttachmentId, RenderPassLoadOp>;
+    using AttachmentInfo = std::pair<AttachmentId, backend::RenderPassLoadOp>;
 
     std::u8string name;
     std::array<Color, 8> clear_colors;
@@ -41,7 +41,7 @@ struct RenderPassDesc {
         return *this;
     }
 
-    RenderPassDesc& set_color(AttachmentId const id, RenderPassLoadOp const load_op, Color const& clear_color = {}) {
+    RenderPassDesc& set_color(AttachmentId const id, backend::RenderPassLoadOp const load_op, Color const& clear_color = {}) {
         
         clear_colors[color_count] = clear_color;
         color_infos[color_count] = AttachmentInfo { id, load_op };
@@ -61,7 +61,7 @@ struct RenderPassDesc {
         return *this;
     }
 
-    RenderPassDesc& set_depth_stencil(AttachmentId const id, RenderPassLoadOp const load_op, float const _clear_depth = 0, uint8_t const _clear_stencil = 0x0) {
+    RenderPassDesc& set_depth_stencil(AttachmentId const id, backend::RenderPassLoadOp const load_op, float const _clear_depth = 0, uint8_t const _clear_stencil = 0x0) {
         
         clear_depth = _clear_depth;
         clear_stencil = _clear_stencil;
@@ -83,11 +83,11 @@ public:
 
     RenderPassContext() = default;
 
-    Handle<Texture> attachment(AttachmentId const id) const { return _attachments.find(id)->second; }
+    Handle<backend::Texture> attachment(AttachmentId const id) const { return _attachments.find(id)->second; }
 
-    Handle<renderer::RenderPass> render_pass() const { return _render_pass; }
+    Handle<backend::RenderPass> render_pass() const { return _render_pass; }
     
-    Encoder& encoder() const { return *_encoder; }
+    backend::Encoder& encoder() const { return *_encoder; }
 
     uint32_t pass_index() const { return _pass_index; }
 
@@ -97,10 +97,10 @@ private:
 
     friend class FrameGraph;
 
-    std::unordered_map<AttachmentId, Handle<Texture>> _attachments;
+    std::unordered_map<AttachmentId, Handle<backend::Texture>> _attachments;
     
-    Handle<renderer::RenderPass> _render_pass;
-    Encoder* _encoder;
+    Handle<backend::RenderPass> _render_pass;
+    backend::Encoder* _encoder;
     uint32_t _pass_index;
     uint32_t _frame_index;
 };
@@ -110,13 +110,13 @@ public:
 
     ComputePassContext() = default;
 
-    Handle<Buffer> buffer(BufferId const id) const { return _buffers.find(id)->second; }
+    Handle<backend::Buffer> buffer(BufferId const id) const { return _buffers.find(id)->second; }
 
 private:
 
     friend class FrameGraph;
 
-    std::unordered_map<BufferId, Handle<Buffer>> _buffers;
+    std::unordered_map<BufferId, Handle<backend::Buffer>> _buffers;
 };
 
 using RenderPassId = uint32_t;
@@ -129,44 +129,44 @@ public:
 
     FrameGraph() = default;
 
-    FrameGraph& attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height, TextureFlags const flags);
+    FrameGraph& attachment(AttachmentId const id, backend::Format const format, uint32_t const width, uint32_t const height, backend::TextureFlags const flags);
     
-    FrameGraph& external_attachment(AttachmentId const id, Format const format, MemoryState const before, MemoryState const after);
+    FrameGraph& external_attachment(AttachmentId const id, backend::Format const format, backend::MemoryState const before, backend::MemoryState const after);
     
     FrameGraph& render_pass(RenderPassId const id, RenderPassDesc const& render_pass_desc, RenderPassFunc const& func);
     
     FrameGraph& compute_pass(ComputePassId const id, ComputePassDesc const& compute_pass_desc, ComputePassFunc const& func);
     
-    FrameGraph& bind_external_attachment(uint32_t const id, Handle<Texture> const& target);
+    FrameGraph& bind_external_attachment(uint32_t const id, Handle<backend::Texture> const& target);
 
-    void build(Backend& backend, uint32_t const flight_frame_count);
+    void build(backend::Backend& backend, uint32_t const flight_frame_count);
     
-    void reset(Backend& backend);
+    void reset(backend::Backend& backend);
     
-    FenceResultInfo execute(Backend& backend, Encoder& encoder);
+    backend::FenceResultInfo execute(backend::Backend& backend, backend::Encoder& encoder);
 
 private:
 
     struct RenderPass {
         RenderPassDesc desc;
-        Handle<renderer::RenderPass> render_pass;
+        Handle<backend::RenderPass> render_pass;
         RenderPassFunc func;
         bool is_compiled;
     };
 
     struct InternalAttachment {
-        Format format;
+        backend::Format format;
         uint32_t width;
         uint32_t height;
-        TextureFlags flags;
-        Handle<Texture> target;
+        backend::TextureFlags flags;
+        Handle<backend::Texture> target;
     };
 
     struct ExternalAttachment {
-        Format format;
-        MemoryState before;
-        MemoryState after;
-        Handle<Texture> target;
+        backend::Format format;
+        backend::MemoryState before;
+        backend::MemoryState after;
+        Handle<backend::Texture> target;
     };
 
     using Attachment = std::variant<FrameGraph::InternalAttachment, FrameGraph::ExternalAttachment>;
@@ -178,7 +178,7 @@ private:
     std::unordered_map<AttachmentFrameId, FrameGraph::Attachment, pair_hash> _attachments;
     std::unordered_map<RenderPassFrameId, RenderPassContext, pair_hash> _render_pass_contexts;
 
-    using MemoryStateInfo = std::pair<MemoryState, std::unordered_set<RenderPassId>>;
+    using MemoryStateInfo = std::pair<backend::MemoryState, std::unordered_set<RenderPassId>>;
 
     std::unordered_map<AttachmentId, MemoryStateInfo> _memory_states;
 
@@ -197,7 +197,7 @@ private:
     uint32_t _frame_index{0};
     uint32_t _frame_count{0};
 
-    Handle<renderer::RenderPass> create_render_pass(Backend& backend, uint32_t const frame_index, RenderPassDesc const& desc);
+    Handle<backend::RenderPass> create_render_pass(backend::Backend& backend, uint32_t const frame_index, RenderPassDesc const& desc);
 };
 
 }

@@ -4,8 +4,6 @@
 
 #include <renderer/backend.h>
 #include <renderer/frame_graph.h>
-#include <renderer/shader.h>
-#include <renderer/data.h>
 #include <lib/thread_pool.h>
 #include <lib/math/matrix.h>
 
@@ -14,7 +12,7 @@ namespace ionengine::renderer {
 class Renderer {
 public:
 
-    Renderer(Backend& backend, ThreadPool& thread_pool, ShaderPackageData const& shader_package_data);
+    Renderer(uint32_t const adapter_index, backend::SwapchainDesc const& swapchain_desc, std::filesystem::path const& cache_path, lib::ThreadPool& thread_pool);
 
     Renderer(Renderer const&) = delete;
 
@@ -30,15 +28,15 @@ public:
 
 private:
 
-    Backend* _backend;
-    ThreadPool* _thread_pool;
+    lib::ThreadPool* _thread_pool;
 
-    ShaderCache _shader_cache;
+    backend::Backend _backend;
+    //ShaderCache _shader_cache;
 
-    std::vector<Encoder> _graphics_encoders;
-    std::vector<FenceResultInfo> _graphics_fence_results;
-    std::vector<Encoder> _copy_encoders;
-    std::vector<FenceResultInfo> _copy_fence_results;
+    std::vector<backend::Encoder> _graphics_encoders;
+    std::vector<backend::FenceResultInfo> _graphics_fence_results;
+    std::vector<backend::Encoder> _copy_encoders;
+    std::vector<backend::FenceResultInfo> _copy_fence_results;
 
     uint32_t _frame_count{0};
     uint32_t _frame_index{0};
@@ -53,21 +51,21 @@ private:
         PostProcess
     };
 
-    std::unordered_map<LayoutType, Handle<DescriptorLayout>> _layouts;
+    std::unordered_map<LayoutType, Handle<backend::DescriptorLayout>> _layouts;
 
     void initialize_resources_per_frame();
 
-    void initialize_shaders(ShaderPackageData const& shader_package_data);
+    void initialize_shaders();
 
     void initialize_layouts();
 
     void build_frame_graph(uint32_t const width, uint32_t const height, uint16_t const sample_count, uint32_t const buffer_count);
 
     // TEST
-    std::vector<Handle<Pipeline>> test_pipelines;
-    Handle<Buffer> test_vertex_triangle;
-    Handle<Buffer> test_index_triangle;
-    Handle<DescriptorSet> test_descriptor_set;
+    std::vector<Handle<backend::Pipeline>> test_pipelines;
+    Handle<backend::Buffer> test_vertex_triangle;
+    Handle<backend::Buffer> test_index_triangle;
+    Handle<backend::DescriptorSet> test_descriptor_set;
 };
 
 }

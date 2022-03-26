@@ -4,7 +4,7 @@
 
 #include <renderer/d3d12/d3d12x.h>
 
-namespace ionengine::renderer::d3d12 {
+namespace ionengine::renderer::backend::d3d12 {
 
 struct MemoryHeap {
     size_t heap_size;

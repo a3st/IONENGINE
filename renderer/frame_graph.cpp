@@ -6,26 +6,26 @@
 using ionengine::Handle;
 using namespace ionengine::renderer;
 
-FrameGraph& FrameGraph::attachment(AttachmentId const id, Format const format, uint32_t const width, uint32_t const height, TextureFlags const flags) {
+FrameGraph& FrameGraph::attachment(AttachmentId const id, backend::Format const format, uint32_t const width, uint32_t const height, backend::TextureFlags const flags) {
 
     auto attachment = FrameGraph::InternalAttachment {
         format,
         width,
         height,
         flags,
-        INVALID_HANDLE(Texture)
+        INVALID_HANDLE(backend::Texture)
     };
     _attachments[{ id, 0 }] = attachment;
     return *this;
 }
 
-FrameGraph& FrameGraph::external_attachment(AttachmentId const id, Format const format, MemoryState const before, MemoryState const after) {
+FrameGraph& FrameGraph::external_attachment(AttachmentId const id, backend::Format const format, backend::MemoryState const before, backend::MemoryState const after) {
 
     auto attachment = FrameGraph::ExternalAttachment {
         format,
         before,
         after,
-        INVALID_HANDLE(Texture)
+        INVALID_HANDLE(backend::Texture)
     };
     _attachments[{ id, 0 }] = attachment;
     return *this;
@@ -35,7 +35,7 @@ FrameGraph& FrameGraph::render_pass(RenderPassId const id, RenderPassDesc const&
 
     auto render_pass = FrameGraph::RenderPass {
         render_pass_desc,
-        INVALID_HANDLE(renderer::RenderPass),
+        INVALID_HANDLE(backend::RenderPass),
         func
     };
     _render_passes[{ id, 0 }] = render_pass;
@@ -43,7 +43,7 @@ FrameGraph& FrameGraph::render_pass(RenderPassId const id, RenderPassDesc const&
     return *this;
 }
 
-void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
+void FrameGraph::build(backend::Backend& backend, uint32_t const frame_count) {
 
     _frame_count = frame_count;
 
@@ -66,12 +66,12 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
 
         auto attachment_visitor = make_visitor(
             [&](ExternalAttachment& attachment) {
-                attachment.target = INVALID_HANDLE(Texture);
+                attachment.target = INVALID_HANDLE(backend::Texture);
                 _memory_states[key.first].first = attachment.before;
             },
             [&](InternalAttachment& attachment) {
                 attachment.target = backend.create_texture(
-                    Dimension::_2D, 
+                    backend::Dimension::_2D, 
                     attachment.width, 
                     attachment.height, 
                     1, 
@@ -79,7 +79,7 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
                     attachment.format,
                     attachment.flags
                 );
-                _memory_states[key.first].first = MemoryState::Common;
+                _memory_states[key.first].first = backend::MemoryState::Common;
             }
         );
 
@@ -101,7 +101,7 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
                             [&](ExternalAttachment& attachment) {
                                 is_external_render_pass = true;
                                 _external_attachments[attachment_id].emplace(op.second);
-                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
+                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(backend::Texture);
                             },
                             [&](InternalAttachment& attachment) {
                                 _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = attachment.target;
@@ -110,8 +110,8 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
 
                         std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
 
-                        if(_memory_states[attachment_id].first != MemoryState::RenderTarget) {
-                            _memory_states[attachment_id].first = MemoryState::RenderTarget;
+                        if(_memory_states[attachment_id].first != backend::MemoryState::RenderTarget) {
+                            _memory_states[attachment_id].first = backend::MemoryState::RenderTarget;
                             _memory_states[attachment_id].second.emplace(op.second);
                         }
                     }
@@ -123,7 +123,7 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
                             [&](ExternalAttachment& attachment) {
                                 is_external_render_pass = true;
                                 _external_attachments[attachment_id].emplace(op.second);
-                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
+                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(backend::Texture);
                             },
                             [&](InternalAttachment& attachment) {
                                 _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = attachment.target;
@@ -132,8 +132,8 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
 
                         std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
 
-                        if(_memory_states[attachment_id].first != MemoryState::DepthWrite) {
-                            _memory_states[attachment_id].first = MemoryState::DepthWrite;
+                        if(_memory_states[attachment_id].first != backend::MemoryState::DepthWrite) {
+                            _memory_states[attachment_id].first = backend::MemoryState::DepthWrite;
                             _memory_states[attachment_id].second.emplace(op.second);
                         }
                     }
@@ -145,7 +145,7 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
                             [&](ExternalAttachment& attachment) {
                                 is_external_render_pass = true;
                                 _external_attachments[attachment_id].emplace(op.second);
-                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(Texture);
+                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(backend::Texture);
                             },
                             [&](InternalAttachment& attachment) {
                                 _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = attachment.target;
@@ -154,8 +154,8 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
 
                         std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
 
-                        if(_memory_states[attachment_id].first != MemoryState::ShaderRead) {
-                            _memory_states[attachment_id].first = MemoryState::ShaderRead;
+                        if(_memory_states[attachment_id].first != backend::MemoryState::ShaderRead) {
+                            _memory_states[attachment_id].first = backend::MemoryState::ShaderRead;
                             _memory_states[attachment_id].second.emplace(op.second);
                         }
                     }
@@ -181,7 +181,7 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
                 _memory_states[key.first].first = attachment.before;
             },
             [&](InternalAttachment& attachment) {
-                _memory_states[key.first].first = MemoryState::Common;
+                _memory_states[key.first].first = backend::MemoryState::Common;
             }
         );
 
@@ -189,9 +189,9 @@ void FrameGraph::build(Backend& backend, uint32_t const frame_count) {
     }
 }
 
-void FrameGraph::reset(Backend& backend) {
+void FrameGraph::reset(backend::Backend& backend) {
 
-    backend.wait_for_idle(EncoderFlags::Graphics);
+    backend.wait_for_idle(backend::EncoderFlags::Graphics);
 
     for(auto& [key, value] : _render_passes) {
         backend.delete_render_pass(value.render_pass);
@@ -222,7 +222,7 @@ void FrameGraph::reset(Backend& backend) {
     _ops.clear();
 }
 
-FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
+backend::FenceResultInfo FrameGraph::execute(backend::Backend& backend, backend::Encoder& encoder) {
 
     uint32_t pass_index = 0;
 
@@ -237,7 +237,7 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
 
                     if(!render_pass.is_compiled) {
 
-                        if(render_pass.render_pass != INVALID_HANDLE(renderer::RenderPass)) {
+                        if(render_pass.render_pass != INVALID_HANDLE(backend::RenderPass)) {
                             backend.delete_render_pass(render_pass.render_pass);
                         }
                         
@@ -274,13 +274,13 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
 
                         auto attachment_visitor = make_visitor(
                             [&](ExternalAttachment const& attachment) {
-                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
-                                _memory_states[attachment_id].first = MemoryState::RenderTarget;
+                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::RenderTarget);
+                                _memory_states[attachment_id].first = backend::MemoryState::RenderTarget;
                             },
                             [&](InternalAttachment const& attachment) {
                                 //std::cout << std::format("(frame {}, pass_index {}) resource acquire ({}) before {}, after {}", _flight_frame_index, pass_index, attachment.target.id, (uint32_t)_memory_states[attachment_id].first, (uint32_t)MemoryState::RenderTarget) << std::endl;
-                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::RenderTarget);
-                                _memory_states[attachment_id].first = MemoryState::RenderTarget;
+                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::RenderTarget);
+                                _memory_states[attachment_id].first = backend::MemoryState::RenderTarget;
                             }
                         );
 
@@ -295,12 +295,12 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
 
                     auto attachment_visitor = make_visitor(
                         [&](ExternalAttachment& attachment) {
-                            encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::DepthWrite);
-                            _memory_states[attachment_id].first = MemoryState::DepthWrite;
+                            encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::DepthWrite);
+                            _memory_states[attachment_id].first = backend::MemoryState::DepthWrite;
                         },
                         [&](InternalAttachment& attachment) {
-                            encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::DepthWrite);
-                            _memory_states[attachment_id].first = MemoryState::DepthWrite;
+                            encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::DepthWrite);
+                            _memory_states[attachment_id].first = backend::MemoryState::DepthWrite;
                         }
                     );
 
@@ -316,12 +316,12 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
 
                         auto attachment_visitor = make_visitor(
                             [&](ExternalAttachment& attachment) {
-                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
-                                _memory_states[attachment_id].first = MemoryState::ShaderRead;
+                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::ShaderRead);
+                                _memory_states[attachment_id].first = backend::MemoryState::ShaderRead;
                             },
                             [&](InternalAttachment& attachment) {
-                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, MemoryState::ShaderRead);
-                                _memory_states[attachment_id].first = MemoryState::ShaderRead;
+                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::ShaderRead);
+                                _memory_states[attachment_id].first = backend::MemoryState::ShaderRead;
                             }
                         );
 
@@ -358,7 +358,7 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
             continue;
         }
 
-        assert(_memory_states[key.first].first != MemoryState::Common && "error during framegraph execution. there are unused resources");
+        assert(_memory_states[key.first].first != backend::MemoryState::Common && "error during framegraph execution. there are unused resources");
         
         auto attachment_visitor = make_visitor(
             [&](ExternalAttachment& attachment) {
@@ -367,15 +367,15 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
             },
             [&](InternalAttachment& attachment) {
                 //std::cout << std::format("(frame {}) resource release ({}) before {}, after {}", _flight_frame_index, attachment.target.id, (uint32_t)_memory_states[key.first].first, (uint32_t)MemoryState::Common) << std::endl;
-                encoder.barrier(attachment.target, _memory_states[key.first].first, MemoryState::Common);
-                _memory_states[key.first].first = MemoryState::Common;
+                encoder.barrier(attachment.target, _memory_states[key.first].first, backend::MemoryState::Common);
+                _memory_states[key.first].first = backend::MemoryState::Common;
             }
         );
 
         std::visit(attachment_visitor, value);
     }
 
-    FenceResultInfo result_info = backend.submit(std::span<Encoder const>(&encoder, 1), EncoderFlags::Graphics);
+    backend::FenceResultInfo result_info = backend.submit(std::span<backend::Encoder const>(&encoder, 1), backend::EncoderFlags::Graphics);
     backend.present();
 
     _frame_index = (_frame_index + 1) % _frame_count;
@@ -383,7 +383,7 @@ FenceResultInfo FrameGraph::execute(Backend& backend, Encoder& encoder) {
     return result_info;
 }
 
-FrameGraph& FrameGraph::bind_external_attachment(AttachmentId const id, Handle<Texture> const& target) {
+FrameGraph& FrameGraph::bind_external_attachment(AttachmentId const id, Handle<backend::Texture> const& target) {
 
     auto& attachment = std::get<ExternalAttachment>(_attachments[{id, _frame_index}]);
     if(attachment.target != target) {
@@ -395,10 +395,10 @@ FrameGraph& FrameGraph::bind_external_attachment(AttachmentId const id, Handle<T
     return *this;
 }
 
-Handle<ionengine::renderer::RenderPass> FrameGraph::create_render_pass(Backend& backend, uint32_t const frame_index, RenderPassDesc const& desc) {
+Handle<backend::RenderPass> FrameGraph::create_render_pass(backend::Backend& backend, uint32_t const frame_index, RenderPassDesc const& desc) {
 
-    std::array<Handle<Texture>, 8> colors;
-    std::array<RenderPassColorDesc, 8> color_descs;
+    std::array<Handle<backend::Texture>, 8> colors;
+    std::array<backend::RenderPassColorDesc, 8> color_descs;
 
     for(uint32_t i = 0; i < desc.color_count; ++i) {
 
@@ -413,15 +413,15 @@ Handle<ionengine::renderer::RenderPass> FrameGraph::create_render_pass(Backend& 
 
         std::visit(attachment_visitor, _attachments[{ desc.color_infos[i].first, frame_index }]);
 
-        auto color_desc = RenderPassColorDesc {};
+        auto color_desc = backend::RenderPassColorDesc {};
         color_desc.load_op = desc.color_infos[i].second;
-        color_desc.store_op = RenderPassStoreOp::Store;
+        color_desc.store_op = backend::RenderPassStoreOp::Store;
 
         color_descs[i] = color_desc;
     }
 
-    Handle<Texture> depth_stencil;
-    auto depth_stencil_desc = RenderPassDepthStencilDesc {};
+    Handle<backend::Texture> depth_stencil;
+    auto depth_stencil_desc = backend::RenderPassDepthStencilDesc {};
 
     if(desc.has_depth_stencil) {
 
@@ -437,14 +437,14 @@ Handle<ionengine::renderer::RenderPass> FrameGraph::create_render_pass(Backend& 
         std::visit(attachment_visitor, _attachments[{ desc.depth_stencil_info.first, frame_index }]);
 
         depth_stencil_desc.depth_load_op = desc.depth_stencil_info.second;
-        depth_stencil_desc.depth_store_op = RenderPassStoreOp::Store;
+        depth_stencil_desc.depth_store_op = backend::RenderPassStoreOp::Store;
         depth_stencil_desc.stencil_load_op = desc.depth_stencil_info.second;
-        depth_stencil_desc.stencil_store_op = RenderPassStoreOp::Store;
+        depth_stencil_desc.stencil_store_op = backend::RenderPassStoreOp::Store;
     }
 
     return backend.create_render_pass(
-        std::span<Handle<Texture>>(colors.data(), desc.color_count),
-        std::span<RenderPassColorDesc>(color_descs.data(), desc.color_count),
+        std::span<Handle<backend::Texture>>(colors.data(), desc.color_count),
+        std::span<backend::RenderPassColorDesc>(color_descs.data(), desc.color_count),
         depth_stencil,
         depth_stencil_desc
     );

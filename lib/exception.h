@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine {
+namespace ionengine::lib {
 
 class Exception : public std::exception {
 public:

@@ -6,7 +6,7 @@
 using namespace ionengine::renderer;
 using ionengine::Handle;
 
-std::span<Handle<Shader> const> ShaderEffect::shaders() const {
+std::span<Handle<backend::Shader> const> ShaderEffect::shaders() const {
 
     return _shaders;
 }
@@ -20,17 +20,17 @@ ShaderEffectBinder::ShaderEffectBinder(ShaderEffect& shader_effect) : _shader_ef
 
 }
 
-ShaderEffectBinder& ShaderEffectBinder::bind(ShaderBindingId const id, std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>> const& target) {
+ShaderEffectBinder& ShaderEffectBinder::bind(ShaderBindingId const id, std::variant<Handle<backend::Texture>, Handle<backend::Buffer>, Handle<backend::Sampler>> const& target) {
 
     auto binding_visitor = make_visitor(
         [&](ShaderBinding<Sampler> const& binding) {
-            _descriptor_updates[_update_count] = DescriptorWriteDesc { .index = binding.index, .data = target };
+            _descriptor_updates[_update_count] = backend::DescriptorWriteDesc { .index = binding.index, .data = target };
         },
         [&](ShaderBinding<Buffer> const& binding) {
-            _descriptor_updates[_update_count] = DescriptorWriteDesc { .index = binding.index, .data = target };
+            _descriptor_updates[_update_count] = backend::DescriptorWriteDesc { .index = binding.index, .data = target };
         },
         [&](ShaderBinding<Texture> const& binding) {
-            _descriptor_updates[_update_count] = DescriptorWriteDesc { .index = binding.index, .data = target };
+            _descriptor_updates[_update_count] = backend::DescriptorWriteDesc { .index = binding.index, .data = target };
         }
     );
 
@@ -39,13 +39,13 @@ ShaderEffectBinder& ShaderEffectBinder::bind(ShaderBindingId const id, std::vari
     return *this;
 }
 
-void ShaderEffectBinder::update(Backend& backend, Handle<DescriptorSet> const& descriptor_set) {
+void ShaderEffectBinder::update(backend::Backend& backend, Handle<backend::DescriptorSet> const& descriptor_set) {
 
     backend.update_descriptor_set(descriptor_set, std::span<DescriptorWriteDesc const>(_descriptor_updates.data(), _update_count));
     _update_count = 0;
 }
 
-void ShaderCache::create_shader_effect(Backend& backend, ShaderEffectId const id, ShaderEffectDesc const& shader_effect_desc) {
+void ShaderCache::create_shader_effect(backend::Backend& backend, ShaderEffectId const id, ShaderEffectDesc const& shader_effect_desc) {
 
     auto shader_effect = ShaderEffect {};
 

@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\GitHub\ionengine_ops\thirdparty\d3d12_ma\src\D3D12MemAlloc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E:\GitHub\ionengine_ops\thirdparty\d3d12_ma\include\d3d12_ma\D3D12MemAlloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\GitHub\ionengine_ops\thirdparty\d3d12_ma\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{DF2E348B-45B4-3BB8-82E2-697E52855C87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{E8A13108-FEC6-3964-A225-65CE804A8A29}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

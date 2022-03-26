@@ -6,7 +6,7 @@
 #include <renderer/color.h>
 #include <lib/handle.h>
 
-namespace ionengine::renderer {
+namespace ionengine::renderer::backend {
 
 struct Buffer;
 struct Texture;

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\GitHub\ionengine_ops\thirdparty\d3d12_ma\build\CMakeFiles\134cd88620914abedaf4f323be752d22\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{7709ABEA-E8EC-348E-8882-8D7DD1BCC1B9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

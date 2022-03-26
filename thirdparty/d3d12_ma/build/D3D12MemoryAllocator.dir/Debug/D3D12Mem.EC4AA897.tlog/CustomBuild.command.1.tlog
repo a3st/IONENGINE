@@ -1,0 +1,10 @@
+^E:\GITHUB\IONENGINE_OPS\THIRDPARTY\D3D12_MA\CMAKELISTS.TXT
+setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SE:/GitHub/ionengine_ops/thirdparty/d3d12_ma -BE:/GitHub/ionengine_ops/thirdparty/d3d12_ma/build --check-stamp-file E:/GitHub/ionengine_ops/thirdparty/d3d12_ma/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -10,7 +10,7 @@ namespace ionengine::renderer {
     std::u8string shader_name;
     std::map<std::u8string, MaterialParameterDesc> parameters;
 };*/
-
+/*
 struct TextureData {
     Dimension dimension;
     Format format;
@@ -48,7 +48,7 @@ struct MeshSurfaceData {
     std::vector<MaterialInfo> material_infos;
 };
 
-}
+}*/
 
 /*inline static std::vector<VertexInputDesc> vertex_declaration = {
     VertexInputDesc { "POSITION", 0, Format::RGB32, 0, sizeof(float) * 3 },

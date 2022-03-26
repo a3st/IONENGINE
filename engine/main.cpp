@@ -2,32 +2,45 @@
 
 #include <precompiled.h>
 #include <platform/window.h>
-#include <engine/asset_manager.h>
-#include <renderer/backend.h>
 #include <renderer/renderer.h>
 #include <lib/thread_pool.h>
 #include <lib/exception.h>
 #include <lib/hash/crc32.h>
 
+#include <scene/scene.h>
+
 using namespace ionengine;
 
 int main(int* argc, char** agrv) {
 
-    ThreadPool thread_pool(3);
+    lib::ThreadPool thread_pool(3);
     
     try {
         platform::WindowLoop loop;
         platform::Window window(u8"IONENGINE", 800, 600, false, loop);
 
-        AssetManager asset_manager(thread_pool);
+#ifdef IONENGINE_RENDERER_BACKEND_D3D12
+        std::filesystem::path const backend_cache_path = "cache/shader_cache_d3d12.bin";
+#endif
+    
+        renderer::Renderer renderer(
+            0, 
+            renderer::backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 },
+            backend_cache_path,
+            thread_pool
+        );
+
+        // Logic
+        /*Handle<core::Asset> default_material_asset;
+        asset_manager.load_asset_from_file(u8"content/default_material.asset", default_material_asset);
+
+        Handle<core::Asset> default_shader_asset;
+        asset_manager.load_asset_from_file(u8"content/default_shader.asset", default_shader_asset);
+
+        scene::Scene default_scene;*/
         
-        renderer::Backend backend(0, renderer::SwapchainDesc { &window, 1, 2 }, "cache/shader_cache_d3d12.payload");
+        //scene::Material default_material(default_material_asset, default_shader_asset);
 
-        Handle<AssetData> asset_data;
-        asset_manager.load_asset_from_file("shader_package.asset"_hash, asset_data);
-        auto& shader_package_data = std::get<renderer::ShaderPackageData>(asset_manager.get_asset_data(asset_data));
-
-        renderer::Renderer renderer(backend, thread_pool, shader_package_data);
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
@@ -41,7 +54,7 @@ int main(int* argc, char** agrv) {
             }
         );
 
-    } catch(Exception& e) {
+    } catch(lib::Exception& e) {
         std::cerr << std::format("[Exception] {}", e.what()) << std::endl;
         std::exit(EXIT_FAILURE);
     }

@@ -3,7 +3,7 @@
 #include <precompiled.h>
 #include <renderer/d3d12/memory_allocator.h>
 
-using namespace ionengine::renderer::d3d12;
+using namespace ionengine::renderer::backend::d3d12;
 
 void MemoryAllocator::create_memory_pool(ID3D12Device4* const device, D3D12_HEAP_TYPE const heap_type) {
 

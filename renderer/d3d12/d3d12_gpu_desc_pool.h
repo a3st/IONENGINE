@@ -5,7 +5,7 @@
 #include <renderer/d3d12/d3d12x.h>
 #include <renderer/d3d12/d3d12_cpu_desc_pool.h>
 
-namespace ionengine::renderer::d3d12 {
+namespace ionengine::renderer::backend::d3d12 {
 
 class GPUDescriptorRange {
 public:

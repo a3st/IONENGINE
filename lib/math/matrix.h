@@ -4,7 +4,7 @@
 
 #include <lib/math/vector.h>
 
-namespace ionengine {
+namespace ionengine::lib::math {
 
 template<typename Type>
 struct Matrix {

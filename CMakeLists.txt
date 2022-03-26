@@ -14,14 +14,8 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 #]]
 add_executable(Runtime-Win32
 
-    # AssetCompiler
-    asset_compiler/asset_compiler.cpp
-    asset_compiler/hlsv_loader.cpp
-    asset_compiler/obj_loader.cpp
-
     # Engine
     engine/main.cpp
-    engine/asset_manager.cpp
 
     # Lib
     lib/thread_pool.cpp
@@ -38,11 +32,23 @@ add_executable(Runtime-Win32
     renderer/renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp
-    renderer/shader.cpp
-    renderer/mesh_surface.cpp
+    #renderer/shader.cpp
+
+    scene/scene.cpp
+    scene/resource_tree.cpp
+
+    scene/node.cpp
+    scene/scene_node.cpp
+
+    scene/components/camera.cpp
+
+    asset_compiler/shader_loader.cpp
 
     # Project
-    project/world_controller.cpp
+    project/world.cpp
+
+
+    
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
@@ -55,26 +61,26 @@ set_target_properties(Runtime-Win32 PROPERTIES
 
 # Include Dirs
 target_include_directories(Runtime-Win32 PRIVATE
-
+    thirdparty/d3d12_ma/include
 )
 
 # Link Libs
 target_link_libraries(Runtime-Win32
-    ${Runtime-Win32}
     d3d12.lib
     dxgi.lib
     dxguid.lib
+    D3D12MA.lib
 )
 
 # Link Dirs
 target_link_directories(Runtime-Win32 PRIVATE
-
+    thirdparty/d3d12_ma/build/Debug
 )
 
 # Preprocessor
 target_compile_definitions(Runtime-Win32 PRIVATE 
     IONENGINE_PLATFORM_WIN32
-    IONENGINE_BACKEND_D3D12
+    IONENGINE_RENDERER_BACKEND_D3D12
 )
 
 #[[

@@ -11,12 +11,12 @@
 #include <wrl/client.h>
 
 #ifndef THROW_IF_FAILED
-#define THROW_IF_FAILED(Result) if(FAILED(Result)) throw ionengine::Exception(ionengine::renderer::d3d12::hresult_to_string(Result));
+#define THROW_IF_FAILED(Result) if(FAILED(Result)) throw ionengine::lib::Exception(ionengine::renderer::backend::d3d12::hresult_to_string(Result));
 #endif // THROW_IF_FAILED
 
 using Microsoft::WRL::ComPtr;
 
-namespace ionengine::renderer::d3d12 {
+namespace ionengine::renderer::backend::d3d12 {
 
 inline std::u8string hresult_to_string(HRESULT const result) {
 
@@ -31,8 +31,8 @@ inline std::u8string hresult_to_string(HRESULT const result) {
 		case D3D12_ERROR_DRIVER_VERSION_MISMATCH: return u8"The specified cached PSO was created on a different driver version and cannot be reused on the current adapter";
 		case DXGI_ERROR_INVALID_CALL: return u8"The method call is invalid. For example, a method's parameter may not be a valid pointer";
 		case DXGI_ERROR_WAS_STILL_DRAWING: return u8"The previous blit operation that is transferring information to or from this surface is incomplete";
+		default: return u8"An unknown error has occurred";
 	}
-    return u8"An unknown error has occurred";
 }
 
 }

@@ -15,6 +15,7 @@
 #include <cassert>
 #include <mutex>
 #include <vector>
+#include <memory>
 #include <array>
 #include <queue>
 #include <stack>

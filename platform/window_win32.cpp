@@ -8,6 +8,7 @@
 #define UNICODE
 #include <windows.h>
 
+using namespace ionengine;
 using namespace ionengine::platform;
 
 struct Window::Impl {
@@ -55,7 +56,7 @@ void Window::Impl::initialize(std::u8string const& label, uint32_t const width, 
 	wnd_class.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
 
     if (!RegisterClass(&wnd_class)) {
-		throw Exception(u8"An error occurred while registering the window");
+		throw lib::Exception(u8"An error occurred while registering the window");
     }
 
 	size_t length = strlen(reinterpret_cast<const char*>(label.c_str())) + 1;
@@ -78,7 +79,7 @@ void Window::Impl::initialize(std::u8string const& label, uint32_t const width, 
 	);
 
 	if (!hwnd) {
-		throw Exception(u8"An error occurred while creating the window");
+		throw lib::Exception(u8"An error occurred while creating the window");
 	}
 
     SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));

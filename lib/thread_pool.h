@@ -5,9 +5,9 @@
 #include <lib/concurrent_queue.h>
 #include <lib/handle.h>
 
-namespace ionengine {
+namespace ionengine::lib {
 
-struct JobData {
+struct Job {
     uint32_t id;
     uint32_t gen;
     std::function<void()> func;
@@ -29,13 +29,13 @@ public:
     ThreadPool& operator=(ThreadPool&&) noexcept = delete;
     
     template<class Func, class... Args>
-    Handle<JobData> push(Func&& func, Args&&... args) {
+    Handle<Job> push(Func&& func, Args&&... args) {
 
         uint32_t const job_id = // Job ID = | uint32_t ( uint16_t ( Thread Index | Generation Index ) | uint16_t Pending Job Index)
             static_cast<uint32_t>(static_cast<uint16_t>(_current_thread) << 8 | static_cast<uint16_t>(_current_generation)) << 16 |
             static_cast<uint32_t>(_last_pending_jobs[_current_thread]);
 
-        auto pending_job = JobData {};
+        auto pending_job = Job {};
         pending_job.id = _last_pending_jobs[_current_thread];
         pending_job.gen = _current_generation;
         pending_job.func = std::bind(std::forward<Func>(func), std::forward<Args>(args)...);
@@ -51,14 +51,14 @@ public:
         
         _pending_jobs_count.store(_pending_jobs_count.load() + 1);
 
-        return Handle<JobData>(job_id);
+        return Handle<Job>(job_id);
     }
 
     uint32_t size() const { return _thread_count; }
 
-    bool is_finished(Handle<JobData> const& job_data) const;
+    bool is_finished(Handle<Job> const& job_data) const;
 
-    void wait(Handle<JobData> const& job_data) const;
+    void wait(Handle<Job> const& job_data) const;
 
     void wait_all() const;
 
@@ -73,7 +73,7 @@ private:
 
     struct Worker {
         std::thread thread;
-        ConcurrentQueue<JobData, MAX_JOBS_PER_WORKER> pending_jobs;
+        ConcurrentQueue<Job, MAX_JOBS_PER_WORKER> pending_jobs;
         std::array<JobStream, MAX_JOBS_PER_WORKER> finished_jobs;
     };
 

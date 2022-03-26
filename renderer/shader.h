@@ -15,24 +15,24 @@ struct ShaderBinding {
 };
 
 template<>
-struct ShaderBinding<Sampler> {
+struct ShaderBinding<backend::Sampler> {
     uint32_t index;
     std::u8string name;
 };
 
 template<>
-struct ShaderBinding<Buffer> {
+struct ShaderBinding<backend::Buffer> {
     uint32_t index;
     std::u8string name;
 };
 
 template<>
-struct ShaderBinding<Texture> {
+struct ShaderBinding<backend::Texture> {
     uint32_t index;
     std::u8string name;
 };
 
-using ShaderBindingDesc = std::variant<ShaderBinding<Sampler>, ShaderBinding<Buffer>,ShaderBinding<Texture>>;
+using ShaderBindingDesc = std::variant<ShaderBinding<backend::Sampler>, ShaderBinding<backend::Buffer>,ShaderBinding<backend::Texture>>;
 
 using ShaderEffectId = uint32_t;
 using ShaderBindingId = uint32_t;
@@ -60,7 +60,7 @@ public:
 
     ShaderEffect() = default;
 
-    std::span<Handle<Shader> const> shaders() const;
+    std::span<Handle<backend::Shader> const> shaders() const;
 
     ShaderBindingDesc const& bindings(ShaderBindingId const id) const;
 
@@ -70,7 +70,7 @@ private:
     friend class ShaderCache;
 
     std::unordered_map<ShaderBindingId, ShaderBindingDesc> _bindings;
-    std::vector<Handle<Shader>> _shaders;
+    std::vector<Handle<backend::Shader>> _shaders;
 };
 
 class ShaderEffectBinder {
@@ -78,15 +78,15 @@ public:
 
     ShaderEffectBinder(ShaderEffect& shader_effect);
 
-    ShaderEffectBinder& bind(ShaderBindingId const id, std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>> const& target);
+    ShaderEffectBinder& bind(ShaderBindingId const id, std::variant<Handle<backend::Texture>, Handle<backend::Buffer>, Handle<backend::Sampler>> const& target);
 
-    void update(Backend& backend, Handle<DescriptorSet> const& descriptor_set);
+    void update(backend::Backend& backend, Handle<backend::DescriptorSet> const& descriptor_set);
 
 private:
 
     ShaderEffect* _shader_effect;
 
-    std::array<DescriptorWriteDesc, 64> _descriptor_updates;
+    std::array<backend::DescriptorWriteDesc, 64> _descriptor_updates;
     uint32_t _update_count{0};
 };
 
@@ -95,7 +95,7 @@ public:
 
     ShaderCache() = default;
 
-    void create_shader_effect(Backend& backend, ShaderEffectId const id, ShaderEffectDesc const& shader_effect_desc);
+    void create_shader_effect(backend::Backend& backend, ShaderEffectId const id, ShaderEffectDesc const& shader_effect_desc);
 
     ShaderEffect const& shader_effect(ShaderEffectId const id) const;
 
@@ -104,9 +104,7 @@ public:
 private:
 
     std::unordered_map<ShaderEffectId, ShaderEffect> _shader_effects;
-    std::map<std::u8string, Handle<Shader>> _shader_cache;
+    std::map<std::u8string, Handle<backend::Shader>> _shader_cache;
 };
-
-
     
 }

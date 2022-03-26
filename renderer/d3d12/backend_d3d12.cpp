@@ -6,14 +6,16 @@
 #include <renderer/d3d12/memory_allocator.h>
 #include <renderer/d3d12/d3d12_cpu_desc_pool.h>
 #include <renderer/d3d12/d3d12_gpu_desc_pool.h>
+#include <d3d12_ma/D3D12MemAlloc.h>
 #include <platform/window.h>
 #include <lib/exception.h>
 #include <lib/algorithm.h>
 
-using namespace ionengine::renderer;
+using namespace ionengine;
+using namespace ionengine::renderer::backend;
 using ionengine::Handle;
 
-namespace ionengine::renderer {
+namespace ionengine::renderer::backend {
 
 using DescriptorAllocInfo2 = std::pair<d3d12::DescriptorAllocInfo, uint32_t>;
 
@@ -140,6 +142,8 @@ private:
 struct Backend::Impl {
 
     d3d12::MemoryAllocator memory_allocator;
+
+    ComPtr<D3D12MA::Allocator> memory_allocator_2;
 
     std::vector<d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024>> cpu_cbv_srv_uav_pools;
     d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 128> cpu_rtv_pool;
@@ -423,7 +427,7 @@ DescriptorAllocInfo2 Backend::Impl::allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TY
     }
 
     if(!alloc_info.heap) {
-        throw ionengine::Exception(u8"Backend: Out of memory");
+        throw lib::Exception(u8"Backend: Out of memory");
     }
     return { alloc_info, pool_index };
 }

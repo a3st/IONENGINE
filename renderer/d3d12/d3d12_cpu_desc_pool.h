@@ -4,7 +4,7 @@
 
 #include <renderer/d3d12/d3d12x.h>
 
-namespace ionengine::renderer::d3d12 {
+namespace ionengine::renderer::backend::d3d12 {
 
 struct DescriptorAllocInfo {
     ID3D12DescriptorHeap* heap;
