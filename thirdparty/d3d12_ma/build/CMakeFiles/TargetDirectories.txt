@@ -1,3 +1,0 @@
-E:/GitHub/ionengine_ops/thirdparty/d3d12_ma/build/CMakeFiles/D3D12MemoryAllocator.dir
-E:/GitHub/ionengine_ops/thirdparty/d3d12_ma/build/CMakeFiles/ALL_BUILD.dir
-E:/GitHub/ionengine_ops/thirdparty/d3d12_ma/build/CMakeFiles/ZERO_CHECK.dir

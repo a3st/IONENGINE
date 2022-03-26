@@ -6,7 +6,7 @@
 
 namespace ionengine::renderer::backend::d3d12 {
 
-struct DescriptorAllocInfo {
+struct DescriptorAllocation : public IUnknown {
     ID3D12DescriptorHeap* heap;
     uint32_t offset;
     uint32_t descriptor_size;
