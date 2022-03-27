@@ -141,20 +141,18 @@ private:
 
 struct Backend::Impl {
 
-    d3d12::MemoryAllocator memory_allocator;
+    ComPtr<D3D12MA::Allocator> memory_allocator;
 
-    ComPtr<D3D12MA::Allocator> memory_allocator_2;
+    ComPtr<d3d12::CPUDescriptorPool> cpu_cbv_srv_uav_pool;
+    ComPtr<d3d12::CPUDescriptorPool> cpu_rtv_pool;
+    ComPtr<d3d12::CPUDescriptorPool> cpu_dsv_pool;
+    ComPtr<d3d12::CPUDescriptorPool> cpu_sampler_pool;
 
-    std::vector<d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1024>> cpu_cbv_srv_uav_pools;
-    d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 128> cpu_rtv_pool;
-    d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 2> cpu_dsv_pool;
-    d3d12::CPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024> cpu_sampler_pool;
+    ComPtr<d3d12::GPUDescriptorPool> gpu_cbv_srv_uav_pool;
+    ComPtr<d3d12::GPUDescriptorPool> gpu_sampler_pool;
 
-    d3d12::GPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4096> gpu_cbv_srv_uav_pool;
-    d3d12::GPUDescriptorPool<D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 512> gpu_sampler_pool;
-
-    std::vector<d3d12::GPUDescriptorRange*> gpu_cbv_srv_uav_ranges;
-    std::vector<d3d12::GPUDescriptorRange*> gpu_sampler_ranges;
+    std::vector<ComPtr<d3d12::GPUDescriptorRange>> gpu_cbv_srv_uav_ranges;
+    std::vector<ComPtr<d3d12::GPUDescriptorRange>> gpu_sampler_ranges;
 
     ComPtr<ID3D12Debug> debug;
     ComPtr<ID3D12InfoQueue> info_queue;

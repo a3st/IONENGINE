@@ -35,4 +35,4 @@
 /build/*
 /.idea/*
 /.gradle/*
-/thirdparty/d3d12_memory_allocator/build/*
+/thirdparty/d3d12_ma/build/*

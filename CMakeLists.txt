@@ -27,6 +27,8 @@ add_executable(Runtime-Win32
     # API
     renderer/d3d12/memory_allocator.cpp
 
+    renderer/d3d12/d3d12_cpu_desc_pool.cpp
+
     # Renderer
     renderer/d3d12/backend_d3d12.cpp
     renderer/renderer.cpp
