@@ -55,6 +55,10 @@ public:
 
     ID3D12DescriptorHeap* heap() const;
 
+protected:
+
+    virtual void ReleaseThis() override;
+
 private:
 
     struct ArenaBlockRange {
@@ -71,7 +75,7 @@ private:
     std::vector<ArenaBlockRange> _arena_block_ranges;
     std::atomic<uint32_t> _arena_block_index{0};
 
-    std::unique_ptr<DescriptorRangeAllocation[]> _allocations;
+    DescriptorRangeAllocation* _allocations;
 
     HRESULT initialize(
         ID3D12Device4* const device, 

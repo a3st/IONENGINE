@@ -28,6 +28,10 @@ void DescriptorPoolAllocation::ReleaseThis() {
     _heap->indices.emplace_back(_offset);
 }
 
+DescriptorPoolAllocation::DescriptorPoolAllocation() {
+    
+}
+
 HRESULT DescriptorPool::allocate(DescriptorAllocation** allocation) {
 
     HRESULT result = E_OUTOFMEMORY;
@@ -49,6 +53,12 @@ HRESULT DescriptorPool::allocate(DescriptorAllocation** allocation) {
     return result;
 }
 
+void DescriptorPool::ReleaseThis() {
+
+    delete[] _allocations;
+    delete this;
+}
+
 HRESULT DescriptorPool::initialize(
     ID3D12Device4* const device, 
     D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, 
@@ -63,7 +73,7 @@ HRESULT DescriptorPool::initialize(
     uint32_t const heap_count = std::max<uint32_t>(1, size / DescriptorPool::DESCRIPTOR_HEAP_SIZE);
 
     _heaps.resize(heap_count);
-    _allocations = std::make_unique<DescriptorPoolAllocation[]>(heap_count * DescriptorPool::DESCRIPTOR_HEAP_SIZE);
+    _allocations = new DescriptorPoolAllocation[heap_count * DescriptorPool::DESCRIPTOR_HEAP_SIZE];
 
     for(uint32_t i = 0; i < heap_count; ++i) {
 
@@ -78,11 +88,12 @@ HRESULT DescriptorPool::initialize(
 
         _heaps[i] = std::move(pool_heap);
 
-        for(uint32_t j = 0; i < DescriptorPool::DESCRIPTOR_HEAP_SIZE; ++j) {
+        for(uint32_t j = 0; j < DescriptorPool::DESCRIPTOR_HEAP_SIZE; ++j) {
             _heaps[i].indices.emplace_back(j);
             
             auto& cur_allocation = _allocations[i * DescriptorPool::DESCRIPTOR_HEAP_SIZE + j];
             cur_allocation._heap = &_heaps[i];
+            cur_allocation._offset = j;
             cur_allocation._descriptor_size = _descriptor_size;
         }
     }

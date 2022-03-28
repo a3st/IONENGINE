@@ -25,7 +25,6 @@ add_executable(Runtime-Win32
     platform/window_loop_win32.cpp
     
     renderer/d3d12/d3d12x.cpp
-
     renderer/d3d12/d3d12_descriptor_pool.cpp
     renderer/d3d12/d3d12_descriptor_range.cpp
 

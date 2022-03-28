@@ -27,6 +27,10 @@ void DescriptorRangeAllocation::ReleaseThis() {
     
 }
 
+DescriptorRangeAllocation::DescriptorRangeAllocation() {
+    
+}
+
 HRESULT DescriptorRange::allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range, DescriptorAllocation** allocation) {
 
     HRESULT result = E_OUTOFMEMORY;
@@ -70,6 +74,12 @@ ID3D12DescriptorHeap* DescriptorRange::heap() const {
     return _heap;
 }
 
+void DescriptorRange::ReleaseThis() {
+
+    delete[] _allocations;
+    delete this;
+}
+
 HRESULT DescriptorRange::initialize(
     ID3D12Device4* const device, 
     ID3D12DescriptorHeap* const descriptor_heap,
@@ -84,7 +94,7 @@ HRESULT DescriptorRange::initialize(
     uint32_t const range_count = std::thread::hardware_concurrency();
 
     _arena_block_ranges.resize(range_count);
-    _allocations = std::make_unique<DescriptorRangeAllocation[]>(range_count * MAX_ALLOCATION_COUNT);
+    _allocations = new DescriptorRangeAllocation[range_count * MAX_ALLOCATION_COUNT];
 
     for(uint32_t i = 0; i < range_count; ++i) {
         auto& range = _arena_block_ranges[i];

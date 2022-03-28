@@ -61,10 +61,14 @@ public:
 
     HRESULT allocate(DescriptorAllocation** allocation);
 
+protected:
+
+    virtual void ReleaseThis() override;
+
 private:
 
     std::vector<detail::DescriptorHeap> _heaps;
-    std::unique_ptr<DescriptorPoolAllocation[]> _allocations;
+    DescriptorPoolAllocation* _allocations;
     uint32_t _descriptor_size{0};
 
     HRESULT initialize(
