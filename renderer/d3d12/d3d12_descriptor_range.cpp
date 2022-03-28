@@ -50,7 +50,7 @@ HRESULT DescriptorRange::allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range
     cur_allocation._descriptor_size = _descriptor_size;
     cur_allocation._offset = _arena_block_ranges[cur_arena_block_index].offset;
 
-    if(cur_allocation._offset + descriptor_range.NumDescriptors < _arena_block_ranges[cur_arena_block_index].size) {
+    if(cur_allocation._offset + descriptor_range.NumDescriptors <= _arena_block_ranges[cur_arena_block_index].size) {
         _arena_block_ranges[cur_arena_block_index].offset += descriptor_range.NumDescriptors;
         result = S_OK;
 
@@ -87,6 +87,8 @@ HRESULT DescriptorRange::initialize(
     uint32_t const size
 ) {
 
+    _descriptor_size = device->GetDescriptorHandleIncrementSize(descriptor_heap->GetDesc().Type);
+
     _heap = descriptor_heap;
     _offset = offset;
     _size = size;
@@ -97,9 +99,8 @@ HRESULT DescriptorRange::initialize(
     _allocations = new DescriptorRangeAllocation[range_count * MAX_ALLOCATION_COUNT];
 
     for(uint32_t i = 0; i < range_count; ++i) {
-        auto& range = _arena_block_ranges[i];
-        range.begin = offset * i + size / range_count;
-        range.size = size / range_count;
+        _arena_block_ranges[i].begin = offset + i * size / range_count;
+        _arena_block_ranges[i].size = size / range_count;
     }
 
     return S_OK;

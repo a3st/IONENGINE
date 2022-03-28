@@ -41,10 +41,8 @@ struct DescriptorLayout {
 struct DescriptorSet {
     ComPtr<ID3D12DescriptorHeap> cbv_srv_uav_heap;
     ComPtr<ID3D12DescriptorHeap> sampler_heap;
-    ComPtr<d3d12::DescriptorRange> cbv_srv_uav_range;
-    ComPtr<d3d12::DescriptorRange> sampler_range;
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
-    std::vector<ComPtr<d3d12::DescriptorAllocation>> bindings;
+    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> bindings;
     std::vector<std::pair<uint32_t, uint32_t>> binding_ranges;
     bool is_compute;
 };
@@ -1366,41 +1364,46 @@ Handle<DescriptorSet> Backend::Impl::create_descriptor_set(Handle<DescriptorLayo
     
     device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.cbv_srv_uav_heap.GetAddressOf()));
 
-    THROW_IF_FAILED(d3d12::create_descriptor_range(device.Get(), descriptor_set_data.cbv_srv_uav_heap.Get(), 0, heap_desc.NumDescriptors, descriptor_set_data.cbv_srv_uav_range.GetAddressOf()));
-
     heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
     heap_desc.NumDescriptors = index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER];
 
     device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.sampler_heap.GetAddressOf()));
 
-    THROW_IF_FAILED(d3d12::create_descriptor_range(device.Get(), descriptor_set_data.sampler_heap.Get(), 0, heap_desc.NumDescriptors, descriptor_set_data.sampler_range.GetAddressOf()));
-
-    uint32_t binding_index = 0;
-
     for(size_t i = 0; i < descriptor_layout_data.ranges.size(); ++i) {
 
         auto& range = descriptor_layout_data.ranges[i];
 
-        ComPtr<d3d12::DescriptorAllocation> allocation;
+        auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {};
 
         switch(range.RangeType) {
 
             case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
             case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
             case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
-                THROW_IF_FAILED(descriptor_set_data.cbv_srv_uav_range->allocate(range, allocation.GetAddressOf()));
+
+                uint32_t const descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                cpu_handle.ptr = 
+                    descriptor_set_data.cbv_srv_uav_heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    descriptor_size * // Device descriptor size
+                    i * range.NumDescriptors // Allocation offset
+                ; 
             } break;
             case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:  {
-                THROW_IF_FAILED(descriptor_set_data.sampler_range->allocate(range, allocation.GetAddressOf()));
+
+                uint32_t const descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                cpu_handle.ptr = 
+                    descriptor_set_data.cbv_srv_uav_heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    descriptor_size * // Device descriptor size
+                    i * range.NumDescriptors // Allocation offset
+                ;
             } break;
         }
 
         for(uint32_t j = 0; j < range.NumDescriptors; ++j) {
-            descriptor_set_data.binding_ranges[binding_index] = { static_cast<uint32_t>(i), j };
-            ++binding_index;
+            descriptor_set_data.binding_ranges.emplace_back(static_cast<uint32_t>(i), j);
         }
 
-        descriptor_set_data.bindings.emplace_back(allocation);
+        descriptor_set_data.bindings.emplace_back(cpu_handle);
     }
 
     uint32_t const id = descriptor_sets.push(std::move(descriptor_set_data));    
@@ -1443,9 +1446,13 @@ void Backend::Impl::update_descriptor_set(Handle<DescriptorSet> const& descripto
 
         auto& binding_info = descriptor_set_data.binding_ranges[write_desc.index];
 
+        uint32_t descriptor_size = device->GetDescriptorHandleIncrementSize(heap_type);
+        auto cpu_handle = descriptor_set_data.bindings[binding_info.first];
+        cpu_handle.ptr += descriptor_size * binding_info.second;
+
         device->CopyDescriptorsSimple(
             1,
-            descriptor_set_data.bindings[binding_info.first]->cpu_handle(binding_info.second),
+            cpu_handle,
             allocation->cpu_handle(),
             heap_type
         );
@@ -1886,7 +1893,7 @@ void Encoder::Impl::bind_descriptor_set(Handle<DescriptorSet> const& descriptor_
         backend->device->CopyDescriptorsSimple(
             range.NumDescriptors, 
             allocation->cpu_handle(), 
-            descriptor_set_data.bindings[i]->cpu_handle(), 
+            descriptor_set_data.bindings[i], 
             heap_type
         );
 
