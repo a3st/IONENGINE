@@ -17,8 +17,6 @@ struct Sampler;
 struct DescriptorLayout;
 struct DescriptorSet;
 
-using PipelineCacheId = uint32_t;
-
 enum class BackendLimits : uint32_t {
     RenderPassCount = 256,
     PipelineCount = 256,
@@ -316,7 +314,7 @@ public:
         DepthStencilDesc const& depth_stencil_desc,
         BlendDesc const& blend_desc,
         Handle<RenderPass> const& render_pass,
-        std::optional<PipelineCacheId> pipeline_cache = std::nullopt
+        std::optional<std::u8string> cache_name = std::nullopt
     );
 
     void delete_pipeline(Handle<Pipeline> const& pipeline);

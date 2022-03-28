@@ -35,4 +35,38 @@ inline std::u8string hresult_to_string(HRESULT const result) {
 	}
 }
 
+class IUnknownImpl : public IUnknown {
+public:
+
+    virtual ~IUnknownImpl() = default;
+
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject);
+
+    virtual ULONG STDMETHODCALLTYPE AddRef();
+
+    virtual ULONG STDMETHODCALLTYPE Release();
+
+protected:
+
+    virtual void ReleaseThis() { delete this; }
+
+private:
+
+    std::atomic<UINT> m_RefCount = 1;
+};
+
+class DescriptorAllocation : public IUnknownImpl {
+public:
+
+	virtual ~DescriptorAllocation() = default;
+
+	virtual D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle(uint32_t const index = 0) const = 0;
+
+    virtual D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle(uint32_t const index = 0) const = 0;
+
+protected:
+
+	virtual void ReleaseThis() = 0;
+};
+
 }

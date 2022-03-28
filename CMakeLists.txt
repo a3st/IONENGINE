@@ -24,10 +24,10 @@ add_executable(Runtime-Win32
     platform/window_win32.cpp
     platform/window_loop_win32.cpp
     
-    # API
-    renderer/d3d12/memory_allocator.cpp
+    renderer/d3d12/d3d12x.cpp
 
-    renderer/d3d12/d3d12_cpu_desc_pool.cpp
+    renderer/d3d12/d3d12_descriptor_pool.cpp
+    renderer/d3d12/d3d12_descriptor_range.cpp
 
     # Renderer
     renderer/d3d12/backend_d3d12.cpp

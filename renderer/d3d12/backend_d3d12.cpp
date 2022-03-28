@@ -3,13 +3,12 @@
 #include <precompiled.h>
 #include <renderer/backend.h>
 #include <renderer/d3d12/d3d12x.h>
-#include <renderer/d3d12/memory_allocator.h>
-#include <renderer/d3d12/d3d12_cpu_desc_pool.h>
-#include <renderer/d3d12/d3d12_gpu_desc_pool.h>
-#include <d3d12_ma/D3D12MemAlloc.h>
+#include <renderer/d3d12/d3d12_descriptor_pool.h>
+#include <renderer/d3d12/d3d12_descriptor_range.h>
 #include <platform/window.h>
 #include <lib/exception.h>
 #include <lib/algorithm.h>
+#include <d3d12_ma/D3D12MemAlloc.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer::backend;
@@ -17,22 +16,20 @@ using ionengine::Handle;
 
 namespace ionengine::renderer::backend {
 
-using DescriptorAllocInfo2 = std::pair<d3d12::DescriptorAllocInfo, uint32_t>;
-
 struct Texture {
     ComPtr<ID3D12Resource> resource;
-    d3d12::MemoryAllocInfo memory_alloc_info;
-    std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, DescriptorAllocInfo2> descriptor_alloc_infos;
+    ComPtr<D3D12MA::Allocation> memory_allocation;
+    std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, ComPtr<d3d12::DescriptorAllocation>> descriptor_allocations;
 };
 
 struct Buffer {
     ComPtr<ID3D12Resource> resource;
-    d3d12::MemoryAllocInfo memory_alloc_info;
-    DescriptorAllocInfo2 descriptor_alloc_info;
+    ComPtr<D3D12MA::Allocation> memory_allocation;
+    ComPtr<d3d12::DescriptorAllocation> descriptor_allocation;
 };
 
 struct Sampler {
-    DescriptorAllocInfo2 alloc_info;
+    ComPtr<d3d12::DescriptorAllocation> descriptor_allocation;
 };
 
 struct DescriptorLayout {
@@ -44,8 +41,10 @@ struct DescriptorLayout {
 struct DescriptorSet {
     ComPtr<ID3D12DescriptorHeap> cbv_srv_uav_heap;
     ComPtr<ID3D12DescriptorHeap> sampler_heap;
+    ComPtr<d3d12::DescriptorRange> cbv_srv_uav_range;
+    ComPtr<d3d12::DescriptorRange> sampler_range;
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
-    std::vector<d3d12::DescriptorAllocInfo> bindings;
+    std::vector<d3d12::DescriptorAllocation> bindings;
     bool is_compute;
 };
 
@@ -142,20 +141,20 @@ private:
 struct Backend::Impl {
 
     ComPtr<D3D12MA::Allocator> memory_allocator;
+    ComPtr<d3d12::DescriptorPool> cbv_srv_uav_pool;
+    ComPtr<d3d12::DescriptorPool> rtv_pool;
+    ComPtr<d3d12::DescriptorPool> dsv_pool;
+    ComPtr<d3d12::DescriptorPool> sampler_pool;
 
-    ComPtr<d3d12::CPUDescriptorPool> cpu_cbv_srv_uav_pool;
-    ComPtr<d3d12::CPUDescriptorPool> cpu_rtv_pool;
-    ComPtr<d3d12::CPUDescriptorPool> cpu_dsv_pool;
-    ComPtr<d3d12::CPUDescriptorPool> cpu_sampler_pool;
+    ComPtr<ID3D12DescriptorHeap> cbv_srv_uav_heap;
+    ComPtr<ID3D12DescriptorHeap> sampler_heap;
+    std::vector<ComPtr<d3d12::DescriptorRange>> cbv_srv_uav_ranges;
+    std::vector<ComPtr<d3d12::DescriptorRange>> sampler_ranges;
 
-    ComPtr<d3d12::GPUDescriptorPool> gpu_cbv_srv_uav_pool;
-    ComPtr<d3d12::GPUDescriptorPool> gpu_sampler_pool;
-
-    std::vector<ComPtr<d3d12::GPUDescriptorRange>> gpu_cbv_srv_uav_ranges;
-    std::vector<ComPtr<d3d12::GPUDescriptorRange>> gpu_sampler_ranges;
-
+#ifdef _DEBUG
     ComPtr<ID3D12Debug> debug;
     ComPtr<ID3D12InfoQueue> info_queue;
+#endif
 
     ComPtr<IDXGIFactory4> factory;
     ComPtr<IDXGIAdapter1> adapter;
@@ -163,9 +162,8 @@ struct Backend::Impl {
     ComPtr<IDXGISwapChain3> swapchain;
     std::vector<ComPtr<ID3D12CommandQueue>> queues;
     std::vector<ComPtr<ID3D12Fence>> fences;
-    std::vector<ID3D12CommandList*> batches;
-
     std::vector<uint64_t> fence_values;
+    std::vector<ID3D12CommandList*> batches;
 
     HANDLE fence_event;
 
@@ -178,28 +176,24 @@ struct Backend::Impl {
     ResourceSet<Shader, std::to_underlying(BackendLimits::ShaderCount)> shaders;
     ResourceSet<RenderPass, std::to_underlying(BackendLimits::RenderPassCount)> render_passes;
 
-    Texture default_texture;
-    Buffer default_cbv_buffer;
-    Sampler default_sampler;
-    Buffer default_uav_buffer;
-
-    std::vector<Handle<Texture>> swapchain_textures;
+    std::vector<uint32_t> swapchain_textures;
     uint32_t swapchain_index{0};
 
-    std::filesystem::path shader_cache_path = "";
     uint32_t const SHADER_CACHE_MAGIC = ((uint32_t)(uint8_t)'D') | ((uint32_t)(uint8_t)'3' << 8) | ((uint32_t)(uint8_t)'D' << 16) | ((uint32_t)(uint8_t)'1' << 24);
-
-    std::unordered_map<PipelineCacheId, ComPtr<ID3DBlob>> shader_cache_data;
+    std::filesystem::path shader_cache_path = "";
+    std::unordered_map<std::u8string, ComPtr<ID3DBlob>> shader_cache_data;
 
     size_t serialize_shader_cache(std::vector<char8_t>& data);
 
     bool deserialize_shader_cache(std::vector<char8_t> const& data);
 
-    DescriptorAllocInfo2 allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type);
-
     void initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc, std::filesystem::path const& shader_cache_path = "");
 
     void deinitialize();
+
+    void create_swapchain(SwapchainDesc const& _swapchain_desc);
+
+    void create_swapchain_resources();
     
     Handle<Texture> create_texture(
         Dimension const dimension, 
@@ -253,7 +247,7 @@ struct Backend::Impl {
         DepthStencilDesc const& depth_stencil_desc, 
         BlendDesc const& blend_desc, 
         Handle<RenderPass> const& render_pass,
-        std::optional<PipelineCacheId> pipeline_cache = std::nullopt
+        std::optional<std::u8string> cache_name = std::nullopt
     );
     
     void delete_pipeline(Handle<Pipeline> const& pipeline);
@@ -398,150 +392,215 @@ bool Backend::Impl::deserialize_shader_cache(std::vector<char8_t> const& data) {
     return true;
 }
 
-DescriptorAllocInfo2 Backend::Impl::allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) {
-
-    auto alloc_info = d3d12::DescriptorAllocInfo {};
-    uint32_t pool_index = 0;
-
-    switch(heap_type) {
-        case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV: {
-            for(size_t i = 0; i < cpu_cbv_srv_uav_pools.size(); ++i) {
-                if(cpu_cbv_srv_uav_pools[i].space() > 0) {
-                    alloc_info = cpu_cbv_srv_uav_pools[i].allocate(device.Get());
-                    pool_index = static_cast<uint32_t>(i);
-                    break;
-                }
-            }
-        } break;
-        case D3D12_DESCRIPTOR_HEAP_TYPE_RTV: {
-            alloc_info = cpu_rtv_pool.allocate(device.Get());
-        } break;
-        case D3D12_DESCRIPTOR_HEAP_TYPE_DSV: {
-            alloc_info = cpu_dsv_pool.allocate(device.Get());
-        } break;
-        case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER: {
-            alloc_info = cpu_sampler_pool.allocate(device.Get());
-        } break;
-    }
-
-    if(!alloc_info.heap) {
-        throw lib::Exception(u8"Backend: Out of memory");
-    }
-    return { alloc_info, pool_index };
-}
-
 void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc, std::filesystem::path const& shader_cache_path) {
 
+    // Initialize shader cache path
     this->shader_cache_path = shader_cache_path;
 
-    THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(debug.GetAddressOf())));
-    debug->EnableDebugLayer();
+    uint32_t factory_flags = 0;
 
-    THROW_IF_FAILED(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, __uuidof(IDXGIFactory4), reinterpret_cast<void**>(factory.GetAddressOf())));
+#ifdef _DEBUG
+    // Create Debug Layer. Only in debug engine build
+    {
+        THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(debug.GetAddressOf())));
+        debug->EnableDebugLayer();
 
+        // Factory debug flags
+        factory_flags = DXGI_CREATE_FACTORY_DEBUG;
+    }
+#endif
+
+    THROW_IF_FAILED(CreateDXGIFactory2(factory_flags, __uuidof(IDXGIFactory4), reinterpret_cast<void**>(factory.GetAddressOf())));
     THROW_IF_FAILED(factory->EnumAdapters1(adapter_index, adapter.GetAddressOf()));
-    
     THROW_IF_FAILED(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), reinterpret_cast<void**>(device.GetAddressOf())));
+
+#ifdef _DEBUG
+    // Setup Info Queue. Only in debug engine build 
+    {
+        THROW_IF_FAILED(device->QueryInterface(info_queue.GetAddressOf()));
+
+        auto info_queue_filter = D3D12_INFO_QUEUE_FILTER {};
+        
+        std::array<D3D12_MESSAGE_SEVERITY, 2> allow_severities = {
+            D3D12_MESSAGE_SEVERITY_ERROR,
+            D3D12_MESSAGE_SEVERITY_WARNING
+        };
+
+        info_queue_filter.AllowList.pSeverityList = allow_severities.data();
+        info_queue_filter.AllowList.NumSeverities = static_cast<uint32_t>(allow_severities.size());
+        info_queue->PushStorageFilter(&info_queue_filter);
+    }
+#endif
+     
+    // Initialize CBV_SRV_UAV Heap Pool for resources
+    THROW_IF_FAILED(d3d12::create_descriptor_pool(
+        device.Get(), 
+        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+        D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+        8096, 
+        cbv_srv_uav_pool.GetAddressOf())
+    );
+
+    // Initialize RTV Heap Pool for resources
+    THROW_IF_FAILED(d3d12::create_descriptor_pool(
+        device.Get(), 
+        D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+        D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+        256, 
+        rtv_pool.GetAddressOf())
+    );
     
-    THROW_IF_FAILED(device->QueryInterface(info_queue.GetAddressOf()));
-
-    auto info_queue_filter = D3D12_INFO_QUEUE_FILTER {};
+    // Initialize DSV Heap Pool for resources
+    THROW_IF_FAILED(d3d12::create_descriptor_pool(
+        device.Get(), 
+        D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+        D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+        12, 
+        dsv_pool.GetAddressOf())
+    );
     
-    std::array<D3D12_MESSAGE_SEVERITY, 2> severities = {
-        D3D12_MESSAGE_SEVERITY_ERROR,
-        D3D12_MESSAGE_SEVERITY_WARNING
-    };
+    // Initialize Sampler Heap Pool for resources
+    THROW_IF_FAILED(d3d12::create_descriptor_pool(
+        device.Get(), 
+        D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 
+        D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+        2048, 
+        sampler_pool.GetAddressOf())
+    );
 
-    info_queue_filter.AllowList.pSeverityList = severities.data();
-    info_queue_filter.AllowList.NumSeverities = static_cast<uint32_t>(severities.size());
+    // Create CBV_SRV_UAV Heap for binding in Descriptor Table
+    {
+        auto descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
+        descriptor_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        descriptor_heap_desc.NumDescriptors = 4096;
+        descriptor_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-    info_queue->PushStorageFilter(&info_queue_filter);
+        THROW_IF_FAILED(device->CreateDescriptorHeap(&descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(cbv_srv_uav_heap.GetAddressOf())));
+    }
 
-    cpu_cbv_srv_uav_pools.resize(4);
+    // Create Sampler Heap for binding in Descriptor Table
+    {
+        auto descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
+        descriptor_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+        descriptor_heap_desc.NumDescriptors = 2048;
+        descriptor_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+        THROW_IF_FAILED(device->CreateDescriptorHeap(&descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(sampler_heap.GetAddressOf())));
+    }
 
     queues.resize(3);
     fences.resize(3);
-
-    auto queue_desc = D3D12_COMMAND_QUEUE_DESC {};
-    queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-    queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-
-    THROW_IF_FAILED(device->CreateCommandQueue(
-        &queue_desc,
-        __uuidof(ID3D12CommandQueue), 
-        reinterpret_cast<void**>(queues[0].GetAddressOf()))
-    );
-
-    THROW_IF_FAILED(device->CreateFence(
-        0, 
-        D3D12_FENCE_FLAG_NONE, 
-        __uuidof(ID3D12Fence), 
-        reinterpret_cast<void**>(fences[0].GetAddressOf()))
-    );
-
-    queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-
-    THROW_IF_FAILED(device->CreateCommandQueue(
-        &queue_desc,
-        __uuidof(ID3D12CommandQueue), 
-        reinterpret_cast<void**>(queues[1].GetAddressOf()))
-    );
-
-    THROW_IF_FAILED(device->CreateFence(
-        0, 
-        D3D12_FENCE_FLAG_NONE, 
-        __uuidof(ID3D12Fence), 
-        reinterpret_cast<void**>(fences[1].GetAddressOf()))
-    );
-
-    queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-
-    THROW_IF_FAILED(device->CreateCommandQueue(
-        &queue_desc,
-        __uuidof(ID3D12CommandQueue), 
-        reinterpret_cast<void**>(queues[2].GetAddressOf()))
-    );
-
-    THROW_IF_FAILED(device->CreateFence(
-        0, 
-        D3D12_FENCE_FLAG_NONE, 
-        __uuidof(ID3D12Fence), 
-        reinterpret_cast<void**>(fences[2].GetAddressOf()))
-    );
-
     fence_values.resize(3);
 
-    fence_event = CreateEvent(nullptr, false, false, nullptr);
+    // Create Device Queue (Direct) for execution command lists
+    // Create Fence Object (Direct) for synchronization
+    {
+        auto command_queue_desc = D3D12_COMMAND_QUEUE_DESC {};
+        command_queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        command_queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-    if(!fence_event) {
-        THROW_IF_FAILED(HRESULT_FROM_WIN32(GetLastError()));
+        THROW_IF_FAILED(device->CreateCommandQueue(
+            &command_queue_desc,
+            __uuidof(ID3D12CommandQueue), 
+            reinterpret_cast<void**>(queues[0].GetAddressOf()))
+        );
+
+        THROW_IF_FAILED(device->CreateFence(
+            0, 
+            D3D12_FENCE_FLAG_NONE, 
+            __uuidof(ID3D12Fence), 
+            reinterpret_cast<void**>(fences[0].GetAddressOf()))
+        );
     }
 
-    platform::Size window_size = _swapchain_desc.window->client_size();
+    // Create Device Queue (Copy) for execution command lists
+    // Create Fence Object (Copy) for synchronization
+    {
+        auto command_queue_desc = D3D12_COMMAND_QUEUE_DESC {};
+        command_queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        command_queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
 
-    auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
-    swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapchain_desc.Width = window_size.width;
-    swapchain_desc.Height = window_size.height;
-    swapchain_desc.BufferCount = _swapchain_desc.buffer_count;
-    swapchain_desc.SampleDesc.Count = _swapchain_desc.sample_count;
-    swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+        THROW_IF_FAILED(device->CreateCommandQueue(
+            &command_queue_desc,
+            __uuidof(ID3D12CommandQueue), 
+            reinterpret_cast<void**>(queues[1].GetAddressOf()))
+        );
 
-    THROW_IF_FAILED(factory->CreateSwapChainForHwnd(
-        queues[0].Get(), 
-        reinterpret_cast<HWND>(_swapchain_desc.window->native_handle()), 
-        &swapchain_desc, 
-        nullptr, 
-        nullptr, 
-        reinterpret_cast<IDXGISwapChain1**>(swapchain.GetAddressOf()))
-    );
+        THROW_IF_FAILED(device->CreateFence(
+            0, 
+            D3D12_FENCE_FLAG_NONE, 
+            __uuidof(ID3D12Fence), 
+            reinterpret_cast<void**>(fences[1].GetAddressOf()))
+        );
+    }
 
-    for(uint32_t i = 0; i < _swapchain_desc.buffer_count; ++i) {
+    // Create Device Queue (Compute) for execution command lists
+    // Create Fence Object (Compute) for synchronization
+    {
+        auto command_queue_desc = D3D12_COMMAND_QUEUE_DESC {};
+        command_queue_desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+        command_queue_desc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
 
-        gpu_cbv_srv_uav_ranges.push_back(gpu_cbv_srv_uav_pool.allocate(device.Get(), 1024));
-        gpu_sampler_ranges.push_back(gpu_sampler_pool.allocate(device.Get(), 256));
+        THROW_IF_FAILED(device->CreateCommandQueue(
+            &command_queue_desc,
+            __uuidof(ID3D12CommandQueue), 
+            reinterpret_cast<void**>(queues[1].GetAddressOf()))
+        );
+
+        THROW_IF_FAILED(device->CreateFence(
+            0, 
+            D3D12_FENCE_FLAG_NONE, 
+            __uuidof(ID3D12Fence), 
+            reinterpret_cast<void**>(fences[1].GetAddressOf()))
+        );
+    }
+
+    // Create WINAPI Fence Object for synchronization
+    {
+        fence_event = CreateEvent(nullptr, false, false, nullptr);
+        if(!fence_event) {
+            THROW_IF_FAILED(HRESULT_FROM_WIN32(GetLastError()));
+        }
+    }
+
+    // Create Swapchain using Device Queue (Direct)
+    {
+        platform::Size initial_size = _swapchain_desc.window->client_size();
+
+        auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
+        swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        swapchain_desc.Width = initial_size.width;
+        swapchain_desc.Height = initial_size.height;
+        swapchain_desc.BufferCount = _swapchain_desc.buffer_count;
+        swapchain_desc.SampleDesc.Count = _swapchain_desc.sample_count;
+        swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        swapchain_desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+
+        THROW_IF_FAILED(factory->CreateSwapChainForHwnd(
+            queues[0].Get(), 
+            reinterpret_cast<HWND>(_swapchain_desc.window->native_handle()), 
+            &swapchain_desc, 
+            nullptr, 
+            nullptr, 
+            reinterpret_cast<IDXGISwapChain1**>(swapchain.GetAddressOf()))
+        );
+    }
+
+    swapchain_textures.resize(_swapchain_desc.buffer_count);
+
+    // Get Swapchain resources and create RTV's
+    {
+        for(uint32_t i = 0; i < _swapchain_desc.buffer_count; ++i) {
+
+            ComPtr<ID3D12Resource> resource;
+            THROW_IF_FAILED(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), reinterpret_cast<void**>(resource.GetAddressOf())));
+
+            auto render_target_view_desc = D3D12_RENDER_TARGET_VIEW_DESC {};
+            render_target_view_desc.Format = swapchain_desc.Format;
+            render_target_view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+        }
+    }
 
         // Render Target from swapchain resource
         {
@@ -552,12 +611,13 @@ void Backend::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const
             view_desc.Format = swapchain_desc.Format;
             view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-            DescriptorAllocInfo2 alloc_info = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-            device->CreateRenderTargetView(resource.Get(), &view_desc, alloc_info.first.cpu_handle());
+            ComPtr<d3d12::CPUDescriptorAllocation> allocation; 
+            cpu_rtv_pool->allocate(allocation.GetAddressOf());
+            device->CreateRenderTargetView(resource.Get(), &view_desc, allocation->cpu_handle());
 
             auto texture = Texture {};
             texture.resource = resource;
-            texture.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = alloc_info;
+            texture.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = allocation;
 
             uint32_t id = textures.push(std::move(texture));
             swapchain_textures.emplace_back(id);
@@ -679,8 +739,10 @@ Handle<Texture> Backend::Impl::create_texture(
             } break;
         }
 
-        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-        device->CreateDepthStencilView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_DSV].first.cpu_handle());
+        ComPtr<d3d12::CPUDescriptorAllocation> descriptor_allocation; 
+        cpu_dsv_pool->allocate(descriptor_allocation.GetAddressOf());
+        texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_DSV] = descriptor_allocation;
+        device->CreateDepthStencilView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_DSV]->cpu_handle());
     }
     if(flags & TextureFlags::RenderTarget) {
 
@@ -703,8 +765,10 @@ Handle<Texture> Backend::Impl::create_texture(
             } break;
         }
 
-        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-        device->CreateRenderTargetView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_RTV].first.cpu_handle());
+        ComPtr<d3d12::CPUDescriptorAllocation> descriptor_allocation; 
+        cpu_rtv_pool->allocate(descriptor_allocation.GetAddressOf());
+        texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_RTV] = descriptor_allocation;
+        device->CreateRenderTargetView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]->cpu_handle());
     }
     if(flags & TextureFlags::UnorderedAccess) {
         // TODO!
@@ -730,8 +794,10 @@ Handle<Texture> Backend::Impl::create_texture(
             } break;
         }
 
-        texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = allocate_descriptor(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-        device->CreateShaderResourceView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_alloc_infos[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV].first.cpu_handle());
+        ComPtr<d3d12::CPUDescriptorAllocation> descriptor_allocation; 
+        cpu_cbv_srv_uav_pool->allocate(descriptor_allocation.GetAddressOf());
+        texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = descriptor_allocation;
+        device->CreateShaderResourceView(texture_data.resource.Get(), &view_desc, texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV]->cpu_handle());
     }
 
     uint32_t id = textures.push(std::move(texture_data));
@@ -1089,7 +1155,7 @@ Handle<Pipeline> Backend::Impl::create_pipeline(
     DepthStencilDesc const& depth_stencil_desc,
     BlendDesc const& blend_desc,
     Handle<RenderPass> const& render_pass,
-    std::optional<PipelineCacheId> pipeline_cache
+    std::optional<std::u8string> cache_name
 ) {
 
     auto get_fill_mode = [&](FillMode const fill_mode) {
@@ -1675,10 +1741,10 @@ Handle<Pipeline> Backend::create_pipeline(
     DepthStencilDesc const& depth_stencil_desc,
     BlendDesc const& blend_desc,
     Handle<RenderPass> const& render_pass,
-    std::optional<PipelineCacheId> pipeline_cache
+    std::optional<std::u8string> cache_name
 ) {
     
-    return _impl->create_pipeline(descriptor_layout, vertex_descs, shaders, rasterizer_desc, depth_stencil_desc, blend_desc, render_pass, pipeline_cache);
+    return _impl->create_pipeline(descriptor_layout, vertex_descs, shaders, rasterizer_desc, depth_stencil_desc, blend_desc, render_pass, cache_name);
 }
 
 void Backend::delete_pipeline(Handle<Pipeline> const& pipeline) {
