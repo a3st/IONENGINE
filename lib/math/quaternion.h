@@ -16,7 +16,7 @@ struct Quaternion {
 
 	Quaternion() = default;
 
-	Quaternion(T const _x, T const _y, T const _z, T const _w) : x(_x), y(_y), z(_z), w(_w) { }
+	Quaternion(Type const _x, Type const _y, Type const _z, Type const _w) : x(_x), y(_y), z(_z), w(_w) { }
 
 	Quaternion(Quaternion const& other) : x(other.x), y(other.y), z(other.z), w(other.w) { }
 
@@ -48,7 +48,7 @@ struct Quaternion {
 
 	Quaternion& normalize() {
 
-        T inverse = 1.0 / length();
+        Type inverse = 1.0 / length();
         x = x * inverse;
         y = y * inverse;
         z = z * inverse;
@@ -69,7 +69,8 @@ struct Quaternion {
         Type sqz = z * z;
         Type inverse = 1 / (sqx + sqy + sqz + sqw);
 
-        Matrix<Type> mat{}.identity();
+        Matrix<Type> mat;
+        mat.identity();
         mat.m00 = (sqx - sqy - sqz + sqw) * inverse;
         mat.m11 = (-sqx + sqy - sqz + sqw) * inverse;
         mat.m22 = (-sqx - sqy + sqz + sqw) * inverse;
@@ -157,9 +158,9 @@ struct Quaternion {
     Quaternion& euler(Type const x, Type const y, Type const z) {
 
         Type rotx, roty, rotz;
-        rotx = static_cast<T>(x * M_PI / 180.0f);
-        roty = static_cast<T>(y * M_PI / 180.0f);
-        rotz = static_cast<T>(z * M_PI / 180.0f);
+        rotx = static_cast<Type>(x * M_PI / 180.0f);
+        roty = static_cast<Type>(y * M_PI / 180.0f);
+        rotz = static_cast<Type>(z * M_PI / 180.0f);
 
         Type sinx, siny, sinz, cosx, cosy, cosz;
         sinx = std::sin(rotx / 2);

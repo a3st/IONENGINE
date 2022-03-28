@@ -1,9 +1,9 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <scene/node.h>
+#include <engine/node.h>
 
-using namespace ionengine::scene;
+using namespace ionengine;
 
 Node& Node::add_child(Node& child) {
         

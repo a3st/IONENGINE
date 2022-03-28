@@ -11,7 +11,7 @@ class Asset;
 
 }
 
-namespace ionengine::scene::resources {
+namespace ionengine {
 
 template<class Type>
 struct MaterialParameterType { };

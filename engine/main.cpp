@@ -5,9 +5,6 @@
 #include <renderer/renderer.h>
 #include <lib/thread_pool.h>
 #include <lib/exception.h>
-#include <lib/hash/crc32.h>
-
-#include <scene/scene.h>
 
 using namespace ionengine;
 

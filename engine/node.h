@@ -2,14 +2,14 @@
 
 #pragma once
 
-namespace ionengine::scene {
+namespace ionengine {
 
 class Node {
 public:
 
     Node() = default;
 
-    ~Node();
+    virtual ~Node() = default;
 
     virtual Node& add_child(Node& child);
 

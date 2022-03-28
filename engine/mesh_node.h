@@ -2,9 +2,16 @@
 
 #pragma once
 
-namespace ionengine::scene {
+namespace ionengine {
 
+class MeshNode {
+public:
 
+    MeshNode() = default;
+
+private:
 
     
+};
+
 }

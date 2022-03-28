@@ -35,13 +35,11 @@ add_executable(Runtime-Win32
     renderer/color.cpp
     #renderer/shader.cpp
 
-    scene/scene.cpp
-    scene/resource_tree.cpp
-
-    scene/node.cpp
-    scene/scene_node.cpp
-
-    scene/components/camera.cpp
+    engine/node.cpp
+    engine/scene_node.cpp
+    engine/camera_node.cpp
+    engine/mesh_node.cpp
+    engine/scene_tree.cpp
 
     asset_compiler/shader_loader.cpp
 

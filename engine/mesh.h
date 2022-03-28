@@ -3,14 +3,13 @@
 #pragma once
 
 #include <renderer/backend.h>
-#include <lib/math/vector.h>
 
-namespace ionengine::scene::resources {
+namespace ionengine {
 
-class Texture {
+class Mesh {
 public:
 
-
+    
 
 private:
 

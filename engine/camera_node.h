@@ -2,27 +2,28 @@
 
 #pragma once
 
+#include <engine/scene_node.h>
 #include <lib/math/matrix.h>
 
-namespace ionengine::scene::components {
+namespace ionengine {
 
 enum class CameraProjectionType {
     Perspective,
     Orthographic
 };
 
-class Camera {
+class CameraNode : public SceneNode {
 public:
 
-    Camera() = default;
+    CameraNode() = default;
 
     float aspect_ratio() const;
 
-    Camera& aspect_ratio(float const value);
+    CameraNode& aspect_ratio(float const value);
 
     float field_of_view() const;
 
-    Camera& field_of_view(float const value);
+    CameraNode& field_of_view(float const value);
 
 private:
 
