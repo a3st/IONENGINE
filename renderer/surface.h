@@ -13,7 +13,6 @@ struct SurfaceData {
     Handle<backend::Buffer> index_buffer;
 };
 
-
 class SurfaceCache {
 public:
 

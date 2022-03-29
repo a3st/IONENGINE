@@ -6,17 +6,22 @@
 using namespace ionengine::renderer;
 using ionengine::Handle;
 
-std::span<Handle<backend::Shader> const> ShaderEffect::shaders() const {
+ShaderSet::ShaderSet(backend::Backend& backend, ShaderSetCreateInfo const& create_info) 
+    : _shaders(create_info.shaders), _bindings(create_info.bindings) {
+    
+}
+
+std::span<Handle<backend::Shader> const> ShaderSet::shaders() const {
 
     return _shaders;
 }
 
-ShaderBindingDesc const& ShaderEffect::bindings(ShaderBindingId const id) const {
+ShaderBinding const& ShaderSet::bindings(uint32_t const id) const {
     
     return _bindings.at(id); 
 }
 
-ShaderEffectBinder::ShaderEffectBinder(ShaderEffect& shader_effect) : _shader_effect(&shader_effect) {
+/*ShaderEffectBinder::ShaderEffectBinder(ShaderEffect& shader_effect) : _shader_effect(&shader_effect) {
 
 }
 
@@ -43,33 +48,4 @@ void ShaderEffectBinder::update(backend::Backend& backend, Handle<backend::Descr
 
     backend.update_descriptor_set(descriptor_set, std::span<DescriptorWriteDesc const>(_descriptor_updates.data(), _update_count));
     _update_count = 0;
-}
-
-void ShaderCache::create_shader_effect(backend::Backend& backend, ShaderEffectId const id, ShaderEffectDesc const& shader_effect_desc) {
-
-    auto shader_effect = ShaderEffect {};
-
-    for(auto const& [name, shader_info] : shader_effect_desc.shader_infos) {
-
-        auto it = _shader_cache.find(name);
-        if(it != _shader_cache.end()) {
-            shader_effect._shaders.emplace_back(it->second);
-        } else {
-            Handle<Shader> shader = backend.create_shader(shader_info->data, shader_info->flags);
-            shader_effect._shaders.emplace_back(shader);
-            _shader_cache[name] = shader;
-        }
-    }
-
-    _shader_effects[id] = std::move(shader_effect);
-}
-
-ShaderEffect const& ShaderCache::shader_effect(ShaderEffectId const id) const {
-
-    return _shader_effects.at(id);
-}
-
-ShaderEffect& ShaderCache::shader_effect(ShaderEffectId const id) {
-
-    return _shader_effects[id];
-}
+}*/

@@ -35,7 +35,7 @@ add_executable(Runtime-Win32
     renderer/renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp
-    #renderer/shader.cpp
+    renderer/shader.cpp
 
     engine/node.cpp
     engine/scene_node.cpp

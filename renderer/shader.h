@@ -1,78 +1,70 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
 #include <renderer/backend.h>
-#include <renderer/data.h>
 #include <lib/math/vector.h>
 
 namespace ionengine::renderer {
 
 template<class Type>
-struct ShaderBinding {
+struct ShaderBindingType {
     uint32_t index;
-    std::u8string name;
 };
 
 template<>
-struct ShaderBinding<backend::Sampler> {
+struct ShaderBindingType<backend::Sampler> {
     uint32_t index;
-    std::u8string name;
 };
 
 template<>
-struct ShaderBinding<backend::Buffer> {
+struct ShaderBindingType<backend::Buffer> {
     uint32_t index;
-    std::u8string name;
 };
 
 template<>
-struct ShaderBinding<backend::Texture> {
+struct ShaderBindingType<backend::Texture> {
     uint32_t index;
-    std::u8string name;
 };
 
-using ShaderBindingDesc = std::variant<ShaderBinding<backend::Sampler>, ShaderBinding<backend::Buffer>,ShaderBinding<backend::Texture>>;
+using ShaderBinding = std::variant<ShaderBindingType<backend::Sampler>, ShaderBindingType<backend::Buffer>, ShaderBindingType<backend::Texture>>;
 
-using ShaderEffectId = uint32_t;
-using ShaderBindingId = uint32_t;
+struct ShaderSetCreateInfo {
 
-struct ShaderEffectDesc {
+    std::vector<Handle<backend::Shader>> shaders;
+    std::unordered_map<uint32_t, ShaderBinding> bindings;
 
-    std::map<std::u8string, ShaderPackageData::ShaderInfo const*> shader_infos;
-    std::unordered_map<ShaderBindingId, ShaderBindingDesc> shader_bindings;
+    ShaderSetCreateInfo& set_shader(Handle<backend::Shader> const& shader) {
 
-    ShaderEffectDesc& set_shader_code(std::u8string const& name, ShaderPackageData::ShaderInfo const& shader_info, ShaderFlags const flags) {
-
-        shader_infos[name] = &shader_info;
+        shaders.emplace_back(shader);
         return *this;
     }
 
-    ShaderEffectDesc& set_binding(ShaderBindingId const id, ShaderBindingDesc const& shader_binding_desc) {
+    ShaderSetCreateInfo& set_binding(uint32_t const id, ShaderBinding const& shader_binding) {
 
-        shader_bindings[id] = shader_binding_desc;
+        bindings[id] = shader_binding;
         return *this;
     }
 };
 
-class ShaderEffect {
+class ShaderSet {
 public:
 
-    ShaderEffect() = default;
+    ShaderSet(backend::Backend& backend, ShaderSetCreateInfo const& create_info);
 
     std::span<Handle<backend::Shader> const> shaders() const;
 
-    ShaderBindingDesc const& bindings(ShaderBindingId const id) const;
+    ShaderBinding const& bindings(uint32_t const id) const;
 
 private:
 
-    friend class ShaderEffectBinder;
-    friend class ShaderCache;
+    friend class ShaderSetBinder;
 
-    std::unordered_map<ShaderBindingId, ShaderBindingDesc> _bindings;
+    std::unordered_map<uint32_t, ShaderBinding> _bindings;
     std::vector<Handle<backend::Shader>> _shaders;
 };
 
+/*
 class ShaderEffectBinder {
 public:
 
@@ -89,22 +81,22 @@ private:
     std::array<backend::DescriptorWriteDesc, 64> _descriptor_updates;
     uint32_t _update_count{0};
 };
+*/
 
-class ShaderCache {
-public:
+struct StateParameters {
+    backend::CullMode cull_mode;
+    backend::FillMode fill_mode;
+};
 
-    ShaderCache() = default;
+struct ShaderData {
 
-    void create_shader_effect(backend::Backend& backend, ShaderEffectId const id, ShaderEffectDesc const& shader_effect_desc);
+    struct PassData {
+        StateParameters parameters;
+        ShaderSet set;
+    };
 
-    ShaderEffect const& shader_effect(ShaderEffectId const id) const;
-
-    ShaderEffect& shader_effect(ShaderEffectId const id);
-
-private:
-
-    std::unordered_map<ShaderEffectId, ShaderEffect> _shader_effects;
-    std::map<std::u8string, Handle<backend::Shader>> _shader_cache;
+    std::unordered_map<uint32_t, ShaderBinding*> bindings;
+    std::vector<PassData> passes;
 };
     
 }
