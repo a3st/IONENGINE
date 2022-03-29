@@ -1,9 +1,4 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#pragma once
-
-namespace ionengine::tools {
-
-
-    
-}
+#include <precompiled.h>
+#include <renderer/surface.h>

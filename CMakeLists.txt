@@ -28,6 +28,8 @@ add_executable(Runtime-Win32
     renderer/d3d12/d3d12_descriptor_pool.cpp
     renderer/d3d12/d3d12_descriptor_range.cpp
 
+    renderer/surface.cpp
+
     # Renderer
     renderer/d3d12/backend_d3d12.cpp
     renderer/renderer.cpp
