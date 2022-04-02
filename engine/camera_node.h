@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <engine/scene_node.h>
+#include <scene/transform_node.h>
 #include <lib/math/matrix.h>
 
 namespace ionengine {
@@ -12,7 +12,7 @@ enum class CameraProjectionType {
     Orthographic
 };
 
-class CameraNode : public SceneNode {
+class CameraNode : public scene::TransformNode {
 public:
 
     CameraNode() = default;

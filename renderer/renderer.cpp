@@ -18,7 +18,6 @@ Renderer::Renderer(uint32_t const adapter_index, backend::SwapchainDesc const& s
     
 
     initialize_layouts();
-    //initialize_shaders(shader_package_data);
     initialize_resources_per_frame();
     build_frame_graph(768, 522, _sample_count, _frame_count);
 
@@ -36,7 +35,7 @@ Renderer::Renderer(uint32_t const adapter_index, backend::SwapchainDesc const& s
     _backend.upload_buffer_data(test_index_triangle, 0, std::span<char8_t const>(reinterpret_cast<char8_t const*>(indices.data()), indices.size() * sizeof(uint32_t)));
 }
 
-void Renderer::update() {
+void Renderer::render(scene::Scene& scene) {
 
     Handle<backend::Texture> swapchain_texture = _backend.acquire_next_texture();
 

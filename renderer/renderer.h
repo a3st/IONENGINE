@@ -4,6 +4,7 @@
 
 #include <renderer/backend.h>
 #include <renderer/frame_graph.h>
+#include <scene/scene.h>
 #include <lib/thread_pool.h>
 #include <lib/math/matrix.h>
 
@@ -22,7 +23,7 @@ public:
 
     Renderer& operator=(Renderer&&) = delete;
 
-    void update();
+    void render(scene::Scene& scene);
 
     void resize(uint32_t const width, uint32_t const height);
 

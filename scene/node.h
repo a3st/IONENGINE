@@ -2,27 +2,32 @@
 
 #pragma once
 
-namespace ionengine {
+#include <lib/handle.h>
+
+namespace ionengine::scene {
 
 class Node {
+
+    friend class Scene;
+
 public:
 
     Node() = default;
 
     virtual ~Node() = default;
 
-    virtual Node& add_child(Node& child);
+    virtual Node& add_child(Handle<Node> const& child);
 
     virtual void name(std::u8string_view const name);
 
     virtual std::u8string_view name() const;
 
+    virtual Handle<Node> parent() const;
+
 protected:
 
-    friend class Scene;
-
-    Node* parent{nullptr};
-    std::list<Node*> childrens;
+    Handle<Node> _parent;
+    std::vector<Handle<Node>> _childrens;
 
     std::u8string _name;
 };

@@ -6,6 +6,9 @@
 #include <lib/thread_pool.h>
 #include <lib/exception.h>
 
+#include <scene/scene.h>
+#include <scene/transform_node.h>
+
 using namespace ionengine;
 
 int main(int* argc, char** agrv) {
@@ -27,17 +30,12 @@ int main(int* argc, char** agrv) {
             thread_pool
         );
 
-        // Logic
-        /*Handle<core::Asset> default_material_asset;
-        asset_manager.load_asset_from_file(u8"content/default_material.asset", default_material_asset);
+        scene::Scene scene_test;
 
-        Handle<core::Asset> default_shader_asset;
-        asset_manager.load_asset_from_file(u8"content/default_shader.asset", default_shader_asset);
+        Handle<scene::Node> empty_node = scene_test.tree().spawn_node<scene::TransformNode>(u8"empty");
 
-        scene::Scene default_scene;*/
-        
-        //scene::Material default_material(default_material_asset, default_shader_asset);
-
+        auto n = scene_test.tree().node<scene::TransformNode>(empty_node).name();
+        std::cout << (const char*)n.data() << std::endl;
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
@@ -45,7 +43,7 @@ int main(int* argc, char** agrv) {
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: {
-                        renderer.update();
+                        renderer.render(scene_test);
                     } break;
                 }
             }
