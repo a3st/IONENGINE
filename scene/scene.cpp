@@ -7,6 +7,8 @@ using namespace ionengine::scene;
 
 void Scene::update_transform(lib::ThreadPool& thread_pool) {
 
+    std::stack<Handle<Node>> stack;
+
     Handle<Node> cur_node = _tree.root();
 
     while(cur_node != INVALID_HANDLE(Node)) {
@@ -15,17 +17,29 @@ void Scene::update_transform(lib::ThreadPool& thread_pool) {
 
         for(size_t i = 0; i < child_size; ++i) {
 
+            stack.emplace(_tree.node<Node>(cur_node)._childrens[i]);
+
+            std::cout << (char*)_tree.node<TransformNode>(_tree.node<Node>(cur_node)._childrens[i]).name().data() << std::endl;
+
             _transform_cache.data.emplace_back(&_tree.node<TransformNode>(_tree.node<Node>(cur_node)._childrens[i]));
         }
 
-        _transform_cache.groups.emplace_back(static_cast<uint32_t>(child_size));
+        if(!stack.empty()) {
+
+            cur_node = stack.top();
+            stack.pop();
+
+            _transform_cache.groups.emplace_back(static_cast<uint32_t>(child_size));
+
+            std::cout << child_size << std::endl;
+        } else {
+            cur_node = INVALID_HANDLE(Node);
+        }
+
+        //break;
     }
 
-    //_tree.begin()->parent() != INVALID_HANDLE(Node)
-
-    size_t const job_count = _tree.begin()->_childrens.size();
-
-    for(uint32_t i = 0; i < job_count; ++i) {
+    for(uint32_t i = 0; i < 1; ++i) {
 
         thread_pool.push(
             [&](TransformNode& node) {

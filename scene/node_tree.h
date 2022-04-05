@@ -26,20 +26,6 @@ public:
     Handle<Node> root() const;
 
     template<class Type>
-    Handle<Node> spawn_node(std::u8string_view const name, Handle<Node> const& parent = INVALID_HANDLE(Node)) {
-
-        uint32_t const id = static_cast<uint32_t>(_pool.size());
-        auto& node = _pool.emplace_back(Type());
-        node.name(name);
-
-        if(parent != INVALID_HANDLE(Node)) {
-            node.add_child(id);
-        }
-
-        return id;
-    }
-
-    template<class Type>
     Type& node(Handle<Node> const& node) {
         
         return static_cast<Type&>(_pool[node.id]);
@@ -49,6 +35,22 @@ public:
     Type const& node(Handle<Node> const& node) const {
 
         return static_cast<Type const&>(_pool.at(node.id));
+    }
+
+    template<class Type>
+    Handle<Node> spawn_node(std::u8string_view const name, Handle<Node> const& parent = INVALID_HANDLE(Node)) {
+
+        uint32_t const id = static_cast<uint32_t>(_pool.size());
+
+        auto& _node = _pool.emplace_back(Type());
+        _node.name(name);
+
+        if(parent != INVALID_HANDLE(Node)) {
+            auto& _parent = node<Node>(parent);
+            _parent.add_child(id);
+        }
+
+        return id;
     }
 
 private:
