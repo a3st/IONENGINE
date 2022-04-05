@@ -14,9 +14,7 @@ class TransformNode : public Node {
 
 public:
 
-    TransformNode() { }
-
-    virtual ~TransformNode() = default;
+    TransformNode();
 
     void transform(Transform const& transform);
 

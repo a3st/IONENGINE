@@ -5,10 +5,14 @@
 
 using namespace ionengine::scene;
 
+TransformNode::TransformNode() {
+
+}
+
 void TransformNode::transform(Transform const& transform) {
 
     _transform = transform;
-
+    
     _model_local = 
         lib::math::Matrixf().translate(transform.position) *
         lib::math::Quaternionf(transform.rotation).matrix() *

@@ -110,7 +110,7 @@ struct Quaternion {
 
         Type rot_angle = static_cast<Type>(angle * M_PI / 180.0f);
 	    Type rot_sin = std::sin(rot_angle / 2);
-        Vector3<Type> norm_axis = axis.Normalize();
+        Vector3<Type> norm_axis = Vector3<Type>(axis).normalize();
 
         x = norm_axis.x * rot_sin;
         y = norm_axis.y * rot_sin;

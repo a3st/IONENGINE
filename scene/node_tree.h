@@ -48,6 +48,7 @@ public:
         if(parent != INVALID_HANDLE(Node)) {
             auto& _parent = node<Node>(parent);
             _parent.add_child(id);
+            _node._parent = parent;
         }
 
         return id;

@@ -8,6 +8,8 @@ using namespace ionengine::scene;
 
 NodeTree::NodeTree() {
 
+    _pool.reserve(1000);
+
     _root = spawn_node<Node>(u8"root");
 }
 

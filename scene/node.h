@@ -8,6 +8,7 @@ namespace ionengine::scene {
 
 class Node {
 
+    friend class NodeTree;
     friend class Scene;
 
 public:
@@ -24,11 +25,10 @@ public:
 
     virtual Handle<Node> parent() const;
 
-protected:
+private:
 
-    Handle<Node> _parent;
+    Handle<Node> _parent{INVALID_HANDLE(Node)};
     std::vector<Handle<Node>> _childrens;
-
     std::u8string _name;
 };
 
