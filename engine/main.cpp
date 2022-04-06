@@ -30,46 +30,6 @@ int main(int* argc, char** agrv) {
         );
 
         scene::Scene scene_test;
-
-        scene::Transform transform = { 
-            .position = lib::math::Vector3f(5.0f, 2.4f, 3.0f),
-            .rotation = lib::math::Quaternionf{},
-            .scale = lib::math::Vector3f(1.0f, 1.0f, 1.0f)
-        };
-
-        scene::Transform transform_2 = { 
-            .position = lib::math::Vector3f(5.0f, 2.4f, 3.0f),
-            .rotation = lib::math::Quaternionf{},
-            .scale = lib::math::Vector3f(1.0f, 1.0f, 1.0f)
-        };
-
-        auto empty_node_0 = scene_test.tree().spawn_node<scene::TransformNode>(u8"empty 0", scene_test.tree().root());
-        scene_test.tree().node<scene::TransformNode>(empty_node_0).transform(transform);
-
-        auto empty_node_1 = scene_test.tree().spawn_node<scene::TransformNode>(u8"empty 1", scene_test.tree().root());
-        scene_test.tree().node<scene::TransformNode>(empty_node_1).transform(transform_2);
-
-        /*auto empty_node_2 = scene_test.tree().spawn_node<scene::TransformNode>(u8"empty 2", scene_test.tree().root());
-        scene_test.tree().node<scene::TransformNode>(empty_node_2).transform(transform);
-
-        auto empty_node_3 = scene_test.tree().spawn_node<scene::TransformNode>(u8"empty 3", empty_node_2);
-        scene_test.tree().node<scene::TransformNode>(empty_node_3).transform(transform_2);
-
-        auto empty_node_5 = scene_test.tree().spawn_node<scene::TransformNode>(u8"empty 5", empty_node_2);
-        scene_test.tree().node<scene::TransformNode>(empty_node_5).transform(transform);
-
-        auto empty_node_7 = scene_test.tree().spawn_node<scene::TransformNode>(u8"empty 7", empty_node_1);
-        scene_test.tree().node<scene::TransformNode>(empty_node_7).transform(transform);
-        
-        auto empty_node_6 = scene_test.tree().spawn_node<scene::TransformNode>(u8"empty 6", empty_node_1);
-        scene_test.tree().node<scene::TransformNode>(empty_node_6).transform(transform);
-
-        auto empty_node_4 = scene_test.tree().spawn_node<scene::TransformNode>(u8"empty 4", scene_test.tree().root());
-        scene_test.tree().node<scene::TransformNode>(empty_node_4).transform(transform);
-*/
-        //scene_test.update_transform(thread_pool);
-
-        std::cout << scene_test.tree().node<scene::TransformNode>(empty_node_0).transform().position.x << std::endl;
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {

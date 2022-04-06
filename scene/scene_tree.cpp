@@ -1,19 +1,17 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <scene/node_tree.h>
+#include <scene/scene_tree.h>
 
 using ionengine::Handle;
 using namespace ionengine::scene;
 
-NodeTree::NodeTree() {
+SceneTree::SceneTree() {
 
-    _pool.reserve(1000);
-
-    _root = spawn_node<Node>(u8"root");
+    _root = spawn_node<SceneNode>(u8"root");
 }
 
-Handle<Node> NodeTree::root() const {
+Handle<SceneNode> SceneTree::root() const {
 
     return _root;
 }

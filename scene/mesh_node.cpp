@@ -1,6 +1,6 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <engine/mesh_node.h>
+#include <scene/mesh_node.h>
 
-using namespace ionengine;
+using namespace ionengine::scene;

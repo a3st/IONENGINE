@@ -2,8 +2,14 @@
 
 #pragma once
 
-namespace ionengine::tools {
+namespace ionengine::asset {
+
+class AssetManager {
+public:
 
 
-    
+private:
+
+};
+
 }

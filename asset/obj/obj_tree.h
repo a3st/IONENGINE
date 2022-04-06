@@ -2,18 +2,14 @@
 
 #pragma once
 
-#include <renderer/backend.h>
+namespace ionengine::asset::obj {
 
-namespace ionengine {
-
-class Mesh {
+class ObjTree {
 public:
 
-    
+    ObjTree() = default;
 
 private:
-
-    
 
 };
 

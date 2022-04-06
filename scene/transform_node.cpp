@@ -5,10 +5,6 @@
 
 using namespace ionengine::scene;
 
-TransformNode::TransformNode() {
-
-}
-
 void TransformNode::transform(Transform const& transform) {
 
     _transform = transform;

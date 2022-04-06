@@ -2,20 +2,20 @@
 
 #pragma once
 
+#include <scene/scene.h>
+
 namespace project {
 
-class World {
+class Sponza {
 public:
 
-    World() = default;
+    Sponza();
 
-    bool initialize();
-
-    void update();
 
 private:
 
-    
-};
+    ionengine::scene::Scene _scene;
 
 };
+
+}

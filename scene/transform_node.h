@@ -2,19 +2,18 @@
 
 #pragma once
 
-#include <scene/node.h>
+#include <scene/scene_node.h>
 #include <scene/transform.h>
-#include <lib/math/matrix.h>
 
 namespace ionengine::scene {
 
-class TransformNode : public Node {
+class TransformNode : public SceneNode {
 
     friend class Scene;
 
 public:
 
-    TransformNode();
+    TransformNode() = default;
 
     void transform(Transform const& transform);
 

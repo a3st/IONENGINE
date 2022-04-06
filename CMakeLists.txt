@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.0)
 
-project(IONENGINE VERSION 0.1.0)
+project(IONENGINE VERSION 0.0.5)
 
 # Global sets
 set(CMAKE_CXX_STANDARD 23)
@@ -16,46 +16,41 @@ add_executable(Runtime-Win32
 
     # Engine
     engine/main.cpp
-
+    engine/sponza.cpp
+# ---------------------------
     # Lib
     lib/thread_pool.cpp
-
+# ---------------------------
     # Platform
     platform/window_win32.cpp
     platform/window_loop_win32.cpp
-    
+# ---------------------------
+    # Asset
+    asset/obj/obj_document.cpp
+    asset/asset_manager.cpp
+    asset/mesh.cpp
+    asset/texture.cpp
+# ---------------------------
+    # Scene
+    scene/scene_node.cpp
+    scene/transform_node.cpp
+    scene/scene_tree.cpp
+    scene/scene.cpp
+    scene/mesh_node.cpp
+# ---------------------------    
+    # Renderer Backend
     renderer/d3d12/d3d12x.cpp
     renderer/d3d12/d3d12_descriptor_pool.cpp
     renderer/d3d12/d3d12_descriptor_range.cpp
-
-    renderer/surface.cpp
+    renderer/d3d12/backend_d3d12.cpp
 
     # Renderer
-    renderer/d3d12/backend_d3d12.cpp
     renderer/renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp
     renderer/shader.cpp
-
-    scene/node.cpp
-    scene/transform_node.cpp
-
-    scene/node_tree.cpp
-
-    scene/scene.cpp
-
-
-
-    engine/camera_node.cpp
-    engine/mesh_node.cpp
-
-    asset_compiler/shader_loader.cpp
-
-    # Project
-    project/world.cpp
-
-
-    
+# ---------------------------    
+    renderer/surface.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
@@ -92,7 +87,7 @@ target_compile_definitions(Runtime-Win32 PRIVATE
 
 #[[
     HLSL SPIRV Package Build Target
-#]]
+#
 add_executable(HLSL_SPIRV_Package hlsl_spirv_package/main.cpp)
 target_precompile_headers(HLSL_SPIRV_Package PRIVATE precompiled.h)
 
@@ -110,7 +105,7 @@ target_include_directories(HLSL_SPIRV_Package PRIVATE
 
 #[[
     Asset Compiler Build Target
-#]]
+#
 add_executable(AssetCompiler
 
     asset_compiler/main.cpp
@@ -133,3 +128,4 @@ set_target_properties(AssetCompiler PROPERTIES
 target_include_directories(AssetCompiler PRIVATE
     ${PROJECT_SOURCE_DIR}/thirdparty/tclap/include
 )
+#]]
