@@ -49,8 +49,7 @@ add_executable(Runtime-Win32
     renderer/frame_graph.cpp
     renderer/color.cpp
     renderer/shader.cpp
-# ---------------------------    
-    renderer/surface.cpp
+# ---------------------------
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

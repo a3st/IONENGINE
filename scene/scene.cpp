@@ -24,8 +24,6 @@ void Scene::update_transform(lib::ThreadPool& thread_pool) {
         uint32_t const transform_per_thread = std::max<uint32_t>(_transform_cache.groups[cur_group_index], _transform_cache.groups[cur_group_index] / 16);
         uint32_t group_job_count = std::max<uint32_t>(1, transform_per_thread);
 
-        //std::cout << "Next Job Group: " << group_job_count << std::endl;
-
         for(uint32_t j = last_data_index; j < last_data_index + group_job_count; ++j) {
 
             thread_pool.push(
@@ -44,7 +42,5 @@ void Scene::update_transform(lib::ThreadPool& thread_pool) {
         ++cur_group_index;
 
         thread_pool.wait_all();
-
-        //std::cout << "----------------------" << std::endl;
     }
 }
