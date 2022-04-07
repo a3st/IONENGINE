@@ -4,7 +4,7 @@
 
 namespace ionengine::asset {
 
-enum class VertexAttributeUsage : uint16_t {
+enum class VertexAttributeUsage : uint8_t {
     Position = 0,
     Normal = 1,
     Tangent = 2,
@@ -13,7 +13,7 @@ enum class VertexAttributeUsage : uint16_t {
     TexCoord2 = 5
 };
 
-enum class VertexAttributeType : uint32_t {
+enum class VertexAttributeType : uint8_t {
     Float32,
     UInt32,
     UInt16,
@@ -24,14 +24,15 @@ struct VertexAttributeDesc {
     VertexAttributeUsage usage;
     VertexAttributeType data_type;
     uint8_t size;
-    uint8_t slot;
-    uint32_t offset;
+    uint8_t index;
 };
 
 class VertexBuffer {
 public:
 
-    VertexBuffer(uint32_t const size, std::span<VertexAttributeDesc const> const attributes, std::span<uint8_t const> const data);
+    VertexBuffer(uint32_t const vertex_count, std::span<VertexAttributeDesc const> const attributes, std::span<uint8_t const> const data);
+
+    VertexBuffer(VertexBuffer const& other);
 
     uint32_t vertex_count() const;
 
@@ -51,16 +52,21 @@ private:
     uint64_t _data_hash{0};
 };
 
-struct TriangleBuffer {
+struct IndexBuffer {
 public:
 
-    TriangleBuffer() = default;
+    IndexBuffer(uint32_t const index_count, std::span<uint8_t const> const data);
+
+    uint32_t index_count() const;
+
+    uint64_t data_hash() const;
+
+    std::span<uint8_t const> data() const;
 
 private:
 
-    uint32_t _triangle_size;
-    uint32_t _triangle_count;
-    std::vector<char8_t> _data;
+    uint32_t _index_count;
+    std::vector<uint8_t> _data;
     uint64_t _data_hash;
 };
 
