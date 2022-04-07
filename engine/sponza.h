@@ -4,6 +4,8 @@
 
 #include <scene/scene.h>
 
+#include <asset/buffer.h>
+
 namespace project {
 
 class Sponza {
@@ -15,7 +17,6 @@ public:
 private:
 
     ionengine::scene::Scene _scene;
-
 };
 
 }

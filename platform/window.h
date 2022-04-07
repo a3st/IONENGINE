@@ -9,7 +9,7 @@ namespace ionengine::platform {
 class Window {
 public:
 
-    Window(std::u8string const& label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop);
+    Window(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop);
 
     ~Window();
 
@@ -25,7 +25,7 @@ public:
 
     void* native_handle() const;
 
-    void label(std::u8string const& label);
+    void label(std::string_view const label);
 
 private:
 

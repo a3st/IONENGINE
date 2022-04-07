@@ -19,7 +19,7 @@ struct Window::Impl {
 
 	Size _client_size;
 
-	void initialize(std::u8string const& label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop);
+	void initialize(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop);
 
 	void deinitialize();
 
@@ -27,7 +27,7 @@ struct Window::Impl {
 
     void* native_handle() const;
 
-    void label(std::u8string const& label);
+    void label(std::string_view const label);
 
 	static LRESULT wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
@@ -45,7 +45,7 @@ void Window::impl_deleter::operator()(Impl* ptr) const {
 //
 //===========================================================
 
-void Window::Impl::initialize(std::u8string const& label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop) {
+void Window::Impl::initialize(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop) {
 
 	this->loop = &loop;
 
@@ -56,15 +56,15 @@ void Window::Impl::initialize(std::u8string const& label, uint32_t const width, 
 	wnd_class.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
 
     if (!RegisterClass(&wnd_class)) {
-		throw lib::Exception(u8"An error occurred while registering the window");
+		throw lib::Exception("An error occurred while registering the window");
     }
 
-	size_t length = strlen(reinterpret_cast<const char*>(label.c_str())) + 1;
+	size_t length = strlen(reinterpret_cast<const char*>(label.data())) + 1;
     size_t result = 0;
 	
 	std::u16string out_str(length - 1, 0);
 
-    mbstowcs_s(&result, reinterpret_cast<wchar_t*>(out_str.data()), length, reinterpret_cast<const char*>(label.c_str()), length - 1);
+    mbstowcs_s(&result, reinterpret_cast<wchar_t*>(out_str.data()), length, reinterpret_cast<const char*>(label.data()), length - 1);
 
     hwnd = CreateWindow(
 		wnd_class.lpszClassName,
@@ -79,7 +79,7 @@ void Window::Impl::initialize(std::u8string const& label, uint32_t const width, 
 	);
 
 	if (!hwnd) {
-		throw lib::Exception(u8"An error occurred while creating the window");
+		throw lib::Exception("An error occurred while creating the window");
 	}
 
     SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
@@ -101,14 +101,14 @@ void* Window::Impl::native_handle() const {
 	return reinterpret_cast<void*>(hwnd);
 }
 
-void Window::Impl::label(std::u8string const& label) {
+void Window::Impl::label(std::string_view const label) {
 
-	size_t length = strlen(reinterpret_cast<const char*>(label.c_str())) + 1;
+	size_t length = strlen(reinterpret_cast<const char*>(label.data())) + 1;
     size_t result = 0;
 
 	std::u16string out_str(length - 1, 0);
 
-    mbstowcs_s(&result, reinterpret_cast<wchar_t*>(out_str.data()), length, reinterpret_cast<const char*>(label.c_str()), length - 1);
+    mbstowcs_s(&result, reinterpret_cast<wchar_t*>(out_str.data()), length, reinterpret_cast<const char*>(label.data()), length - 1);
 
 	SetWindowText(hwnd, reinterpret_cast<const wchar_t*>(out_str.c_str()));
 }
@@ -156,7 +156,7 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 //
 //===========================================================
 
-Window::Window(std::u8string const& label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop) :
+Window::Window(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop) :
 	_impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
 
 	_impl->initialize(label, width, height, fullscreen, loop);
@@ -177,7 +177,7 @@ void* Window::native_handle() const {
 	return _impl->native_handle();
 }
 
-void Window::label(std::u8string const& label) {
+void Window::label(std::string_view const label) {
 
 	_impl->label(label);
 }

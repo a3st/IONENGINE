@@ -133,6 +133,8 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                 .set_depth_stencil("z_buffer"_hash, backend::RenderPassLoadOp::Clear, 0.0f, 0x0),
             [&, this](RenderPassContext const& context) {
 
+                Handle<backend::Texture> depth_buffer = context.attachment("z_buffer"_hash);
+
                 
             }
         )

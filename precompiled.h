@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <locale>
 #include <format>
 #include <random>
 #include <limits>

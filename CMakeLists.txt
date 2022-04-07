@@ -30,6 +30,7 @@ add_executable(Runtime-Win32
     asset/asset_manager.cpp
     asset/mesh.cpp
     asset/texture.cpp
+    asset/buffer.cpp
 # ---------------------------
     # Scene
     scene/scene_node.cpp

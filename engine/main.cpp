@@ -8,6 +8,8 @@
 #include <scene/scene.h>
 #include <scene/transform_node.h>
 
+#include <engine/sponza.h>
+
 using namespace ionengine;
 
 int main(int* argc, char** agrv) {
@@ -16,7 +18,7 @@ int main(int* argc, char** agrv) {
     
     try {
         platform::WindowLoop loop;
-        platform::Window window(u8"IONENGINE", 800, 600, false, loop);
+        platform::Window window("IONENGINE", 800, 600, false, loop);
 
 #ifdef IONENGINE_RENDERER_BACKEND_D3D12
         std::filesystem::path const backend_cache_path = "cache/shader_cache_d3d12.payload";
@@ -30,6 +32,9 @@ int main(int* argc, char** agrv) {
         );
 
         scene::Scene scene_test;
+
+        window.label("Sponza Test");
+        project::Sponza sponza;
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
