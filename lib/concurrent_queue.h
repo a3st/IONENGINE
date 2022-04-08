@@ -102,7 +102,6 @@ private:
 
     std::atomic<size_t> _tail{0};
     std::atomic<size_t> _head{0};
-
     std::vector<Type> _data;
 };
 
