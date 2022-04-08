@@ -11,12 +11,12 @@ void SceneNode::add_child(Handle<SceneNode> const& child) {
     _childrens.emplace_back(child);
 }
 
-void SceneNode::name(std::u8string_view const name) {
+void SceneNode::name(std::string_view const name) {
 
     _name = name;
 }
 
-std::u8string_view SceneNode::name() const {
+std::string_view SceneNode::name() const {
 
     return _name;
 }

@@ -4,3 +4,8 @@
 #include <scene/mesh_node.h>
 
 using namespace ionengine::scene;
+
+void MeshNode::mesh(Handle<asset::Asset> const& asset) {
+
+    _mesh = asset;
+}

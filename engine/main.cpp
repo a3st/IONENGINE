@@ -31,10 +31,10 @@ int main(int* argc, char** agrv) {
             thread_pool
         );
 
-        scene::Scene scene_test;
-
         window.label("Sponza Test");
         project::Sponza sponza;
+
+        sponza.scene().update_transform(thread_pool);
     
         loop.run(
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
@@ -42,7 +42,7 @@ int main(int* argc, char** agrv) {
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: {
-                        renderer.render(scene_test);
+                        renderer.render(sponza.scene());
                     } break;
                 }
             }

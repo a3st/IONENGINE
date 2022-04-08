@@ -40,7 +40,7 @@ struct DescriptorLayout {
 
 struct DescriptorSet {
     ComPtr<ID3D12DescriptorHeap> cbv_srv_uav_heap;
-    ComPtr<ID3D12DescriptorHeap> sampler_heap;
+    std::optional<ComPtr<ID3D12DescriptorHeap>> sampler_heap;
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
     std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> bindings;
     std::vector<std::pair<uint32_t, uint32_t>> binding_ranges;
@@ -1358,17 +1358,26 @@ Handle<DescriptorSet> Backend::Impl::create_descriptor_set(Handle<DescriptorLayo
         ++index_ranges[range.RangeType];
     }
 
-    auto heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
-    heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    heap_desc.NumDescriptors = index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_CBV] + index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SRV] + index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_UAV];
+    {
+        auto descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
+        descriptor_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        descriptor_heap_desc.NumDescriptors = index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_CBV] + index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SRV] + index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_UAV];
     
-    device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.cbv_srv_uav_heap.GetAddressOf()));
+        device->CreateDescriptorHeap(&descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.cbv_srv_uav_heap.GetAddressOf()));
+    }
 
-    heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-    heap_desc.NumDescriptors = index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER];
+    if(index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER] > 0) {
 
-    device->CreateDescriptorHeap(&heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.sampler_heap.GetAddressOf()));
+        auto descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
+        descriptor_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+        descriptor_heap_desc.NumDescriptors = index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER];
 
+        ComPtr<ID3D12DescriptorHeap> descriptor_heap;
+        device->CreateDescriptorHeap(&descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_heap.GetAddressOf()));
+    
+        descriptor_set_data.sampler_heap = descriptor_heap;
+    }
+    
     for(size_t i = 0; i < descriptor_layout_data.ranges.size(); ++i) {
 
         auto& range = descriptor_layout_data.ranges[i];
@@ -1392,7 +1401,7 @@ Handle<DescriptorSet> Backend::Impl::create_descriptor_set(Handle<DescriptorLayo
 
                 uint32_t const descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
                 cpu_handle.ptr = 
-                    descriptor_set_data.cbv_srv_uav_heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                    descriptor_set_data.sampler_heap.value()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
                     descriptor_size * // Device descriptor size
                     i * range.NumDescriptors // Allocation offset
                 ;

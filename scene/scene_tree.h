@@ -37,7 +37,7 @@ public:
     }
 
     template<class Type>
-    Handle<SceneNode> spawn_node(std::u8string_view const name, Handle<SceneNode> const& parent = INVALID_HANDLE(SceneNode)) {
+    Handle<SceneNode> spawn_node(std::string_view const name, Handle<SceneNode> const& parent = INVALID_HANDLE(SceneNode)) {
 
         uint32_t const id = static_cast<uint32_t>(_pool.size());
         _pool.push_back(std::make_unique<Type>());

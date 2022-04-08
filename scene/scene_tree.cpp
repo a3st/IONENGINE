@@ -8,7 +8,7 @@ using namespace ionengine::scene;
 
 SceneTree::SceneTree() {
 
-    _root = spawn_node<SceneNode>(u8"root");
+    _root = spawn_node<SceneNode>("root");
 }
 
 Handle<SceneNode> SceneTree::root() const {

@@ -13,6 +13,7 @@ public:
 
     Sponza();
 
+    ionengine::scene::Scene& scene() { return _scene; }
 
 private:
 

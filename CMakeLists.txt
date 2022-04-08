@@ -50,6 +50,7 @@ add_executable(Runtime-Win32
     renderer/frame_graph.cpp
     renderer/color.cpp
     renderer/shader.cpp
+    renderer/cache/vertex.cpp
 # ---------------------------
 )
 

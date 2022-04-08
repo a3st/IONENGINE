@@ -15,7 +15,7 @@ public:
 
     MeshNode() = default;
 
-    
+    virtual void mesh(Handle<asset::Asset> const& asset);
 
 private:
 

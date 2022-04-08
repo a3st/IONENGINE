@@ -29,13 +29,22 @@ Renderer::Renderer(uint32_t const adapter_index, backend::SwapchainDesc const& s
 
     test_vertex_triangle = _backend.create_buffer(65536, backend::BufferFlags::VertexBuffer | backend::BufferFlags::HostWrite);
     test_index_triangle = _backend.create_buffer(65536, backend::BufferFlags::IndexBuffer | backend::BufferFlags::HostWrite);
-    //test_descriptor_set = _backend.create_descriptor_set(_layouts[LayoutType::GBuffer]);
+    test_descriptor_set = _backend.create_descriptor_set(_layouts[LayoutType::GBuffer]);
 
     //_backend.upload_buffer_data(test_vertex_triangle, 0, std::span<char8_t const>(reinterpret_cast<char8_t const*>(vertices.data()), vertices.size() * sizeof(float)));
     //_backend.upload_buffer_data(test_index_triangle, 0, std::span<char8_t const>(reinterpret_cast<char8_t const*>(indices.data()), indices.size() * sizeof(uint32_t)));
 }
 
 void Renderer::render(scene::Scene& scene) {
+    
+    for(auto it = scene.tree().begin(); it != scene.tree().end(); ++it) {
+
+        auto node_casted = dynamic_cast<scene::MeshNode*>(it->get());
+
+        if(node_casted) {
+            std::cout << it->get()->name() << std::endl;
+        }
+    }
 
     Handle<backend::Texture> swapchain_texture = _backend.acquire_next_texture();
 

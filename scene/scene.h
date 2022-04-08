@@ -27,6 +27,10 @@ private:
         std::vector<uint32_t> groups;
     } _transform_cache;
 
+    struct {
+        std::vector<Handle<SceneNode>> nodes;
+        std::vector<uint32_t> groups;
+    } _mesh_cache;
 };
 
 }
