@@ -19,7 +19,7 @@ public:
 
 private:
 
-    Handle<asset::Mesh> _mesh;
+    Handle<asset::Asset> _mesh;
 };
 
 }

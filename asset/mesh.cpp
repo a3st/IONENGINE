@@ -10,7 +10,17 @@ Mesh::Mesh(VertexBuffer const& vertex_buffer, IndexBuffer const& index_buffer)
 
 }
 
-std::unique_ptr<Mesh> Mesh::make_test_cube() {
+VertexBuffer const& Mesh::vertex_buffer() const {
+
+    return _vertex_buffer;
+}
+
+IndexBuffer const& Mesh::index_buffer() const {
+
+    return _index_buffer;
+}
+
+std::unique_ptr<Mesh> ionengine::asset::make_test_cube() {
 
     auto attributes = std::vector<VertexAttributeDesc> {
 

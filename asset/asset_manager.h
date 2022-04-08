@@ -7,6 +7,7 @@ namespace ionengine::asset {
 class AssetManager {
 public:
 
+    AssetManager();
 
 private:
 

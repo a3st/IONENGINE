@@ -14,12 +14,16 @@ public:
 
     Mesh(VertexBuffer const& vertex_buffer, IndexBuffer const& index_buffer);
 
-    static std::unique_ptr<Mesh> make_test_cube();
+    VertexBuffer const& vertex_buffer() const;
+
+    IndexBuffer const& index_buffer() const;
 
 private:
 
     VertexBuffer _vertex_buffer;
     IndexBuffer _index_buffer;
 };
+
+std::unique_ptr<Mesh> make_test_cube();
 
 }
