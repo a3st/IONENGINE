@@ -16,41 +16,39 @@ add_executable(Runtime-Win32
 
     # Engine
     engine/main.cpp
-    engine/sponza.cpp
+    #engine/sponza.cpp
 # ---------------------------
     # Lib
-    lib/thread_pool.cpp
+    #lib/thread_pool.cpp
 # ---------------------------
     # Platform
     platform/window_win32.cpp
-    platform/window_loop_win32.cpp
+    platform/window_loop.cpp
 # ---------------------------
     # Asset
-    asset/obj/obj_document.cpp
-    asset/asset_manager.cpp
+    #asset/obj/obj_document.cpp
+    #asset/asset_manager.cpp
     asset/mesh.cpp
     asset/texture.cpp
     asset/buffer.cpp
 # ---------------------------
     # Scene
-    scene/scene_node.cpp
-    scene/transform_node.cpp
-    scene/scene_tree.cpp
-    scene/scene.cpp
-    scene/mesh_node.cpp
+    #scene/scene_node.cpp
+    #scene/transform_node.cpp
+    #scene/scene_tree.cpp
+    #scene/scene.cpp
+    #scene/mesh_node.cpp
 # ---------------------------    
     # Renderer Backend
-    renderer/d3d12/d3d12x.cpp
-    renderer/d3d12/d3d12_descriptor_pool.cpp
-    renderer/d3d12/d3d12_descriptor_range.cpp
-    renderer/d3d12/backend_d3d12.cpp
+    renderer/backend/d3d12x.cpp
+    renderer/backend/backend_d3d12.cpp
 
     # Renderer
-    renderer/renderer.cpp
-    renderer/frame_graph.cpp
+    #renderer/renderer.cpp
+    #renderer/frame_graph.cpp
     renderer/color.cpp
-    renderer/shader.cpp
-    renderer/cache/vertex.cpp
+    #renderer/shader.cpp
+    #renderer/cache/vertex.cpp
 # ---------------------------
 )
 

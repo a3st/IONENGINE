@@ -3,7 +3,6 @@
 #pragma once
 
 #include <lib/concurrent_queue.h>
-#include <lib/handle.h>
 
 namespace ionengine::lib {
 

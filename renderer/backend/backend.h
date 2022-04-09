@@ -2,9 +2,9 @@
 
 #pragma once
 
+#include <renderer/backend/handle.h>
 #include <platform/window.h>
 #include <renderer/color.h>
-#include <lib/handle.h>
 
 namespace ionengine::renderer::backend {
 
@@ -16,6 +16,9 @@ struct RenderPass;
 struct Sampler;
 struct DescriptorLayout;
 struct DescriptorSet;
+struct FenceResult;
+struct CachePipeline;
+struct CommandList;
 
 enum class BackendLimits : uint32_t {
     RenderPassCount = 256,
@@ -84,13 +87,13 @@ enum class ShaderFlags : uint16_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(ShaderFlags)
 
-enum class EncoderFlags : uint32_t {
+enum class QueueFlags : uint8_t {
     Graphics = 1 << 0,
     Copy = 1 << 1,
     Compute = 1 << 2
 };
 
-DECLARE_ENUM_CLASS_BIT_FLAG(EncoderFlags)
+DECLARE_ENUM_CLASS_BIT_FLAG(QueueFlags)
 
 enum class RenderPassLoadOp {
     Load,
@@ -172,6 +175,8 @@ enum class AddressMode {
     Mirror
 };
 
+using ResourceHandle = std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>;
+
 struct RenderPassColorDesc {
     RenderPassLoadOp load_op;
     RenderPassStoreOp store_op;
@@ -193,7 +198,7 @@ struct DescriptorRangeDesc {
 
 struct DescriptorWriteDesc {
     uint32_t index;
-    std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>> data;
+    ResourceHandle data;
 };
 
 struct VertexInputDesc {
@@ -225,12 +230,7 @@ struct BlendDesc {
 };
 
 struct AdapterDesc {
-    std::u8string name;
-};
-
-struct FenceResultInfo {
-    EncoderFlags flags;
-    uint64_t value;
+    std::string name;
 };
 
 struct SwapchainDesc {
@@ -239,24 +239,23 @@ struct SwapchainDesc {
     uint32_t buffer_count;
 };
 
-class Backend {
-private:
+class Device {
 
     friend class Encoder;
 
 public:
 
-    Backend(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc, std::filesystem::path const& shader_cache_path = "");
+    Device(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc);
 
-    ~Backend();
+    ~Device();
 
-    Backend(Backend const&) = delete;
+    Device(Device const&) = delete;
 
-    Backend(Backend&&) noexcept = delete;
+    Device(Device&&) noexcept;
 
-    Backend& operator=(Backend const&) = delete;
+    Device& operator=(Device const&) = delete;
 
-    Backend& operator=(Backend&&) noexcept = delete;
+    Device& operator=(Device&&) noexcept;
 
     Handle<Texture> create_texture(
         Dimension const dimension,
@@ -294,7 +293,7 @@ public:
 
     void delete_sampler(Handle<Sampler> const& sampler);
 
-    Handle<Shader> create_shader(std::span<char8_t const> const data, ShaderFlags const flags);
+    Handle<Shader> create_shader(std::span<uint8_t const> const data, ShaderFlags const flags);
 
     void delete_shader(Handle<Shader> const& shader);
 
@@ -314,67 +313,37 @@ public:
         DepthStencilDesc const& depth_stencil_desc,
         BlendDesc const& blend_desc,
         Handle<RenderPass> const& render_pass,
-        std::optional<std::u8string> cache_name = std::nullopt
+        Handle<CachePipeline> const& cache_pipeline
     );
 
     void delete_pipeline(Handle<Pipeline> const& pipeline);
 
+    Handle<CommandList> create_command_list(QueueFlags const flags);
+
+    void delete_command_list(Handle<CommandList> const& command_list);
+
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<char8_t const> const data);
+    void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);
 
     void present();
 
     Handle<Texture> acquire_next_texture();
 
-    void recreate_swapchain(uint32_t const width, uint32_t const height, SwapchainDesc const& swapchain_desc = {});
+    void recreate_swapchain(uint32_t const width, uint32_t const height, std::optional<SwapchainDesc> swapchain_desc = std::nullopt);
 
-    FenceResultInfo submit(std::span<Encoder const> const encoders, EncoderFlags const flags);
+    uint64_t submit(std::span<Handle<CommandList>> const command_lists, QueueFlags const flags);
 
-    FenceResultInfo submit_after(std::span<Encoder const> const encoders, FenceResultInfo const& result_info_after, EncoderFlags const flags);
+    uint64_t submit_after(std::span<Handle<CommandList>> const command_lists, uint64_t const fence_value, QueueFlags const flags);
 
-    void wait(FenceResultInfo const& result_info);
+    void wait(uint64_t const fence_value, QueueFlags const flags);
 
-    bool is_completed(FenceResultInfo const& result_info) const;
+    bool is_completed(uint64_t const fence_value, QueueFlags const flags) const;
 
-    void wait_for_idle(EncoderFlags const flags);
+    void wait_for_idle(QueueFlags const flags);
 
-private:
-
-    struct Impl;
-    struct impl_deleter { void operator()(Impl* ptr) const; };
-    std::unique_ptr<Impl, impl_deleter> _impl;
-};
-
-class Encoder {
-private:
-
-    friend class Backend;
-
-public:
-
-    Encoder() = default;
-
-    Encoder(Backend& backend, EncoderFlags const flags);
-
-    ~Encoder();
-
-    Encoder(Encoder const&) = delete;
-
-    Encoder(Encoder&& other) noexcept {
-
-        std::swap(_impl, other._impl);
-    }
-
-    Encoder& operator=(Encoder const&) = delete;
-
-    Encoder& operator=(Encoder&& other) noexcept {
-
-        std::swap(_impl, other._impl);
-        return *this;
-    }
-
-    Encoder& copy_buffer_region(
+    void copy_buffer_region(
+        Handle<CommandList> const& command_list,
         Handle<Buffer> const& dest, 
         uint64_t const dest_offset, 
         Handle<Buffer> const& source, 
@@ -382,34 +351,35 @@ public:
         size_t const size
     );
 
-    Encoder& copy_texture_region();
+    void copy_texture_region();
 
-    Encoder& bind_vertex_buffer(uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
+    void bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
 
-    Encoder& bind_index_buffer(Handle<Buffer> const& buffer, uint64_t const offset);
+    void bind_index_buffer(Handle<CommandList> const& command_list, Handle<Buffer> const& buffer, uint64_t const offset);
 
-    Encoder& barrier(std::variant<Handle<Texture>, Handle<Buffer>> const& target, MemoryState const before, MemoryState const after);
+    void barrier(Handle<CommandList> const& command_list, ResourceHandle const& target, MemoryState const before, MemoryState const after);
 
-    Encoder& bind_pipeline(Handle<Pipeline> const& pipeline);
+    void bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline);
 
-    Encoder& bind_descriptor_set(Handle<DescriptorSet> const& descriptor_set);
+    void bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set);
 
-    Encoder& set_viewport(uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
+    void set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
 
-    Encoder& set_scissor(uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
+    void set_scissor(Handle<CommandList> const& command_list, uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
 
-    Encoder& begin_render_pass(
+    void begin_render_pass(
+        Handle<CommandList> const& command_list,
         Handle<RenderPass> const& render_pass, 
-        std::span<Color> const clear_colors, 
+        std::span<Color const> const clear_colors, 
         float const clear_depth = 0.0f,
         uint8_t const clear_stencil = 0x0
     );
 
-    Encoder& end_render_pass();
+    void end_render_pass(Handle<CommandList> const& command_list);
 
-    Encoder& draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
+    void draw(Handle<CommandList> const& command_list, uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
 
-    Encoder& draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
+    void draw_indexed(Handle<CommandList> const& command_list, uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
 
 private:
 

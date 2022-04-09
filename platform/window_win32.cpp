@@ -13,13 +13,11 @@ using namespace ionengine::platform;
 
 struct Window::Impl {
 
-	WindowLoop* loop;
-
 	HWND hwnd;
-
 	Size _client_size;
+	std::queue<WindowEvent> events;
 
-	void initialize(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop);
+	void initialize(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen);
 
 	void deinitialize();
 
@@ -28,6 +26,8 @@ struct Window::Impl {
     void* native_handle() const;
 
     void label(std::string_view const label);
+
+	std::queue<WindowEvent>& messages();
 
 	static LRESULT wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
@@ -45,9 +45,7 @@ void Window::impl_deleter::operator()(Impl* ptr) const {
 //
 //===========================================================
 
-void Window::Impl::initialize(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop) {
-
-	this->loop = &loop;
+void Window::Impl::initialize(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen) {
 
     WNDCLASS wnd_class{};
 	wnd_class.lpszClassName = TEXT("IONENGINE_WINDOW");
@@ -113,6 +111,19 @@ void Window::Impl::label(std::string_view const label) {
 	SetWindowText(hwnd, reinterpret_cast<const wchar_t*>(out_str.c_str()));
 }
 
+std::queue<WindowEvent>& Window::Impl::messages() {
+	
+	auto msg = MSG {};
+
+	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+	events.emplace(WindowEventType::Updated);
+	return events;
+}
+
 LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	auto window_impl = reinterpret_cast<Impl*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -123,7 +134,7 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
 	switch(msg) {
 		case WM_CLOSE: {
-			window_impl->loop->_events.emplace(WindowEventType::Closed);
+			window_impl->events.emplace(WindowEventType::Closed);
 		} break;
 
 		case WM_SIZE: {
@@ -142,7 +153,7 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
 			window_impl->_client_size = Size { std::max<uint32_t>(1, width - style_width), std::max<uint32_t>(1, height - style_height) };
 
-			window_impl->loop->_events.emplace(WindowEventType::Sized, window_impl->_client_size);
+			window_impl->events.emplace(WindowEventType::Sized, window_impl->_client_size);
 		} break;
 	}
     return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -156,10 +167,10 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 //
 //===========================================================
 
-Window::Window(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen, WindowLoop& loop) :
+Window::Window(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen) :
 	_impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
 
-	_impl->initialize(label, width, height, fullscreen, loop);
+	_impl->initialize(label, width, height, fullscreen);
 }
 
 Window::~Window() {
@@ -180,4 +191,9 @@ void* Window::native_handle() const {
 void Window::label(std::string_view const label) {
 
 	_impl->label(label);
+}
+
+std::queue<WindowEvent>& Window::messages() {
+
+	return _impl->messages();
 }

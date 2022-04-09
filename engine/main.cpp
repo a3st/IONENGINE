@@ -2,47 +2,38 @@
 
 #include <precompiled.h>
 #include <platform/window.h>
-#include <renderer/renderer.h>
-#include <lib/thread_pool.h>
+#include <platform/window_loop.h>
+//#include <renderer/renderer.h>
+//#include <lib/thread_pool.h>
 #include <lib/exception.h>
-#include <scene/scene.h>
-#include <scene/transform_node.h>
 
-#include <engine/sponza.h>
+//#include <engine/sponza.h>
 
 using namespace ionengine;
 
 int main(int* argc, char** agrv) {
 
-    lib::ThreadPool thread_pool(3);
+    //lib::ThreadPool thread_pool(3);
     
     try {
         platform::WindowLoop loop;
-        platform::Window window("IONENGINE", 800, 600, false, loop);
-
-#ifdef IONENGINE_RENDERER_BACKEND_D3D12
-        std::filesystem::path const backend_cache_path = "cache/shader_cache_d3d12.payload";
-#endif
+        platform::Window window("IONENGINE", 800, 600, false);
     
-        renderer::Renderer renderer(
+        /*renderer::Renderer renderer(
             0, 
             renderer::backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 },
             backend_cache_path,
             thread_pool
-        );
-
-        window.label("Sponza Test");
-        project::Sponza sponza;
-
-        sponza.scene().update_transform(thread_pool);
+        );*/
     
         loop.run(
+            window,
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
                 flow = platform::WindowEventFlow::Poll;
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: {
-                        renderer.render(sponza.scene());
+                        //renderer.render(sponza.scene());
                     } break;
                 }
             }
@@ -55,6 +46,6 @@ int main(int* argc, char** agrv) {
 
     std::cout << "[Debug] Main: Exit" << std::endl;
 
-    thread_pool.join();
+    //thread_pool.join();
     return EXIT_SUCCESS;
 }
