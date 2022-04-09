@@ -16,7 +16,6 @@ struct RenderPass;
 struct Sampler;
 struct DescriptorLayout;
 struct DescriptorSet;
-struct FenceResult;
 struct CachePipeline;
 struct CommandList;
 

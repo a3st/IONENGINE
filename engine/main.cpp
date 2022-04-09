@@ -3,8 +3,8 @@
 #include <precompiled.h>
 #include <platform/window.h>
 #include <platform/window_loop.h>
-//#include <renderer/renderer.h>
-//#include <lib/thread_pool.h>
+#include <renderer/context.h>
+#include <renderer/mesh_renderer.h>
 #include <lib/exception.h>
 
 //#include <engine/sponza.h>
@@ -14,18 +14,14 @@ using namespace ionengine;
 int main(int* argc, char** agrv) {
 
     //lib::ThreadPool thread_pool(3);
-    
+       
     try {
         platform::WindowLoop loop;
         platform::Window window("IONENGINE", 800, 600, false);
-    
-        /*renderer::Renderer renderer(
-            0, 
-            renderer::backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 },
-            backend_cache_path,
-            thread_pool
-        );*/
-    
+
+        renderer::Context context(window, 2);
+        renderer::MeshRenderer mesh_renderer(context);
+
         loop.run(
             window,
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
@@ -33,7 +29,7 @@ int main(int* argc, char** agrv) {
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: {
-                        //renderer.render(sponza.scene());
+                        context.render();
                     } break;
                 }
             }

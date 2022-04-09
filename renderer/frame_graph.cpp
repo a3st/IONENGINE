@@ -3,87 +3,68 @@
 #include <precompiled.h>
 #include <renderer/frame_graph.h>
 
-using ionengine::Handle;
 using namespace ionengine::renderer;
 
-FrameGraph& FrameGraph::attachment(AttachmentId const id, backend::Format const format, uint32_t const width, uint32_t const height, backend::TextureFlags const flags) {
+Attachment& FrameGraph::add_attachment(AttachmentDesc const& attachment_desc) {
 
-    auto attachment = FrameGraph::InternalAttachment {
-        format,
-        width,
-        height,
-        flags,
-        INVALID_HANDLE(backend::Texture)
-    };
-    _attachments[{ id, 0 }] = attachment;
-    return *this;
+    _attachment_barriers[static_cast<uint32_t>(_attachments.size())].state = backend::MemoryState::Common;
+    _attachments.push_back(std::make_unique<Attachment>(attachment_desc));
+    return *_attachments.back().get();
 }
 
-FrameGraph& FrameGraph::external_attachment(AttachmentId const id, backend::Format const format, backend::MemoryState const before, backend::MemoryState const after) {
+Attachment& FrameGraph::add_attachment(std::string_view const name, backend::MemoryState const before, backend::MemoryState const after) {
 
-    auto attachment = FrameGraph::ExternalAttachment {
-        format,
-        before,
-        after,
-        INVALID_HANDLE(backend::Texture)
-    };
-    _attachments[{ id, 0 }] = attachment;
-    return *this;
+    _attachment_barriers[static_cast<uint32_t>(_attachments.size())].state = before;
+    _attachments.push_back(std::make_unique<Attachment>(name, before, after));
+    return *_attachments.back().get();
 }
 
-FrameGraph& FrameGraph::render_pass(RenderPassId const id, RenderPassDesc const& render_pass_desc, RenderPassFunc const& func) {
+RenderPass& FrameGraph::add_pass(RenderPassDesc const& render_pass_desc, RenderPassFunc const& func) {
 
-    auto render_pass = FrameGraph::RenderPass {
-        render_pass_desc,
-        INVALID_HANDLE(backend::RenderPass),
-        func
-    };
-    _render_passes[{ id, 0 }] = render_pass;
-    _ops.emplace_back(OpType::RenderPass, id);
-    return *this;
+    _ops.emplace_back(OpType::RenderPass, _render_passes.size());
+    _render_passes.push_back(std::make_unique<RenderPass>(render_pass_desc, func));
+    return *_render_passes.back().get();
 }
 
-void FrameGraph::build(backend::Backend& backend, uint32_t const frame_count) {
+void FrameGraph::build(backend::Device& device, uint32_t const frame_count) {
 
     _frame_count = frame_count;
 
-    for(uint32_t i = 1; i < frame_count; ++i) {
+    for(size_t i = 0; i < _attachments.size(); ++i) {
+        _attachments[i]->_attachments.resize(frame_count);
 
-        for(auto& [key, value] : _attachments) {
-            _attachments[{ key.first, i }] = _attachments[{ key.first, 0 }];
-        }
+        for(uint32_t j = 0; i < frame_count; ++j) {
 
-        for(auto& [key, value] : _render_passes) {
-            _render_passes[{ key.first, i }] = _render_passes[{ key.first, 0 }];
-        }
-
-        for(auto& [key, value] : _render_pass_contexts) {
-            _render_pass_contexts[{ key.first, i }] = _render_pass_contexts[{ key.first, 0 }];
+            if(_attachments[i]->is_persistent()) {
+                _attachments[i]->_attachments[j] = backend::InvalidHandle<backend::Texture>();
+            } else {
+                _attachments[i]->_attachments[j] = device.create_texture(
+                    backend::Dimension::_2D, 
+                    _attachments[i]->_width, 
+                    _attachments[i]->_height, 
+                    1, 
+                    1, 
+                    _attachments[i]->_format,
+                    _attachments[i]->_flags
+                );
+            }
         }
     }
 
-    for(auto& [key, value] : _attachments) {
+    for(auto& op : _ops) {
 
-        auto attachment_visitor = make_visitor(
-            [&](ExternalAttachment& attachment) {
-                attachment.target = INVALID_HANDLE(backend::Texture);
-                _memory_states[key.first].first = attachment.before;
-            },
-            [&](InternalAttachment& attachment) {
-                attachment.target = backend.create_texture(
-                    backend::Dimension::_2D, 
-                    attachment.width, 
-                    attachment.height, 
-                    1, 
-                    1, 
-                    attachment.format,
-                    attachment.flags
-                );
-                _memory_states[key.first].first = backend::MemoryState::Common;
-            }
-        );
+        switch(op.op_type) {
 
-        std::visit(attachment_visitor, value);
+            case OpType::RenderPass: {
+
+
+
+            } break;
+
+            case OpType::ComputePass: {
+
+            } break;
+        }
     }
 
     for(uint32_t i = 0; i < frame_count; ++i) {

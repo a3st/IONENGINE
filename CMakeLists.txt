@@ -44,8 +44,10 @@ add_executable(Runtime-Win32
     renderer/backend/backend_d3d12.cpp
 
     # Renderer
+    renderer/context.cpp
+    renderer/mesh_renderer.cpp
     #renderer/renderer.cpp
-    #renderer/frame_graph.cpp
+    renderer/frame_graph.cpp
     renderer/color.cpp
     #renderer/shader.cpp
     #renderer/cache/vertex.cpp
