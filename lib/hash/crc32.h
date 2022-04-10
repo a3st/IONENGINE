@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine {
+namespace ionengine::lib::hash {
 
 namespace detail {
 
@@ -77,11 +77,6 @@ inline constexpr uint32_t crc32(const char * str, size_t idx) {
 inline constexpr uint32_t ctcrc32(const char* str, size_t len) {
 
     return detail::crc32(str, len) ^ 0xFFFFFFFF;
-}
-
-inline uint32_t constexpr operator "" _hash(const char* str, size_t len) {
-
-    return ctcrc32(str, len);
 }
 
 }

@@ -4,6 +4,7 @@
 
 #include <renderer/backend/backend.h>
 #include <renderer/color.h>
+#include <lib/hash/crc32.h>
 
 namespace ionengine {
 
@@ -26,6 +27,8 @@ struct AttachmentDesc {
     backend::TextureFlags flags;
 };
 
+class RenderPass;
+
 class Attachment {
 
     friend class FrameGraph;
@@ -38,6 +41,9 @@ public:
         _format = attachment_desc.format;
         _width = attachment_desc.width;
         _height = attachment_desc.height;
+        _is_persistent = false;
+
+        _hash = lib::hash::ctcrc32(_name.data(), _name.size());
     }
 
     Attachment(std::string_view const name, backend::MemoryState const before, backend::MemoryState const after) {
@@ -45,11 +51,18 @@ public:
         _name = name;
         _before = before;
         _after = after;
+        _is_persistent = true;
+
+        _hash = lib::hash::ctcrc32(_name.data(), _name.size());
     }
 
-    backend::Handle<backend::Texture> attachment(uint32_t const index) const;
-
     bool is_persistent() const { return _is_persistent; }
+
+    backend::Handle<backend::Texture> attachment(uint32_t const frame_index) const { return _attachments.at(frame_index); }
+
+    void attachment(uint32_t const frame_index, backend::Handle<backend::Texture> const& texture) { _attachments[frame_index] = texture; }
+
+    uint32_t hash() const { return _hash; }
 
 private:
 
@@ -60,8 +73,10 @@ private:
     backend::TextureFlags _flags;
     backend::MemoryState _before;
     backend::MemoryState _after;
-    std::vector<backend::Handle<backend::Texture>> _attachments;
     bool _is_persistent{false};
+    std::vector<backend::Handle<backend::Texture>> _attachments;
+    std::vector<RenderPass*> _render_passes;
+    uint32_t _hash;
 };
 
 struct CreateColorInfo {
@@ -81,9 +96,9 @@ struct RenderPassDesc {
     std::string name;
     uint32_t width;
     uint32_t height;
-    std::optional<std::span<CreateColorInfo const>> color_infos;
+    std::span<CreateColorInfo const> color_infos;
     std::optional<CreateDepthStencilInfo> depth_stencil_info;
-    std::optional<std::span<Attachment const>> inputs;
+    std::span<Attachment const> inputs;
 
     RenderPassDesc& set_name(std::string const& _name) {
 
@@ -118,6 +133,9 @@ struct RenderPassDesc {
 };
 
 class RenderPassContext {
+
+    friend class FrameGraph;
+
 public:
 
     RenderPassContext() = default;
@@ -133,8 +151,6 @@ public:
     uint32_t frame_index() const { return _frame_index; }
 
 private:
-
-    friend class FrameGraph;
 
     std::span<Attachment const> _attachments;
     
@@ -158,10 +174,29 @@ public:
         _name = render_pass_desc.name;
         _width = render_pass_desc.width;
         _height = render_pass_desc.height;
-        _color_infos = render_pass_desc.color_infos;
-        _depth_stencil_info = render_pass_desc.depth_stencil_info;
-        _inputs = render_pass_desc.inputs;
+
+        if(!render_pass_desc.color_infos.empty()) {
+            for(auto& color_info : render_pass_desc.color_infos) {
+                _color_clears.emplace_back(color_info.clear_color);
+                _color_attachments.emplace_back(color_info.attachment);
+                _color_ops.emplace_back(color_info.load_op);
+            }
+        }
+
+        if(render_pass_desc.depth_stencil_info.has_value()) {
+            _depth_stencil_clear = { render_pass_desc.depth_stencil_info.value().clear_depth, render_pass_desc.depth_stencil_info.value().clear_stencil };
+            _depth_stencil_attachment = render_pass_desc.depth_stencil_info.value().attachment;
+            _depth_stencil_op = render_pass_desc.depth_stencil_info.value().load_op;
+        }
+
+        if(!render_pass_desc.inputs.empty()) {
+            _input_attachments.resize(render_pass_desc.inputs.size());
+            std::memcpy(_input_attachments.data(), render_pass_desc.inputs.data(), render_pass_desc.inputs.size_bytes());
+        }
+
         _func = func;
+
+        _hash = lib::hash::ctcrc32(_name.data(), _name.size());
     }
 
     void operator()(RenderPassContext const& context) { _func(context); }
@@ -172,17 +207,24 @@ public:
 
     void render_pass(uint32_t const frame_index, backend::Handle<backend::RenderPass> const& render_pass) { _render_passes[frame_index] = render_pass; }
 
+    uint32_t hash() const { return _hash; }
+
 private:
 
     std::string _name;
     uint32_t _width{0};
     uint32_t _height{0};
-    std::optional<std::span<CreateColorInfo const>> _color_infos{std::nullopt};
-    std::optional<CreateDepthStencilInfo> _depth_stencil_info{std::nullopt};
-    std::optional<std::span<Attachment const>> _inputs{std::nullopt};
+    std::vector<Color> _color_clears;
+    std::vector<Attachment const*> _color_attachments;
+    std::vector<backend::RenderPassLoadOp> _color_ops;
+    std::pair<float, uint8_t> _depth_stencil_clear;
+    Attachment* _depth_stencil_attachment;
+    backend::RenderPassLoadOp _depth_stencil_op;
+    std::vector<Attachment const*> _input_attachments;
     RenderPassFunc _func;
     std::vector<backend::Handle<backend::RenderPass>> _render_passes;
     bool _is_compiled{false};
+    uint32_t _hash;
 };
 
 /*
@@ -221,7 +263,7 @@ public:
     
     // Pass& add_pass(ComputePassDesc const& compute_pass_desc, ComputePassFunc const& func);
     
-    void bind_attachment(Attachment& attachment, backend::Handle<backend::Texture> const& target);
+    void bind_attachment(Attachment& attachment, backend::Handle<backend::Texture> const& texture);
 
     void build(backend::Device& device, uint32_t const frame_count);
     
@@ -242,9 +284,6 @@ private:
     std::unordered_map<uint32_t, MemoryBarrier> _attachment_barriers;
     std::unordered_map<uint32_t, MemoryBarrier> _buffer_barriers;
 
-    std::unordered_map<uint32_t, std::unordered_set<uint32_t>> _external_attachments;
-    std::unordered_set<uint32_t> _external_passes;
-
     enum class OpType : uint8_t {
         RenderPass,
         ComputePass
@@ -260,7 +299,7 @@ private:
     uint32_t _frame_index{0};
     uint32_t _frame_count{0};
 
-    // Handle<backend::RenderPass> create_render_pass(backend::Backend& backend, uint32_t const frame_index, RenderPassDesc const& desc);
+    void compile_render_pass(backend::Device& device, RenderPass& render_pass, uint32_t const frame_index);
 };
 
 }

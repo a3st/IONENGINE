@@ -21,7 +21,7 @@ Attachment& FrameGraph::add_attachment(std::string_view const name, backend::Mem
 
 RenderPass& FrameGraph::add_pass(RenderPassDesc const& render_pass_desc, RenderPassFunc const& func) {
 
-    _ops.emplace_back(OpType::RenderPass, _render_passes.size());
+    _ops.emplace_back(OpType::RenderPass, static_cast<uint32_t>(_render_passes.size()));
     _render_passes.push_back(std::make_unique<RenderPass>(render_pass_desc, func));
     return *_render_passes.back().get();
 }
@@ -33,7 +33,7 @@ void FrameGraph::build(backend::Device& device, uint32_t const frame_count) {
     for(size_t i = 0; i < _attachments.size(); ++i) {
         _attachments[i]->_attachments.resize(frame_count);
 
-        for(uint32_t j = 0; i < frame_count; ++j) {
+        for(uint32_t j = 0; j < frame_count; ++j) {
 
             if(_attachments[i]->is_persistent()) {
                 _attachments[i]->_attachments[j] = backend::InvalidHandle<backend::Texture>();
@@ -54,10 +54,51 @@ void FrameGraph::build(backend::Device& device, uint32_t const frame_count) {
     for(auto& op : _ops) {
 
         switch(op.op_type) {
-
             case OpType::RenderPass: {
+                auto& render_pass = _render_passes[op.index];
 
+                bool is_external_render_pass = false;
 
+                for(auto& attachment : render_pass->_color_attachments) {
+                    if(attachment->is_persistent()) {
+                        is_external_render_pass = true;
+                        break;
+                    }
+
+                    if(_attachment_barriers[attachment->hash()].state != backend::MemoryState::RenderTarget) {
+                        _attachment_barriers[attachment->hash()].state = backend::MemoryState::RenderTarget;
+                        _attachment_barriers[attachment->hash()].switch_index.emplace(render_pass->hash());
+                    }
+                }
+
+                if(render_pass->_depth_stencil_attachment) {
+                    if(render_pass->_depth_stencil_attachment->is_persistent()) {
+                        is_external_render_pass = true;
+                    }
+
+                    if(_attachment_barriers[render_pass->_depth_stencil_attachment->hash()].state != backend::MemoryState::DepthWrite) {
+                        _attachment_barriers[render_pass->_depth_stencil_attachment->hash()].state = backend::MemoryState::DepthWrite;
+                        _attachment_barriers[render_pass->_depth_stencil_attachment->hash()].switch_index.emplace(render_pass->hash());
+                    }
+                }
+
+                for(auto& attachment : render_pass->_input_attachments) {
+                    if(attachment->is_persistent()) {
+                        is_external_render_pass = true;
+                        break;
+                    }
+
+                    if(_attachment_barriers[attachment->hash()].state != backend::MemoryState::ShaderRead) {
+                        _attachment_barriers[attachment->hash()].state = backend::MemoryState::ShaderRead;
+                        _attachment_barriers[attachment->hash()].switch_index.emplace(render_pass->hash());
+                    }
+                }
+
+                if(!is_external_render_pass) {
+                    for(uint32_t i = 0; i < frame_count; ++i) {
+                        compile_render_pass(device, *render_pass, i);
+                    }
+                }
 
             } break;
 
@@ -67,271 +108,117 @@ void FrameGraph::build(backend::Device& device, uint32_t const frame_count) {
         }
     }
 
-    for(uint32_t i = 0; i < frame_count; ++i) {
-        for(auto& op : _ops) {
-            switch(op.first) {
-                case FrameGraph::OpType::RenderPass: {
-                    auto& render_pass = _render_passes[{ op.second, i }];
-                    
-                    bool is_external_render_pass = false;
+    for(size_t i = 0; i < _attachments.size(); ++i) {
+        if(_attachments[i]->is_persistent()) {
+            _attachment_barriers[_attachments[i]->hash()].state = _attachments[i]->_before;
+        } else {
+            _attachment_barriers[_attachments[i]->hash()].state = backend::MemoryState::Common;
+        }
+    }
+}
 
-                    for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
-                        AttachmentId attachment_id = render_pass.desc.color_infos[i].first;
+void FrameGraph::reset(backend::Device& device) {
 
-                        auto attachment_visitor = make_visitor(
-                            [&](ExternalAttachment& attachment) {
-                                is_external_render_pass = true;
-                                _external_attachments[attachment_id].emplace(op.second);
-                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(backend::Texture);
-                            },
-                            [&](InternalAttachment& attachment) {
-                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = attachment.target;
-                            }
-                        );
+    device.wait_for_idle(backend::QueueFlags::Graphics);
 
-                        std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
+    for(auto& render_pass : _render_passes) {
+        for(uint32_t i = 0; i < _frame_count; ++i) {
+            device.delete_render_pass(render_pass->_render_passes[i]);
+        }
+    }
 
-                        if(_memory_states[attachment_id].first != backend::MemoryState::RenderTarget) {
-                            _memory_states[attachment_id].first = backend::MemoryState::RenderTarget;
-                            _memory_states[attachment_id].second.emplace(op.second);
-                        }
-                    }
+    _render_passes.clear();
 
-                    if(render_pass.desc.has_depth_stencil) {
-                        AttachmentId attachment_id = render_pass.desc.depth_stencil_info.first;
-
-                        auto attachment_visitor = make_visitor(
-                            [&](ExternalAttachment& attachment) {
-                                is_external_render_pass = true;
-                                _external_attachments[attachment_id].emplace(op.second);
-                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(backend::Texture);
-                            },
-                            [&](InternalAttachment& attachment) {
-                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = attachment.target;
-                            }
-                        );
-
-                        std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
-
-                        if(_memory_states[attachment_id].first != backend::MemoryState::DepthWrite) {
-                            _memory_states[attachment_id].first = backend::MemoryState::DepthWrite;
-                            _memory_states[attachment_id].second.emplace(op.second);
-                        }
-                    }
-
-                    for(uint32_t i = 0; i < static_cast<uint32_t>(render_pass.desc.inputs.size()); ++i) {
-                        AttachmentId attachment_id = render_pass.desc.inputs[i];
-
-                        auto attachment_visitor = make_visitor(
-                            [&](ExternalAttachment& attachment) {
-                                is_external_render_pass = true;
-                                _external_attachments[attachment_id].emplace(op.second);
-                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = INVALID_HANDLE(backend::Texture);
-                            },
-                            [&](InternalAttachment& attachment) {
-                                _render_pass_contexts[{ op.second, i }]._attachments[attachment_id] = attachment.target;
-                            }
-                        );
-
-                        std::visit(attachment_visitor, _attachments[{ attachment_id, i }]);
-
-                        if(_memory_states[attachment_id].first != backend::MemoryState::ShaderRead) {
-                            _memory_states[attachment_id].first = backend::MemoryState::ShaderRead;
-                            _memory_states[attachment_id].second.emplace(op.second);
-                        }
-                    }
-
-                    if(is_external_render_pass) {
-                        _external_render_passes.emplace(op.second);
-                    } else {
-                        render_pass.render_pass = create_render_pass(backend, i, render_pass.desc);
-                    }
-                } break;
-                case FrameGraph::OpType::ComputePass: {
-
-
-                } break; 
+    for(auto& attachment : _attachments) {
+        for(uint32_t i = 0; i < _frame_count; ++i) {
+            if(!attachment->is_persistent()) {
+                device.delete_texture(attachment->_attachments[i]);
             }
         }
     }
 
-    for(auto& [key, value] : _attachments) {
-
-        auto attachment_visitor = make_visitor(
-            [&](ExternalAttachment& attachment) {
-                _memory_states[key.first].first = attachment.before;
-            },
-            [&](InternalAttachment& attachment) {
-                _memory_states[key.first].first = backend::MemoryState::Common;
-            }
-        );
-
-        std::visit(attachment_visitor, value);
-    }
-}
-
-void FrameGraph::reset(backend::Backend& backend) {
-
-    backend.wait_for_idle(backend::EncoderFlags::Graphics);
-
-    for(auto& [key, value] : _render_passes) {
-        backend.delete_render_pass(value.render_pass);
-    }
-
-    _render_passes.clear();
-    _render_pass_contexts.clear();
-
-    for(auto& [key, value] : _attachments) {
-
-        auto attachment_visitor = make_visitor(
-            [&](ExternalAttachment& attachment) {
-                
-            },
-            [&](InternalAttachment& attachment) {
-                backend.delete_texture(attachment.target);
-            }
-        );
-
-        std::visit(attachment_visitor, value);
-    }
-
     _attachments.clear();
-
-    _external_render_passes.clear();
-    _external_attachments.clear();
+    _attachment_barriers.clear();
 
     _ops.clear();
 }
 
-backend::FenceResultInfo FrameGraph::execute(backend::Backend& backend, backend::Encoder& encoder) {
+uint64_t FrameGraph::execute(backend::Device& device, backend::Handle<backend::CommandList> const& command_list) {
 
     uint32_t pass_index = 0;
 
     for(auto& op : _ops) {
-        switch(op.first) {
+        switch(op.op_type) {
             case OpType::RenderPass: {
 
-                auto& render_pass = _render_passes[{ op.second, _frame_index }];
+                auto& render_pass = _render_passes[op.index];
 
-                // Build external render pass
-                if(_external_render_passes.find(op.second) != _external_render_passes.end()) {
+                if(!render_pass->is_compiled()) {
 
-                    if(!render_pass.is_compiled) {
-
-                        if(render_pass.render_pass != INVALID_HANDLE(backend::RenderPass)) {
-                            backend.delete_render_pass(render_pass.render_pass);
-                        }
-                        
-                        render_pass.render_pass = create_render_pass(backend, _frame_index, render_pass.desc);
-
-                        for(auto& [key, value] : _render_pass_contexts[{ op.second, _frame_index }]._attachments) {
-
-                            auto attachment_visitor = make_visitor(
-                                [&](ExternalAttachment& attachment) {
-                                    value = attachment.target;
-                                },
-                                [&](InternalAttachment& attachment) {
-                                    value = attachment.target;
-                                }
-                            );
-
-                            std::visit(attachment_visitor, _attachments[{ key, _frame_index }]);
-                        }
-
-                        render_pass.is_compiled = true;
+                    if(render_pass->_render_passes[_frame_index] != backend::InvalidHandle<backend::RenderPass>()) {
+                        device.delete_render_pass(render_pass->_render_passes[_frame_index]);
                     }
+
+                    compile_render_pass(device, *render_pass, _frame_index);
+
+                    render_pass->_is_compiled = true;
                 }
 
-                encoder
-                    .set_viewport(0, 0, render_pass.desc.width, render_pass.desc.height)
-                    .set_scissor(0, 0, render_pass.desc.width, render_pass.desc.height);
+                device.set_viewport(command_list, 0, 0, render_pass->_width, render_pass->_height);
+                device.set_scissor(command_list, 0, 0, render_pass->_width, render_pass->_height);
 
                 // Color Barriers
-                for(uint32_t i = 0; i < render_pass.desc.color_count; ++i) {
+                for(auto& attachment : render_pass->_color_attachments) {
 
-                    AttachmentId attachment_id = render_pass.desc.color_infos[i].first;
-
-                    if(_memory_states[attachment_id].second.find(op.second) != _memory_states[attachment_id].second.end()) {
-
-                        auto attachment_visitor = make_visitor(
-                            [&](ExternalAttachment const& attachment) {
-                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::RenderTarget);
-                                _memory_states[attachment_id].first = backend::MemoryState::RenderTarget;
-                            },
-                            [&](InternalAttachment const& attachment) {
-                                //std::cout << std::format("(frame {}, pass_index {}) resource acquire ({}) before {}, after {}", _flight_frame_index, pass_index, attachment.target.id, (uint32_t)_memory_states[attachment_id].first, (uint32_t)MemoryState::RenderTarget) << std::endl;
-                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::RenderTarget);
-                                _memory_states[attachment_id].first = backend::MemoryState::RenderTarget;
-                            }
-                        );
-
-                        std::visit(attachment_visitor, _attachments.at({ attachment_id, _frame_index }));
+                    if(_attachment_barriers[attachment->hash()].switch_index.find(render_pass->hash()) != _attachment_barriers[attachment->hash()].switch_index.end()) {
+                        device.barrier(command_list, attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::RenderTarget);
+                        _attachment_barriers[attachment->hash()].state = backend::MemoryState::RenderTarget;
                     }
                 }
 
-                // Depth Stencil Barriers
-                AttachmentId attachment_id = render_pass.desc.depth_stencil_info.first;
-                
-                if(_memory_states[attachment_id].second.find(op.second) != _memory_states[attachment_id].second.end()) {
+                // Depth Stencil Barrier
+                {
+                    auto& attachment = render_pass->_depth_stencil_attachment;
 
-                    auto attachment_visitor = make_visitor(
-                        [&](ExternalAttachment& attachment) {
-                            encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::DepthWrite);
-                            _memory_states[attachment_id].first = backend::MemoryState::DepthWrite;
-                        },
-                        [&](InternalAttachment& attachment) {
-                            encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::DepthWrite);
-                            _memory_states[attachment_id].first = backend::MemoryState::DepthWrite;
-                        }
-                    );
-
-                    std::visit(attachment_visitor, _attachments[{ attachment_id, _frame_index }]);
+                    if(_attachment_barriers[attachment->hash()].switch_index.find(render_pass->hash()) != _attachment_barriers[attachment->hash()].switch_index.end()) {
+                        device.barrier(command_list, attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::DepthWrite);
+                        _attachment_barriers[attachment->hash()].state = backend::MemoryState::DepthWrite;
+                    }
                 }
 
                 // Input Barriers
-                for(uint32_t i = 0; i < static_cast<uint32_t>(render_pass.desc.inputs.size()); ++i) {
+                for(auto& attachment : render_pass->_input_attachments) {
 
-                    AttachmentId attachment_id = render_pass.desc.inputs[i];
-
-                    if(_memory_states[attachment_id].second.find(op.second) != _memory_states[attachment_id].second.end()) {
-
-                        auto attachment_visitor = make_visitor(
-                            [&](ExternalAttachment& attachment) {
-                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::ShaderRead);
-                                _memory_states[attachment_id].first = backend::MemoryState::ShaderRead;
-                            },
-                            [&](InternalAttachment& attachment) {
-                                encoder.barrier(attachment.target, _memory_states[attachment_id].first, backend::MemoryState::ShaderRead);
-                                _memory_states[attachment_id].first = backend::MemoryState::ShaderRead;
-                            }
-                        );
-
-                        std::visit(attachment_visitor, _attachments[{ attachment_id, _frame_index }]);
+                    if(_attachment_barriers[attachment->hash()].switch_index.find(render_pass->hash()) != _attachment_barriers[attachment->hash()].switch_index.end()) {
+                        device.barrier(command_list, attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::ShaderRead);
+                        _attachment_barriers[attachment->hash()].state = backend::MemoryState::ShaderRead;
                     }
                 }
 
-                encoder.begin_render_pass(
-                    render_pass.render_pass, 
-                    std::span<Color>(render_pass.desc.clear_colors.data(), render_pass.desc.color_count), 
-                    render_pass.desc.clear_depth,
-                    render_pass.desc.clear_stencil
+                device.begin_render_pass(
+                    command_list,
+                    render_pass->_render_passes[_frame_index], 
+                    render_pass->_color_clears, 
+                    render_pass->_depth_stencil_clear.first,
+                    render_pass->_depth_stencil_clear.second
                 );
 
-                auto& context = _render_pass_contexts[{ op.second, _frame_index }];
-                context._render_pass = render_pass.render_pass;
-                context._encoder = &encoder;
+                RenderPassContext context;
+                context._render_pass = render_pass->_render_passes[_frame_index];
+                context._command_list = command_list;
                 context._pass_index = pass_index;
                 context._frame_index = _frame_index;
+                context._attachments = std::span<Attachment const>(*render_pass->_input_attachments.data(), render_pass->_input_attachments.size());
 
-                render_pass.func(context);
+                (*render_pass)(context);
 
-                encoder.end_render_pass();
+                device.end_render_pass(command_list);
 
                 ++pass_index;
             } break;
         }
     }
-
+/*
     // Final Barriers
     for(auto& [key, value] : _attachments) {
 
@@ -358,75 +245,64 @@ backend::FenceResultInfo FrameGraph::execute(backend::Backend& backend, backend:
 
     backend::FenceResultInfo result_info = backend.submit(std::span<backend::Encoder const>(&encoder, 1), backend::EncoderFlags::Graphics);
     backend.present();
-
+*/
     _frame_index = (_frame_index + 1) % _frame_count;
-
-    return result_info;
+    return 0;
 }
 
-FrameGraph& FrameGraph::bind_external_attachment(AttachmentId const id, Handle<backend::Texture> const& target) {
+void FrameGraph::bind_attachment(Attachment& attachment, backend::Handle<backend::Texture> const& texture) {
 
-    auto& attachment = std::get<ExternalAttachment>(_attachments[{id, _frame_index}]);
-    if(attachment.target != target) {
-        attachment.target = target;
-        for(auto& _id : _external_attachments[id]) {
-            _render_passes[{ _id, _frame_index }].is_compiled = false;
+    assert(attachment.is_persistent() && "attachment is not persistent");
+
+    if(attachment._attachments[_frame_index] != texture) {
+
+        attachment._attachments[_frame_index] = texture;
+
+        for(auto& render_pass : attachment._render_passes) {
+            render_pass->_is_compiled = false;
         }
     }
-    return *this;
 }
 
-Handle<backend::RenderPass> FrameGraph::create_render_pass(backend::Backend& backend, uint32_t const frame_index, RenderPassDesc const& desc) {
+void FrameGraph::compile_render_pass(backend::Device& device, RenderPass& render_pass, uint32_t const frame_index) {
 
-    std::array<Handle<backend::Texture>, 8> colors;
+    std::array<backend::Handle<backend::Texture>, 8> colors;
     std::array<backend::RenderPassColorDesc, 8> color_descs;
+    backend::Handle<backend::Texture> depth_stencil;
 
-    for(uint32_t i = 0; i < desc.color_count; ++i) {
-
-        auto attachment_visitor = make_visitor(
-            [&](ExternalAttachment& attachment) {
-                colors[i] = attachment.target;
-            },
-            [&](InternalAttachment& attachment) {
-                colors[i] = attachment.target;
-            }
-        );
-
-        std::visit(attachment_visitor, _attachments[{ desc.color_infos[i].first, frame_index }]);
+    for(size_t i = 0; i < render_pass._color_attachments.size(); ++i) {
+        colors[i] = render_pass._color_attachments[i]->_attachments[frame_index];
 
         auto color_desc = backend::RenderPassColorDesc {};
-        color_desc.load_op = desc.color_infos[i].second;
+        color_desc.load_op = render_pass._color_ops[i];
         color_desc.store_op = backend::RenderPassStoreOp::Store;
 
         color_descs[i] = color_desc;
     }
 
-    Handle<backend::Texture> depth_stencil;
-    auto depth_stencil_desc = backend::RenderPassDepthStencilDesc {};
+    if(!render_pass._depth_stencil_attachment) {
 
-    if(desc.has_depth_stencil) {
+        depth_stencil = render_pass._depth_stencil_attachment->_attachments[frame_index];
 
-        auto attachment_visitor = make_visitor(
-            [&](ExternalAttachment& attachment) {
-                depth_stencil = attachment.target;
-            },
-            [&](InternalAttachment& attachment) {
-                depth_stencil = attachment.target;
-            }
-        );
-
-        std::visit(attachment_visitor, _attachments[{ desc.depth_stencil_info.first, frame_index }]);
-
-        depth_stencil_desc.depth_load_op = desc.depth_stencil_info.second;
+        auto depth_stencil_desc = backend::RenderPassDepthStencilDesc {};
+        depth_stencil_desc.depth_load_op = render_pass._depth_stencil_op;
         depth_stencil_desc.depth_store_op = backend::RenderPassStoreOp::Store;
-        depth_stencil_desc.stencil_load_op = desc.depth_stencil_info.second;
+        depth_stencil_desc.stencil_load_op = render_pass._depth_stencil_op;
         depth_stencil_desc.stencil_store_op = backend::RenderPassStoreOp::Store;
-    }
 
-    return backend.create_render_pass(
-        std::span<Handle<backend::Texture>>(colors.data(), desc.color_count),
-        std::span<backend::RenderPassColorDesc>(color_descs.data(), desc.color_count),
-        depth_stencil,
-        depth_stencil_desc
-    );
+        device.create_render_pass(
+            std::span<backend::Handle<backend::Texture>>(colors.data(), render_pass._color_attachments.size()),
+            std::span<backend::RenderPassColorDesc>(color_descs.data(), render_pass._color_attachments.size()),
+            depth_stencil,
+            depth_stencil_desc
+        );
+    } else {
+
+        device.create_render_pass(
+            std::span<backend::Handle<backend::Texture>>(colors.data(), render_pass._color_attachments.size()),
+            std::span<backend::RenderPassColorDesc>(color_descs.data(), render_pass._color_attachments.size()),
+            backend::InvalidHandle<backend::Texture>(),
+            {}
+        );
+    }
 }
