@@ -6,17 +6,6 @@
 #include <renderer/color.h>
 #include <lib/hash/crc32.h>
 
-namespace ionengine {
-
-struct pair_hash {
-    template<typename TypeFirst, typename TypeSecond> 
-    size_t operator()(std::pair<TypeFirst, TypeSecond> const& other) const {
-        return std::hash<TypeFirst>()(other.first) ^ std::hash<TypeSecond>()(other.second);
-    }
-};
-
-}
-
 namespace ionengine::renderer {
 
 struct AttachmentDesc {
@@ -140,15 +129,13 @@ public:
 
     RenderPassContext() = default;
 
-    backend::Handle<backend::Texture> attachment(uint32_t const index) { return _attachments[index].attachment(_frame_index); }
+    backend::Handle<backend::Texture> attachment(uint32_t const index) const { return _attachments[index].attachment(_frame_index); }
 
     backend::Handle<backend::RenderPass> render_pass() const { return _render_pass; }
     
     backend::Handle<backend::CommandList> command_list() const { return _command_list; }
 
     uint32_t pass_index() const { return _pass_index; }
-
-    uint32_t frame_index() const { return _frame_index; }
 
 private:
 

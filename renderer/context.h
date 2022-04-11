@@ -28,6 +28,8 @@ public:
 
     FrameGraph& frame_graph();
 
+    void build_frame_graph();
+
 private:
 
     backend::Device _device;

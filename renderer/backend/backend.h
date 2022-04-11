@@ -331,9 +331,9 @@ public:
 
     void recreate_swapchain(uint32_t const width, uint32_t const height, std::optional<SwapchainDesc> swapchain_desc = std::nullopt);
 
-    uint64_t submit(std::span<Handle<CommandList>> const command_lists, QueueFlags const flags);
+    uint64_t submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags);
 
-    uint64_t submit_after(std::span<Handle<CommandList>> const command_lists, uint64_t const fence_value, QueueFlags const flags);
+    uint64_t submit_after(std::span<Handle<CommandList> const> const command_lists, uint64_t const fence_value, QueueFlags const flags);
 
     void wait(uint64_t const fence_value, QueueFlags const flags);
 

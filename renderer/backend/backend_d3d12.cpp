@@ -1691,12 +1691,12 @@ void Device::recreate_swapchain(uint32_t const width, uint32_t const height, std
     _impl->recreate_swapchain(width, height, swapchain_desc);
 }
 
-uint64_t Device::submit(std::span<Handle<CommandList>> const command_lists, QueueFlags const flags) {
+uint64_t Device::submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags) {
 
     return _impl->submit(command_lists, flags);
 }
 
-uint64_t Device::submit_after(std::span<Handle<CommandList>> const command_lists, uint64_t const fence_result, QueueFlags const flags) {
+uint64_t Device::submit_after(std::span<Handle<CommandList> const> const command_lists, uint64_t const fence_result, QueueFlags const flags) {
     
     return _impl->submit_after(command_lists, fence_result, flags);
 }

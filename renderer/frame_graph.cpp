@@ -160,8 +160,6 @@ uint64_t FrameGraph::execute(backend::Device& device, backend::Handle<backend::C
                     }
 
                     compile_render_pass(device, *render_pass, _frame_index);
-
-                    render_pass->_is_compiled = true;
                 }
 
                 device.set_viewport(command_list, 0, 0, render_pass->_width, render_pass->_height);
@@ -218,36 +216,23 @@ uint64_t FrameGraph::execute(backend::Device& device, backend::Handle<backend::C
             } break;
         }
     }
-/*
-    // Final Barriers
-    for(auto& [key, value] : _attachments) {
 
-        if(key.second != _frame_index) {
-            continue;
+    for(auto& attachment : _attachments) {
+
+        if(attachment->is_persistent()) {
+            device.barrier(command_list, attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, attachment->_after);
+            _attachment_barriers[attachment->hash()].state = attachment->_after;
+        } else {
+            device.barrier(command_list, attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::Common);
+            _attachment_barriers[attachment->hash()].state = backend::MemoryState::Common;
         }
-
-        assert(_memory_states[key.first].first != backend::MemoryState::Common && "error during framegraph execution. there are unused resources");
-        
-        auto attachment_visitor = make_visitor(
-            [&](ExternalAttachment& attachment) {
-                encoder.barrier(attachment.target, _memory_states[key.first].first, attachment.after);
-                _memory_states[key.first].first = attachment.after;
-            },
-            [&](InternalAttachment& attachment) {
-                //std::cout << std::format("(frame {}) resource release ({}) before {}, after {}", _flight_frame_index, attachment.target.id, (uint32_t)_memory_states[key.first].first, (uint32_t)MemoryState::Common) << std::endl;
-                encoder.barrier(attachment.target, _memory_states[key.first].first, backend::MemoryState::Common);
-                _memory_states[key.first].first = backend::MemoryState::Common;
-            }
-        );
-
-        std::visit(attachment_visitor, value);
     }
 
-    backend::FenceResultInfo result_info = backend.submit(std::span<backend::Encoder const>(&encoder, 1), backend::EncoderFlags::Graphics);
-    backend.present();
-*/
+    uint64_t fence_value = device.submit(std::span<backend::Handle<backend::CommandList> const>(&command_list, 1), backend::QueueFlags::Graphics);
+    device.present();
+
     _frame_index = (_frame_index + 1) % _frame_count;
-    return 0;
+    return fence_value;
 }
 
 void FrameGraph::bind_attachment(Attachment& attachment, backend::Handle<backend::Texture> const& texture) {
@@ -305,4 +290,6 @@ void FrameGraph::compile_render_pass(backend::Device& device, RenderPass& render
             {}
         );
     }
+
+    render_pass._is_compiled = true;
 }
