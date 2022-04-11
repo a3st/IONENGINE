@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -210,32 +210,104 @@ private:
     std::vector<Attachment const*> _input_attachments;
     RenderPassFunc _func;
     std::vector<backend::Handle<backend::RenderPass>> _render_passes;
+    std::vector<backend::Handle<backend::CommandList>> _command_lists;
     bool _is_compiled{false};
     uint32_t _hash;
 };
 
-/*
+struct BufferDesc {
+    std::string name;
+    size_t size;
+    backend::BufferFlags flags;
+};
+
+class ComputePass;
+
+class Buffer {
+public:
+
+    Buffer(BufferDesc const& buffer_desc) {
+
+    }
+
+    bool is_persistent() const { return _is_persistent; }
+
+    backend::Handle<backend::Buffer> buffer(uint32_t const frame_index) const { return _buffers.at(frame_index); }
+
+    void buffer(uint32_t const frame_index, backend::Handle<backend::Buffer> const& buffer) { _buffers[frame_index] = buffer; }
+
+    uint32_t hash() const { return _hash; }
+
+private:
+
+    std::string name;
+    size_t size{0};
+    backend::BufferFlags flags;
+    bool _is_persistent{false};
+    std::vector<backend::Handle<backend::Buffer>> _buffers;
+    std::vector<ComputePass*> _compute_passes;
+    uint32_t _hash;
+};
+
 struct ComputePassDesc {
     std::string name;
-    // TODO!
+    std::span<Buffer const> buffers;
+    bool is_async;
 };
 
 class ComputePassContext {
+
+    friend class FrameGraph;
+
 public:
 
     ComputePassContext() = default;
 
-    Handle<backend::Buffer> buffer(BufferId const id) const { return _buffers.find(id)->second; }
+    backend::Handle<backend::Buffer> buffer(uint32_t const index) const { return _buffers[index].buffer(_frame_index); }
+    
+    backend::Handle<backend::CommandList> command_list() const { return _command_list; }
+
+    uint32_t pass_index() const { return _pass_index; }
 
 private:
 
-    friend class FrameGraph;
+    std::span<Buffer const> _buffers;
+    
+    backend::Handle<backend::CommandList> _command_list;
 
-    std::unordered_map<BufferId, backend::Handle<backend::Buffer>> _buffers;
+    uint32_t _pass_index{0};
+    uint32_t _frame_index{0};
 };
 
 using ComputePassFunc = std::function<void(ComputePassContext const&)>;
-*/
+
+class ComputePass {
+
+    friend class FrameGraph;
+
+public:
+
+    ComputePass(ComputePassDesc const& compute_pass_desc, ComputePassFunc const& func) {
+
+        _name = compute_pass_desc.name;
+
+        _func = func;
+
+        _hash = lib::hash::ctcrc32(_name.data(), _name.size());
+    }
+
+    void operator()(ComputePassContext const& context) { _func(context); }
+
+    uint32_t hash() const { return _hash; }
+
+private:
+
+    std::string _name;
+    std::vector<Attachment const*> _input_attachments;
+    ComputePassFunc _func;
+    std::vector<backend::Handle<backend::CommandList>> _command_lists;
+    uint32_t _hash;
+};
 
 class FrameGraph {
 public:
@@ -248,7 +320,7 @@ public:
     
     RenderPass& add_pass(RenderPassDesc const& render_pass_desc, RenderPassFunc const& func);
     
-    // Pass& add_pass(ComputePassDesc const& compute_pass_desc, ComputePassFunc const& func);
+    ComputePass& add_pass(ComputePassDesc const& compute_pass_desc, ComputePassFunc const& func);
     
     void bind_attachment(Attachment& attachment, backend::Handle<backend::Texture> const& texture);
 
@@ -256,7 +328,7 @@ public:
     
     void reset(backend::Device& device);
     
-    uint64_t execute(backend::Device& device, backend::Handle<backend::CommandList> const& command_list);
+    uint64_t execute(backend::Device& device);
 
 private:
 
@@ -265,15 +337,23 @@ private:
         std::unordered_set<uint32_t> switch_index;
     };
 
+    struct SubmitCommandList {
+        std::vector<backend::Handle<backend::CommandList>> command_lists;
+        backend::QueueFlags flags;
+    };
+
     std::vector<std::unique_ptr<Attachment>> _attachments;
     std::vector<std::unique_ptr<RenderPass>> _render_passes;
+    std::vector<std::unique_ptr<ComputePass>> _compute_passes;
+    std::vector<SubmitCommandList> _submit_command_lists;
 
     std::unordered_map<uint32_t, MemoryBarrier> _attachment_barriers;
     std::unordered_map<uint32_t, MemoryBarrier> _buffer_barriers;
 
     enum class OpType : uint8_t {
         RenderPass,
-        ComputePass
+        ComputePass,
+        SubmitCommandList
     };
 
     struct OpData {
@@ -285,6 +365,8 @@ private:
 
     uint32_t _frame_index{0};
     uint32_t _frame_count{0};
+
+    std::vector<backend::Handle<backend::CommandList>> _command_lists;
 
     void compile_render_pass(backend::Device& device, RenderPass& render_pass, uint32_t const frame_index);
 };

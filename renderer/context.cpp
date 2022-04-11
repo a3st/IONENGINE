@@ -23,7 +23,7 @@ FrameGraph& Context::frame_graph() {
 
 void Context::build_frame_graph() {
 
-    Attachment& color_buffer = context.frame_graph().add_attachment(
+    Attachment& color_buffer = _frame_graph.add_attachment(
         AttachmentDesc {
             .name = "color_buffer",
             .format = backend::Format::RGBA8,
@@ -41,7 +41,7 @@ void Context::build_frame_graph() {
         }
     };
 
-    context.frame_graph().add_pass(
+    _frame_graph.add_pass(
         RenderPassDesc {
             .name = "gbuffer_only_color",
             .width = 800,
