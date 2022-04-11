@@ -81,8 +81,9 @@ void FrameGraph::build(backend::Device& device, uint32_t const frame_count) {
                 for(auto& attachment : render_pass->_color_attachments) {
                     if(attachment->is_persistent()) {
                         is_external_render_pass = true;
-                        break;
                     }
+
+                    attachment->_render_passes.emplace_back(render_pass.get());
 
                     if(_attachment_barriers[attachment->hash()].state != backend::MemoryState::RenderTarget) {
                         _attachment_barriers[attachment->hash()].state = backend::MemoryState::RenderTarget;
@@ -95,6 +96,8 @@ void FrameGraph::build(backend::Device& device, uint32_t const frame_count) {
                         is_external_render_pass = true;
                     }
 
+                    render_pass->_depth_stencil_attachment->_render_passes.emplace_back(render_pass.get());
+
                     if(_attachment_barriers[render_pass->_depth_stencil_attachment->hash()].state != backend::MemoryState::DepthWrite) {
                         _attachment_barriers[render_pass->_depth_stencil_attachment->hash()].state = backend::MemoryState::DepthWrite;
                         _attachment_barriers[render_pass->_depth_stencil_attachment->hash()].switch_index.emplace(render_pass->hash());
@@ -104,8 +107,9 @@ void FrameGraph::build(backend::Device& device, uint32_t const frame_count) {
                 for(auto& attachment : render_pass->_input_attachments) {
                     if(attachment->is_persistent()) {
                         is_external_render_pass = true;
-                        break;
                     }
+
+                    attachment->_render_passes.emplace_back(render_pass.get());
 
                     if(_attachment_barriers[attachment->hash()].state != backend::MemoryState::ShaderRead) {
                         _attachment_barriers[attachment->hash()].state = backend::MemoryState::ShaderRead;
@@ -115,13 +119,18 @@ void FrameGraph::build(backend::Device& device, uint32_t const frame_count) {
 
                 for(uint32_t i = 0; i < frame_count; ++i) {
 
+                    render_pass->_render_passes.resize(frame_count);
+                    render_pass->_command_lists.resize(frame_count);
+
                     if(!is_external_render_pass) {
                         compile_render_pass(device, *render_pass, i);
                     }
 
                     if(cur_graphics_command_lists[i] == backend::InvalidHandle<backend::CommandList>()) {
-                        _command_lists.emplace_back(device.create_command_list(backend::QueueFlags::Graphics));
+                        cur_graphics_command_lists[i] = _command_lists.emplace_back(device.create_command_list(backend::QueueFlags::Graphics));
                     }
+
+                    render_pass->_command_lists[i] = cur_graphics_command_lists[i];
                 }
 
                 temp_ops.emplace_back(OpType::RenderPass, op.index);
@@ -212,6 +221,7 @@ uint64_t FrameGraph::execute(backend::Device& device) {
                 }
 
                 // Depth Stencil Barrier
+                if(render_pass->_depth_stencil_attachment)
                 {
                     auto& attachment = render_pass->_depth_stencil_attachment;
 
@@ -243,7 +253,7 @@ uint64_t FrameGraph::execute(backend::Device& device) {
                 context._command_list = render_pass->_command_lists[_frame_index];
                 context._pass_index = pass_index;
                 context._frame_index = _frame_index;
-                context._attachments = std::span<Attachment const>(*render_pass->_input_attachments.data(), render_pass->_input_attachments.size());
+                context._attachments = std::span<Attachment const* const>(render_pass->_input_attachments.data(), render_pass->_input_attachments.size());
 
                 (*render_pass)(context);
 
@@ -306,7 +316,7 @@ void FrameGraph::compile_render_pass(backend::Device& device, RenderPass& render
         color_descs[i] = color_desc;
     }
 
-    if(!render_pass._depth_stencil_attachment) {
+    if(render_pass._depth_stencil_attachment) {
 
         depth_stencil = render_pass._depth_stencil_attachment->_attachments[frame_index];
 
@@ -316,7 +326,7 @@ void FrameGraph::compile_render_pass(backend::Device& device, RenderPass& render
         depth_stencil_desc.stencil_load_op = render_pass._depth_stencil_op;
         depth_stencil_desc.stencil_store_op = backend::RenderPassStoreOp::Store;
 
-        device.create_render_pass(
+        render_pass._render_passes[frame_index] = device.create_render_pass(
             std::span<backend::Handle<backend::Texture>>(colors.data(), render_pass._color_attachments.size()),
             std::span<backend::RenderPassColorDesc>(color_descs.data(), render_pass._color_attachments.size()),
             depth_stencil,
@@ -324,7 +334,7 @@ void FrameGraph::compile_render_pass(backend::Device& device, RenderPass& render
         );
     } else {
 
-        device.create_render_pass(
+        render_pass._render_passes[frame_index] = device.create_render_pass(
             std::span<backend::Handle<backend::Texture>>(colors.data(), render_pass._color_attachments.size()),
             std::span<backend::RenderPassColorDesc>(color_descs.data(), render_pass._color_attachments.size()),
             backend::InvalidHandle<backend::Texture>(),

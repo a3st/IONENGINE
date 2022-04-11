@@ -270,12 +270,12 @@ void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const&
     textures = HandlePool<Texture>(1024);
     buffers = HandlePool<Buffer>(1024);
     samplers = HandlePool<Sampler>(1024);
-    descriptor_layouts = HandlePool<DescriptorLayout>(1024);
+    descriptor_layouts = HandlePool<DescriptorLayout>(8);
     descriptor_sets = HandlePool<DescriptorSet>(1024);
     pipelines = HandlePool<Pipeline>(1024);
-    shaders = HandlePool<Shader>(1024);
-    render_passes = HandlePool<RenderPass>(1024);
-    command_lists = HandlePool<CommandList>(1024);
+    shaders = HandlePool<Shader>(512);
+    render_passes = HandlePool<RenderPass>(128);
+    command_lists = HandlePool<CommandList>(64);
 
     uint32_t factory_flags = 0;
 

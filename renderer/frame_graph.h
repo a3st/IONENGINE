@@ -129,7 +129,7 @@ public:
 
     RenderPassContext() = default;
 
-    backend::Handle<backend::Texture> attachment(uint32_t const index) const { return _attachments[index].attachment(_frame_index); }
+    backend::Handle<backend::Texture> attachment(uint32_t const index) const { return _attachments[index]->attachment(_frame_index); }
 
     backend::Handle<backend::RenderPass> render_pass() const { return _render_pass; }
     
@@ -139,7 +139,7 @@ public:
 
 private:
 
-    std::span<Attachment const> _attachments;
+    std::span<Attachment const* const> _attachments;
     
     backend::Handle<backend::RenderPass> _render_pass;
     backend::Handle<backend::CommandList> _command_list;
@@ -149,6 +149,8 @@ private:
 };
 
 using RenderPassFunc = std::function<void(RenderPassContext const&)>;
+
+inline RenderPassFunc RenderPassDefaultFunc = [&](RenderPassContext const& context) {};
 
 class RenderPass {
 
@@ -202,12 +204,12 @@ private:
     uint32_t _width{0};
     uint32_t _height{0};
     std::vector<Color> _color_clears;
-    std::vector<Attachment const*> _color_attachments;
+    std::vector<Attachment*> _color_attachments;
     std::vector<backend::RenderPassLoadOp> _color_ops;
     std::pair<float, uint8_t> _depth_stencil_clear;
-    Attachment* _depth_stencil_attachment;
+    Attachment* _depth_stencil_attachment{nullptr};
     backend::RenderPassLoadOp _depth_stencil_op;
-    std::vector<Attachment const*> _input_attachments;
+    std::vector<Attachment*> _input_attachments;
     RenderPassFunc _func;
     std::vector<backend::Handle<backend::RenderPass>> _render_passes;
     std::vector<backend::Handle<backend::CommandList>> _command_lists;

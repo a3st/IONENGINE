@@ -28,11 +28,18 @@ public:
 
     FrameGraph& frame_graph();
 
-    void build_frame_graph();
+    void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count);
 
 private:
 
     backend::Device _device;
+
+    std::vector<uint64_t> _graphics_fence_values;
+
+    uint32_t _buffered_frame_count{0};
+    uint32_t _frame_index{0};
+
+    Attachment* _swapchain_buffer;
 
     FrameGraph _frame_graph;
 };

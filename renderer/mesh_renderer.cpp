@@ -7,7 +7,7 @@ using namespace ionengine::renderer;
 
 MeshRenderer::MeshRenderer(Context& context) {
 
-    Attachment& color_buffer = context.frame_graph().add_attachment(
+    /*Attachment& color_buffer = context.frame_graph().add_attachment(
         AttachmentDesc {
             .name = "color_buffer",
             .format = backend::Format::RGBA8,
@@ -36,5 +36,5 @@ MeshRenderer::MeshRenderer(Context& context) {
 
             
         }
-    );
+    );*/
 }
