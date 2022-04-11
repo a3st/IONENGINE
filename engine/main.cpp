@@ -3,8 +3,8 @@
 #include <precompiled.h>
 #include <platform/window.h>
 #include <platform/window_loop.h>
-#include <renderer/context.h>
-#include <renderer/mesh_renderer.h>
+#include <renderer/renderer.h>
+#include <scene/scene.h>
 #include <lib/exception.h>
 
 //#include <engine/sponza.h>
@@ -19,8 +19,9 @@ int main(int* argc, char** agrv) {
         platform::WindowLoop loop;
         platform::Window window("IONENGINE", 800, 600, false);
 
-        renderer::Context context(window, 2);
-        renderer::MeshRenderer mesh_renderer(context);
+        renderer::Renderer renderer(window);
+
+        scene::Scene test_scene;
 
         loop.run(
             window,
@@ -29,7 +30,11 @@ int main(int* argc, char** agrv) {
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: {
-                        context.render();
+                        renderer.render(test_scene);
+                    } break;
+                    case platform::WindowEventType::Sized: {
+                        auto event_size = std::get<platform::Size>(event.data);
+                        renderer.resize(event_size.width, event_size.height);
                     } break;
                 }
             }

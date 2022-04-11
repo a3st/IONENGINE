@@ -54,7 +54,7 @@ enum class Format {
     D32
 };
 
-enum class TextureFlags : uint16_t {
+enum class TextureFlags : uint8_t {
     ShaderResource = 1 << 0,
     RenderTarget = 1 << 1,
     DepthStencil = 1 << 2,

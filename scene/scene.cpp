@@ -5,6 +5,16 @@
 
 using namespace ionengine::scene;
 
+Scene::Scene() {
+
+}
+
+void Scene::add_mesh_node(MeshNode* node) {
+
+    _meshes.emplace_back(node);
+}
+
+/*
 void Scene::update_transform(lib::ThreadPool& thread_pool) {
 
     _transform_cache.nodes.resize(128);
@@ -44,3 +54,4 @@ void Scene::update_transform(lib::ThreadPool& thread_pool) {
         thread_pool.wait_all();
     }
 }
+*/

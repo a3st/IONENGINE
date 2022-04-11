@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -24,11 +24,22 @@ public:
 
     Context& operator=(Context&&) noexcept = delete;
 
-    void render();
+    uint64_t graphics_fence_value() const { return _graphics_fence_values[_frame_index]; }
 
-    FrameGraph& frame_graph();
+    void graphics_fence_value(uint64_t const value) { _graphics_fence_values[_frame_index] = value; }
 
-    void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count);
+    void swap_buffers();
+
+    uint32_t buffered_frame_count() const { return _buffered_frame_count; }
+
+    backend::Device& device() { return _device; }
+
+    backend::Handle<backend::Texture> get_or_wait_previous_frame() {
+
+        backend::Handle<backend::Texture> swapchain_texture = _device.acquire_next_texture();
+        _device.wait(_graphics_fence_values[_frame_index], backend::QueueFlags::Graphics);
+        return swapchain_texture;
+    }
 
 private:
 
@@ -38,10 +49,6 @@ private:
 
     uint32_t _buffered_frame_count{0};
     uint32_t _frame_index{0};
-
-    Attachment* _swapchain_buffer;
-
-    FrameGraph _frame_graph;
 };
 
 }

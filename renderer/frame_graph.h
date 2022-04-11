@@ -30,6 +30,7 @@ public:
         _format = attachment_desc.format;
         _width = attachment_desc.width;
         _height = attachment_desc.height;
+        _flags = attachment_desc.flags;
         _is_persistent = false;
 
         _hash = lib::hash::ctcrc32(_name.data(), _name.size());

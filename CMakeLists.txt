@@ -36,8 +36,8 @@ add_executable(Runtime-Win32
     #scene/scene_node.cpp
     #scene/transform_node.cpp
     #scene/scene_tree.cpp
-    #scene/scene.cpp
-    #scene/mesh_node.cpp
+    scene/scene.cpp
+    scene/mesh_node.cpp
 # ---------------------------    
     # Renderer Backend
     renderer/backend/d3d12x.cpp
@@ -45,12 +45,11 @@ add_executable(Runtime-Win32
 
     # Renderer
     renderer/context.cpp
-    renderer/mesh_renderer.cpp
-    #renderer/renderer.cpp
+    renderer/renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp
     #renderer/shader.cpp
-    #renderer/cache/vertex.cpp
+    renderer/cache/geometry.cpp
 # ---------------------------
 )
 
