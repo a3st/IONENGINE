@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
 #include <renderer/frame_graph.h>
@@ -25,6 +25,8 @@ RenderPass& FrameGraph::add_pass(RenderPassDesc const& render_pass_desc, RenderP
 }
 
 ComputePass& FrameGraph::add_pass(ComputePassDesc const& compute_pass_desc, ComputePassFunc const& func) {
+
+    assert(false && "to do add compute pass");
 
     _ops.emplace_back(OpType::ComputePass, static_cast<uint32_t>(_compute_passes.size()));
     _compute_passes.push_back(std::make_unique<ComputePass>(compute_pass_desc, func));
@@ -126,7 +128,7 @@ void FrameGraph::build(backend::Device& device, uint32_t const frame_count) {
             } break;
 
             case OpType::ComputePass: {
-
+                // TODO!
             } break;
         }
     }
