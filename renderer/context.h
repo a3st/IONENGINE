@@ -41,7 +41,7 @@ public:
         return swapchain_texture;
     }
 
-    UploadBuffer& get_or_allocate_upload_buffer(UploadBufferFlags const flags);
+    UploadBuffer& upload_buffer(UploadBufferFlags const flags);
 
     void submit_upload_buffers();
 
@@ -54,8 +54,9 @@ private:
     uint32_t _buffered_frame_count{0};
     uint32_t _frame_index{0};
 
-    std::unordered_map<UploadBufferFlags, std::vector<backend::Handle<backend::CommandList>>> _copy_command_lists;
-    std::unordered_map<UploadBufferFlags, std::vector<UploadBuffer>> _upload_buffers;
+    
+    std::optional<UploadBuffer> _sync_upload_buffer;
+    std::vector<UploadBuffer> _async_upload_buffers;
 };
 
 }
