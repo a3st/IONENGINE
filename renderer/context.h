@@ -3,7 +3,7 @@
 #pragma once
 
 #include <renderer/backend/backend.h>
-#include <renderer/frame_graph.h>
+#include <renderer/upload_buffer.h>
 
 namespace ionengine::platform {
 class Window;
@@ -41,6 +41,10 @@ public:
         return swapchain_texture;
     }
 
+    UploadBuffer& get_or_allocate_upload_buffer(UploadBufferFlags const flags);
+
+    void submit_upload_buffers();
+
 private:
 
     backend::Device _device;
@@ -49,6 +53,9 @@ private:
 
     uint32_t _buffered_frame_count{0};
     uint32_t _frame_index{0};
+
+    std::unordered_map<UploadBufferFlags, std::vector<backend::Handle<backend::CommandList>>> _copy_command_lists;
+    std::unordered_map<UploadBufferFlags, std::vector<UploadBuffer>> _upload_buffers;
 };
 
 }

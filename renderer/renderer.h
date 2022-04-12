@@ -3,6 +3,7 @@
 #pragma once
 
 #include <renderer/context.h>
+#include <renderer/frame_graph.h>
 #include <renderer/cache/geometry.h>
 
 namespace ionengine::scene {

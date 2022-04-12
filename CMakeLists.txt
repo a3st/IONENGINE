@@ -48,6 +48,8 @@ add_executable(Runtime-Win32
     renderer/renderer.cpp
     renderer/frame_graph.cpp
     renderer/color.cpp
+    renderer/geometry.cpp
+    renderer/upload_buffer.cpp
     #renderer/shader.cpp
     renderer/cache/geometry.cpp
 # ---------------------------

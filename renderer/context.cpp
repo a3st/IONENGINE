@@ -19,3 +19,13 @@ void Context::swap_buffers() {
     _device.present();
     _frame_index = (_frame_index + 1) % _buffered_frame_count;
 }
+
+UploadBuffer& Context::get_or_allocate_upload_buffer(UploadBufferFlags const flags) {
+
+    
+}
+
+void Context::submit_upload_buffers() {
+
+    
+}

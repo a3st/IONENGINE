@@ -15,6 +15,8 @@ Renderer::Renderer(platform::Window& window)
 }
 
 void Renderer::render(scene::Scene& scene) {
+
+    _context.submit_upload_buffers();
     
     auto frame_texture = _context.get_or_wait_previous_frame();
 
