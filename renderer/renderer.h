@@ -2,20 +2,14 @@
 
 #pragma once
 
-#include <renderer/context.h>
-#include <renderer/frame_graph.h>
-#include <renderer/cache/geometry.h>
+#include <renderer/frontend/context.h>
+#include <renderer/frontend/frame_graph.h>
 
 namespace ionengine::scene {
 class Scene;
 }
 
 namespace ionengine::renderer {
-
-struct Renderable {
-    GeometryBuffer* buffer;
-    
-};
 
 class Renderer {
 public:
@@ -36,16 +30,17 @@ public:
 
 private:
 
-    Context _context;
-    FrameGraph _frame_graph;
+    frontend::Context _context;
+    frontend::FrameGraph _frame_graph;
 
-    Attachment* _gbuffer_color_buffer;
-
-    Attachment* _swapchain_buffer;
+    frontend::Attachment* _gbuffer_color_buffer;
+    frontend::Attachment* _swapchain_buffer;
 
     void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count);
 
-    std::vector<Renderable> _renderables;
+    //std::vector<Renderable> _renderables;
+
+    backend::Handle<backend::Buffer> _buffer_triangle;
 };
 
 }

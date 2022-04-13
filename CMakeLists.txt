@@ -43,15 +43,18 @@ add_executable(Runtime-Win32
     renderer/backend/d3d12x.cpp
     renderer/backend/backend_d3d12.cpp
 
+    # Renderer Frontend
+    renderer/frontend/context.cpp
+    renderer/frontend/geometry_buffer.cpp
+    renderer/frontend/frame_graph.cpp
+
+
     # Renderer
-    renderer/context.cpp
     renderer/renderer.cpp
-    renderer/frame_graph.cpp
     renderer/color.cpp
-    renderer/geometry.cpp
-    renderer/upload_buffer.cpp
+    #renderer/upload_buffer.cpp
     #renderer/shader.cpp
-    renderer/cache/geometry.cpp
+    #renderer/cache/geometry.cpp
 # ---------------------------
 )
 

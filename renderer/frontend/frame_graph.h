@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include <renderer/backend/backend.h>
+#include <renderer/frontend/context.h>
 #include <renderer/color.h>
 #include <lib/hash/crc32.h>
 
-namespace ionengine::renderer {
+namespace ionengine::renderer::frontend {
 
 struct AttachmentDesc {
     std::string name;
@@ -315,7 +315,7 @@ private:
 class FrameGraph {
 public:
 
-    FrameGraph() = default;
+    FrameGraph(Context& context);
 
     Attachment& add_attachment(AttachmentDesc const& attachment_desc);
     
@@ -327,13 +327,15 @@ public:
     
     void bind_attachment(Attachment& attachment, backend::Handle<backend::Texture> const& texture);
 
-    void build(backend::Device& device, uint32_t const frame_count);
+    void build_for(uint32_t const frame_count);
     
-    void reset(backend::Device& device);
+    void reset();
     
-    uint64_t execute(backend::Device& device);
+    uint64_t execute();
 
 private:
+
+    Context* _context;
 
     struct MemoryBarrier {
         backend::MemoryState state;
@@ -369,9 +371,7 @@ private:
     uint32_t _frame_index{0};
     uint32_t _frame_count{0};
 
-    std::vector<backend::Handle<backend::CommandList>> _command_lists;
-
-    void compile_render_pass(backend::Device& device, RenderPass& render_pass, uint32_t const frame_index);
+    void compile_render_pass(RenderPass& render_pass, uint32_t const frame_index);
 };
 
 }

@@ -3,7 +3,7 @@
 #pragma once
 
 #include <renderer/context.h>
-#include <renderer/geometry.h>
+#include <renderer/geometry_buffer.h>
 
 namespace ionengine::renderer {
 

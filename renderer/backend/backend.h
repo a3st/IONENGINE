@@ -105,17 +105,17 @@ enum class RenderPassStoreOp {
     DontCare
 };
 
-enum class MemoryState {
-    Common,
-    Present,
-    RenderTarget,
-    CopySource,
-    CopyDest,
-    ShaderRead,
-    VertexConstantBufferRead,
-    IndexBufferRead,
-    DepthRead,
-    DepthWrite
+enum class MemoryState : uint32_t {
+    Common = 1 << 0,
+    Present = 1 << 1,
+    RenderTarget = 1 << 2,
+    CopySource = 1 << 3,
+    CopyDest = 1 << 4,
+    ShaderRead = 1 << 5,
+    VertexConstantBufferRead = 1 << 6,
+    IndexBufferRead = 1 << 7,
+    DepthRead = 1 << 8,
+    DepthWrite = 1 << 9
 };
 
 enum class DescriptorRangeType {
