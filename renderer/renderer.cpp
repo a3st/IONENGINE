@@ -26,12 +26,10 @@ Renderer::Renderer(platform::Window& window) :
 void Renderer::render(scene::Scene& scene) {
 
     
-    
     auto frame_texture = _context.get_or_wait_previous_frame();
 
-    //_frame_graph.bind_attachment(*_swapchain_buffer, frame_texture);
-    //uint64_t const fence_value = _frame_graph.execute(_context.device());
-    //_context.graphics_fence_value(fence_value);
+    _frame_graph.bind_attachment(*_swapchain_buffer, frame_texture);
+    _frame_graph.execute();
 
     _context.swap_buffers();
 }

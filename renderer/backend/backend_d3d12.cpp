@@ -17,12 +17,14 @@ struct Texture {
     ComPtr<ID3D12Resource> resource;
     ComPtr<D3D12MA::Allocation> memory_allocation;
     std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, ComPtr<d3d12::DescriptorAllocation>> descriptor_allocations;
+    uint64_t fence_value;
 };
 
 struct Buffer {
     ComPtr<ID3D12Resource> resource;
     ComPtr<D3D12MA::Allocation> memory_allocation;
     ComPtr<d3d12::DescriptorAllocation> descriptor_allocation;
+    uint64_t fence_value;
 };
 
 struct Sampler {
@@ -69,6 +71,7 @@ struct CommandList {
     Pipeline* binded_pipeline;
     QueueFlags flags;
     bool is_reset{false};
+    std::vector<std::variant<Buffer*, Texture*>> copy_data;
 };
 
 }
@@ -194,7 +197,9 @@ struct Device::Impl {
     
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);
+    void map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);\
+    
+    uint64_t resource_fence(ResourceHandle const& target) const;
     
     void present();
 
@@ -1363,7 +1368,7 @@ void Device::Impl::update_descriptor_set(Handle<DescriptorSet> const& descriptor
     }
 }
 
-void Device::Impl::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data) {
+void Device::Impl::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data) {
 
     auto& buffer_data = buffers[buffer];
 
@@ -1380,6 +1385,26 @@ void Device::Impl::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t con
     } else {
         assert(false && "invalid buffer heap type");
     }
+}
+
+uint64_t Device::Impl::resource_fence(ResourceHandle const& target) const {
+
+    uint64_t fence_value = 0;
+
+    auto resource_visitor = make_visitor(
+        [&](Handle<Buffer> const& resource) {
+            fence_value = buffers[resource].fence_value;
+        },
+        [&](Handle<Texture> const& resource) {
+            fence_value = textures[resource].fence_value;
+        },
+        [&](Handle<Sampler> const& resource) {
+
+        }
+    );
+    
+    std::visit(resource_visitor, target);
+    return fence_value;
 }
 
 Handle<Texture> Device::Impl::acquire_next_texture() {
@@ -1410,16 +1435,31 @@ uint64_t Device::Impl::submit(std::span<Handle<CommandList> const> const command
 
     batches.clear();
 
+    uint64_t& cur_fence_value = fence_values[get_queue_index(flags)]; 
+
     for(auto& command_list : command_lists) {
+
         auto& command_list_data = this->command_lists[command_list];
         command_list_data.command_list->Close();
         command_list_data.is_reset = false;
         batches.push_back(reinterpret_cast<ID3D12CommandList* const>(command_list_data.command_list.Get()));
+
+        for(auto& data : command_list_data.copy_data) {
+            
+            auto resource_visitor = make_visitor(
+                [&](Buffer* resource) {
+                    resource->fence_value = cur_fence_value;
+                },
+                [&](Texture* resource) {
+                    resource->fence_value = cur_fence_value;
+                }
+            );
+
+            std::visit(resource_visitor, data);
+        }
     }
 
     queues[get_queue_index(flags)]->ExecuteCommandLists(static_cast<uint32_t>(batches.size()), batches.data());
-
-    uint64_t& cur_fence_value = fence_values[get_queue_index(flags)]; 
 
     THROW_IF_FAILED(queues[get_queue_index(flags)]->Signal(fences[get_queue_index(flags)].Get(), cur_fence_value));
 
@@ -1528,194 +1568,6 @@ void Device::Impl::wait_for_idle(QueueFlags const flags) {
     }
 }
 
-//===========================================================
-//
-//
-//          Backend Pointer to Implementation
-//
-//
-//===========================================================
-
-Device::Device(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc) : 
-    _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
-
-    _impl->initialize(adapter_index, swapchain_desc);
-}
-
-Device::~Device() {
-
-    _impl->deinitialize();
-}
-
-Handle<Texture> Device::create_texture(
-    Dimension const dimension,
-    uint32_t const width,
-    uint32_t const height,
-    uint16_t const mip_levels,
-    uint16_t const array_layers,
-    Format const format,
-    TextureFlags const flags
-) {
-    
-    return _impl->create_texture(dimension, width, height, mip_levels, array_layers, format, flags);
-}
-
-void Device::delete_texture(Handle<Texture> const& texture) {
-
-    _impl->delete_texture(texture);
-}
-
-Handle<Buffer> Device::create_buffer(size_t const size, BufferFlags const flags) {
-
-    return _impl->create_buffer(size, flags); 
-}
-
-void Device::delete_buffer(Handle<Buffer> const& buffer) {
-
-    _impl->delete_buffer(buffer);
-}
-
-Handle<RenderPass> Device::create_render_pass(
-    std::span<Handle<Texture>> const& colors, 
-    std::span<RenderPassColorDesc const> const& color_descs, 
-    Handle<Texture> const& depth_stencil, 
-    RenderPassDepthStencilDesc const& depth_stencil_desc
-) {
-
-    return _impl->create_render_pass(colors, color_descs, depth_stencil, depth_stencil_desc);
-}
-
-void Device::delete_render_pass(Handle<RenderPass> const& render_pass) {
-
-    _impl->delete_render_pass(render_pass);
-}
-
-Handle<Sampler> Device::create_sampler(
-    Filter const filter, 
-    AddressMode const address_u, 
-    AddressMode const address_v, 
-    AddressMode const address_w, 
-    uint16_t const anisotropic, 
-    CompareOp const compare_op
-) {
-
-    return _impl->create_sampler(filter, address_u, address_v, address_w, anisotropic, compare_op);
-}
-
-void Device::delete_sampler(Handle<Sampler> const& sampler) {
-
-    _impl->delete_sampler(sampler);
-}
-
-Handle<Shader> Device::create_shader(std::span<uint8_t const> const data, ShaderFlags const flags) {
-
-    return _impl->create_shader(data, flags);
-}
-
-void Device::delete_shader(Handle<Shader> const& shader) {
-
-    _impl->delete_shader(shader);
-}
-
-Handle<DescriptorLayout> Device::create_descriptor_layout(std::span<DescriptorRangeDesc const> const ranges) {
-
-    return _impl->create_descriptor_layout(ranges);
-}
-
-void Device::delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout) {
-
-    _impl->delete_descriptor_layout(descriptor_layout);
-}
-
-Handle<Pipeline> Device::create_pipeline(
-    Handle<DescriptorLayout> const& descriptor_layout,
-    std::span<VertexInputDesc const> const vertex_descs,
-    std::span<Handle<Shader> const> const shaders,
-    RasterizerDesc const& rasterizer_desc,
-    DepthStencilDesc const& depth_stencil_desc,
-    BlendDesc const& blend_desc,
-    Handle<RenderPass> const& render_pass,
-    Handle<CachePipeline> const& cache_pipeline
-) {
-    
-    return _impl->create_pipeline(descriptor_layout, vertex_descs, shaders, rasterizer_desc, depth_stencil_desc, blend_desc, render_pass, cache_pipeline);
-}
-
-void Device::delete_pipeline(Handle<Pipeline> const& pipeline) {
-
-    _impl->delete_pipeline(pipeline);
-}
-
-Handle<DescriptorSet> Device::create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout) {
-
-    return _impl->create_descriptor_set(descriptor_layout);
-}
-
-void Device::delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set) {
-
-    _impl->delete_descriptor_set(descriptor_set);
-}
-
-Handle<CommandList> Device::create_command_list(QueueFlags const flags) {
-
-    return _impl->create_command_list(flags);
-}
-
-void Device::delete_command_list(Handle<CommandList> const& command_list) {
-
-    _impl->delete_command_list(command_list);
-}
-
-void Device::update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs) {
-
-    _impl->update_descriptor_set(descriptor_set, write_descs);
-}
-
-void Device::upload_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data) {
-
-    _impl->upload_buffer_data(buffer, offset, data);
-}
-
-void Device::present() {
-
-    _impl->present();
-}
-
-Handle<Texture> Device::acquire_next_texture() {
-
-    return _impl->acquire_next_texture();
-}
-
-void Device::recreate_swapchain(uint32_t const width, uint32_t const height, std::optional<SwapchainDesc> swapchain_desc) {
-    
-    _impl->recreate_swapchain(width, height, swapchain_desc);
-}
-
-uint64_t Device::submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags) {
-
-    return _impl->submit(command_lists, flags);
-}
-
-uint64_t Device::submit_after(std::span<Handle<CommandList> const> const command_lists, uint64_t const fence_result, QueueFlags const flags) {
-    
-    return _impl->submit_after(command_lists, fence_result, flags);
-}
-
-void Device::wait(uint64_t const fence_result, QueueFlags const flags) {
-    
-    return _impl->wait(fence_result, flags);
-}
-
-bool Device::is_completed(uint64_t const fence_result, QueueFlags const flags) const {
-    
-    return _impl->is_completed(fence_result, flags);
-}
-
-void Device::wait_for_idle(QueueFlags const flags) {
-    
-    return _impl->wait_for_idle(flags);
-}
-
 void Device::Impl::command_list_reset(CommandList& command_list) {
 
     THROW_IF_FAILED(command_list.command_allocator->Reset());
@@ -1736,6 +1588,7 @@ void Device::Impl::command_list_reset(CommandList& command_list) {
     }
 
     command_list.is_reset = true;
+    command_list.copy_data.clear();
 }
 
 void Device::Impl::bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set) {
@@ -2057,6 +1910,8 @@ void Device::Impl::copy_buffer_region(
         source_offset,
         size
     );
+
+    command_list_data.copy_data.emplace_back(&dest_buffer);
 }
 
 void Device::Impl::draw(Handle<CommandList> const& command_list, uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset) {
@@ -2086,10 +1941,195 @@ void Device::Impl::draw_indexed(Handle<CommandList> const& command_list, uint32_
 //===========================================================
 //
 //
-//          Encoder Pointer to Implementation
+//          Backend Pointer to Implementation
 //
 //
 //===========================================================
+
+Device::Device(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc) : 
+    _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
+
+    _impl->initialize(adapter_index, swapchain_desc);
+}
+
+Device::~Device() {
+
+    _impl->deinitialize();
+}
+
+Handle<Texture> Device::create_texture(
+    Dimension const dimension,
+    uint32_t const width,
+    uint32_t const height,
+    uint16_t const mip_levels,
+    uint16_t const array_layers,
+    Format const format,
+    TextureFlags const flags
+) {
+    
+    return _impl->create_texture(dimension, width, height, mip_levels, array_layers, format, flags);
+}
+
+void Device::delete_texture(Handle<Texture> const& texture) {
+
+    _impl->delete_texture(texture);
+}
+
+Handle<Buffer> Device::create_buffer(size_t const size, BufferFlags const flags) {
+
+    return _impl->create_buffer(size, flags); 
+}
+
+void Device::delete_buffer(Handle<Buffer> const& buffer) {
+
+    _impl->delete_buffer(buffer);
+}
+
+Handle<RenderPass> Device::create_render_pass(
+    std::span<Handle<Texture>> const& colors, 
+    std::span<RenderPassColorDesc const> const& color_descs, 
+    Handle<Texture> const& depth_stencil, 
+    RenderPassDepthStencilDesc const& depth_stencil_desc
+) {
+
+    return _impl->create_render_pass(colors, color_descs, depth_stencil, depth_stencil_desc);
+}
+
+void Device::delete_render_pass(Handle<RenderPass> const& render_pass) {
+
+    _impl->delete_render_pass(render_pass);
+}
+
+Handle<Sampler> Device::create_sampler(
+    Filter const filter, 
+    AddressMode const address_u, 
+    AddressMode const address_v, 
+    AddressMode const address_w, 
+    uint16_t const anisotropic, 
+    CompareOp const compare_op
+) {
+
+    return _impl->create_sampler(filter, address_u, address_v, address_w, anisotropic, compare_op);
+}
+
+void Device::delete_sampler(Handle<Sampler> const& sampler) {
+
+    _impl->delete_sampler(sampler);
+}
+
+Handle<Shader> Device::create_shader(std::span<uint8_t const> const data, ShaderFlags const flags) {
+
+    return _impl->create_shader(data, flags);
+}
+
+void Device::delete_shader(Handle<Shader> const& shader) {
+
+    _impl->delete_shader(shader);
+}
+
+Handle<DescriptorLayout> Device::create_descriptor_layout(std::span<DescriptorRangeDesc const> const ranges) {
+
+    return _impl->create_descriptor_layout(ranges);
+}
+
+void Device::delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout) {
+
+    _impl->delete_descriptor_layout(descriptor_layout);
+}
+
+Handle<Pipeline> Device::create_pipeline(
+    Handle<DescriptorLayout> const& descriptor_layout,
+    std::span<VertexInputDesc const> const vertex_descs,
+    std::span<Handle<Shader> const> const shaders,
+    RasterizerDesc const& rasterizer_desc,
+    DepthStencilDesc const& depth_stencil_desc,
+    BlendDesc const& blend_desc,
+    Handle<RenderPass> const& render_pass,
+    Handle<CachePipeline> const& cache_pipeline
+) {
+    
+    return _impl->create_pipeline(descriptor_layout, vertex_descs, shaders, rasterizer_desc, depth_stencil_desc, blend_desc, render_pass, cache_pipeline);
+}
+
+void Device::delete_pipeline(Handle<Pipeline> const& pipeline) {
+
+    _impl->delete_pipeline(pipeline);
+}
+
+Handle<DescriptorSet> Device::create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout) {
+
+    return _impl->create_descriptor_set(descriptor_layout);
+}
+
+void Device::delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set) {
+
+    _impl->delete_descriptor_set(descriptor_set);
+}
+
+Handle<CommandList> Device::create_command_list(QueueFlags const flags) {
+
+    return _impl->create_command_list(flags);
+}
+
+void Device::delete_command_list(Handle<CommandList> const& command_list) {
+
+    _impl->delete_command_list(command_list);
+}
+
+void Device::update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs) {
+
+    _impl->update_descriptor_set(descriptor_set, write_descs);
+}
+
+void Device::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data) {
+
+    _impl->map_buffer_data(buffer, offset, data);
+}
+
+uint64_t Device::resource_fence(ResourceHandle const& target) const {
+
+    return _impl->resource_fence(target);
+}
+
+void Device::present() {
+
+    _impl->present();
+}
+
+Handle<Texture> Device::acquire_next_texture() {
+
+    return _impl->acquire_next_texture();
+}
+
+void Device::recreate_swapchain(uint32_t const width, uint32_t const height, std::optional<SwapchainDesc> swapchain_desc) {
+    
+    _impl->recreate_swapchain(width, height, swapchain_desc);
+}
+
+uint64_t Device::submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags) {
+
+    return _impl->submit(command_lists, flags);
+}
+
+uint64_t Device::submit_after(std::span<Handle<CommandList> const> const command_lists, uint64_t const fence_result, QueueFlags const flags) {
+    
+    return _impl->submit_after(command_lists, fence_result, flags);
+}
+
+void Device::wait(uint64_t const fence_result, QueueFlags const flags) {
+    
+    return _impl->wait(fence_result, flags);
+}
+
+bool Device::is_completed(uint64_t const fence_result, QueueFlags const flags) const {
+    
+    return _impl->is_completed(fence_result, flags);
+}
+
+void Device::wait_for_idle(QueueFlags const flags) {
+    
+    return _impl->wait_for_idle(flags);
+}
 
 void Device::bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set) {
 

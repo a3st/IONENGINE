@@ -29,20 +29,32 @@ backend::Device& Context::device() {
 backend::Handle<backend::Texture> Context::get_or_wait_previous_frame() {
 
     backend::Handle<backend::Texture> swapchain_texture = _device.acquire_next_texture();
-    //_device.wait(_graphics_fence_values[_frame_index], backend::QueueFlags::Graphics);
+    _device.wait(_graphics_fence_values[_frame_index], backend::QueueFlags::Graphics);
     return swapchain_texture;
 }
 
-uint64_t Context::upload_buffer_data(backend::Handle<backend::Buffer> const& dest, uint64_t const offset, std::span<uint8_t const> const data, BufferUsage const usage) {
+void Context::submit_or_skip_upload_buffers() {
+
+}
+
+void Context::upload_buffer_data(backend::Handle<backend::Buffer> const& dest, uint64_t const offset, std::span<uint8_t const> const data, BufferUsage const usage) {
 
     if(usage == BufferUsage::Dynamic) {
 
-        _device.upload_buffer_data(dest, offset, data);
-        return 0;
+        _device.map_buffer_data(dest, offset, data);
         
     } else {
         
-        
-        return 0;
+    
     }
+}
+
+uint64_t Context::graphics_fence_value() const {
+
+    return _graphics_fence_values[_frame_index];
+}
+
+void Context::graphics_fence_value(uint64_t const value) {
+
+    _graphics_fence_values[_frame_index] = value;
 }

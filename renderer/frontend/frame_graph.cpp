@@ -194,10 +194,9 @@ void FrameGraph::reset() {
     _ops.clear();
 }
 
-uint64_t FrameGraph::execute() {
+void FrameGraph::execute() {
 
     uint32_t pass_index = 0;
-    uint64_t fence_value = 0;
 
     for(auto& op : _ops) {
         switch(op.op_type) {
@@ -283,13 +282,13 @@ uint64_t FrameGraph::execute() {
                     }
                 }
 
-                fence_value = _context->device().submit(std::span<backend::Handle<backend::CommandList> const>(&submit_command_list.command_lists[_frame_index], 1), submit_command_list.flags);
+                uint64_t const fence_value = _context->device().submit(std::span<backend::Handle<backend::CommandList> const>(&submit_command_list.command_lists[_frame_index], 1), submit_command_list.flags);
+                _context->graphics_fence_value(fence_value);
             } break;
         }
     }
 
     _frame_index = (_frame_index + 1) % _frame_count;
-    return fence_value;
 }
 
 void FrameGraph::bind_attachment(Attachment& attachment, backend::Handle<backend::Texture> const& texture) {

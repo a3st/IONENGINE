@@ -331,7 +331,7 @@ public:
     
     void reset();
     
-    uint64_t execute();
+    void execute();
 
 private:
 
