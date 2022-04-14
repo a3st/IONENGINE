@@ -27,5 +27,5 @@ GeometryBuffer::~GeometryBuffer() {
 
 void GeometryBuffer::bind(backend::Handle<backend::CommandList> const& command_list) {
 
-
+    _context->device().draw_indexed(command_list, 1, 1, 0);
 }
