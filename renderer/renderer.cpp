@@ -25,7 +25,15 @@ Renderer::Renderer(platform::Window& window) :
 
 void Renderer::render(scene::Scene& scene) {
 
-    
+    // -> Scene Data
+    /*
+        for(auto& object : scene.cache_objects[CacheType::Mesh]) {
+            // -> renderable_queue.emplace(object, material, data);
+        }
+    */
+
+    _context.submit_or_skip_upload_buffers();
+
     auto frame_texture = _context.get_or_wait_previous_frame();
 
     _frame_graph.bind_attachment(*_swapchain_buffer, frame_texture);

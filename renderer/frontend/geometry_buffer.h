@@ -16,6 +16,7 @@ public:
 
     void bind(backend::Handle<backend::CommandList> const& command_list);
 
+
 private:
 
     Context* _context;
