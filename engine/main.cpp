@@ -7,7 +7,7 @@
 #include <scene/scene.h>
 #include <lib/exception.h>
 
-#include <shader/technique_parser.h>
+#include <shader/technique_loader.h>
 #include <lib/algorithm.h>
 
 //#include <engine/sponza.h>
@@ -30,8 +30,8 @@ int main(int* argc, char** agrv) {
         bytes.resize(file_size);
         lib::load_bytes_from_file("../../data/techniques/geometry.json5", bytes);
 
-        shader::TechniqueParser parser;
-        parser.parse(bytes);
+        shader::TechniqueLoader loader;
+        loader.parse(bytes);
 
         scene::Scene test_scene;
 

@@ -1,7 +1,7 @@
 {
     name: "standard",
-    "override_parameters": [
-        { name: "power", uniform: "view_buffer", value: "power" },
+    "parameters": [
+        { name: "power", uniform: "world" },
         { name: "albedo", uniform: "albedo" }
     ],
     passes: [

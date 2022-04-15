@@ -12,7 +12,7 @@ struct VSOutput {
 	float3 normal : NORMAL;
 };
 
-cbuffer ViewData : register(b0) {
+cbuffer world : register(b0) {
 	float4x4 view;
 	float4x4 projection;
 };

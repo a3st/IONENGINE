@@ -4,23 +4,26 @@
         { 
             name: "world", 
             type: "cbuffer", 
-            register: 0,
-            value: [
+            declaration: [
                 { name: "viewproj", type: "f32x4x4" }
-            ]
+            ],
+            location: 0,
+            visibility: "vertex"
         },
-        { 
+        {
             name: "material", 
             type: "cbuffer", 
-            register: 1,
-            value: [
+            declaration: [
                 { name: "power", type: "f32x3" }
-            ]
+            ],
+            location: 1,
+            visibility: "vertex"
         },
         {
             name: "albedo",
             type: "sampler2D",
-            register: 0
+            location: 0,
+            visibility: "pixel"
         }
     ],
     shaders: [
@@ -35,9 +38,9 @@
                 { name: "color", type: "f32x4", semantic: "COLOR" }
             ],
             source: "
-                VSOutput main(VSInput input) {
+                vs_output main(vs_input input) {
     
-                    VSOutput output;
+                    vs_output output;
 
                     float4 world_pos = float4(input.position, 1.0f);
 
@@ -62,8 +65,8 @@
                 { name: "albedo", type: "f32x4", semantic: "SV_TARGET0" },
             ],
             source: "   
-                PSOutput main(PSInput input) : SV_TARGET {
-                    PSOutput output;
+                ps_output main(ps_input input) : SV_TARGET {
+                    ps_output output;
                     output.albedo = float4(0.2f, 0.1f, 0.5f, 1.0f);
                     return output;
                 }

@@ -55,7 +55,7 @@ add_executable(Runtime-Win32
 # ---------------------------
     # Shader
     shader/compiler_hlsl.cpp
-    shader/technique_parser.cpp
+    shader/technique_loader.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

@@ -40,6 +40,7 @@ void ShaderCompiler::Impl::initialize() {
 
 bool ShaderCompiler::Impl::compile(std::filesystem::path const& shader_path) {
 
+    
     return true;
 }
 
@@ -51,6 +52,6 @@ ShaderCompiler::ShaderCompiler() :
 
 bool ShaderCompiler::compile(std::filesystem::path const& shader_path) {
 
-    //DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pCompiler));
+    
     return true;
 }
