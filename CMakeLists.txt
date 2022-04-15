@@ -47,15 +47,15 @@ add_executable(Runtime-Win32
     renderer/frontend/context.cpp
     renderer/frontend/geometry_buffer.cpp
     renderer/frontend/frame_graph.cpp
-
+    renderer/frontend/shader.cpp
 
     # Renderer
     renderer/renderer.cpp
     renderer/color.cpp
-    #renderer/upload_buffer.cpp
-    #renderer/shader.cpp
-    #renderer/cache/geometry.cpp
 # ---------------------------
+    # Shader
+    shader/compiler_hlsl.cpp
+    shader/technique_parser.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
@@ -69,6 +69,7 @@ set_target_properties(Runtime-Win32 PROPERTIES
 # Include Dirs
 target_include_directories(Runtime-Win32 PRIVATE
     thirdparty/d3d12_ma/include
+    thirdparty/json5/include
 )
 
 # Link Libs
@@ -77,6 +78,7 @@ target_link_libraries(Runtime-Win32
     dxgi.lib
     dxguid.lib
     D3D12MA.lib
+    dxcompiler.lib
 )
 
 # Link Dirs

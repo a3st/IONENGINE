@@ -7,19 +7,31 @@
 #include <scene/scene.h>
 #include <lib/exception.h>
 
+#include <shader/technique_parser.h>
+#include <lib/algorithm.h>
+
 //#include <engine/sponza.h>
 
 using namespace ionengine;
 
 int main(int* argc, char** agrv) {
 
-    //lib::ThreadPool thread_pool(3);
+    // lib::ThreadPool thread_pool(3);
        
     try {
         platform::WindowLoop loop;
         platform::Window window("IONENGINE", 800, 600, false);
 
         renderer::Renderer renderer(window);
+
+
+        std::vector<uint8_t> bytes;
+        size_t const file_size = lib::get_file_size("../../data/techniques/geometry.json5");
+        bytes.resize(file_size);
+        lib::load_bytes_from_file("../../data/techniques/geometry.json5", bytes);
+
+        shader::TechniqueParser parser;
+        parser.parse(bytes);
 
         scene::Scene test_scene;
 

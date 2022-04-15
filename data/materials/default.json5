@@ -1,0 +1,16 @@
+{
+    name: "default",
+    shader: "standard",
+    parameters: [
+        {
+            name: "albedo",
+            type: "sampler2D",
+            value: "default_albedo"
+        },
+        {
+            name: "power",
+            type: "f32x4",
+            value: [ 1.0, 0.4, 0.5, 1.0 ]
+        }
+    ]
+}

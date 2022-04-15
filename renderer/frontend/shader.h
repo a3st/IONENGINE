@@ -2,19 +2,18 @@
 
 #pragma once
 
-#include <renderer/backend/backend.h>
+#include <renderer/frontend/context.h>
 
-namespace ionengine::renderer {
+namespace ionengine::renderer::frontend {
 
-class ShaderLoader {
+class Technique {
 public:
 
-
-
+    
 
 private:
 
-    
+
 };
 
 }
