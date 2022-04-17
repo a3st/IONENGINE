@@ -8,9 +8,8 @@
 #include <lib/exception.h>
 #include <lib/algorithm.h>
 
-#include <shader/technique.h>
-
-//#include <engine/sponza.h>
+#include <asset/shader.h>
+#include <engine/asset_manager.h>
 
 using namespace ionengine;
 
@@ -25,6 +24,15 @@ int main(int* argc, char** agrv) {
         renderer::Renderer renderer(window);
 
         renderer.load_shader();
+
+        AssetManager asset_manager;
+        
+        asset::Shader shader("../../data/shaders/standard.json5", asset_manager);
+        
+        std::cout << shader.name() << std::endl;
+
+        auto shader_passes = shader.shader_passes();
+        std::cout << shader_passes[0].technique->data().name << std::endl;
 
         scene::Scene test_scene;
 

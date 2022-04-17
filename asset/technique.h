@@ -76,7 +76,7 @@ struct TechniqueData {
 
 JSON5_CLASS(TechniqueData, name, properties, shaders)
 
-namespace ionengine::shader {
+namespace ionengine::asset {
 
 class Technique {
 public:
@@ -101,7 +101,7 @@ private:
         std::span<VertexAssemblerDefinition const> const properties
     );
 
-    std::string constexpr shader_data_type(ShaderDataType const data_type);
+    std::string constexpr get_shader_data_type(ShaderDataType const data_type);
 };
 
 }

@@ -1,10 +1,10 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <shader/technique.h>
+#include <asset/technique.h>
 #include <lib/exception.h>
 
-using namespace ionengine::shader;
+using namespace ionengine::asset;
 
 Technique::Technique(std::filesystem::path const& file_path) {
 
@@ -67,7 +67,7 @@ std::string Technique::generate_uniform_code(
         std::string generated_code = "cbuffer";
         generated_code += std::format(" {} : register(b{}) {{ ", name, location);
         for(auto& property : properties.value()) {
-            generated_code += std::format("{} {}; ", shader_data_type(property.type), property.name);
+            generated_code += std::format("{} {}; ", get_shader_data_type(property.type), property.name);
         }
         generated_code += "};\n";
         return generated_code;
@@ -76,6 +76,7 @@ std::string Technique::generate_uniform_code(
 
         std::string generated_code = "SamplerState";
         generated_code += std::format(" {}_sampler : register(s{}); ", name, location);
+        generated_code += "Texture2D";
         generated_code += std::format(" {}_texture : register(t{}); ", name, location);
         generated_code += "\n";
         return generated_code;
@@ -92,13 +93,13 @@ std::string Technique::generate_vertex_assembler_code(
     std::string generated_code = "struct";
     generated_code += std::format(" {} {{ ", name);
     for(auto& property : properties) {
-        generated_code += std::format("{} {} : {}; ", shader_data_type(property.type), property.name, property.semantic);
+        generated_code += std::format("{} {} : {}; ", get_shader_data_type(property.type), property.name, property.semantic);
     }
     generated_code += "};\n";
     return generated_code;
 }
 
-std::string constexpr Technique::shader_data_type(ShaderDataType const data_type) {
+std::string constexpr Technique::get_shader_data_type(ShaderDataType const data_type) {
 
     switch(data_type) {
         case ShaderDataType::f32x4x4: return "float4x4";

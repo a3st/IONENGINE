@@ -6,8 +6,6 @@ namespace ionengine::asset {
 
 class Asset {
 
-    friend class AssetManager;
-
 public:
 
     Asset() = default;

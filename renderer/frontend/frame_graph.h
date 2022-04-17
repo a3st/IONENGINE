@@ -3,7 +3,7 @@
 #pragma once
 
 #include <renderer/frontend/context.h>
-#include <renderer/color.h>
+#include <lib/math/color.h>
 #include <lib/hash/crc32.h>
 
 namespace ionengine::renderer::frontend {
@@ -327,7 +327,7 @@ public:
     
     void bind_attachment(Attachment& attachment, backend::Handle<backend::Texture> const& texture);
 
-    void build_for(uint32_t const frame_count);
+    void build(uint32_t const frame_count);
     
     void reset();
     

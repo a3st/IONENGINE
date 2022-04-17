@@ -4,7 +4,7 @@
 
 #include <renderer/backend/handle.h>
 #include <platform/window.h>
-#include <renderer/color.h>
+#include <lib/math/color.h>
 
 namespace ionengine::renderer::backend {
 

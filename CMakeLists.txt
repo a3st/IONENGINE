@@ -16,10 +16,12 @@ add_executable(Runtime-Win32
 
     # Engine
     engine/main.cpp
+    engine/asset_manager.cpp
     #engine/sponza.cpp
 # ---------------------------
     # Lib
     #lib/thread_pool.cpp
+    lib/math/color.cpp
 # ---------------------------
     # Platform
     platform/window_win32.cpp
@@ -27,10 +29,12 @@ add_executable(Runtime-Win32
 # ---------------------------
     # Asset
     #asset/obj/obj_document.cpp
-    #asset/asset_manager.cpp
     asset/mesh.cpp
     asset/texture.cpp
     asset/buffer.cpp
+    asset/material.cpp
+    asset/shader.cpp
+    asset/technique.cpp
 # ---------------------------
     # Scene
     #scene/scene_node.cpp
@@ -51,11 +55,7 @@ add_executable(Runtime-Win32
 
     # Renderer
     renderer/renderer.cpp
-    renderer/color.cpp
 # ---------------------------
-    # Shader
-    shader/shader.cpp
-    shader/technique.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

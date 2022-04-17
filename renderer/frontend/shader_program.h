@@ -3,18 +3,25 @@
 #pragma once
 
 #include <renderer/frontend/context.h>
-#include <shader/technique.h>
+#include <asset/technique.h>
 
 namespace ionengine::renderer::frontend {
 
 class ShaderProgram {
 public:
 
-    ShaderProgram(Context& context, shader::Technique const& technique);
+    ShaderProgram(Context& context, asset::Technique const& technique);
+
+    ~ShaderProgram();
 
 private:
 
+    Context* _context;
+
     std::vector<backend::Handle<backend::Shader>> _shaders;
+    backend::Handle<backend::DescriptorLayout> _layout;
+
+    backend::ShaderFlags get_shader_flags(ShaderType const shader_type);
 };
 
 }

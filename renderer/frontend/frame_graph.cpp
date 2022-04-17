@@ -39,7 +39,7 @@ ComputePass& FrameGraph::add_pass(ComputePassDesc const& compute_pass_desc, Comp
     return *_compute_passes.back().get();
 }
 
-void FrameGraph::build_for(uint32_t const frame_count) {
+void FrameGraph::build(uint32_t const frame_count) {
 
     _frame_count = frame_count;
 

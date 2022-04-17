@@ -1,7 +1,7 @@
 {
     name: "standard",
     properties: [
-        { name: "power", type: "f32x3", from: "material" },
+        { name: "power", type: "f32x3" },
         { name: "albedo", type: "sampler2D" }
     ],
     passes: [
@@ -12,7 +12,7 @@
                 cull_mode: "front",
                 depth_stencil: true
             },
-            technique: { import: "geometry", from: "../techniques/geometry.json5" }
+            technique: { import: "geometry", from: "../../data/shaders/techniques/geometry.json5" }
         }
     ]
 }
