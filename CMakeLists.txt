@@ -47,15 +47,15 @@ add_executable(Runtime-Win32
     renderer/frontend/context.cpp
     renderer/frontend/geometry_buffer.cpp
     renderer/frontend/frame_graph.cpp
-    renderer/frontend/shader.cpp
+    renderer/frontend/shader_program.cpp
 
     # Renderer
     renderer/renderer.cpp
     renderer/color.cpp
 # ---------------------------
     # Shader
-    shader/compiler_hlsl.cpp
-    shader/technique_loader.cpp
+    shader/shader.cpp
+    shader/technique.cpp
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

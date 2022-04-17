@@ -1,10 +1,10 @@
 {
     name: "geometry",
-    uniforms: [
+    properties: [
         { 
             name: "world", 
             type: "cbuffer", 
-            declaration: [
+            properties: [
                 { name: "viewproj", type: "f32x4x4" }
             ],
             location: 0,
@@ -13,7 +13,7 @@
         {
             name: "material", 
             type: "cbuffer", 
-            declaration: [
+            properties: [
                 { name: "power", type: "f32x3" }
             ],
             location: 1,
@@ -39,18 +39,9 @@
             ],
             source: "
                 vs_output main(vs_input input) {
-    
                     vs_output output;
-
                     float4 world_pos = float4(input.position, 1.0f);
-
-                    world_pos = mul(world_pos, model);
-                    world_pos = mul(world_pos, view);
-                    world_pos = mul(world_pos, proj);
-
                     output.position = world_pos;
-                    output.color = input.color;
-
                     return output;
                 }
             "
@@ -65,7 +56,7 @@
                 { name: "albedo", type: "f32x4", semantic: "SV_TARGET0" },
             ],
             source: "   
-                ps_output main(ps_input input) : SV_TARGET {
+                ps_output main(ps_input input) {
                     ps_output output;
                     output.albedo = float4(0.2f, 0.1f, 0.5f, 1.0f);
                     return output;

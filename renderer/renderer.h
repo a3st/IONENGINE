@@ -28,6 +28,8 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
+    void load_shader();
+
 private:
 
     frontend::Context _context;

@@ -1,11 +1,11 @@
 {
     name: "default",
     shader: "standard",
-    parameters: [
+    properties: [
         {
             name: "albedo",
             type: "sampler2D",
-            value: "default_albedo"
+            asset: "default_albedo"
         },
         {
             name: "power",

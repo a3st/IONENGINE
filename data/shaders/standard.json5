@@ -1,8 +1,8 @@
 {
     name: "standard",
-    "parameters": [
-        { name: "power", uniform: "world" },
-        { name: "albedo", uniform: "albedo" }
+    properties: [
+        { name: "power", type: "f32x3", from: "material" },
+        { name: "albedo", type: "sampler2D" }
     ],
     passes: [
         {
@@ -12,7 +12,7 @@
                 cull_mode: "front",
                 depth_stencil: true
             },
-            technique: "geometry"
+            technique: { import: "geometry", from: "../techniques/geometry.json5" }
         }
     ]
 }

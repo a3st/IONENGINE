@@ -4,6 +4,8 @@
 #include <renderer/renderer.h>
 #include <scene/scene.h>
 
+#include <shader/technique.h>
+
 using namespace ionengine::renderer;
 
 Renderer::Renderer(platform::Window& window) : 
@@ -20,7 +22,9 @@ Renderer::Renderer(platform::Window& window) :
         0.0f, 0.0f, 1.0f 
     };
 
-    
+    shader::Technique technique("../../data/shaders/techniques/geometry.json5");
+
+    _context.device().create_shader(technique.data().shaders[0].source, backend::ShaderFlags::Vertex);
 }
 
 void Renderer::render(scene::Scene& scene) {
@@ -110,4 +114,9 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
     );
 
     _frame_graph.build_for(buffered_frame_count);
+}
+
+void Renderer::load_shader() {
+
+    
 }

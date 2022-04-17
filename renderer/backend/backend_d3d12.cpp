@@ -78,6 +78,9 @@ struct CommandList {
 
 struct Device::Impl {
 
+    ComPtr<IDxcCompiler3> dxc_compiler;
+    ComPtr<IDxcUtils> dxc_utils;
+
     ComPtr<D3D12MA::Allocator> memory_allocator;
 
     ComPtr<d3d12::DescriptorPool> cbv_srv_uav_pool;
@@ -167,6 +170,8 @@ struct Device::Impl {
     void delete_sampler(Handle<Sampler> const& sampler);
     
     Handle<Shader> create_shader(std::span<uint8_t const> const data, ShaderFlags const flags);
+
+    Handle<Shader> create_shader(std::string_view const source, ShaderFlags const flags);
     
     void delete_shader(Handle<Shader> const& shader);
     
@@ -281,6 +286,9 @@ void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const&
     shaders = HandlePool<Shader>(512);
     render_passes = HandlePool<RenderPass>(128);
     command_lists = HandlePool<CommandList>(64);
+
+    THROW_IF_FAILED(DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), reinterpret_cast<void**>(dxc_compiler.GetAddressOf())));
+    THROW_IF_FAILED(DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), reinterpret_cast<void**>(dxc_utils.GetAddressOf())));
 
     uint32_t factory_flags = 0;
 
@@ -896,6 +904,64 @@ Handle<Shader> Device::Impl::create_shader(std::span<uint8_t const> const data, 
 
     shader_data.data.resize(data.size());
     std::memcpy(shader_data.data.data(), data.data(), sizeof(char8_t) * data.size());
+    
+    return shaders.push(std::move(shader_data));
+}
+
+Handle<Shader> Device::Impl::create_shader(std::string_view const source, ShaderFlags const flags) {
+
+    auto get_shader_type = [&](ShaderFlags const shader_flags) -> const wchar_t* {
+        switch(shader_flags) {
+            case ShaderFlags::Vertex: return L"vs_6_0";
+            case ShaderFlags::Pixel: return L"ps_6_0";
+            default: return L"vs_6_0";
+        }
+    };
+
+    ComPtr<IDxcBlobEncoding> source_blob;
+    THROW_IF_FAILED(dxc_utils->CreateBlob(source.data(), static_cast<uint32_t>(source.size()), CP_UTF8, source_blob.GetAddressOf()));
+
+    std::vector<const wchar_t*> arguments;
+    
+    arguments.push_back(L"-E");
+    arguments.push_back(L"main");
+
+    arguments.push_back(L"-T");
+    arguments.push_back(get_shader_type(flags));
+
+    arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS); //-WX
+    arguments.push_back(DXC_ARG_DEBUG); //-Zi
+    arguments.push_back(DXC_ARG_PACK_MATRIX_ROW_MAJOR); //-Zp
+
+    auto source_buffer = DxcBuffer {};
+    source_buffer.Ptr = source_blob->GetBufferPointer();
+    source_buffer.Size = source_blob->GetBufferSize();
+    source_buffer.Encoding = 0;
+
+    ComPtr<IDxcResult> result;
+    THROW_IF_FAILED(dxc_compiler->Compile(
+        &source_buffer, 
+        arguments.data(), 
+        static_cast<uint32_t>(arguments.size()), 
+        nullptr, 
+        __uuidof(IDxcResult), 
+        reinterpret_cast<void**>(result.GetAddressOf()))
+    );
+
+    ComPtr<IDxcBlobUtf8> error_blob;
+    result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), reinterpret_cast<void**>(error_blob.GetAddressOf()), nullptr);
+    if (error_blob && error_blob->GetStringLength() > 0) {
+        throw lib::Exception(std::format("Shader compilation error ({})", std::string_view(error_blob->GetStringPointer(), error_blob->GetStringLength())));
+    }
+
+    ComPtr<IDxcBlob> shader_blob;
+    THROW_IF_FAILED(result->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), reinterpret_cast<void**>(shader_blob.GetAddressOf()), nullptr));
+
+    auto shader_data = Shader {};
+    shader_data.flags = flags;
+
+    shader_data.data.resize(shader_blob->GetBufferSize());
+    std::memcpy(shader_data.data.data(), shader_blob->GetBufferPointer(), shader_blob->GetBufferSize());
     
     return shaders.push(std::move(shader_data));
 }
@@ -2020,6 +2086,11 @@ void Device::delete_sampler(Handle<Sampler> const& sampler) {
 Handle<Shader> Device::create_shader(std::span<uint8_t const> const data, ShaderFlags const flags) {
 
     return _impl->create_shader(data, flags);
+}
+
+Handle<Shader> Device::create_shader(std::string_view const source, ShaderFlags const flags) {
+
+    return _impl->create_shader(source, flags);
 }
 
 void Device::delete_shader(Handle<Shader> const& shader) {

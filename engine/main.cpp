@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
 #include <platform/window.h>
@@ -6,9 +6,9 @@
 #include <renderer/renderer.h>
 #include <scene/scene.h>
 #include <lib/exception.h>
-
-#include <shader/technique_loader.h>
 #include <lib/algorithm.h>
+
+#include <shader/technique.h>
 
 //#include <engine/sponza.h>
 
@@ -24,14 +24,7 @@ int main(int* argc, char** agrv) {
 
         renderer::Renderer renderer(window);
 
-
-        std::vector<uint8_t> bytes;
-        size_t const file_size = lib::get_file_size("../../data/techniques/geometry.json5");
-        bytes.resize(file_size);
-        lib::load_bytes_from_file("../../data/techniques/geometry.json5", bytes);
-
-        shader::TechniqueLoader loader;
-        loader.parse(bytes);
+        renderer.load_shader();
 
         scene::Scene test_scene;
 

@@ -294,6 +294,8 @@ public:
 
     Handle<Shader> create_shader(std::span<uint8_t const> const data, ShaderFlags const flags);
 
+    Handle<Shader> create_shader(std::string_view const source, ShaderFlags const flags);
+
     void delete_shader(Handle<Shader> const& shader);
 
     Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorRangeDesc const> const ranges);
