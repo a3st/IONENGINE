@@ -118,11 +118,11 @@ enum class MemoryState : uint32_t {
     DepthWrite = 1 << 9
 };
 
-enum class DescriptorType {
+enum class DescriptorRangeType {
     ShaderResource,
     ConstantBuffer,
     UnorderedAccess,
-    CombinedSampler
+    Sampler
 };
 
 enum class FillMode {
@@ -190,13 +190,13 @@ struct RenderPassDepthStencilDesc {
 
 struct DescriptorLayoutBinding {
     uint32_t binding;
-    DescriptorType type;
+    DescriptorRangeType range_type;
     uint32_t count;
     ShaderFlags flags;
 };
 
 struct DescriptorRangeDesc {
-    DescriptorType range_type;
+    DescriptorRangeType range_type;
     uint32_t index;
     uint32_t count;
     ShaderFlags flags;

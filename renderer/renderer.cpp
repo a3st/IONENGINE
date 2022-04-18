@@ -32,7 +32,7 @@ Renderer::Renderer(platform::Window& window) :
 
     auto shader_passes = shader.shader_passes();
 
-    
+    frontend::ShaderProgram program(_context, *shader.shader_passes().data()->technique);
 }
 
 void Renderer::render(scene::Scene& scene) {

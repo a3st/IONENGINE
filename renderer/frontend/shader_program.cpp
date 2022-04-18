@@ -6,27 +6,31 @@
 using namespace ionengine::renderer;
 using namespace ionengine::renderer::frontend;
 
-backend::ShaderFlags ShaderProgram::get_shader_flags(asset::ShaderType const shader_type) {
 
-    switch(shader_type) {
-        case asset::ShaderType::Vertex: return backend::ShaderFlags::Vertex;
-        case asset::ShaderType::Pixel: return backend::ShaderFlags::Pixel;
-        case asset::ShaderType::Geometry: return backend::ShaderFlags::Geometry;
-        case asset::ShaderType::Domain: return backend::ShaderFlags::Domain;
-        case asset::ShaderType::Hull: return backend::ShaderFlags::Hull;
+backend::ShaderFlags ShaderProgram::get_shader_flags(asset::ShaderFlags const shader_flags) {
+
+    switch(shader_flags) {
+        case asset::ShaderFlags::Vertex: return backend::ShaderFlags::Vertex;
+        case asset::ShaderFlags::Pixel: return backend::ShaderFlags::Pixel;
+        case asset::ShaderFlags::Geometry: return backend::ShaderFlags::Geometry;
+        case asset::ShaderFlags::Domain: return backend::ShaderFlags::Domain;
+        case asset::ShaderFlags::Hull: return backend::ShaderFlags::Hull;
         default: return backend::ShaderFlags::All;
     }
 }
+
 
 ShaderProgram::ShaderProgram(Context& context, asset::Technique const& technique) :
     _context(&context) {
 
     std::for_each(
-        technique.shaders().begin(), 
-        technique.shaders().end(),
+        technique.data().begin(), 
+        technique.data().end(),
         [&](auto& element) {  
-            backend::Handle<backend::Shader> shader = _context->device().create_shader(element.source, get_shader_flags(element.type));
+            backend::Handle<backend::Shader> shader = _context->device().create_shader(element.source, get_shader_flags(element.flags));
             _shaders.emplace_back(shader);
+
+            std::cout << 123 << std::endl;
         }
     );
 
@@ -37,12 +41,7 @@ ShaderProgram::ShaderProgram(Context& context, asset::Technique const& technique
         technique.uniforms().end(),
         [&](auto const& element) {
 
-            backend::DescriptorType descriptor_type = {};
-            switch(element.type) {
-                case asset::ShaderUniformType::CBuffer: descriptor_type = backend::DescriptorType::ConstantBuffer; break;
-            }
             
-            bindings.emplace_back()
         }
     );
 
