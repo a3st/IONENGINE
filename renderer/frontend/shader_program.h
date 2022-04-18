@@ -21,7 +21,9 @@ private:
     std::vector<backend::Handle<backend::Shader>> _shaders;
     backend::Handle<backend::DescriptorLayout> _layout;
 
-    backend::ShaderFlags get_shader_flags(ShaderType const shader_type);
+    
+
+    backend::ShaderFlags get_shader_flags(asset::ShaderType const shader_type);
 };
 
 }

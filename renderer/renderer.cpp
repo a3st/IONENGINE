@@ -5,6 +5,8 @@
 #include <scene/scene.h>
 
 #include <renderer/frontend/shader_program.h>
+#include <engine/asset_manager.h>
+#include <asset/shader.h>
 
 using namespace ionengine::renderer;
 
@@ -21,6 +23,16 @@ Renderer::Renderer(platform::Window& window) :
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f 
     };
+
+    AssetManager asset_manager;
+        
+    asset::Shader shader("../../data/shaders/standard.json5", asset_manager);
+        
+    std::cout << shader.name() << std::endl;
+
+    auto shader_passes = shader.shader_passes();
+
+    
 }
 
 void Renderer::render(scene::Scene& scene) {

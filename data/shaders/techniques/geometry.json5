@@ -1,29 +1,31 @@
 {
     name: "geometry",
-    properties: [
+    uniforms: [
         { 
             name: "world", 
             type: "cbuffer", 
             properties: [
                 { name: "viewproj", type: "f32x4x4" }
             ],
-            location: 0,
             visibility: "vertex"
         },
         {
-            name: "material", 
+            name: "light", 
             type: "cbuffer", 
             properties: [
-                { name: "power", type: "f32x3" }
+                { name: "light", type: "f32x3" }
             ],
-            location: 1,
             visibility: "vertex"
         },
         {
             name: "albedo",
             type: "sampler2D",
-            location: 0,
             visibility: "pixel"
+        },
+        {
+            name: "power",
+            type: "f32x3",
+            visibility: "vertex"
         }
     ],
     shaders: [

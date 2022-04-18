@@ -2,9 +2,13 @@
 
 #pragma once
 
+#include <json5/json5.hpp>
+#include <json5/json5_input.hpp>
+#include <json5/json5_reflect.hpp>
+
 #include <asset/technique.h>
 
-enum class JSON_ShaderPropertyType {
+enum class JSON_ShaderParameterType {
     sampler2D,
     f32x4,
     f32x3,
@@ -12,7 +16,7 @@ enum class JSON_ShaderPropertyType {
     f32
 };
 
-JSON5_ENUM(JSON_ShaderPropertyType, sampler2D, f32x4, f32x3, f32x2, f32)
+JSON5_ENUM(JSON_ShaderParameterType, sampler2D, f32x4, f32x3, f32x2, f32)
 
 enum class JSON_DrawParameterFillMode {
     wireframe,
@@ -29,12 +33,13 @@ enum class JSON_DrawParameterCullMode {
 
 JSON5_ENUM(JSON_DrawParameterCullMode, none, front, back)
 
-struct JSON_ShaderPropertyDefinition {
+struct JSON_ShaderParameterDefinition {
     std::string name;
-    JSON_ShaderPropertyType type;
+    JSON_ShaderParameterType type;
+    std::string from;
 };
 
-JSON5_CLASS(JSON_ShaderPropertyDefinition, name, type)
+JSON5_CLASS(JSON_ShaderParameterDefinition, name, type, from)
 
 struct JSON_DrawParametersDefinition {
     JSON_DrawParameterFillMode fill_mode;
@@ -61,11 +66,11 @@ JSON5_CLASS(JSON_ShaderPassDefinition, name, draw_parameters, technique)
 
 struct JSON_ShaderDefinition {
     std::string name;
-    std::vector<JSON_ShaderPropertyDefinition> properties;
+    std::vector<JSON_ShaderParameterDefinition> parameters;
     std::vector<JSON_ShaderPassDefinition> passes;
 };
 
-JSON5_CLASS(JSON_ShaderDefinition, name, properties, passes)
+JSON5_CLASS(JSON_ShaderDefinition, name, parameters, passes)
 
 namespace ionengine {
 class AssetManager;
@@ -84,6 +89,7 @@ enum class ShaderParameterType {
 struct ShaderParameter {
     std::string name;
     ShaderParameterType type;
+    std::string from;
 };
 
 enum class DrawParameterFillMode {

@@ -25,14 +25,13 @@ int main(int* argc, char** agrv) {
 
         renderer.load_shader();
 
-        AssetManager asset_manager;
+        /*AssetManager asset_manager;
         
         asset::Shader shader("../../data/shaders/standard.json5", asset_manager);
         
         std::cout << shader.name() << std::endl;
 
-        auto shader_passes = shader.shader_passes();
-        std::cout << shader_passes[0].technique->data().name << std::endl;
+        auto shader_passes = shader.shader_passes();*/
 
         scene::Scene test_scene;
 

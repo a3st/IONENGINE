@@ -21,10 +21,10 @@ Shader::Shader(std::filesystem::path const& file_path, AssetManager& asset_manag
     _name = document.name;
 
     std::for_each(
-        document.properties.begin(), 
-        document.properties.end(), 
-        [&](auto& property) { 
-            _parameters.emplace_back(property.name, static_cast<ShaderParameterType>(property.type)); 
+        document.parameters.begin(), 
+        document.parameters.end(), 
+        [&](auto& parameter) { 
+            _parameters.emplace_back(parameter.name, static_cast<ShaderParameterType>(parameter.type), parameter.from); 
         }
     );
     

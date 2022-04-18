@@ -1,8 +1,8 @@
 {
     name: "standard",
-    properties: [
-        { name: "power", type: "f32x3" },
-        { name: "albedo", type: "sampler2D" }
+    parameters: [
+        { name: "power", type: "f32x3", from: "geometry" },
+        { name: "albedo", type: "sampler2D", from: "geometry" }
     ],
     passes: [
         {
