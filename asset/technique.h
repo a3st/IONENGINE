@@ -6,9 +6,14 @@
 #include <json5/json5_input.hpp>
 #include <json5/json5_reflect.hpp>
 
-enum class JSON_ShaderDataType {
+enum class JSON_ShaderUniformType {
     cbuffer,
-    sampler2D,
+    sampler2D
+};
+
+JSON5_ENUM(JSON_ShaderUniformType, cbuffer, sampler2D)
+
+enum class JSON_ShaderDataType {
     f32x4x4,
     f32x4,
     f32x3,
@@ -16,7 +21,7 @@ enum class JSON_ShaderDataType {
     f32
 };
 
-JSON5_ENUM(JSON_ShaderDataType, cbuffer, sampler2D, f32x4x4, f32x4, f32x3, f32x2, f32)
+JSON5_ENUM(JSON_ShaderDataType, f32x4x4, f32x4, f32x3, f32x2, f32)
 
 enum class JSON_ShaderType {
     vertex,
@@ -39,12 +44,13 @@ JSON5_CLASS(JSON_ShaderStructDefinition, name, type, semantic)
 
 struct JSON_TechniqueUniformDefinition {
     std::string name;
-    JSON_ShaderDataType type;
+    JSON_ShaderUniformType type;
     std::optional<std::vector<JSON_ShaderStructDefinition>> properties;
     std::optional<JSON_ShaderType> visibility;
+    bool is_export;
 };
 
-JSON5_CLASS(JSON_TechniqueUniformDefinition, name, type, properties, visibility)
+JSON5_CLASS(JSON_TechniqueUniformDefinition, name, type, properties, visibility, is_export)
 
 struct JSON_TechniqueShaderDefinition {
     JSON_ShaderType type;
@@ -77,38 +83,33 @@ enum class ShaderFlags : uint16_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(ShaderFlags)
 
-enum class ShaderDataFlags : uint16_t {
-    CBuffer = 1 << 0,
-    Sampler2D = 1 << 1,
-    F32x4x4 = 1 << 2,
-    F32x4 = 1 << 3,
-    F32x3 = 1 << 4,
-    F32x2 = 1 << 5,
-    F32 = 1 << 6,
-    Constant = F32x4x4 | F32x4 | F32x3 | F32x2 | F32
+enum class ShaderUniformType {
+    CBuffer,
+    Sampler2D
 };
 
-DECLARE_ENUM_CLASS_BIT_FLAG(ShaderDataFlags)
+enum class ShaderDataType {
+    F32x4x4,
+    F32x4,
+    F32x3,
+    F32x2,
+    F32
+};
 
-template<ShaderDataFlags Flags>
+template<ShaderUniformType Type>
 struct ShaderUniformData {};
 
 template<>
-struct ShaderUniformData<ShaderDataFlags::Sampler2D> { };
+struct ShaderUniformData<ShaderUniformType::Sampler2D> { };
 
 struct ShaderBufferData {
     std::string name;
-    ShaderDataFlags flags;
+    ShaderDataType type;
 };
 
 template<>
-struct ShaderUniformData<ShaderDataFlags::CBuffer> {
+struct ShaderUniformData<ShaderUniformType::CBuffer> {
     std::vector<ShaderBufferData> data;
-};
-
-template<>
-struct ShaderUniformData<ShaderDataFlags::Constant> { 
-    ShaderDataFlags flags;
 };
 
 #ifndef DECLARE_SHADER_UNIFORM_CAST
@@ -122,16 +123,15 @@ struct ShaderUniform {
     std::string name;
 
     std::variant<
-        ShaderUniformData<ShaderDataFlags::Sampler2D>,
-        ShaderUniformData<ShaderDataFlags::CBuffer>,
-        ShaderUniformData<ShaderDataFlags::Constant>
+        ShaderUniformData<ShaderUniformType::Sampler2D>,
+        ShaderUniformData<ShaderUniformType::CBuffer>
     > data;
 
     ShaderFlags visibility;
+    bool is_export;
 
-    DECLARE_SHADER_UNIFORM_CAST(as_sampler2D, ShaderDataFlags::Sampler2D)
-    DECLARE_SHADER_UNIFORM_CAST(as_cbuffer, ShaderDataFlags::CBuffer)
-    DECLARE_SHADER_UNIFORM_CAST(as_constant, ShaderDataFlags::Constant)
+    DECLARE_SHADER_UNIFORM_CAST(as_sampler2D, ShaderUniformType::Sampler2D)
+    DECLARE_SHADER_UNIFORM_CAST(as_cbuffer, ShaderUniformType::CBuffer)
 };
 
 struct ShaderData {
@@ -148,17 +148,17 @@ public:
 
     std::span<ShaderUniform const> uniforms() const;
 
-    std::span<ShaderData const> data() const;
+    std::span<ShaderData const> shaders() const;
 
 private:
 
     std::string _name;
     std::vector<ShaderUniform> _uniforms;
-    std::vector<ShaderData> _data;
+    std::vector<ShaderData> _shaders;
 
     std::string generate_uniform_code(
         std::string_view const name, 
-        JSON_ShaderDataType const uniform_type, 
+        JSON_ShaderUniformType const uniform_type, 
         uint32_t const location,
         std::optional<std::span<JSON_ShaderStructDefinition const>> const properties = std::nullopt
     ) const;
@@ -170,7 +170,7 @@ private:
 
     std::string constexpr get_shader_data_string(JSON_ShaderDataType const data_type) const;
 
-    ShaderDataFlags constexpr get_shader_data_flags(JSON_ShaderDataType const data_type) const;
+    ShaderDataType constexpr get_shader_data_type(JSON_ShaderDataType const data_type) const;
 
     ShaderFlags constexpr get_shader_flags(JSON_ShaderType const shader_type) const;
 };

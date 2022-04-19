@@ -31,18 +31,24 @@ struct Sampler {
     ComPtr<d3d12::DescriptorAllocation> descriptor_allocation;
 };
 
+struct BindingLocation {
+    uint32_t range_index;
+    uint32_t offset;
+};
+
 struct DescriptorLayout {
     ComPtr<ID3D12RootSignature> root_signature;
+    std::unordered_map<uint32_t, BindingLocation> bindings;
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
     bool is_compute;
 };
 
 struct DescriptorSet {
     ComPtr<ID3D12DescriptorHeap> cbv_srv_uav_heap;
-    std::optional<ComPtr<ID3D12DescriptorHeap>> sampler_heap;
+    ComPtr<ID3D12DescriptorHeap> sampler_heap;
+    std::unordered_map<uint32_t, BindingLocation> bindings;
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
-    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> bindings;
-    std::vector<std::pair<uint32_t, uint32_t>> binding_ranges;
+    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> descriptors;
     bool is_compute;
 };
 
@@ -175,7 +181,7 @@ struct Device::Impl {
     
     void delete_shader(Handle<Shader> const& shader);
     
-    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorRangeDesc const> const ranges);
+    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings);
     
     void delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout);
     
@@ -971,14 +977,14 @@ void Device::Impl::delete_shader(Handle<Shader> const& shader) {
     shaders.erase(shader);
 }
 
-Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<DescriptorRangeDesc const> const ranges) {
+Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings) {
 
-    auto get_descriptor_range_type = [&](DescriptorRangeType const range_type) -> D3D12_DESCRIPTOR_RANGE_TYPE {
-        switch(range_type) {
-            case DescriptorRangeType::ShaderResource: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-            case DescriptorRangeType::ConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-            case DescriptorRangeType::Sampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
-            case DescriptorRangeType::UnorderedAccess: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+    auto get_descriptor_range_type = [&](DescriptorType const descriptor_type) -> D3D12_DESCRIPTOR_RANGE_TYPE {
+        switch(descriptor_type) {
+            case DescriptorType::ShaderResource: return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+            case DescriptorType::ConstantBuffer: return D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+            case DescriptorType::Sampler: return D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+            case DescriptorType::UnorderedAccess: return D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
         }
         return D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
     };
@@ -997,53 +1003,70 @@ Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<Descri
 
     auto descriptor_layout_data = DescriptorLayout {};
 
-    descriptor_layout_data.ranges.reserve(ranges.size());
+    std::unordered_map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> registers_count;
+    registers_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 0 });
+    registers_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0 });
+    registers_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0 });
+    registers_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 0 });
+
+    std::map<std::pair<D3D12_DESCRIPTOR_RANGE_TYPE, D3D12_SHADER_VISIBILITY>, uint32_t> ranges_index;
 
     std::vector<D3D12_ROOT_PARAMETER> parameters;
-    parameters.reserve(ranges.size());
 
-    std::map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> index_ranges;
-    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_CBV] = 0;
-    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SRV] = 0;
-    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_UAV] = 0;
-    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER] = 0;
+    for(auto& binding : bindings) {
 
-    for(auto& range : ranges) {
+        auto it = ranges_index.find({ get_descriptor_range_type(binding.type), get_shader_visibility(binding.flags) });
 
-        auto _range = D3D12_DESCRIPTOR_RANGE {};
-        _range.RangeType = get_descriptor_range_type(range.range_type);
-        _range.NumDescriptors = range.count;
-        _range.BaseShaderRegister = index_ranges[_range.RangeType];
-        _range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+        if(it != ranges_index.end()) {
 
-        index_ranges[_range.RangeType] += _range.NumDescriptors;
-        descriptor_layout_data.ranges.emplace_back(std::move(_range));
+            descriptor_layout_data.bindings.insert({ binding.index, { it->second, descriptor_layout_data.ranges.at(it->second).NumDescriptors } });
+            ++descriptor_layout_data.ranges.at(it->second).NumDescriptors;
+            ++registers_count.at(get_descriptor_range_type(binding.type));
 
-        auto parameter = D3D12_ROOT_PARAMETER {};
-        parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-        parameter.DescriptorTable.pDescriptorRanges = &descriptor_layout_data.ranges.back();
-        parameter.DescriptorTable.NumDescriptorRanges = 1;
-        parameter.ShaderVisibility = get_shader_visibility(range.flags);
+        } else {
 
-        parameters.emplace_back(std::move(parameter));
+            auto range = D3D12_DESCRIPTOR_RANGE {};
+            range.RangeType = get_descriptor_range_type(binding.type);
+            range.BaseShaderRegister = registers_count.at(get_descriptor_range_type(binding.type));
+            range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+            descriptor_layout_data.bindings.insert(
+                { binding.index, { static_cast<uint32_t>(descriptor_layout_data.ranges.size()), descriptor_layout_data.ranges.at(static_cast<uint32_t>(descriptor_layout_data.ranges.size())).NumDescriptors } }
+            );
+            ++range.NumDescriptors;
+            ++registers_count.at(get_descriptor_range_type(binding.type));
+
+            descriptor_layout_data.ranges.emplace_back(std::move(range));
+
+            auto parameter = D3D12_ROOT_PARAMETER {};
+            parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+            parameter.ShaderVisibility = get_shader_visibility(binding.flags);
+
+            parameters.emplace_back(std::move(parameter));
+        }
     }
 
-    auto root_desc = D3D12_ROOT_SIGNATURE_DESC {};
-    root_desc.pParameters = parameters.data();
-    root_desc.NumParameters = static_cast<uint32_t>(parameters.size());
-    root_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+    for(size_t i = 0; i < parameters.size(); ++i) {
 
-    ComPtr<ID3DBlob> serialized_data;
+        parameters.at(i).DescriptorTable.pDescriptorRanges = &descriptor_layout_data.ranges.at(i);
+        parameters.at(i).DescriptorTable.NumDescriptorRanges = 1;
+    }
 
-    THROW_IF_FAILED(D3D12SerializeRootSignature(&root_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, serialized_data.GetAddressOf(), nullptr));
+    auto root_signature_desc = D3D12_ROOT_SIGNATURE_DESC {};
+    root_signature_desc.pParameters = parameters.data();
+    root_signature_desc.NumParameters = static_cast<uint32_t>(parameters.size());
+    root_signature_desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ComPtr<ID3DBlob> serialized_blob;
+    THROW_IF_FAILED(D3D12SerializeRootSignature(&root_signature_desc, D3D_ROOT_SIGNATURE_VERSION_1_0, serialized_blob.GetAddressOf(), nullptr));
 
     THROW_IF_FAILED(device->CreateRootSignature(
         0,
-        serialized_data->GetBufferPointer(), 
-        serialized_data->GetBufferSize(), 
+        serialized_blob->GetBufferPointer(), 
+        serialized_blob->GetBufferSize(), 
         __uuidof(ID3D12RootSignature), 
-        reinterpret_cast<void**>(descriptor_layout_data.root_signature.GetAddressOf())
-    ));
+        reinterpret_cast<void**>(descriptor_layout_data.root_signature.GetAddressOf()))
+    );
 
     return descriptor_layouts.push(std::move(descriptor_layout_data));
 }
@@ -2098,9 +2121,9 @@ void Device::delete_shader(Handle<Shader> const& shader) {
     _impl->delete_shader(shader);
 }
 
-Handle<DescriptorLayout> Device::create_descriptor_layout(std::span<DescriptorRangeDesc const> const ranges) {
+Handle<DescriptorLayout> Device::create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings) {
 
-    return _impl->create_descriptor_layout(ranges);
+    return _impl->create_descriptor_layout(bindings);
 }
 
 void Device::delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout) {

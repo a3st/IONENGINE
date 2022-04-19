@@ -21,11 +21,6 @@
             name: "albedo",
             type: "sampler2D",
             visibility: "pixel"
-        },
-        {
-            name: "power",
-            type: "f32x3",
-            visibility: "vertex"
         }
     ],
     shaders: [

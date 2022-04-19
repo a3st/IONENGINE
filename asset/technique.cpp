@@ -19,10 +19,9 @@ Technique::Technique(std::filesystem::path const& file_path) {
 
     _name = document.name;
 
-    std::unordered_map<ShaderDataFlags, uint32_t> registers_count;
-    registers_count.insert({ ShaderDataFlags::Constant, 0 });
-    registers_count.insert({ ShaderDataFlags::CBuffer, 0 });
-    registers_count.insert({ ShaderDataFlags::Sampler2D, 0 });
+    std::unordered_map<JSON_ShaderUniformType, uint32_t> registers_count;
+    registers_count.insert({ JSON_ShaderUniformType::cbuffer, 0 });
+    registers_count.insert({ JSON_ShaderUniformType::sampler2D, 0 });
 
     std::unordered_map<std::string, uint32_t> locations;
 
@@ -33,41 +32,28 @@ Technique::Technique(std::filesystem::path const& file_path) {
 
             _uniforms.emplace_back();
             _uniforms.back().name = uniform.name;
+            _uniforms.back().is_export = uniform.is_export;
 
-            if(uniform.properties.has_value() && uniform.type != JSON_ShaderDataType::sampler2D) {
+            if(uniform.properties.has_value() && uniform.type != JSON_ShaderUniformType::sampler2D) {
 
-                if(uniform.type != JSON_ShaderDataType::cbuffer) {
+                auto& data = _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::CBuffer>>();
 
-                    auto& data = _uniforms.back().data.emplace<ShaderUniformData<ShaderDataFlags::Constant>>();
-                    data.flags = get_shader_data_flags(uniform.type);
+                std::for_each(
+                    uniform.properties.value().begin(), 
+                    uniform.properties.value().end(), 
+                    [&](auto& element) {
 
-                    locations.insert({ uniform.name, registers_count.at(ShaderDataFlags::Constant) });
-                    ++registers_count.at(ShaderDataFlags::Constant);
-                } else {
-
-                    auto& data = _uniforms.back().data.emplace<ShaderUniformData<ShaderDataFlags::CBuffer>>();
-
-                    std::for_each(
-                        uniform.properties.value().begin(), 
-                        uniform.properties.value().end(), 
-                        [&](auto& element) {
-
-                            data.data.emplace_back(element.name, get_shader_data_flags(element.type));
-                        }
-                    );
-
-                    locations.insert({ uniform.name, registers_count.at(ShaderDataFlags::CBuffer) });
-                    ++registers_count.at(ShaderDataFlags::CBuffer);
-                }
+                        data.data.emplace_back(element.name, get_shader_data_type(element.type));
+                    }
+                );  
             } else {
-
-                _uniforms.back().data.emplace<ShaderUniformData<ShaderDataFlags::Sampler2D>>();
-
-                locations.insert({ uniform.name, registers_count.at(ShaderDataFlags::Sampler2D) });
-                ++registers_count.at(ShaderDataFlags::Sampler2D);
+                _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::Sampler2D>>();
             }
 
             _uniforms.back().visibility = get_shader_flags(uniform.visibility.value_or(static_cast<JSON_ShaderType>(-1)));
+
+            locations.insert({ uniform.name, registers_count.at(uniform.type) });
+            ++registers_count.at(uniform.type);
         }
     );
 
@@ -106,7 +92,7 @@ Technique::Technique(std::filesystem::path const& file_path) {
 
             shader_code += shader.source;
 
-            _data.emplace_back(shader_code, get_shader_flags(shader.type));
+            _shaders.emplace_back(shader_code, get_shader_flags(shader.type));
         }
     );
 }
@@ -121,14 +107,14 @@ std::span<ShaderUniform const> Technique::uniforms() const {
     return _uniforms;
 }
 
-std::span<ShaderData const> Technique::data() const {
+std::span<ShaderData const> Technique::shaders() const {
 
-    return _data;
+    return _shaders;
 }
 
 std::string Technique::generate_uniform_code(
     std::string_view const name, 
-    JSON_ShaderDataType const uniform_type, 
+    JSON_ShaderUniformType const uniform_type, 
     uint32_t const location,
     std::optional<std::span<JSON_ShaderStructDefinition const>> const properties
 ) const {
@@ -137,7 +123,7 @@ std::string Technique::generate_uniform_code(
 
     switch(uniform_type) {
 
-        case JSON_ShaderDataType::cbuffer: {
+        case JSON_ShaderUniformType::cbuffer: {
             generated_code += std::format("cbuffer {} : register(b{}) {{ ", name, location);
             for(auto& property : properties.value()) {
                 generated_code += std::format("{} {}; ", get_shader_data_string(property.type), property.name);
@@ -145,13 +131,9 @@ std::string Technique::generate_uniform_code(
             generated_code += "};\n";
         } break;
 
-        case JSON_ShaderDataType::sampler2D: {
+        case JSON_ShaderUniformType::sampler2D: {
             generated_code += std::format("SamplerState {}_sampler : register(s{}); ", name, location);
             generated_code += std::format("Texture2D {}_texture : register(t{});\n", name, location);
-        } break;
-
-        default: {
-            generated_code += std::format("{} {} : register(c{});\n", get_shader_data_string(uniform_type), name, location);
         } break;
     }
 
@@ -184,15 +166,15 @@ std::string constexpr Technique::get_shader_data_string(JSON_ShaderDataType cons
     }
 }
 
-ShaderDataFlags constexpr Technique::get_shader_data_flags(JSON_ShaderDataType const data_type) const {
+ShaderDataType constexpr Technique::get_shader_data_type(JSON_ShaderDataType const data_type) const {
 
     switch(data_type) {
-        case JSON_ShaderDataType::f32: return ShaderDataFlags::F32;
-        case JSON_ShaderDataType::f32x2: return ShaderDataFlags::F32x2;
-        case JSON_ShaderDataType::f32x3: return ShaderDataFlags::F32x3;
-        case JSON_ShaderDataType::f32x4: return ShaderDataFlags::F32x4;
-        case JSON_ShaderDataType::f32x4x4: return ShaderDataFlags::F32x4x4;
-        default: return ShaderDataFlags::F32;
+        case JSON_ShaderDataType::f32: return ShaderDataType::F32;
+        case JSON_ShaderDataType::f32x2: return ShaderDataType::F32x2;
+        case JSON_ShaderDataType::f32x3: return ShaderDataType::F32x3;
+        case JSON_ShaderDataType::f32x4: return ShaderDataType::F32x4;
+        case JSON_ShaderDataType::f32x4x4: return ShaderDataType::F32x4x4;
+        default: return ShaderDataType::F32;
     }
 }
 

@@ -26,13 +26,10 @@ Renderer::Renderer(platform::Window& window) :
 
     AssetManager asset_manager;
         
-    asset::Shader shader("../../data/shaders/standard.json5", asset_manager);
-        
-    std::cout << shader.name() << std::endl;
 
-    auto shader_passes = shader.shader_passes();
+    asset::Technique technique("geometry.json5");
 
-    frontend::ShaderProgram program(_context, *shader.shader_passes().data()->technique);
+    frontend::ShaderProgram program(_context, technique);
 }
 
 void Renderer::render(scene::Scene& scene) {

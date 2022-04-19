@@ -118,7 +118,7 @@ enum class MemoryState : uint32_t {
     DepthWrite = 1 << 9
 };
 
-enum class DescriptorRangeType {
+enum class DescriptorType {
     ShaderResource,
     ConstantBuffer,
     UnorderedAccess,
@@ -189,16 +189,8 @@ struct RenderPassDepthStencilDesc {
 };
 
 struct DescriptorLayoutBinding {
-    uint32_t binding;
-    DescriptorRangeType range_type;
-    uint32_t count;
-    ShaderFlags flags;
-};
-
-struct DescriptorRangeDesc {
-    DescriptorRangeType range_type;
     uint32_t index;
-    uint32_t count;
+    DescriptorType type;
     ShaderFlags flags;
 };
 
@@ -305,7 +297,7 @@ public:
 
     void delete_shader(Handle<Shader> const& shader);
 
-    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorRangeDesc const> const ranges);
+    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings);
 
     void delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout);
 

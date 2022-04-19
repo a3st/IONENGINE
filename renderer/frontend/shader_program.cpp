@@ -6,7 +6,6 @@
 using namespace ionengine::renderer;
 using namespace ionengine::renderer::frontend;
 
-
 backend::ShaderFlags ShaderProgram::get_shader_flags(asset::ShaderFlags const shader_flags) {
 
     switch(shader_flags) {
@@ -19,18 +18,15 @@ backend::ShaderFlags ShaderProgram::get_shader_flags(asset::ShaderFlags const sh
     }
 }
 
-
 ShaderProgram::ShaderProgram(Context& context, asset::Technique const& technique) :
     _context(&context) {
 
     std::for_each(
-        technique.data().begin(), 
-        technique.data().end(),
-        [&](auto& element) {  
-            backend::Handle<backend::Shader> shader = _context->device().create_shader(element.source, get_shader_flags(element.flags));
-            _shaders.emplace_back(shader);
-
-            std::cout << 123 << std::endl;
+        technique.shaders().begin(), 
+        technique.shaders().end(),
+        [&](auto const& shader_data) {  
+            backend::Handle<backend::Shader> compiled_shader = _context->device().create_shader(shader_data.source, get_shader_flags(shader_data.flags));
+            _shaders.emplace_back(compiled_shader);
         }
     );
 
@@ -53,8 +49,8 @@ ShaderProgram::~ShaderProgram() {
     std::for_each(
         _shaders.begin(), 
         _shaders.end(), 
-        [&](auto& element) { 
-            _context->device().delete_shader(element); 
+        [&](auto const& shader) { 
+            _context->device().delete_shader(shader); 
         }
     );
 
