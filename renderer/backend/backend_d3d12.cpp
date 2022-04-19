@@ -1030,9 +1030,7 @@ Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<Descri
             range.BaseShaderRegister = registers_count.at(get_descriptor_range_type(binding.type));
             range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-            descriptor_layout_data.bindings.insert(
-                { binding.index, { static_cast<uint32_t>(descriptor_layout_data.ranges.size()), descriptor_layout_data.ranges.at(static_cast<uint32_t>(descriptor_layout_data.ranges.size())).NumDescriptors } }
-            );
+            descriptor_layout_data.bindings.insert({ binding.index, { static_cast<uint32_t>(descriptor_layout_data.ranges.size()), 0 } });
             ++range.NumDescriptors;
             ++registers_count.at(get_descriptor_range_type(binding.type));
 
@@ -1302,73 +1300,74 @@ Handle<DescriptorSet> Device::Impl::create_descriptor_set(Handle<DescriptorLayou
     descriptor_set_data.ranges = descriptor_layout_data.ranges;
     descriptor_set_data.is_compute = descriptor_layout_data.is_compute;
 
-    std::map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> index_ranges;
-    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_CBV] = 0;
-    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SRV] = 0;
-    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_UAV] = 0;
-    index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER] = 0;
+    std::unordered_map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> descriptors_count;
+    descriptors_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 0 });
+    descriptors_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0 });
+    descriptors_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0 });
+    descriptors_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 0 });
 
-    for(auto& range : descriptor_layout_data.ranges) {
-
-        ++index_ranges[range.RangeType];
-    }
+    std::for_each(
+        descriptor_layout_data.ranges.begin(),
+        descriptor_layout_data.ranges.end(),
+        [&](auto const& range) {
+            ++descriptors_count.at(range.RangeType);
+        }
+    );
 
     {
         auto descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
         descriptor_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        descriptor_heap_desc.NumDescriptors = index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_CBV] + index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SRV] + index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_UAV];
-    
+        descriptor_heap_desc.NumDescriptors = descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_CBV) + descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_SRV) + descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
+        descriptor_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
         device->CreateDescriptorHeap(&descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.cbv_srv_uav_heap.GetAddressOf()));
     }
 
-    if(index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER] > 0) {
+    if(descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER) > 0) {
 
         auto descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
         descriptor_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-        descriptor_heap_desc.NumDescriptors = index_ranges[D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER];
+        descriptor_heap_desc.NumDescriptors = descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER);
+        descriptor_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-        ComPtr<ID3D12DescriptorHeap> descriptor_heap;
-        device->CreateDescriptorHeap(&descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_heap.GetAddressOf()));
-    
-        descriptor_set_data.sampler_heap = descriptor_heap;
+        device->CreateDescriptorHeap(&descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.sampler_heap.GetAddressOf()));
     }
-    
-    for(size_t i = 0; i < descriptor_layout_data.ranges.size(); ++i) {
 
-        auto& range = descriptor_layout_data.ranges[i];
+    std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32_t> offsets;
 
-        auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {};
+    std::for_each(
+        descriptor_layout_data.ranges.begin(),
+        descriptor_layout_data.ranges.end(),
+        [&](auto const& range) {
 
-        switch(range.RangeType) {
+            auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {};
 
-            case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
-            case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
-            case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
+            switch(range.RangeType) {
+                case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+                case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+                case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
+                    uint32_t const descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                    cpu_handle.ptr = 
+                        descriptor_set_data.cbv_srv_uav_heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                        descriptor_size * // Device descriptor size
+                        offsets.at(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * range.NumDescriptors // Allocation offset
+                    ;
+                    ++offsets.at(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+                } break;
+                case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: {
+                    uint32_t const descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                    cpu_handle.ptr = 
+                        descriptor_set_data.sampler_heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
+                        descriptor_size * // Device descriptor size
+                        offsets.at(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) * range.NumDescriptors // Allocation offset
+                    ;
+                    ++offsets.at(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+                } break;
+            }
 
-                uint32_t const descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                cpu_handle.ptr = 
-                    descriptor_set_data.cbv_srv_uav_heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                    descriptor_size * // Device descriptor size
-                    i * range.NumDescriptors // Allocation offset
-                ; 
-            } break;
-            case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:  {
-
-                uint32_t const descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-                cpu_handle.ptr = 
-                    descriptor_set_data.sampler_heap.value()->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                    descriptor_size * // Device descriptor size
-                    i * range.NumDescriptors // Allocation offset
-                ;
-            } break;
+            descriptor_set_data.descriptors.emplace_back(cpu_handle);
         }
-
-        for(uint32_t j = 0; j < range.NumDescriptors; ++j) {
-            descriptor_set_data.binding_ranges.emplace_back(static_cast<uint32_t>(i), j);
-        }
-
-        descriptor_set_data.bindings.emplace_back(cpu_handle);
-    }
+    );
 
     return descriptor_sets.push(std::move(descriptor_set_data));
 }
@@ -1442,7 +1441,7 @@ void Device::Impl::update_descriptor_set(Handle<DescriptorSet> const& descriptor
 
         std::visit(resource_visitor, write_desc.data);
 
-        auto& binding_info = descriptor_set_data.binding_ranges[write_desc.index];
+        auto const& binding_location = descriptor_set_data.bindings.at(write_desc.index);
 
         uint32_t descriptor_size = device->GetDescriptorHandleIncrementSize(heap_type);
         auto cpu_handle = descriptor_set_data.bindings[binding_info.first];

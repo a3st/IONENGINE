@@ -27,7 +27,7 @@ Renderer::Renderer(platform::Window& window) :
     AssetManager asset_manager;
         
 
-    asset::Technique technique("geometry.json5");
+    asset::Technique technique("../../data/techniques/geometry.json5");
 
     frontend::ShaderProgram program(_context, technique);
 }
