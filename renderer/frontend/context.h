@@ -16,6 +16,9 @@ enum class BufferUsage {
 };
 
 class Context {
+
+    friend class ShaderUniformBinder;
+
 public:
 
     Context(platform::Window& window, uint32_t const buffered_frame_count);

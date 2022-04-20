@@ -1334,6 +1334,8 @@ Handle<DescriptorSet> Device::Impl::create_descriptor_set(Handle<DescriptorLayou
     }
 
     std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32_t> offsets;
+    offsets.insert({ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0 });
+    offsets.insert({ D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 0 });
 
     std::for_each(
         descriptor_layout_data.ranges.begin(),
@@ -1444,8 +1446,9 @@ void Device::Impl::update_descriptor_set(Handle<DescriptorSet> const& descriptor
         auto const& binding_location = descriptor_set_data.bindings.at(write_desc.index);
 
         uint32_t descriptor_size = device->GetDescriptorHandleIncrementSize(heap_type);
-        auto cpu_handle = descriptor_set_data.bindings[binding_info.first];
-        cpu_handle.ptr += descriptor_size * binding_info.second;
+
+        auto cpu_handle = descriptor_set_data.descriptors[binding_location.range_index];
+        cpu_handle.ptr += descriptor_size * binding_location.offset;
 
         device->CopyDescriptorsSimple(
             1,
@@ -1713,7 +1716,7 @@ void Device::Impl::bind_descriptor_set(Handle<CommandList> const& command_list, 
         device->CopyDescriptorsSimple(
             range.NumDescriptors, 
             allocation->cpu_handle(), 
-            descriptor_set_data.bindings[i], 
+            descriptor_set_data.descriptors[i], 
             heap_type
         );
 

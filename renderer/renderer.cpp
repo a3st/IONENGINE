@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
 #include <renderer/renderer.h>
@@ -19,17 +19,38 @@ Renderer::Renderer(platform::Window& window) :
     _buffer_triangle = _context.device().create_buffer(65536, backend::BufferFlags::VertexBuffer);
 
     std::vector<float> triangles = {
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f 
+        -0.5f, -0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f,
+        0.0f,  0.5f, 0.0f
     };
 
     AssetManager asset_manager;
+
+    asset::Technique technique_2("../../data/techniques/offscreen.json5");
+    _shader_prog_2.emplace(_context, technique_2);
         
-
     asset::Technique technique("../../data/techniques/geometry.json5");
+    _shader_prog.emplace(_context, technique);
 
-    frontend::ShaderProgram program(_context, technique);
+    vertex_declaration = { backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, sizeof(float) * 3 } };
+
+    vertex_declaration_offscreen = { 
+        backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, sizeof(float) * 3 },
+        backend::VertexInputDesc { "TEXCOORD", 0, backend::Format::RG32, 0, sizeof(float) * 2 }
+    };
+
+    _vertex_buffer = _context.device().create_buffer(65536, backend::BufferFlags::HostWrite | backend::BufferFlags::VertexBuffer);
+    
+    _context.device().map_buffer_data(_vertex_buffer, 0, std::span<uint8_t const>((uint8_t*)triangles.data(), triangles.size() * sizeof(float)));
+
+    _sampler = _context.device().create_sampler(
+        backend::Filter::MinMagMipLinear, 
+        backend::AddressMode::Clamp, 
+        backend::AddressMode::Clamp, 
+        backend::AddressMode::Clamp,
+        8,
+        backend::CompareOp::Always
+    );
 }
 
 void Renderer::render(scene::Scene& scene) {
@@ -53,21 +74,7 @@ void Renderer::render(scene::Scene& scene) {
 
 void Renderer::resize(uint32_t const width, uint32_t const height) {
 
-    
 }
-
-/*
-    _pipeline_test = _backend->create_pipeline(
-        _pbr_layout,
-        vertex_declaration,
-        _shader_cache.shader_effect("basic"_hash).shaders(),
-        RasterizerDesc { FillMode::Solid, CullMode::Back },
-        DepthStencilDesc { CompareOp::Always, false },
-        BlendDesc { false, Blend::One, Blend::Zero, BlendOp::Add, Blend::One, Blend::Zero, BlendOp::Add },
-        context.render_pass(),
-        "Pipeline_TEST"_hash
-    );
-*/
 
 void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count) {
 
@@ -84,7 +91,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
     frontend::CreateColorInfo gbuffer_color_info {
         .attachment = _gbuffer_color_buffer,
         .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = Color(0.4f, 0.2f, 0.1f, 1.0f)
+        .clear_color = Color(0.4f, 0.3f, 0.8f, 1.0f)
     };
 
     _frame_graph.add_pass(
@@ -96,16 +103,49 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         },
         [&](frontend::RenderPassContext const& context) {
             
-            // 
+            backend::Handle<backend::Pipeline> pipeline_target;
+
+            auto it = _pipelines.find(context.render_pass().index());
+            if(it != _pipelines.end()) {
+                
+                pipeline_target = it->second;
+
+            } else {
+
+                pipeline_target = _context.device().create_pipeline(
+                    _shader_prog.value().layout(),
+                    vertex_declaration,
+                    _shader_prog.value().shaders(),
+                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::Back },
+                    backend::DepthStencilDesc { backend::CompareOp::Always, false },
+                    backend::BlendDesc { false, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add },
+                    context.render_pass(),
+                    backend::InvalidHandle<backend::CachePipeline>()
+                );
+
+                _pipelines.insert({ context.render_pass().index(), pipeline_target });
+            }
+
+            _context.device().bind_pipeline(context.command_list(), pipeline_target);
+            _context.device().bind_vertex_buffer(context.command_list(), 0, _vertex_buffer, 0);
+            _context.device().draw(context.command_list(), 3, 1, 0);
         }
     );
 
     _swapchain_buffer = &_frame_graph.add_attachment("swapchain_buffer", backend::MemoryState::Present, backend::MemoryState::Present);
 
-    frontend::CreateColorInfo swapchain_info = {
+    std::array<frontend::CreateColorInfo, 1> present_colors;
+
+    present_colors[0] = frontend::CreateColorInfo {
         .attachment = _swapchain_buffer,
         .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = Color(0.4f, 0.2f, 0.1f, 1.0f)
+        .clear_color = Color(0.0f, 0.3f, 0.8f, 1.0f)
+    };
+
+    std::array<frontend::Attachment*, 1> present_inputs;
+
+    present_inputs[0] = {
+        _gbuffer_color_buffer
     };
 
     _frame_graph.add_pass(
@@ -113,9 +153,44 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             .name = "present_only_pass",
             .width = width,
             .height = height,
-            .color_infos = std::span<frontend::CreateColorInfo const>(&swapchain_info, 1)
+            .color_infos = present_colors,
+            .inputs = present_inputs
         },
-        frontend::RenderPassDefaultFunc
+        [&](frontend::RenderPassContext const& context) {
+
+            backend::Handle<backend::Pipeline> pipeline_target;
+
+            auto it = _pipelines.find(context.render_pass().index());
+            if(it != _pipelines.end()) {
+                
+                pipeline_target = it->second;
+
+            } else {
+
+                pipeline_target = _context.device().create_pipeline(
+                    _shader_prog_2.value().layout(),
+                    vertex_declaration_offscreen,
+                    _shader_prog_2.value().shaders(),
+                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::Back },
+                    backend::DepthStencilDesc { backend::CompareOp::Always, false },
+                    backend::BlendDesc { false, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add },
+                    context.render_pass(),
+                    backend::InvalidHandle<backend::CachePipeline>()
+                );
+
+                _pipelines.insert({ context.render_pass().index(), pipeline_target });
+            }
+
+            frontend::ShaderUniformBinder binder(_context, _shader_prog_2.value());
+            uint32_t albedo_index = binder.get_uniform_by_name("albedo");
+            binder.bind_sampler(albedo_index, context.attachment(0), _sampler);
+
+            binder.update(context.command_list());
+
+            _context.device().bind_pipeline(context.command_list(), pipeline_target);
+            _context.device().bind_vertex_buffer(context.command_list(), 0, _vertex_buffer, 0);
+            _context.device().draw(context.command_list(), 3, 1, 0);
+        }
     );
 
     _frame_graph.build(buffered_frame_count);

@@ -4,6 +4,7 @@
 
 #include <renderer/frontend/context.h>
 #include <renderer/frontend/frame_graph.h>
+#include <renderer/frontend/shader_program.h>
 
 namespace ionengine::scene {
 class Scene;
@@ -40,9 +41,23 @@ private:
 
     void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count);
 
-    //std::vector<Renderable> _renderables;
-
     backend::Handle<backend::Buffer> _buffer_triangle;
+
+    std::vector<backend::VertexInputDesc> vertex_declaration;
+
+    std::vector<backend::VertexInputDesc> vertex_declaration_offscreen;
+
+    std::optional<frontend::ShaderProgram> _shader_prog;
+
+    std::optional<frontend::ShaderProgram> _shader_prog_2;
+
+    std::unordered_map<uint32_t, backend::Handle<backend::Pipeline>> _pipelines;
+
+    backend::Handle<backend::Buffer> _vertex_buffer;
+
+    backend::Handle<backend::Buffer> offscreen_vertex_buffer;
+
+    backend::Handle<backend::Sampler> _sampler;
 };
 
 }

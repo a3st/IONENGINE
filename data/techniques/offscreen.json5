@@ -20,18 +20,18 @@
             is_export: false
         },
         {
+            name: "albedo",
+            type: "sampler2D",
+            visibility: "pixel",
+            is_export: true
+        },
+        {
             name: "material",
             type: "cbuffer",
             properties: [
                 { name: "color", type: "f32x4" }
             ],
             visibility: "vertex",
-            is_export: true
-        },
-        {
-            name: "albedo",
-            type: "sampler2D",
-            visibility: "pixel",
             is_export: true
         }
     ],
@@ -40,15 +40,18 @@
             type: "vertex",
             inputs: [
                 { name: "position", type: "f32x3", semantic: "POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             outputs: [
                 { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             source: "
                 vs_output main(vs_input input) {
                     vs_output output;
                     float4 world_pos = float4(input.position, 1.0f);
                     output.position = world_pos;
+                    output.uv = input.uv;
                     return output;
                 }
             "
@@ -57,6 +60,7 @@
             type: "pixel",
             inputs: [
                 { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             outputs: [
                 { name: "albedo", type: "f32x4", semantic: "SV_TARGET0" },

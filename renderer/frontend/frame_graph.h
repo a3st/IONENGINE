@@ -88,7 +88,7 @@ struct RenderPassDesc {
     uint32_t height;
     std::span<CreateColorInfo const> color_infos;
     std::optional<CreateDepthStencilInfo> depth_stencil_info;
-    std::span<Attachment const> inputs;
+    std::span<Attachment* const> inputs;
 
     RenderPassDesc& set_name(std::string const& _name) {
 
@@ -115,7 +115,7 @@ struct RenderPassDesc {
         return *this;
     }
 
-    RenderPassDesc& set_inputs(std::span<Attachment const> const _inputs) {
+    RenderPassDesc& set_inputs(std::span<Attachment* const> const _inputs) {
         
         inputs = _inputs;
         return *this;
@@ -180,8 +180,9 @@ public:
         }
 
         if(!render_pass_desc.inputs.empty()) {
-            _input_attachments.resize(render_pass_desc.inputs.size());
-            std::memcpy(_input_attachments.data(), render_pass_desc.inputs.data(), render_pass_desc.inputs.size_bytes());
+            for(auto& input : render_pass_desc.inputs) {
+                _input_attachments.emplace_back(input);
+            }
         }
 
         _func = func;
