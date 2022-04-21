@@ -18,19 +18,18 @@ Renderer::Renderer(platform::Window& window) :
 
     _buffer_triangle = _context.device().create_buffer(65536, backend::BufferFlags::VertexBuffer);
 
-    std::vector<float> triangles = {
+    std::vector<float> triangle = {
         -0.5f, -0.5f, 0.0f,
         0.5f, -0.5f, 0.0f,
         0.0f,  0.5f, 0.0f
     };
 
     AssetManager asset_manager;
-
-    asset::Technique technique_2("../../data/techniques/offscreen.json5");
-    _shader_prog_2.emplace(_context, technique_2);
         
     asset::Technique technique("../../data/techniques/geometry.json5");
     _shader_prog.emplace(_context, technique);
+    asset::Technique technique_2("../../data/techniques/offscreen.json5");
+    _shader_prog_2.emplace(_context, technique_2);
 
     vertex_declaration = { backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, sizeof(float) * 3 } };
 
@@ -41,7 +40,7 @@ Renderer::Renderer(platform::Window& window) :
 
     _vertex_buffer = _context.device().create_buffer(65536, backend::BufferFlags::HostWrite | backend::BufferFlags::VertexBuffer);
     
-    _context.device().map_buffer_data(_vertex_buffer, 0, std::span<uint8_t const>((uint8_t*)triangles.data(), triangles.size() * sizeof(float)));
+    _context.device().map_buffer_data(_vertex_buffer, 0, std::span<uint8_t const>((uint8_t*)triangle.data(), triangle.size() * sizeof(float)));
 
     _sampler = _context.device().create_sampler(
         backend::Filter::MinMagMipLinear, 
@@ -51,6 +50,19 @@ Renderer::Renderer(platform::Window& window) :
         8,
         backend::CompareOp::Always
     );
+
+    offscreen_vertex_buffer = _context.device().create_buffer(65536, backend::BufferFlags::HostWrite | backend::BufferFlags::VertexBuffer);
+
+    std::vector<float> quad = {
+        1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f, 0.0f, 1.0f
+    };
+
+    _context.device().map_buffer_data(offscreen_vertex_buffer, 0, std::span<uint8_t const>((uint8_t*)quad.data(), quad.size() * sizeof(float)));
 }
 
 void Renderer::render(scene::Scene& scene) {
@@ -91,7 +103,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
     frontend::CreateColorInfo gbuffer_color_info {
         .attachment = _gbuffer_color_buffer,
         .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = Color(0.4f, 0.3f, 0.8f, 1.0f)
+        .clear_color = Color(0.1f, 0.5f, 0.2f, 1.0f)
     };
 
     _frame_graph.add_pass(
@@ -181,15 +193,14 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                 _pipelines.insert({ context.render_pass().index(), pipeline_target });
             }
 
-            frontend::ShaderUniformBinder binder(_context, _shader_prog_2.value());
-            uint32_t albedo_index = binder.get_uniform_by_name("albedo");
-            //binder.bind_sampler(albedo_index, context.attachment(0), _sampler);
+            _context.device().bind_pipeline(context.command_list(), pipeline_target);
 
+            frontend::ShaderUniformBinder binder(_context, _shader_prog_2.value());
+            binder.bind_texture(_shader_prog_2.value().get_uniform_by_name("albedo"), context.attachment(0), _sampler);
             binder.update(context.command_list());
 
-            _context.device().bind_pipeline(context.command_list(), pipeline_target);
-            _context.device().bind_vertex_buffer(context.command_list(), 0, _vertex_buffer, 0);
-            _context.device().draw(context.command_list(), 3, 1, 0);
+            _context.device().bind_vertex_buffer(context.command_list(), 0, offscreen_vertex_buffer, 0);
+            _context.device().draw(context.command_list(), 6, 1, 0);
         }
     );
 
@@ -198,5 +209,4 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
 void Renderer::load_shader() {
 
-    
 }

@@ -1,5 +1,5 @@
 {
-    name: "geometry",
+    name: "offscreen",
     uniforms: [
         { 
             name: "world", 
@@ -20,18 +20,18 @@
             is_export: false
         },
         {
-            name: "albedo",
-            type: "sampler2D",
-            visibility: "pixel",
-            is_export: true
-        },
-        {
             name: "material",
             type: "cbuffer",
             properties: [
                 { name: "color", type: "f32x4" }
             ],
             visibility: "vertex",
+            is_export: true
+        },
+        {
+            name: "albedo",
+            type: "sampler2D",
+            visibility: "pixel",
             is_export: true
         }
     ],
@@ -65,10 +65,10 @@
             outputs: [
                 { name: "albedo", type: "f32x4", semantic: "SV_TARGET0" },
             ],
-            source: "   
+            source: "
                 ps_output main(ps_input input) {
                     ps_output output;
-                    output.albedo = float4(0.2f, 0.1f, 0.5f, 1.0f);
+                    output.albedo = albedo_texture.Sample(albedo_sampler, input.uv);
                     return output;
                 }
             "

@@ -1313,7 +1313,7 @@ Handle<DescriptorSet> Device::Impl::create_descriptor_set(Handle<DescriptorLayou
         descriptor_layout_data.ranges.begin(),
         descriptor_layout_data.ranges.end(),
         [&](auto const& range) {
-            ++descriptors_count.at(range.RangeType);
+            descriptors_count.at(range.RangeType) += range.NumDescriptors;
         }
     );
 

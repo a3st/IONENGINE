@@ -22,6 +22,8 @@ ShaderProgram::ShaderProgram(Context& context, asset::Technique const& technique
 
     uint32_t binding = 0;
 
+    std::cout << std::format("----- {} ------", technique.name()) << std::endl;
+
     std::for_each(
         technique.uniforms().begin(),
         technique.uniforms().end(),
@@ -29,7 +31,7 @@ ShaderProgram::ShaderProgram(Context& context, asset::Technique const& technique
 
             _uniforms.insert({ element.name, binding });
 
-            std::cout << binding << " " << element.name << " " << std::boolalpha << element.is_export << std::endl;
+            std::cout << std::format("Binding: {}, Name: {}, Export: {}", binding, element.name, element.is_export) << std::endl;
 
             auto uniform_visitor = make_visitor(
                 [&](asset::ShaderUniformData<asset::ShaderUniformType::Sampler2D> const& data) {
@@ -66,6 +68,19 @@ ShaderProgram::~ShaderProgram() {
     _context->device().delete_descriptor_layout(_layout);
 }
 
+backend::Handle<backend::DescriptorLayout> ShaderProgram::layout() const { 
+    return _layout; 
+}
+
+std::span<backend::Handle<backend::Shader> const> ShaderProgram::shaders() const { 
+    return _shaders; 
+}
+
+uint32_t ShaderProgram::get_uniform_by_name(std::string const& name) const {
+
+    return _uniforms.at(name);
+}
+
 backend::ShaderFlags ShaderProgram::get_shader_flags(asset::ShaderFlags const shader_flags) {
 
     switch(shader_flags) {
@@ -76,4 +91,26 @@ backend::ShaderFlags ShaderProgram::get_shader_flags(asset::ShaderFlags const sh
         case asset::ShaderFlags::Hull: return backend::ShaderFlags::Hull;
         default: return backend::ShaderFlags::All;
     }
+}
+
+ShaderUniformBinder::ShaderUniformBinder(Context& context, ShaderProgram& program) : 
+    _context(&context), _program(&program) {
+
+}
+
+void ShaderUniformBinder::bind_cbuffer(uint32_t const index, backend::Handle<backend::Buffer> const& buffer) {
+
+    _descriptor_writes.emplace_back(index, buffer);
+}
+
+void ShaderUniformBinder::bind_texture(uint32_t const index, backend::Handle<backend::Texture> const& texture, backend::Handle<backend::Sampler> const& sampler) {
+
+    _descriptor_writes.emplace_back(index, texture);
+    _descriptor_writes.emplace_back(index + 1, sampler);
+}
+
+void ShaderUniformBinder::update(backend::Handle<backend::CommandList> const& command_list) {
+
+    _context->device().update_descriptor_set(_program->descriptor_sets.at(_context->_frame_index), _descriptor_writes);
+    _context->device().bind_descriptor_set(command_list, _program->descriptor_sets.at(_context->_frame_index));
 }

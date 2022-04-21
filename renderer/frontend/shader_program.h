@@ -17,9 +17,11 @@ public:
 
     ~ShaderProgram();
 
-    backend::Handle<backend::DescriptorLayout> layout() const { return _layout; }
+    backend::Handle<backend::DescriptorLayout> layout() const;
 
-    std::span<backend::Handle<backend::Shader> const> shaders() const { return _shaders; }
+    std::span<backend::Handle<backend::Shader> const> shaders() const;
+
+    uint32_t get_uniform_by_name(std::string const& name) const;
 
 private:
 
@@ -38,34 +40,13 @@ private:
 class ShaderUniformBinder {
 public:
 
-    ShaderUniformBinder(Context& context, ShaderProgram& program) : 
-        _context(&context), _program(&program) {
+    ShaderUniformBinder(Context& context, ShaderProgram& program);
 
-    }
+    void bind_cbuffer(uint32_t const index, backend::Handle<backend::Buffer> const& buffer);
 
-    uint32_t get_uniform_by_name(std::string const& name) const {
+    void bind_texture(uint32_t const index, backend::Handle<backend::Texture> const& texture, backend::Handle<backend::Sampler> const& sampler);
 
-        return _program->_uniforms.at(name);
-    }
-
-    ShaderUniformBinder& bind_cbuffer(uint32_t const index, backend::Handle<backend::Buffer> const& buffer) {
-
-        _descriptor_writes.emplace_back(index, buffer);
-        return *this;
-    }
-
-    ShaderUniformBinder& bind_sampler(uint32_t const index, backend::Handle<backend::Texture> const& texture, backend::Handle<backend::Sampler> const& sampler) {
-
-        _descriptor_writes.emplace_back(index, texture);
-        _descriptor_writes.emplace_back(index + 1, sampler);
-        return *this;
-    }
-
-    void update(backend::Handle<backend::CommandList> const& command_list) {
-
-        _context->device().update_descriptor_set(_program->descriptor_sets.at(_context->_frame_index), _descriptor_writes);
-        _context->device().bind_descriptor_set(command_list, _program->descriptor_sets.at(_context->_frame_index));
-    }
+    void update(backend::Handle<backend::CommandList> const& command_list);
 
 private:
 
