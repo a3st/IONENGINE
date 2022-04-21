@@ -1034,6 +1034,8 @@ Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<Descri
             ++range.NumDescriptors;
             ++registers_count.at(get_descriptor_range_type(binding.type));
 
+            ranges_index.insert({ { range.RangeType, get_shader_visibility(binding.flags) }, static_cast<uint32_t>(descriptor_layout_data.ranges.size()) });
+
             descriptor_layout_data.ranges.emplace_back(std::move(range));
 
             auto parameter = D3D12_ROOT_PARAMETER {};
@@ -1298,6 +1300,7 @@ Handle<DescriptorSet> Device::Impl::create_descriptor_set(Handle<DescriptorLayou
     auto& descriptor_layout_data = descriptor_layouts[descriptor_layout];
 
     descriptor_set_data.ranges = descriptor_layout_data.ranges;
+    descriptor_set_data.bindings = descriptor_layout_data.bindings;
     descriptor_set_data.is_compute = descriptor_layout_data.is_compute;
 
     std::unordered_map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> descriptors_count;

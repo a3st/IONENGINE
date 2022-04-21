@@ -27,13 +27,13 @@
             ],
             visibility: "vertex",
             is_export: true
-        },
-        {
+        }
+        /*{
             name: "albedo",
             type: "sampler2D",
             visibility: "pixel",
             is_export: true
-        }
+        }*/
     ],
     shaders: [
         {

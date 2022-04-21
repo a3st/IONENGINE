@@ -183,7 +183,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
             frontend::ShaderUniformBinder binder(_context, _shader_prog_2.value());
             uint32_t albedo_index = binder.get_uniform_by_name("albedo");
-            binder.bind_sampler(albedo_index, context.attachment(0), _sampler);
+            //binder.bind_sampler(albedo_index, context.attachment(0), _sampler);
 
             binder.update(context.command_list());
 
