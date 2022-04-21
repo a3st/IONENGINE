@@ -31,7 +31,7 @@ ShaderProgram::ShaderProgram(Context& context, asset::Technique const& technique
 
             _uniforms.insert({ element.name, binding });
 
-            std::cout << std::format("Binding: {}, Name: {}, Export: {}", binding, element.name, element.is_export) << std::endl;
+            std::cout << std::format("Binding: {}, Name: {}", binding, element.name) << std::endl;
 
             auto uniform_visitor = make_visitor(
                 [&](asset::ShaderUniformData<asset::ShaderUniformType::Sampler2D> const& data) {

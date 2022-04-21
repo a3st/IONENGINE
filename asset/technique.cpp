@@ -32,7 +32,6 @@ Technique::Technique(std::filesystem::path const& file_path) {
 
             _uniforms.emplace_back();
             _uniforms.back().name = uniform.name;
-            _uniforms.back().is_export = uniform.is_export;
 
             if(uniform.properties.has_value() && uniform.type != JSON_ShaderUniformType::sampler2D) {
 

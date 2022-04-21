@@ -8,7 +8,6 @@
 #include <lib/exception.h>
 #include <lib/algorithm.h>
 
-#include <asset/shader.h>
 #include <engine/asset_manager.h>
 
 using namespace ionengine;

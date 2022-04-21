@@ -4,9 +4,7 @@
 #include <renderer/renderer.h>
 #include <scene/scene.h>
 
-#include <renderer/frontend/shader_program.h>
 #include <engine/asset_manager.h>
-#include <asset/shader.h>
 
 using namespace ionengine::renderer;
 
@@ -31,11 +29,11 @@ Renderer::Renderer(platform::Window& window) :
     asset::Technique technique_2("../../data/techniques/offscreen.json5");
     _shader_prog_2.emplace(_context, technique_2);
 
-    vertex_declaration = { backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, sizeof(float) * 3 } };
+    vertex_declaration = { backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, 0 } };
 
     vertex_declaration_offscreen = { 
-        backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, sizeof(float) * 3 },
-        backend::VertexInputDesc { "TEXCOORD", 0, backend::Format::RG32, 0, sizeof(float) * 2 }
+        backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, 0 },
+        backend::VertexInputDesc { "TEXCOORD", 0, backend::Format::RG32, 0, sizeof(float) * 3 }
     };
 
     _vertex_buffer = _context.device().create_buffer(65536, backend::BufferFlags::HostWrite | backend::BufferFlags::VertexBuffer);

@@ -8,7 +8,6 @@
                 { name: "viewproj", type: "f32x4x4" }
             ],
             visibility: "vertex",
-            is_export: false
         },
         {
             name: "light", 
@@ -17,7 +16,6 @@
                 { name: "light", type: "f32x3" }
             ],
             visibility: "vertex",
-            is_export: false
         },
         {
             name: "material",
@@ -26,14 +24,7 @@
                 { name: "color", type: "f32x4" }
             ],
             visibility: "vertex",
-            is_export: true
         }
-        /*{
-            name: "albedo",
-            type: "sampler2D",
-            visibility: "pixel",
-            is_export: true
-        }*/
     ],
     shaders: [
         {

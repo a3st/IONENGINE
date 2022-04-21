@@ -1148,6 +1148,15 @@ Handle<Pipeline> Device::Impl::create_pipeline(
         return DXGI_FORMAT_R32G32B32_FLOAT;
     };
 
+    auto get_format_size = [&](Format const format) -> uint32_t {
+        switch(format) {
+            case Format::RGB32: return sizeof(float) * 3;
+            case Format::RGBA32: return sizeof(float) * 4;
+            case Format::RG32: return sizeof(float) * 2;
+        }
+        return sizeof(float) * 3;
+    };
+
     auto pipeline_data = Pipeline {};
 
     auto& descriptor_layout_data = descriptor_layouts[descriptor_layout];
@@ -1171,7 +1180,7 @@ Handle<Pipeline> Device::Impl::create_pipeline(
         input_element_desc.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT;
         input_element_descs.emplace_back(input_element_desc);
 
-        pipeline_data.vertex_strides[input.slot] += input.stride;
+        pipeline_data.vertex_strides[input.slot] += get_format_size(input.format);
     }
 
     pipeline_desc.InputLayout.pInputElementDescs = input_element_descs.data();

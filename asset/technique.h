@@ -47,10 +47,9 @@ struct JSON_TechniqueUniformDefinition {
     JSON_ShaderUniformType type;
     std::optional<std::vector<JSON_ShaderStructDefinition>> properties;
     std::optional<JSON_ShaderType> visibility;
-    bool is_export;
 };
 
-JSON5_CLASS(JSON_TechniqueUniformDefinition, name, type, properties, visibility, is_export)
+JSON5_CLASS(JSON_TechniqueUniformDefinition, name, type, properties, visibility)
 
 struct JSON_TechniqueShaderDefinition {
     JSON_ShaderType type;
@@ -128,7 +127,6 @@ struct ShaderUniform {
     > data;
 
     ShaderFlags visibility;
-    bool is_export;
 
     DECLARE_SHADER_UNIFORM_CAST(as_sampler2D, ShaderUniformType::Sampler2D)
     DECLARE_SHADER_UNIFORM_CAST(as_cbuffer, ShaderUniformType::CBuffer)

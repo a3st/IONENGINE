@@ -33,7 +33,6 @@ add_executable(Runtime-Win32
     asset/texture.cpp
     asset/buffer.cpp
     asset/material.cpp
-    asset/shader.cpp
     asset/technique.cpp
 # ---------------------------
     # Scene

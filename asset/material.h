@@ -6,33 +6,115 @@
 #include <json5/json5_input.hpp>
 #include <json5/json5_reflect.hpp>
 
-#include <asset/shader.h>
 #include <asset/texture.h>
-
 #include <lib/math/vector.h>
+
+namespace json5::detail {
+
+inline json5::value write(writer& w, ionengine::lib::math::Vector4f const& in) {
+
+	w.push_array();
+	w += write(w, in.x);
+	w += write(w, in.y);
+	w += write(w, in.z);
+    w += write(w, in.w);
+	return w.pop();
+}
+
+inline error read(json5::value const& in, ionengine::lib::math::Vector4f& out) {
+
+	return read(json5::array_view(in), out.x, out.y, out.z, out.w);
+}
+
+inline json5::value write(writer& w, ionengine::lib::math::Vector3f const& in) {
+
+	w.push_array();
+	w += write(w, in.x);
+	w += write(w, in.y);
+	w += write(w, in.z);
+	return w.pop();
+}
+
+inline error read(json5::value const& in, ionengine::lib::math::Vector3f& out) {
+
+	return read(json5::array_view(in), out.x, out.y, out.z);
+}
+
+inline json5::value write(writer& w, ionengine::lib::math::Vector2f const& in) {
+
+	w.push_array();
+	w += write(w, in.x);
+	w += write(w, in.y);
+	return w.pop();
+}
+
+inline error read(json5::value const& in, ionengine::lib::math::Vector2f& out) {
+
+	return read(json5::array_view(in), out.x, out.y);
+}
+
+}
 
 enum class JSON_MaterialParameterType {
     sampler2D,
+    f32x4x4,
     f32x4,
     f32x3,
     f32x2,
     f32
 };
 
-JSON5_ENUM(JSON_MaterialParameterType, sampler2D, f32x4, f32x3, f32x2, f32)
+JSON5_ENUM(JSON_MaterialParameterType, sampler2D, f32x4x4, f32x4, f32x3, f32x2, f32)
 
-struct JSON_MaterialPropertyDefinition {
+struct JSON_MaterialParameterValueDefinition {
     JSON_MaterialParameterType type;
-    std::optional<std::string> asset;
-    std::optional<std::vector<float>> value;
+    std::optional<std::string> path;
+    std::optional<ionengine::lib::math::Vector4f> vec4;
+    std::optional<ionengine::lib::math::Vector3f> vec3;
+    std::optional<ionengine::lib::math::Vector2f> vec2;
+    std::optional<float> value;
 };
 
-JSON5_CLASS(JSON_MaterialPropertyDefinition, type, asset, value)
+JSON5_CLASS(JSON_MaterialParameterValueDefinition, type, path, vec4, vec3, vec2, value)
+
+struct JSON_MaterialParameterDefinition {
+    std::string name;
+    JSON_MaterialParameterValueDefinition value;
+};
+
+JSON5_CLASS(JSON_MaterialParameterDefinition, name, value)
+
+struct JSON_MaterialPassParametersDefinition {
+    
+};
+
+JSON5_CLASS(JSON_MaterialParameterDefinition)
+
+struct JSON_MaterialPassDefinition {
+    std::string name;
+    JSON_MaterialPassParametersDefinition parameters;
+    std::string technique;
+};
+
+JSON5_CLASS(JSON_MaterialParameterDefinition, name, parameters, technique)
+
+struct JSON_MaterialDefinition {
+    std::string name;
+    std::vector<JSON_MaterialParameterDefinition> parameters;
+    std::vector<JSON_MaterialPassDefinition> passes;
+};
+
+JSON5_CLASS(JSON_MaterialDefinition, name, parameters, passes)
+
+namespace ionengine {
+class AssetManager;
+};
 
 namespace ionengine::asset {
 
 enum class MaterialParameterType {
     Sampler2D,
+    F32x4x4,
     F32x4,
     F32x3,
     F32x2,
@@ -40,48 +122,48 @@ enum class MaterialParameterType {
 };
 
 template<MaterialParameterType Type>
-struct MaterialParameter {};
+struct MaterialParameterData {};
 
 template<>
-struct MaterialParameter<MaterialParameterType::Sampler2D> { 
+struct MaterialParameterData<MaterialParameterType::Sampler2D> { 
     std::shared_ptr<Texture> asset;
 };
 
 template<>
-struct MaterialParameter<MaterialParameterType::F32> {
+struct MaterialParameterData<MaterialParameterType::F32> {
     float value;
 };
 
 template<>
-struct MaterialParameter<MaterialParameterType::F32x2> {
+struct MaterialParameterData<MaterialParameterType::F32x2> {
     lib::math::Vector2f value;
 };
 
 template<>
-struct MaterialParameter<MaterialParameterType::F32x3> {
+struct MaterialParameterData<MaterialParameterType::F32x3> {
     lib::math::Vector3f value;
 };
 
 template<>
-struct MaterialParameter<MaterialParameterType::F32x4> {
+struct MaterialParameterData<MaterialParameterType::F32x4> {
     lib::math::Vector4f value;
 };
 
 #ifndef DECLARE_MATERIAL_PARAMETER_CAST
 #define DECLARE_MATERIAL_PARAMETER_CAST(Name, Type) \
-MaterialParameter<Type> const& Name() { \
-    return std::get<MaterialParameter<Type>>(property); \
+MaterialParameterData<Type> const& Name() { \
+    return std::get<MaterialParameterData<Type>>(data); \
 }
 #endif
 
-struct MaterialProperty {
+struct MaterialParameter {
     std::variant<
-        MaterialParameter<MaterialParameterType::Sampler2D>,
-        MaterialParameter<MaterialParameterType::F32>,
-        MaterialParameter<MaterialParameterType::F32x2>,
-        MaterialParameter<MaterialParameterType::F32x3>,
-        MaterialParameter<MaterialParameterType::F32x4>
-    > property;
+        MaterialParameterData<MaterialParameterType::Sampler2D>,
+        MaterialParameterData<MaterialParameterType::F32>,
+        MaterialParameterData<MaterialParameterType::F32x2>,
+        MaterialParameterData<MaterialParameterType::F32x3>,
+        MaterialParameterData<MaterialParameterType::F32x4>
+    > data;
 
     DECLARE_MATERIAL_PARAMETER_CAST(as_sampler2D, MaterialParameterType::Sampler2D)
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32, MaterialParameterType::F32)
@@ -97,8 +179,7 @@ public:
 
 private:
 
-    std::shared_ptr<Shader> _shader;
-    std::unordered_map<std::string, MaterialProperty> _properties;
+    std::unordered_map<std::string, MaterialParameter> _parameters;
 };
 
 }

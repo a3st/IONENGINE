@@ -1,13 +1,24 @@
 {
-    shader: "standard",
-    properties: {
-        albedo: {
-            type: "sampler2D",
-            asset: "default_albedo"
+    name: "surface_test",
+    parameters: [
+        {
+            name: "albedo",
+            value: { type: "sampler2D", path: "content/default_albedo.asset" }
         },
-        power: {
-            type: "f32x4",
-            value: [ 1.0, 0.4, 0.5, 1.0 ]
+        {
+            name: "color",
+            value: { type: "f32x4", vec4: [ 1.0, 0.4, 0.5, 1.0 ] }
         }
-    }
+    ],
+    passes: [
+        {
+            name: "geometry",
+            parameters: {
+                fill_mode: "wireframe",
+                cull_mode: "front",
+                depth_stencil: true
+            },
+            technique: "../../data/shaders/techniques/geometry.json5"
+        }
+    ]
 }
