@@ -66,6 +66,21 @@ enum class JSON_MaterialParameterType {
 
 JSON5_ENUM(JSON_MaterialParameterType, sampler2D, f32x4x4, f32x4, f32x3, f32x2, f32)
 
+enum JSON_PassFillMode {
+    wireframe,
+    solid
+};
+
+JSON5_ENUM(JSON_PassFillMode, wireframe, solid)
+
+enum JSON_PassCullMode {
+    front,
+    back,
+    none
+};
+
+JSON5_ENUM(JSON_PassCullMode, front, back, none)
+
 struct JSON_MaterialParameterValueDefinition {
     JSON_MaterialParameterType type;
     std::optional<std::string> path;
@@ -85,10 +100,12 @@ struct JSON_MaterialParameterDefinition {
 JSON5_CLASS(JSON_MaterialParameterDefinition, name, value)
 
 struct JSON_MaterialPassParametersDefinition {
-    
+    JSON_PassFillMode fill_mode;
+    JSON_PassCullMode cull_mode;
+    bool depth_stencil;
 };
 
-JSON5_CLASS(JSON_MaterialParameterDefinition)
+JSON5_CLASS(JSON_MaterialPassParametersDefinition, fill_mode, cull_mode, depth_stencil)
 
 struct JSON_MaterialPassDefinition {
     std::string name;
@@ -96,7 +113,7 @@ struct JSON_MaterialPassDefinition {
     std::string technique;
 };
 
-JSON5_CLASS(JSON_MaterialParameterDefinition, name, parameters, technique)
+JSON5_CLASS(JSON_MaterialPassDefinition, name, parameters, technique)
 
 struct JSON_MaterialDefinition {
     std::string name;
