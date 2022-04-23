@@ -10,9 +10,10 @@ enum class VertexUsage : uint8_t {
     Position = 0,
     Normal = 1,
     Tangent = 2,
-    TexCoord0 = 3,
-    TexCoord1 = 4,
-    TexCoord2 = 5
+    Color0 = 3,
+    TexCoord0 = 4,
+    TexCoord1 = 5,
+    TexCoord2 = 6
 };
 
 enum class VertexFormat : uint8_t {
@@ -51,7 +52,7 @@ private:
 
 struct Primitive {
     HashedBuffer vertex_buffer;
-    HashedBuffer index_buffer;
+    std::optional<HashedBuffer> index_buffer;
     uint32_t material_index;
 };
 

@@ -31,15 +31,18 @@
             type: "vertex",
             inputs: [
                 { name: "position", type: "f32x3", semantic: "POSITION" },
+                { name: "color", type: "f32x3", semantic: "COLOR" }
             ],
             outputs: [
                 { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "color", type: "f32x3", semantic: "COLOR" }
             ],
             source: "
                 vs_output main(vs_input input) {
                     vs_output output;
                     float4 world_pos = float4(input.position, 1.0f);
                     output.position = world_pos;
+                    output.color = input.color;
                     return output;
                 }
             "
@@ -48,6 +51,7 @@
             type: "pixel",
             inputs: [
                 { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "color", type: "f32x3", semantic: "COLOR" },
             ],
             outputs: [
                 { name: "albedo", type: "f32x4", semantic: "SV_TARGET0" },
@@ -55,7 +59,7 @@
             source: "   
                 ps_output main(ps_input input) {
                     ps_output output;
-                    output.albedo = float4(0.7f, 0.5f, 0.5f, 1.0f);
+                    output.albedo = float4(input.color, 1.0f);
                     return output;
                 }
             "

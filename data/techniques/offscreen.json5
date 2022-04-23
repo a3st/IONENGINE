@@ -1,30 +1,6 @@
 {
     name: "offscreen",
     uniforms: [
-        { 
-            name: "world", 
-            type: "cbuffer", 
-            properties: [
-                { name: "viewproj", type: "f32x4x4" }
-            ],
-            visibility: "vertex",
-        },
-        {
-            name: "light", 
-            type: "cbuffer", 
-            properties: [
-                { name: "light", type: "f32x3" }
-            ],
-            visibility: "vertex",
-        },
-        {
-            name: "material",
-            type: "cbuffer",
-            properties: [
-                { name: "color", type: "f32x4" }
-            ],
-            visibility: "vertex",
-        },
         {
             name: "albedo",
             type: "sampler2D",
@@ -35,7 +11,7 @@
         {
             type: "vertex",
             inputs: [
-                { name: "position", type: "f32x3", semantic: "POSITION" },
+                { name: "position", type: "f32x2", semantic: "POSITION" },
                 { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             outputs: [
@@ -45,7 +21,7 @@
             source: "
                 vs_output main(vs_input input) {
                     vs_output output;
-                    float4 world_pos = float4(input.position, 1.0f);
+                    float4 world_pos = float4(input.position, 0.0f, 1.0f);
                     output.position = world_pos;
                     output.uv = input.uv;
                     return output;

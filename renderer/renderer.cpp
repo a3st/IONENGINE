@@ -17,11 +17,9 @@ Renderer::Renderer(platform::Window& window) :
     asset::Technique technique_2("../../data/techniques/offscreen.json5");
     _shader_prog_2.emplace(_context, technique_2);
 
-    vertex_declaration = { backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, 0 } };
-
-    vertex_declaration_offscreen = { 
+    vertex_declaration = { 
         backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, 0 },
-        backend::VertexInputDesc { "TEXCOORD", 0, backend::Format::RG32, 0, sizeof(float) * 3 }
+        backend::VertexInputDesc { "COLOR", 0, backend::Format::RGB32, 0, 0 },
     };
 
     _sampler = _context.device().create_sampler(
@@ -33,18 +31,8 @@ Renderer::Renderer(platform::Window& window) :
         backend::CompareOp::Always
     );
 
-    offscreen_vertex_buffer = _context.device().create_buffer(65536, backend::BufferFlags::HostWrite | backend::BufferFlags::VertexBuffer);
-
-    std::vector<float> quad = {
-        1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f, 0.0f, 1.0f
-    };
-
-    _context.device().map_buffer_data(offscreen_vertex_buffer, 0, std::span<uint8_t const>((uint8_t*)quad.data(), quad.size() * sizeof(float)));
+    auto quad = frontend::GeometryBuffer::quad(_context);
+    _offscreen_quad.emplace(std::move(quad));
 
     asset::Model model("");
     _geom_triangle.emplace(_context, model.surfaces()[0], frontend::BufferUsage::Static);
@@ -165,9 +153,9 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
                 pipeline_target = _context.device().create_pipeline(
                     _shader_prog_2.value().layout(),
-                    vertex_declaration_offscreen,
+                    _offscreen_quad.value().vertex_declaration(),
                     _shader_prog_2.value().shaders(),
-                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::Back },
+                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::None },
                     backend::DepthStencilDesc { backend::CompareOp::Always, false },
                     backend::BlendDesc { false, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add },
                     context.render_pass(),
@@ -183,8 +171,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             binder.bind_texture(_shader_prog_2.value().get_uniform_by_name("albedo"), context.attachment(0), _sampler);
             binder.update(context.command_list());
 
-            _context.device().bind_vertex_buffer(context.command_list(), 0, offscreen_vertex_buffer, 0);
-            _context.device().draw(context.command_list(), 6, 1, 0);
+            _offscreen_quad.value().bind(context.command_list());
         }
     );
 

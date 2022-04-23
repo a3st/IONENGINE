@@ -9,18 +9,18 @@ Model::Model(std::filesystem::path const& file_path) {
 
     auto attributes = std::vector<PrimitiveAttribute> {
         { VertexUsage::Position, VertexFormat::F32x3, 0 },
-        { VertexUsage::TexCoord0, VertexFormat::F32x2, 1 }
+        { VertexUsage::Color0, VertexFormat::F32x2, 1 },
     };
 
     std::vector<float> triangle = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f,  0.5f, 0.0f
+        -0.5f, -0.5f, 0.0f, 0.4f, 0.3f, 0.3f,
+        0.5f, -0.5f, 0.0f, 0.1f, 0.8f, 0.3f,
+        0.0f,  0.5f, 0.0f, 0.2f, 0.3f, 0.7f
     };
     _data.resize(triangle.size() * sizeof(float));
     std::memcpy(_data.data(), triangle.data(), _data.size());
 
-    HashedBuffer vertex_buffer(_data, sizeof(float) * 3);
+    HashedBuffer vertex_buffer(_data, sizeof(float) * 3 + sizeof(float) * 3);
     HashedBuffer index_buffer(_data, sizeof(float) * 3);
 
     Primitive primitive = { .vertex_buffer = std::move(vertex_buffer), .index_buffer = std::move(index_buffer), .material_index = 0 };
