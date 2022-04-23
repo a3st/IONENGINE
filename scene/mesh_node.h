@@ -3,7 +3,7 @@
 #pragma once
 
 //#include <scene/transform_node.h>
-#include <asset/mesh.h>
+#include <asset/model.h>
 
 namespace ionengine::scene {
 
@@ -15,11 +15,11 @@ public:
 
     MeshNode() = default;
 
-    void mesh(std::shared_ptr<asset::Mesh>& asset);
+    void mesh(std::shared_ptr<asset::Model>& asset);
 
 private:
 
-    std::shared_ptr<asset::Mesh> _mesh;
+    std::shared_ptr<asset::Model> _mesh;
 };
 
 }

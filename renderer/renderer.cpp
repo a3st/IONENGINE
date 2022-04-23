@@ -4,8 +4,6 @@
 #include <renderer/renderer.h>
 #include <scene/scene.h>
 
-#include <engine/asset_manager.h>
-
 using namespace ionengine::renderer;
 
 Renderer::Renderer(platform::Window& window) : 
@@ -21,8 +19,6 @@ Renderer::Renderer(platform::Window& window) :
         0.5f, -0.5f, 0.0f,
         0.0f,  0.5f, 0.0f
     };
-
-    AssetManager asset_manager;
         
     asset::Technique technique("../../data/techniques/geometry.json5");
     _shader_prog.emplace(_context, technique);

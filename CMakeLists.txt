@@ -29,7 +29,7 @@ add_executable(Runtime-Win32
 # ---------------------------
     # Asset
     #asset/obj/obj_document.cpp
-    asset/mesh.cpp
+    asset/model.cpp
     asset/texture.cpp
     asset/buffer.cpp
     asset/material.cpp

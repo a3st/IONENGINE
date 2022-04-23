@@ -11,9 +11,19 @@ Material::Material(std::filesystem::path const& file_path, AssetManager& asset_m
 
     std::string from_path_string = file_path.string();
 
-    /*json5::error result = json5::from_file(from_path_string, _data);
+    JSON_MaterialDefinition document;
+    json5::error result = json5::from_file(from_path_string, document);
 
     if(result != json5::error::none) {
         throw lib::Exception(std::format("File load {}!", from_path_string));
-    }*/
+    }
+
+    _name = document.name;
+
+    
+}
+
+std::string_view Material::name() const {
+
+    return _name;
 }

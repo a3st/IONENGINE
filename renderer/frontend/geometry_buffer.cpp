@@ -6,7 +6,7 @@
 using namespace ionengine::renderer;
 using namespace ionengine::renderer::frontend;
 
-GeometryBuffer::GeometryBuffer(Context& context, asset::Mesh const& mesh, BufferUsage const usage) :
+GeometryBuffer::GeometryBuffer(Context& context, asset::Model const& model, BufferUsage const usage) :
     _context(&context) {
 
     _buffer = _context->device().create_buffer(65536, backend::BufferFlags::VertexBuffer | backend::BufferFlags::HostWrite);

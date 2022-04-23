@@ -9,52 +9,6 @@
 #include <asset/texture.h>
 #include <lib/math/vector.h>
 
-namespace json5::detail {
-
-inline json5::value write(writer& w, ionengine::lib::math::Vector4f const& in) {
-
-	w.push_array();
-	w += write(w, in.x);
-	w += write(w, in.y);
-	w += write(w, in.z);
-    w += write(w, in.w);
-	return w.pop();
-}
-
-inline error read(json5::value const& in, ionengine::lib::math::Vector4f& out) {
-
-	return read(json5::array_view(in), out.x, out.y, out.z, out.w);
-}
-
-inline json5::value write(writer& w, ionengine::lib::math::Vector3f const& in) {
-
-	w.push_array();
-	w += write(w, in.x);
-	w += write(w, in.y);
-	w += write(w, in.z);
-	return w.pop();
-}
-
-inline error read(json5::value const& in, ionengine::lib::math::Vector3f& out) {
-
-	return read(json5::array_view(in), out.x, out.y, out.z);
-}
-
-inline json5::value write(writer& w, ionengine::lib::math::Vector2f const& in) {
-
-	w.push_array();
-	w += write(w, in.x);
-	w += write(w, in.y);
-	return w.pop();
-}
-
-inline error read(json5::value const& in, ionengine::lib::math::Vector2f& out) {
-
-	return read(json5::array_view(in), out.x, out.y);
-}
-
-}
-
 enum class JSON_MaterialParameterType {
     sampler2D,
     f32x4x4,
@@ -84,9 +38,9 @@ JSON5_ENUM(JSON_PassCullMode, front, back, none)
 struct JSON_MaterialParameterValueDefinition {
     JSON_MaterialParameterType type;
     std::optional<std::string> path;
-    std::optional<ionengine::lib::math::Vector4f> vec4;
-    std::optional<ionengine::lib::math::Vector3f> vec3;
-    std::optional<ionengine::lib::math::Vector2f> vec2;
+    std::optional<std::array<float, 4>> vec4;
+    std::optional<std::array<float, 3>> vec3;
+    std::optional<std::array<float, 2>> vec2;
     std::optional<float> value;
 };
 
@@ -194,7 +148,11 @@ public:
     
     Material(std::filesystem::path const& file_path, AssetManager& asset_manager);
 
+    std::string_view name() const;
+
 private:
+
+    std::string _name;
 
     std::unordered_map<std::string, MaterialParameter> _parameters;
 };

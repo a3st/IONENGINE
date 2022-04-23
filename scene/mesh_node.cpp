@@ -5,7 +5,7 @@
 
 using namespace ionengine::scene;
 
-void MeshNode::mesh(std::shared_ptr<asset::Mesh>& asset) {
+void MeshNode::mesh(std::shared_ptr<asset::Model>& asset) {
 
     _mesh = asset;
 }

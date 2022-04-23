@@ -9,6 +9,7 @@
 #include <lib/algorithm.h>
 
 #include <engine/asset_manager.h>
+#include <asset/material.h>
 
 using namespace ionengine;
 
@@ -25,6 +26,12 @@ int main(int* argc, char** agrv) {
         renderer.load_shader();
 
         scene::Scene test_scene;
+
+        AssetManager asset_manager;
+
+        asset::Material material("../../data/materials/default.json5", asset_manager);
+
+        std::cout << "Material loaded " << material.name() << std::endl;
 
         loop.run(
             window,
