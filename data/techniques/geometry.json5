@@ -55,7 +55,7 @@
             source: "   
                 ps_output main(ps_input input) {
                     ps_output output;
-                    output.albedo = float4(0.2f, 0.1f, 0.5f, 1.0f);
+                    output.albedo = float4(0.7f, 0.5f, 0.5f, 1.0f);
                     return output;
                 }
             "

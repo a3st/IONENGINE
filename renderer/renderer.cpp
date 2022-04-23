@@ -11,14 +11,6 @@ Renderer::Renderer(platform::Window& window) :
     _frame_graph(_context) {
 
     build_frame_graph(window.client_size().width, window.client_size().height, 2);
-
-    _buffer_triangle = _context.device().create_buffer(65536, backend::BufferFlags::VertexBuffer);
-
-    std::vector<float> triangle = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f,  0.5f, 0.0f
-    };
         
     asset::Technique technique("../../data/techniques/geometry.json5");
     _shader_prog.emplace(_context, technique);
@@ -32,15 +24,11 @@ Renderer::Renderer(platform::Window& window) :
         backend::VertexInputDesc { "TEXCOORD", 0, backend::Format::RG32, 0, sizeof(float) * 3 }
     };
 
-    _vertex_buffer = _context.device().create_buffer(65536, backend::BufferFlags::HostWrite | backend::BufferFlags::VertexBuffer);
-    
-    _context.device().map_buffer_data(_vertex_buffer, 0, std::span<uint8_t const>((uint8_t*)triangle.data(), triangle.size() * sizeof(float)));
-
     _sampler = _context.device().create_sampler(
         backend::Filter::MinMagMipLinear, 
-        backend::AddressMode::Clamp, 
-        backend::AddressMode::Clamp, 
-        backend::AddressMode::Clamp,
+        backend::AddressMode::Wrap, 
+        backend::AddressMode::Wrap, 
+        backend::AddressMode::Wrap,
         8,
         backend::CompareOp::Always
     );
@@ -57,6 +45,9 @@ Renderer::Renderer(platform::Window& window) :
     };
 
     _context.device().map_buffer_data(offscreen_vertex_buffer, 0, std::span<uint8_t const>((uint8_t*)quad.data(), quad.size() * sizeof(float)));
+
+    asset::Model model("");
+    _geom_triangle.emplace(_context, model.surfaces()[0], frontend::BufferUsage::Static);
 }
 
 void Renderer::render(scene::Scene& scene) {
@@ -122,7 +113,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                     _shader_prog.value().layout(),
                     vertex_declaration,
                     _shader_prog.value().shaders(),
-                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::Back },
+                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::Front },
                     backend::DepthStencilDesc { backend::CompareOp::Always, false },
                     backend::BlendDesc { false, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add },
                     context.render_pass(),
@@ -133,8 +124,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             }
 
             _context.device().bind_pipeline(context.command_list(), pipeline_target);
-            _context.device().bind_vertex_buffer(context.command_list(), 0, _vertex_buffer, 0);
-            _context.device().draw(context.command_list(), 3, 1, 0);
+            _geom_triangle.value().bind(context.command_list());
         }
     );
 

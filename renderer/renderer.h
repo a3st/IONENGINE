@@ -5,6 +5,7 @@
 #include <renderer/frontend/context.h>
 #include <renderer/frontend/frame_graph.h>
 #include <renderer/frontend/shader_program.h>
+#include <renderer/frontend/geometry_buffer.h>
 
 namespace ionengine::scene {
 class Scene;
@@ -58,6 +59,8 @@ private:
     backend::Handle<backend::Buffer> offscreen_vertex_buffer;
 
     backend::Handle<backend::Sampler> _sampler;
+
+    std::optional<frontend::GeometryBuffer> _geom_triangle;
 };
 
 }

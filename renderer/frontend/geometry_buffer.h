@@ -10,7 +10,7 @@ namespace ionengine::renderer::frontend {
 class GeometryBuffer {
 public:
 
-    GeometryBuffer(Context& context, asset::Model const& model, BufferUsage const usage);
+    GeometryBuffer(Context& context, asset::Surface const& surface, BufferUsage const usage);
 
     ~GeometryBuffer();
 
@@ -21,7 +21,10 @@ private:
 
     Context* _context;
     
-    backend::Handle<backend::Buffer> _buffer;
+    backend::Handle<backend::Buffer> _vertex_buffer;
+    backend::Handle<backend::Buffer> _index_buffer;
+
+    uint32_t _vertex_count;
 };
 
 }
