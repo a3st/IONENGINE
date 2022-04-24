@@ -256,7 +256,7 @@ struct Device::Impl {
     void begin_render_pass(
         Handle<CommandList> const& command_list,
         Handle<RenderPass> const& render_pass, 
-        std::span<Color const> const clear_colors, 
+        std::span<lib::math::Color const> const clear_colors, 
         float const clear_depth = 0.0f,
         uint8_t const clear_stencil = 0x0
     );
@@ -1828,7 +1828,7 @@ void Device::Impl::barrier(Handle<CommandList> const& command_list, ResourceHand
 void Device::Impl::begin_render_pass(
     Handle<CommandList> const& command_list,
     Handle<RenderPass> const& render_pass, 
-    std::span<Color const> const clear_colors, 
+    std::span<lib::math::Color const> const clear_colors, 
     float const clear_depth, 
     uint8_t const clear_stencil
 ) {
@@ -1843,7 +1843,7 @@ void Device::Impl::begin_render_pass(
     auto& render_pass_data = render_passes[render_pass];
 
     for(uint32_t i = 0; i < render_pass_data.render_target_count; ++i) {
-        std::memcpy(render_pass_data.render_target_descs[i].BeginningAccess.Clear.ClearValue.Color, &clear_colors[i], sizeof(Color));
+        std::memcpy(render_pass_data.render_target_descs[i].BeginningAccess.Clear.ClearValue.Color, &clear_colors[i], sizeof(lib::math::Color));
     }
 
     if(render_pass_data.has_depth_stencil) {
@@ -2262,7 +2262,7 @@ void Device::barrier(Handle<CommandList> const& command_list, ResourceHandle con
 void Device::begin_render_pass(
     Handle<CommandList> const& command_list, 
     Handle<RenderPass> const& render_pass, 
-    std::span<Color const> const clear_colors, 
+    std::span<lib::math::Color const> const clear_colors, 
     float const clear_depth, 
     uint8_t const clear_stencil
 ) {

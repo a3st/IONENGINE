@@ -55,6 +55,15 @@ ShaderProgram::ShaderProgram(Context& context, asset::Technique const& technique
     descriptor_sets[1] = _context->device().create_descriptor_set(_layout);
 }
 
+ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept {
+
+}
+
+ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
+
+    return *this;
+}
+
 ShaderProgram::~ShaderProgram() {
 
     std::for_each(
@@ -65,7 +74,9 @@ ShaderProgram::~ShaderProgram() {
         }
     );
 
-    _context->device().delete_descriptor_layout(_layout);
+    if(_layout != backend::InvalidHandle<backend::DescriptorLayout>()) {
+        _context->device().delete_descriptor_layout(_layout);
+    }
 }
 
 backend::Handle<backend::DescriptorLayout> ShaderProgram::layout() const { 

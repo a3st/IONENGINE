@@ -9,11 +9,6 @@ Scene::Scene() {
 
 }
 
-void Scene::add_mesh_node(MeshNode* node) {
-
-    _meshes.emplace_back(node);
-}
-
 /*
 void Scene::update_transform(lib::ThreadPool& thread_pool) {
 

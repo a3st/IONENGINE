@@ -372,7 +372,7 @@ public:
     void begin_render_pass(
         Handle<CommandList> const& command_list,
         Handle<RenderPass> const& render_pass, 
-        std::span<Color const> const clear_colors, 
+        std::span<lib::math::Color const> const clear_colors, 
         float const clear_depth = 0.0f,
         uint8_t const clear_stencil = 0x0
     );

@@ -22,6 +22,7 @@ add_executable(Runtime-Win32
     # Lib
     #lib/thread_pool.cpp
     lib/math/color.cpp
+    lib/hash/buffer_view.cpp
 # ---------------------------
     # Platform
     platform/window_win32.cpp
@@ -31,7 +32,6 @@ add_executable(Runtime-Win32
     #asset/obj/obj_document.cpp
     asset/model.cpp
     asset/texture.cpp
-    asset/buffer.cpp
     asset/material.cpp
     asset/technique.cpp
 # ---------------------------
@@ -40,7 +40,6 @@ add_executable(Runtime-Win32
     #scene/transform_node.cpp
     #scene/scene_tree.cpp
     scene/scene.cpp
-    scene/mesh_node.cpp
 # ---------------------------    
     # Renderer Backend
     renderer/backend/d3d12x.cpp

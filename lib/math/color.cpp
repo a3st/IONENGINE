@@ -3,7 +3,7 @@
 #include <precompiled.h>
 #include <lib/math/color.h>
 
-using namespace ionengine::renderer;
+using namespace ionengine::lib::math;
 
 Color& Color::srgb() {
 

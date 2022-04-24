@@ -3,6 +3,7 @@
 #pragma once
 
 #include <asset/asset.h>
+#include <lib/hash/buffer_view.h>
 
 namespace ionengine::asset {
 
@@ -30,29 +31,11 @@ struct PrimitiveAttribute {
     uint32_t index;
 };
 
-class HashedBuffer {
-public:
-
-    HashedBuffer(std::span<uint8_t const> const data, size_t const element_size);
-
-    uint64_t hash() const;
-
-    uint8_t const* data() const;
-
-    size_t size() const;
-
-    uint32_t count() const;
-
-private:
-    
-    std::span<uint8_t const> _data;
-    uint64_t _data_hash{0};
-    uint32_t _count{0};
-};
-
 struct Primitive {
-    HashedBuffer vertex_buffer;
-    std::optional<HashedBuffer> index_buffer;
+    lib::hash::BufferView vertex_buffer;
+    std::optional<lib::hash::BufferView> index_buffer;
+    uint32_t vertex_count;
+    uint32_t index_count;
     uint32_t material_index;
 };
 

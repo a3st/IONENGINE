@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine {
+namespace ionengine::lib {
 
 template<class Type, size_t Size>
 class ConcurrentQueue {

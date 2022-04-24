@@ -76,7 +76,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
     frontend::CreateColorInfo gbuffer_color_info {
         .attachment = _gbuffer_color_buffer,
         .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = Color(0.1f, 0.5f, 0.2f, 1.0f)
+        .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
     };
 
     _frame_graph.add_pass(
@@ -123,7 +123,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
     present_colors[0] = frontend::CreateColorInfo {
         .attachment = _swapchain_buffer,
         .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = Color(0.0f, 0.3f, 0.8f, 1.0f)
+        .clear_color = lib::math::Color(0.0f, 0.3f, 0.8f, 1.0f)
     };
 
     std::array<frontend::Attachment*, 1> present_inputs;

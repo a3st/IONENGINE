@@ -36,6 +36,7 @@ private:
     std::vector<backend::VertexInputDesc> _vertex_inputs;
 
     uint32_t _vertex_count{0};
+    uint32_t _index_count{0};
 };
 
 }

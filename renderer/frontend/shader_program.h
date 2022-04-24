@@ -15,6 +15,10 @@ public:
 
     ShaderProgram(Context& context, asset::Technique const& technique);
 
+    ShaderProgram(ShaderProgram&& other) noexcept;
+
+    ShaderProgram& operator=(ShaderProgram&& other) noexcept;
+
     ~ShaderProgram();
 
     backend::Handle<backend::DescriptorLayout> layout() const;

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <scene/mesh_node.h>
+#include <scene/node.h>
 
 namespace ionengine::scene {
 
@@ -11,11 +11,9 @@ public:
 
     Scene();
 
-    void add_mesh_node(MeshNode* node);
-
 private:
 
-    std::vector<MeshNode*> _meshes;
+    std::vector<std::unique_ptr<Node>> _meshes;
 };
 
 }

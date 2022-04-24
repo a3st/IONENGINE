@@ -72,7 +72,7 @@ private:
 struct CreateColorInfo {
     Attachment* attachment;
     backend::RenderPassLoadOp load_op;
-    Color clear_color;
+    lib::math::Color clear_color;
 };
 
 struct CreateDepthStencilInfo {
@@ -205,7 +205,7 @@ private:
     std::string _name;
     uint32_t _width{0};
     uint32_t _height{0};
-    std::vector<Color> _color_clears;
+    std::vector<lib::math::Color> _color_clears;
     std::vector<Attachment*> _color_attachments;
     std::vector<backend::RenderPassLoadOp> _color_ops;
     std::pair<float, uint8_t> _depth_stencil_clear;
