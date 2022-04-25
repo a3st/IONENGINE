@@ -8,14 +8,7 @@ class Asset {
 
 public:
 
-    Asset() = default;
-
     virtual ~Asset() = default;
-
-
-
-private:
-
     
 };
 
