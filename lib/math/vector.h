@@ -32,7 +32,7 @@ struct Vector2 {
 	    return *this;
     }
 
-	const Type* data() const { return &x; }
+	Type const* data() const { return &x; }
 
 	size_t size() const { return 2; }
 
@@ -107,17 +107,11 @@ struct Vector3 {
 
 	Vector3() = default;
 
-	Vector3(const Type _x, const Type _y, const Type _z) : x(_x), y(_y), z(_z) {
+	Vector3(const Type _x, const Type _y, const Type _z) : x(_x), y(_y), z(_z) { }
 
-    }
+	Vector3(Vector3 const& other) : x(other.x), y(other.y), z(other.z) { }
 
-	Vector3(Vector3 const& other) : x(other.x), y(other.y), z(other.z) {
-
-    }
-
-	Vector3(Vector3&& other) noexcept : x(other.x), y(other.y), z(other.z) {
-
-    }
+	Vector3(Vector3&& other) noexcept : x(other.x), y(other.y), z(other.z) { }
 
 	Vector3& operator=(Vector3 const& other) {
 
@@ -135,7 +129,7 @@ struct Vector3 {
         return *this;
     }
 
-	const Type* data() const { return &x; }
+	Type const* data() const { return &x; }
 
 	size_t size() const { return 3; }
 
@@ -225,17 +219,11 @@ struct Vector4 {
 
 	Vector4() = default;
 
-	Vector4(const Type _x, const Type _y, const Type _z, const Type _w) : x(_x), y(_y), z(_z), w(_w) {
+	Vector4(const Type _x, const Type _y, const Type _z, const Type _w) : x(_x), y(_y), z(_z), w(_w) { }
 
-    }
+	Vector4(Vector4 const& other) : x(other.x), y(other.y), z(other.z), w(other.w) { }
 
-	Vector4(Vector4 const& other) : x(other.x), y(other.y), z(other.z), w(other.w) {
-
-    }
-
-	Vector4(Vector4&& other) noexcept : x(other.x), y(other.y), z(other.z), w(other.w) {
-
-    }
+	Vector4(Vector4&& other) noexcept : x(other.x), y(other.y), z(other.z), w(other.w) { }
 
 	Vector4& operator=(Vector4 const& other) {
 
@@ -255,9 +243,9 @@ struct Vector4 {
         return *this;
     }
 
-	const Type* data() const { return &x; }
+	Type const* data() const { return &x; }
 
-	inline size_t size() const { return 4; }
+	size_t size() const { return 4; }
 
 	Vector4& normalize() {
 
@@ -327,21 +315,23 @@ using Vector4d = Vector4<double>;
 
 namespace std {
 
-    template<typename Type> struct hash<ionengine::lib::math::Vector2<Type>> {
-        size_t operator()(ionengine::lib::math::Vector2<Type> const& other) const {
-            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y);
-        }
-    };
+template<typename Type> struct hash<ionengine::lib::math::Vector2<Type>> {
+    size_t operator()(ionengine::lib::math::Vector2<Type> const& other) const {
+        return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y);
+    }
+    
+};
 
-	template<typename Type> struct hash<ionengine::lib::math::Vector3<Type>> {
-        size_t operator()(ionengine::lib::math::Vector3<Type> const& other) const {
-            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z);
-        }
-    };
+template<typename Type> struct hash<ionengine::lib::math::Vector3<Type>> {
+    size_t operator()(ionengine::lib::math::Vector3<Type> const& other) const {
+        return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z);
+    }
+};
 
-	template<typename Type> struct hash<ionengine::lib::math::Vector4<Type>> {
-        size_t operator()(ionengine::lib::math::Vector4<Type> const& other) const {
-            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^ std::hash<Type>()(other.w);
-        }
-    };
+template<typename Type> struct hash<ionengine::lib::math::Vector4<Type>> {
+    size_t operator()(ionengine::lib::math::Vector4<Type> const& other) const {
+        return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^ std::hash<Type>()(other.w);
+    }
+};
+
 }

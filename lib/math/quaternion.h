@@ -42,7 +42,7 @@ struct Quaternion {
 	    return *this;
     }
 
-    const Type* data() const { return &x; }
+    Type const* data() const { return &x; }
 
     size_t size() const { return 4; }
 
@@ -69,8 +69,7 @@ struct Quaternion {
         Type sqz = z * z;
         Type inverse = 1 / (sqx + sqy + sqz + sqw);
 
-        Matrix<Type> mat;
-        mat.identity();
+        Matrix<Type> mat = Matrix<Type>::identity();
         mat.m00 = (sqx - sqy - sqz + sqw) * inverse;
         mat.m11 = (-sqx + sqy - sqz + sqw) * inverse;
         mat.m22 = (-sqx - sqy + sqz + sqw) * inverse;

@@ -81,7 +81,7 @@ struct Matrix {
 		return *this;
 	}
 
-	const Type* data() const { return &m00; }
+	Type const* data() const { return &m00; }
 
 	size_t size() const { return 16; }
 
@@ -217,79 +217,82 @@ struct Matrix {
 		return mat;
 	}
 
-	Matrix& identity() {
+	static Matrix<Type> identity() {
 
-		m00 = 1;
-		m11 = 1;
-		m22 = 1;
-		m33 = 1;
-		return *this;
+		Matrix<Type> mat;
+		mat.m00 = 1;
+		mat.m11 = 1;
+		mat.m22 = 1;
+		mat.m33 = 1;
+		return mat;
 	}
 
-	Matrix& translate(Vector3<Type> const& other) {
+	static Matrix<Type> translate(Vector3<Type> const& position) {
 
-		identity();
-		m30 = other.x;
-		m31 = other.y;
-		m32 = other.z;
-		return *this;
+		Matrix<Type> mat = Matrix<Type>::identity();
+		mat.m30 = position.x;
+		mat.m31 = position.y;
+		mat.m32 = position.z;
+		return mat;
 	}
 
-	Matrix& scale(Vector3<Type> const& other) {
+	static Matrix<Type> scale(Vector3<Type> const& scale) {
 
-		identity();
-		m00 = other.x;
-		m11 = other.y;
-		m22 = other.z;
-		return *this;
+		Matrix<Type> mat = Matrix<Type>::identity();
+		mat.m00 = scale.x;
+		mat.m11 = scale.y;
+		mat.m22 = scale.z;
+		return mat;
 	}
 
-	Matrix& perspective(Type const fovy, Type const aspect, Type const near_dst, Type const far_dst) {
+	static Matrix<Type> perspective(Type const fovy, Type const aspect, Type const near_dst, Type const far_dst) {
 
-		m00 = 1 / (std::tan(fovy / 2) * aspect);
-		m11 = 1 / std::tan(fovy / 2);
-		m22 = (far_dst + near_dst) / (near_dst - far_dst);
-		m23 = -1;
-		m32 = (2 * near_dst * far_dst) / (near_dst - far_dst);
-		return *this;
+		Matrix<Type> mat;
+		mat.m00 = 1 / (std::tan(fovy / 2) * aspect);
+		mat.m11 = 1 / std::tan(fovy / 2);
+		mat.m22 = (far_dst + near_dst) / (near_dst - far_dst);
+		mat.m23 = -1;
+		mat.m32 = (2 * near_dst * far_dst) / (near_dst - far_dst);
+		return mat;
 	}
 
-	Matrix& orthographic(
+	static Matrix orthographic(
 		Type const left, Type const right,
 		Type const bottom, Type const top,
 		Type const near_dst, Type const far_dst
 	) {
 
-		m00 = 2 / (right - left);
-		m11 = 2 / (top - bottom);
-		m22 = -2 / (far_dst - near_dst);
-		m30 = -(right + left) / (right - left);
-		m31 = -(top + bottom) / (top - bottom);
-		m32 = -(far_dst + near_dst) / (far_dst - near_dst);
-		m33 = 1;
-		return *this;
+		Matrix<Type> mat;
+		mat.m00 = 2 / (right - left);
+		mat.m11 = 2 / (top - bottom);
+		mat.m22 = -2 / (far_dst - near_dst);
+		mat.m30 = -(right + left) / (right - left);
+		mat.m31 = -(top + bottom) / (top - bottom);
+		mat.m32 = -(far_dst + near_dst) / (far_dst - near_dst);
+		mat.m33 = 1;
+		return mat;
 	}
 
-	Matrix& look_at(Vector3<Type> const& eye, Vector3<Type> const& target, Vector3<Type> const& up) {
+	static Matrix look_at(Vector3<Type> const& eye, Vector3<Type> const& target, Vector3<Type> const& up) {
 
 		Vector3<Type> z = (eye - target).normalize();
 		Vector3<Type> x = Vector3(up).cross(z).normalize();
 		Vector3<Type> y = Vector3(z).cross(x);
 
-		identity();
-		m00 = x.x;
-		m01 = y.x;
-		m02 = z.x;
-		m10 = x.y;
-		m11 = y.y;
-		m12 = z.y;
-		m20 = x.z;
-		m21 = y.z;
-		m22 = z.z;
-		m30 = (-x).dot(eye);
-		m31 = (-y).dot(eye);
-		m32 = (-z).dot(eye);
-		return *this;
+		Matrix<Type> mat = Matrix<Type>::identity();
+		mat.m00 = x.x;
+		mat.m01 = y.x;
+		mat.m02 = z.x;
+		mat.m10 = x.y;
+		mat.m11 = y.y;
+		mat.m12 = z.y;
+		mat.m20 = x.z;
+		mat.m21 = y.z;
+		mat.m22 = z.z;
+		mat.m30 = (-x).dot(eye);
+		mat.m31 = (-y).dot(eye);
+		mat.m32 = (-z).dot(eye);
+		return mat;
 	}
 
 	bool operator==(Matrix const& other) const {
