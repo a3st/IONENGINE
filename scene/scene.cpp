@@ -1,12 +1,25 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
 #include <scene/scene.h>
+
+#include <scene/mesh_node.h>
 
 using namespace ionengine::scene;
 
 Scene::Scene() {
 
+}
+
+void Scene::visit(Iterator const& begin, Iterator const& end, SceneVisitor& visitor) {
+
+    std::for_each(
+        begin, 
+        end, 
+        [&](auto& element) {
+            element->accept(visitor);
+        }
+    );
 }
 
 /*

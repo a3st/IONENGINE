@@ -1,11 +1,23 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
 #include <scene/mesh_node.h>
+#include <scene/scene_visitor.h>
 
+using namespace ionengine;
 using namespace ionengine::scene;
 
-void MeshNode::mesh(std::shared_ptr<asset::Model>& asset) {
+MeshNode::MeshNode() {
 
-    _mesh = asset;
+    _model = std::make_shared<asset::Model>("");
+}
+
+void MeshNode::accept(SceneVisitor& visitor) {
+
+    visitor(*this);
+}
+
+asset::Surface const& MeshNode::surface() const {
+
+    return _model->surfaces()[_surface_index];
 }

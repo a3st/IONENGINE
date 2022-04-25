@@ -1475,9 +1475,10 @@ void Device::Impl::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const 
 
     auto& buffer_data = buffers[buffer];
 
-    D3D12_HEAP_DESC heap_desc = buffer_data.memory_allocation->GetHeap()->GetDesc();
+    auto properties = D3D12_HEAP_PROPERTIES {};
+    buffer_data.memory_allocation->GetResource()->GetHeapProperties(&properties, nullptr);
 
-    if(heap_desc.Properties.Type == D3D12_HEAP_TYPE_UPLOAD || heap_desc.Properties.Type == D3D12_HEAP_TYPE_READBACK) {
+    if(properties.Type == D3D12_HEAP_TYPE_UPLOAD || properties.Type == D3D12_HEAP_TYPE_READBACK) {
 
         char8_t* bytes = nullptr;
         auto range = D3D12_RANGE {};

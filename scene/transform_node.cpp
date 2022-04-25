@@ -1,10 +1,17 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
 #include <scene/transform_node.h>
+#include <scene/scene_visitor.h>
 
 using namespace ionengine::scene;
 
+void TransformNode::accept(SceneVisitor& visitor) {
+
+    visitor(*this);
+}
+
+/*
 void TransformNode::transform(Transform const& transform) {
 
     _transform = transform;
@@ -14,9 +21,4 @@ void TransformNode::transform(Transform const& transform) {
         lib::math::Quaternionf(transform.rotation).matrix() *
         lib::math::Matrixf().scale(transform.scale)
     ;
-}
-
-Transform const& TransformNode::transform() const {
-
-    return _transform;
-}
+}*/

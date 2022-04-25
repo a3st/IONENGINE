@@ -1,25 +1,27 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
-//#include <scene/transform_node.h>
+#include <scene/transform_node.h>
 #include <asset/model.h>
+#include <asset/material.h>
 
 namespace ionengine::scene {
 
-class MeshNode {
-
-    friend class Scene;
-
+class MeshNode : public TransformNode {
 public:
 
-    MeshNode() = default;
+    MeshNode();
 
-    void mesh(std::shared_ptr<asset::Model>& asset);
+    virtual void accept(SceneVisitor& visitor);
+
+    asset::Surface const& surface() const;
 
 private:
 
-    std::shared_ptr<asset::Model> _mesh;
+    std::shared_ptr<asset::Model> _model;
+    uint32_t _surface_index{0};
+    std::vector<std::shared_ptr<asset::Material>> _materials;
 };
 
 }

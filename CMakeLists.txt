@@ -36,9 +36,11 @@ add_executable(Runtime-Win32
     asset/technique.cpp
 # ---------------------------
     # Scene
-    #scene/scene_node.cpp
-    #scene/transform_node.cpp
+    scene/scene_node.cpp
+    scene/scene_graph.cpp
+    scene/transform_node.cpp
     #scene/scene_tree.cpp
+    scene/mesh_node.cpp
     scene/scene.cpp
 # ---------------------------    
     # Renderer Backend

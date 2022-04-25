@@ -1,30 +1,23 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
 #include <scene/scene_node.h>
-#include <scene/transform.h>
+#include <lib/math/matrix.h>
 
 namespace ionengine::scene {
 
 class TransformNode : public SceneNode {
-
-    friend class Scene;
-
 public:
 
-    TransformNode() = default;
+    TransformNode() { }
 
-    void transform(Transform const& transform);
-
-    Transform const& transform() const;
+    virtual void accept(SceneVisitor& visitor);
 
 private:
 
     lib::math::Matrixf _model_local;
     lib::math::Matrixf _model_global;
-
-    Transform _transform;
 };
 
 }

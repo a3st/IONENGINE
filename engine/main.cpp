@@ -5,6 +5,7 @@
 #include <platform/window_loop.h>
 #include <renderer/renderer.h>
 #include <scene/scene.h>
+#include <scene/mesh_node.h>
 #include <lib/exception.h>
 #include <lib/algorithm.h>
 
@@ -16,22 +17,19 @@ using namespace ionengine;
 int main(int* argc, char** agrv) {
 
     // lib::ThreadPool thread_pool(3);
-       
+
     try {
         platform::WindowLoop loop;
         platform::Window window("IONENGINE", 800, 600, false);
 
         renderer::Renderer renderer(window);
 
-        renderer.load_shader();
-
         scene::Scene test_scene;
+        test_scene.push_node<scene::MeshNode>();
 
         AssetManager asset_manager;
 
-        asset::Material material("../../data/materials/default.json5", asset_manager);
-
-        std::cout << "Material loaded " << material.name() << std::endl;
+        // asset::Material material("../../data/materials/default.json5", asset_manager);
 
         loop.run(
             window,

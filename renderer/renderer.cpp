@@ -3,8 +3,36 @@
 #include <precompiled.h>
 #include <renderer/renderer.h>
 #include <scene/scene.h>
+#include <scene/scene_visitor.h>
+#include <scene/mesh_node.h>
+#include <scene/transform_node.h>
 
 using namespace ionengine::renderer;
+
+class GeometryVisitor : public ionengine::scene::SceneVisitor {
+public:
+
+    GeometryVisitor(frontend::Context& context, std::optional<frontend::GeometryBuffer>& geom_buffer) {
+        _context = &context;
+        geom = &geom_buffer;
+    }
+
+    void operator()(ionengine::scene::MeshNode& other) {
+
+        if(!geom->has_value()) {
+            geom->emplace(*_context, other.surface(), frontend::BufferUsage::Static);
+        }
+    }
+
+    void operator()(ionengine::scene::TransformNode& other) {
+
+    }
+
+private:
+
+    frontend::Context* _context;
+    std::optional<frontend::GeometryBuffer>* geom;
+};
 
 Renderer::Renderer(platform::Window& window) : 
     _context(window, 2),
@@ -33,19 +61,12 @@ Renderer::Renderer(platform::Window& window) :
 
     auto quad = frontend::GeometryBuffer::quad(_context);
     _offscreen_quad.emplace(std::move(quad));
-
-    asset::Model model("");
-    _geom_triangle.emplace(_context, model.surfaces()[0], frontend::BufferUsage::Static);
 }
 
 void Renderer::render(scene::Scene& scene) {
 
-    // -> Scene Data
-    /*
-        for(auto& object : scene.cache_objects[CacheType::Mesh]) {
-            // -> renderable_queue.emplace(object, material, data);
-        }
-    */
+    GeometryVisitor geometry_visitor(_context, _geom_triangle);
+    scene.visit(scene.begin(), scene.end(), geometry_visitor);
 
     _context.submit_or_skip_upload_buffers();
 
