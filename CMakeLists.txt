@@ -39,6 +39,7 @@ add_executable(Runtime-Win32
     scene/scene_node.cpp
     scene/scene_graph.cpp
     scene/transform_node.cpp
+    scene/camera_node.cpp
     #scene/scene_tree.cpp
     scene/mesh_node.cpp
     scene/scene.cpp

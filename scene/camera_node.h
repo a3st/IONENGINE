@@ -5,25 +5,27 @@
 #include <scene/transform_node.h>
 #include <lib/math/matrix.h>
 
-namespace ionengine {
+namespace ionengine::scene {
 
 enum class CameraProjectionType {
     Perspective,
     Orthographic
 };
 
-class CameraNode : public scene::TransformNode {
+class CameraNode : public TransformNode {
 public:
 
-    CameraNode() = default;
+    CameraNode();
 
     float aspect_ratio() const;
 
-    CameraNode& aspect_ratio(float const value);
+    void aspect_ratio(float const value);
 
     float field_of_view() const;
 
-    CameraNode& field_of_view(float const value);
+    void field_of_view(float const value);
+
+    virtual void accept(SceneVisitor& visitor);
 
 private:
 

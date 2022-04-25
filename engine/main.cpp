@@ -6,6 +6,7 @@
 #include <renderer/renderer.h>
 #include <scene/scene.h>
 #include <scene/mesh_node.h>
+#include <scene/camera_node.h>
 #include <lib/exception.h>
 #include <lib/algorithm.h>
 
@@ -26,6 +27,8 @@ int main(int* argc, char** agrv) {
 
         scene::Scene test_scene;
         test_scene.push_node<scene::MeshNode>();
+
+        test_scene.push_node<scene::CameraNode>();
 
         AssetManager asset_manager;
 

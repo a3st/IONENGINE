@@ -6,10 +6,12 @@
 #include <scene/scene_visitor.h>
 #include <scene/mesh_node.h>
 #include <scene/transform_node.h>
+#include <scene/camera_node.h>
 
+using namespace ionengine;
 using namespace ionengine::renderer;
 
-class GeometryVisitor : public ionengine::scene::SceneVisitor {
+class GeometryVisitor : public scene::SceneVisitor {
 public:
 
     GeometryVisitor(frontend::Context& context, std::optional<frontend::GeometryBuffer>& geom_buffer) {
@@ -17,14 +19,18 @@ public:
         geom = &geom_buffer;
     }
 
-    void operator()(ionengine::scene::MeshNode& other) {
+    void operator()(scene::MeshNode& other) {
 
         if(!geom->has_value()) {
             geom->emplace(*_context, other.surface(), frontend::BufferUsage::Static);
         }
     }
 
-    void operator()(ionengine::scene::TransformNode& other) {
+    void operator()(scene::TransformNode& other) {
+
+    }
+
+    void operator()(scene::CameraNode& other) {
 
     }
 
