@@ -5,3 +5,13 @@
 
 using namespace ionengine::scene;
 
+SceneGraph::SceneGraph() {
+
+
+}
+
+void SceneGraph::update_hierarchical_data() {
+
+    
+    
+}

@@ -9,6 +9,9 @@
 namespace ionengine::scene {
 
 class MeshNode : public TransformNode {
+
+    friend class SceneGraph;
+
 public:
 
     MeshNode();

@@ -4,21 +4,46 @@
 #include <scene/transform_node.h>
 #include <scene/scene_visitor.h>
 
+using namespace ionengine;
 using namespace ionengine::scene;
+
+TransformNode::TransformNode() {
+
+    _model_local = lib::math::Matrixf::identity();
+    _model_global = lib::math::Matrixf::identity();
+}
 
 void TransformNode::accept(SceneVisitor& visitor) {
 
     visitor(*this);
 }
 
-/*
-void TransformNode::transform(Transform const& transform) {
-
-    _transform = transform;
+void TransformNode::position(lib::math::Vector3f const& position) {
     
-    _model_local = 
-        lib::math::Matrixf().translate(transform.position) *
-        lib::math::Quaternionf(transform.rotation).matrix() *
-        lib::math::Matrixf().scale(transform.scale)
-    ;
-}*/
+    _position = position;
+}
+
+lib::math::Vector3f const& TransformNode::position() const {
+    
+    return _position;
+}
+
+void TransformNode::rotation(lib::math::Quaternionf const& rotation) {
+    
+    _rotation = rotation;
+}
+
+lib::math::Quaternionf const& TransformNode::rotation() const {
+    
+    return _rotation;
+}
+
+void TransformNode::scale(lib::math::Vector3f const& scale) {
+    
+    _scale = scale;
+}
+
+lib::math::Vector3f const& TransformNode::scale() const {
+    
+    return _scale;
+}

@@ -7,7 +7,11 @@ namespace ionengine::scene {
 class SceneGraph {
 public:
 
-    SceneGraph() { }
+    SceneGraph();
+
+    void dfs();
+
+    void update_hierarchical_data();
 
 private:
 
