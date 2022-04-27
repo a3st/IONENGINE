@@ -11,6 +11,10 @@ TransformNode::TransformNode() {
 
     _model_local = lib::math::Matrixf::identity();
     _model_global = lib::math::Matrixf::identity();
+
+    _position = lib::math::Vector3f(0.0f, 0.0f, 0.0f);
+    _rotation = lib::math::Quaternionf::angle_axis(0.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f));
+    _scale = lib::math::Vector3f(1.0f, 1.0f, 1.0f);
 }
 
 void TransformNode::accept(SceneVisitor& visitor) {
@@ -46,4 +50,14 @@ void TransformNode::scale(lib::math::Vector3f const& scale) {
 lib::math::Vector3f const& TransformNode::scale() const {
     
     return _scale;
+}
+
+lib::math::Matrixf const& TransformNode::transform_local() const {
+
+    return _model_local;
+}
+
+lib::math::Matrixf const& TransformNode::transform_global() const {
+
+    return _model_global;
 }

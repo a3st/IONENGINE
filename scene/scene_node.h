@@ -21,6 +21,8 @@ public:
 
     virtual void accept(SceneVisitor& visitor) = 0;
 
+    virtual std::span<SceneNode*> childrens();
+
 private:
 
     std::string _name;

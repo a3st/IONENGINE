@@ -180,9 +180,9 @@ HRESULT DescriptorRange::allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range
     
     cur_allocation._heap = _heap;
     cur_allocation._descriptor_size = _descriptor_size;
-    cur_allocation._offset = _arena_block_ranges[cur_arena_block_index].offset;
+    cur_allocation._offset = _arena_block_ranges[cur_arena_block_index].begin + _arena_block_ranges[cur_arena_block_index].offset;
 
-    if(cur_allocation._offset + descriptor_range.NumDescriptors <= _arena_block_ranges[cur_arena_block_index].size) {
+    if(_arena_block_ranges[cur_arena_block_index].offset + descriptor_range.NumDescriptors <= _arena_block_ranges[cur_arena_block_index].size) {
         _arena_block_ranges[cur_arena_block_index].offset += descriptor_range.NumDescriptors;
         result = S_OK;
 

@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -27,7 +27,15 @@ public:
 
     virtual void accept(SceneVisitor& visitor);
 
+    void calculate_matrices();
+
+    lib::math::Matrixf const& transform_view() const;
+
+    lib::math::Matrixf const& transform_projection() const;
+
 private:
+
+    CameraProjectionType _projection_type{CameraProjectionType::Perspective};
 
     lib::math::Matrixf _view;
     lib::math::Matrixf _projection;

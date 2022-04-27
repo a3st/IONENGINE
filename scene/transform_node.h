@@ -31,6 +31,10 @@ public:
 
     lib::math::Vector3f const& scale() const;
 
+    lib::math::Matrixf const& transform_local() const;
+
+    lib::math::Matrixf const& transform_global() const;
+
 private:
 
     lib::math::Matrixf _model_local;

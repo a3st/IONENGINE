@@ -14,15 +14,28 @@ using namespace ionengine::renderer;
 class GeometryVisitor : public scene::SceneVisitor {
 public:
 
-    GeometryVisitor(frontend::Context& context, std::optional<frontend::GeometryBuffer>& geom_buffer) {
+    GeometryVisitor(frontend::Context& context, std::optional<frontend::GeometryBuffer>& geom_buffer, backend::Handle<backend::Buffer>& buffer) {
         _context = &context;
         geom = &geom_buffer;
+        _buffer = &buffer;
     }
 
     void operator()(scene::MeshNode& other) {
 
         if(!geom->has_value()) {
             geom->emplace(*_context, other.surface(), frontend::BufferUsage::Static);
+
+            lib::math::Matrixf matrix = other.transform_global();
+            matrix.transpose();
+
+            _context->device().map_buffer_data(
+                *_buffer,
+                0,
+                std::span<uint8_t const>(
+                    reinterpret_cast<uint8_t const*>(matrix.data()),
+                    matrix.size() * sizeof(float)
+                )
+            );
         }
     }
 
@@ -32,12 +45,38 @@ public:
 
     void operator()(scene::CameraNode& other) {
 
+        other.calculate_matrices();
+
+        lib::math::Matrixf matrix = other.transform_view();
+        matrix.transpose();
+
+        _context->device().map_buffer_data(
+            *_buffer,
+            sizeof(lib::math::Matrixf),
+            std::span<uint8_t const>(
+                reinterpret_cast<uint8_t const*>(matrix.data()),
+                matrix.size() * sizeof(float)
+            )
+        );
+
+        matrix = other.transform_projection();
+        matrix.transpose();
+
+        _context->device().map_buffer_data(
+            *_buffer,
+            sizeof(lib::math::Matrixf) * 2,
+            std::span<uint8_t const>(
+                reinterpret_cast<uint8_t const*>(matrix.data()),
+                matrix.size() * sizeof(float)
+            )
+        );
     }
 
 private:
 
     frontend::Context* _context;
     std::optional<frontend::GeometryBuffer>* geom;
+    backend::Handle<backend::Buffer>* _buffer;
 };
 
 Renderer::Renderer(platform::Window& window) : 
@@ -50,6 +89,8 @@ Renderer::Renderer(platform::Window& window) :
     _shader_prog.emplace(_context, technique);
     asset::Technique technique_2("../../data/techniques/offscreen.json5");
     _shader_prog_2.emplace(_context, technique_2);
+
+    _model_buffer = _context.device().create_buffer(256, backend::BufferFlags::HostWrite | backend::BufferFlags::ConstantBuffer);
 
     vertex_declaration = { 
         backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, 0 },
@@ -71,8 +112,8 @@ Renderer::Renderer(platform::Window& window) :
 
 void Renderer::render(scene::Scene& scene) {
 
-    GeometryVisitor geometry_visitor(_context, _geom_triangle);
-    scene.visit(scene.begin(), scene.end(), geometry_visitor);
+    GeometryVisitor geometry_visitor(_context, _geom_triangle, _model_buffer);
+    scene.graph().visit(scene.graph().begin(), scene.graph().end(), geometry_visitor);
 
     _context.submit_or_skip_upload_buffers();
 
@@ -128,7 +169,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                     _shader_prog.value().layout(),
                     vertex_declaration,
                     _shader_prog.value().shaders(),
-                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::Front },
+                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::None },
                     backend::DepthStencilDesc { backend::CompareOp::Always, false },
                     backend::BlendDesc { false, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add },
                     context.render_pass(),
@@ -139,6 +180,11 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             }
 
             _context.device().bind_pipeline(context.command_list(), pipeline_target);
+
+            frontend::ShaderUniformBinder binder(_context, _shader_prog.value());
+            binder.bind_cbuffer(_shader_prog.value().get_uniform_by_name("world"), _model_buffer);
+            binder.update(context.command_list());
+
             _geom_triangle.value().bind(context.command_list());
         }
     );

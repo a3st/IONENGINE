@@ -20,9 +20,7 @@ struct Quaternion {
 
 	Quaternion(Quaternion const& other) : x(other.x), y(other.y), z(other.z), w(other.w) { }
 
-	Quaternion(Quaternion&& other) noexcept : x(other.x), y(other.y), z(other.z), w(other.w) {
-
-    }
+	Quaternion(Quaternion&& other) noexcept : x(other.x), y(other.y), z(other.z), w(other.w) { }
 
 	Quaternion& operator=(Quaternion const& other) {
 
@@ -88,7 +86,7 @@ struct Quaternion {
         quat = *this;
 
         if (w > 1) {
-            quat.Normalize();
+            quat.normalize();
         }
 
         *angle = static_cast<Type>(2 * std::acos(quat.w) * 180.0f / M_PI);
@@ -105,18 +103,20 @@ struct Quaternion {
         }
     }
 
-    Quaternion& angle_axis(Type const angle, Vector3<Type> const& axis) {
+    static Quaternion<Type> angle_axis(Type const angle, Vector3<Type> const& axis) {
+
+        auto quat = Quaternion<Type> {};
 
         Type rot_angle = static_cast<Type>(angle * M_PI / 180.0f);
 	    Type rot_sin = std::sin(rot_angle / 2);
         Vector3<Type> norm_axis = Vector3<Type>(axis).normalize();
 
-        x = norm_axis.x * rot_sin;
-        y = norm_axis.y * rot_sin;
-        z = norm_axis.z * rot_sin;
-        w = std::cos(rot_angle / 2);
+        quat.x = norm_axis.x * rot_sin;
+        quat.y = norm_axis.y * rot_sin;
+        quat.z = norm_axis.z * rot_sin;
+        quat.w = std::cos(rot_angle / 2);
 
-	    return *this;
+	    return quat;
     }
 
 	Quaternion operator*(Quaternion const& other) const {
@@ -154,7 +154,9 @@ struct Quaternion {
 		return std::tie(x, y, z, w) != std::tie(other.x, other.y, other.z, other.w);
 	}
 
-    Quaternion& euler(Type const x, Type const y, Type const z) {
+    static Quaternion euler(Type const x, Type const y, Type const z) {
+
+        auto quat = Quaternion {};
 
         Type rotx, roty, rotz;
         rotx = static_cast<Type>(x * M_PI / 180.0f);
@@ -169,12 +171,12 @@ struct Quaternion {
         cosy = std::cos(roty / 2);
         cosz = std::cos(rotz / 2);
 
-        x = sinx * cosy * cosz + cosx * siny * sinz;
-        y = cosx * siny * cosz - sinx * cosy * sinz;
-        z = cosx * cosy * sinz - sinx * siny * cosz;
-        w = cosx * cosy * cosz + sinx * siny * sinz;
+        quat.x = sinx * cosy * cosz + cosx * siny * sinz;
+        quat.y = cosx * siny * cosz - sinx * cosy * sinz;
+        quat.z = cosx * cosy * sinz - sinx * siny * cosz;
+        quat.w = cosx * cosy * cosz + sinx * siny * sinz;
 
-        return *this;
+        return quat;
     }
 };
 

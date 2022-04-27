@@ -1189,7 +1189,7 @@ Handle<Pipeline> Device::Impl::create_pipeline(
     auto _rasterizer_desc = D3D12_RASTERIZER_DESC {};
     _rasterizer_desc.FillMode = get_fill_mode(rasterizer_desc.fill_mode);
     _rasterizer_desc.CullMode = get_cull_mode(rasterizer_desc.cull_mode);
-    _rasterizer_desc.FrontCounterClockwise = false;
+    _rasterizer_desc.FrontCounterClockwise = true;
     _rasterizer_desc.DepthBias = 0;
     _rasterizer_desc.DepthBiasClamp = 0.0f;
     _rasterizer_desc.SlopeScaledDepthBias = 0.0f;

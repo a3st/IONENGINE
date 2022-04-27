@@ -5,23 +5,9 @@
             name: "world", 
             type: "cbuffer", 
             properties: [
-                { name: "viewproj", type: "f32x4x4" }
-            ],
-            visibility: "vertex",
-        },
-        {
-            name: "light", 
-            type: "cbuffer", 
-            properties: [
-                { name: "light", type: "f32x3" }
-            ],
-            visibility: "vertex",
-        },
-        {
-            name: "material",
-            type: "cbuffer",
-            properties: [
-                { name: "color", type: "f32x4" }
+                { name: "model", type: "f32x4x4" },
+                { name: "view", type: "f32x4x4" },
+                { name: "proj", type: "f32x4x4" },
             ],
             visibility: "vertex",
         }
@@ -41,6 +27,10 @@
                 vs_output main(vs_input input) {
                     vs_output output;
                     float4 world_pos = float4(input.position, 1.0f);
+
+                    world_pos = mul(world_pos, model);
+                    world_pos = mul(world_pos, view);
+
                     output.position = world_pos;
                     output.color = input.color;
                     return output;

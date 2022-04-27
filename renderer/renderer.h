@@ -55,6 +55,8 @@ private:
     backend::Handle<backend::Sampler> _sampler;
 
     std::optional<frontend::GeometryBuffer> _geom_triangle;
+
+    backend::Handle<backend::Buffer> _model_buffer;
 };
 
 }
