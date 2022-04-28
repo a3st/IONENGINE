@@ -230,9 +230,9 @@ struct Matrix {
 	static Matrix<Type> translate(Vector3<Type> const& position) {
 
 		Matrix<Type> mat = Matrix<Type>::identity();
-		mat.m03 = position.x;
-		mat.m13 = position.y;
-		mat.m23 = position.z;
+		mat.m30 = position.x;
+		mat.m31 = position.y;
+		mat.m32 = position.z;
 		return mat;
 	}
 
@@ -245,14 +245,14 @@ struct Matrix {
 		return mat;
 	}
 
-	static Matrix<Type> perspective(Type const fovy, Type const aspect, Type const near_dst, Type const far_dst) {
+	static Matrix<Type> perspective_rh(Type const fovy, Type const aspect, Type const near_dst, Type const far_dst) {
 
 		auto mat = Matrix<Type> {};
-		mat.m00 = 1 / (std::tan(fovy / 2) * aspect);
-		mat.m11 = 1 / std::tan(fovy / 2);
+		mat.m00 = static_cast<Type>(1) / (std::tan(fovy / static_cast<Type>(2)) * aspect);
+		mat.m11 = static_cast<Type>(1) / std::tan(fovy / static_cast<Type>(2));
 		mat.m22 = far_dst / (near_dst - far_dst);
-		mat.m23 = -1;
-		mat.m32 = -(far_dst * near_dst) / (far_dst - near_dst);
+		mat.m23 = - static_cast<Type>(1);
+		mat.m32 = - (far_dst * near_dst) / (far_dst - near_dst);
 		return mat;
 	}
 
@@ -273,25 +273,25 @@ struct Matrix {
 		return mat;
 	}
 
-	static Matrix look_at(Vector3<Type> const& eye, Vector3<Type> const& target, Vector3<Type> const& up) {
+	static Matrix look_at_rh(Vector3<Type> const& eye, Vector3<Type> const& center, Vector3<Type> const& up) {
 
-		Vector3<Type> z = (target - eye).normalize();
-		Vector3<Type> x = Vector3(up).cross(z).normalize();
-		Vector3<Type> y = Vector3(z).cross(x);
+		Vector3<Type> f = (center - eye).normalize();
+		Vector3<Type> r = Vector3(f).cross(up).normalize();
+		Vector3<Type> u = Vector3(r).cross(f);
 
 		Matrix<Type> mat = Matrix<Type>::identity();
-		mat.m00 = x.x;
-		mat.m10 = x.y;
-		mat.m20 = x.z;
-		mat.m01 = y.x;
-		mat.m11 = y.y;
-		mat.m21 = y.z;
-		mat.m02 = -z.x;
-		mat.m12 = -z.y;
-		mat.m22 = -z.z;
-		mat.m30 = -x.dot(eye);
-		mat.m31 = -y.dot(eye);
-		mat.m32 = -z.dot(eye);
+		mat.m00 = r.x;
+		mat.m10 = r.y;
+		mat.m20 = r.z;
+		mat.m01 = u.x;
+		mat.m11 = u.y;
+		mat.m21 = u.z;
+		mat.m02 = -f.x;
+		mat.m12 = -f.y;
+		mat.m22 = -f.z;
+		mat.m30 = -r.dot(eye);
+		mat.m31 = -u.dot(eye);
+		mat.m32 = f.dot(eye);
 		return mat;
 	}
 

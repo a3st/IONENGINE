@@ -30,6 +30,7 @@
 
                     world_pos = mul(world_pos, model);
                     world_pos = mul(world_pos, view);
+                    world_pos = mul(world_pos, proj);
 
                     output.position = world_pos;
                     output.color = input.color;

@@ -24,10 +24,10 @@ public:
 
         if(!geom->has_value()) {
             geom->emplace(*_context, other.surface(), frontend::BufferUsage::Static);
+        }
 
-            lib::math::Matrixf matrix = other.transform_global();
-            matrix.transpose();
-
+        lib::math::Matrixf matrix = other.transform_global();
+            
             _context->device().map_buffer_data(
                 *_buffer,
                 0,
@@ -36,7 +36,6 @@ public:
                     matrix.size() * sizeof(float)
                 )
             );
-        }
     }
 
     void operator()(scene::TransformNode& other) {
@@ -48,7 +47,6 @@ public:
         other.calculate_matrices();
 
         lib::math::Matrixf matrix = other.transform_view();
-        matrix.transpose();
 
         _context->device().map_buffer_data(
             *_buffer,
@@ -60,7 +58,6 @@ public:
         );
 
         matrix = other.transform_projection();
-        matrix.transpose();
 
         _context->device().map_buffer_data(
             *_buffer,
@@ -90,7 +87,10 @@ Renderer::Renderer(platform::Window& window) :
     asset::Technique technique_2("../../data/techniques/offscreen.json5");
     _shader_prog_2.emplace(_context, technique_2);
 
-    _model_buffer = _context.device().create_buffer(256, backend::BufferFlags::HostWrite | backend::BufferFlags::ConstantBuffer);
+    _model_buffer.resize(2);
+
+    _model_buffer[0] = _context.device().create_buffer(256, backend::BufferFlags::HostWrite | backend::BufferFlags::ConstantBuffer);
+    _model_buffer[1] = _context.device().create_buffer(256, backend::BufferFlags::HostWrite | backend::BufferFlags::ConstantBuffer);
 
     vertex_declaration = { 
         backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, 0 },
@@ -112,12 +112,12 @@ Renderer::Renderer(platform::Window& window) :
 
 void Renderer::render(scene::Scene& scene) {
 
-    GeometryVisitor geometry_visitor(_context, _geom_triangle, _model_buffer);
-    scene.graph().visit(scene.graph().begin(), scene.graph().end(), geometry_visitor);
-
     _context.submit_or_skip_upload_buffers();
 
     auto frame_texture = _context.get_or_wait_previous_frame();
+
+    GeometryVisitor geometry_visitor(_context, _geom_triangle, _model_buffer[_context.frame_index()]);
+    scene.graph().visit(scene.graph().begin(), scene.graph().end(), geometry_visitor);
 
     _frame_graph.bind_attachment(*_swapchain_buffer, frame_texture);
     _frame_graph.execute();
@@ -182,7 +182,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             _context.device().bind_pipeline(context.command_list(), pipeline_target);
 
             frontend::ShaderUniformBinder binder(_context, _shader_prog.value());
-            binder.bind_cbuffer(_shader_prog.value().get_uniform_by_name("world"), _model_buffer);
+            binder.bind_cbuffer(_shader_prog.value().get_uniform_by_name("world"), _model_buffer[_context.frame_index()]);
             binder.update(context.command_list());
 
             _geom_triangle.value().bind(context.command_list());

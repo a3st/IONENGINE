@@ -38,7 +38,7 @@ struct Vector2 {
 
 	Vector2& normalize() {
 
-        Type inverse = 1.0 / length();
+        Type inverse = static_cast<Type>(1) / length();
 	    x = x * inverse;
 	    y = y * inverse;
 		return *this;
@@ -46,7 +46,7 @@ struct Vector2 {
 
 	Type length() const { 
 		
-		return std::sqrt(x * x + y * y); 
+		return static_cast<Type>(std::sqrt(x * x + y * y)); 
 	}
 
 	Vector2 operator*(Type const other) const {
@@ -135,7 +135,7 @@ struct Vector3 {
 
 	Vector3& normalize() {
 		
-        Type inverse = 1.0f / length();
+        Type inverse = static_cast<Type>(1) / length();
         x = x * inverse;
         y = y * inverse;
         z = z * inverse;
@@ -144,7 +144,7 @@ struct Vector3 {
 
 	Type length() const {
 
-		return std::sqrt(x * x + y * y + z * z);
+		return static_cast<Type>(std::sqrt(x * x + y * y + z * z));
 	}
     
 	Vector3 operator*(Type const other) const {
@@ -199,9 +199,10 @@ struct Vector3 {
 
 	Vector3& cross(Vector3 const& other) {
 
-		x = y * other.z - z * other.y;
-		y = z * other.x - x * other.z;
-		z = x * other.y - y * other.x;
+		Vector3<Type> vec = *this;
+		x = vec.y * other.z - vec.z * other.y;
+		y = vec.z * other.x - vec.x * other.z;
+		z = vec.x * other.y - vec.y * other.x;
 		return *this;
 	}
 };
@@ -249,7 +250,7 @@ struct Vector4 {
 
 	Vector4& normalize() {
 
-        Type inverse = 1.0f / length();
+        Type inverse = static_cast<Type>(1) / length();
         x = x * inverse;
         y = y * inverse;
         z = z * inverse;
@@ -259,7 +260,7 @@ struct Vector4 {
 
 	Type length() const {
 
-		return std::sqrt(x * x + y * y + z * z + w * w);
+		return static_cast<Type>(std::sqrt(x * x + y * y + z * z + w * w));
 	}
 
 	Vector4 operator*(Type const other) const {

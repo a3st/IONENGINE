@@ -56,7 +56,7 @@ private:
 
     std::optional<frontend::GeometryBuffer> _geom_triangle;
 
-    backend::Handle<backend::Buffer> _model_buffer;
+    std::vector<backend::Handle<backend::Buffer>> _model_buffer;
 };
 
 }

@@ -32,7 +32,7 @@ void SceneGraph::update_hierarchical_data() {
 
         transform_node->_model_local = 
             lib::math::Matrixf::translate(transform_node->_position) *
-            //transform_node->_rotation.matrix() *
+            transform_node->_rotation.matrix() *
             lib::math::Matrixf::scale(transform_node->_scale)
         ;
 

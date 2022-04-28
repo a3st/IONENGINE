@@ -17,6 +17,8 @@ using namespace ionengine;
 
 int main(int* argc, char** agrv) {
 
+    float rotate = 0.0f;
+
     // lib::ThreadPool thread_pool(3);
 
     try {
@@ -28,37 +30,20 @@ int main(int* argc, char** agrv) {
         scene::Scene test_scene;
         
         auto node_0 = test_scene.graph().add_node<scene::TransformNode>();
-        node_0->position(lib::math::Vector3f(0.0f, 0.0f, 0.0f));
+        node_0->position(lib::math::Vector3f(0.0f, 1.0f, 0.0f));
 
         test_scene.graph().root()->add_child(node_0);
 
         auto node_1 = test_scene.graph().add_node<scene::MeshNode>();
-        node_1->position(lib::math::Vector3f(0.0f, 0.0, 0.0f));
-        node_1->rotation(lib::math::Quaternionf::angle_axis(50.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
+        node_1->name("mesh");
+        node_1->position(lib::math::Vector3f(0.0f, -0.5f, 0.0f));
+        node_1->rotation(lib::math::Quaternionf::angle_axis(0.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
         node_1->scale(lib::math::Vector3f(1.0f, 1.0f, 1.0f));
 
         node_0->add_child(node_1);
 
         auto camera = test_scene.graph().add_node<scene::CameraNode>();
-        camera->position(lib::math::Vector3f(0.0f, 20.0f, 10.0f));
-
-        /*std::cout << std::format("{} {} {} {}\n{} {} {} {}\n{} {} {} {}\n{} {} {} {}", 
-            node_1->transform_local().m00, node->transform_local().m01, node->transform_local().m02, node->transform_local().m03,
-            node_1->transform_local().m10, node->transform_local().m11, node->transform_local().m12, node->transform_local().m13,
-            node_1->transform_local().m20, node->transform_local().m21, node->transform_local().m22, node->transform_local().m23,
-            node_1->transform_local().m30, node->transform_local().m31, node->transform_local().m32, node->transform_local().m33
-        ) 
-        << std::endl;
-
-        test_scene.graph().update_hierarchical_data();
-
-        std::cout << std::format("{} {} {} {}\n{} {} {} {}\n{} {} {} {}\n{} {} {} {}", 
-            node->transform_local().m00, node->transform_local().m01, node->transform_local().m02, node->transform_local().m03,
-            node->transform_local().m10, node->transform_local().m11, node->transform_local().m12, node->transform_local().m13,
-            node->transform_local().m20, node->transform_local().m21, node->transform_local().m22, node->transform_local().m23,
-            node->transform_local().m30, node->transform_local().m31, node->transform_local().m32, node->transform_local().m33
-        ) 
-        << std::endl;*/
+        camera->position(lib::math::Vector3f(0.0f, 2.0f, 3.0f));
 
         AssetManager asset_manager;
 
@@ -71,6 +56,15 @@ int main(int* argc, char** agrv) {
                 switch(event.type) {
                     case platform::WindowEventType::Closed: { flow = platform::WindowEventFlow::Exit; } break;
                     case platform::WindowEventType::Updated: {
+
+                        rotate += 0.5f;
+                        if(rotate >= 180.0f) {
+                            rotate = 0.0f;
+                        }
+
+                        auto mesh = test_scene.graph().find_by_name<scene::MeshNode>("mesh");
+                        mesh->rotation(lib::math::Quaternionf::angle_axis(rotate, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
+
                         test_scene.graph().update_hierarchical_data();
                         renderer.render(test_scene);
                     } break;

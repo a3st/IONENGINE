@@ -45,6 +45,8 @@ public:
 
     void graphics_fence_value(uint64_t const value);
 
+    uint32_t frame_index() const { return _frame_index; }
+
 private:
 
     backend::Device _device;

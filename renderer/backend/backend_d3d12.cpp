@@ -937,7 +937,7 @@ Handle<Shader> Device::Impl::create_shader(std::string_view const source, Shader
 
     arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS); //-WX
     arguments.push_back(DXC_ARG_DEBUG); //-Zi
-    arguments.push_back(DXC_ARG_PACK_MATRIX_ROW_MAJOR); //-Zp
+    arguments.push_back(DXC_ARG_PACK_MATRIX_ROW_MAJOR); //-Zpr
 
     auto source_buffer = DxcBuffer {};
     source_buffer.Ptr = source_blob->GetBufferPointer();

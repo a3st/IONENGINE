@@ -28,6 +28,24 @@ public:
         return static_cast<Type*>(_nodes.back().get());
     }
 
+    template<class Type>
+    Type* find_by_name(std::string_view const name) {
+
+        auto it = std::find_if(
+            _nodes.begin(), 
+            _nodes.end(), 
+            [&](auto const& element) {
+                return name == element->name();
+            }
+        );
+
+        if(it != _nodes.end()) {
+            return static_cast<Type*>(it->get());
+        } else {
+            return nullptr;
+        }
+    }
+
     SceneNode* root();
 
 private:

@@ -42,6 +42,7 @@ struct Primitive {
 struct Surface {
     std::vector<PrimitiveAttribute> attributes;
     std::vector<Primitive> primitives;
+    uint32_t material_count;
 };
 
 class Model : public Asset {

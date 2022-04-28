@@ -3,9 +3,38 @@
 #include <precompiled.h>
 #include <asset/model.h>
 
+#include <tinyobjloader/tiny_obj_loader.h>
+
 using namespace ionengine::asset;
 
 Model::Model(std::filesystem::path const& file_path) {
+
+    std::filesystem::path extension = file_path.extension();
+
+    if(extension == ".obj") {
+
+        tinyobj::attrib_t attributes;
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+
+        std::string warn;
+        std::string err;
+
+        std::string input_file = file_path.string();
+
+        tinyobj::LoadObj(&attributes, &shapes, &materials, &warn, &err, input_file.c_str());
+
+        if(!err.empty()) {
+            std::cerr << err << std::endl;
+        }
+
+        
+
+        for(auto& shape : shapes) {
+            std::cout << shape.name << std::endl;
+            shape.mesh.
+        }
+    }
 
     auto attributes = std::vector<PrimitiveAttribute> {
         { VertexUsage::Position, VertexFormat::F32x3, 0 },
