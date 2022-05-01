@@ -3,14 +3,14 @@
 #pragma once
 
 #include <renderer/frontend/context.h>
-#include <asset/model.h>
+#include <asset/mesh.h>
 
 namespace ionengine::renderer::frontend {
 
 class GeometryBuffer {
 public:
 
-    GeometryBuffer(Context& context, asset::Surface const& surface, BufferUsage const usage);
+    GeometryBuffer(Context& context, asset::MeshSurface const& surface, BufferUsage const usage);
 
     GeometryBuffer(GeometryBuffer&& other) noexcept;
 

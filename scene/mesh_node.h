@@ -3,7 +3,7 @@
 #pragma once
 
 #include <scene/transform_node.h>
-#include <asset/model.h>
+#include <asset/mesh.h>
 #include <asset/material.h>
 
 namespace ionengine::scene {
@@ -18,13 +18,12 @@ public:
 
     virtual void accept(SceneVisitor& visitor);
 
-    asset::Surface const& surface() const;
+    asset::Mesh const& mesh() const;
 
 private:
 
-    std::shared_ptr<asset::Model> _model;
-    uint32_t _surface_index{0};
-    std::vector<std::shared_ptr<asset::Material>> _materials;
+    std::shared_ptr<asset::Mesh> _mesh;
+    std::vector<std::shared_ptr<asset::Material>> _ovveride_materials;
 };
 
 }

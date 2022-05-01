@@ -143,7 +143,7 @@ struct MaterialParameter {
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32x4, MaterialParameterType::F32x4)
 };
 
-class Material {
+class Material : public Asset {
 public:
     
     Material(std::filesystem::path const& file_path, AssetManager& asset_manager);

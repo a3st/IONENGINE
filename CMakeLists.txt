@@ -22,15 +22,13 @@ add_executable(Runtime-Win32
     # Lib
     #lib/thread_pool.cpp
     lib/math/color.cpp
-    lib/hash/buffer_view.cpp
 # ---------------------------
     # Platform
     platform/window_win32.cpp
     platform/window_loop.cpp
 # ---------------------------
     # Asset
-    #asset/obj/obj_document.cpp
-    asset/model.cpp
+    asset/mesh.cpp
     asset/texture.cpp
     asset/material.cpp
     asset/technique.cpp
@@ -53,6 +51,9 @@ add_executable(Runtime-Win32
     renderer/frontend/geometry_buffer.cpp
     renderer/frontend/frame_graph.cpp
     renderer/frontend/shader_program.cpp
+
+    # Cache
+    renderer/cache/geometry.cpp
 
     # Renderer
     renderer/renderer.cpp

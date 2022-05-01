@@ -3,6 +3,7 @@
 #pragma once
 
 #include <asset/asset.h>
+#include <asset/material.h>
 #include <lib/hash/buffer_view.h>
 
 namespace ionengine::asset {
@@ -25,37 +26,32 @@ enum class VertexFormat : uint8_t {
     F32
 };
 
-struct PrimitiveAttribute {
+struct MeshAttribute {
     VertexUsage usage;
     VertexFormat format;
     uint32_t index;
 };
 
-struct Primitive {
-    lib::hash::BufferView vertex_buffer;
-    std::optional<lib::hash::BufferView> index_buffer;
-    uint32_t vertex_count;
-    uint32_t index_count;
+struct MeshSurface {
+    lib::hash::BufferView<float> vertices;
+    lib::hash::BufferView<uint32_t> indices;
     uint32_t material_index;
 };
 
-struct Surface {
-    std::vector<PrimitiveAttribute> attributes;
-    std::vector<Primitive> primitives;
-    uint32_t material_count;
-};
-
-class Model : public Asset {
+class Mesh : public Asset {
 public:
 
-    Model(std::filesystem::path const& file_path);
+    Mesh(std::filesystem::path const& file_path, AssetManager& asset_manager);
 
-    std::span<Surface const> surfaces() const;
+    MeshSurface const& surface(uint32_t const index) const;
 
 private:
 
-    std::vector<Surface> _surfaces;
-    std::vector<uint8_t> _data;
+    std::vector<float> _mesh_vertices;
+    std::vector<uint32_t> _mesh_indices;
+    std::vector<MeshAttribute> _mesh_attributes;
+    std::vector<MeshSurface> _mesh_surfaces;
+    std::vector<std::shared_ptr<Material>> _materials;
 };
 
 }

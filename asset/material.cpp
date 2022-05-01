@@ -19,8 +19,6 @@ Material::Material(std::filesystem::path const& file_path, AssetManager& asset_m
     }
 
     _name = document.name;
-
-    
 }
 
 std::string_view Material::name() const {

@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include <renderer/context.h>
-#include <renderer/geometry_buffer.h>
+#include <renderer/frontend/context.h>
+#include <renderer/frontend/geometry_buffer.h>
+#include <lib/sparse_vector.h>
 
 namespace ionengine::renderer {
 
@@ -18,11 +19,13 @@ public:
 
     GeometryCache();
 
-    GeometryBuffer& get_from(Context& context, asset::Mesh& mesh);
+    frontend::GeometryBuffer& get(frontend::Context& context, asset::MeshSurface& surface);
+
+    void clear();
 
 private:
 
-    std::vector<CacheEntry<GeometryBuffer>> _cache;
+    lib::SparseVector<CacheEntry<frontend::GeometryBuffer>> _buffers;
 
 };
 

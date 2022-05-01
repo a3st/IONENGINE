@@ -1,19 +1,17 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <asset/model.h>
-
-#include <tinyobjloader/tiny_obj_loader.h>
+#include <asset/mesh.h>
 
 using namespace ionengine::asset;
 
-Model::Model(std::filesystem::path const& file_path) {
+Mesh::Mesh(std::filesystem::path const& file_path, AssetManager& asset_manager) {
 
     std::filesystem::path extension = file_path.extension();
 
     if(extension == ".obj") {
 
-        tinyobj::attrib_t attributes;
+        /*tinyobj::attrib_t attributes;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
 
@@ -28,45 +26,40 @@ Model::Model(std::filesystem::path const& file_path) {
             std::cerr << err << std::endl;
         }
 
-        
-
         for(auto& shape : shapes) {
             std::cout << shape.name << std::endl;
-            shape.mesh.
-        }
+        }*/
     }
 
-    auto attributes = std::vector<PrimitiveAttribute> {
+    auto attributes = std::vector<MeshAttribute> {
         { VertexUsage::Position, VertexFormat::F32x3, 0 },
         { VertexUsage::Color0, VertexFormat::F32x2, 1 },
     };
 
-    std::vector<float> triangle = {
+    _mesh_attributes.resize(attributes.size());
+    std::memcpy(_mesh_attributes.data(), attributes.data(), _mesh_attributes.size());
+
+    std::vector<float> triangles = {
         -0.5f, -0.5f, 0.0f, 0.4f, 0.3f, 0.3f,
         0.5f, -0.5f, 0.0f, 0.1f, 0.8f, 0.3f,
         0.0f,  0.5f, 0.0f, 0.2f, 0.3f, 0.7f
     };
 
-    _data.resize(triangle.size() * sizeof(float));
-    std::memcpy(_data.data(), triangle.data(), _data.size());
+    _mesh_vertices.resize(triangles.size());
+    std::memcpy(_mesh_vertices.data(), triangles.data(), _mesh_vertices.size());
 
-    lib::hash::BufferView vertex_buffer(_data);
-    lib::hash::BufferView index_buffer(_data);
+    // Triangle Primitive
 
-    auto primitive = Primitive { 
-        .vertex_buffer = std::move(vertex_buffer), 
-        .index_buffer = std::move(index_buffer), 
-        .vertex_count = 3,
-        .index_count = 0,
+    auto surface = MeshSurface { 
+        .vertices = lib::hash::BufferView<float>(_mesh_vertices), 
+        .indices = lib::hash::BufferView<uint32_t>(_mesh_indices), 
         .material_index = 0 
     };
 
-    _surfaces.resize(1);
-    _surfaces[0].attributes = attributes;
-    _surfaces[0].primitives.push_back(primitive);
+    _mesh_surfaces.emplace_back(surface);
 }
 
-std::span<Surface const> Model::surfaces() const {
+MeshSurface const& Mesh::surface(uint32_t const index) const {
 
-    return _surfaces;
+    return _mesh_surfaces.at(index);
 }

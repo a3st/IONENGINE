@@ -25,6 +25,10 @@ int main(int* argc, char** agrv) {
         platform::WindowLoop loop;
         platform::Window window("IONENGINE", 800, 600, false);
 
+        AssetManager asset_manager;
+
+        
+
         renderer::Renderer renderer(window);
 
         scene::Scene test_scene;
@@ -44,8 +48,6 @@ int main(int* argc, char** agrv) {
 
         auto camera = test_scene.graph().add_node<scene::CameraNode>();
         camera->position(lib::math::Vector3f(0.0f, 2.0f, 3.0f));
-
-        AssetManager asset_manager;
 
         // asset::Material material("../../data/materials/default.json5", asset_manager);
 
