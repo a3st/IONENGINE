@@ -112,12 +112,12 @@ Renderer::Renderer(platform::Window& window) :
 
 void Renderer::render(scene::Scene& scene) {
 
-    _context.submit_or_skip_upload_buffers();
-
     auto frame_texture = _context.get_or_wait_previous_frame();
 
     GeometryVisitor geometry_visitor(_context, _geom_triangle, _model_buffer[_context.frame_index()]);
     scene.graph().visit(scene.graph().begin(), scene.graph().end(), geometry_visitor);
+
+    _context.submit_or_skip_upload_data();
 
     _frame_graph.bind_attachment(*_swapchain_buffer, frame_texture);
     _frame_graph.execute();

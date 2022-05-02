@@ -12,7 +12,7 @@ enum class VertexUsage : uint8_t {
     Position = 0,
     Normal = 1,
     Tangent = 2,
-    Color0 = 3,
+    Color = 3,
     TexCoord0 = 4,
     TexCoord1 = 5,
     TexCoord2 = 6
@@ -36,6 +36,7 @@ struct MeshSurface {
     lib::hash::BufferView<float> vertices;
     lib::hash::BufferView<uint32_t> indices;
     uint32_t material_index;
+    size_t cache_entry{std::numeric_limits<size_t>::max()};
 };
 
 class Mesh : public Asset {

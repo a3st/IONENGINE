@@ -12,20 +12,29 @@ GeometryCache::GeometryCache() {
 
 frontend::GeometryBuffer& GeometryCache::get(frontend::Context& context, asset::MeshSurface& surface) {
 
-    /*uint64_t hash = mesh.vertex_buffer().data_hash() ^ mesh.index_buffer().data_hash();
+    uint64_t const hash = surface.vertices.hash() ^ surface.indices.hash();
 
-    auto it = std::find_if(_cache.begin(), _cache.end(),
-        [&](auto& other) {
-            return hash == other.value_hash;
+    if(_buffers.is_valid(surface.cache_entry)) {
+
+        auto& buffer = _buffers.get(surface.cache_entry);
+
+        if(buffer.value_hash != hash) {
+
+            buffer.value_hash = hash;
+        } else {
+
+            return buffer.value;
         }
-    );
 
-    if(it != _cache.end()) {
-        return it->value;
     } else {
-        _cache.emplace_back(GeometryBuffer(context, mesh.vertex_buffer(), mesh.index_buffer()), hash);
-        return _cache.back().value;
-    }*/
+
+        CacheEntry<frontend::GeometryBuffer> entry = {
+            .value = frontend::GeometryBuffer(context, surface),
+            .value_hash = hash
+        };
+
+        surface.cache_entry = _buffers.push(std::move(entry));
+    }
 }
 
 void GeometryCache::clear() {

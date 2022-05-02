@@ -33,7 +33,7 @@ Mesh::Mesh(std::filesystem::path const& file_path, AssetManager& asset_manager) 
 
     auto attributes = std::vector<MeshAttribute> {
         { VertexUsage::Position, VertexFormat::F32x3, 0 },
-        { VertexUsage::Color0, VertexFormat::F32x2, 1 },
+        { VertexUsage::Color, VertexFormat::F32x2, 1 },
     };
 
     _mesh_attributes.resize(attributes.size());

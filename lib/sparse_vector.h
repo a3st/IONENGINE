@@ -64,6 +64,11 @@ public:
         return _dense[index].value();
     }
 
+    bool is_valid(size_t const index) const {
+
+        return _dense[index].has_value();
+    }
+
 private:
 
     std::vector<std::optional<Type>> _dense;
