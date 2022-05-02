@@ -8,6 +8,8 @@
 
 namespace ionengine::asset {
 
+class AssetManager;
+
 enum class VertexUsage : uint8_t {
     Position = 0,
     Normal = 1,
@@ -42,7 +44,7 @@ struct MeshSurface {
 class Mesh : public Asset {
 public:
 
-    Mesh(std::filesystem::path const& file_path, AssetManager& asset_manager);
+    Mesh(std::filesystem::path const& file_path);
 
     MeshSurface const& surface(uint32_t const index) const;
 

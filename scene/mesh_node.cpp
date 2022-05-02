@@ -9,7 +9,7 @@ using namespace ionengine::scene;
 
 MeshNode::MeshNode() {
 
-    _mesh = std::make_shared<asset::Mesh>("untitled.obj");
+    
 }
 
 void MeshNode::accept(SceneVisitor& visitor) {

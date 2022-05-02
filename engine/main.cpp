@@ -10,7 +10,7 @@
 #include <lib/exception.h>
 #include <lib/algorithm.h>
 
-#include <engine/asset_manager.h>
+#include <asset/asset_manager.h>
 #include <asset/material.h>
 
 using namespace ionengine;
@@ -25,11 +25,13 @@ int main(int* argc, char** agrv) {
         platform::WindowLoop loop;
         platform::Window window("IONENGINE", 800, 600, false);
 
-        AssetManager asset_manager;
+        asset::AssetManager asset_manager;
 
-        
+        {
+            asset::AssetPtr<asset::Mesh> mesh = asset_manager.get_mesh("123");
+        }
 
-        renderer::Renderer renderer(window);
+        renderer::Renderer renderer(window, asset_manager);
 
         scene::Scene test_scene;
         
@@ -66,6 +68,8 @@ int main(int* argc, char** agrv) {
 
                         auto mesh = test_scene.graph().find_by_name<scene::MeshNode>("mesh");
                         mesh->rotation(lib::math::Quaternionf::angle_axis(rotate, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
+
+                        asset_manager.update(0.5f);
 
                         test_scene.graph().update_hierarchical_data();
                         renderer.render(test_scene);

@@ -2,10 +2,11 @@
 
 #include <precompiled.h>
 #include <asset/mesh.h>
+#include <asset/asset_manager.h>
 
 using namespace ionengine::asset;
 
-Mesh::Mesh(std::filesystem::path const& file_path, AssetManager& asset_manager) {
+Mesh::Mesh(std::filesystem::path const& file_path) : Asset(file_path) {
 
     std::filesystem::path extension = file_path.extension();
 

@@ -2,12 +2,11 @@
 
 #pragma once
 
+#include <asset/texture.h>
+#include <lib/math/vector.h>
 #include <json5/json5.hpp>
 #include <json5/json5_input.hpp>
 #include <json5/json5_reflect.hpp>
-
-#include <asset/texture.h>
-#include <lib/math/vector.h>
 
 enum class JSON_MaterialParameterType {
     sampler2D,
@@ -77,11 +76,9 @@ struct JSON_MaterialDefinition {
 
 JSON5_CLASS(JSON_MaterialDefinition, name, parameters, passes)
 
-namespace ionengine {
-class AssetManager;
-};
-
 namespace ionengine::asset {
+
+class AssetManager;
 
 enum class MaterialParameterType {
     Sampler2D,
@@ -146,7 +143,7 @@ struct MaterialParameter {
 class Material : public Asset {
 public:
     
-    Material(std::filesystem::path const& file_path, AssetManager& asset_manager);
+    Material(std::filesystem::path const& file_path);
 
     std::string_view name() const;
 

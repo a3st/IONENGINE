@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <asset/asset.h>
 #include <json5/json5.hpp>
 #include <json5/json5_input.hpp>
 #include <json5/json5_reflect.hpp>
@@ -137,7 +138,7 @@ struct ShaderData {
     ShaderFlags flags;
 };
 
-class Technique {
+class Technique : public Asset {
 public:
 
     Technique(std::filesystem::path const& file_path);

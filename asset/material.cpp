@@ -3,11 +3,11 @@
 #include <precompiled.h>
 #include <asset/material.h>
 #include <lib/exception.h>
-#include <engine/asset_manager.h>
+#include <asset/asset_manager.h>
 
 using namespace ionengine::asset;
 
-Material::Material(std::filesystem::path const& file_path, AssetManager& asset_manager) {
+Material::Material(std::filesystem::path const& file_path) : Asset(file_path) {
 
     std::string from_path_string = file_path.string();
 

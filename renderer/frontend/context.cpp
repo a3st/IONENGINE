@@ -12,7 +12,8 @@ Context::Context(platform::Window& window, uint32_t const buffered_frame_count) 
 
     _graphics_fence_values.resize(buffered_frame_count);
 
-    std::generate_n(
+
+    /*std::generate_n(
         _upload_buffers.begin(), 
         buffered_frame_count, 
         [&] { 
@@ -23,7 +24,7 @@ Context::Context(platform::Window& window, uint32_t const buffered_frame_count) 
                 .offset = 0
             };
         }
-    );
+    );*/
 }
 
 void Context::swap_buffers() {

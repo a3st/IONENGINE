@@ -6,9 +6,15 @@
 #include <renderer/frontend/frame_graph.h>
 #include <renderer/frontend/shader_program.h>
 #include <renderer/frontend/geometry_buffer.h>
+#include <asset/asset_manager.h>
+#include <lib/event_dispatcher.h>
 
-namespace ionengine::scene {
+namespace ionengine {
+
+namespace scene {
 class Scene;
+}
+
 }
 
 namespace ionengine::renderer {
@@ -16,7 +22,7 @@ namespace ionengine::renderer {
 class Renderer {
 public:
 
-    Renderer(platform::Window& window);
+    Renderer(platform::Window& window, asset::AssetManager& asset_manager);
 
     Renderer(Renderer const&) = delete;
 
@@ -33,6 +39,10 @@ public:
     void load_shader();
 
 private:
+
+    asset::AssetManager* _asset_manager;
+
+    std::optional<mpsc::Receiver<asset::AssetEvent<asset::Mesh>>> _meshes_receiver;
 
     frontend::Context _context;
     frontend::FrameGraph _frame_graph;

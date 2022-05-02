@@ -7,6 +7,7 @@
 #include <scene/mesh_node.h>
 #include <scene/transform_node.h>
 #include <scene/camera_node.h>
+#include <asset/asset_manager.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -23,7 +24,7 @@ public:
     void operator()(scene::MeshNode& other) {
 
         if(!geom->has_value()) {
-            geom->emplace(*_context, other.surface(), frontend::BufferUsage::Static);
+            //geom->emplace(*_context, other.surface(), frontend::BufferUsage::Static);
         }
 
         lib::math::Matrixf matrix = other.transform_global();
@@ -76,11 +77,17 @@ private:
     backend::Handle<backend::Buffer>* _buffer;
 };
 
-Renderer::Renderer(platform::Window& window) : 
+Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager) : 
     _context(window, 2),
-    _frame_graph(_context) {
+    _frame_graph(_context),
+    _asset_manager(&asset_manager) {
 
     build_frame_graph(window.client_size().width, window.client_size().height, 2);
+
+    auto [sender, receiver] = mpsc::make_channel<asset::AssetEvent<asset::Mesh>>();
+    asset_manager.mesh_pool().event_dispatcher().add(sender);
+
+    _meshes_receiver.emplace(std::move(receiver));
         
     asset::Technique technique("../../data/techniques/geometry.json5");
     _shader_prog.emplace(_context, technique);
@@ -106,18 +113,38 @@ Renderer::Renderer(platform::Window& window) :
         backend::CompareOp::Always
     );
 
-    auto quad = frontend::GeometryBuffer::quad(_context);
-    _offscreen_quad.emplace(std::move(quad));
+    //auto quad = frontend::GeometryBuffer::quad(_context);
+    //_offscreen_quad.emplace(std::move(quad));
 }
 
 void Renderer::render(scene::Scene& scene) {
 
+    auto element = _meshes_receiver.value().try_receive();
+            
+            auto event_visitor = make_visitor(
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Loaded>& event) {
+                    std::cout << "asset loaded "<<std::endl;
+                },
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Unloaded>& event) {
+
+                },
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Added>& event) {
+
+                },
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Removed>& event) {
+                    std::cout << "asset removed "<<std::endl;
+                }
+            );
+
+            if(element.has_value()) {
+            std::visit(event_visitor, element.value().data);
+            }
     auto frame_texture = _context.get_or_wait_previous_frame();
 
     GeometryVisitor geometry_visitor(_context, _geom_triangle, _model_buffer[_context.frame_index()]);
     scene.graph().visit(scene.graph().begin(), scene.graph().end(), geometry_visitor);
 
-    _context.submit_or_skip_upload_data();
+    //_context.submit_or_skip_upload_data();
 
     _frame_graph.bind_attachment(*_swapchain_buffer, frame_texture);
     _frame_graph.execute();
@@ -179,13 +206,13 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                 _pipelines.insert({ context.render_pass().index(), pipeline_target });
             }
 
-            _context.device().bind_pipeline(context.command_list(), pipeline_target);
+            /*_context.device().bind_pipeline(context.command_list(), pipeline_target);
 
             frontend::ShaderUniformBinder binder(_context, _shader_prog.value());
             binder.bind_cbuffer(_shader_prog.value().get_uniform_by_name("world"), _model_buffer[_context.frame_index()]);
             binder.update(context.command_list());
 
-            _geom_triangle.value().bind(context.command_list());
+            _geom_triangle.value().bind(context.command_list());*/
         }
     );
 
@@ -224,9 +251,9 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
             } else {
 
-                pipeline_target = _context.device().create_pipeline(
+                /*pipeline_target = _context.device().create_pipeline(
                     _shader_prog_2.value().layout(),
-                    _offscreen_quad.value().vertex_declaration(),
+                    //_offscreen_quad.value().vertex_declaration(),
                     _shader_prog_2.value().shaders(),
                     backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::None },
                     backend::DepthStencilDesc { backend::CompareOp::Always, false },
@@ -235,16 +262,16 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                     backend::InvalidHandle<backend::CachePipeline>()
                 );
 
-                _pipelines.insert({ context.render_pass().index(), pipeline_target });
+                _pipelines.insert({ context.render_pass().index(), pipeline_target });*/
             }
 
-            _context.device().bind_pipeline(context.command_list(), pipeline_target);
+            /*_context.device().bind_pipeline(context.command_list(), pipeline_target);
 
             frontend::ShaderUniformBinder binder(_context, _shader_prog_2.value());
             binder.bind_texture(_shader_prog_2.value().get_uniform_by_name("albedo"), context.attachment(0), _sampler);
             binder.update(context.command_list());
 
-            _offscreen_quad.value().bind(context.command_list());
+            _offscreen_quad.value().bind(context.command_list());*/
         }
     );
 
