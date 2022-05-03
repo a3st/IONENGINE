@@ -3,6 +3,7 @@
 #pragma once
 
 #include <asset/asset.h>
+#include <lib/expected.h>
 #include <json5/json5.hpp>
 #include <json5/json5_input.hpp>
 #include <json5/json5_reflect.hpp>
@@ -70,6 +71,11 @@ struct JSON_TechniqueDefinition {
 JSON5_CLASS(JSON_TechniqueDefinition, name, uniforms, shaders)
 
 namespace ionengine::asset {
+
+enum class TechniqueError {
+    IO,
+    ParseError
+};
 
 enum class ShaderFlags : uint16_t {
     Vertex = 1 << 0,
@@ -141,7 +147,7 @@ struct ShaderData {
 class Technique : public Asset {
 public:
 
-    Technique(std::filesystem::path const& file_path);
+    static lib::Expected<Technique, lib::Result<TechniqueError>> load_from_file(std::filesystem::path const& file_path);
 
     std::string_view name() const;
 
@@ -150,6 +156,8 @@ public:
     std::span<ShaderData const> shaders() const;
 
 private:
+
+    Technique(JSON_TechniqueDefinition const& document);
 
     std::string _name;
     std::vector<ShaderUniform> _uniforms;

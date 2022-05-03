@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <mpsc_channel/mpsc_channel.hpp>
+#include <lib/channel.h>
 
 namespace ionengine::lib {
 
@@ -12,7 +12,7 @@ public:
 
     EventDispatcher() = default;
 
-    void add(mpsc::Sender<Type> const& sender) {
+    void add(Sender<Type> const& sender) {
 
         _senders.emplace_back(sender);
     }
@@ -31,7 +31,7 @@ public:
 
 private:
 
-    std::vector<mpsc::Sender<Type>> _senders;
+    std::vector<Sender<Type>> _senders;
 };
 
 }

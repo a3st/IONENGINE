@@ -42,7 +42,7 @@ private:
 
     asset::AssetManager* _asset_manager;
 
-    std::optional<mpsc::Receiver<asset::AssetEvent<asset::Mesh>>> _meshes_receiver;
+    std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _meshes_receiver;
 
     frontend::Context _context;
     frontend::FrameGraph _frame_graph;

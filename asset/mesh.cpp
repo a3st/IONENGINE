@@ -6,7 +6,7 @@
 
 using namespace ionengine::asset;
 
-Mesh::Mesh(std::filesystem::path const& file_path) : Asset(file_path) {
+Mesh::Mesh(std::filesystem::path const& file_path) {
 
     std::filesystem::path extension = file_path.extension();
 

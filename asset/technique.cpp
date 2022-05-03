@@ -4,18 +4,10 @@
 #include <asset/technique.h>
 #include <lib/exception.h>
 
+using namespace ionengine;
 using namespace ionengine::asset;
 
-Technique::Technique(std::filesystem::path const& file_path) : Asset(file_path) {
-
-    std::string from_path_string = file_path.string();
-
-    JSON_TechniqueDefinition document;
-    json5::error result = json5::from_file(from_path_string, document);
-
-    if(result != json5::error::none) {
-        throw lib::Exception(std::format("File load {}!", from_path_string));
-    }
+Technique::Technique(JSON_TechniqueDefinition const& document) {
 
     _name = document.name;
 
@@ -94,6 +86,28 @@ Technique::Technique(std::filesystem::path const& file_path) : Asset(file_path) 
             _shaders.emplace_back(shader_code, get_shader_flags(shader.type));
         }
     );
+}
+
+lib::Expected<Technique, lib::Result<TechniqueError>> Technique::load_from_file(std::filesystem::path const& file_path) {
+
+    std::string path_string = file_path.string();
+
+    JSON_TechniqueDefinition document;
+    json5::error result = json5::from_file(path_string, document);
+
+    if(result == json5::error::could_not_open) {
+        return lib::Expected<Technique, lib::Result<TechniqueError>>::error(
+            lib::Result<TechniqueError> { .errc = TechniqueError::IO, .message = "Could not open a file" }
+        );
+    }
+
+    if(result != json5::error::none) {
+        return lib::Expected<Technique, lib::Result<TechniqueError>>::error(
+            lib::Result<TechniqueError> { .errc = TechniqueError::ParseError, .message = "Parse file error" }
+        );
+    }
+
+    return lib::Expected<Technique, lib::Result<TechniqueError>>::ok(Technique(document));
 }
 
 std::string_view Technique::name() const {

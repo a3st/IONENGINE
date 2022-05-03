@@ -84,15 +84,15 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
 
     build_frame_graph(window.client_size().width, window.client_size().height, 2);
 
-    auto [sender, receiver] = mpsc::make_channel<asset::AssetEvent<asset::Mesh>>();
+    auto [sender, receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
     asset_manager.mesh_pool().event_dispatcher().add(sender);
 
     _meshes_receiver.emplace(std::move(receiver));
         
-    asset::Technique technique("../../data/techniques/geometry.json5");
-    _shader_prog.emplace(_context, technique);
-    asset::Technique technique_2("../../data/techniques/offscreen.json5");
-    _shader_prog_2.emplace(_context, technique_2);
+    //asset::Technique technique("../../data/techniques/geometry.json5");
+    //_shader_prog.emplace(_context, technique);
+    //asset::Technique technique_2("../../data/techniques/offscreen.json5");
+    //_shader_prog_2.emplace(_context, technique_2);
 
     _model_buffer.resize(2);
 
@@ -119,7 +119,8 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
 
 void Renderer::render(scene::Scene& scene) {
 
-    auto element = _meshes_receiver.value().try_receive();
+    asset::AssetEvent<asset::Mesh> mesh_event;
+    bool result = _meshes_receiver.value().try_receive(mesh_event);
             
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Loaded>& event) {
@@ -136,8 +137,8 @@ void Renderer::render(scene::Scene& scene) {
                 }
             );
 
-            if(element.has_value()) {
-            std::visit(event_visitor, element.value().data);
+            if(result) {
+            std::visit(event_visitor, mesh_event.data);
             }
     auto frame_texture = _context.get_or_wait_previous_frame();
 
@@ -192,7 +193,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
             } else {
 
-                pipeline_target = _context.device().create_pipeline(
+                /*pipeline_target = _context.device().create_pipeline(
                     _shader_prog.value().layout(),
                     vertex_declaration,
                     _shader_prog.value().shaders(),
@@ -203,7 +204,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                     backend::InvalidHandle<backend::CachePipeline>()
                 );
 
-                _pipelines.insert({ context.render_pass().index(), pipeline_target });
+                _pipelines.insert({ context.render_pass().index(), pipeline_target });*/
             }
 
             /*_context.device().bind_pipeline(context.command_list(), pipeline_target);

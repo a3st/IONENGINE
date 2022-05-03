@@ -27,6 +27,7 @@ add_executable(Runtime-Win32
     platform/window_loop.cpp
 # ---------------------------
     # Asset
+    asset/asset.cpp
     asset/asset_manager.cpp
     asset/mesh.cpp
     asset/texture.cpp
@@ -75,7 +76,6 @@ target_include_directories(Runtime-Win32 PRIVATE
     thirdparty/d3d12_ma/include
     thirdparty/json5/include
     #thirdparty/tinyobjloader/include
-    thirdparty/mpsc_channel/include
 )
 
 # Link Libs

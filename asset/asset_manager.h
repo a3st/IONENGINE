@@ -2,7 +2,11 @@
 
 #pragma once
 
+#include <asset/asset_event.h>
 #include <asset/asset_ptr.h>
+#include <asset/asset_loader.h>
+#include <asset/technique_loader.h>
+#include <asset/mesh_loader.h>
 #include <lib/event_dispatcher.h>
 
 namespace ionengine::asset {
@@ -11,64 +15,6 @@ class Mesh;
 class Material;
 class Technique;
 class Texture;
-
-enum class AssetEventType {
-    Loaded,
-    Unloaded,
-    Added,
-    Removed
-};
-
-template<class AssetType, AssetEventType EventType>
-struct AssetEventData { };
-
-template<class AssetType>
-struct AssetEventData<AssetType, AssetEventType::Loaded> {
-    AssetPtr<AssetType> asset;
-};
-
-template<class AssetType>
-struct AssetEventData<AssetType, AssetEventType::Unloaded> {
-    AssetPtr<AssetType> asset;
-};
-
-template<class AssetType>
-struct AssetEventData<AssetType, AssetEventType::Added> {
-    AssetPtr<AssetType> asset;
-};
-
-template<class AssetType>
-struct AssetEventData<AssetType, AssetEventType::Removed> {
-    std::filesystem::path path;
-};
-
-template<class Type = Asset>
-struct AssetEvent {
-    std::variant<
-        AssetEventData<Type, AssetEventType::Loaded>,
-        AssetEventData<Type, AssetEventType::Unloaded>,
-        AssetEventData<Type, AssetEventType::Added>,
-        AssetEventData<Type, AssetEventType::Removed>
-    > data;
-
-    static AssetEvent<Type> removed(std::filesystem::path const& path) {
-
-        return AssetEvent<Type> {
-            .data = AssetEventData<Type, AssetEventType::Removed> { 
-                .path = path 
-            }
-        };
-    }
-
-    static AssetEvent<Type> added(AssetPtr<Type> const& asset) {
-
-        return AssetEvent<Type> {
-            .data = AssetEventData<Type, AssetEventType::Added> {
-                .asset = asset
-            }
-        };
-    }
-};
 
 template<class Type>
 struct TimedEntry {
@@ -83,25 +29,21 @@ public:
     AssetPool() = default;
 
     AssetPtr<Type> find(std::filesystem::path const& asset_path) {
-
         for(auto& entry : _data) {
             if(entry.value.path() == asset_path) {
                 return entry.value;
             }
         }
-
-        return AssetPtr<Type>();
+        return nullptr;
     }
 
     void push(AssetPtr<Type> const& element) {
-
         _event_dispatcher.broadcast(AssetEvent<Type>::added(element));
         std::cout << std::format("Asset {} added", element.path().string()) << std::endl;
         _data.emplace_back(element, 60.0f);
     }
 
     void update(float const delta_time) {
-
         std::erase_if(
             _data,
             [&](auto& element) {
@@ -131,13 +73,15 @@ public:
 
     AssetPtr<Type> get(std::filesystem::path const& asset_path) {
 
-        AssetPtr<Type> ptr = find(asset_path);
-        if(ptr) {
-            return ptr;
+        AssetPtr<Type> asset = find(asset_path);
+        if(asset) {
+            return asset;
         } else {
 
-            AssetPtr<Type> asset(asset_path);
+            asset = AssetPtr<Type>(asset_path);
             push(asset);
+
+            _loader.load_asset(asset, _event_dispatcher);
 
             return asset;
         }
@@ -149,6 +93,7 @@ private:
 
     std::vector<TimedEntry<AssetPtr<Type>>> _data;
     lib::EventDispatcher<AssetEvent<Type>> _event_dispatcher;
+    AssetLoader<Type> _loader;
 };
 
 class AssetManager {

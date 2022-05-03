@@ -28,7 +28,11 @@ int main(int* argc, char** agrv) {
         asset::AssetManager asset_manager;
 
         {
-            asset::AssetPtr<asset::Mesh> mesh = asset_manager.get_mesh("123");
+            asset::AssetPtr<asset::Technique> mesh = asset_manager.get_technique("../../data/techniques/geometry.json5");
+            
+            std::cout << "is pending " << std::boolalpha << mesh.is_pending() << std::endl;
+
+            std::cout << mesh->name() << std::endl;
         }
 
         renderer::Renderer renderer(window, asset_manager);
@@ -50,8 +54,6 @@ int main(int* argc, char** agrv) {
 
         auto camera = test_scene.graph().add_node<scene::CameraNode>();
         camera->position(lib::math::Vector3f(0.0f, 2.0f, 3.0f));
-
-        // asset::Material material("../../data/materials/default.json5", asset_manager);
 
         loop.run(
             window,

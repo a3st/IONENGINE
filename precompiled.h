@@ -21,6 +21,7 @@
 #include <numeric>
 #include <memory>
 #include <array>
+#include <future>
 #include <queue>
 #include <stack>
 #include <map>
@@ -29,6 +30,7 @@
 #include <span>
 #include <string_view>
 #include <charconv>
+#include <tuple>
 #include <set>
 #include <unordered_set>
 

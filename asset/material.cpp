@@ -7,7 +7,7 @@
 
 using namespace ionengine::asset;
 
-Material::Material(std::filesystem::path const& file_path) : Asset(file_path) {
+Material::Material(std::filesystem::path const& file_path) {
 
     std::string from_path_string = file_path.string();
 

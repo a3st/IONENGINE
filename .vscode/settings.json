@@ -99,6 +99,7 @@
         "condition_variable": "cpp",
         "cstdarg": "cpp",
         "shared_mutex": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "future": "cpp"
     }
 }
