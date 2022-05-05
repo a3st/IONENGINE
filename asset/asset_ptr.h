@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <asset/asset.h>
 #include <lib/exception.h>
 
 namespace ionengine::asset {
@@ -19,6 +18,7 @@ struct AssetStateData { };
 template<class AssetType>
 struct AssetStateData<AssetType, AssetStateType::Ok> {
     AssetType asset;
+    std::filesystem::path path;
 };
 
 template<class AssetType>
@@ -31,16 +31,18 @@ struct AssetStateData<AssetType, AssetStateType::Pending> {
     std::filesystem::path path;
 };
 
-template<class Type = Asset>
+template<class Type>
 struct AssetState {
     std::variant<
         AssetStateData<Type, AssetStateType::Ok>,
         AssetStateData<Type, AssetStateType::Error>,
         AssetStateData<Type, AssetStateType::Pending>
     > data;
+
+    std::mutex mutex;
 };
 
-template<class Type = Asset>
+template<class Type>
 class AssetPtr {
 public:
 
@@ -66,6 +68,7 @@ public:
 
     Type* operator->() const {
 
+        std::unique_lock lock(_ptr->mutex);
         if(_ptr->data.index() != 0) {
             throw lib::Exception(std::format("Error while accessing an unloaded asset '{}'", path().string()));
         }
@@ -74,6 +77,7 @@ public:
 
     Type& operator*() const { 
 
+        std::unique_lock lock(_ptr->mutex);
         if(_ptr->data.index() != 0) {
             throw lib::Exception(std::format("Error while accessing an unloaded asset '{}'", path().string()));
         }
@@ -85,7 +89,7 @@ public:
         std::filesystem::path* path;
         auto state_visitor = make_visitor(
             [&](AssetStateData<Type, AssetStateType::Ok>& state) {
-
+                path = &state.path;
             },
             [&](AssetStateData<Type, AssetStateType::Error>& state) {
                 path = &state.path;
@@ -95,27 +99,33 @@ public:
             }
         );
 
+        std::unique_lock lock(_ptr->mutex);
         std::visit(state_visitor, _ptr->data);
         return *path; 
     }
 
     bool is_pending() const {
+        std::unique_lock lock(_ptr->mutex);
         return _ptr->data.index() == 2;
     }
 
     bool is_ok() const {
+        std::unique_lock lock(_ptr->mutex);
         return _ptr->data.index() == 0;
     }
 
     bool is_error() const {
+        std::unique_lock lock(_ptr->mutex);
         return _ptr->data.index() == 1;
     }
 
-    void commit_ok(Type&& element) {
-        _ptr->data = AssetStateData<Type, AssetStateType::Ok> { .asset = std::move(element) };
+    void commit_ok(Type&& element, std::filesystem::path const& asset_path) {
+        std::unique_lock lock(_ptr->mutex);
+        _ptr->data = AssetStateData<Type, AssetStateType::Ok> { .asset = std::move(element), .path = asset_path };
     }
 
     void commit_error(std::filesystem::path const& asset_path) {
+        std::unique_lock lock(_ptr->mutex);
         _ptr->data = AssetStateData<Type, AssetStateType::Error> { .path = asset_path };
     }
 

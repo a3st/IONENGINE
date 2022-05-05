@@ -21,7 +21,7 @@ public:
         } else {
 
             size_t const index = _dense.size();
-            _dense[index] = element;
+            _dense.emplace_back(element);
             return index;
         }
     }
@@ -37,7 +37,7 @@ public:
         } else {
 
             size_t const index = _dense.size();
-            _dense[index] = std::move(element);
+            _dense.emplace_back(std::move(element));
             return index;
         }
     }
@@ -66,6 +66,9 @@ public:
 
     bool is_valid(size_t const index) const {
 
+        if(index == std::numeric_limits<size_t>::max()) {
+            return false;
+        }
         return _dense[index].has_value();
     }
 

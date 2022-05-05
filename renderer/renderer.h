@@ -6,8 +6,8 @@
 #include <renderer/frontend/frame_graph.h>
 #include <renderer/frontend/shader_program.h>
 #include <renderer/frontend/geometry_buffer.h>
+#include <renderer/cache/shader.h>
 #include <asset/asset_manager.h>
-#include <lib/event_dispatcher.h>
 
 namespace ionengine {
 
@@ -32,17 +32,20 @@ public:
 
     Renderer& operator=(Renderer&&) = delete;
 
+    void update(float const delta_time);
+
     void render(scene::Scene& scene);
 
     void resize(uint32_t const width, uint32_t const height);
-
-    void load_shader();
 
 private:
 
     asset::AssetManager* _asset_manager;
 
-    std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _meshes_receiver;
+    cache::ShaderCache _shader_cache;
+
+    std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _mesh_event_receiver;
+    std::optional<lib::Receiver<asset::AssetEvent<asset::Technique>>> _technique_event_receiver;
 
     frontend::Context _context;
     frontend::FrameGraph _frame_graph;

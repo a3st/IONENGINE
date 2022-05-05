@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <asset/asset.h>
 #include <lib/expected.h>
 #include <json5/json5.hpp>
 #include <json5/json5_input.hpp>
@@ -144,7 +143,7 @@ struct ShaderData {
     ShaderFlags flags;
 };
 
-class Technique : public Asset {
+class Technique {
 public:
 
     static lib::Expected<Technique, lib::Result<TechniqueError>> load_from_file(std::filesystem::path const& file_path);
@@ -155,6 +154,10 @@ public:
 
     std::span<ShaderData const> shaders() const;
 
+    void cache_entry(size_t const value);
+
+    size_t cache_entry() const;
+
 private:
 
     Technique(JSON_TechniqueDefinition const& document);
@@ -162,6 +165,8 @@ private:
     std::string _name;
     std::vector<ShaderUniform> _uniforms;
     std::vector<ShaderData> _shaders;
+
+    size_t _cache_entry{std::numeric_limits<size_t>::max()};
 
     std::string generate_uniform_code(
         std::string_view const name, 

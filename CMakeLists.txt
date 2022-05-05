@@ -19,7 +19,7 @@ add_executable(Runtime-Win32
     #engine/sponza.cpp
 # ---------------------------
     # Lib
-    #lib/thread_pool.cpp
+    lib/thread_pool.cpp
     lib/math/color.cpp
 # ---------------------------
     # Platform
@@ -27,7 +27,6 @@ add_executable(Runtime-Win32
     platform/window_loop.cpp
 # ---------------------------
     # Asset
-    asset/asset.cpp
     asset/asset_manager.cpp
     asset/mesh.cpp
     asset/texture.cpp
@@ -55,6 +54,7 @@ add_executable(Runtime-Win32
 
     # Cache
     renderer/cache/geometry.cpp
+    renderer/cache/shader.cpp
 
     # Renderer
     renderer/renderer.cpp

@@ -82,17 +82,17 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     _frame_graph(_context),
     _asset_manager(&asset_manager) {
 
+    auto [mesh_sender, mesh_receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
+    asset_manager.mesh_pool().event_dispatcher().add(std::move(mesh_sender));
+    _mesh_event_receiver.emplace(std::move(mesh_receiver));
+
+    auto [technique_sender, technique_receiver] = lib::make_channel<asset::AssetEvent<asset::Technique>>();
+    asset_manager.technique_pool().event_dispatcher().add(std::move(technique_sender));
+    _technique_event_receiver.emplace(std::move(technique_receiver));
+
+
     build_frame_graph(window.client_size().width, window.client_size().height, 2);
 
-    auto [sender, receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
-    asset_manager.mesh_pool().event_dispatcher().add(sender);
-
-    _meshes_receiver.emplace(std::move(receiver));
-        
-    //asset::Technique technique("../../data/techniques/geometry.json5");
-    //_shader_prog.emplace(_context, technique);
-    //asset::Technique technique_2("../../data/techniques/offscreen.json5");
-    //_shader_prog_2.emplace(_context, technique_2);
 
     _model_buffer.resize(2);
 
@@ -117,29 +117,48 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     //_offscreen_quad.emplace(std::move(quad));
 }
 
-void Renderer::render(scene::Scene& scene) {
+void Renderer::update(float const delta_time) {
 
-    asset::AssetEvent<asset::Mesh> mesh_event;
-    bool result = _meshes_receiver.value().try_receive(mesh_event);
-            
+    // Mesh Event Update
+    {
+        asset::AssetEvent<asset::Mesh> mesh_event;
+        while(_mesh_event_receiver.value().try_receive(mesh_event)) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Loaded>& event) {
-                    std::cout << "asset loaded "<<std::endl;
+                    
                 },
-                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Unloaded>& event) {
-
-                },
-                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Added>& event) {
-
-                },
-                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Removed>& event) {
-                    std::cout << "asset removed "<<std::endl;
-                }
+                // Default
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Unloaded>& event) { },
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Added>& event) { },
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Removed>& event) { }
             );
 
-            if(result) {
             std::visit(event_visitor, mesh_event.data);
-            }
+        }
+    }
+
+    // Technique Event Update
+    {
+        asset::AssetEvent<asset::Technique> technique_event;
+        while(_technique_event_receiver.value().try_receive(technique_event)) {
+            auto event_visitor = make_visitor(
+                [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Loaded>& event) {
+                    std::cout << std::format("[Debug] Renderer created ShaderProgram from '{}'", event.asset.path().string()) << std::endl;
+                    _shader_cache.get(_context, *event.asset);
+                },
+                // Default
+                [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Unloaded>& event) { },
+                [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Added>& event) { },
+                [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Removed>& event) { }
+            );
+
+            std::visit(event_visitor, technique_event.data);
+        }
+    }
+}
+
+void Renderer::render(scene::Scene& scene) {
+
     auto frame_texture = _context.get_or_wait_previous_frame();
 
     GeometryVisitor geometry_visitor(_context, _geom_triangle, _model_buffer[_context.frame_index()]);
@@ -277,8 +296,4 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
     );
 
     _frame_graph.build(buffered_frame_count);
-}
-
-void Renderer::load_shader() {
-
 }

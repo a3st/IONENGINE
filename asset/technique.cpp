@@ -125,6 +125,14 @@ std::span<ShaderData const> Technique::shaders() const {
     return _shaders;
 }
 
+void Technique::cache_entry(size_t const value) {
+    _cache_entry = value;
+}
+
+size_t Technique::cache_entry() const {
+    return _cache_entry;
+}
+
 std::string Technique::generate_uniform_code(
     std::string_view const name, 
     JSON_ShaderUniformType const uniform_type, 

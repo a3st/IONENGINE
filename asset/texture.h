@@ -2,12 +2,11 @@
 
 #pragma once
 
-#include <asset/asset.h>
 #include <lib/math/vector.h>
 
 namespace ionengine::asset {
 
-class Texture : public Asset {
+class Texture {
 public:
 
     struct Size {

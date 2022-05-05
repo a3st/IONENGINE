@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <asset/asset.h>
 #include <asset/material.h>
 #include <lib/hash/buffer_view.h>
 
@@ -41,7 +40,7 @@ struct MeshSurface {
     size_t cache_entry{std::numeric_limits<size_t>::max()};
 };
 
-class Mesh : public Asset {
+class Mesh {
 public:
 
     Mesh(std::filesystem::path const& file_path);

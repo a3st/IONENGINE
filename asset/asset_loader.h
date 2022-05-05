@@ -14,7 +14,7 @@ public:
 
     AssetLoader() = default;
 
-    void load_asset(AssetPtr<Type>& asset, lib::EventDispatcher<AssetEvent<Type>>& event_dispatcher);
+    void load_asset(AssetPtr<Type> asset, lib::EventDispatcher<AssetEvent<Type>>& event_dispatcher);
 };
 
 }

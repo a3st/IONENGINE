@@ -5,6 +5,7 @@
 
 using namespace ionengine;
 using namespace ionengine::renderer;
+using namespace ionengine::renderer::cache;
 
 GeometryCache::GeometryCache() {
 
@@ -18,9 +19,9 @@ frontend::GeometryBuffer& GeometryCache::get(frontend::Context& context, asset::
 
         auto& buffer = _buffers.get(surface.cache_entry);
 
-        if(buffer.value_hash != hash) {
+        if(buffer.hash != hash) {
 
-            buffer.value_hash = hash;
+            buffer.hash = hash;
         } else {
 
             return buffer.value;
@@ -30,10 +31,10 @@ frontend::GeometryBuffer& GeometryCache::get(frontend::Context& context, asset::
 
         CacheEntry<frontend::GeometryBuffer> entry = {
             .value = frontend::GeometryBuffer(context, surface),
-            .value_hash = hash
+            .hash = hash
         };
 
-        surface.cache_entry = _buffers.push(std::move(entry));
+        auto result = _buffers.push(std::move(entry));
     }
 }
 

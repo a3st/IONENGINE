@@ -36,7 +36,7 @@ struct AssetEventData<AssetType, AssetEventType::Removed> {
     std::filesystem::path path;
 };
 
-template<class Type = Asset>
+template<class Type>
 struct AssetEvent {
     std::variant<
         AssetEventData<Type, AssetEventType::Loaded>,
@@ -54,6 +54,12 @@ struct AssetEvent {
     static AssetEvent<Type> added(AssetPtr<Type> const& asset) {
         return AssetEvent<Type> {
             .data = AssetEventData<Type, AssetEventType::Added> { .asset = asset }
+        };
+    }
+
+    static AssetEvent<Type> loaded(AssetPtr<Type> const& asset) {
+        return AssetEvent<Type> {
+            .data = AssetEventData<Type, AssetEventType::Loaded> { .asset = asset }
         };
     }
 };

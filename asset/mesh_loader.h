@@ -13,9 +13,9 @@ public:
 
     AssetLoader() = default;
 
-    void load_asset(AssetPtr<Mesh>& asset, lib::EventDispatcher<AssetEvent<Mesh>>& event_dispatcher) {
+    void load_asset(AssetPtr<Mesh> asset, lib::EventDispatcher<AssetEvent<Mesh>>& event_dispatcher) {
 
-        std::cout << "Zdarova bidlo mesh" << std::endl;
+        
     }
 };
 
