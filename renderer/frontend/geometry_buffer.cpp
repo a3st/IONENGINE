@@ -6,7 +6,7 @@
 using namespace ionengine::renderer;
 using namespace ionengine::renderer::frontend;
 
-GeometryBuffer::GeometryBuffer(Context& context, asset::MeshSurface const& surface) :
+GeometryBuffer::GeometryBuffer(Context& context, asset::SurfaceData const& surface) :
     _context(&context) {
 
     _vertex_buffer = _context->create_vertex_buffer(static_cast<uint32_t>(surface.vertices.size()));

@@ -12,6 +12,8 @@
 
 namespace ionengine::asset {
 
+const float ASSET_DEFAULT_LIVE_TIME = 60.0f;
+
 template<class Type>
 struct TimedEntry {
     Type value;
@@ -36,7 +38,7 @@ public:
     void push(AssetPtr<Type> const& element) {
         _event_dispatcher.broadcast(AssetEvent<Type>::added(element));
         std::cout << std::format("[Debug] Asset: '{}' is added", element.path().string()) << std::endl;
-        _data.emplace_back(element, 10.0f);
+        _data.emplace_back(element, ASSET_DEFAULT_LIVE_TIME);
     }
 
     void update(float const delta_time) {
@@ -54,7 +56,7 @@ public:
                         return false;
                     }
                 } else {
-                    element.time_to_live = 60.0f;
+                    element.time_to_live = ASSET_DEFAULT_LIVE_TIME;
                     return false;
                 }
             }

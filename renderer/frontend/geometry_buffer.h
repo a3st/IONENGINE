@@ -10,7 +10,7 @@ namespace ionengine::renderer::frontend {
 class GeometryBuffer {
 public:
 
-    GeometryBuffer(Context& context, asset::MeshSurface const& surface);
+    GeometryBuffer(Context& context, asset::SurfaceData const& surface);
 
     GeometryBuffer(GeometryBuffer&& other) noexcept;
 

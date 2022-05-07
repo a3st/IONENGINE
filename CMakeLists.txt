@@ -75,6 +75,7 @@ set_target_properties(Runtime-Win32 PROPERTIES
 target_include_directories(Runtime-Win32 PRIVATE
     thirdparty/d3d12_ma/include
     thirdparty/json5/include
+    thirdparty/xxhash/include
     #thirdparty/tinyobjloader/include
 )
 

@@ -29,31 +29,34 @@ int main(int* argc, char** agrv) {
         {
             asset::AssetPtr<asset::Technique> technique = asset_manager.get_technique("../../data/techniques/geometry.json5");
             
-            std::cout << "[Debug] Asset pending status: " << std::boolalpha << technique.is_pending() << std::endl;
-
             thread_pool.wait_all();
             std::cout << "[Debug] Loaded technique name: " << technique->name() << std::endl;
+
+            asset::AssetPtr<asset::Mesh> mesh = asset_manager.get_mesh("unpacked/objects/cube.obj");
+
+            thread_pool.wait_all();
+            std::cout << "[Debug] Loaded mesh: unpacked/objects/cube.obj" << std::endl;
         }
 
         float rotate = 0.0f;
-
         scene::Scene test_scene;
-        
-        auto node_0 = test_scene.graph().add_node<scene::TransformNode>();
-        node_0->position(lib::math::Vector3f(0.0f, 1.0f, 0.0f));
+        {
+            auto node_0 = test_scene.graph().add_node<scene::TransformNode>();
+            node_0->position(lib::math::Vector3f(0.0f, 1.0f, 0.0f));
 
-        test_scene.graph().root()->add_child(node_0);
+            test_scene.graph().root()->add_child(node_0);
 
-        auto node_1 = test_scene.graph().add_node<scene::MeshNode>();
-        node_1->name("mesh");
-        node_1->position(lib::math::Vector3f(0.0f, -0.5f, 0.0f));
-        node_1->rotation(lib::math::Quaternionf::angle_axis(0.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
-        node_1->scale(lib::math::Vector3f(1.0f, 1.0f, 1.0f));
+            auto node_1 = test_scene.graph().add_node<scene::MeshNode>();
+            node_1->name("mesh");
+            node_1->position(lib::math::Vector3f(0.0f, -0.5f, 0.0f));
+            node_1->rotation(lib::math::Quaternionf::angle_axis(0.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
+            node_1->scale(lib::math::Vector3f(1.0f, 1.0f, 1.0f));
 
-        node_0->add_child(node_1);
+            node_0->add_child(node_1);
 
-        auto camera = test_scene.graph().add_node<scene::CameraNode>();
-        camera->position(lib::math::Vector3f(0.0f, 2.0f, 3.0f));
+            auto camera = test_scene.graph().add_node<scene::CameraNode>();
+            camera->position(lib::math::Vector3f(0.0f, 2.0f, 3.0f));
+        }
 
         auto begin_time = std::chrono::high_resolution_clock::now();
 

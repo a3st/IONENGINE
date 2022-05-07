@@ -14,7 +14,7 @@ public:
 
     GeometryCache();
 
-    frontend::GeometryBuffer& get(frontend::Context& context, asset::MeshSurface& surface);
+    frontend::GeometryBuffer& get(frontend::Context& context, asset::SurfaceData& surface);
 
     void clear();
 

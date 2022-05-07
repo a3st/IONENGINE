@@ -11,7 +11,7 @@ GeometryCache::GeometryCache() {
 
 }
 
-frontend::GeometryBuffer& GeometryCache::get(frontend::Context& context, asset::MeshSurface& surface) {
+frontend::GeometryBuffer& GeometryCache::get(frontend::Context& context, asset::SurfaceData& surface) {
 
     uint64_t const hash = surface.vertices.hash() ^ surface.indices.hash();
 
@@ -22,10 +22,9 @@ frontend::GeometryBuffer& GeometryCache::get(frontend::Context& context, asset::
         if(buffer.hash != hash) {
 
             buffer.hash = hash;
-        } else {
+        } 
 
-            return buffer.value;
-        }
+        return buffer.value;
 
     } else {
 

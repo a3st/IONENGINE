@@ -4,15 +4,17 @@
 #include <asset/mesh.h>
 #include <asset/asset_manager.h>
 
+using namespace ionengine;
 using namespace ionengine::asset;
 
-Mesh::Mesh(std::filesystem::path const& file_path) {
+Mesh::Mesh() {
 
+    /*
     std::filesystem::path extension = file_path.extension();
 
     if(extension == ".obj") {
 
-        /*tinyobj::attrib_t attributes;
+        tinyobj::attrib_t attributes;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
 
@@ -29,10 +31,11 @@ Mesh::Mesh(std::filesystem::path const& file_path) {
 
         for(auto& shape : shapes) {
             std::cout << shape.name << std::endl;
-        }*/
+        }
     }
+    */
 
-    auto attributes = std::vector<MeshAttribute> {
+    /*auto attributes = std::vector<MeshAttribute> {
         { VertexUsage::Position, VertexFormat::F32x3, 0 },
         { VertexUsage::Color, VertexFormat::F32x2, 1 },
     };
@@ -57,10 +60,21 @@ Mesh::Mesh(std::filesystem::path const& file_path) {
         .material_index = 0 
     };
 
-    _mesh_surfaces.emplace_back(surface);
+    _mesh_surfaces.emplace_back(surface);*/
 }
 
-MeshSurface const& Mesh::surface(uint32_t const index) const {
+lib::Expected<Mesh, lib::Result<MeshError>> Mesh::load_from_file(std::filesystem::path const& file_path) {
 
-    return _mesh_surfaces.at(index);
+    std::filesystem::path extension = file_path.extension();
+
+    if(extension == ".obj") {
+
+
+    }
+
+    return lib::Expected<Mesh, lib::Result<MeshError>>::ok(Mesh());   
+}
+
+std::span<SurfaceData const> Mesh::surfaces() const {
+    return _surfaces;
 }
