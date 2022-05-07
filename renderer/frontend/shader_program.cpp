@@ -65,9 +65,8 @@ ShaderProgram::~ShaderProgram() {
             _context->device().delete_shader(shader);
         }
     }
-    std::cout << 123 << std::endl;
+
     if(_descriptor_layout != backend::InvalidHandle<backend::DescriptorLayout>()) {
-        std::cout << 1243 << std::endl;
         _context->device().delete_descriptor_layout(_descriptor_layout);
     }
 }

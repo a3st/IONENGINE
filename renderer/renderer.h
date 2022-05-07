@@ -42,13 +42,13 @@ private:
 
     asset::AssetManager* _asset_manager;
 
-    cache::ShaderCache _shader_cache;
-
     std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _mesh_event_receiver;
     std::optional<lib::Receiver<asset::AssetEvent<asset::Technique>>> _technique_event_receiver;
 
     frontend::Context _context;
     frontend::FrameGraph _frame_graph;
+
+    cache::ShaderCache _shader_cache;
 
     frontend::Attachment* _gbuffer_color_buffer;
     frontend::Attachment* _swapchain_buffer;
