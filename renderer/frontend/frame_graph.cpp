@@ -6,8 +6,8 @@
 using namespace ionengine::renderer;
 using namespace ionengine::renderer::frontend;
 
-FrameGraph::FrameGraph(Context& context) :
-    _context(&context) {
+FrameGraph::FrameGraph(backend::Device& device) :
+    _device(&device) {
 
 }
 
@@ -55,7 +55,7 @@ void FrameGraph::build(uint32_t const frame_count) {
                 _attachments[i]->_attachments[j] = backend::InvalidHandle<backend::Texture>();
             } else {
                 _attachment_barriers[_attachments[i]->hash()].state = backend::MemoryState::Common;
-                _attachments[i]->_attachments[j] = _context->device().create_texture(
+                _attachments[i]->_attachments[j] = _device->create_texture(
                     backend::Dimension::_2D, 
                     _attachments[i]->_width, 
                     _attachments[i]->_height, 
@@ -133,7 +133,7 @@ void FrameGraph::build(uint32_t const frame_count) {
                     }
 
                     if(cur_graphics_command_lists[i] == backend::InvalidHandle<backend::CommandList>()) {
-                        cur_graphics_command_lists[i] = _context->device().create_command_list(backend::QueueFlags::Graphics);
+                        cur_graphics_command_lists[i] = _device->create_command_list(backend::QueueFlags::Graphics);
                     }
 
                     render_pass->_command_lists[i] = cur_graphics_command_lists[i];
@@ -170,11 +170,11 @@ void FrameGraph::build(uint32_t const frame_count) {
 
 void FrameGraph::reset() {
 
-    _context->device().wait_for_idle(backend::QueueFlags::Graphics | backend::QueueFlags::Compute);
+    _device->wait_for_idle(backend::QueueFlags::Graphics | backend::QueueFlags::Compute);
 
     for(auto& render_pass : _render_passes) {
         for(uint32_t i = 0; i < _frame_count; ++i) {
-            _context->device().delete_render_pass(render_pass->_render_passes[i]);
+            _device->delete_render_pass(render_pass->_render_passes[i]);
         }
     }
 
@@ -183,7 +183,7 @@ void FrameGraph::reset() {
     for(auto& attachment : _attachments) {
         for(uint32_t i = 0; i < _frame_count; ++i) {
             if(!attachment->is_persistent()) {
-                _context->device().delete_texture(attachment->_attachments[i]);
+                _device->delete_texture(attachment->_attachments[i]);
             }
         }
     }
@@ -194,9 +194,10 @@ void FrameGraph::reset() {
     _ops.clear();
 }
 
-void FrameGraph::execute() {
+uint64_t FrameGraph::execute() {
 
     uint32_t pass_index = 0;
+    uint64_t fence_value = 0;
 
     for(auto& op : _ops) {
         switch(op.op_type) {
@@ -207,20 +208,20 @@ void FrameGraph::execute() {
                 if(!render_pass->is_compiled()) {
 
                     if(render_pass->_render_passes[_frame_index] != backend::InvalidHandle<backend::RenderPass>()) {
-                        _context->device().delete_render_pass(render_pass->_render_passes[_frame_index]);
+                        _device->delete_render_pass(render_pass->_render_passes[_frame_index]);
                     }
 
                     compile_render_pass(*render_pass, _frame_index);
                 }
 
-                _context->device().set_viewport(render_pass->_command_lists[_frame_index], 0, 0, render_pass->_width, render_pass->_height);
-                _context->device().set_scissor(render_pass->_command_lists[_frame_index], 0, 0, render_pass->_width, render_pass->_height);
+                _device->set_viewport(render_pass->_command_lists[_frame_index], 0, 0, render_pass->_width, render_pass->_height);
+                _device->set_scissor(render_pass->_command_lists[_frame_index], 0, 0, render_pass->_width, render_pass->_height);
 
                 // Color Barriers
                 for(auto& attachment : render_pass->_color_attachments) {
 
                     if(_attachment_barriers[attachment->hash()].switch_index.find(render_pass->hash()) != _attachment_barriers[attachment->hash()].switch_index.end()) {
-                        _context->device().barrier(render_pass->_command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::RenderTarget);
+                        _device->barrier(render_pass->_command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::RenderTarget);
                         _attachment_barriers[attachment->hash()].state = backend::MemoryState::RenderTarget;
                     }
                 }
@@ -231,7 +232,7 @@ void FrameGraph::execute() {
                     auto& attachment = render_pass->_depth_stencil_attachment;
 
                     if(_attachment_barriers[attachment->hash()].switch_index.find(render_pass->hash()) != _attachment_barriers[attachment->hash()].switch_index.end()) {
-                        _context->device().barrier(render_pass->_command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::DepthWrite);
+                        _device->barrier(render_pass->_command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::DepthWrite);
                         _attachment_barriers[attachment->hash()].state = backend::MemoryState::DepthWrite;
                     }
                 }
@@ -240,12 +241,12 @@ void FrameGraph::execute() {
                 for(auto& attachment : render_pass->_input_attachments) {
 
                     if(_attachment_barriers[attachment->hash()].switch_index.find(render_pass->hash()) != _attachment_barriers[attachment->hash()].switch_index.end()) {
-                        _context->device().barrier(render_pass->_command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::ShaderRead);
+                        _device->barrier(render_pass->_command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::ShaderRead);
                         _attachment_barriers[attachment->hash()].state = backend::MemoryState::ShaderRead;
                     }
                 }
 
-                _context->device().begin_render_pass(
+                _device->begin_render_pass(
                     render_pass->_command_lists[_frame_index],
                     render_pass->_render_passes[_frame_index], 
                     render_pass->_color_clears, 
@@ -262,7 +263,7 @@ void FrameGraph::execute() {
 
                 (*render_pass)(context);
 
-                _context->device().end_render_pass(render_pass->_command_lists[_frame_index]);
+                _device->end_render_pass(render_pass->_command_lists[_frame_index]);
 
                 ++pass_index;
             } break;
@@ -274,21 +275,21 @@ void FrameGraph::execute() {
                 for(auto& attachment : _attachments) {
 
                     if(attachment->is_persistent()) {
-                        _context->device().barrier(submit_command_list.command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, attachment->_after);
+                        _device->barrier(submit_command_list.command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, attachment->_after);
                         _attachment_barriers[attachment->hash()].state = attachment->_after;
                     } else {
-                        _context->device().barrier(submit_command_list.command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::Common);
+                        _device->barrier(submit_command_list.command_lists[_frame_index], attachment->_attachments[_frame_index], _attachment_barriers[attachment->hash()].state, backend::MemoryState::Common);
                         _attachment_barriers[attachment->hash()].state = backend::MemoryState::Common;
                     }
                 }
 
-                uint64_t const fence_value = _context->device().submit(std::span<backend::Handle<backend::CommandList> const>(&submit_command_list.command_lists[_frame_index], 1), submit_command_list.flags);
-                _context->graphics_fence_value(fence_value);
+                fence_value = _device->submit(std::span<backend::Handle<backend::CommandList> const>(&submit_command_list.command_lists[_frame_index], 1), submit_command_list.flags);
             } break;
         }
     }
 
     _frame_index = (_frame_index + 1) % _frame_count;
+    return fence_value;
 }
 
 void FrameGraph::bind_attachment(Attachment& attachment, backend::Handle<backend::Texture> const& texture) {
@@ -331,7 +332,7 @@ void FrameGraph::compile_render_pass(RenderPass& render_pass, uint32_t const fra
         depth_stencil_desc.stencil_load_op = render_pass._depth_stencil_op;
         depth_stencil_desc.stencil_store_op = backend::RenderPassStoreOp::Store;
 
-        render_pass._render_passes[frame_index] = _context->device().create_render_pass(
+        render_pass._render_passes[frame_index] = _device->create_render_pass(
             std::span<backend::Handle<backend::Texture>>(colors.data(), render_pass._color_attachments.size()),
             std::span<backend::RenderPassColorDesc>(color_descs.data(), render_pass._color_attachments.size()),
             depth_stencil,
@@ -339,7 +340,7 @@ void FrameGraph::compile_render_pass(RenderPass& render_pass, uint32_t const fra
         );
     } else {
 
-        render_pass._render_passes[frame_index] = _context->device().create_render_pass(
+        render_pass._render_passes[frame_index] = _device->create_render_pass(
             std::span<backend::Handle<backend::Texture>>(colors.data(), render_pass._color_attachments.size()),
             std::span<backend::RenderPassColorDesc>(color_descs.data(), render_pass._color_attachments.size()),
             backend::InvalidHandle<backend::Texture>(),

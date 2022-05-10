@@ -1800,6 +1800,7 @@ void Device::Impl::barrier(Handle<CommandList> const& command_list, ResourceHand
             case MemoryState::IndexBufferRead: return D3D12_RESOURCE_STATE_INDEX_BUFFER;
             case MemoryState::DepthWrite: return D3D12_RESOURCE_STATE_DEPTH_WRITE;
             case MemoryState::DepthRead: return D3D12_RESOURCE_STATE_DEPTH_READ;
+            case MemoryState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
         }
         return D3D12_RESOURCE_STATE_COMMON;
     };

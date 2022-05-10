@@ -5,26 +5,32 @@
 #include <asset/mesh.h>
 #include <asset/technique.h>
 
+using namespace ionengine;
 using namespace ionengine::asset;
 
 AssetManager::AssetManager(lib::ThreadPool& thread_pool) :
-    _thread_pool(&thread_pool) {
+    _mesh_pool(thread_pool, std::make_unique<AssetLoader<Mesh>>()),
+    _technique_pool(thread_pool, std::make_unique<AssetLoader<Technique>>()),
+    _material_pool(thread_pool, std::make_unique<AssetLoader<Material>>(*this)) {
 
 }
 
 AssetPtr<Mesh> AssetManager::get_mesh(std::filesystem::path const& asset_path) {
-
-    return _mesh_pool.get(*_thread_pool, asset_path);
+    return _mesh_pool.get(asset_path);
 }
 
 AssetPtr<Technique> AssetManager::get_technique(std::filesystem::path const& asset_path) {
+    return _technique_pool.get(asset_path);
+}
 
-    return _technique_pool.get(*_thread_pool, asset_path);
+AssetPtr<Material> AssetManager::get_material(std::filesystem::path const& asset_path) {
+    return _material_pool.get(asset_path);
 }
 
 void AssetManager::update(float const delta_time) {
     _mesh_pool.update(delta_time);
     _technique_pool.update(delta_time);
+    _material_pool.update(delta_time);
 }
 
 AssetPool<Mesh>& AssetManager::mesh_pool() {
@@ -33,4 +39,8 @@ AssetPool<Mesh>& AssetManager::mesh_pool() {
 
 AssetPool<Technique>& AssetManager::technique_pool() {
     return _technique_pool;
+}
+
+AssetPool<Material>& AssetManager::material_pool() {
+    return _material_pool;
 }

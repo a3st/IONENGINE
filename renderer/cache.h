@@ -2,12 +2,15 @@
 
 #pragma once
 
-namespace ionengine::renderer::cache {
+namespace ionengine::renderer {
 
 template<class Type>
 struct CacheEntry {
     Type value;
     uint64_t hash;
 };
+
+template<class Type>
+class CachePool { };
 
 }

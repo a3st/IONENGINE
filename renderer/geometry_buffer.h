@@ -2,15 +2,15 @@
 
 #pragma once
 
-#include <renderer/frontend/context.h>
+#include <renderer/backend/backend.h>
 #include <asset/mesh.h>
 
-namespace ionengine::renderer::frontend {
+namespace ionengine::renderer {
 
 class GeometryBuffer {
 public:
 
-    GeometryBuffer(Context& context, asset::SurfaceData const& surface);
+    GeometryBuffer(backend::Device& device, asset::Surface const& surface);
 
     GeometryBuffer(GeometryBuffer&& other) noexcept;
 
@@ -22,7 +22,7 @@ public:
 
 private:
 
-    Context* _context;
+    backend::Device* _device;
     
     backend::Handle<backend::Buffer> _vertex_buffer;
     backend::Handle<backend::Buffer> _index_buffer;

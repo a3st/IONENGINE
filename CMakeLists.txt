@@ -38,7 +38,6 @@ add_executable(Runtime-Win32
     scene/scene_graph.cpp
     scene/transform_node.cpp
     scene/camera_node.cpp
-    #scene/scene_tree.cpp
     scene/mesh_node.cpp
     scene/scene.cpp
 # ---------------------------    
@@ -47,20 +46,17 @@ add_executable(Runtime-Win32
     renderer/backend/backend_d3d12.cpp
 
     # Renderer Frontend
-    renderer/frontend/context.cpp
-    renderer/frontend/geometry_buffer.cpp
     renderer/frontend/frame_graph.cpp
-    renderer/frontend/shader_program.cpp
-
-    # Cache
-    renderer/cache/geometry.cpp
-    renderer/cache/shader.cpp
+    renderer/frontend/gpu_texture.cpp
 
     # Renderer
     renderer/renderer.cpp
+    renderer/cache_manager.cpp
+    renderer/shader_program.cpp
+    renderer/geometry_buffer.cpp
+    renderer/render_queue.cpp
+    renderer/upload_context.cpp
 # ---------------------------
-
-    #thirdparty/tinyobjloader/src/tiny_obj_loader.cc
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)

@@ -3,6 +3,8 @@
 #pragma once
 
 #include <scene/transform_node.h>
+#include <asset/texture.h>
+#include <asset/asset_ptr.h>
 #include <lib/math/matrix.h>
 
 namespace ionengine::scene {
@@ -42,6 +44,8 @@ private:
 
     float _aspect_ratio;
     float _field_of_view;
+
+    asset::AssetPtr<asset::Texture> _render_target;
 };
 
 }

@@ -141,6 +141,7 @@ struct ShaderUniform {
 struct ShaderData {
     std::string source;
     ShaderFlags flags;
+    uint64_t hash;
 };
 
 class Technique {
@@ -153,6 +154,8 @@ public:
     std::span<ShaderUniform const> uniforms() const;
 
     std::span<ShaderData const> shaders() const;
+
+    uint64_t hash() const;
 
     void cache_entry(size_t const value);
 
@@ -167,6 +170,7 @@ private:
     std::vector<ShaderData> _shaders;
 
     size_t _cache_entry{std::numeric_limits<size_t>::max()};
+    uint64_t _total_hash{0};
 
     std::string generate_uniform_code(
         std::string_view const name, 

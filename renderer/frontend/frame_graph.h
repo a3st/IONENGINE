@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <renderer/frontend/context.h>
+#include <renderer/backend/backend.h>
 #include <lib/math/color.h>
 #include <lib/hash/crc32.h>
 
@@ -316,7 +316,7 @@ private:
 class FrameGraph {
 public:
 
-    FrameGraph(Context& context);
+    FrameGraph(backend::Device& device);
 
     Attachment& add_attachment(AttachmentDesc const& attachment_desc);
     
@@ -332,11 +332,11 @@ public:
     
     void reset();
     
-    void execute();
+    uint64_t execute();
 
 private:
 
-    Context* _context;
+    backend::Device* _device;
 
     struct MemoryBarrier {
         backend::MemoryState state;

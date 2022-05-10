@@ -7,6 +7,7 @@
 #include <asset/asset_loader.h>
 #include <asset/technique_loader.h>
 #include <asset/mesh_loader.h>
+#include <asset/material_loader.h>
 #include <lib/event_dispatcher.h>
 #include <lib/thread_pool.h>
 
@@ -24,7 +25,10 @@ template<class Type>
 class AssetPool {
 public:
 
-    AssetPool() = default;
+    AssetPool(lib::ThreadPool& thread_pool, std::unique_ptr<AssetLoader<Type>> loader) :
+        _thread_pool(&thread_pool), _loader(std::move(loader)) {
+        
+    }
 
     AssetPtr<Type> find(std::filesystem::path const& asset_path) {
         for(auto& entry : _data) {
@@ -67,7 +71,7 @@ public:
         std::erase_if(_data, [&](auto const& element) { return element.value.use_count() > 1; });
     }
 
-    AssetPtr<Type> get(lib::ThreadPool& thread_pool, std::filesystem::path const& asset_path) {
+    AssetPtr<Type> get(std::filesystem::path const& asset_path) {
         AssetPtr<Type> asset = find(asset_path);
         if(asset) {
             return asset;
@@ -75,9 +79,9 @@ public:
             asset = AssetPtr<Type>(asset_path);
             push(asset);
 
-            thread_pool.push(
+            _thread_pool->push(
                 [&, asset]() {
-                    _loader.load_asset(asset, _event_dispatcher);
+                    _loader->load_asset(asset, _event_dispatcher);
                 }
             );
             return asset;
@@ -88,9 +92,12 @@ public:
 
 private:
 
+    lib::ThreadPool* _thread_pool;
+
     std::vector<TimedEntry<AssetPtr<Type>>> _data;
     lib::EventDispatcher<AssetEvent<Type>> _event_dispatcher;
-    AssetLoader<Type> _loader;
+    
+    std::unique_ptr<AssetLoader<Type>> _loader;
 };
 
 class AssetManager {
@@ -102,18 +109,21 @@ public:
 
     AssetPtr<Technique> get_technique(std::filesystem::path const& asset_path);
 
+    AssetPtr<Material> get_material(std::filesystem::path const& asset_path);
+
     void update(float const delta_time);
 
     AssetPool<Mesh>& mesh_pool();
 
     AssetPool<Technique>& technique_pool();
 
-private:
+    AssetPool<Material>& material_pool();
 
-    lib::ThreadPool* _thread_pool;
+private:
 
     AssetPool<Mesh> _mesh_pool;
     AssetPool<Technique> _technique_pool;
+    AssetPool<Material> _material_pool;
 };
 
 }

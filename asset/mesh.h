@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <asset/asset_ptr.h>
 #include <asset/material.h>
 #include <lib/hash/buffer.h>
 #include <lib/expected.h>
@@ -39,7 +40,7 @@ struct MeshAttribute {
     uint32_t index;
 };
 
-struct SurfaceData {
+struct Surface {
     lib::hash::Buffer<float> vertices;
     lib::hash::Buffer<uint32_t> indices;
     uint32_t material_index;
@@ -51,15 +52,17 @@ public:
 
     static lib::Expected<Mesh, lib::Result<MeshError>> load_from_file(std::filesystem::path const& file_path);
 
-    std::span<SurfaceData const> surfaces() const;
+    std::span<Surface const> surfaces() const;
+
+    std::span<Surface> surfaces();
 
 private:
 
     Mesh();
 
     std::vector<MeshAttribute> _attributes;
-    std::vector<SurfaceData> _surfaces;
-    std::vector<std::shared_ptr<Material>> _materials;
+    std::vector<Surface> _surfaces;
+    std::vector<AssetPtr<Material>> _materials;
 };
 
 }

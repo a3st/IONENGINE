@@ -1,16 +1,16 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <renderer/frontend/shader_program.h>
+#include <renderer/shader_program.h>
 
+using namespace ionengine;
 using namespace ionengine::renderer;
-using namespace ionengine::renderer::frontend;
 
-ShaderProgram::ShaderProgram(Context& context, asset::Technique const& technique) :
-    _context(&context) {
+ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& technique) :
+    _device(&device) {
 
     for(auto const& shader : technique.shaders()) {
-        _shaders.emplace_back(context.device().create_shader(shader.source, get_shader_flags(shader.flags)));
+        _shaders.emplace_back(device.create_shader(shader.source, get_shader_flags(shader.flags)));
     }
 
     std::vector<backend::DescriptorLayoutBinding> bindings;
@@ -35,21 +35,23 @@ ShaderProgram::ShaderProgram(Context& context, asset::Technique const& technique
         std::visit(uniform_visitor, uniform.data); 
     }
 
-    _descriptor_layout = context.device().create_descriptor_layout(bindings);
+    _descriptor_layout = device.create_descriptor_layout(bindings);
 }
 
 ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept {
-    _context = other._context;
+    _device = other._device;
     _shaders = std::move(other._shaders);
     _uniforms = std::move(other._uniforms);
+
     for(auto& shader : _shaders) {
         shader = backend::InvalidHandle<backend::Shader>();
     }
+    
     _descriptor_layout = std::exchange(other._descriptor_layout, backend::InvalidHandle<backend::DescriptorLayout>());
 }
 
 ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
-    _context = other._context;
+    _device = other._device;
     _shaders = std::move(other._shaders);
     _uniforms = std::move(other._uniforms);
     for(auto& shader : _shaders) {
@@ -62,12 +64,12 @@ ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
 ShaderProgram::~ShaderProgram() {
     for(auto const& shader : _shaders) {
         if(shader != backend::InvalidHandle<backend::Shader>()) {
-            _context->device().delete_shader(shader);
+            _device->delete_shader(shader);
         }
     }
 
     if(_descriptor_layout != backend::InvalidHandle<backend::DescriptorLayout>()) {
-        _context->device().delete_descriptor_layout(_descriptor_layout);
+        _device->delete_descriptor_layout(_descriptor_layout);
     }
 }
 

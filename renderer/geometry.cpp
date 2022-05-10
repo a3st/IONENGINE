@@ -11,7 +11,12 @@ GeometryCache::GeometryCache() {
 
 }
 
-frontend::GeometryBuffer& GeometryCache::get(frontend::Context& context, asset::SurfaceData& surface) {
+void GeometryCache::upload(backend::Device& device, asset::Surface const& surface) {
+
+
+}
+
+frontend::GeometryBuffer& GeometryCache::get(backend::Device& device, asset::Surface& surface) {
 
     uint64_t const hash = surface.vertices.hash() ^ surface.indices.hash();
 
@@ -22,18 +27,19 @@ frontend::GeometryBuffer& GeometryCache::get(frontend::Context& context, asset::
         if(buffer.hash != hash) {
 
             buffer.hash = hash;
-        } 
+        }
 
         return buffer.value;
 
     } else {
 
         CacheEntry<frontend::GeometryBuffer> entry = {
-            .value = frontend::GeometryBuffer(context, surface),
+            .value = frontend::GeometryBuffer(device, surface),
             .hash = hash
         };
 
-        auto result = _buffers.push(std::move(entry));
+        size_t result = _buffers.push(std::move(entry));
+        return _buffers.get(result).value;
     }
 }
 

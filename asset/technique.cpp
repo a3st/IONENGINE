@@ -3,6 +3,7 @@
 #include <precompiled.h>
 #include <asset/technique.h>
 #include <lib/exception.h>
+#include <xxhash/xxhash64.h>
 
 using namespace ionengine;
 using namespace ionengine::asset;
@@ -33,10 +34,9 @@ Technique::Technique(JSON_TechniqueDefinition const& document) {
                     uniform.properties.value().begin(), 
                     uniform.properties.value().end(), 
                     [&](auto& element) {
-
                         data.data.emplace_back(element.name, get_shader_data_type(element.type));
                     }
-                );  
+                );
             } else {
                 _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::Sampler2D>>();
             }
@@ -47,6 +47,8 @@ Technique::Technique(JSON_TechniqueDefinition const& document) {
             ++registers_count.at(uniform.type);
         }
     );
+
+    std::vector<uint64_t> hashes;
 
     std::for_each(
         document.shaders.begin(),
@@ -82,10 +84,17 @@ Technique::Technique(JSON_TechniqueDefinition const& document) {
             }
 
             shader_code += shader.source;
+            uint64_t const hash = XXHash64::hash(reinterpret_cast<void*>(shader_code.data()), shader_code.size(), 0);
 
-            _shaders.emplace_back(shader_code, get_shader_flags(shader.type));
+            hashes.emplace_back(hash);
+            _shaders.emplace_back(shader_code, get_shader_flags(shader.type), hash);
         }
     );
+
+    _total_hash = hashes.at(0);
+    for(size_t i = 1; i < hashes.size(); ++i) {
+        _total_hash ^= hashes.at(i);
+    }
 }
 
 lib::Expected<Technique, lib::Result<TechniqueError>> Technique::load_from_file(std::filesystem::path const& file_path) {
@@ -111,17 +120,18 @@ lib::Expected<Technique, lib::Result<TechniqueError>> Technique::load_from_file(
 }
 
 std::string_view Technique::name() const {
-
     return _name;
 }
 
-std::span<ShaderUniform const> Technique::uniforms() const {
+uint64_t Technique::hash() const {
+    return _total_hash;
+}
 
+std::span<ShaderUniform const> Technique::uniforms() const {
     return _uniforms;
 }
 
 std::span<ShaderData const> Technique::shaders() const {
-
     return _shaders;
 }
 

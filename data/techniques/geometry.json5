@@ -10,6 +10,14 @@
                 { name: "proj", type: "f32x4x4" },
             ],
             visibility: "vertex",
+        },
+        {
+            name: "material",
+            type: "cbuffer",
+            properties: [
+                { name: "color", type: "f32x4" }
+            ],
+            visibility: "vertex"
         }
     ],
     shaders: [

@@ -115,7 +115,8 @@ enum class MemoryState : uint32_t {
     VertexConstantBufferRead = 1 << 6,
     IndexBufferRead = 1 << 7,
     DepthRead = 1 << 8,
-    DepthWrite = 1 << 9
+    DepthWrite = 1 << 9,
+    GenericRead = 1 << 10
 };
 
 enum class DescriptorType {

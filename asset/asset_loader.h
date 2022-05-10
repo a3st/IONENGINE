@@ -8,7 +8,7 @@
 
 namespace ionengine::asset {
 
-template<class Type = Asset>
+template<class Type>
 class AssetLoader {
 public:
 

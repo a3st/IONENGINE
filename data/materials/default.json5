@@ -3,11 +3,13 @@
     parameters: [
         {
             name: "albedo",
-            value: { type: "sampler2D", path: "content/default_albedo.asset" }
+            type: "sampler2D",
+            value: { path: "content/default_albedo.asset" }
         },
         {
             name: "color",
-            value: { type: "f32x4", vec4: [ 1.0, 0.4, 0.5, 1.0 ] }
+            type: "f32x4",
+            value: { vec4: [ 1.0, 0.4, 0.5, 1.0 ], uniform: "material", offset: 0 }
         }
     ],
     passes: [
@@ -18,7 +20,7 @@
                 cull_mode: "front",
                 depth_stencil: true
             },
-            technique: "../../data/shaders/techniques/geometry.json5"
+            technique: "../../data/techniques/geometry.json5"
         }
     ]
 }

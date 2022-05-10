@@ -2,15 +2,29 @@
 
 #pragma once
 
-#include <renderer/frontend/context.h>
+#include <renderer/backend/backend.h>
 #include <asset/technique.h>
 
-namespace ionengine::renderer::frontend {
+namespace ionengine::renderer {
+
+class ShaderUniformPool {
+public:
+
+    ShaderUniformPool() {
+        
+    }
+
+private:
+
+    std::vector<backend::Handle<backend::DescriptorSet>> _descriptor_sets;
+    uint32_t _offset{0};
+
+};
 
 class ShaderProgram {
 public:
 
-    ShaderProgram(Context& context, asset::Technique const& technique);
+    ShaderProgram(backend::Device& device, asset::Technique const& technique);
 
     ShaderProgram(ShaderProgram const&) = delete;
 
@@ -28,7 +42,7 @@ public:
 
 private:
 
-    Context* _context;
+    backend::Device* _device;
 
     std::vector<backend::Handle<backend::Shader>> _shaders;
     backend::Handle<backend::DescriptorLayout> _descriptor_layout;

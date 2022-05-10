@@ -7,7 +7,6 @@
 #include <scene/mesh_node.h>
 #include <scene/transform_node.h>
 #include <scene/camera_node.h>
-#include <asset/asset_manager.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -15,8 +14,8 @@ using namespace ionengine::renderer;
 class GeometryVisitor : public scene::SceneVisitor {
 public:
 
-    GeometryVisitor(frontend::Context& context, std::optional<frontend::GeometryBuffer>& geom_buffer, backend::Handle<backend::Buffer>& buffer) {
-        _context = &context;
+    GeometryVisitor(backend::Device& device, std::optional<GeometryBuffer>& geom_buffer, backend::Handle<backend::Buffer>& buffer) {
+        _device = &device;
         geom = &geom_buffer;
         _buffer = &buffer;
     }
@@ -29,7 +28,7 @@ public:
 
         lib::math::Matrixf matrix = other.transform_global();
             
-            _context->device().map_buffer_data(
+            _device->map_buffer_data(
                 *_buffer,
                 0,
                 std::span<uint8_t const>(
@@ -49,7 +48,7 @@ public:
 
         lib::math::Matrixf matrix = other.transform_view();
 
-        _context->device().map_buffer_data(
+        _device->map_buffer_data(
             *_buffer,
             sizeof(lib::math::Matrixf),
             std::span<uint8_t const>(
@@ -60,7 +59,7 @@ public:
 
         matrix = other.transform_projection();
 
-        _context->device().map_buffer_data(
+        _device->map_buffer_data(
             *_buffer,
             sizeof(lib::math::Matrixf) * 2,
             std::span<uint8_t const>(
@@ -72,15 +71,17 @@ public:
 
 private:
 
-    frontend::Context* _context;
-    std::optional<frontend::GeometryBuffer>* geom;
+    backend::Device* _device;
+    std::optional<GeometryBuffer>* geom;
     backend::Handle<backend::Buffer>* _buffer;
 };
 
 Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager) : 
-    _context(window, 2),
-    _frame_graph(_context),
-    _asset_manager(&asset_manager) {
+    _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 3 }),
+    _asset_manager(&asset_manager),
+    _upload_context(_device, 2) {
+
+    _frame_count = 3;
 
     auto [mesh_sender, mesh_receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
     asset_manager.mesh_pool().event_dispatcher().add(std::move(mesh_sender));
@@ -90,34 +91,17 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     asset_manager.technique_pool().event_dispatcher().add(std::move(technique_sender));
     _technique_event_receiver.emplace(std::move(technique_receiver));
 
+    _frame_graph.emplace(_device);
+    _cache_manager.emplace(_device, _upload_context);
 
-    build_frame_graph(window.client_size().width, window.client_size().height, 2);
+    _graphics_fence_values.resize(_frame_count);
 
-
-    _model_buffer.resize(2);
-
-    _model_buffer[0] = _context.device().create_buffer(256, backend::BufferFlags::HostWrite | backend::BufferFlags::ConstantBuffer);
-    _model_buffer[1] = _context.device().create_buffer(256, backend::BufferFlags::HostWrite | backend::BufferFlags::ConstantBuffer);
-
-    vertex_declaration = { 
-        backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, 0 },
-        backend::VertexInputDesc { "COLOR", 0, backend::Format::RGB32, 0, 0 },
-    };
-
-    _sampler = _context.device().create_sampler(
-        backend::Filter::MinMagMipLinear, 
-        backend::AddressMode::Wrap, 
-        backend::AddressMode::Wrap, 
-        backend::AddressMode::Wrap,
-        8,
-        backend::CompareOp::Always
-    );
-
-    //auto quad = frontend::GeometryBuffer::quad(_context);
-    //_offscreen_quad.emplace(std::move(quad));
+    build_frame_graph(window.client_size().width, window.client_size().height, _frame_count);
 }
 
 void Renderer::update(float const delta_time) {
+
+    
 
     // Mesh Event Update
     {
@@ -125,7 +109,12 @@ void Renderer::update(float const delta_time) {
         while(_mesh_event_receiver.value().try_receive(mesh_event)) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Loaded>& event) {
-                    
+                    std::cout << std::format("[Debug] Renderer created GeometryBuffers from '{}'", event.asset.path().string()) << std::endl;
+
+                    for(auto& surface : event.asset->surfaces()) {
+                        std::cout << std::format("[Debug] Upload surface to GPU") << std::endl;
+                        _cache_manager.value().get_geometry_buffer(surface);
+                    }
                 },
                 // Default
                 [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Unloaded>& event) { },
@@ -144,7 +133,7 @@ void Renderer::update(float const delta_time) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Loaded>& event) {
                     std::cout << std::format("[Debug] Renderer created ShaderProgram from '{}'", event.asset.path().string()) << std::endl;
-                    _shader_cache.get(_context, *event.asset);
+                    _cache_manager.value().get_shader_program(*event.asset);
                 },
                 // Default
                 [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Unloaded>& event) { },
@@ -159,17 +148,17 @@ void Renderer::update(float const delta_time) {
 
 void Renderer::render(scene::Scene& scene) {
 
-    auto frame_texture = _context.get_or_wait_previous_frame();
+    backend::Handle<backend::Texture> buffer = get_or_wait_previous_buffer();
 
-    GeometryVisitor geometry_visitor(_context, _geom_triangle, _model_buffer[_context.frame_index()]);
-    scene.graph().visit(scene.graph().begin(), scene.graph().end(), geometry_visitor);
+    scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("MainCamera");
 
-    //_context.submit_or_skip_upload_data();
+    //GeometryVisitor geometry_visitor(_device, _geom_triangle, _model_buffer[_frame_index]);
+    //scene.graph().visit(scene.graph().begin(), scene.graph().end(), geometry_visitor);
 
-    _frame_graph.bind_attachment(*_swapchain_buffer, frame_texture);
-    _frame_graph.execute();
+    _frame_graph.value().bind_attachment(*_swapchain_buffer, buffer);
+    _graphics_fence_values[_frame_index] = _frame_graph.value().execute();
 
-    _context.swap_buffers();
+    swap_buffers();
 }
 
 void Renderer::resize(uint32_t const width, uint32_t const height) {
@@ -178,7 +167,7 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
 
 void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count) {
 
-    _gbuffer_color_buffer = &_frame_graph.add_attachment(
+    _gbuffer_color_buffer = &_frame_graph.value().add_attachment(
         frontend::AttachmentDesc {
             .name = "gbuffer_color",
             .format = backend::Format::RGBA8,
@@ -194,7 +183,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
     };
 
-    _frame_graph.add_pass(
+    _frame_graph.value().add_pass(
         frontend::RenderPassDesc {
             .name = "gbuffer",
             .width = width,
@@ -203,40 +192,11 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         },
         [&](frontend::RenderPassContext const& context) {
             
-            backend::Handle<backend::Pipeline> pipeline_target;
-
-            auto it = _pipelines.find(context.render_pass().index());
-            if(it != _pipelines.end()) {
-                
-                pipeline_target = it->second;
-
-            } else {
-
-                /*pipeline_target = _context.device().create_pipeline(
-                    _shader_prog.value().layout(),
-                    vertex_declaration,
-                    _shader_prog.value().shaders(),
-                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::None },
-                    backend::DepthStencilDesc { backend::CompareOp::Always, false },
-                    backend::BlendDesc { false, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add },
-                    context.render_pass(),
-                    backend::InvalidHandle<backend::CachePipeline>()
-                );
-
-                _pipelines.insert({ context.render_pass().index(), pipeline_target });*/
-            }
-
-            /*_context.device().bind_pipeline(context.command_list(), pipeline_target);
-
-            frontend::ShaderUniformBinder binder(_context, _shader_prog.value());
-            binder.bind_cbuffer(_shader_prog.value().get_uniform_by_name("world"), _model_buffer[_context.frame_index()]);
-            binder.update(context.command_list());
-
-            _geom_triangle.value().bind(context.command_list());*/
+            
         }
     );
 
-    _swapchain_buffer = &_frame_graph.add_attachment("swapchain_buffer", backend::MemoryState::Present, backend::MemoryState::Present);
+    _swapchain_buffer = &_frame_graph.value().add_attachment("swapchain_buffer", backend::MemoryState::Present, backend::MemoryState::Present);
 
     std::array<frontend::CreateColorInfo, 1> present_colors;
 
@@ -252,7 +212,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         _gbuffer_color_buffer
     };
 
-    _frame_graph.add_pass(
+    _frame_graph.value().add_pass(
         frontend::RenderPassDesc {
             .name = "present_only_pass",
             .width = width,
@@ -295,5 +255,16 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         }
     );
 
-    _frame_graph.build(buffered_frame_count);
+    _frame_graph.value().build(buffered_frame_count);
+}
+
+void Renderer::swap_buffers() {
+    _device.present();
+    _frame_index = (_frame_index + 1) % _frame_count;
+}
+    
+backend::Handle<backend::Texture> Renderer::get_or_wait_previous_buffer() {
+    backend::Handle<backend::Texture> next_texture = _device.acquire_next_texture();
+    _device.wait(_graphics_fence_values[_frame_index], backend::QueueFlags::Graphics);
+    return next_texture;
 }

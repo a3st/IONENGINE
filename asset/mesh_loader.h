@@ -21,11 +21,10 @@ public:
 
         if(result.is_ok()) {
             asset.commit_ok(result.value(), path);
+            event_dispatcher.broadcast(asset::AssetEvent<Mesh>::loaded(asset));
         } else {
             asset.commit_error(path);
         }
-
-        event_dispatcher.broadcast(asset::AssetEvent<Mesh>::loaded(asset));
     }
 };
 

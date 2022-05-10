@@ -27,15 +27,17 @@ int main(int* argc, char** agrv) {
         renderer::Renderer renderer(window, asset_manager);
 
         {
-            asset::AssetPtr<asset::Technique> technique = asset_manager.get_technique("../../data/techniques/geometry.json5");
+            //asset::AssetPtr<asset::Technique> technique = asset_manager.get_technique("../../data/techniques/geometry.json5");
             
-            thread_pool.wait_all();
-            std::cout << "[Debug] Loaded technique name: " << technique->name() << std::endl;
+            //thread_pool.wait_all();
+            //std::cout << "[Debug] Loaded technique name: " << technique->name() << std::endl;
 
             asset::AssetPtr<asset::Mesh> mesh = asset_manager.get_mesh("unpacked/objects/cube.obj");
 
             thread_pool.wait_all();
             std::cout << "[Debug] Loaded mesh: unpacked/objects/cube.obj" << std::endl;
+
+            asset::AssetPtr<asset::Material> material = asset_manager.get_material("../../data/materials/default.json5");
         }
 
         float rotate = 0.0f;
@@ -55,10 +57,14 @@ int main(int* argc, char** agrv) {
             node_0->add_child(node_1);
 
             auto camera = test_scene.graph().add_node<scene::CameraNode>();
+            camera->name("MainCamera");
             camera->position(lib::math::Vector3f(0.0f, 2.0f, 3.0f));
         }
 
         auto begin_time = std::chrono::high_resolution_clock::now();
+        uint64_t frame_count = 0;
+
+        float frame_timer = 0.0f;
 
         loop.run(
             window,
@@ -80,12 +86,20 @@ int main(int* argc, char** agrv) {
                         mesh->rotation(lib::math::Quaternionf::angle_axis(rotate, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
                         */
 
-                        window.label(std::format("{} delta-time", delta_time.count()));
-                        
+                        frame_timer += delta_time.count();
+                        if(frame_timer >= 1.0f) {
+                            window.label(std::format("{} FPS, {} DT", frame_count, delta_time.count()));
+                            frame_timer = 0.0f;
+                            frame_count = 0;
+                        }
+
                         test_scene.graph().update_hierarchical_data();
+
                         asset_manager.update(delta_time.count());
                         renderer.update(delta_time.count());
                         renderer.render(test_scene);
+
+                        ++frame_count;
                     } break;
                     case platform::WindowEventType::Sized: {
                         auto event_size = std::get<platform::Size>(event.data);
