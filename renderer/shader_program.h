@@ -7,20 +7,6 @@
 
 namespace ionengine::renderer {
 
-class ShaderUniformPool {
-public:
-
-    ShaderUniformPool() {
-        
-    }
-
-private:
-
-    std::vector<backend::Handle<backend::DescriptorSet>> _descriptor_sets;
-    uint32_t _offset{0};
-
-};
-
 class ShaderProgram {
 public:
 

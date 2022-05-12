@@ -45,6 +45,10 @@ struct Surface {
     lib::hash::Buffer<uint32_t> indices;
     uint32_t material_index;
     size_t cache_entry{std::numeric_limits<size_t>::max()};
+
+    uint64_t hash() const { 
+        return vertices.hash() ^ indices.hash(); 
+    }
 };
 
 class Mesh {

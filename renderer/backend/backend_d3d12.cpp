@@ -579,11 +579,14 @@ Handle<Texture> Device::Impl::create_texture(
     resource_desc.Format = get_format(format);
     resource_desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
+    D3D12_RESOURCE_STATES initial_state = D3D12_RESOURCE_STATE_COMMON;
+
     if(flags & TextureFlags::DepthStencil) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
     }
     if(flags & TextureFlags::RenderTarget) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        initial_state = D3D12_RESOURCE_STATE_RENDER_TARGET;
     }
     if(flags & TextureFlags::UnorderedAccess) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
@@ -598,7 +601,7 @@ Handle<Texture> Device::Impl::create_texture(
     THROW_IF_FAILED(memory_allocator->CreateResource(
         &allocation_desc,
         &resource_desc,
-        D3D12_RESOURCE_STATE_COMMON,
+        initial_state,
         nullptr,
         texture_data.memory_allocation.GetAddressOf(),
         __uuidof(ID3D12Resource), 

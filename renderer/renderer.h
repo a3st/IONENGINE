@@ -3,8 +3,11 @@
 #pragma once
 
 #include <renderer/render_queue.h>
-#include <renderer/frontend/frame_graph.h>
-#include <renderer/cache_manager.h>
+#include <renderer/upload_context.h>
+#include <renderer/shader_cache.h>
+#include <renderer/geometry_cache.h>
+#include <renderer/gpu_texture.h>
+#include <renderer/frame_graph.h>
 #include <asset/asset_manager.h>
 
 namespace ionengine {
@@ -42,29 +45,22 @@ private:
 
     backend::Device _device;
 
-    UploadContext _upload_context;
-
     std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _mesh_event_receiver;
     std::optional<lib::Receiver<asset::AssetEvent<asset::Technique>>> _technique_event_receiver;
 
-    std::optional<frontend::FrameGraph> _frame_graph;
-    std::optional<CacheManager> _cache_manager;
+    std::optional<UploadContext> _upload_context;
+    std::optional<ShaderCache> _shader_cache;
+    std::optional<GeometryCache> _geometry_cache;
+    std::optional<FrameGraph> _frame_graph;
 
-    frontend::Attachment* _gbuffer_color_buffer;
-    frontend::Attachment* _swapchain_buffer;
-
-    uint32_t _frame_count{0};
-    uint32_t _frame_index{0};
-
-    std::vector<uint64_t> _graphics_fence_values;
+    std::shared_ptr<GPUTexture> _gbuffer_albedo;
 
     RenderQueue _deffered_queue;
 
+    uint32_t _width;
+    uint32_t _height;
+
     void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count);
-    
-    void swap_buffers();
-    
-    backend::Handle<backend::Texture> get_or_wait_previous_buffer();
 
     // TEST ONLY
     std::vector<backend::VertexInputDesc> vertex_declaration;

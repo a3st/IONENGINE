@@ -3,7 +3,6 @@
 #pragma once
 
 #include <renderer/cache.h>
-#include <renderer/cache_ptr.h>
 #include <renderer/geometry_buffer.h>
 #include <renderer/upload_context.h>
 #include <asset/mesh.h>
@@ -11,54 +10,26 @@
 
 namespace ionengine::renderer {
 
-template<>
-class CachePool<GeometryBuffer> {
+class GeometryCache {
 public:
 
-    CachePool(backend::Device& device, UploadContext& upload_context) :
-        _device(&device),
-        _upload_context(&upload_context) {
-        
-    }
+    GeometryCache(backend::Device& device);
 
-    CachePtr<GeometryBuffer> get(asset::Surface& surface) {
+    GeometryCache(GeometryCache const&) = delete;
 
-        uint64_t const hash = surface.vertices.hash();
+    GeometryCache(GeometryCache&& other) noexcept;
 
-        if(_data.is_valid(surface.cache_entry)) {
-            auto& cache_entry = _data.get(surface.cache_entry);
-            
-            if(cache_entry.hash != surface.cache_entry) {
+    GeometryCache& operator=(GeometryCache const&) = delete;
 
+    GeometryCache& operator=(GeometryCache&& other) noexcept;
 
-            }
-
-            return cache_entry.value;
-
-        } else {
-
-            auto cache_entry = CacheEntry<CachePtr<GeometryBuffer>> {
-                .value = CachePtr<GeometryBuffer>(GeometryBuffer(*_device, surface)),
-                .hash = hash
-            };
-
-            _upload_context->upload(
-                cache_entry.value, 
-                std::span<uint8_t const>((uint8_t*)surface.vertices.data(), surface.vertices.size()), 
-                std::span<uint8_t const>((uint8_t*)surface.indices.data(), surface.indices.size())
-            );
-
-            surface.cache_entry = _data.push(std::move(cache_entry));
-            return _data.get(surface.cache_entry).value;
-        }
-    }
+    std::shared_ptr<GeometryBuffer> get(asset::Surface& surface, UploadContext& upload_context);
 
 private:
 
     backend::Device* _device;
-    UploadContext* _upload_context;
 
-    lib::SparseVector<CacheEntry<CachePtr<GeometryBuffer>>> _data;
+    lib::SparseVector<CacheEntry<std::shared_ptr<GeometryBuffer>>> _data;
 };
 
 }

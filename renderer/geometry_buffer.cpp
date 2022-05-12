@@ -6,11 +6,22 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-GeometryBuffer::GeometryBuffer(backend::Device& device, asset::Surface const& surface) :
+GeometryBuffer::GeometryBuffer(backend::Device& device, asset::Surface const& surface, UploadContext& upload_context) :
     _device(&device) {
 
-    //_vertex_buffer = _context->create_vertex_buffer(static_cast<uint32_t>(surface.vertices.size()));
-    //_index_buffer = _context->create_index_buffer(static_cast<uint32_t>(surface.indices.size()));
+    size_t const vertices_size_bytes = surface.vertices.size() * sizeof(float);
+    _vertex_buffer = device.create_buffer(vertices_size_bytes, backend::BufferFlags::VertexBuffer);
+
+    size_t const indices_size_bytes = surface.indices.size() * sizeof(uint32_t);
+    _index_buffer = device.create_buffer(indices_size_bytes, backend::BufferFlags::IndexBuffer);
+
+    upload_context.begin();
+    upload_context.copy_buffer_data(_vertex_buffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(surface.vertices.data()), vertices_size_bytes));
+    upload_context.copy_buffer_data(_index_buffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(surface.indices.data()), indices_size_bytes));
+    upload_context.end();
+
+    _vertices_count = surface.vertices.size();
+    _indices_count = surface.indices.size();
 }
 
 GeometryBuffer::GeometryBuffer(GeometryBuffer&& other) noexcept {

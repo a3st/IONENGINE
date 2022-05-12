@@ -77,11 +77,8 @@ private:
 };
 
 Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager) : 
-    _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 3 }),
-    _asset_manager(&asset_manager),
-    _upload_context(_device, 2) {
-
-    _frame_count = 3;
+    _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 }),
+    _asset_manager(&asset_manager) {
 
     auto [mesh_sender, mesh_receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
     asset_manager.mesh_pool().event_dispatcher().add(std::move(mesh_sender));
@@ -92,16 +89,18 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     _technique_event_receiver.emplace(std::move(technique_receiver));
 
     _frame_graph.emplace(_device);
-    _cache_manager.emplace(_device, _upload_context);
+    _upload_context.emplace(_device);
 
-    _graphics_fence_values.resize(_frame_count);
+    _shader_cache.emplace(_device);
+    _geometry_cache.emplace(_device);
 
-    build_frame_graph(window.client_size().width, window.client_size().height, _frame_count);
+    _width = window.client_size().width;
+    _height = window.client_size().height;
+
+    _gbuffer_albedo = GPUTexture::render_target(_device, backend::Format::RGBA8, window.client_size().width, window.client_size().height);
 }
 
 void Renderer::update(float const delta_time) {
-
-    
 
     // Mesh Event Update
     {
@@ -112,8 +111,7 @@ void Renderer::update(float const delta_time) {
                     std::cout << std::format("[Debug] Renderer created GeometryBuffers from '{}'", event.asset.path().string()) << std::endl;
 
                     for(auto& surface : event.asset->surfaces()) {
-                        std::cout << std::format("[Debug] Upload surface to GPU") << std::endl;
-                        _cache_manager.value().get_geometry_buffer(surface);
+                        _geometry_cache.value().get(surface, _upload_context.value());
                     }
                 },
                 // Default
@@ -133,7 +131,7 @@ void Renderer::update(float const delta_time) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Loaded>& event) {
                     std::cout << std::format("[Debug] Renderer created ShaderProgram from '{}'", event.asset.path().string()) << std::endl;
-                    _cache_manager.value().get_shader_program(*event.asset);
+                    _shader_cache.value().get(*event.asset);
                 },
                 // Default
                 [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Unloaded>& event) { },
@@ -148,17 +146,16 @@ void Renderer::update(float const delta_time) {
 
 void Renderer::render(scene::Scene& scene) {
 
-    backend::Handle<backend::Texture> buffer = get_or_wait_previous_buffer();
+    _frame_graph.value().wait();
 
     scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("MainCamera");
 
+    build_frame_graph(_width, _height, 2);
+
     //GeometryVisitor geometry_visitor(_device, _geom_triangle, _model_buffer[_frame_index]);
     //scene.graph().visit(scene.graph().begin(), scene.graph().end(), geometry_visitor);
-
-    _frame_graph.value().bind_attachment(*_swapchain_buffer, buffer);
-    _graphics_fence_values[_frame_index] = _frame_graph.value().execute();
-
-    swap_buffers();
+    
+    _frame_graph.value().execute();
 }
 
 void Renderer::resize(uint32_t const width, uint32_t const height) {
@@ -167,52 +164,41 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
 
 void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count) {
 
-    _gbuffer_color_buffer = &_frame_graph.value().add_attachment(
-        frontend::AttachmentDesc {
-            .name = "gbuffer_color",
-            .format = backend::Format::RGBA8,
-            .width = width,
-            .height = height,
-            .flags = backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource
-        }
-    );
-
-    frontend::CreateColorInfo gbuffer_color_info {
-        .attachment = _gbuffer_color_buffer,
+    CreateColorInfo gbuffer_albedo_info {
+        .attachment = _gbuffer_albedo,
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
     };
 
     _frame_graph.value().add_pass(
-        frontend::RenderPassDesc {
-            .name = "gbuffer",
-            .width = width,
-            .height = height,
-            .color_infos = std::span<frontend::CreateColorInfo const>(&gbuffer_color_info, 1)
-        },
-        [&](frontend::RenderPassContext const& context) {
-            
+        "GBuffer", 
+        width,
+        height,
+        std::span<CreateColorInfo const>(&gbuffer_albedo_info, 1),
+        std::nullopt,
+        std::nullopt,
+        [&](RenderPassContext const& context) {
             
         }
     );
 
-    _swapchain_buffer = &_frame_graph.value().add_attachment("swapchain_buffer", backend::MemoryState::Present, backend::MemoryState::Present);
-
-    std::array<frontend::CreateColorInfo, 1> present_colors;
-
-    present_colors[0] = frontend::CreateColorInfo {
-        .attachment = _swapchain_buffer,
+    CreateColorInfo swapchain_info {
+        .attachment = nullptr,
         .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = lib::math::Color(0.0f, 0.3f, 0.8f, 1.0f)
-    };
-
-    std::array<frontend::Attachment*, 1> present_inputs;
-
-    present_inputs[0] = {
-        _gbuffer_color_buffer
+        .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
     };
 
     _frame_graph.value().add_pass(
+        "Present",
+        width,
+        height,
+        std::span<CreateColorInfo const>(&swapchain_info, 1),
+        std::nullopt,
+        std::nullopt,
+        RenderPassDefaultFunc
+    );
+
+    /*_frame_graph.value().add_pass(
         frontend::RenderPassDesc {
             .name = "present_only_pass",
             .width = width,
@@ -231,7 +217,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
             } else {
 
-                /*pipeline_target = _context.device().create_pipeline(
+                pipeline_target = _context.device().create_pipeline(
                     _shader_prog_2.value().layout(),
                     //_offscreen_quad.value().vertex_declaration(),
                     _shader_prog_2.value().shaders(),
@@ -242,29 +228,16 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                     backend::InvalidHandle<backend::CachePipeline>()
                 );
 
-                _pipelines.insert({ context.render_pass().index(), pipeline_target });*/
+                _pipelines.insert({ context.render_pass().index(), pipeline_target });
             }
 
-            /*_context.device().bind_pipeline(context.command_list(), pipeline_target);
+            _context.device().bind_pipeline(context.command_list(), pipeline_target);
 
             frontend::ShaderUniformBinder binder(_context, _shader_prog_2.value());
             binder.bind_texture(_shader_prog_2.value().get_uniform_by_name("albedo"), context.attachment(0), _sampler);
             binder.update(context.command_list());
 
-            _offscreen_quad.value().bind(context.command_list());*/
+            _offscreen_quad.value().bind(context.command_list());
         }
-    );
-
-    _frame_graph.value().build(buffered_frame_count);
-}
-
-void Renderer::swap_buffers() {
-    _device.present();
-    _frame_index = (_frame_index + 1) % _frame_count;
-}
-    
-backend::Handle<backend::Texture> Renderer::get_or_wait_previous_buffer() {
-    backend::Handle<backend::Texture> next_texture = _device.acquire_next_texture();
-    _device.wait(_graphics_fence_values[_frame_index], backend::QueueFlags::Graphics);
-    return next_texture;
+    );*/
 }

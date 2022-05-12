@@ -2,12 +2,16 @@
 
 #pragma once
 
+#include <renderer/backend/backend.h>
+
 namespace ionengine::renderer {
 
-template<class Type>
-struct CacheEntry {
-    Type value;
-    uint64_t hash;
+class GPUBuffer {
+public:
+
+
+private:
+
 };
 
 }

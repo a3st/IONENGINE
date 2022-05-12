@@ -2,21 +2,29 @@
 
 #pragma once
 
-#include <renderer/cache_ptr.h>
-#include <renderer/geometry_buffer.h>
+#include <renderer/backend/backend.h>
 
 namespace ionengine::renderer {
 
 class UploadContext {
 public:
 
-    UploadContext(backend::Device& device, uint32_t const frame_index);
+    UploadContext(backend::Device& device);
 
-    void upload(CachePtr<GeometryBuffer> resource, std::span<uint8_t const> const vertices, std::span<uint8_t const> const indices);
+    void begin();
+
+    void copy_buffer_data(backend::Handle<backend::Buffer> const& dest, uint64_t const offset, std::span<uint8_t const> const data);
+
+    void end();
 
 private:
 
+    backend::Device* _device;
 
+    backend::Handle<backend::CommandList> _command_list;
+
+    backend::Handle<backend::Buffer> _buffer;
+    uint64_t _offset{0};
 };
 
 }
