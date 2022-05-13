@@ -26,10 +26,10 @@ std::shared_ptr<GeometryBuffer> GeometryCache::get(asset::Surface& surface, Uplo
         
     uint64_t const total_hash = surface.hash();
 
-    if(_data.is_valid(surface.cache_entry)) {
-        auto& cache_entry = _data.get(surface.cache_entry);
+    if(_data.is_valid(surface.cache_entry())) {
+        auto& cache_entry = _data.get(surface.cache_entry());
             
-        if(cache_entry.hash != surface.cache_entry) {
+        if(cache_entry.hash != surface.cache_entry()) {
 
         }
 
@@ -43,9 +43,9 @@ std::shared_ptr<GeometryBuffer> GeometryCache::get(asset::Surface& surface, Uplo
                 .hash = total_hash
             };
 
-            surface.cache_entry = _data.push(std::move(cache_entry));
+            surface.cache_entry(_data.push(std::move(cache_entry)));
         }
-        auto& cache_entry = _data.get(surface.cache_entry);
+        auto& cache_entry = _data.get(surface.cache_entry());
         return cache_entry.value;
     }
 }

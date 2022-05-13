@@ -55,7 +55,7 @@ private:
 
     std::shared_ptr<GPUTexture> _gbuffer_albedo;
 
-    RenderQueue _deffered_queue;
+    std::vector<RenderQueue> _deffered_queues;
 
     uint32_t _width;
     uint32_t _height;

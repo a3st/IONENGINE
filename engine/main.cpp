@@ -50,6 +50,7 @@ int main(int* argc, char** agrv) {
 
             auto node_1 = test_scene.graph().add_node<scene::MeshNode>();
             node_1->name("mesh");
+            node_1->mesh(asset_manager.get_mesh("unpacked/objects/cube.obj"));
             node_1->position(lib::math::Vector3f(0.0f, -0.5f, 0.0f));
             node_1->rotation(lib::math::Quaternionf::angle_axis(0.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
             node_1->scale(lib::math::Vector3f(1.0f, 1.0f, 1.0f));

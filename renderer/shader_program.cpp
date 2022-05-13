@@ -38,39 +38,11 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
     _descriptor_layout = device.create_descriptor_layout(bindings);
 }
 
-ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept {
-    _device = other._device;
-    _shaders = std::move(other._shaders);
-    _uniforms = std::move(other._uniforms);
-
-    for(auto& shader : _shaders) {
-        shader = backend::InvalidHandle<backend::Shader>();
-    }
-    
-    _descriptor_layout = std::exchange(other._descriptor_layout, backend::InvalidHandle<backend::DescriptorLayout>());
-}
-
-ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
-    _device = other._device;
-    _shaders = std::move(other._shaders);
-    _uniforms = std::move(other._uniforms);
-    for(auto& shader : _shaders) {
-        shader = backend::InvalidHandle<backend::Shader>();
-    }
-    _descriptor_layout = std::exchange(other._descriptor_layout, backend::InvalidHandle<backend::DescriptorLayout>());
-    return *this;
-}
-
 ShaderProgram::~ShaderProgram() {
     for(auto const& shader : _shaders) {
-        if(shader != backend::InvalidHandle<backend::Shader>()) {
-            _device->delete_shader(shader);
-        }
+        _device->delete_shader(shader);
     }
-
-    if(_descriptor_layout != backend::InvalidHandle<backend::DescriptorLayout>()) {
-        _device->delete_descriptor_layout(_descriptor_layout);
-    }
+    _device->delete_descriptor_layout(_descriptor_layout);
 }
 
 backend::Handle<backend::DescriptorLayout> ShaderProgram::descriptor_layout() const { 

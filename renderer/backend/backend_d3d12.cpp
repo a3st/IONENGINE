@@ -17,14 +17,12 @@ struct Texture {
     ComPtr<ID3D12Resource> resource;
     ComPtr<D3D12MA::Allocation> memory_allocation;
     std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, ComPtr<d3d12::DescriptorAllocation>> descriptor_allocations;
-    uint64_t fence_value;
 };
 
 struct Buffer {
     ComPtr<ID3D12Resource> resource;
     ComPtr<D3D12MA::Allocation> memory_allocation;
     ComPtr<d3d12::DescriptorAllocation> descriptor_allocation;
-    uint64_t fence_value;
 };
 
 struct Sampler {
@@ -77,7 +75,6 @@ struct CommandList {
     Pipeline* binded_pipeline;
     QueueFlags flags;
     bool is_reset{false};
-    std::vector<std::variant<Buffer*, Texture*>> copy_data;
 };
 
 }
@@ -208,9 +205,7 @@ struct Device::Impl {
     
     void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);\
-    
-    uint64_t resource_fence(ResourceHandle const& target) const;
+    void map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);
     
     void present();
 
@@ -1494,26 +1489,6 @@ void Device::Impl::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const 
     }
 }
 
-uint64_t Device::Impl::resource_fence(ResourceHandle const& target) const {
-
-    uint64_t fence_value = 0;
-
-    auto resource_visitor = make_visitor(
-        [&](Handle<Buffer> const& resource) {
-            fence_value = buffers[resource].fence_value;
-        },
-        [&](Handle<Texture> const& resource) {
-            fence_value = textures[resource].fence_value;
-        },
-        [&](Handle<Sampler> const& resource) {
-
-        }
-    );
-    
-    std::visit(resource_visitor, target);
-    return fence_value;
-}
-
 Handle<Texture> Device::Impl::acquire_next_texture() {
 
     swapchain_index = swapchain->GetCurrentBackBufferIndex();
@@ -1550,20 +1525,6 @@ uint64_t Device::Impl::submit(std::span<Handle<CommandList> const> const command
         command_list_data.command_list->Close();
         command_list_data.is_reset = false;
         batches.push_back(reinterpret_cast<ID3D12CommandList* const>(command_list_data.command_list.Get()));
-
-        for(auto& data : command_list_data.copy_data) {
-            
-            auto resource_visitor = make_visitor(
-                [&](Buffer* resource) {
-                    resource->fence_value = cur_fence_value;
-                },
-                [&](Texture* resource) {
-                    resource->fence_value = cur_fence_value;
-                }
-            );
-
-            std::visit(resource_visitor, data);
-        }
     }
 
     queues[get_queue_index(flags)]->ExecuteCommandLists(static_cast<uint32_t>(batches.size()), batches.data());
@@ -1681,21 +1642,17 @@ void Device::Impl::command_list_reset(CommandList& command_list) {
     THROW_IF_FAILED(command_list.command_list->Reset(command_list.command_allocator.Get(), nullptr));
 
     if(command_list.command_list->GetType() == D3D12_COMMAND_LIST_TYPE_DIRECT) {
-
-        uint32_t const swap_index = swapchain_index;
-
-        cbv_srv_uav_ranges[swap_index]->reset();
-        sampler_ranges[swap_index]->reset();
+        cbv_srv_uav_ranges[swapchain_index]->reset();
+        sampler_ranges[swapchain_index]->reset();
 
         std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
-        descriptor_heaps[0] = cbv_srv_uav_ranges[swap_index]->heap();
-        descriptor_heaps[1] = sampler_ranges[swap_index]->heap();
+        descriptor_heaps[0] = cbv_srv_uav_ranges[swapchain_index]->heap();
+        descriptor_heaps[1] = sampler_ranges[swapchain_index]->heap();
 
         command_list.command_list->SetDescriptorHeaps(2, descriptor_heaps.data());
     }
 
     command_list.is_reset = true;
-    command_list.copy_data.clear();
 }
 
 void Device::Impl::bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set) {
@@ -1877,7 +1834,6 @@ void Device::Impl::end_render_pass(Handle<CommandList> const& command_list) {
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -1889,7 +1845,6 @@ void Device::Impl::bind_pipeline(Handle<CommandList> const& command_list, Handle
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -1912,7 +1867,6 @@ void Device::Impl::bind_vertex_buffer(Handle<CommandList> const& command_list, u
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -1931,7 +1885,6 @@ void Device::Impl::bind_index_buffer(Handle<CommandList> const& command_list, Ha
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -2018,8 +1971,6 @@ void Device::Impl::copy_buffer_region(
         source_offset,
         size
     );
-
-    command_list_data.copy_data.emplace_back(&dest_buffer);
 }
 
 void Device::Impl::draw(Handle<CommandList> const& command_list, uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset) {
@@ -2197,11 +2148,6 @@ void Device::update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, 
 void Device::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data) {
 
     _impl->map_buffer_data(buffer, offset, data);
-}
-
-uint64_t Device::resource_fence(ResourceHandle const& target) const {
-
-    return _impl->resource_fence(target);
 }
 
 void Device::present() {

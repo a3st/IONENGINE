@@ -146,9 +146,10 @@ void FrameGraph::execute() {
     _ops.clear();
 }
 
-void FrameGraph::wait() {
+uint32_t FrameGraph::wait() {
     _device->wait(_fence_values.at(_frame_index), backend::QueueFlags::Graphics);
     _swapchain_texture = _device->acquire_next_texture();
+    return _frame_index;
 }
 
 backend::Handle<backend::RenderPass> FrameGraph::compile_render_pass(

@@ -35,6 +35,20 @@ GPUTexture::GPUTexture(
     );
 
     _memory_state = backend::MemoryState::RenderTarget;
+
+    _sampler = _device->create_sampler(
+        backend::Filter::MinMagMipLinear,
+        backend::AddressMode::Clamp,
+        backend::AddressMode::Clamp,
+        backend::AddressMode::Clamp,
+        1,
+        backend::CompareOp::Always
+    );
+}
+
+GPUTexture::~GPUTexture() {
+    _device->delete_texture(_texture);
+    _device->delete_sampler(_sampler);
 }
 
 backend::Handle<backend::Texture> GPUTexture::as_texture() const {

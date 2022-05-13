@@ -18,12 +18,18 @@ public:
 
     virtual void accept(SceneVisitor& visitor);
 
-    asset::Mesh const& mesh() const;
+    void mesh(asset::AssetPtr<asset::Mesh> mesh);
+
+    asset::AssetPtr<asset::Mesh> mesh();
+
+    void material(uint32_t const index, asset::AssetPtr<asset::Material> material);
+
+    asset::AssetPtr<asset::Material> material(uint32_t const index);
 
 private:
 
-    std::shared_ptr<asset::Mesh> _mesh;
-    std::vector<std::shared_ptr<asset::Material>> _ovveride_materials;
+    asset::AssetPtr<asset::Mesh> _mesh;
+    std::vector<asset::AssetPtr<asset::Material>> _override_materials;
 };
 
 }

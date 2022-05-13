@@ -137,7 +137,7 @@ public:
     
     void execute();
 
-    void wait();
+    uint32_t wait();
 
 private:
 

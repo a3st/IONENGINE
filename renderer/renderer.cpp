@@ -11,69 +11,32 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-class GeometryVisitor : public scene::SceneVisitor {
+class MeshVisitor : public scene::SceneVisitor {
 public:
 
-    GeometryVisitor(backend::Device& device, std::optional<GeometryBuffer>& geom_buffer, backend::Handle<backend::Buffer>& buffer) {
-        _device = &device;
-        geom = &geom_buffer;
-        _buffer = &buffer;
-    }
+    MeshVisitor(RenderQueue& render_queue) : _render_queue(&render_queue) { }
 
     void operator()(scene::MeshNode& other) {
 
-        if(!geom->has_value()) {
-            //geom->emplace(*_context, other.surface(), frontend::BufferUsage::Static);
+        if(other.mesh().is_ok()) {
+            for(auto& surface : other.mesh()->surfaces()) {
+                
+                auto instance = SurfaceInstance {
+                    .model = other.transform_global()
+                };
+
+                _render_queue->push(surface, instance, other.material(surface->material_index()));
+            }
         }
-
-        lib::math::Matrixf matrix = other.transform_global();
-            
-            _device->map_buffer_data(
-                *_buffer,
-                0,
-                std::span<uint8_t const>(
-                    reinterpret_cast<uint8_t const*>(matrix.data()),
-                    matrix.size() * sizeof(float)
-                )
-            );
     }
 
-    void operator()(scene::TransformNode& other) {
-
-    }
-
-    void operator()(scene::CameraNode& other) {
-
-        other.calculate_matrices();
-
-        lib::math::Matrixf matrix = other.transform_view();
-
-        _device->map_buffer_data(
-            *_buffer,
-            sizeof(lib::math::Matrixf),
-            std::span<uint8_t const>(
-                reinterpret_cast<uint8_t const*>(matrix.data()),
-                matrix.size() * sizeof(float)
-            )
-        );
-
-        matrix = other.transform_projection();
-
-        _device->map_buffer_data(
-            *_buffer,
-            sizeof(lib::math::Matrixf) * 2,
-            std::span<uint8_t const>(
-                reinterpret_cast<uint8_t const*>(matrix.data()),
-                matrix.size() * sizeof(float)
-            )
-        );
-    }
+    // Default
+    void operator()(scene::TransformNode& other) { }
+    void operator()(scene::CameraNode& other) { }
 
 private:
 
-    backend::Device* _device;
-    std::optional<GeometryBuffer>* geom;
-    backend::Handle<backend::Buffer>* _buffer;
+    RenderQueue* _render_queue;
 };
 
 Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager) : 
@@ -97,6 +60,8 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     _width = window.client_size().width;
     _height = window.client_size().height;
 
+    _deffered_queues.resize(2);
+
     _gbuffer_albedo = GPUTexture::render_target(_device, backend::Format::RGBA8, window.client_size().width, window.client_size().height);
 }
 
@@ -111,7 +76,7 @@ void Renderer::update(float const delta_time) {
                     std::cout << std::format("[Debug] Renderer created GeometryBuffers from '{}'", event.asset.path().string()) << std::endl;
 
                     for(auto& surface : event.asset->surfaces()) {
-                        _geometry_cache.value().get(surface, _upload_context.value());
+                        _geometry_cache.value().get(*surface, _upload_context.value());
                     }
                 },
                 // Default
@@ -146,14 +111,14 @@ void Renderer::update(float const delta_time) {
 
 void Renderer::render(scene::Scene& scene) {
 
-    _frame_graph.value().wait();
+    uint32_t const frame_index = _frame_graph.value().wait();
 
     scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("MainCamera");
 
-    build_frame_graph(_width, _height, 2);
+    MeshVisitor mesh_visitor(_deffered_queues.at(frame_index));
+    scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
 
-    //GeometryVisitor geometry_visitor(_device, _geom_triangle, _model_buffer[_frame_index]);
-    //scene.graph().visit(scene.graph().begin(), scene.graph().end(), geometry_visitor);
+    build_frame_graph(_width, _height, 2);
     
     _frame_graph.value().execute();
 }

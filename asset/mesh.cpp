@@ -7,6 +7,34 @@
 using namespace ionengine;
 using namespace ionengine::asset;
 
+Surface::Surface(std::span<float> const vertices, std::span<uint32_t> const indices, uint32_t const material_index) :
+    _vertices(vertices), _indices(indices), _material_index(material_index) {
+}
+
+uint64_t Surface::hash() const {
+    return _vertices.hash() ^ _indices.hash();
+}
+
+uint32_t Surface::material_index() const {
+    return _material_index;
+}
+
+void Surface::cache_entry(size_t const value) {
+    _cache_entry = value;
+}
+
+size_t Surface::cache_entry() const {
+    return _cache_entry;
+}
+
+std::span<float const> Surface::vertices() const {
+    return std::span<float const>(_vertices.data(), _vertices.size());
+}
+
+std::span<uint32_t const> Surface::indices() const {
+    return std::span<uint32_t const>(_indices.data(), _indices.size());
+}
+
 Mesh::Mesh() {
 
     _attributes.emplace_back(VertexUsage::Position, VertexFormat::F32x3, 0);
@@ -24,12 +52,10 @@ Mesh::Mesh() {
         6, 7, 8
     };
 
-    auto surface = Surface {
-        .vertices = lib::hash::Buffer<float>(triangles),
-        .indices = lib::hash::Buffer<uint32_t>(indices),
-        .material_index = 0
-    };
+    auto surface = std::make_shared<Surface>(triangles, indices, 0);
     _surfaces.emplace_back(surface);
+
+    _materials.resize(1);
 
     /*
     std::filesystem::path extension = file_path.extension();
@@ -77,10 +103,18 @@ lib::Expected<Mesh, lib::Result<MeshError>> Mesh::load_from_file(std::filesystem
     return lib::Expected<Mesh, lib::Result<MeshError>>::ok(Mesh());   
 }
 
-std::span<Surface const> Mesh::surfaces() const {
+std::span<std::shared_ptr<Surface>> Mesh::surfaces() {
     return _surfaces;
 }
 
-std::span<Surface> Mesh::surfaces() {
-    return _surfaces;
+void Mesh::material(uint32_t const index, AssetPtr<Material> material) {
+    _materials.at(index) = material;
+}
+
+AssetPtr<Material> Mesh::material(uint32_t const index) {
+    return _materials.at(index);
+}
+
+uint32_t Mesh::materials_size() const {
+    return static_cast<uint32_t>(_materials.size());
 }

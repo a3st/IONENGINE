@@ -9,6 +9,8 @@ namespace ionengine::renderer {
 class GPUTexture {
 public:
 
+    ~GPUTexture();
+
     static std::shared_ptr<GPUTexture> render_target(backend::Device& device, backend::Format const format, uint32_t const width, uint32_t const height);
 
     backend::Handle<backend::Texture> as_texture() const;

@@ -12,14 +12,6 @@ public:
 
     ShaderProgram(backend::Device& device, asset::Technique const& technique);
 
-    ShaderProgram(ShaderProgram const&) = delete;
-
-    ShaderProgram(ShaderProgram&& other) noexcept;
-
-    ShaderProgram& operator=(ShaderProgram const&) = delete;
-
-    ShaderProgram& operator=(ShaderProgram&& other) noexcept;
-
     ~ShaderProgram();
 
     backend::Handle<backend::DescriptorLayout> descriptor_layout() const;

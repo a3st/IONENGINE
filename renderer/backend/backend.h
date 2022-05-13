@@ -327,8 +327,6 @@ public:
 
     void map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);
 
-    uint64_t resource_fence(ResourceHandle const& target) const;
-
     void present();
 
     Handle<Texture> acquire_next_texture();

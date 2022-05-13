@@ -110,13 +110,19 @@ public:
     }
 
     bool is_ok() const {
-        std::unique_lock lock(_ptr->mutex);
-        return _ptr->data.index() == 0;
+        if(_ptr->mutex.try_lock()) {
+            std::unique_lock lock(_ptr->mutex, std::adopt_lock);
+            return _ptr->data.index() == 0;
+        }
+        return false;
     }
 
     bool is_error() const {
-        std::unique_lock lock(_ptr->mutex);
-        return _ptr->data.index() == 1;
+        if(_ptr->mutex.try_lock()) {
+            std::unique_lock lock(_ptr->mutex, std::adopt_lock);
+            return _ptr->data.index() == 1;
+        }
+        return false;
     }
 
     void commit_ok(Type&& element, std::filesystem::path const& asset_path) {
