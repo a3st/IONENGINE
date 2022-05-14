@@ -51,6 +51,8 @@ add_executable(Runtime-Win32
     renderer/shader_cache.cpp
     renderer/geometry_buffer.cpp
     renderer/geometry_cache.cpp
+    renderer/pipeline.cpp
+    renderer/pipeline_cache.cpp
     renderer/gpu_texture.cpp
     renderer/gpu_buffer.cpp
     renderer/render_queue.cpp

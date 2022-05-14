@@ -60,8 +60,6 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     _width = window.client_size().width;
     _height = window.client_size().height;
 
-    _deffered_queues.resize(2);
-
     _gbuffer_albedo = GPUTexture::render_target(_device, backend::Format::RGBA8, window.client_size().width, window.client_size().height);
 }
 
@@ -76,7 +74,7 @@ void Renderer::update(float const delta_time) {
                     std::cout << std::format("[Debug] Renderer created GeometryBuffers from '{}'", event.asset.path().string()) << std::endl;
 
                     for(auto& surface : event.asset->surfaces()) {
-                        _geometry_cache.value().get(*surface, _upload_context.value());
+                        _geometry_cache.value().get(_upload_context.value(), *surface);
                     }
                 },
                 // Default
@@ -115,10 +113,12 @@ void Renderer::render(scene::Scene& scene) {
 
     scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("MainCamera");
 
-    MeshVisitor mesh_visitor(_deffered_queues.at(frame_index));
+    _deffered_queue.clear();
+
+    MeshVisitor mesh_visitor(_deffered_queue);
     scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
 
-    build_frame_graph(_width, _height, 2);
+    build_frame_graph(_width, _height, frame_index);
     
     _frame_graph.value().execute();
 }
@@ -127,7 +127,7 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
 
 }
 
-void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count) {
+void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index) {
 
     CreateColorInfo gbuffer_albedo_info {
         .attachment = _gbuffer_albedo,
@@ -144,6 +144,14 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         std::nullopt,
         [&](RenderPassContext const& context) {
             
+            for(auto const& batch : _deffered_queue) {
+                
+                auto geometry_buffer = _geometry_cache.value().get(_upload_context.value(), *batch.surface);
+
+                for(auto const& instance : batch.instances) {
+                    // Pipeline Draw
+                }
+            }
         }
     );
 

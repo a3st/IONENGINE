@@ -38,8 +38,10 @@ std::shared_ptr<ShaderProgram> ShaderCache::get(asset::Technique& technique) {
     } else {
 
         {
+            auto program = ShaderProgram::from_technique(*_device, technique);
+
             auto cache_entry = CacheEntry<std::shared_ptr<ShaderProgram>> {
-                .value = std::make_shared<ShaderProgram>(*_device, technique),
+                .value = program,
                 .hash = total_hash
             };
 

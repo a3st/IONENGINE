@@ -22,13 +22,27 @@ struct RenderBatch {
 class RenderQueue {
 public:
 
+    using ConstIterator = std::vector<RenderBatch>::const_iterator;
+
+    using Iterator = std::vector<RenderBatch>::iterator;
+
     RenderQueue();
 
     void push(std::shared_ptr<asset::Surface> surface, SurfaceInstance const& instance, asset::AssetPtr<asset::Material> material);
 
+    ConstIterator begin() const;
+
+    ConstIterator end() const;
+
+    Iterator begin();
+
+    Iterator end();
+
+    void clear();
+
 private:
 
-    std::vector<std::optional<RenderBatch>> _batches;
+    std::vector<RenderBatch> _batches;
     std::vector<size_t> _sorted;
 
 };

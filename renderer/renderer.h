@@ -55,12 +55,12 @@ private:
 
     std::shared_ptr<GPUTexture> _gbuffer_albedo;
 
-    std::vector<RenderQueue> _deffered_queues;
+    RenderQueue _deffered_queue;
 
     uint32_t _width;
     uint32_t _height;
 
-    void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const buffered_frame_count);
+    void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index);
 
     // TEST ONLY
     std::vector<backend::VertexInputDesc> vertex_declaration;

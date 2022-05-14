@@ -38,6 +38,10 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
     _descriptor_layout = device.create_descriptor_layout(bindings);
 }
 
+std::shared_ptr<ShaderProgram> ShaderProgram::from_technique(backend::Device& device, asset::Technique const& technique) {
+    return std::shared_ptr<ShaderProgram>(new ShaderProgram(device, technique));
+}
+
 ShaderProgram::~ShaderProgram() {
     for(auto const& shader : _shaders) {
         _device->delete_shader(shader);

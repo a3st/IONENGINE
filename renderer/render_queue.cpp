@@ -24,3 +24,23 @@ void RenderQueue::push(std::shared_ptr<asset::Surface> surface, SurfaceInstance 
 
     _batches.emplace_back(std::move(render_batch));
 }
+
+RenderQueue::ConstIterator RenderQueue::begin() const {
+    return _batches.begin();
+}
+
+RenderQueue::ConstIterator RenderQueue::end() const {
+    return _batches.end();
+}
+
+RenderQueue::Iterator RenderQueue::begin() {
+    return _batches.begin();
+}
+
+RenderQueue::Iterator RenderQueue::end() {
+    return _batches.end();
+}
+
+void RenderQueue::clear() {
+    _batches.clear();
+}

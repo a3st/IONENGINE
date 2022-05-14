@@ -8,7 +8,6 @@ using namespace ionengine::renderer;
 
 GeometryCache::GeometryCache(backend::Device& device) :
     _device(&device) {
-
 }
 
 GeometryCache::GeometryCache(GeometryCache&& other) noexcept {
@@ -22,7 +21,7 @@ GeometryCache& GeometryCache::operator=(GeometryCache&& other) noexcept {
     return *this;
 }
 
-std::shared_ptr<GeometryBuffer> GeometryCache::get(asset::Surface& surface, UploadContext& upload_context) {
+std::shared_ptr<GeometryBuffer> GeometryCache::get(UploadContext& context, asset::Surface& surface) {
         
     uint64_t const total_hash = surface.hash();
 
@@ -38,8 +37,10 @@ std::shared_ptr<GeometryBuffer> GeometryCache::get(asset::Surface& surface, Uplo
     } else {
 
         {
+            auto buffer = GeometryBuffer::from_surface(*_device, context, surface);
+
             auto cache_entry = CacheEntry<std::shared_ptr<GeometryBuffer>> {
-                .value = std::make_shared<GeometryBuffer>(*_device, surface, upload_context),
+                .value = buffer,
                 .hash = total_hash
             };
 

@@ -10,15 +10,17 @@ namespace ionengine::renderer {
 class ShaderProgram {
 public:
 
-    ShaderProgram(backend::Device& device, asset::Technique const& technique);
-
     ~ShaderProgram();
+
+    static std::shared_ptr<ShaderProgram> from_technique(backend::Device& device, asset::Technique const& technique);
 
     backend::Handle<backend::DescriptorLayout> descriptor_layout() const;
 
     std::span<backend::Handle<backend::Shader> const> shaders() const;
 
 private:
+
+    ShaderProgram(backend::Device& device, asset::Technique const& technique);
 
     backend::Device* _device;
 
