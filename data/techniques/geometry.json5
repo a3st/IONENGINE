@@ -1,5 +1,5 @@
 {
-    name: "geometry",
+    name: "gbuffer",
     uniforms: [
         { 
             name: "world", 

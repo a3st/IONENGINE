@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <renderer/shader_cache.h>
 #include <renderer/pipeline.h>
 #include <asset/material.h>
 
@@ -20,13 +21,18 @@ public:
 
     PipelineCache& operator=(PipelineCache&& other) noexcept;
 
-    std::shared_ptr<Pipeline> get(asset::Material& material, backend::Handle<backend::RenderPass> const& render_pass);
+    std::shared_ptr<Pipeline> get(
+        ShaderCache& shader_cache,
+        asset::Material& material,
+        std::string_view const render_pass_name, 
+        backend::Handle<backend::RenderPass> const& render_pass
+    );
 
 private:
 
     backend::Device* _device;
 
-    lib::SparseVector<CacheEntry<std::shared_ptr<Pipeline>>> _data;
+    std::unordered_map<uint32_t, std::shared_ptr<Pipeline>> _data;
 };
 
 }

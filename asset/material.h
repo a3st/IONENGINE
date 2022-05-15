@@ -195,14 +195,14 @@ public:
 
     std::string_view name() const;
 
+    std::span<MaterialPass const> passes() const;
+
 private:
 
     Material(JSON_MaterialDefinition const& document, AssetManager& asset_manager);
 
     std::string _name;
-
     std::unordered_map<std::string, MaterialParameter> _parameters;
-
     std::vector<MaterialPass> _passes;
 
     MaterialPassFillMode constexpr get_pass_fill_mode(JSON_PassFillMode const fill_mode) const;

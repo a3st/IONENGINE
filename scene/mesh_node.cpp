@@ -32,3 +32,7 @@ asset::AssetPtr<asset::Mesh> MeshNode::mesh() {
 asset::AssetPtr<asset::Material> MeshNode::material(uint32_t const index) {
     return _override_materials.at(index);
 }
+
+void MeshNode::material(uint32_t const index, asset::AssetPtr<asset::Material> material) {
+    _override_materials.at(index) = material;
+}

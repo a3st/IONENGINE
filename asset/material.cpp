@@ -130,6 +130,10 @@ std::string_view Material::name() const {
     return _name;
 }
 
+std::span<MaterialPass const> Material::passes() const {
+    return _passes;
+}
+
 MaterialPassFillMode constexpr Material::get_pass_fill_mode(JSON_PassFillMode const fill_mode) const {
     switch(fill_mode) {
         case JSON_PassFillMode::solid: return MaterialPassFillMode::Solid;

@@ -7,6 +7,7 @@
 #include <renderer/shader_cache.h>
 #include <renderer/geometry_cache.h>
 #include <renderer/gpu_texture.h>
+#include <renderer/pipeline_cache.h>
 #include <renderer/frame_graph.h>
 #include <asset/asset_manager.h>
 
@@ -52,6 +53,7 @@ private:
     std::optional<ShaderCache> _shader_cache;
     std::optional<GeometryCache> _geometry_cache;
     std::optional<FrameGraph> _frame_graph;
+    std::optional<PipelineCache> _pipeline_cache;
 
     std::shared_ptr<GPUTexture> _gbuffer_albedo;
 

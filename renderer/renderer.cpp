@@ -56,6 +56,7 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
 
     _shader_cache.emplace(_device);
     _geometry_cache.emplace(_device);
+    _pipeline_cache.emplace(_device);
 
     _width = window.client_size().width;
     _height = window.client_size().height;
@@ -129,14 +130,14 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
 
 void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index) {
 
-    CreateColorInfo gbuffer_albedo_info {
+    CreateColorInfo gbuffer_albedo_info = {
         .attachment = _gbuffer_albedo,
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
     };
 
     _frame_graph.value().add_pass(
-        "GBuffer", 
+        "gbuffer", 
         width,
         height,
         std::span<CreateColorInfo const>(&gbuffer_albedo_info, 1),
@@ -147,22 +148,29 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             for(auto const& batch : _deffered_queue) {
                 
                 auto geometry_buffer = _geometry_cache.value().get(_upload_context.value(), *batch.surface);
+                auto pipeline = _pipeline_cache.value().get(_shader_cache.value(), *batch.material, "gbuffer", context.render_pass());
+
+                pipeline->bind(context.command_list());
 
                 for(auto const& instance : batch.instances) {
-                    // Pipeline Draw
+                    // ShaderUniformBinder = pipeline->allocate_uniform_binder();
+                    // std::shared_ptr<GPUBuffer> buffer = pipeline->allocate_cbuffer();
+                    // binder.bind_sampler("color", std::shared_ptr<GPUTexture> texture);
+                    // binder.bind_cbuffer("material", std::shared_ptr<GPUBuffeR> buffer);
+                    //
                 }
             }
         }
     );
 
-    CreateColorInfo swapchain_info {
+    CreateColorInfo swapchain_info = {
         .attachment = nullptr,
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
     };
 
     _frame_graph.value().add_pass(
-        "Present",
+        "present",
         width,
         height,
         std::span<CreateColorInfo const>(&swapchain_info, 1),

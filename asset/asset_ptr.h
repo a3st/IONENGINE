@@ -70,7 +70,7 @@ public:
 
         std::unique_lock lock(_ptr->mutex);
         if(_ptr->data.index() != 0) {
-            throw lib::Exception(std::format("Error while accessing an unloaded asset '{}'", path().string()));
+            throw lib::Exception("Error while accessing an unloaded asset");
         }
         return &(std::get<0>(_ptr->data).asset); 
     }
@@ -79,7 +79,7 @@ public:
 
         std::unique_lock lock(_ptr->mutex);
         if(_ptr->data.index() != 0) {
-            throw lib::Exception(std::format("Error while accessing an unloaded asset '{}'", path().string()));
+            throw lib::Exception("Error while accessing an unloaded asset");
         }
         return std::get<0>(_ptr->data).asset;
     }
@@ -123,6 +123,12 @@ public:
             return _ptr->data.index() == 1;
         }
         return false;
+    }
+
+    void wait() {
+        while(is_pending()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
     }
 
     void commit_ok(Type&& element, std::filesystem::path const& asset_path) {
