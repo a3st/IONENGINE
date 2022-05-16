@@ -8,12 +8,11 @@ using namespace ionengine::renderer;
 
 Pipeline::Pipeline(
     backend::Device& device,
-    backend::Handle<backend::DescriptorLayout> const& descriptor_layout,
     std::span<backend::VertexInputDesc const> const vertex_descs,
-    std::span<backend::Handle<backend::Shader> const> const shaders,
+    std::shared_ptr<ShaderProgram> shader_program,
     asset::MaterialPassParameters const& parameters,
     backend::Handle<backend::RenderPass> const& render_pass
-) : _device(&device) {
+) : _device(&device), _shader_program(shader_program) {
 
     backend::RasterizerDesc rasterizer_desc = {
         .fill_mode = get_fill_mode(parameters.fill_mode),
@@ -29,9 +28,9 @@ Pipeline::Pipeline(
     };
 
     _pipeline = device.create_pipeline(
-        descriptor_layout, 
+        shader_program->descriptor_layout(), 
         vertex_descs, 
-        shaders, 
+        shader_program->shaders(), 
         rasterizer_desc, 
         depth_stencil_desc, 
         blend_desc, 
@@ -42,16 +41,15 @@ Pipeline::Pipeline(
 
 std::shared_ptr<Pipeline> Pipeline::from_data(
     backend::Device& device,
-    backend::Handle<backend::DescriptorLayout> const& descriptor_layout,
-    std::span<backend::Handle<backend::Shader> const> const shaders,
+    std::shared_ptr<ShaderProgram> shader_program,
     asset::MaterialPassParameters const& parameters,
     backend::Handle<backend::RenderPass> const& render_pass
 ) {
     std::vector<backend::VertexInputDesc> vertex_inputs;
-    vertex_inputs.emplace_back("POSITION", 0, backend::Format::RGB32, 0, 0);
-    vertex_inputs.emplace_back("COLOR", 0, backend::Format::RGB32, 0, sizeof(float) * 3);
+    vertex_inputs.push_back( backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, 0 });
+    vertex_inputs.push_back( backend::VertexInputDesc { "COLOR", 1, backend::Format::RGB32, 0, sizeof(float) * 3 });
 
-    return std::shared_ptr<Pipeline>(new Pipeline(device, descriptor_layout, vertex_inputs, shaders, parameters, render_pass));
+    return std::shared_ptr<Pipeline>(new Pipeline(device, vertex_inputs, shader_program, parameters, render_pass));
 }
 
 Pipeline::~Pipeline() {
@@ -60,6 +58,10 @@ Pipeline::~Pipeline() {
 
 void Pipeline::bind(backend::Handle<backend::CommandList> const& command_list) {
     _device->bind_pipeline(command_list, _pipeline);
+}
+
+std::shared_ptr<ShaderProgram> Pipeline::shader_program() const {
+    return _shader_program;
 }
 
 backend::FillMode constexpr Pipeline::get_fill_mode(asset::MaterialPassFillMode const fill_mode) const {

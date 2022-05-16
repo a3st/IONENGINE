@@ -12,8 +12,8 @@ public:
 
     Buffer(std::span<Type const> const data) {
         _data.resize(data.size());
-        std::memcpy(_data.data(), data.data(), data.size());
-        _data_hash = XXHash64::hash(reinterpret_cast<void*>(_data.data()), _data.size(), 0);
+        std::memcpy(_data.data(), data.data(), data.size_bytes());
+        _data_hash = XXHash64::hash(reinterpret_cast<void*>(_data.data()), _data.size() * sizeof(Type), 0);
     }
 
     Buffer(Buffer const& other) {

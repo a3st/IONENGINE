@@ -73,14 +73,14 @@ int main(int* argc, char** agrv) {
                         std::chrono::duration<float> delta_time = end_time - begin_time;
                         begin_time = end_time;
 
-                        /*
-                        rotate += delta_time.count();
+                        
+                        rotate += delta_time.count() * 10.0f;
                         if(rotate >= 180.0f) {
                             rotate = 0.0f;
                         }
                         auto mesh = test_scene.graph().find_by_name<scene::MeshNode>("mesh");
                         mesh->rotation(lib::math::Quaternionf::angle_axis(rotate, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
-                        */
+                        
 
                         frame_timer += delta_time.count();
                         if(frame_timer >= 1.0f) {

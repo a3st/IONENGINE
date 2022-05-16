@@ -21,13 +21,12 @@ void UploadContext::copy_buffer_data(backend::Handle<backend::Buffer> const& des
 
     _device->map_buffer_data(_buffer, _offset, data);
     _device->barrier(_command_list, dest, backend::MemoryState::Common, backend::MemoryState::CopyDest);
-    _device->copy_buffer_region(_command_list, dest, offset, _buffer, _offset, data.size());
+    _device->copy_buffer_region(_command_list, dest, offset, _buffer, _offset, data.size_bytes());
     _device->barrier(_command_list, dest, backend::MemoryState::CopyDest, backend::MemoryState::Common);
-    _offset += data.size();
+    _offset += data.size_bytes();
 }
 
 void UploadContext::end() {
-
     uint64_t fence_value = _device->submit(std::span<backend::Handle<backend::CommandList> const>(&_command_list, 1), backend::QueueFlags::Copy);
     _device->wait(fence_value, backend::QueueFlags::Copy);
 }

@@ -61,7 +61,12 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     _width = window.client_size().width;
     _height = window.client_size().height;
 
-    _gbuffer_albedo = GPUTexture::render_target(_device, backend::Format::RGBA8, window.client_size().width, window.client_size().height);
+    _gbuffer_albedos.resize(2);
+
+    for(uint32_t i = 0; i < 2; ++i) {
+        _gbuffer_albedos[i] = GPUTexture::render_target(_device, backend::Format::RGBA8, window.client_size().width, window.client_size().height);
+        _world_cbuffer_pools.emplace_back(_device, 256, 64);
+    }
 }
 
 void Renderer::update(float const delta_time) {
@@ -111,15 +116,18 @@ void Renderer::update(float const delta_time) {
 void Renderer::render(scene::Scene& scene) {
 
     uint32_t const frame_index = _frame_graph.value().wait();
-
     scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("MainCamera");
 
     _deffered_queue.clear();
 
+    _world_cbuffer_pools.at(frame_index).reset();
+
     MeshVisitor mesh_visitor(_deffered_queue);
     scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
 
-    build_frame_graph(_width, _height, frame_index);
+    camera->calculate_matrices();
+
+    build_frame_graph(_width, _height, frame_index, camera);
     
     _frame_graph.value().execute();
 }
@@ -128,10 +136,16 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
 
 }
 
-void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index) {
+void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode* camera) {
 
     CreateColorInfo gbuffer_albedo_info = {
-        .attachment = _gbuffer_albedo,
+        .attachment = _gbuffer_albedos.at(frame_index),
+        .load_op = backend::RenderPassLoadOp::Clear,
+        .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
+    };
+
+    CreateColorInfo swapchain_info = {
+        .attachment = nullptr,
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
     };
@@ -140,7 +154,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         "gbuffer", 
         width,
         height,
-        std::span<CreateColorInfo const>(&gbuffer_albedo_info, 1),
+        std::span<CreateColorInfo const>(&swapchain_info, 1),
         std::nullopt,
         std::nullopt,
         [&](RenderPassContext const& context) {
@@ -152,18 +166,30 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
                 pipeline->bind(context.command_list());
 
+                auto shader_program = pipeline->shader_program();
+
                 for(auto const& instance : batch.instances) {
-                    // ShaderUniformBinder = pipeline->allocate_uniform_binder();
-                    // std::shared_ptr<GPUBuffer> buffer = pipeline->allocate_cbuffer();
-                    // binder.bind_sampler("color", std::shared_ptr<GPUTexture> texture);
-                    // binder.bind_cbuffer("material", std::shared_ptr<GPUBuffeR> buffer);
-                    //
+
+                    auto world = WorldCBuffer {
+                        .world = instance.model,
+                        .view = camera->transform_view(),
+                        .proj = camera->transform_projection()
+                    };
+
+                    std::shared_ptr<GPUBuffer> buffer = _world_cbuffer_pools.at(frame_index).allocate();
+                    buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&world), sizeof(WorldCBuffer)));
+                    
+                    ShaderUniformBinder binder(_device, *shader_program);
+                    binder.bind_cbuffer("world", *buffer);
+                    binder.update(context.command_list());
+
+                    geometry_buffer->bind(context.command_list());
                 }
             }
         }
     );
 
-    CreateColorInfo swapchain_info = {
+    /*CreateColorInfo swapchain_info = {
         .attachment = nullptr,
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
@@ -177,48 +203,5 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         std::nullopt,
         std::nullopt,
         RenderPassDefaultFunc
-    );
-
-    /*_frame_graph.value().add_pass(
-        frontend::RenderPassDesc {
-            .name = "present_only_pass",
-            .width = width,
-            .height = height,
-            .color_infos = present_colors,
-            .inputs = present_inputs
-        },
-        [&](frontend::RenderPassContext const& context) {
-
-            backend::Handle<backend::Pipeline> pipeline_target;
-
-            auto it = _pipelines.find(context.render_pass().index());
-            if(it != _pipelines.end()) {
-                
-                pipeline_target = it->second;
-
-            } else {
-
-                pipeline_target = _context.device().create_pipeline(
-                    _shader_prog_2.value().layout(),
-                    //_offscreen_quad.value().vertex_declaration(),
-                    _shader_prog_2.value().shaders(),
-                    backend::RasterizerDesc { backend::FillMode::Solid, backend::CullMode::None },
-                    backend::DepthStencilDesc { backend::CompareOp::Always, false },
-                    backend::BlendDesc { false, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add, backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add },
-                    context.render_pass(),
-                    backend::InvalidHandle<backend::CachePipeline>()
-                );
-
-                _pipelines.insert({ context.render_pass().index(), pipeline_target });
-            }
-
-            _context.device().bind_pipeline(context.command_list(), pipeline_target);
-
-            frontend::ShaderUniformBinder binder(_context, _shader_prog_2.value());
-            binder.bind_texture(_shader_prog_2.value().get_uniform_by_name("albedo"), context.attachment(0), _sampler);
-            binder.update(context.command_list());
-
-            _offscreen_quad.value().bind(context.command_list());
-        }
     );*/
 }

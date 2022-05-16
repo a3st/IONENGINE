@@ -29,8 +29,7 @@ std::shared_ptr<Pipeline> PipelineCache::get(
             
                 auto pipeline = Pipeline::from_data(
                     *_device,
-                    shader_program->descriptor_layout(), 
-                    shader_program->shaders(),
+                    shader_program,
                     pass.parameters,
                     render_pass
                 );

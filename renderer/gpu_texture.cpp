@@ -34,6 +34,8 @@ GPUTexture::GPUTexture(
         flags
     );
 
+    _flags = flags;
+
     _memory_state = backend::MemoryState::RenderTarget;
 
     _sampler = _device->create_sampler(

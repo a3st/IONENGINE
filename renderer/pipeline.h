@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <renderer/backend/backend.h>
+#include <renderer/shader_program.h>
 #include <asset/material.h>
 
 namespace ionengine::renderer {
@@ -14,21 +14,21 @@ public:
 
     static std::shared_ptr<Pipeline> from_data(
         backend::Device& device,
-        backend::Handle<backend::DescriptorLayout> const& descriptor_layout,
-        std::span<backend::Handle<backend::Shader> const> const shaders,
+        std::shared_ptr<ShaderProgram> shader_program,
         asset::MaterialPassParameters const& parameters,
         backend::Handle<backend::RenderPass> const& render_pass
     );
 
     void bind(backend::Handle<backend::CommandList> const& command_list);
 
+    std::shared_ptr<ShaderProgram> shader_program() const;
+
 private:
 
     Pipeline(
         backend::Device& device,
-        backend::Handle<backend::DescriptorLayout> const& descriptor_layout,
         std::span<backend::VertexInputDesc const> const vertex_descs,
-        std::span<backend::Handle<backend::Shader> const> const shaders,
+        std::shared_ptr<ShaderProgram> shader_program,
         asset::MaterialPassParameters const& parameters,
         backend::Handle<backend::RenderPass> const& render_pass
     );
@@ -36,6 +36,8 @@ private:
     backend::Device* _device;
 
     backend::Handle<backend::Pipeline> _pipeline;
+
+    std::shared_ptr<ShaderProgram> _shader_program;
 
     backend::FillMode constexpr get_fill_mode(asset::MaterialPassFillMode const fill_mode) const;
 

@@ -6,7 +6,7 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-GeometryBuffer::GeometryBuffer(backend::Device& device, uint32_t const vertices_size, uint32_t const indices_size) : \
+GeometryBuffer::GeometryBuffer(backend::Device& device, uint32_t const vertices_size, uint32_t const indices_size) :
     _device(&device), _vertices_size(vertices_size), _indices_size(indices_size) {
 
     size_t const vertices_size_bytes = vertices_size * sizeof(float);

@@ -241,6 +241,8 @@ struct Device::Impl {
     void barrier(Handle<CommandList> const& command_list, ResourceHandle const& target, MemoryState const before, MemoryState const after);
 
     void bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline);
+    
+    void bind_resources(Handle<CommandList> const& command_list, Handle<DescriptorLayout> const& descriptor_layout, std::span<DescriptorWriteDesc const> const write_descs);
 
     void bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set);
 
@@ -394,6 +396,7 @@ void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const&
     queues.resize(3);
     fences.resize(3);
     fence_values.resize(3);
+    std::fill(fence_values.begin(), fence_values.end(), 1);
 
     // Create Device Queue (Direct) for execution command lists
     // Create Fence Object (Direct) for synchronization
@@ -1506,7 +1509,7 @@ void Device::Impl::recreate_swapchain(uint32_t const width, uint32_t const heigh
 
 uint64_t Device::Impl::submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags) {
 
-    auto get_queue_index = [&](QueueFlags const queue_flags) -> uint8_t {
+    auto get_queue_index = [&](QueueFlags const queue_flags) -> uint32_t {
         switch(queue_flags) {
             case QueueFlags::Graphics: return 0;
             case QueueFlags::Copy: return 1;
@@ -1520,7 +1523,6 @@ uint64_t Device::Impl::submit(std::span<Handle<CommandList> const> const command
     uint64_t& cur_fence_value = fence_values[get_queue_index(flags)]; 
 
     for(auto& command_list : command_lists) {
-
         auto& command_list_data = this->command_lists[command_list];
         command_list_data.command_list->Close();
         command_list_data.is_reset = false;
@@ -1537,7 +1539,7 @@ uint64_t Device::Impl::submit(std::span<Handle<CommandList> const> const command
 
 uint64_t Device::Impl::submit_after(std::span<Handle<CommandList> const> const command_lists, uint64_t fence_value, QueueFlags const flags) {
     
-    auto get_queue_index = [&](QueueFlags const queue_flags) -> uint8_t {
+    auto get_queue_index = [&](QueueFlags const queue_flags) -> uint32_t {
         switch(queue_flags) {
             case QueueFlags::Graphics: return 0;
             case QueueFlags::Copy: return 1;
@@ -1568,7 +1570,7 @@ uint64_t Device::Impl::submit_after(std::span<Handle<CommandList> const> const c
 
 void Device::Impl::wait(uint64_t const fence_value, QueueFlags const flags) {
     
-    auto get_queue_index = [&](QueueFlags const queue_flags) -> uint8_t {
+    auto get_queue_index = [&](QueueFlags const queue_flags) -> uint32_t {
         switch(queue_flags) {
             case QueueFlags::Graphics: return 0;
             case QueueFlags::Copy: return 1;
@@ -1585,7 +1587,7 @@ void Device::Impl::wait(uint64_t const fence_value, QueueFlags const flags) {
 
 bool Device::Impl::is_completed(uint64_t const fence_value, QueueFlags const flags) const {
 
-    auto get_queue_index = [&](QueueFlags const queue_flags) -> uint8_t {
+    auto get_queue_index = [&](QueueFlags const queue_flags) -> uint32_t {
         switch(queue_flags) {
             case QueueFlags::Graphics: return 0;
             case QueueFlags::Copy: return 1;
@@ -1660,7 +1662,6 @@ void Device::Impl::bind_descriptor_set(Handle<CommandList> const& command_list, 
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -1862,6 +1863,70 @@ void Device::Impl::bind_pipeline(Handle<CommandList> const& command_list, Handle
     }
 }
 
+void Device::Impl::bind_resources(Handle<CommandList> const& command_list, Handle<DescriptorLayout> const& descriptor_layout, std::span<DescriptorWriteDesc const> const write_descs) {
+
+    auto& command_list_data = command_lists[command_list];
+
+    if(!command_list_data.is_reset) {
+        command_list_reset(command_list_data);
+    }
+
+    auto& descriptor_layout_data = descriptor_layouts[descriptor_layout];
+
+    std::vector<ComPtr<d3d12::DescriptorAllocation>> allocations(descriptor_layout_data.ranges.size());
+
+    for(size_t i = 0; i < allocations.size(); ++i) {
+
+        THROW_IF_FAILED(cbv_srv_uav_ranges[swapchain_index]->allocate(descriptor_layout_data.ranges.at(i), allocations.at(i).GetAddressOf()));
+
+        if(!descriptor_layout_data.is_compute) {
+            command_list_data.command_list->SetGraphicsRootDescriptorTable(static_cast<uint32_t>(i), allocations.at(i)->gpu_handle());
+        } else {
+            command_list_data.command_list->SetComputeRootDescriptorTable(static_cast<uint32_t>(i), allocations.at(i)->gpu_handle());   
+        }
+    }
+    
+    for(auto& write_desc : write_descs) {
+
+        ComPtr<d3d12::DescriptorAllocation> allocation;
+        D3D12_DESCRIPTOR_HEAP_TYPE heap_type;
+
+        auto resource_visitor = make_visitor(
+            [&](Handle<Texture> const& resource) {
+                auto& texture_data = textures[resource];
+                allocation = texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV];
+                heap_type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+            },
+            [&](Handle<Buffer> const& resource) {
+                auto& buffer_data = buffers[resource];
+                allocation = buffer_data.descriptor_allocation;
+                heap_type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+            },
+            [&](Handle<Sampler> const& resource) {
+                auto& sampler_data = samplers[resource];
+                allocation = sampler_data.descriptor_allocation;
+                heap_type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+            }
+        );
+
+        std::visit(resource_visitor, write_desc.data);
+
+        auto const& binding_location = descriptor_layout_data.bindings.at(write_desc.index);
+
+        uint32_t descriptor_size = device->GetDescriptorHandleIncrementSize(heap_type);
+
+        auto cpu_handle = allocations[binding_location.range_index]->cpu_handle();
+        cpu_handle.ptr += descriptor_size * binding_location.offset;
+
+        device->CopyDescriptorsSimple(
+            1,
+            cpu_handle,
+            allocation->cpu_handle(),
+            heap_type
+        );
+    }
+}
+
 void Device::Impl::bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset) {
 
     auto& command_list_data = command_lists[command_list];
@@ -1957,7 +2022,6 @@ void Device::Impl::copy_buffer_region(
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -2229,6 +2293,10 @@ void Device::end_render_pass(Handle<CommandList> const& command_list) {
 void Device::bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline) {
 
     _impl->bind_pipeline(command_list, pipeline);
+}
+
+void Device::bind_resources(Handle<CommandList> const& command_list, Handle<DescriptorLayout> const& descriptor_layout, std::span<DescriptorWriteDesc const> const write_descs) {
+    _impl->bind_resources(command_list, descriptor_layout, write_descs);
 }
 
 void Device::copy_buffer_region(

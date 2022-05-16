@@ -362,6 +362,8 @@ public:
 
     void bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline);
 
+    void bind_resources(Handle<CommandList> const& command_list, Handle<DescriptorLayout> const& descriptor_layout, std::span<DescriptorWriteDesc const> const write_descs);
+
     void bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set);
 
     void set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);

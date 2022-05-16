@@ -16,8 +16,8 @@
         {
             name: "gbuffer",
             parameters: {
-                fill_mode: "wireframe",
-                cull_mode: "front",
+                fill_mode: "solid",
+                cull_mode: "back",
                 depth_stencil: true
             },
             technique: "../../data/techniques/geometry.json5"

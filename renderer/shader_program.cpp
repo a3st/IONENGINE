@@ -57,6 +57,14 @@ std::span<backend::Handle<backend::Shader> const> ShaderProgram::shaders() const
     return _shaders;
 }
 
+uint32_t ShaderProgram::location_by_uniform_name(std::string const& name) const {
+    auto it = _uniforms.find(name);
+    if(it == _uniforms.end()) {
+        throw lib::Exception("Invalid uniform location");
+    }
+    return it->second;
+}
+
 backend::ShaderFlags constexpr ShaderProgram::get_shader_flags(asset::ShaderFlags const shader_flags) const {
     switch(shader_flags) {
         case asset::ShaderFlags::Vertex: return backend::ShaderFlags::Vertex;
