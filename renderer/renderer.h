@@ -56,6 +56,7 @@ private:
 
     std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _mesh_event_receiver;
     std::optional<lib::Receiver<asset::AssetEvent<asset::Technique>>> _technique_event_receiver;
+    std::optional<lib::Receiver<asset::AssetEvent<asset::Texture>>> _texture_event_receiver;
 
     std::optional<UploadContext> _upload_context;
     std::optional<ShaderCache> _shader_cache;

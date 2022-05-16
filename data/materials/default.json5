@@ -16,7 +16,7 @@
         {
             name: "gbuffer",
             parameters: {
-                fill_mode: "solid",
+                fill_mode: "wireframe",
                 cull_mode: "back",
                 depth_stencil: true
             },

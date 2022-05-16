@@ -59,6 +59,7 @@ add_executable(Runtime-Win32
     renderer/upload_context.cpp
     renderer/frame_graph.cpp
 # ---------------------------
+    thirdparty/tinyobjloader/src/tiny_obj_loader.cc
 )
 
 target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
@@ -74,7 +75,7 @@ target_include_directories(Runtime-Win32 PRIVATE
     thirdparty/d3d12_ma/include
     thirdparty/json5/include
     thirdparty/xxhash/include
-    #thirdparty/tinyobjloader/include
+    thirdparty/tinyobjloader/include
 )
 
 # Link Libs

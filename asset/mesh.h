@@ -6,6 +6,7 @@
 #include <asset/material.h>
 #include <lib/hash/buffer.h>
 #include <lib/expected.h>
+#include <tinyobjloader/tiny_obj_loader.h>
 
 namespace ionengine::asset {
 
@@ -80,7 +81,7 @@ public:
 
 private:
 
-    Mesh();
+    Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const> const shapes, std::span<tinyobj::material_t const> const materials);
 
     std::vector<MeshAttribute> _attributes;
     std::vector<std::shared_ptr<Surface>> _surfaces;

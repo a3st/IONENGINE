@@ -3,28 +3,25 @@
 #pragma once
 
 #include <lib/math/vector.h>
+#include <lib/expected.h>
 
 namespace ionengine::asset {
+
+enum class TextureError {
+    IO,
+    ParseError
+};
 
 class Texture {
 public:
 
-    struct Size {
-        uint32_t width;
-        uint32_t height;
-    };
-
-    enum class Dimension {
-        _2D,
-        _3D,
-        Cube
-    };
-
-    Texture() = default;
+    static lib::Expected<Texture, lib::Result<TextureError>> load_from_file(std::filesystem::path const& file_path);
 
 private:
 
-    Size _size;
+    Texture();
+
+    
 
 };
 

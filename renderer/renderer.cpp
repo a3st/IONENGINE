@@ -51,6 +51,10 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     asset_manager.technique_pool().event_dispatcher().add(std::move(technique_sender));
     _technique_event_receiver.emplace(std::move(technique_receiver));
 
+    auto [texture_sender, texture_receiver] = lib::make_channel<asset::AssetEvent<asset::Texture>>();
+    asset_manager.texture_pool().event_dispatcher().add(std::move(texture_sender));
+    _texture_event_receiver.emplace(std::move(texture_receiver));
+
     _frame_graph.emplace(_device);
     _upload_context.emplace(_device);
 
@@ -109,6 +113,24 @@ void Renderer::update(float const delta_time) {
             );
 
             std::visit(event_visitor, technique_event.data);
+        }
+    }
+
+    // Texture Event Update
+    {
+        asset::AssetEvent<asset::Texture> texture_event;
+        while(_texture_event_receiver.value().try_receive(texture_event)) {
+            auto event_visitor = make_visitor(
+                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Loaded>& event) {
+                    
+                },
+                // Default
+                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Unloaded>& event) { },
+                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Added>& event) { },
+                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Removed>& event) { }
+            );
+
+            std::visit(event_visitor, texture_event.data);
         }
     }
 }

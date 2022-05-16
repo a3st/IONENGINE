@@ -25,10 +25,16 @@
             type: "vertex",
             inputs: [
                 { name: "position", type: "f32x3", semantic: "POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" },
+                { name: "normal", type: "f32x3", semantic: "NORMAL" },
+                { name: "tangent", type: "f32x3", semantic: "TANGENT" },
                 { name: "color", type: "f32x3", semantic: "COLOR" }
             ],
             outputs: [
                 { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" },
+                { name: "normal", type: "f32x3", semantic: "NORMAL" },
+                { name: "tangent", type: "f32x3", semantic: "TANGENT" },
                 { name: "color", type: "f32x3", semantic: "COLOR" }
             ],
             source: "
@@ -50,6 +56,9 @@
             type: "pixel",
             inputs: [
                 { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" },
+                { name: "normal", type: "f32x3", semantic: "NORMAL" },
+                { name: "tangent", type: "f32x3", semantic: "TANGENT" },
                 { name: "color", type: "f32x3", semantic: "COLOR" },
             ],
             outputs: [
