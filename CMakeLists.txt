@@ -54,6 +54,7 @@ add_executable(Runtime-Win32
     renderer/pipeline.cpp
     renderer/pipeline_cache.cpp
     renderer/gpu_texture.cpp
+    renderer/texture_cache.cpp
     renderer/gpu_buffer.cpp
     renderer/render_queue.cpp
     renderer/upload_context.cpp
@@ -76,6 +77,7 @@ target_include_directories(Runtime-Win32 PRIVATE
     thirdparty/json5/include
     thirdparty/xxhash/include
     thirdparty/tinyobjloader/include
+    thirdparty/dds/include
 )
 
 # Link Libs

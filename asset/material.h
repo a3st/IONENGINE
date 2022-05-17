@@ -197,6 +197,8 @@ public:
 
     std::span<MaterialPass const> passes() const;
 
+    std::unordered_map<std::string, MaterialParameter>& parameters();
+
 private:
 
     Material(JSON_MaterialDefinition const& document, AssetManager& asset_manager);

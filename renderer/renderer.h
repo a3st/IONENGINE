@@ -6,7 +6,7 @@
 #include <renderer/upload_context.h>
 #include <renderer/shader_cache.h>
 #include <renderer/geometry_cache.h>
-#include <renderer/gpu_texture.h>
+#include <renderer/texture_cache.h>
 #include <renderer/pipeline_cache.h>
 #include <renderer/frame_graph.h>
 #include <renderer/cbuffer_pool.h>
@@ -63,8 +63,10 @@ private:
     std::optional<GeometryCache> _geometry_cache;
     std::optional<FrameGraph> _frame_graph;
     std::optional<PipelineCache> _pipeline_cache;
+    std::optional<TextureCache> _texture_cache;
 
     std::vector<std::shared_ptr<GPUTexture>> _gbuffer_albedos;
+    std::vector<std::shared_ptr<GPUTexture>> _depth_stencils;
 
     std::vector<CBufferPool> _world_cbuffer_pools;
 

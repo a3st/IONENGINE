@@ -12,7 +12,6 @@
 #include <lib/thread_pool.h>
 
 #include <asset/asset_manager.h>
-#include <asset/material.h>
 
 using namespace ionengine;
 
@@ -29,9 +28,11 @@ int main(int* argc, char** agrv) {
         {
             asset::AssetPtr<asset::Mesh> mesh = asset_manager.get_mesh("unpacked/objects/cube.obj");
             asset::AssetPtr<asset::Material> material = asset_manager.get_material("../../data/materials/default.json5");
+            //asset::AssetPtr<asset::Texture> texture_brick = asset_manager.get_texture("unpacked/textures/brick_dxt1.dds");
 
             mesh.wait();
             material.wait();
+            //texture_brick.wait();
         }
 
         float rotate = 0.0f;

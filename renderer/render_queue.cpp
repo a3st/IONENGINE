@@ -10,13 +10,14 @@ RenderQueue::RenderQueue() {
     
 }
 
-void RenderQueue::push(std::shared_ptr<asset::Surface> surface, SurfaceInstance const& instance, asset::AssetPtr<asset::Material> material) {
+void RenderQueue::push(asset::AssetPtr<asset::Mesh> mesh, uint32_t const surface_index, SurfaceInstance const& instance, asset::AssetPtr<asset::Material> material) {
 
     std::vector<SurfaceInstance> instances;
     instances.emplace_back(instance);
 
     auto render_batch = RenderBatch {
-        .surface = surface,
+        .mesh = mesh,
+        .surface_index = surface_index,
         .instances = std::move(instances),
         .material = material,
         .sort_index = 0

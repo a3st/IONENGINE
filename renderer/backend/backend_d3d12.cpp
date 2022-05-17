@@ -232,7 +232,14 @@ struct Device::Impl {
         size_t const size
     );
 
-    void copy_texture_region();
+    void copy_texture_region(
+        Handle<CommandList> const& command_list,
+        Handle<Texture> const& dest,
+        std::pair<uint32_t, uint32_t> const mip_range, 
+        Handle<Buffer> const& source,
+        uint64_t const source_offset,
+        size_t const size
+    );
 
     void bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
 
@@ -1877,7 +1884,16 @@ void Device::Impl::bind_resources(Handle<CommandList> const& command_list, Handl
 
     for(size_t i = 0; i < allocations.size(); ++i) {
 
-        THROW_IF_FAILED(cbv_srv_uav_ranges[swapchain_index]->allocate(descriptor_layout_data.ranges.at(i), allocations.at(i).GetAddressOf()));
+        switch(descriptor_layout_data.ranges.at(i).RangeType) {
+            case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
+            case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
+            case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
+                THROW_IF_FAILED(cbv_srv_uav_ranges[swapchain_index]->allocate(descriptor_layout_data.ranges.at(i), allocations.at(i).GetAddressOf()));
+            } break;
+            case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: {
+                THROW_IF_FAILED(sampler_ranges[swapchain_index]->allocate(descriptor_layout_data.ranges.at(i), allocations.at(i).GetAddressOf()));
+            } break;
+        }
 
         if(!descriptor_layout_data.is_compute) {
             command_list_data.command_list->SetGraphicsRootDescriptorTable(static_cast<uint32_t>(i), allocations.at(i)->gpu_handle());
@@ -1963,10 +1979,23 @@ void Device::Impl::bind_index_buffer(Handle<CommandList> const& command_list, Ha
     command_list_data.command_list->IASetIndexBuffer(&index_view);
 }
 
-void Device::Impl::copy_texture_region() { 
+void Device::Impl::copy_texture_region(
+    Handle<CommandList> const& command_list,
+    Handle<Texture> const& dest,
+    std::pair<uint32_t, uint32_t> const mip_range, 
+    Handle<Buffer> const& source,
+    uint64_t const source_offset,
+    size_t const size
+) {
+    auto& command_list_data = command_lists[command_list];
 
-    /*auto& texture = _impl->textures.get(dst);
-    D3D12_RESOURCE_DESC resource_desc = texture.resource->GetDesc();
+    if(!command_list_data.is_reset) {
+        command_list_reset(command_list_data);
+    }
+
+    auto& texture_data = textures[dest];
+
+    D3D12_RESOURCE_DESC resource_desc = texture_data.resource->GetDesc();
 
     std::array<D3D12_PLACED_SUBRESOURCE_FOOTPRINT, 16> footprints;
     std::array<uint32_t, 16> num_rows;
@@ -1974,7 +2003,7 @@ void Device::Impl::copy_texture_region() {
 
     size_t total_bytes = 0;
 
-    _impl->device->GetCopyableFootprints(
+    device->GetCopyableFootprints(
         &resource_desc,
         0,
         1,
@@ -1985,29 +2014,22 @@ void Device::Impl::copy_texture_region() {
         &total_bytes
     );
 
-    auto range = D3D12_RANGE {};
-    char8_t* ptr;
-
-    auto& stage_buffer = _impl->frames[_impl->frame_index].stage_buffer;
+    auto source_buffer_data = buffers[source];
 
     // auto& layout = footprints[0];
     // const uint64_t subresource_pitch = layout.Footprint.RowPitch + (~layout.Footprint.RowPitch & D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
 
-    THROW_IF_FAILED(stage_buffer.resource->Map(0, &range, reinterpret_cast<void**>(&ptr)));
-    std::memcpy(ptr + stage_buffer.offset, data.data(), data.size());
-    stage_buffer.resource->Unmap(0, &range);
-
-    auto dst_location = D3D12_TEXTURE_COPY_LOCATION {};
-    dst_location.pResource = texture.resource.Get();
-    dst_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dst_location.SubresourceIndex = 0;
+    auto dest_location = D3D12_TEXTURE_COPY_LOCATION {};
+    dest_location.pResource = texture_data.resource.Get();
+    dest_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dest_location.SubresourceIndex = 0;
  
-    auto src_location = D3D12_TEXTURE_COPY_LOCATION {};
-    src_location.pResource = stage_buffer.resource.Get();
-    src_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-    src_location.PlacedFootprint = footprints[0];
+    auto source_location = D3D12_TEXTURE_COPY_LOCATION {};
+    source_location.pResource = source_buffer_data.resource.Get();
+    source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+    source_location.PlacedFootprint = footprints[0];
 
-    _impl->current_buffer->command_list->CopyTextureRegion(&dst_location, 0, 0, 0, &src_location, nullptr);*/
+    command_list_data.command_list->CopyTextureRegion(&dest_location, 0, 0, 0, &source_location, nullptr);
 }
 
 void Device::Impl::copy_buffer_region(
@@ -2042,7 +2064,6 @@ void Device::Impl::draw(Handle<CommandList> const& command_list, uint32_t const 
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -2054,7 +2075,6 @@ void Device::Impl::draw_indexed(Handle<CommandList> const& command_list, uint32_
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -2311,8 +2331,15 @@ void Device::copy_buffer_region(
     _impl->copy_buffer_region(command_list, dest, dest_offset, source, source_offset, size);
 }
 
-void Device::copy_texture_region() {
-
+void Device::copy_texture_region(
+    Handle<CommandList> const& command_list,
+    Handle<Texture> const& dest,
+    std::pair<uint32_t, uint32_t> const mip_range, 
+    Handle<Buffer> const& source,
+    uint64_t const source_offset,
+    size_t const size
+) {
+    _impl->copy_texture_region(command_list, dest, mip_range, source, source_offset, size);
 }
 
 void Device::bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset) {

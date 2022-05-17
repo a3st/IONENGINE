@@ -37,34 +37,6 @@ struct hash<Vertex> {
 
 }
 
-Surface::Surface(std::span<float> const vertices, std::span<uint32_t> const indices, uint32_t const material_index) :
-    _vertices(vertices), _indices(indices), _material_index(material_index) {
-}
-
-uint64_t Surface::hash() const {
-    return _vertices.hash() ^ _indices.hash();
-}
-
-uint32_t Surface::material_index() const {
-    return _material_index;
-}
-
-void Surface::cache_entry(size_t const value) {
-    _cache_entry = value;
-}
-
-size_t Surface::cache_entry() const {
-    return _cache_entry;
-}
-
-std::span<float const> Surface::vertices() const {
-    return std::span<float const>(_vertices.data(), _vertices.size());
-}
-
-std::span<uint32_t const> Surface::indices() const {
-    return std::span<uint32_t const>(_indices.data(), _indices.size());
-}
-
 Mesh::Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const> const shapes, std::span<tinyobj::material_t const> const materials) {
 
     for(auto const& shape : shapes) {
@@ -120,7 +92,11 @@ Mesh::Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const
             indices.push_back(unique_vertices[vertex]);
         }
 
-        auto surface = std::make_shared<Surface>(vertices, indices, 0);
+        auto surface = SurfaceData {
+            .vertices = lib::hash::Buffer<float>(vertices),
+            .indices = lib::hash::Buffer<uint32_t>(indices),
+            .material_index = 0
+        };
         _surfaces.emplace_back(surface);
     }
 
@@ -154,10 +130,10 @@ lib::Expected<Mesh, lib::Result<MeshError>> Mesh::load_from_file(std::filesystem
                 .message = "Invalid format"
             }
         );
-    } 
+    }
 }
 
-std::span<std::shared_ptr<Surface>> Mesh::surfaces() {
+std::span<SurfaceData> Mesh::surfaces() {
     return _surfaces;
 }
 

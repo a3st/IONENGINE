@@ -23,7 +23,7 @@ public:
 
     GeometryCache& operator=(GeometryCache&& other) noexcept;
 
-    std::shared_ptr<GeometryBuffer> get(UploadContext& context, asset::Surface& surface);
+    std::shared_ptr<GeometryBuffer> get(UploadContext& context, asset::Mesh& mesh, uint32_t const surface_index);
 
 private:
 

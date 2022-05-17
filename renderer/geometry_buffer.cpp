@@ -16,10 +16,10 @@ GeometryBuffer::GeometryBuffer(backend::Device& device, uint32_t const vertices_
     _index_buffer = device.create_buffer(indices_size_bytes, backend::BufferFlags::IndexBuffer);
 }
 
-std::shared_ptr<GeometryBuffer> GeometryBuffer::from_surface(backend::Device& device, UploadContext& upload_context, asset::Surface const& surface) {
-    auto buffer = std::shared_ptr<GeometryBuffer>(new GeometryBuffer(device, static_cast<uint32_t>(surface.vertices().size()), static_cast<uint32_t>(surface.indices().size())));
-    buffer->copy_vertex_data(upload_context, surface.vertices());
-    buffer->copy_index_data(upload_context, surface.indices());
+std::shared_ptr<GeometryBuffer> GeometryBuffer::from_surface(backend::Device& device, UploadContext& upload_context, asset::SurfaceData const& surface) {
+    auto buffer = std::shared_ptr<GeometryBuffer>(new GeometryBuffer(device, static_cast<uint32_t>(surface.vertices.size()), static_cast<uint32_t>(surface.indices.size())));
+    buffer->copy_vertex_data(upload_context, std::span<float const>(surface.vertices.data(), surface.vertices.size()));
+    buffer->copy_index_data(upload_context, std::span<uint32_t const>(surface.indices.data(), surface.indices.size()));
     return buffer;
 }
 

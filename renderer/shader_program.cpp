@@ -65,6 +65,10 @@ uint32_t ShaderProgram::location_by_uniform_name(std::string const& name) const 
     return it->second;
 }
 
+std::unordered_map<std::string, uint32_t>& ShaderProgram::uniforms() {
+    return _uniforms;
+}
+
 backend::ShaderFlags constexpr ShaderProgram::get_shader_flags(asset::ShaderFlags const shader_flags) const {
     switch(shader_flags) {
         case asset::ShaderFlags::Vertex: return backend::ShaderFlags::Vertex;

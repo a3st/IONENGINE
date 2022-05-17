@@ -4,7 +4,7 @@
         {
             name: "albedo",
             type: "sampler2D",
-            value: { path: "content/default_albedo.asset" }
+            value: { path: "unpacked/textures/brick_dxt1.dds" }
         },
         {
             name: "color",
@@ -16,7 +16,7 @@
         {
             name: "gbuffer",
             parameters: {
-                fill_mode: "wireframe",
+                fill_mode: "solid",
                 cull_mode: "back",
                 depth_stencil: true
             },

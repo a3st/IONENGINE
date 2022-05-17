@@ -3,6 +3,8 @@
 #pragma once
 
 #include <renderer/backend/backend.h>
+#include <renderer/upload_context.h>
+#include <asset/texture.h>
 
 namespace ionengine::renderer {
 
@@ -12,6 +14,12 @@ public:
     ~GPUTexture();
 
     static std::shared_ptr<GPUTexture> render_target(backend::Device& device, backend::Format const format, uint32_t const width, uint32_t const height);
+
+    static std::shared_ptr<GPUTexture> depth_stencil(backend::Device& device, backend::Format const format, uint32_t const width, uint32_t const height);
+
+    static std::shared_ptr<GPUTexture> sampler(backend::Device& device, UploadContext& upload_context, asset::Texture const& texture);
+
+    void copy_texture_data(UploadContext& context, std::pair<uint32_t, uint32_t> const mip_range, std::span<uint8_t const> const data);
 
     backend::Handle<backend::Texture> as_texture() const;
 
@@ -27,7 +35,14 @@ public:
 
 private:
 
-    GPUTexture(backend::Device& device, backend::Format const format, uint32_t const width, uint32_t const height, backend::TextureFlags const flags);
+    GPUTexture(
+        backend::Device& device, 
+        backend::Format const format, 
+        uint32_t const width, 
+        uint32_t const height, 
+        uint32_t const mip_count,
+        backend::TextureFlags const flags
+    );
 
     backend::Device* _device;
 
@@ -37,6 +52,8 @@ private:
     backend::TextureFlags _flags;
 
     backend::MemoryState _memory_state;
+
+    static backend::Format constexpr get_texture_format(asset::TextureFormat const format);
 };
 
 }

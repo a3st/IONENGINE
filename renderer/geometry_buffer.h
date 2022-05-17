@@ -14,7 +14,7 @@ public:
 
     ~GeometryBuffer();
 
-    static std::shared_ptr<GeometryBuffer> from_surface(backend::Device& device, UploadContext& upload_context, asset::Surface const& surface);
+    static std::shared_ptr<GeometryBuffer> from_surface(backend::Device& device, UploadContext& upload_context, asset::SurfaceData const& surface);
 
     void copy_vertex_data(UploadContext& context, std::span<float const> const data);
 

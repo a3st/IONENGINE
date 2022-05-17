@@ -43,6 +43,17 @@ void FrameGraph::add_pass(
             color_clears.emplace_back(color.clear_color);
         }
 
+
+
+        auto depth_stencil_info = depth_stencil.value_or(
+            CreateDepthStencilInfo { 
+                .attachment = nullptr, 
+                .load_op = backend::RenderPassLoadOp::DontCare,
+                .clear_depth = 0.0f, 
+                .clear_stencil = 0x0
+            }
+        );
+
         auto render_pass = RenderPass {
             .name = std::string(name),
             .width = width,
@@ -50,12 +61,12 @@ void FrameGraph::add_pass(
             .color_attachments = color_attachments,
             .color_ops = color_ops,
             .color_clears = color_clears,
-            .ds_attachment = nullptr,
-            .ds_op = backend::RenderPassLoadOp::DontCare,
-            .ds_clear = {},
+            .ds_attachment = depth_stencil_info.attachment,
+            .ds_op = depth_stencil_info.load_op,
+            .ds_clear = { depth_stencil_info.clear_depth, depth_stencil_info.clear_stencil },
             .inputs = inputs,
             .func = func,
-            .render_pass = compile_render_pass(color_attachments, color_ops, nullptr, backend::RenderPassLoadOp::DontCare),
+            .render_pass = compile_render_pass(color_attachments, color_ops, depth_stencil_info.attachment, depth_stencil_info.load_op),
             .command_list = _command_lists.at(_frame_index)
         };
 

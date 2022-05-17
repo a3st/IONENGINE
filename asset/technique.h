@@ -102,7 +102,7 @@ enum class ShaderDataType {
 };
 
 template<ShaderUniformType Type>
-struct ShaderUniformData {};
+struct ShaderUniformData { };
 
 template<>
 struct ShaderUniformData<ShaderUniformType::Sampler2D> { };

@@ -22,6 +22,8 @@ public:
 
     uint32_t location_by_uniform_name(std::string const& name) const;
 
+    std::unordered_map<std::string, uint32_t>& uniforms();
+
 private:
 
     ShaderProgram(backend::Device& device, asset::Technique const& technique);

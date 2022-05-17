@@ -352,7 +352,14 @@ public:
         size_t const size
     );
 
-    void copy_texture_region();
+    void copy_texture_region(
+        Handle<CommandList> const& command_list,
+        Handle<Texture> const& dest,
+        std::pair<uint32_t, uint32_t> const mip_range, 
+        Handle<Buffer> const& source,
+        uint64_t const source_offset,
+        size_t const size
+    );
 
     void bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
 

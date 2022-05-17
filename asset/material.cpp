@@ -20,7 +20,7 @@ Material::Material(JSON_MaterialDefinition const& document, AssetManager& asset_
                     parameter.name, 
                     MaterialParameter { 
                         .data = MaterialParameterData<asset::MaterialParameterType::Sampler2D> { 
-                            .asset = nullptr // get_texture from asset_manager.get_texture(parameter.value.path.value());
+                            .asset = asset_manager.get_texture(parameter.value.path.value())
                         } 
                     } 
                 }
@@ -132,6 +132,10 @@ std::string_view Material::name() const {
 
 std::span<MaterialPass const> Material::passes() const {
     return _passes;
+}
+
+std::unordered_map<std::string, MaterialParameter>& Material::parameters() {
+    return _parameters;
 }
 
 MaterialPassFillMode constexpr Material::get_pass_fill_mode(JSON_PassFillMode const fill_mode) const {

@@ -1,21 +1,23 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
+#include <lib/expected.h>
+
 namespace ionengine::lib {
 
-inline size_t read_bytes(std::span<uint8_t const> const source, uint64_t& offset, std::span<uint8_t>& dest, size_t const size) {
+inline std::span<uint8_t const> read_bytes(std::span<uint8_t const> const source, uint64_t& offset, size_t const size) {
     
     size_t read_bytes = 0;
+    std::span<uint8_t const> dest;
 
     if(offset + size <= source.size()) {
         read_bytes = size;
-        dest = std::span<uint8_t>(const_cast<uint8_t* const>(source.data()) + offset, size);
+        dest = std::span<uint8_t const>(source.data() + offset, size);
     }
 
     offset += read_bytes;
-
-    return read_bytes;
+    return dest;
 };
 
 inline size_t get_line(std::string_view const buffer, size_t& offset, std::string_view& line, char const delimeter) {
@@ -39,9 +41,9 @@ inline size_t get_line(std::string_view const buffer, size_t& offset, std::strin
     return read_bytes;
 }
 
-inline size_t get_file_size(std::filesystem::path const& file_path, std::ios::openmode const ios = std::ios::beg) {
+inline size_t get_file_size(std::filesystem::path const& file_path) {
 
-    std::ifstream ifs(file_path, ios);
+    std::ifstream ifs(file_path, std::ios::beg | std::ios::binary);
 
     if(!ifs.is_open()) {
         return 0;
@@ -54,25 +56,31 @@ inline size_t get_file_size(std::filesystem::path const& file_path, std::ios::op
     return total_bytes;
 }
 
-inline bool load_bytes_from_file(std::filesystem::path const& file_path, std::span<uint8_t> const dest, std::ios::openmode const ios = std::ios::beg) {
+enum class IOError {
+    OpenError
+};
 
-    std::ifstream ifs(file_path, ios);
+inline Expected<std::vector<uint8_t>, Result<IOError>> load_file(std::filesystem::path const& file_path) {
+
+    std::ifstream ifs(file_path, std::ios::beg | std::ios::binary);
 
     if(!ifs.is_open()) {
-        return false;
+        return Expected<std::vector<uint8_t>, Result<IOError>>::error(
+            Result<IOError> { 
+                .errc = IOError::OpenError,
+                .message = "File is not open"
+            }
+        );
     }
 
     ifs.seekg(0, std::ios::end);
     size_t total_bytes = ifs.tellg();
     ifs.seekg(0, std::ios::beg);
 
-    if(total_bytes > dest.size()) {
-        return false;
-    }
+    std::vector<uint8_t> buffer(total_bytes);
+    ifs.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
 
-    ifs.read(reinterpret_cast<char*>(dest.data()), total_bytes);
-
-    return true;
+    return Expected<std::vector<uint8_t>, Result<IOError>>::ok(std::move(buffer));
 };
 
 inline bool save_bytes_to_file(std::filesystem::path const& file_path, std::span<uint8_t const> const data, std::ios::openmode const open_mode = std::ios::beg) {

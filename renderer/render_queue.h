@@ -13,7 +13,8 @@ struct SurfaceInstance {
 };
 
 struct RenderBatch {
-    std::shared_ptr<asset::Surface> surface;
+    asset::AssetPtr<asset::Mesh> mesh;
+    uint32_t surface_index;
     std::vector<SurfaceInstance> instances;
     asset::AssetPtr<asset::Material> material;
     uint64_t sort_index;
@@ -28,7 +29,7 @@ public:
 
     RenderQueue();
 
-    void push(std::shared_ptr<asset::Surface> surface, SurfaceInstance const& instance, asset::AssetPtr<asset::Material> material);
+    void push(asset::AssetPtr<asset::Mesh> mesh, uint32_t const surface_index, SurfaceInstance const& instance, asset::AssetPtr<asset::Material> material);
 
     ConstIterator begin() const;
 

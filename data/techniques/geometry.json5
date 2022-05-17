@@ -18,6 +18,11 @@
                 { name: "color", type: "f32x4" }
             ],
             visibility: "vertex"
+        },
+        {
+            name: "albedo",
+            type: "sampler2D",
+            visibility: "pixel",
         }
     ],
     shaders: [
@@ -47,6 +52,7 @@
                     world_pos = mul(world_pos, proj);
 
                     output.position = world_pos;
+                    output.uv = input.uv;
                     output.color = input.color;
                     return output;
                 }
@@ -67,7 +73,7 @@
             source: "   
                 ps_output main(ps_input input) {
                     ps_output output;
-                    output.albedo = float4(input.color, 1.0f);
+                    output.albedo = albedo_texture.Sample(albedo_sampler, input.uv);
                     return output;
                 }
             "

@@ -21,14 +21,14 @@ GeometryCache& GeometryCache::operator=(GeometryCache&& other) noexcept {
     return *this;
 }
 
-std::shared_ptr<GeometryBuffer> GeometryCache::get(UploadContext& context, asset::Surface& surface) {
+std::shared_ptr<GeometryBuffer> GeometryCache::get(UploadContext& context, asset::Mesh& mesh, uint32_t const surface_index) {
         
-    uint64_t const total_hash = surface.hash();
+    uint64_t const total_hash = mesh.surfaces()[surface_index].vertices.hash() ^ mesh.surfaces()[surface_index].indices.hash();
 
-    if(_data.is_valid(surface.cache_entry())) {
-        auto& cache_entry = _data.get(surface.cache_entry());
+    if(_data.is_valid(mesh.surfaces()[surface_index].cache_entry)) {
+        auto& cache_entry = _data.get(mesh.surfaces()[surface_index].cache_entry);
             
-        if(cache_entry.hash != surface.cache_entry()) {
+        if(cache_entry.hash != mesh.surfaces()[surface_index].cache_entry) {
 
         }
 
@@ -37,16 +37,16 @@ std::shared_ptr<GeometryBuffer> GeometryCache::get(UploadContext& context, asset
     } else {
 
         {
-            auto buffer = GeometryBuffer::from_surface(*_device, context, surface);
+            auto buffer = GeometryBuffer::from_surface(*_device, context, mesh.surfaces()[surface_index]);
 
             auto cache_entry = CacheEntry<std::shared_ptr<GeometryBuffer>> {
                 .value = buffer,
                 .hash = total_hash
             };
 
-            surface.cache_entry(_data.push(std::move(cache_entry)));
+            mesh.surfaces()[surface_index].cache_entry = _data.push(std::move(cache_entry));
         }
-        auto& cache_entry = _data.get(surface.cache_entry());
+        auto& cache_entry = _data.get(mesh.surfaces()[surface_index].cache_entry);
         return cache_entry.value;
     }
 }

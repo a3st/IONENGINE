@@ -10,6 +10,8 @@ template<class Type>
 class Buffer {
 public:
 
+    Buffer() = default;
+
     Buffer(std::span<Type const> const data) {
         _data.resize(data.size());
         std::memcpy(_data.data(), data.data(), data.size_bytes());
