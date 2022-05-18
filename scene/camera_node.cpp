@@ -42,7 +42,8 @@ void CameraNode::calculate_matrices() {
 
     lib::math::Vector3f position = this->position();
 
-    _view = lib::math::Matrixf::look_at_rh(position, lib::math::Vector3f(0.0f, 0.0f, 0.0f), lib::math::Vector3f(0.0f, 1.0f, 0.0f)); 
+    _view = lib::math::Matrixf::look_at_rh(position, position + lib::math::Vector3f(0.0f, 0.0f, -1.0f), lib::math::Vector3f(0.0f, 1.0f, 0.0f));
+
     if(_projection_type == CameraProjectionType::Perspective) {
         _projection = lib::math::Matrixf::perspective_rh(_field_of_view, _aspect_ratio, 0.1f, 100.0f);
     }

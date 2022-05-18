@@ -5,20 +5,67 @@
 namespace ionengine::platform {
 
 enum class WindowEventType {
-    Unknown,
     Closed,
     Sized,
-    Updated
+    Updated,
+    KeyboardInput,
+    MouseMoved
 };
 
-struct Size {
+enum class InputState {
+    Released,
+    Pressed
+};
+
+template<WindowEventType Type>
+struct WindowEventData { };
+
+template<>
+struct WindowEventData<WindowEventType::Sized> {
     uint32_t width;
     uint32_t height;
 };
 
+template<>
+struct WindowEventData<WindowEventType::KeyboardInput> {
+    uint32_t scan_code;
+    InputState input_state;
+};
+
+template<>
+struct WindowEventData<WindowEventType::MouseMoved> {
+    int32_t x;
+    int32_t y;
+};
+
 struct WindowEvent {
-    WindowEventType type;
-    std::variant<Size> data;
+    std::variant<
+        WindowEventData<WindowEventType::Closed>,
+        WindowEventData<WindowEventType::Sized>,
+        WindowEventData<WindowEventType::Updated>,
+        WindowEventData<WindowEventType::KeyboardInput>,
+        WindowEventData<WindowEventType::MouseMoved>
+    > data;
+
+    static WindowEvent sized(uint32_t const width, uint32_t const height) {
+        return WindowEvent { .data = WindowEventData<WindowEventType::Sized> { .width = width, .height = height } };
+    }
+
+    static WindowEvent closed() {
+        return WindowEvent { .data = WindowEventData<WindowEventType::Closed> { } };
+    }
+
+    static WindowEvent updated() {
+        return WindowEvent { .data = WindowEventData<WindowEventType::Updated> { } };
+    }
+
+    static WindowEvent keyboard_input(uint32_t const scan_code, InputState const input_state) {
+        return WindowEvent { .data = WindowEventData<WindowEventType::KeyboardInput> { .scan_code = scan_code, .input_state = input_state } };
+    }
+
+    static WindowEvent mouse_moved(int32_t const x, int32_t const y) {
+        return WindowEvent { .data = WindowEventData<WindowEventType::MouseMoved> { .x = x, .y = y } };
+    }
 };
 
 class Window {
@@ -30,13 +77,15 @@ public:
 
     Window(Window const&) = delete;
 
-    Window(Window&&) { }
+    Window(Window&& other) noexcept;
 
     Window& operator=(Window const&) = delete;
 
-    Window& operator=(Window&&) { }
+    Window& operator=(Window&& other) noexcept;
 
-    Size client_size() const;
+    uint32_t client_width() const;
+
+    uint32_t client_height() const;
 
     void* native_handle() const;
 

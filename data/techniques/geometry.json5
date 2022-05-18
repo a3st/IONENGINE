@@ -52,7 +52,7 @@
                     world_pos = mul(world_pos, proj);
 
                     output.position = world_pos;
-                    output.uv = input.uv;
+                    output.uv = float2(input.uv.x, 1.0 - input.uv.y);
                     output.color = input.color;
                     return output;
                 }
@@ -73,7 +73,8 @@
             source: "   
                 ps_output main(ps_input input) {
                     ps_output output;
-                    output.albedo = albedo_texture.Sample(albedo_sampler, input.uv);
+                    float3 albedo = albedo_texture.Sample(albedo_sampler, input.uv).rgb;
+                    output.albedo = float4(albedo, 1.0f);
                     return output;
                 }
             "

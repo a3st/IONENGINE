@@ -14,14 +14,21 @@ using namespace ionengine::platform;
 struct Window::Impl {
 
 	HWND hwnd;
-	Size _client_size;
+
+	std::array<RAWINPUTDEVICE, 2> raw_devices;
+
+	uint32_t _client_width;
+	uint32_t _client_height;
+
 	std::queue<WindowEvent> events;
 
 	void initialize(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen);
 
 	void deinitialize();
 
-	Size client_size() const;
+	uint32_t client_width() const;
+
+	uint32_t client_height() const;
 
     void* native_handle() const;
 
@@ -82,16 +89,47 @@ void Window::Impl::initialize(std::string_view const label, uint32_t const width
 
     SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 	ShowWindow(hwnd, SW_SHOWDEFAULT);
+
+	raw_devices[0].usUsagePage = 0x01;
+	raw_devices[0].usUsage = 0x06;
+	raw_devices[0].dwFlags = 0;
+	raw_devices[0].hwndTarget = hwnd;
+
+	raw_devices[1].usUsagePage = 0x01;
+	raw_devices[1].usUsage = 0x02;
+	raw_devices[1].dwFlags = 0;
+	raw_devices[1].hwndTarget = hwnd;
+
+	if (!RegisterRawInputDevices(raw_devices.data(), static_cast<uint32_t>(raw_devices.size()), sizeof(RAWINPUTDEVICE))) {
+		throw std::runtime_error("An error occurred while registering raw input devices");
+	}
 }
 
 void Window::Impl::deinitialize() {
 
 	DestroyWindow(hwnd);
+
+	raw_devices[0].usUsagePage = 0x01;
+	raw_devices[0].usUsage = 0x06;
+	raw_devices[0].dwFlags = RIDEV_REMOVE;
+	raw_devices[0].hwndTarget = nullptr;
+
+	raw_devices[1].usUsagePage = 0x01;
+	raw_devices[1].usUsage = 0x02;
+	raw_devices[1].dwFlags = RIDEV_REMOVE;
+	raw_devices[1].hwndTarget = nullptr;
+
+	RegisterRawInputDevices(raw_devices.data(), static_cast<uint32_t>(raw_devices.size()), sizeof(RAWINPUTDEVICE));
 }
 
-Size Window::Impl::client_size() const {
+uint32_t Window::Impl::client_width() const {
 
-	return _client_size;
+	return _client_width;
+}
+
+uint32_t Window::Impl::client_height() const {
+
+	return _client_height;
 }
 
 void* Window::Impl::native_handle() const {
@@ -120,7 +158,7 @@ std::queue<WindowEvent>& Window::Impl::messages() {
         DispatchMessage(&msg);
     }
 
-	events.emplace(WindowEventType::Updated);
+	events.push(WindowEvent::updated());
 	return events;
 }
 
@@ -133,8 +171,9 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 	}
 
 	switch(msg) {
+
 		case WM_CLOSE: {
-			window_impl->events.emplace(WindowEventType::Closed);
+			window_impl->events.push(WindowEvent::closed());
 		} break;
 
 		case WM_SIZE: {
@@ -151,9 +190,54 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			LONG style_width = style_rect.right - style_rect.left;
 			LONG style_height = style_rect.bottom - style_rect.top;
 
-			window_impl->_client_size = Size { std::max<uint32_t>(1, width - style_width), std::max<uint32_t>(1, height - style_height) };
+			window_impl->_client_width = std::max<uint32_t>(1, width - style_width);
+			window_impl->_client_height = std::max<uint32_t>(1, height - style_height);
 
-			window_impl->events.emplace(WindowEventType::Sized, window_impl->_client_size);
+			window_impl->events.push(WindowEvent::sized(window_impl->_client_width, window_impl->_client_height));
+		} break;
+
+		case WM_INPUT: {
+
+			uint8_t buffer[48];
+			uint32_t size = 0;
+
+			GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, nullptr, &size, sizeof(RAWINPUTHEADER));
+			if (size <= 48) {
+				GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT, buffer, &size, sizeof(RAWINPUTHEADER));
+			}
+
+			RAWINPUT* raw_input = reinterpret_cast<RAWINPUT*>(buffer);
+			DWORD device_type = raw_input->header.dwType;
+
+			if(device_type == RIM_TYPEKEYBOARD) {
+				
+				auto window_event = WindowEvent {};
+
+				USHORT key = raw_input->data.keyboard.VKey;
+				USHORT flags = raw_input->data.keyboard.Flags;
+				UINT msg = raw_input->data.keyboard.Message;
+
+				switch (msg) {
+					case WM_KEYDOWN:
+					case WM_SYSKEYDOWN: {
+						window_event = WindowEvent::keyboard_input(static_cast<uint32_t>(key), InputState::Pressed); 
+					} break;
+					case WM_KEYUP:
+					case WM_SYSKEYUP: {
+						window_event = WindowEvent::keyboard_input(static_cast<uint32_t>(key), InputState::Released); 
+					} break;
+				}
+					
+				window_impl->events.push(window_event);
+
+			} else if (device_type == RIM_TYPEMOUSE) {
+
+				LONG x = raw_input->data.mouse.lLastX;
+				LONG y = raw_input->data.mouse.lLastY;
+
+				window_impl->events.push(WindowEvent::mouse_moved(static_cast<int32_t>(x), static_cast<int32_t>(y)));
+			}
+
 		} break;
 	}
     return DefWindowProc(hWnd, msg, wParam, lParam);
@@ -178,22 +262,33 @@ Window::~Window() {
 	_impl->deinitialize();
 }
 
-Size Window::client_size() const {
-	
-	return _impl->client_size();
+Window::Window(Window&& other) noexcept {
+
+	_impl = std::move(other._impl);
+}
+
+Window& Window::operator=(Window&& other) noexcept {
+
+	_impl = std::move(other._impl);
+	return *this;
+}
+
+uint32_t Window::client_width() const {
+	return _impl->client_width();
+}
+
+uint32_t Window::client_height() const {
+	return _impl->client_height();
 }
 
 void* Window::native_handle() const {
-
 	return _impl->native_handle();
 }
 
 void Window::label(std::string_view const label) {
-
 	_impl->label(label);
 }
 
 std::queue<WindowEvent>& Window::messages() {
-
 	return _impl->messages();
 }

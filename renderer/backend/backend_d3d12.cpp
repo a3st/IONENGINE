@@ -460,12 +460,10 @@ void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const&
 
     // Create Swapchain using Device Queue (Direct)
     {
-        platform::Size initial_size = _swapchain_desc.window->client_size();
-
         auto swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
         swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        swapchain_desc.Width = initial_size.width;
-        swapchain_desc.Height = initial_size.height;
+        swapchain_desc.Width = _swapchain_desc.window->client_width();
+        swapchain_desc.Height = _swapchain_desc.window->client_height();
         swapchain_desc.BufferCount = _swapchain_desc.buffer_count;
         swapchain_desc.SampleDesc.Count = _swapchain_desc.sample_count;
         swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;

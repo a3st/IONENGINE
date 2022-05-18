@@ -14,6 +14,8 @@ include_directories(${PROJECT_SOURCE_DIR}/)
 #]]
 add_executable(Runtime-Win32
 
+    engine/kids_room.cpp
+
     # Engine
     engine/main.cpp
     #engine/sponza.cpp
@@ -25,6 +27,9 @@ add_executable(Runtime-Win32
     # Platform
     platform/window_win32.cpp
     platform/window_loop.cpp
+# ---------------------------
+    # Input
+    input/input_manager.cpp
 # ---------------------------
     # Asset
     asset/asset_manager.cpp

@@ -63,8 +63,8 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     _pipeline_cache.emplace(_device);
     _texture_cache.emplace(_device);
 
-    _width = window.client_size().width;
-    _height = window.client_size().height;
+    _width = window.client_width();
+    _height = window.client_height();
 
     _gbuffer_albedos.resize(2);
     _depth_stencils.resize(2);
@@ -218,9 +218,18 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                         auto gpu_texture = _texture_cache.value().get(_upload_context.value(), *parameter.as_sampler2D().asset);
                         samplers.emplace_back(gpu_texture);
 
-                        binder.bind_texture(it->second, *gpu_texture);
+                        auto uniform_visitor = make_visitor(
+                            [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& data) {
+                                binder.bind_texture(data.index, *gpu_texture);
+                            },
+                            // Default
+                            [&](ShaderUniformData<ShaderUniformType::CBuffer> const& data) { }
+                        );
+
+                        std::visit(uniform_visitor, it->second.data);
 
                     } else {
+                        
                         auto it = shader_program->uniforms().find("material");
                         if(it == shader_program->uniforms().end()) {
                             break;

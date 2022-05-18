@@ -78,10 +78,23 @@ uint32_t ShaderProgram::location_by_uniform_name(std::string const& name) const 
     if(it == _uniforms.end()) {
         throw lib::Exception("Invalid uniform location");
     }
-    return it->second;
+
+    uint32_t location = 0;
+
+    auto uniform_visitor = make_visitor(
+        [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& data) {
+            location = data.index;
+        },
+        [&](ShaderUniformData<ShaderUniformType::CBuffer> const& data) {
+            location = data.index;
+        }
+    );
+
+    std::visit(uniform_visitor, it->second.data);
+    return location;
 }
 
-std::unordered_map<std::string, uint32_t>& ShaderProgram::uniforms() {
+std::unordered_map<std::string, ShaderUniform>& ShaderProgram::uniforms() {
     return _uniforms;
 }
 

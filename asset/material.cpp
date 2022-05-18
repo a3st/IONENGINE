@@ -98,7 +98,8 @@ Material::Material(JSON_MaterialDefinition const& document, AssetManager& asset_
             asset_manager.get_technique(pass.technique), 
             MaterialPassParameters {
                 .fill_mode = get_pass_fill_mode(pass.parameters.fill_mode),
-                .cull_mode = get_pass_cull_mode(pass.parameters.cull_mode)
+                .cull_mode = get_pass_cull_mode(pass.parameters.cull_mode),
+                .depth_stencil = pass.parameters.depth_stencil
             }
         );
     }

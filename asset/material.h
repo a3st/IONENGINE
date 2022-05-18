@@ -180,6 +180,7 @@ struct MaterialParameter {
 struct MaterialPassParameters {
     MaterialPassFillMode fill_mode;
     MaterialPassCullMode cull_mode;
+    bool depth_stencil;
 };
 
 struct MaterialPass {
