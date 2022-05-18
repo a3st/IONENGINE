@@ -56,7 +56,7 @@ GPUTexture::GPUTexture(
         backend::Dimension::_2D, 
         width, 
         height, 
-        mip_count, 
+        1 /*mip_count*/, 
         1, 
         format,
         flags

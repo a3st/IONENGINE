@@ -201,36 +201,54 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
                 auto shader_program = pipeline->shader_program();
 
-                sampler_texture->barrier(context.command_list(), backend::MemoryState::ShaderRead);
+                uint32_t const world_location = shader_program->location_by_uniform_name("world");
 
-                    
-                for(auto const& [parameter_name, parameter] : batch.material->parameters()) {
+                ShaderUniformBinder binder(_device, *shader_program);
+                std::vector<std::shared_ptr<GPUTexture>> samplers;
 
-                    auto it = shader_program->uniforms().find("material");
+                for(auto& [parameter_name, parameter] : batch.material->parameters()) {
 
-                    if(it != shader_program->uniforms().end()) {
-                        break;
-                    }
+                    if(parameter.is_sampler2D()) {
 
-                    auto parameter_visitor = make_visitor(
-                        [&](asset::MaterialParameterData<asset::MaterialParameterType::Sampler2D> const& data) {
-                            
-                        },
-                        [&](asset::MaterialParameterData<asset::MaterialParameterType::F32> const& data) {
-                            
-                        },
-                        [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x2> const& data) {
-
-                        },
-                        [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x3> const& data) {
-
-                        },
-                        [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x4> const& data) {
-
+                        auto it = shader_program->uniforms().find(parameter_name);
+                        if(it == shader_program->uniforms().end()) {
+                            break;
                         }
-                    );
 
-                    std::visit(parameter_visitor, parameter.data);
+                        auto gpu_texture = _texture_cache.value().get(_upload_context.value(), *parameter.as_sampler2D().asset);
+                        samplers.emplace_back(gpu_texture);
+
+                        binder.bind_texture(it->second, *gpu_texture);
+
+                    } else {
+                        auto it = shader_program->uniforms().find("material");
+                        if(it == shader_program->uniforms().end()) {
+                            break;
+                        }
+
+                        auto parameter_visitor = make_visitor(
+                            [&](asset::MaterialParameterData<asset::MaterialParameterType::F32> const& data) {
+                                
+                            },
+                            [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x2> const& data) {
+
+                            },
+                            [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x3> const& data) {
+
+                            },
+                            [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x4> const& data) {
+
+                            },
+                            // Default
+                            [&](asset::MaterialParameterData<asset::MaterialParameterType::Sampler2D> const& data) { }
+                        );
+
+                        std::visit(parameter_visitor, parameter.data);
+                    }
+                }
+
+                for(auto& sampler : samplers) {
+                    sampler->barrier(context.command_list(), backend::MemoryState::ShaderRead);
                 }
 
                 for(auto const& instance : batch.instances) {
@@ -244,15 +262,15 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                     std::shared_ptr<GPUBuffer> buffer = _world_cbuffer_pools.at(frame_index).allocate();
                     buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&world), sizeof(WorldCBuffer)));
                     
-                    ShaderUniformBinder binder(_device, *shader_program);
-                    binder.bind_cbuffer("world", *buffer);
-                    binder.bind_texture("albedo", *sampler_texture);
-                    binder.update(context.command_list());
+                    binder.bind_cbuffer(world_location, *buffer);
 
+                    binder.update(context.command_list());
                     geometry_buffer->bind(context.command_list());
                 }
 
-                sampler_texture->barrier(context.command_list(), backend::MemoryState::Common);
+                for(auto& sampler : samplers) {
+                    sampler->barrier(context.command_list(), backend::MemoryState::Common);
+                }
             }
         }
     );

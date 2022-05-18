@@ -17,22 +17,38 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
     uint32_t binding_index = 0;
 
     for(auto const& uniform : technique.uniforms()) {
-        _uniforms.insert({ uniform.name, binding_index });
+
+        auto shader_uniform = ShaderUniform { };
 
         auto uniform_visitor = make_visitor(
             [&](asset::ShaderUniformData<asset::ShaderUniformType::Sampler2D> const& data) {
+
+                shader_uniform.data = ShaderUniformData<ShaderUniformType::Sampler2D> { .index = binding_index };
+
                 bindings.emplace_back(binding_index, backend::DescriptorType::ShaderResource, get_shader_flags(uniform.visibility));
                 ++binding_index;
                 bindings.emplace_back(binding_index, backend::DescriptorType::Sampler, get_shader_flags(uniform.visibility));
                 ++binding_index;
             },
             [&](asset::ShaderUniformData<asset::ShaderUniformType::CBuffer> const& data) {
+
+                auto cbuffer_uniform = ShaderUniformData<ShaderUniformType::CBuffer> { .index = binding_index };
+
+                for(auto const& data : data.data) {
+                    
+                    cbuffer_uniform.data_offset.insert({ data.name, 0 });
+                }
+
+                shader_uniform.data = cbuffer_uniform;
+
                 bindings.emplace_back(binding_index, backend::DescriptorType::ConstantBuffer, get_shader_flags(uniform.visibility));
                 ++binding_index;
             }
         );
 
-        std::visit(uniform_visitor, uniform.data); 
+        std::visit(uniform_visitor, uniform.data);
+
+        _uniforms.insert({ uniform.name, shader_uniform });
     }
 
     _descriptor_layout = device.create_descriptor_layout(bindings);

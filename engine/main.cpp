@@ -26,13 +26,13 @@ int main(int* argc, char** agrv) {
         renderer::Renderer renderer(window, asset_manager);
 
         {
-            asset::AssetPtr<asset::Mesh> mesh = asset_manager.get_mesh("unpacked/objects/cube.obj");
-            asset::AssetPtr<asset::Material> material = asset_manager.get_material("../../data/materials/default.json5");
-            //asset::AssetPtr<asset::Texture> texture_brick = asset_manager.get_texture("unpacked/textures/brick_dxt1.dds");
+            asset::AssetPtr<asset::Mesh> mesh = asset_manager.get_mesh("content/objects/tv.obj");
+            asset::AssetPtr<asset::Material> material = asset_manager.get_material("content/materials/tv_default.json5");
+            asset::AssetPtr<asset::Material> material_2 = asset_manager.get_material("content/materials/tv_screen_default.json5");
 
             mesh.wait();
             material.wait();
-            //texture_brick.wait();
+            material_2.wait();
         }
 
         float rotate = 0.0f;
@@ -45,9 +45,10 @@ int main(int* argc, char** agrv) {
 
             auto node_1 = test_scene.graph().add_node<scene::MeshNode>();
             node_1->name("mesh");
-            node_1->mesh(asset_manager.get_mesh("unpacked/objects/cube.obj"));
-            node_1->material(0, asset_manager.get_material("../../data/materials/default.json5"));
-            node_1->position(lib::math::Vector3f(0.0f, -0.5f, 0.0f));
+            node_1->mesh(asset_manager.get_mesh("content/objects/tv.obj"));
+            node_1->material(0, asset_manager.get_material("content/materials/tv_default.json5"));
+            node_1->material(1, asset_manager.get_material("content/materials/tv_screen_default.json5"));
+            node_1->position(lib::math::Vector3f(0.0f, -0.5f, 1.0f));
             node_1->rotation(lib::math::Quaternionf::angle_axis(0.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
             node_1->scale(lib::math::Vector3f(1.0f, 1.0f, 1.0f));
 
@@ -75,12 +76,12 @@ int main(int* argc, char** agrv) {
                         begin_time = end_time;
 
                         
-                        rotate += delta_time.count() * 10.0f;
+                        /*rotate += delta_time.count() * 10.0f;
                         if(rotate >= 180.0f) {
                             rotate = 0.0f;
                         }
                         auto mesh = test_scene.graph().find_by_name<scene::MeshNode>("mesh");
-                        mesh->rotation(lib::math::Quaternionf::angle_axis(rotate, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
+                        mesh->rotation(lib::math::Quaternionf::angle_axis(rotate, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));*/
                         
 
                         frame_timer += delta_time.count();

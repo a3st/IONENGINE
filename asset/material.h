@@ -148,7 +148,7 @@ struct MaterialParameterData<MaterialParameterType::F32x4> {
 
 #ifndef DECLARE_MATERIAL_PARAMETER_CAST
 #define DECLARE_MATERIAL_PARAMETER_CAST(Name, Type) \
-MaterialParameterData<Type> const& Name() { \
+MaterialParameterData<Type>& Name() { \
     return std::get<MaterialParameterData<Type>>(data); \
 }
 #endif

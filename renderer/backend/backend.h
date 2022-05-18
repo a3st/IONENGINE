@@ -15,7 +15,6 @@ struct Shader;
 struct RenderPass;
 struct Sampler;
 struct DescriptorLayout;
-struct DescriptorSet;
 struct CachePipeline;
 struct CommandList;
 
@@ -118,6 +117,8 @@ enum class MemoryState : uint32_t {
     DepthWrite = 1 << 9,
     GenericRead = 1 << 10
 };
+
+DECLARE_ENUM_CLASS_BIT_FLAG(MemoryState)
 
 enum class DescriptorType {
     ShaderResource,
@@ -302,10 +303,6 @@ public:
 
     void delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout);
 
-    Handle<DescriptorSet> create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout);
-
-    void delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set);
-
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& descriptor_layout,
         std::span<VertexInputDesc const> const vertex_descs,
@@ -322,8 +319,6 @@ public:
     Handle<CommandList> create_command_list(QueueFlags const flags);
 
     void delete_command_list(Handle<CommandList> const& command_list);
-
-    void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
     void map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);
 
@@ -370,8 +365,6 @@ public:
     void bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline);
 
     void bind_resources(Handle<CommandList> const& command_list, Handle<DescriptorLayout> const& descriptor_layout, std::span<DescriptorWriteDesc const> const write_descs);
-
-    void bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set);
 
     void set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
 

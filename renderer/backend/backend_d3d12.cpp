@@ -9,6 +9,7 @@
 #include <d3d12_ma/D3D12MemAlloc.h>
 
 using namespace ionengine;
+using namespace ionengine::renderer;
 using namespace ionengine::renderer::backend;
 
 namespace ionengine::renderer::backend {
@@ -38,15 +39,6 @@ struct DescriptorLayout {
     ComPtr<ID3D12RootSignature> root_signature;
     std::unordered_map<uint32_t, BindingLocation> bindings;
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
-    bool is_compute;
-};
-
-struct DescriptorSet {
-    ComPtr<ID3D12DescriptorHeap> cbv_srv_uav_heap;
-    ComPtr<ID3D12DescriptorHeap> sampler_heap;
-    std::unordered_map<uint32_t, BindingLocation> bindings;
-    std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
-    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> descriptors;
     bool is_compute;
 };
 
@@ -117,7 +109,6 @@ struct Device::Impl {
     HandlePool<Buffer> buffers;
     HandlePool<Sampler> samplers;
     HandlePool<DescriptorLayout> descriptor_layouts;
-    HandlePool<DescriptorSet> descriptor_sets;
     HandlePool<Pipeline> pipelines;
     HandlePool<Shader> shaders;
     HandlePool<RenderPass> render_passes;
@@ -194,16 +185,10 @@ struct Device::Impl {
     );
     
     void delete_pipeline(Handle<Pipeline> const& pipeline);
-    
-    Handle<DescriptorSet> create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout);
-    
-    void delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set);
 
     Handle<CommandList> create_command_list(QueueFlags const flags);
 
     void delete_command_list(Handle<CommandList> const& command_list);
-    
-    void update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs);
 
     void map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);
     
@@ -251,8 +236,6 @@ struct Device::Impl {
     
     void bind_resources(Handle<CommandList> const& command_list, Handle<DescriptorLayout> const& descriptor_layout, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set);
-
     void set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
 
     void set_scissor(Handle<CommandList> const& command_list, uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
@@ -290,8 +273,7 @@ void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const&
     textures = HandlePool<Texture>(1024);
     buffers = HandlePool<Buffer>(1024);
     samplers = HandlePool<Sampler>(1024);
-    descriptor_layouts = HandlePool<DescriptorLayout>(8);
-    descriptor_sets = HandlePool<DescriptorSet>(1024);
+    descriptor_layouts = HandlePool<DescriptorLayout>(128);
     pipelines = HandlePool<Pipeline>(1024);
     shaders = HandlePool<Shader>(512);
     render_passes = HandlePool<RenderPass>(128);
@@ -1311,94 +1293,6 @@ void Device::Impl::delete_pipeline(Handle<Pipeline> const& pipeline) {
     pipelines.erase(pipeline);
 }
 
-Handle<DescriptorSet> Device::Impl::create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout) {
-
-    auto descriptor_set_data = DescriptorSet {};
-    auto& descriptor_layout_data = descriptor_layouts[descriptor_layout];
-
-    descriptor_set_data.ranges = descriptor_layout_data.ranges;
-    descriptor_set_data.bindings = descriptor_layout_data.bindings;
-    descriptor_set_data.is_compute = descriptor_layout_data.is_compute;
-
-    std::unordered_map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> descriptors_count;
-    descriptors_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 0 });
-    descriptors_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 0 });
-    descriptors_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 0 });
-    descriptors_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 0 });
-
-    std::for_each(
-        descriptor_layout_data.ranges.begin(),
-        descriptor_layout_data.ranges.end(),
-        [&](auto const& range) {
-            descriptors_count.at(range.RangeType) += range.NumDescriptors;
-        }
-    );
-
-    {
-        auto descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
-        descriptor_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        descriptor_heap_desc.NumDescriptors = descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_CBV) + descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_SRV) + descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
-        descriptor_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-        device->CreateDescriptorHeap(&descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.cbv_srv_uav_heap.GetAddressOf()));
-    }
-
-    if(descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER) > 0) {
-
-        auto descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
-        descriptor_heap_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-        descriptor_heap_desc.NumDescriptors = descriptors_count.at(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER);
-        descriptor_heap_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-        device->CreateDescriptorHeap(&descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), reinterpret_cast<void**>(descriptor_set_data.sampler_heap.GetAddressOf()));
-    }
-
-    std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32_t> offsets;
-    offsets.insert({ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 0 });
-    offsets.insert({ D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 0 });
-
-    std::for_each(
-        descriptor_layout_data.ranges.begin(),
-        descriptor_layout_data.ranges.end(),
-        [&](auto const& range) {
-
-            auto cpu_handle = D3D12_CPU_DESCRIPTOR_HANDLE {};
-
-            switch(range.RangeType) {
-                case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
-                case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
-                case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
-                    uint32_t const descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                    cpu_handle.ptr = 
-                        descriptor_set_data.cbv_srv_uav_heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                        descriptor_size * // Device descriptor size
-                        offsets.at(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * range.NumDescriptors // Allocation offset
-                    ;
-                    ++offsets.at(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-                } break;
-                case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: {
-                    uint32_t const descriptor_size = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-                    cpu_handle.ptr = 
-                        descriptor_set_data.sampler_heap->GetCPUDescriptorHandleForHeapStart().ptr + // Base descriptor pointer
-                        descriptor_size * // Device descriptor size
-                        offsets.at(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER) * range.NumDescriptors // Allocation offset
-                    ;
-                    ++offsets.at(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
-                } break;
-            }
-
-            descriptor_set_data.descriptors.emplace_back(cpu_handle);
-        }
-    );
-
-    return descriptor_sets.push(std::move(descriptor_set_data));
-}
-
-void Device::Impl::delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set) {
-
-    descriptor_sets.erase(descriptor_set);
-}
-
 Handle<CommandList> Device::Impl::create_command_list(QueueFlags const flags) {
 
     auto get_command_list_type = [&](QueueFlags const queue_flags) -> D3D12_COMMAND_LIST_TYPE {
@@ -1432,51 +1326,6 @@ Handle<CommandList> Device::Impl::create_command_list(QueueFlags const flags) {
 void Device::Impl::delete_command_list(Handle<CommandList> const& command_list) {
 
     command_lists.erase(command_list);
-}
-
-void Device::Impl::update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs) {
-
-    auto& descriptor_set_data = descriptor_sets[descriptor_set];
-
-    for(auto& write_desc : write_descs) {
-
-        ComPtr<d3d12::DescriptorAllocation> allocation;
-        D3D12_DESCRIPTOR_HEAP_TYPE heap_type;
-
-        auto resource_visitor = make_visitor(
-            [&](Handle<Texture> const& resource) {
-                auto& texture_data = textures[resource];
-                allocation = texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV];
-                heap_type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-            },
-            [&](Handle<Buffer> const& resource) {
-                auto& buffer_data = buffers[resource];
-                allocation = buffer_data.descriptor_allocation;
-                heap_type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-            },
-            [&](Handle<Sampler> const& resource) {
-                auto& sampler_data = samplers[resource];
-                allocation = sampler_data.descriptor_allocation;
-                heap_type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-            }
-        );
-
-        std::visit(resource_visitor, write_desc.data);
-
-        auto const& binding_location = descriptor_set_data.bindings.at(write_desc.index);
-
-        uint32_t descriptor_size = device->GetDescriptorHandleIncrementSize(heap_type);
-
-        auto cpu_handle = descriptor_set_data.descriptors[binding_location.range_index];
-        cpu_handle.ptr += descriptor_size * binding_location.offset;
-
-        device->CopyDescriptorsSimple(
-            1,
-            cpu_handle,
-            allocation->cpu_handle(),
-            heap_type
-        );
-    }
 }
 
 void Device::Impl::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data) {
@@ -1662,51 +1511,6 @@ void Device::Impl::command_list_reset(CommandList& command_list) {
     }
 
     command_list.is_reset = true;
-}
-
-void Device::Impl::bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set) {
-
-    auto& command_list_data = command_lists[command_list];
-
-    if(!command_list_data.is_reset) {
-        command_list_reset(command_list_data);
-    }
-
-    auto& descriptor_set_data = descriptor_sets[descriptor_set];
-
-    for(size_t i = 0; i < descriptor_set_data.ranges.size(); ++i) {
-
-        ComPtr<d3d12::DescriptorAllocation> allocation;
-        D3D12_DESCRIPTOR_HEAP_TYPE heap_type;
-
-        auto& range = descriptor_set_data.ranges[i];
-
-        switch(range.RangeType) {
-            case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
-            case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
-            case D3D12_DESCRIPTOR_RANGE_TYPE_UAV: {
-                THROW_IF_FAILED(cbv_srv_uav_ranges[swapchain_index]->allocate(range, allocation.GetAddressOf()));
-                heap_type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-            } break;
-            case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: {
-                THROW_IF_FAILED(sampler_ranges[swapchain_index]->allocate(range, allocation.GetAddressOf()));
-                heap_type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-            } break;
-        }
-
-        device->CopyDescriptorsSimple(
-            range.NumDescriptors, 
-            allocation->cpu_handle(), 
-            descriptor_set_data.descriptors[i], 
-            heap_type
-        );
-
-        if(!descriptor_set_data.is_compute) {
-            command_list_data.command_list->SetGraphicsRootDescriptorTable(static_cast<uint32_t>(i), allocation->gpu_handle());
-        } else {
-            command_list_data.command_list->SetComputeRootDescriptorTable(static_cast<uint32_t>(i), allocation->gpu_handle());   
-        }
-    }
 }
 
 void Device::Impl::set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height) {
@@ -2204,16 +2008,6 @@ void Device::delete_pipeline(Handle<Pipeline> const& pipeline) {
     _impl->delete_pipeline(pipeline);
 }
 
-Handle<DescriptorSet> Device::create_descriptor_set(Handle<DescriptorLayout> const& descriptor_layout) {
-
-    return _impl->create_descriptor_set(descriptor_layout);
-}
-
-void Device::delete_descriptor_set(Handle<DescriptorSet> const& descriptor_set) {
-
-    _impl->delete_descriptor_set(descriptor_set);
-}
-
 Handle<CommandList> Device::create_command_list(QueueFlags const flags) {
 
     return _impl->create_command_list(flags);
@@ -2222,11 +2016,6 @@ Handle<CommandList> Device::create_command_list(QueueFlags const flags) {
 void Device::delete_command_list(Handle<CommandList> const& command_list) {
 
     _impl->delete_command_list(command_list);
-}
-
-void Device::update_descriptor_set(Handle<DescriptorSet> const& descriptor_set, std::span<DescriptorWriteDesc const> const write_descs) {
-
-    _impl->update_descriptor_set(descriptor_set, write_descs);
 }
 
 void Device::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data) {
@@ -2272,11 +2061,6 @@ bool Device::is_completed(uint64_t const fence_result, QueueFlags const flags) c
 void Device::wait_for_idle(QueueFlags const flags) {
     
     return _impl->wait_for_idle(flags);
-}
-
-void Device::bind_descriptor_set(Handle<CommandList> const& command_list, Handle<DescriptorSet> const& descriptor_set) {
-
-    _impl->bind_descriptor_set(command_list, descriptor_set);
 }
 
 void Device::set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height) {

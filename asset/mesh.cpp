@@ -39,6 +39,8 @@ struct hash<Vertex> {
 
 Mesh::Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const> const shapes, std::span<tinyobj::material_t const> const materials) {
 
+    uint32_t material_index = 0;
+
     for(auto const& shape : shapes) {
 
         std::unordered_map<Vertex, uint32_t> unique_vertices;
@@ -95,12 +97,14 @@ Mesh::Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const
         auto surface = SurfaceData {
             .vertices = lib::hash::Buffer<float>(vertices),
             .indices = lib::hash::Buffer<uint32_t>(indices),
-            .material_index = 0
+            .material_index = material_index
         };
+
         _surfaces.emplace_back(surface);
+        ++material_index;
     }
 
-    _materials.resize(1);
+    _materials.resize(material_index);
 }
 
 lib::Expected<Mesh, lib::Result<MeshError>> Mesh::load_from_file(std::filesystem::path const& file_path) {
