@@ -25,7 +25,7 @@ struct ShaderUniformData<ShaderUniformType::Sampler2D> {
 template<>
 struct ShaderUniformData<ShaderUniformType::CBuffer> {
     uint32_t index;
-    std::unordered_map<std::string, uint64_t> data_offset; 
+    std::unordered_map<std::string, uint64_t> offsets; 
 };
 
 struct ShaderUniform {

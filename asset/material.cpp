@@ -34,9 +34,7 @@ Material::Material(JSON_MaterialDefinition const& document, AssetManager& asset_
                             parameter.name,
                             MaterialParameter {
                                 .data = MaterialParameterData<asset::MaterialParameterType::F32> {
-                                    .value = value,
-                                    .uniform = parameter.value.uniform.value(),
-                                    .offset = static_cast<uint64_t>(parameter.value.offset.value())
+                                    .value = value
                                 }
                             }
                         }
@@ -49,9 +47,7 @@ Material::Material(JSON_MaterialDefinition const& document, AssetManager& asset_
                             parameter.name,
                             MaterialParameter {
                                 .data = MaterialParameterData<asset::MaterialParameterType::F32x2> {
-                                    .value = lib::math::Vector2f(value.at(0), value.at(1)),
-                                    .uniform = parameter.value.uniform.value(),
-                                    .offset = static_cast<uint64_t>(parameter.value.offset.value())
+                                    .value = lib::math::Vector2f(value.at(0), value.at(1))
                                 }
                             }
                         }
@@ -64,9 +60,7 @@ Material::Material(JSON_MaterialDefinition const& document, AssetManager& asset_
                             parameter.name,
                             MaterialParameter {
                                 .data = MaterialParameterData<asset::MaterialParameterType::F32x3> {
-                                    .value = lib::math::Vector3f(value.at(0), value.at(1), value.at(2)),
-                                    .uniform = parameter.value.uniform.value(),
-                                    .offset = static_cast<uint64_t>(parameter.value.offset.value())
+                                    .value = lib::math::Vector3f(value.at(0), value.at(1), value.at(2))
                                 }
                             }
                         }
@@ -79,9 +73,7 @@ Material::Material(JSON_MaterialDefinition const& document, AssetManager& asset_
                             parameter.name,
                             MaterialParameter {
                                 .data = MaterialParameterData<asset::MaterialParameterType::F32x4> {
-                                    .value = lib::math::Vector4f(value.at(0), value.at(1), value.at(2), value.at(3)),
-                                    .uniform = parameter.value.uniform.value(),
-                                    .offset = static_cast<uint64_t>(parameter.value.offset.value())
+                                    .value = lib::math::Vector4f(value.at(0), value.at(1), value.at(2), value.at(3))
                                 }
                             }
                         }

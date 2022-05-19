@@ -43,11 +43,9 @@ struct JSON_MaterialParameterValueDefinition {
     std::optional<std::array<float, 3>> vec3;
     std::optional<std::array<float, 2>> vec2;
     std::optional<float> value;
-    std::optional<std::string> uniform;
-    std::optional<int> offset;
 };
 
-JSON5_CLASS(JSON_MaterialParameterValueDefinition, path, vec4, vec3, vec2, value, uniform, offset)
+JSON5_CLASS(JSON_MaterialParameterValueDefinition, path, vec4, vec3, vec2, value)
 
 struct JSON_MaterialParameterDefinition {
     std::string name;

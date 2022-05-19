@@ -129,6 +129,14 @@ struct Quaternion {
 	    return quat;
     }
 
+    Vector3<Type> operator*(Vector3<Type> const& other) const {
+
+        Vector3<Type> vec(x, y, z);
+        Vector3<Type> uv(Vector3<Type>(vec).cross(other));
+        Vector3<Type> uuv(Vector3<Type>(vec).cross(uv));
+	    return other + ((uv * w) + uuv) * static_cast<Type>(2);
+    }
+
 	Quaternion operator*(Type const other) const {
 
 		return Quaternion { x * other, y * other, z * other, w * other };

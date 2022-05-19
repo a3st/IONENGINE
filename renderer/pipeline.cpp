@@ -19,7 +19,7 @@ Pipeline::Pipeline(
         .cull_mode = get_cull_mode(parameters.cull_mode)
     };
 
-    backend::DepthStencilDesc depth_stencil_desc = { backend::CompareOp::Always, parameters.depth_stencil };
+    backend::DepthStencilDesc depth_stencil_desc = { backend::CompareOp::Less, parameters.depth_stencil };
 
     backend::BlendDesc blend_desc = { 
         false, 

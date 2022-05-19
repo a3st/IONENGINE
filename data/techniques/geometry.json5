@@ -53,7 +53,7 @@
 
                     output.position = world_pos;
                     output.uv = float2(input.uv.x, 1.0 - input.uv.y);
-                    output.color = input.color;
+                    output.color = input.color + color.rgb;
                     return output;
                 }
             "

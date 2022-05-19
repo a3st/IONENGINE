@@ -2,6 +2,7 @@
 
 #include <precompiled.h>
 #include <renderer/shader_program.h>
+#include <lib/math/matrix.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -32,14 +33,23 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
             },
             [&](asset::ShaderUniformData<asset::ShaderUniformType::CBuffer> const& data) {
 
-                auto cbuffer_uniform = ShaderUniformData<ShaderUniformType::CBuffer> { .index = binding_index };
+                auto cbuffer_uniform_data = ShaderUniformData<ShaderUniformType::CBuffer> { .index = binding_index };
+                uint64_t offset = 0;
 
                 for(auto const& data : data.data) {
-                    
-                    cbuffer_uniform.data_offset.insert({ data.name, 0 });
+
+                    cbuffer_uniform_data.offsets.insert({ data.name, offset });
+
+                    switch(data.type) {
+                        case asset::ShaderDataType::F32: { offset += sizeof(float); } break;
+                        case asset::ShaderDataType::F32x2: { offset += sizeof(float) * 2; } break;
+                        case asset::ShaderDataType::F32x3: { offset += sizeof(float) * 3; } break;
+                        case asset::ShaderDataType::F32x4: { offset += sizeof(lib::math::Vector4f); } break;
+                        case asset::ShaderDataType::F32x4x4: { offset += sizeof(lib::math::Matrixf); } break;
+                    }
                 }
 
-                shader_uniform.data = cbuffer_uniform;
+                shader_uniform.data = cbuffer_uniform_data;
 
                 bindings.emplace_back(binding_index, backend::DescriptorType::ConstantBuffer, get_shader_flags(uniform.visibility));
                 ++binding_index;

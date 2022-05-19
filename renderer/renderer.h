@@ -50,6 +50,8 @@ private:
         lib::math::Matrixf proj;
     };
 
+    std::vector<std::vector<uint8_t>> _material_buffers;
+
     asset::AssetManager* _asset_manager;
 
     backend::Device _device;
@@ -69,6 +71,7 @@ private:
     std::vector<std::shared_ptr<GPUTexture>> _depth_stencils;
 
     std::vector<CBufferPool> _world_cbuffer_pools;
+    std::vector<CBufferPool> _material_cbuffer_pools;
 
     RenderQueue _deffered_queue;
 

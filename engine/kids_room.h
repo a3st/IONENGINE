@@ -24,6 +24,11 @@ private:
 
     scene::CameraNode* _camera_node;
 
+    float _rotation_x = 0.0f;
+    float _rotation_y = 0.0f;
+
+    lib::math::Quaternionf _original_rotation;
+
     scene::Scene _scene;
 };
 

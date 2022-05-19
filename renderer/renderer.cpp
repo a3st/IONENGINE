@@ -69,10 +69,14 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     _gbuffer_albedos.resize(2);
     _depth_stencils.resize(2);
 
+    _material_buffers.resize(2);
+
     for(uint32_t i = 0; i < 2; ++i) {
         _gbuffer_albedos[i] = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height);
         _depth_stencils[i] = GPUTexture::depth_stencil(_device, backend::Format::D32, _width, _height);
         _world_cbuffer_pools.emplace_back(_device, 256, 64);
+        _material_cbuffer_pools.emplace_back(_device, 512, 32);
+        _material_buffers[i].resize(512);
     }
 }
 
@@ -147,6 +151,7 @@ void Renderer::render(scene::Scene& scene) {
     _deffered_queue.clear();
 
     _world_cbuffer_pools.at(frame_index).reset();
+    _material_cbuffer_pools.at(frame_index).reset();
 
     MeshVisitor mesh_visitor(_deffered_queue);
     scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
@@ -180,7 +185,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
     CreateColorInfo swapchain_info = {
         .attachment = nullptr,
         .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
+        .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
     };
 
     _frame_graph.value().add_pass(
@@ -235,25 +240,42 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                             break;
                         }
 
-                        auto parameter_visitor = make_visitor(
-                            [&](asset::MaterialParameterData<asset::MaterialParameterType::F32> const& data) {
-                                
-                            },
-                            [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x2> const& data) {
+                        auto uniform_visitor = make_visitor(
+                            [&](ShaderUniformData<ShaderUniformType::CBuffer> const& uniform_data) {
 
-                            },
-                            [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x3> const& data) {
+                                auto parameter_visitor = make_visitor(
+                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::F32> const& parameter_data) {
+                                        std::memcpy(_material_buffers.at(frame_index).data() + uniform_data.offsets.at(parameter_name), &parameter_data.value, sizeof(float));
+                                    },
+                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x2> const& parameter_data) {
+                                        std::memcpy(_material_buffers.at(frame_index).data() + uniform_data.offsets.at(parameter_name), parameter_data.value.data(), sizeof(lib::math::Vector2f));
+                                    },
+                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x3> const& parameter_data) {
+                                        std::memcpy(_material_buffers.at(frame_index).data() + uniform_data.offsets.at(parameter_name), parameter_data.value.data(), sizeof(lib::math::Vector3f));
+                                    },
+                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x4> const& parameter_data) {
+                                        std::memcpy(_material_buffers.at(frame_index).data() + uniform_data.offsets.at(parameter_name), parameter_data.value.data(), sizeof(lib::math::Vector4f));
+                                    },
+                                    // Default
+                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::Sampler2D> const& parameter_data) { }
+                                );
 
-                            },
-                            [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x4> const& data) {
-
+                                std::visit(parameter_visitor, parameter.data);
                             },
                             // Default
-                            [&](asset::MaterialParameterData<asset::MaterialParameterType::Sampler2D> const& data) { }
+                            [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& uniform_data) { }
                         );
 
-                        std::visit(parameter_visitor, parameter.data);
+                        std::visit(uniform_visitor, it->second.data);
                     }
+                }
+
+                {
+                    std::shared_ptr<GPUBuffer> buffer = _material_cbuffer_pools.at(frame_index).allocate();
+                    buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(_material_buffers.at(frame_index).data()), _material_buffers.at(frame_index).size()));
+
+                    uint32_t const material_location = shader_program->location_by_uniform_name("material");
+                    binder.bind_cbuffer(material_location, *buffer);
                 }
 
                 for(auto& sampler : samplers) {

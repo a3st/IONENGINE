@@ -70,7 +70,7 @@ HRESULT DescriptorPool::allocate(DescriptorAllocation** allocation) {
 
     for(size_t i = 0; i < _heaps.size(); ++i) {
 
-        if(_heaps[i].offset == DescriptorPool::DESCRIPTOR_HEAP_SIZE) {
+        if(_heaps[i].indices.empty()) {
             continue;
         }
 

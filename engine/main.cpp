@@ -50,8 +50,6 @@ int main(int* argc, char** agrv) {
                         std::chrono::duration<float> delta_time = end_time - begin_time;
                         begin_time = end_time;
 
-                        input_manager.update();
-
                         framework.update(delta_time.count());
 
                         frame_timer += delta_time.count();
@@ -61,6 +59,7 @@ int main(int* argc, char** agrv) {
                             frame_count = 0;
                         }
 
+                        input_manager.update();
                         framework.scene().graph().update_hierarchical_data();
                         asset_manager.update(delta_time.count());
                         renderer.update(delta_time.count());
@@ -75,7 +74,7 @@ int main(int* argc, char** agrv) {
                         input_manager.on_keyboard_event(data);
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::MouseMoved> const& data) {
-                        
+                        input_manager.on_mouse_moved_event(data);
                     }
                 );
 

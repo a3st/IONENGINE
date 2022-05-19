@@ -106,4 +106,11 @@ enum class KeyCode : uint32_t {
 
 inline uint32_t constexpr KEY_CODE_COUNT = 400;
 
+enum class AxisCode : uint32_t {
+	MouseX,
+	MouseY
+};
+
+inline uint32_t constexpr AXIS_CODE_COUNT = 5;
+
 }
