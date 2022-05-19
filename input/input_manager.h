@@ -12,6 +12,14 @@ public:
 
     InputManager();
 
+    InputManager(InputManager const&) = delete;
+
+    InputManager(InputManager&&) = delete;
+
+    InputManager& operator=(InputManager const&) = delete;
+
+    InputManager& operator=(InputManager&&) = delete;
+
     void update();
 
     void on_keyboard_event(platform::WindowEventData<platform::WindowEventType::KeyboardInput> const& event);

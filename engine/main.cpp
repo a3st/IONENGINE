@@ -28,6 +28,8 @@ int main(int* argc, char** agrv) {
         renderer::Renderer renderer(window, asset_manager);
         input::InputManager input_manager;
 
+        window.cursor(false);
+
         window.label("IONENGINE Kids Room Demo");
         framework::KidsRoom framework(asset_manager, input_manager);
 
@@ -54,9 +56,21 @@ int main(int* argc, char** agrv) {
 
                         frame_timer += delta_time.count();
                         if(frame_timer >= 1.0f) {
-                            //window.label(std::format("IONENGINE KidsRoom Demo, {} fps, {} delta-time", frame_count, delta_time.count()));
+                            window.label(std::format("IONENGINE KidsRoom Demo [{} fps]", frame_count, delta_time.count()));
                             frame_timer = 0.0f;
                             frame_count = 0;
+                        }
+
+                        if(input_manager.key_down(input::KeyCode::Escape)) {
+                            flow = platform::WindowEventFlow::Exit;
+                        }
+
+                        if(input_manager.key_down(input::KeyCode::F1)) {
+                            window.cursor(false);
+                        }
+
+                        if(input_manager.key_down(input::KeyCode::F2)) {
+                            window.cursor(true);
                         }
 
                         input_manager.update();

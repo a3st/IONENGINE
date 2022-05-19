@@ -50,7 +50,7 @@ std::shared_ptr<Pipeline> Pipeline::from_data(
     vertex_inputs.push_back( backend::VertexInputDesc { "TEXCOORD", 0, backend::Format::RG32, 0, sizeof(float) * 3 });
     vertex_inputs.push_back( backend::VertexInputDesc { "NORMAL", 0, backend::Format::RGB32, 0, sizeof(float) * 2 });
     vertex_inputs.push_back( backend::VertexInputDesc { "TANGENT", 1, backend::Format::RGB32, 0, sizeof(float) * 3 });
-    vertex_inputs.push_back( backend::VertexInputDesc { "COLOR", 1, backend::Format::RGB32, 0, sizeof(float) * 3 });
+    vertex_inputs.push_back( backend::VertexInputDesc { "BITANGENT", 1, backend::Format::RGB32, 0, sizeof(float) * 3 });
 
     return std::shared_ptr<Pipeline>(new Pipeline(device, vertex_inputs, shader_program, parameters, render_pass));
 }

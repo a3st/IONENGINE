@@ -18,7 +18,6 @@ add_executable(Runtime-Win32
 
     # Engine
     engine/main.cpp
-    #engine/sponza.cpp
 # ---------------------------
     # Lib
     lib/thread_pool.cpp
@@ -96,7 +95,7 @@ target_link_libraries(Runtime-Win32
 
 # Link Dirs
 target_link_directories(Runtime-Win32 PRIVATE
-    thirdparty/d3d12_ma/build/Debug
+    thirdparty/d3d12_ma/build/${CMAKE_BUILD_TYPE}
 )
 
 # Preprocessor

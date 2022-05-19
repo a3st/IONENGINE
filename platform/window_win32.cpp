@@ -20,6 +20,8 @@ struct Window::Impl {
 	uint32_t _client_width;
 	uint32_t _client_height;
 
+	bool _cursor;
+
 	std::queue<WindowEvent> events;
 
 	void initialize(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen);
@@ -35,6 +37,10 @@ struct Window::Impl {
     void label(std::string_view const label);
 
 	std::queue<WindowEvent>& messages();
+
+	bool cursor() const;
+
+    void cursor(bool const show);
 
 	static LRESULT wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 };
@@ -103,6 +109,8 @@ void Window::Impl::initialize(std::string_view const label, uint32_t const width
 	if (!RegisterRawInputDevices(raw_devices.data(), static_cast<uint32_t>(raw_devices.size()), sizeof(RAWINPUTDEVICE))) {
 		throw std::runtime_error("An error occurred while registering raw input devices");
 	}
+
+	cursor(true);
 }
 
 void Window::Impl::deinitialize() {
@@ -162,6 +170,14 @@ std::queue<WindowEvent>& Window::Impl::messages() {
 	return events;
 }
 
+bool Window::Impl::cursor() const {
+	return _cursor;
+}
+
+void Window::Impl::cursor(bool const show) {
+	_cursor = show;
+}
+
 LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
 	auto window_impl = reinterpret_cast<Impl*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -194,6 +210,27 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			window_impl->_client_height = std::max<uint32_t>(1, height - style_height);
 
 			window_impl->events.push(WindowEvent::sized(window_impl->_client_width, window_impl->_client_height));
+		} break;
+
+		case WM_MOUSEMOVE: {
+			if(!window_impl->_cursor) {
+
+				SetCursor(NULL);
+
+				auto rect = RECT {};
+				if(GetClientRect(hWnd, &rect)) {
+					auto point = POINT {
+						.x = rect.right / 2,
+						.y = rect.bottom / 2
+					};
+
+					if(ClientToScreen(hWnd, &point)) {
+						SetCursorPos(point.x, point.y);
+					}
+				}
+			} else {
+				SetCursor(LoadCursor(0, IDC_ARROW));
+			}
 		} break;
 
 		case WM_INPUT: {
@@ -291,4 +328,12 @@ void Window::label(std::string_view const label) {
 
 std::queue<WindowEvent>& Window::messages() {
 	return _impl->messages();
+}
+
+bool Window::cursor() const {
+	return _impl->cursor();
+}
+
+void Window::cursor(bool const show) {
+	_impl->cursor(show);
 }

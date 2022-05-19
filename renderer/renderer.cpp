@@ -66,17 +66,24 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     _width = window.client_width();
     _height = window.client_height();
 
+    _gbuffer_positions.resize(2);
     _gbuffer_albedos.resize(2);
+    _gbuffer_normals.resize(2);
+    _gbuffer_roughmetals.resize(2);
     _depth_stencils.resize(2);
 
-    _material_buffers.resize(2);
+    _material_buffer.resize(512);
 
     for(uint32_t i = 0; i < 2; ++i) {
-        _gbuffer_albedos[i] = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height);
-        _depth_stencils[i] = GPUTexture::depth_stencil(_device, backend::Format::D32, _width, _height);
+
+        _gbuffer_positions.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height);
+        _gbuffer_albedos.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height);
+        _gbuffer_normals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height);
+        _gbuffer_roughmetals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height);
+        _depth_stencils.at(i) = GPUTexture::depth_stencil(_device, backend::Format::D32, _width, _height);
+
         _world_cbuffer_pools.emplace_back(_device, 256, 64);
         _material_cbuffer_pools.emplace_back(_device, 512, 32);
-        _material_buffers[i].resize(512);
     }
 }
 
@@ -169,18 +176,87 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
 
 void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode* camera) {
 
-    auto gbuffer_albedo_info = CreateColorInfo {
-        .attachment = _gbuffer_albedos.at(frame_index),
-        .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
-    };
-
     auto depth_stencil_info = CreateDepthStencilInfo {
         .attachment = _depth_stencils.at(frame_index),
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_depth = 1.0f,
         .clear_stencil = 0x0
     };
+
+    auto gbuffer_infos = std::array<CreateColorInfo, 4> {
+        CreateColorInfo {
+            .attachment = _gbuffer_positions.at(frame_index),
+            .load_op = backend::RenderPassLoadOp::Clear,
+            .clear_color = lib::math::Color(0.0f, 0.0f, 0.0f, 1.0f)
+        },
+        CreateColorInfo {
+            .attachment = _gbuffer_albedos.at(frame_index),
+            .load_op = backend::RenderPassLoadOp::Clear,
+            .clear_color = lib::math::Color(0.0f, 0.0f, 0.0f, 1.0f)
+        },
+        CreateColorInfo {
+            .attachment = _gbuffer_normals.at(frame_index),
+            .load_op = backend::RenderPassLoadOp::Clear,
+            .clear_color = lib::math::Color(0.0f, 0.8f, 0.0f, 1.0f)
+        },
+        CreateColorInfo {
+            .attachment = _gbuffer_roughmetals.at(frame_index),
+            .load_op = backend::RenderPassLoadOp::Clear,
+            .clear_color = lib::math::Color(0.0f, 0.0f, 0.0f, 1.0f)
+        }
+    };
+
+    _frame_graph.value().add_pass(
+        "gbuffer", 
+        width,
+        height,
+        gbuffer_infos,
+        std::nullopt,
+        depth_stencil_info,
+        [=](RenderPassContext const& context) {
+            
+            for(auto const& batch : _deffered_queue) {
+
+                _material_samplers.clear();
+                
+                auto geometry_buffer = _geometry_cache.value().get(_upload_context.value(), *batch.mesh, batch.surface_index);
+                auto pipeline = _pipeline_cache.value().get(_shader_cache.value(), *batch.material, "gbuffer", context.render_pass());
+                auto shader_program = pipeline->shader_program();
+
+                pipeline->bind(context.command_list());
+
+                ShaderUniformBinder binder(_device, *shader_program);
+
+                // apply_material_parameters(binder, *batch.material, frame_index);
+
+                for(auto& sampler : _material_samplers) {
+                    //sampler->barrier(context.command_list(), backend::MemoryState::ShaderRead);
+                }
+
+                uint32_t const world_location = shader_program->location_by_uniform_name("world");
+
+                for(auto const& instance : batch.instances) {
+
+                    auto world = WorldCBuffer {
+                        .world = instance.model,
+                        .viewproj = camera->transform_view() * camera->transform_projection(),
+                    };
+
+                    std::shared_ptr<GPUBuffer> buffer = _world_cbuffer_pools.at(frame_index).allocate();
+                    buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&world), sizeof(WorldCBuffer)));
+
+                    binder.bind_cbuffer(world_location, *buffer);
+
+                    binder.update(context.command_list());
+                    geometry_buffer->bind(context.command_list());
+                }
+
+                for(auto& sampler : _material_samplers) {
+                    //sampler->barrier(context.command_list(), backend::MemoryState::Common);
+                }
+            }
+        }
+    );
 
     CreateColorInfo swapchain_info = {
         .attachment = nullptr,
@@ -189,136 +265,83 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
     };
 
     _frame_graph.value().add_pass(
-        "gbuffer", 
-        width,
-        height,
-        std::span<CreateColorInfo const>(&swapchain_info, 1),
-        std::nullopt,
-        depth_stencil_info,
-        [&](RenderPassContext const& context) {
-            
-            for(auto const& batch : _deffered_queue) {
-                
-                auto geometry_buffer = _geometry_cache.value().get(_upload_context.value(), *batch.mesh, batch.surface_index);
-                auto pipeline = _pipeline_cache.value().get(_shader_cache.value(), *batch.material, "gbuffer", context.render_pass());
-
-                pipeline->bind(context.command_list());
-
-                auto shader_program = pipeline->shader_program();
-
-                uint32_t const world_location = shader_program->location_by_uniform_name("world");
-
-                ShaderUniformBinder binder(_device, *shader_program);
-                std::vector<std::shared_ptr<GPUTexture>> samplers;
-
-                for(auto& [parameter_name, parameter] : batch.material->parameters()) {
-
-                    if(parameter.is_sampler2D()) {
-
-                        auto it = shader_program->uniforms().find(parameter_name);
-                        if(it == shader_program->uniforms().end()) {
-                            break;
-                        }
-
-                        auto gpu_texture = _texture_cache.value().get(_upload_context.value(), *parameter.as_sampler2D().asset);
-                        samplers.emplace_back(gpu_texture);
-
-                        auto uniform_visitor = make_visitor(
-                            [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& data) {
-                                binder.bind_texture(data.index, *gpu_texture);
-                            },
-                            // Default
-                            [&](ShaderUniformData<ShaderUniformType::CBuffer> const& data) { }
-                        );
-
-                        std::visit(uniform_visitor, it->second.data);
-
-                    } else {
-                        
-                        auto it = shader_program->uniforms().find("material");
-                        if(it == shader_program->uniforms().end()) {
-                            break;
-                        }
-
-                        auto uniform_visitor = make_visitor(
-                            [&](ShaderUniformData<ShaderUniformType::CBuffer> const& uniform_data) {
-
-                                auto parameter_visitor = make_visitor(
-                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::F32> const& parameter_data) {
-                                        std::memcpy(_material_buffers.at(frame_index).data() + uniform_data.offsets.at(parameter_name), &parameter_data.value, sizeof(float));
-                                    },
-                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x2> const& parameter_data) {
-                                        std::memcpy(_material_buffers.at(frame_index).data() + uniform_data.offsets.at(parameter_name), parameter_data.value.data(), sizeof(lib::math::Vector2f));
-                                    },
-                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x3> const& parameter_data) {
-                                        std::memcpy(_material_buffers.at(frame_index).data() + uniform_data.offsets.at(parameter_name), parameter_data.value.data(), sizeof(lib::math::Vector3f));
-                                    },
-                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x4> const& parameter_data) {
-                                        std::memcpy(_material_buffers.at(frame_index).data() + uniform_data.offsets.at(parameter_name), parameter_data.value.data(), sizeof(lib::math::Vector4f));
-                                    },
-                                    // Default
-                                    [&](asset::MaterialParameterData<asset::MaterialParameterType::Sampler2D> const& parameter_data) { }
-                                );
-
-                                std::visit(parameter_visitor, parameter.data);
-                            },
-                            // Default
-                            [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& uniform_data) { }
-                        );
-
-                        std::visit(uniform_visitor, it->second.data);
-                    }
-                }
-
-                {
-                    std::shared_ptr<GPUBuffer> buffer = _material_cbuffer_pools.at(frame_index).allocate();
-                    buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(_material_buffers.at(frame_index).data()), _material_buffers.at(frame_index).size()));
-
-                    uint32_t const material_location = shader_program->location_by_uniform_name("material");
-                    binder.bind_cbuffer(material_location, *buffer);
-                }
-
-                for(auto& sampler : samplers) {
-                    sampler->barrier(context.command_list(), backend::MemoryState::ShaderRead);
-                }
-
-                for(auto const& instance : batch.instances) {
-
-                    auto world = WorldCBuffer {
-                        .world = instance.model,
-                        .view = camera->transform_view(),
-                        .proj = camera->transform_projection()
-                    };
-
-                    std::shared_ptr<GPUBuffer> buffer = _world_cbuffer_pools.at(frame_index).allocate();
-                    buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&world), sizeof(WorldCBuffer)));
-                    
-                    binder.bind_cbuffer(world_location, *buffer);
-
-                    binder.update(context.command_list());
-                    geometry_buffer->bind(context.command_list());
-                }
-
-                for(auto& sampler : samplers) {
-                    sampler->barrier(context.command_list(), backend::MemoryState::Common);
-                }
-            }
-        }
-    );
-
-    /*CreateColorInfo swapchain_info = {
-        .attachment = nullptr,
-        .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = lib::math::Color(0.1f, 0.5f, 0.2f, 1.0f)
-    };
-
-    _frame_graph.value().add_pass(
-        "present",
+        "deffered",
         width,
         height,
         std::span<CreateColorInfo const>(&swapchain_info, 1),
         std::nullopt,
         std::nullopt,
         RenderPassDefaultFunc
-    );*/
+    );
+}
+
+void Renderer::apply_material_parameters(ShaderUniformBinder& binder, asset::Material& material, uint32_t const frame_index) {
+
+    for(auto& [parameter_name, parameter] : material.parameters()) {
+
+        if(parameter.is_sampler2D()) {
+
+            auto it = binder.shader_program().uniforms().find(parameter_name);
+            if(it == binder.shader_program().uniforms().end()) {
+                break;
+            }
+
+            if(parameter.as_sampler2D().asset.is_ok()) {
+
+                auto gpu_texture = _texture_cache.value().get(_upload_context.value(), *parameter.as_sampler2D().asset);
+                _material_samplers.emplace_back(gpu_texture);
+
+                auto uniform_visitor = make_visitor(
+                    [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& data) {
+                        binder.bind_texture(data.index, *gpu_texture);
+                    },
+                    // Default
+                    [&](ShaderUniformData<ShaderUniformType::CBuffer> const& data) { }
+                );
+
+                std::visit(uniform_visitor, it->second.data);
+            }
+
+        } else {
+                        
+            auto it = binder.shader_program().uniforms().find("material");
+            if(it == binder.shader_program().uniforms().end()) {
+                break;
+            }
+
+            auto uniform_visitor = make_visitor(
+                [&](ShaderUniformData<ShaderUniformType::CBuffer> const& uniform_data) {
+                                
+                    auto parameter_visitor = make_visitor(
+                        [&](asset::MaterialParameterData<asset::MaterialParameterType::F32> const& parameter_data) {
+                            std::memcpy(_material_buffer.data() + uniform_data.offsets.at(parameter_name), &parameter_data.value, sizeof(float));
+                        },
+                        [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x2> const& parameter_data) {
+                            std::memcpy(_material_buffer.data() + uniform_data.offsets.at(parameter_name), parameter_data.value.data(), sizeof(lib::math::Vector2f));
+                        },
+                        [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x3> const& parameter_data) {
+                            std::memcpy(_material_buffer.data() + uniform_data.offsets.at(parameter_name), parameter_data.value.data(), sizeof(lib::math::Vector3f));
+                        },
+                        [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x4> const& parameter_data) {
+                            std::memcpy(_material_buffer.data() + uniform_data.offsets.at(parameter_name), parameter_data.value.data(), sizeof(lib::math::Vector4f));
+                        },
+                        // Default
+                        [&](asset::MaterialParameterData<asset::MaterialParameterType::Sampler2D> const& parameter_data) { }
+                    );
+
+                    std::visit(parameter_visitor, parameter.data);
+                },
+                // Default
+                [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& uniform_data) { }
+            );
+
+            std::visit(uniform_visitor, it->second.data);
+        }
+    }
+
+    std::shared_ptr<GPUBuffer> buffer = _material_cbuffer_pools.at(frame_index).allocate();
+    buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(_material_buffer.data()), _material_buffer.size()));
+
+    //uint32_t const material_location = binder.shader_program().location_by_uniform_name("material");
+    //binder.bind_cbuffer(material_location, *buffer);
 }

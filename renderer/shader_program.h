@@ -95,6 +95,8 @@ public:
         _device->bind_resources(command_list, _shader_program->descriptor_layout(), _descriptor_writes);
     }
 
+    ShaderProgram& shader_program() { return *_shader_program; }
+
 private:
 
     backend::Device* _device;

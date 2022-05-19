@@ -46,11 +46,11 @@ private:
 
     struct WorldCBuffer {
         lib::math::Matrixf world;
-        lib::math::Matrixf view;
-        lib::math::Matrixf proj;
+        lib::math::Matrixf viewproj;
     };
 
-    std::vector<std::vector<uint8_t>> _material_buffers;
+    std::vector<uint8_t> _material_buffer;
+    std::vector<std::shared_ptr<GPUTexture>> _material_samplers;
 
     asset::AssetManager* _asset_manager;
 
@@ -67,7 +67,11 @@ private:
     std::optional<PipelineCache> _pipeline_cache;
     std::optional<TextureCache> _texture_cache;
 
+    std::vector<std::shared_ptr<GPUTexture>> _gbuffer_positions;
     std::vector<std::shared_ptr<GPUTexture>> _gbuffer_albedos;
+    std::vector<std::shared_ptr<GPUTexture>> _gbuffer_normals;
+    std::vector<std::shared_ptr<GPUTexture>> _gbuffer_roughmetals;
+
     std::vector<std::shared_ptr<GPUTexture>> _depth_stencils;
 
     std::vector<CBufferPool> _world_cbuffer_pools;
@@ -79,6 +83,8 @@ private:
     uint32_t _height;
 
     void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode* camera);
+
+    void apply_material_parameters(ShaderUniformBinder& binder, asset::Material& material, uint32_t const frame_index);
 };
 
 }

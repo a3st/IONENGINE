@@ -93,6 +93,10 @@ public:
 
     std::queue<WindowEvent>& messages();
 
+    bool cursor() const;
+
+    void cursor(bool const show);
+
 private:
 
     struct Impl;

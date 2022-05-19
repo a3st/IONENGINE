@@ -14,31 +14,37 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
     asset::AssetPtr<asset::Mesh> tv_mesh;
     asset::AssetPtr<asset::Mesh> chair_mesh;
     asset::AssetPtr<asset::Mesh> cabinet_mesh;
+    asset::AssetPtr<asset::Mesh> cube_mesh;
 
     asset::AssetPtr<asset::Material> tv_default_material;
     asset::AssetPtr<asset::Material> tv_screen_default_material;
     asset::AssetPtr<asset::Material> chair_default_material;
     asset::AssetPtr<asset::Material> cabinet_default_material;
+    asset::AssetPtr<asset::Material> cube_default_material;
 
     // Initialize assets
     {
         tv_mesh = asset_manager.get_mesh("content/objects/tv.obj");
         chair_mesh = asset_manager.get_mesh("content/objects/chair.obj");
         cabinet_mesh = asset_manager.get_mesh("content/objects/cabinet.obj");
+        cube_mesh = asset_manager.get_mesh("content/objects/cube.obj");
 
         tv_default_material = asset_manager.get_material("content/materials/tv_default.json5");
         tv_screen_default_material = asset_manager.get_material("content/materials/tv_screen_default.json5");
         chair_default_material = asset_manager.get_material("content/materials/chair_default.json5");
         cabinet_default_material = asset_manager.get_material("content/materials/cabinet_default.json5");
+        cube_default_material = asset_manager.get_material("content/materials/cube_default.json5");
 
         tv_mesh.wait();
         chair_mesh.wait();
         cabinet_mesh.wait();
+        cube_mesh.wait();
 
         tv_default_material.wait();
         tv_screen_default_material.wait();
         chair_default_material.wait();
         cabinet_default_material.wait();
+        cube_default_material.wait();
     }
 
     // Initialize scene objects
@@ -66,9 +72,21 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         cabinet_object_node->name("cabinet_object");
         cabinet_object_node->mesh(cabinet_mesh);
         cabinet_object_node->material(0, cabinet_default_material);
-        cabinet_object_node->position(lib::math::Vector3f(5.0f, -2.0f, 0.5f));
+        cabinet_object_node->position(lib::math::Vector3f(2.0f, -1.0f, 0.5f));
         cabinet_object_node->rotation(lib::math::Quaternionf::angle_axis(0.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
         cabinet_object_node->scale(lib::math::Vector3f(0.5f, 0.5f, 0.5f));
+
+        std::array<scene::MeshNode*, 3> cube_object_nodes;
+
+        for(size_t i = 0; i < cube_object_nodes.size(); ++i) {
+            cube_object_nodes[i] = _scene.graph().add_node<scene::MeshNode>();
+            cube_object_nodes[i]->name("cube_object_" + i);
+            cube_object_nodes[i]->mesh(cube_mesh);
+            cube_object_nodes[i]->material(0, cube_default_material);
+            cube_object_nodes[i]->position(lib::math::Vector3f(static_cast<float>(i), -1.0f, 2.5f));
+            cube_object_nodes[i]->rotation(lib::math::Quaternionf::angle_axis(90.0f * i, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
+            cube_object_nodes[i]->scale(lib::math::Vector3f(0.2f, 0.2f, 0.2f));
+        }
 
         auto camera_object_node = _scene.graph().add_node<scene::CameraNode>();
         camera_object_node->name("MainCamera");
@@ -79,6 +97,9 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         root_node->add_child(chair_object_node);
         root_node->add_child(cabinet_object_node);
         root_node->add_child(camera_object_node);
+        for(size_t i = 0; i < cube_object_nodes.size(); ++i) {
+            root_node->add_child(cube_object_nodes[i]);
+        }
 
         _camera_node = camera_object_node;
 
@@ -115,8 +136,8 @@ void KidsRoom::update(float const delta_time) {
     float mouse_x_value = _input_manager->axis(input::AxisCode::MouseX);
     float mouse_y_value = _input_manager->axis(input::AxisCode::MouseY);
 
-    _rotation_x += -mouse_x_value * 15.0f * delta_time;
-    _rotation_y += -mouse_y_value * 15.0f * delta_time;
+    _rotation_x += -mouse_x_value * 25.0f * delta_time;
+    _rotation_y += -mouse_y_value * 25.0f * delta_time;
 
     lib::math::Quaternionf quat_x = lib::math::Quaternionf::angle_axis(_rotation_x, lib::math::Vector3f(0.0f, 1.0f, 0.0f));
     lib::math::Quaternionf quat_y = lib::math::Quaternionf::angle_axis(_rotation_y, lib::math::Vector3f(1.0f, 0.0f, 0.0f));

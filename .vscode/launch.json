@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "configurations": [
         {
-            "name": "(Windows) Launch Runtime",
+            "name": "(Windows) Launch Runtime Debug",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Debug/project.exe",
@@ -16,13 +16,13 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "(Windows) Launch SPIRV HLSL Package",
+            "name": "(Windows) Launch Runtime Release",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/hlsl_spirv_package.exe",
+            "program": "${workspaceFolder}/build/Release/project.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/Debug",
+            "cwd": "${workspaceFolder}/build/Release",
             "environment": [],
             "console": "integratedTerminal"
         }

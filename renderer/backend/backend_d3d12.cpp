@@ -270,7 +270,7 @@ void Device::impl_deleter::operator()(Impl* ptr) const {
 
 void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc) {
 
-    textures = HandlePool<Texture>(1024);
+    textures = HandlePool<Texture>(4096);
     buffers = HandlePool<Buffer>(1024);
     samplers = HandlePool<Sampler>(1024);
     descriptor_layouts = HandlePool<DescriptorLayout>(128);

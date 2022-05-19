@@ -84,6 +84,7 @@ void FrameGraph::reset() {
 void FrameGraph::execute() {
 
     for(auto const& op : _ops) {
+
         switch(op.op_type) {
             case OpType::RenderPass: {
                 auto& render_pass = _render_passes[op.index];
