@@ -9,10 +9,12 @@
 
 enum class JSON_ShaderUniformType {
     cbuffer,
-    sampler2D
+    sbuffer,
+    sampler2D,
+    rwbuffer
 };
 
-JSON5_ENUM(JSON_ShaderUniformType, cbuffer, sampler2D)
+JSON5_ENUM(JSON_ShaderUniformType, cbuffer, sbuffer, rwbuffer, sampler2D)
 
 enum class JSON_ShaderDataType {
     f32x4x4,
@@ -90,7 +92,9 @@ DECLARE_ENUM_CLASS_BIT_FLAG(ShaderFlags)
 
 enum class ShaderUniformType {
     CBuffer,
-    Sampler2D
+    SBuffer,
+    Sampler2D,
+    RWBuffer
 };
 
 enum class ShaderDataType {
@@ -117,6 +121,16 @@ struct ShaderUniformData<ShaderUniformType::CBuffer> {
     std::vector<ShaderBufferData> data;
 };
 
+template<>
+struct ShaderUniformData<ShaderUniformType::SBuffer> {
+    std::vector<ShaderBufferData> data;
+};
+
+template<>
+struct ShaderUniformData<ShaderUniformType::RWBuffer> {
+    std::vector<ShaderBufferData> data;
+};
+
 #ifndef DECLARE_SHADER_UNIFORM_CAST
 #define DECLARE_SHADER_UNIFORM_CAST(Name, Type) \
 ShaderUniformData<Type> const& Name() { \
@@ -129,13 +143,22 @@ struct ShaderUniform {
 
     std::variant<
         ShaderUniformData<ShaderUniformType::Sampler2D>,
-        ShaderUniformData<ShaderUniformType::CBuffer>
+        ShaderUniformData<ShaderUniformType::CBuffer>,
+        ShaderUniformData<ShaderUniformType::SBuffer>,
+        ShaderUniformData<ShaderUniformType::RWBuffer>
     > data;
 
     ShaderFlags visibility;
 
     DECLARE_SHADER_UNIFORM_CAST(as_sampler2D, ShaderUniformType::Sampler2D)
     DECLARE_SHADER_UNIFORM_CAST(as_cbuffer, ShaderUniformType::CBuffer)
+    DECLARE_SHADER_UNIFORM_CAST(as_sbuffer, ShaderUniformType::SBuffer)
+    DECLARE_SHADER_UNIFORM_CAST(as_rwbuffer, ShaderUniformType::RWBuffer)
+};
+
+struct VertexAttribute {
+    std::string semantic;
+    ShaderDataType type;
 };
 
 struct ShaderData {
@@ -155,6 +178,8 @@ public:
 
     std::span<ShaderData const> shaders() const;
 
+    std::span<VertexAttribute const> attributes() const;
+
     uint64_t hash() const;
 
     void cache_entry(size_t const value);
@@ -168,6 +193,7 @@ private:
     std::string _name;
     std::vector<ShaderUniform> _uniforms;
     std::vector<ShaderData> _shaders;
+    std::vector<VertexAttribute> _attributes;
 
     size_t _cache_entry{std::numeric_limits<size_t>::max()};
     uint64_t _total_hash{0};

@@ -14,14 +14,22 @@ Texture::Texture(DirectX::DDS_HEADER const& header, std::span<uint8_t const> con
     _mip_count = header.mipMapCount;
 
     if(header.ddspf.flags & DDS_FOURCC) {
-        if(header.ddspf.fourCC == MAKEFOURCC('D','X','T','1')) {
+        if(header.ddspf.fourCC == MAKEFOURCC('D', 'X', 'T', '1')) {
             _format = TextureFormat::BC1;
         } else if(header.ddspf.fourCC == MAKEFOURCC('D', 'X', 'T', '3')) {
             _format = TextureFormat::BC2;
         } else if(header.ddspf.fourCC == MAKEFOURCC('D', 'X', 'T', '5')) {
             _format = TextureFormat::BC3;
-        } else if(header.ddspf.fourCC == MAKEFOURCC('B', 'C', '5', 'U')) {
+        } else if(header.ddspf.fourCC == MAKEFOURCC('D', 'X', 'T', '4')) {
             _format = TextureFormat::BC3;
+        } else if(header.ddspf.fourCC == MAKEFOURCC('B', 'C', '4', 'U')) {
+            _format = TextureFormat::BC4;
+        } else if(header.ddspf.fourCC == MAKEFOURCC('B', 'C', '4', 'S')) {
+            _format = TextureFormat::BC4;
+        } else if(header.ddspf.fourCC == MAKEFOURCC('B', 'C', '5', 'U')) {
+            _format = TextureFormat::BC5;
+        } else if(header.ddspf.fourCC == MAKEFOURCC('B', 'C', '5', 'S')) {
+            _format = TextureFormat::BC5;
         }
     } else if(header.ddspf.flags & DDS_RGB) {
 

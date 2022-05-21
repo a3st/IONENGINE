@@ -169,12 +169,16 @@ HRESULT DescriptorRange::allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range
 
     uint32_t cur_arena_block_index = _arena_block_index.load();
 
-    while(true) {
+    // TODO Multithreading Allocation
+    // 21.05.2022 - 24.06.2022
+
+    /*while(true) {
         uint32_t const next_arena_block_index = cur_arena_block_index + 1 % static_cast<uint32_t>(_arena_block_ranges.size());
         if(_arena_block_index.compare_exchange_strong(cur_arena_block_index, next_arena_block_index)) {
             break;
         }
-    }
+    }*/
+    cur_arena_block_index = cur_arena_block_index + 1 % static_cast<uint32_t>(_arena_block_ranges.size());
 
     auto& cur_allocation = _allocations[cur_arena_block_index * MAX_ALLOCATION_COUNT + _arena_block_ranges[cur_arena_block_index].offset];
     
@@ -225,7 +229,8 @@ HRESULT DescriptorRange::initialize(
     _offset = offset;
     _size = size;
 
-    uint32_t const range_count = std::thread::hardware_concurrency();
+    //uint32_t const range_count = std::thread::hardware_concurrency();
+    uint32_t const range_count = 2;
 
     _arena_block_ranges.resize(range_count);
     _allocations = new DescriptorRangeAllocation[range_count * MAX_ALLOCATION_COUNT];

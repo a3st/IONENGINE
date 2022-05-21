@@ -6,10 +6,15 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-GPUBuffer::GPUBuffer(backend::Device& device, size_t const size, backend::BufferFlags const flags) :
+GPUBuffer::GPUBuffer(backend::Device& device, size_t const size, backend::BufferFlags const flags, uint32_t const element_stride) :
     _device(&device) {
 
-    _buffer = device.create_buffer(size, flags);
+    if(flags & backend::BufferFlags::ShaderResource) {
+        _buffer = device.create_buffer(size, flags, element_stride);
+    } else {
+        _buffer = device.create_buffer(size, flags);
+    }
+    
     _flags = flags;
 }
 
@@ -18,7 +23,11 @@ GPUBuffer::~GPUBuffer() {
 }
 
 std::shared_ptr<GPUBuffer> GPUBuffer::cbuffer(backend::Device& device, uint32_t const size) {
-    return std::shared_ptr<GPUBuffer>(new GPUBuffer(device, static_cast<size_t>(size), backend::BufferFlags::HostWrite | backend::BufferFlags::ConstantBuffer));
+    return std::shared_ptr<GPUBuffer>(new GPUBuffer(device, static_cast<size_t>(size), backend::BufferFlags::HostWrite | backend::BufferFlags::ConstantBuffer, 0));
+}
+
+std::shared_ptr<GPUBuffer> GPUBuffer::sbuffer(backend::Device& device, uint32_t const size, uint32_t const element_stride) {
+    return std::shared_ptr<GPUBuffer>(new GPUBuffer(device, static_cast<size_t>(size), backend::BufferFlags::HostWrite | backend::BufferFlags::ShaderResource, element_stride));
 }
 
 backend::Handle<backend::Buffer> GPUBuffer::as_buffer() const {
@@ -27,6 +36,11 @@ backend::Handle<backend::Buffer> GPUBuffer::as_buffer() const {
 
 bool GPUBuffer::is_cbuffer() const {
     return _flags & backend::BufferFlags::ConstantBuffer;
+}
+
+void GPUBuffer::barrier(backend::Handle<backend::CommandList> const& command_list, backend::MemoryState const memory_state) {
+    _device->barrier(command_list, _buffer, _memory_state, memory_state);
+    _memory_state = memory_state;
 }
 
 void GPUBuffer::copy_data(UploadContext& context, std::span<uint8_t const> const data) {

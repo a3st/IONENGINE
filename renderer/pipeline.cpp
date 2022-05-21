@@ -8,11 +8,10 @@ using namespace ionengine::renderer;
 
 Pipeline::Pipeline(
     backend::Device& device,
-    std::span<backend::VertexInputDesc const> const vertex_descs,
     std::shared_ptr<ShaderProgram> shader_program,
     asset::MaterialPassParameters const& parameters,
     backend::Handle<backend::RenderPass> const& render_pass
-) : _device(&device), _shader_program(shader_program) {
+) : _device(&device) {
 
     backend::RasterizerDesc rasterizer_desc = {
         .fill_mode = get_fill_mode(parameters.fill_mode),
@@ -29,7 +28,7 @@ Pipeline::Pipeline(
 
     _pipeline = device.create_pipeline(
         shader_program->descriptor_layout(), 
-        vertex_descs, 
+        shader_program->attributes(), 
         shader_program->shaders(), 
         rasterizer_desc, 
         depth_stencil_desc, 
@@ -45,14 +44,8 @@ std::shared_ptr<Pipeline> Pipeline::from_data(
     asset::MaterialPassParameters const& parameters,
     backend::Handle<backend::RenderPass> const& render_pass
 ) {
-    std::vector<backend::VertexInputDesc> vertex_inputs;
-    vertex_inputs.push_back( backend::VertexInputDesc { "POSITION", 0, backend::Format::RGB32, 0, 0 });
-    vertex_inputs.push_back( backend::VertexInputDesc { "TEXCOORD", 0, backend::Format::RG32, 0, sizeof(float) * 3 });
-    vertex_inputs.push_back( backend::VertexInputDesc { "NORMAL", 0, backend::Format::RGB32, 0, sizeof(float) * 2 });
-    vertex_inputs.push_back( backend::VertexInputDesc { "TANGENT", 1, backend::Format::RGB32, 0, sizeof(float) * 3 });
-    vertex_inputs.push_back( backend::VertexInputDesc { "BITANGENT", 1, backend::Format::RGB32, 0, sizeof(float) * 3 });
 
-    return std::shared_ptr<Pipeline>(new Pipeline(device, vertex_inputs, shader_program, parameters, render_pass));
+    return std::shared_ptr<Pipeline>(new Pipeline(device, shader_program, parameters, render_pass));
 }
 
 Pipeline::~Pipeline() {
@@ -61,10 +54,6 @@ Pipeline::~Pipeline() {
 
 void Pipeline::bind(backend::Handle<backend::CommandList> const& command_list) {
     _device->bind_pipeline(command_list, _pipeline);
-}
-
-std::shared_ptr<ShaderProgram> Pipeline::shader_program() const {
-    return _shader_program;
 }
 
 backend::FillMode constexpr Pipeline::get_fill_mode(asset::MaterialPassFillMode const fill_mode) const {

@@ -122,6 +122,7 @@ backend::Format constexpr GPUTexture::get_texture_format(asset::TextureFormat co
     switch(format) {
         case asset::TextureFormat::BC1: return backend::Format::BC1;
         case asset::TextureFormat::BC5: return backend::Format::BC5;
+        case asset::TextureFormat::BC4: return backend::Format::BC4;
         default: return backend::Format::Unknown;
     }
 }

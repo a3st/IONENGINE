@@ -10,6 +10,7 @@
 #include <renderer/pipeline_cache.h>
 #include <renderer/frame_graph.h>
 #include <renderer/cbuffer_pool.h>
+#include <renderer/sbuffer_pool.h>
 #include <asset/asset_manager.h>
 
 namespace ionengine {
@@ -22,11 +23,16 @@ class CameraNode;
 }
 
 namespace ionengine::renderer {
+    
+struct DefaultAssetDesc {
+    asset::AssetPtr<asset::Technique> deffered;
+    asset::AssetPtr<asset::Mesh> quad;
+};
 
 class Renderer {
 public:
 
-    Renderer(platform::Window& window, asset::AssetManager& asset_manager);
+    Renderer(platform::Window& window, asset::AssetManager& asset_manager, DefaultAssetDesc const& asset_desc);
 
     Renderer(Renderer const&) = delete;
 
@@ -45,27 +51,31 @@ public:
 private:
 
     struct WorldCBuffer {
-        lib::math::Matrixf world;
         lib::math::Matrixf viewproj;
     };
 
-    std::vector<uint8_t> _material_buffer;
-    std::vector<std::shared_ptr<GPUTexture>> _material_samplers;
+    struct ObjectSBuffer {
+        lib::math::Matrixf model;
+    };
 
     asset::AssetManager* _asset_manager;
 
     backend::Device _device;
 
+    std::optional<UploadContext> _upload_context;
+
     std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _mesh_event_receiver;
     std::optional<lib::Receiver<asset::AssetEvent<asset::Technique>>> _technique_event_receiver;
     std::optional<lib::Receiver<asset::AssetEvent<asset::Texture>>> _texture_event_receiver;
 
-    std::optional<UploadContext> _upload_context;
     std::optional<ShaderCache> _shader_cache;
     std::optional<GeometryCache> _geometry_cache;
     std::optional<FrameGraph> _frame_graph;
     std::optional<PipelineCache> _pipeline_cache;
     std::optional<TextureCache> _texture_cache;
+
+    std::vector<uint8_t> _material_buffer;
+    std::vector<std::shared_ptr<GPUTexture>> _material_samplers;
 
     std::vector<std::shared_ptr<GPUTexture>> _gbuffer_positions;
     std::vector<std::shared_ptr<GPUTexture>> _gbuffer_albedos;
@@ -74,8 +84,12 @@ private:
 
     std::vector<std::shared_ptr<GPUTexture>> _depth_stencils;
 
+    std::vector<SBufferPool> _object_sbuffer_pools;
     std::vector<CBufferPool> _world_cbuffer_pools;
     std::vector<CBufferPool> _material_cbuffer_pools;
+
+    asset::AssetPtr<asset::Technique> _deffered_technique;
+    asset::AssetPtr<asset::Mesh> _quad_mesh;
 
     RenderQueue _deffered_queue;
 

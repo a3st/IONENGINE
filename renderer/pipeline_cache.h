@@ -21,10 +21,10 @@ public:
 
     PipelineCache& operator=(PipelineCache&& other) noexcept;
 
-    std::shared_ptr<Pipeline> get(
+    std::tuple<std::shared_ptr<Pipeline>, std::shared_ptr<ShaderProgram>> get(
         ShaderCache& shader_cache,
-        asset::Material& material,
-        std::string_view const render_pass_name, 
+        asset::Technique& technique,
+        asset::MaterialPassParameters const& parameters,
         backend::Handle<backend::RenderPass> const& render_pass
     );
 

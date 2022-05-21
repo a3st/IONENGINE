@@ -11,35 +11,22 @@ PipelineCache::PipelineCache(backend::Device& device) :
     _device(&device) {
 }
 
-std::shared_ptr<Pipeline> PipelineCache::get(
+std::tuple<std::shared_ptr<Pipeline>, std::shared_ptr<ShaderProgram>> PipelineCache::get(
     ShaderCache& shader_cache,
-    asset::Material& material, 
-    std::string_view const render_pass_name, 
+    asset::Technique& technique,
+    asset::MaterialPassParameters const& parameters,
     backend::Handle<backend::RenderPass> const& render_pass
 ) {
 
-    std::string const pipeline_name = std::format("{}_{}", render_pass_name, render_pass.index());
+    std::string const pipeline_name = std::format("{}_{}", technique.name(), render_pass.index());
     uint32_t const pipeline_hash = lib::hash::ctcrc32(pipeline_name.data(), pipeline_name.size());
 
-    if(_data.find(pipeline_hash) == _data.end()) {
-        
-        for(auto const& pass : material.passes()) {
-            if(pass.name == render_pass_name) {
-                auto shader_program = shader_cache.get(*pass.technique);
-            
-                auto pipeline = Pipeline::from_data(
-                    *_device,
-                    shader_program,
-                    pass.parameters,
-                    render_pass
-                );
+    auto shader_program = shader_cache.get(technique);
 
-                _data.insert({ pipeline_hash, pipeline });
-                break;
-            }
-            continue;
-        }
+    if(_data.find(pipeline_hash) == _data.end()) {
+        auto pipeline = Pipeline::from_data(*_device, shader_program, parameters, render_pass);
+        _data.insert({ pipeline_hash, pipeline });
     }
 
-    return _data.at(pipeline_hash);
+    return { _data.at(pipeline_hash), shader_program };
 }

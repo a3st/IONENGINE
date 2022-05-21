@@ -21,13 +21,10 @@ public:
 
     void bind(backend::Handle<backend::CommandList> const& command_list);
 
-    std::shared_ptr<ShaderProgram> shader_program() const;
-
 private:
 
     Pipeline(
         backend::Device& device,
-        std::span<backend::VertexInputDesc const> const vertex_descs,
         std::shared_ptr<ShaderProgram> shader_program,
         asset::MaterialPassParameters const& parameters,
         backend::Handle<backend::RenderPass> const& render_pass
@@ -36,8 +33,6 @@ private:
     backend::Device* _device;
 
     backend::Handle<backend::Pipeline> _pipeline;
-
-    std::shared_ptr<ShaderProgram> _shader_program;
 
     backend::FillMode constexpr get_fill_mode(asset::MaterialPassFillMode const fill_mode) const;
 

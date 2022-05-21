@@ -12,9 +12,10 @@ Technique::Technique(JSON_TechniqueDefinition const& document) {
 
     _name = document.name;
 
-    std::unordered_map<JSON_ShaderUniformType, uint32_t> registers_count;
-    registers_count.insert({ JSON_ShaderUniformType::cbuffer, 0 });
-    registers_count.insert({ JSON_ShaderUniformType::sampler2D, 0 });
+    std::unordered_map<ShaderUniformType, uint32_t> registers_count;
+    registers_count.insert({ ShaderUniformType::CBuffer, 0 });
+    registers_count.insert({ ShaderUniformType::Sampler2D, 0 });
+    registers_count.insert({ ShaderUniformType::RWBuffer, 0 });
 
     std::unordered_map<std::string, uint32_t> locations;
 
@@ -28,68 +29,107 @@ Technique::Technique(JSON_TechniqueDefinition const& document) {
 
             if(uniform.properties.has_value() && uniform.type != JSON_ShaderUniformType::sampler2D) {
 
-                auto& data = _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::CBuffer>>();
+                if(uniform.type == JSON_ShaderUniformType::sbuffer) {
 
-                std::for_each(
-                    uniform.properties.value().begin(), 
-                    uniform.properties.value().end(), 
-                    [&](auto& element) {
-                        data.data.emplace_back(element.name, get_shader_data_type(element.type));
-                    }
-                );
+                    auto& data = _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::SBuffer>>();
+
+                    std::for_each(
+                        uniform.properties.value().begin(), 
+                        uniform.properties.value().end(), 
+                        [&](auto& element) {
+                            data.data.emplace_back(element.name, get_shader_data_type(element.type));
+                        }
+                    );
+
+                    locations.insert({ uniform.name, registers_count.at(ShaderUniformType::Sampler2D) });
+                    ++registers_count.at(ShaderUniformType::Sampler2D);
+
+                } else if(uniform.type == JSON_ShaderUniformType::rwbuffer) {
+
+                    auto& data = _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::RWBuffer>>();
+
+                    std::for_each(
+                        uniform.properties.value().begin(), 
+                        uniform.properties.value().end(), 
+                        [&](auto& element) {
+                            data.data.emplace_back(element.name, get_shader_data_type(element.type));
+                        }
+                    );
+
+                    locations.insert({ uniform.name, registers_count.at(ShaderUniformType::RWBuffer) });
+                    ++registers_count.at(ShaderUniformType::RWBuffer);
+
+                } else {
+
+                    auto& data = _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::CBuffer>>();
+
+                    std::for_each(
+                        uniform.properties.value().begin(), 
+                        uniform.properties.value().end(), 
+                        [&](auto& element) {
+                            data.data.emplace_back(element.name, get_shader_data_type(element.type));
+                        }
+                    );
+
+                    locations.insert({ uniform.name, registers_count.at(ShaderUniformType::CBuffer) });
+                    ++registers_count.at(ShaderUniformType::CBuffer);
+                }
+                
             } else {
                 _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::Sampler2D>>();
+
+                locations.insert({ uniform.name, registers_count.at(ShaderUniformType::Sampler2D) });
+                ++registers_count.at(ShaderUniformType::Sampler2D);
             }
 
             _uniforms.back().visibility = get_shader_flags(uniform.visibility.value_or(static_cast<JSON_ShaderType>(-1)));
-
-            locations.insert({ uniform.name, registers_count.at(uniform.type) });
-            ++registers_count.at(uniform.type);
         }
     );
 
     std::vector<uint64_t> hashes;
 
-    std::for_each(
-        document.shaders.begin(),
-        document.shaders.end(),
-        [&](auto const& shader) {
+    for(auto const& shader : document.shaders) {
 
-            std::string shader_code = "";
+        std::string shader_code = "";
 
-            switch(shader.type) {
-                case JSON_ShaderType::vertex: {
-                    shader_code += generate_struct_code("vs_input", shader.inputs);
-                    shader_code += generate_struct_code("vs_output", shader.outputs);
-                } break;
-                case JSON_ShaderType::pixel: {
-                    shader_code += generate_struct_code("ps_input", shader.inputs);
-                    shader_code += generate_struct_code("ps_output", shader.outputs);
-                } break;
-            }
+        switch(shader.type) {
+            case JSON_ShaderType::vertex: {
+                shader_code += generate_struct_code("vs_input", shader.inputs);
+                shader_code += generate_struct_code("vs_output", shader.outputs);
 
-            for(auto& uniform : document.uniforms) {
-
-                if(uniform.visibility.has_value()) {
-                    if(uniform.visibility.value() != shader.type) {
-                        continue;
-                    }
+                for(auto const& input : shader.inputs) {
+                    _attributes.emplace_back(input.semantic.value(), get_shader_data_type(input.type));
                 }
-
-                if(uniform.properties.has_value()) {
-                    shader_code += generate_uniform_code(uniform.name, uniform.type, locations.at(uniform.name), uniform.properties.value());
-                } else {
-                    shader_code += generate_uniform_code(uniform.name, uniform.type, locations.at(uniform.name));
-                }
-            }
-
-            shader_code += shader.source;
-            uint64_t const hash = XXHash64::hash(reinterpret_cast<void*>(shader_code.data()), shader_code.size(), 0);
-
-            hashes.emplace_back(hash);
-            _shaders.emplace_back(shader_code, get_shader_flags(shader.type), hash);
+            } break;
+            case JSON_ShaderType::pixel: {
+                shader_code += generate_struct_code("ps_input", shader.inputs);
+                shader_code += generate_struct_code("ps_output", shader.outputs);
+            } break;
         }
-    );
+
+        for(auto& uniform : document.uniforms) {
+
+            if(uniform.visibility.has_value()) {
+                if(uniform.visibility.value() != shader.type) {
+                    continue;
+                }
+            }
+
+            if(uniform.properties.has_value()) {
+                shader_code += generate_uniform_code(uniform.name, uniform.type, locations.at(uniform.name), uniform.properties.value());
+            } else {
+                shader_code += generate_uniform_code(uniform.name, uniform.type, locations.at(uniform.name));
+            }
+        }
+
+        shader_code += shader.source;
+        uint64_t const hash = XXHash64::hash(reinterpret_cast<void*>(shader_code.data()), shader_code.size(), 0);
+
+        hashes.emplace_back(hash);
+        _shaders.emplace_back(shader_code, get_shader_flags(shader.type), hash);
+
+        // std::cout << shader_code << std::endl;
+    }
 
     _total_hash = hashes.at(0);
     for(size_t i = 1; i < hashes.size(); ++i) {
@@ -135,6 +175,10 @@ std::span<ShaderData const> Technique::shaders() const {
     return _shaders;
 }
 
+std::span<VertexAttribute const> Technique::attributes() const {
+    return _attributes;
+}
+
 void Technique::cache_entry(size_t const value) {
     _cache_entry = value;
 }
@@ -162,6 +206,16 @@ std::string Technique::generate_uniform_code(
             generated_code += "};\n";
         } break;
 
+        case JSON_ShaderUniformType::sbuffer: {
+            generated_code += generate_struct_code(name, properties.value());
+            generated_code += std::format("StructuredBuffer<{}> {}s : register(t{});\n", name, name, location);
+        } break;
+
+        case JSON_ShaderUniformType::rwbuffer: {
+            generated_code += generate_struct_code(name, properties.value());
+            generated_code += std::format("RWStructuredBuffer<{}> {}s : register(u{});\n", name, name, location);
+        } break;
+
         case JSON_ShaderUniformType::sampler2D: {
             generated_code += std::format("SamplerState {}_sampler : register(s{}); ", name, location);
             generated_code += std::format("Texture2D {}_texture : register(t{});\n", name, location);
@@ -179,7 +233,11 @@ std::string Technique::generate_struct_code(
     std::string generated_code = "struct";
     generated_code += std::format(" {} {{ ", name);
     for(auto& property : properties) {
-        generated_code += std::format("{} {} : {}; ", get_shader_data_string(property.type), property.name, property.semantic.value_or(""));
+        if(property.semantic.has_value()) {
+            generated_code += std::format("{} {} : {}; ", get_shader_data_string(property.type), property.name, property.semantic.value());
+        } else {
+            generated_code += std::format("{} {}; ", get_shader_data_string(property.type), property.name);
+        }
     }
     generated_code += "};\n";
     return generated_code;

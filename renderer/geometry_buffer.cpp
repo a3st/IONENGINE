@@ -43,37 +43,8 @@ GeometryBuffer::~GeometryBuffer() {
 void GeometryBuffer::bind(backend::Handle<backend::CommandList> const& command_list) {
     _device->bind_vertex_buffer(command_list, 0, _vertex_buffer, 0);
     _device->bind_index_buffer(command_list, _index_buffer, 0);
-    _device->draw_indexed(command_list, _indices_size, 1, 0);
 }
 
-/*
-GeometryBuffer GeometryBuffer::quad(Context& context) {
-
-    auto quad_vertices = std::vector<float> {
-        1.0f, 1.0f, 1.0f, -1.0f,
-        1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f, -1.0f,
-        1.0f, -1.0f, 1.0f, 0.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f, -1.0f
-    };
-
-    auto vertex_declaration = std::vector<backend::VertexInputDesc> {
-        backend::VertexInputDesc { "POSITION", 0, backend::Format::RG32, 0, 0 },
-        backend::VertexInputDesc { "TEXCOORD", 0, backend::Format::RG32, 0, sizeof(float) * 2 }
-    };
-
-    GeometryBuffer geometry_buffer(context);
-    geometry_buffer._vertex_buffer = context.device().create_buffer(100, backend::BufferFlags::VertexBuffer | backend::BufferFlags::HostWrite);
-    
-    context.device().map_buffer_data(
-        geometry_buffer._vertex_buffer, 
-        0, 
-        std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(quad_vertices.data()), quad_vertices.size() * sizeof(float))
-    );
-
-    geometry_buffer._vertex_count = 6;
-    geometry_buffer._vertex_inputs = std::move(vertex_declaration);
-    return geometry_buffer;
+void GeometryBuffer::draw(backend::Handle<backend::CommandList> const& command_list, uint32_t const instance_count) {
+    _device->draw_indexed(command_list, _indices_size, instance_count, 0);
 }
-*/

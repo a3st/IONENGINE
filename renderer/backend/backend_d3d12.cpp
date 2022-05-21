@@ -139,7 +139,7 @@ struct Device::Impl {
     
     void delete_texture(Handle<Texture> const& texture);
     
-    Handle<Buffer> create_buffer(size_t const size, BufferFlags const flags);
+    Handle<Buffer> create_buffer(size_t const size, BufferFlags const flags, uint32_t const element_stride = 0);
     
     void delete_buffer(Handle<Buffer> const& buffer);
     
@@ -169,7 +169,7 @@ struct Device::Impl {
     
     void delete_shader(Handle<Shader> const& shader);
     
-    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings);
+    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings, bool const is_compute);
     
     void delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout);
     
@@ -181,6 +181,12 @@ struct Device::Impl {
         DepthStencilDesc const& depth_stencil_desc, 
         BlendDesc const& blend_desc, 
         Handle<RenderPass> const& render_pass,
+        Handle<CachePipeline> const& cache_pipeline
+    );
+
+    Handle<Pipeline> create_pipeline(
+        Handle<DescriptorLayout> const& descriptor_layout,
+        Handle<Shader> const& shader,
         Handle<CachePipeline> const& cache_pipeline
     );
     
@@ -271,7 +277,7 @@ void Device::impl_deleter::operator()(Impl* ptr) const {
 void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc) {
 
     textures = HandlePool<Texture>(4096);
-    buffers = HandlePool<Buffer>(1024);
+    buffers = HandlePool<Buffer>(2048);
     samplers = HandlePool<Sampler>(1024);
     descriptor_layouts = HandlePool<DescriptorLayout>(128);
     pipelines = HandlePool<Pipeline>(1024);
@@ -545,8 +551,10 @@ Handle<Texture> Device::Impl::create_texture(
             case Format::BGRA8: return DXGI_FORMAT_B8G8R8A8_UNORM;
             case Format::BGR8: return DXGI_FORMAT_B8G8R8X8_UNORM;
             case Format::BC1: return DXGI_FORMAT_BC1_UNORM;
+            case Format::BC4: return DXGI_FORMAT_BC4_UNORM;
             case Format::BC5: return DXGI_FORMAT_BC5_UNORM;
             case Format::D32: return DXGI_FORMAT_D32_FLOAT;
+            case Format::RGBA16_FLOAT: return DXGI_FORMAT_R16G16B16A16_FLOAT;
             default: assert(false && "invalid format specified"); break;
         }
         return DXGI_FORMAT_UNKNOWN;
@@ -682,7 +690,7 @@ void Device::Impl::delete_texture(Handle<Texture> const& texture) {
     textures.erase(texture);
 }
 
-Handle<Buffer> Device::Impl::create_buffer(size_t const size, BufferFlags const flags) {
+Handle<Buffer> Device::Impl::create_buffer(size_t const size, BufferFlags const flags, uint32_t const element_stride) {
 
     auto buffer_data = Buffer {};
 
@@ -739,6 +747,20 @@ Handle<Buffer> Device::Impl::create_buffer(size_t const size, BufferFlags const 
         THROW_IF_FAILED(cbv_srv_uav_pool->allocate(buffer_data.descriptor_allocation.GetAddressOf()));
 
         device->CreateUnorderedAccessView(buffer_data.resource.Get(), nullptr, &unordered_access_view_desc, buffer_data.descriptor_allocation->cpu_handle());
+    }
+    if(flags & BufferFlags::ShaderResource) {
+
+        auto shader_resource_view_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {};
+        shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+        shader_resource_view_desc.Format = resource_desc.Format;
+        shader_resource_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        shader_resource_view_desc.Buffer.FirstElement = 0;
+        shader_resource_view_desc.Buffer.NumElements = static_cast<uint32_t>(size) / element_stride;
+        shader_resource_view_desc.Buffer.StructureByteStride = element_stride;
+
+        THROW_IF_FAILED(cbv_srv_uav_pool->allocate(buffer_data.descriptor_allocation.GetAddressOf()));
+
+        device->CreateShaderResourceView(buffer_data.resource.Get(), &shader_resource_view_desc, buffer_data.descriptor_allocation->cpu_handle());
     }
 
     return buffers.push(std::move(buffer_data));
@@ -965,7 +987,7 @@ void Device::Impl::delete_shader(Handle<Shader> const& shader) {
     shaders.erase(shader);
 }
 
-Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings) {
+Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings, bool const is_compute) {
 
     auto get_descriptor_range_type = [&](DescriptorType const descriptor_type) -> D3D12_DESCRIPTOR_RANGE_TYPE {
         switch(descriptor_type) {
@@ -990,6 +1012,7 @@ Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<Descri
     };
 
     auto descriptor_layout_data = DescriptorLayout {};
+    descriptor_layout_data.is_compute = is_compute;
 
     std::unordered_map<D3D12_DESCRIPTOR_RANGE_TYPE, uint32_t> registers_count;
     registers_count.insert({ D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 0 });
@@ -1271,8 +1294,63 @@ Handle<Pipeline> Device::Impl::create_pipeline(
     THROW_IF_FAILED(device->CreateGraphicsPipelineState(
         &pipeline_desc,
         __uuidof(ID3D12PipelineState), 
-        reinterpret_cast<void**>(pipeline_data.pipeline_state.GetAddressOf())
-    ));
+        reinterpret_cast<void**>(pipeline_data.pipeline_state.GetAddressOf()))
+    );
+
+    /*if(!is_cached && cache_name.has_value()) {
+
+        ComPtr<ID3DBlob> buffer;
+        pipeline_data.pipeline_state->GetCachedBlob(buffer.GetAddressOf());
+        
+        shader_cache_data[cache_name.value()] = buffer;
+        is_cached = true;
+    }*/
+
+    return pipelines.push(std::move(pipeline_data));
+}
+
+Handle<Pipeline> Device::Impl::create_pipeline(
+    Handle<DescriptorLayout> const& descriptor_layout,
+    Handle<Shader> const& shader,
+    Handle<CachePipeline> const& cache_pipeline
+) {
+    auto pipeline_data = Pipeline {};
+
+    auto& descriptor_layout_data = descriptor_layouts[descriptor_layout];
+    pipeline_data.root_signature = descriptor_layout_data.root_signature;
+
+    auto pipeline_desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {};
+    pipeline_desc.pRootSignature = pipeline_data.root_signature.Get();
+
+    auto& shader_data = this->shaders[shader];
+        
+    auto shader_bytecode = D3D12_SHADER_BYTECODE {};
+    shader_bytecode.pShaderBytecode = shader_data.data.data();
+    shader_bytecode.BytecodeLength = shader_data.data.size();
+
+    pipeline_desc.CS = shader_bytecode;
+
+    /*bool is_cached = false;
+
+    if(cache_name.has_value()) {
+        
+        auto it = shader_cache_data.find(cache_name.value());
+        if(it != shader_cache_data.end()) {
+
+            auto cached_pso_state = D3D12_CACHED_PIPELINE_STATE {};
+            cached_pso_state.pCachedBlob = it->second->GetBufferPointer();
+            cached_pso_state.CachedBlobSizeInBytes = it->second->GetBufferSize();
+
+            pipeline_desc.CachedPSO = cached_pso_state;
+            is_cached = true;
+        }
+    }*/
+
+    THROW_IF_FAILED(device->CreateComputePipelineState(
+        &pipeline_desc,
+        __uuidof(ID3D12PipelineState), 
+        reinterpret_cast<void**>(pipeline_data.pipeline_state.GetAddressOf()))
+    );
 
     /*if(!is_cached && cache_name.has_value()) {
 
@@ -1571,6 +1649,7 @@ void Device::Impl::barrier(Handle<CommandList> const& command_list, ResourceHand
             case MemoryState::DepthWrite: return D3D12_RESOURCE_STATE_DEPTH_WRITE;
             case MemoryState::DepthRead: return D3D12_RESOURCE_STATE_DEPTH_READ;
             case MemoryState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
+            case MemoryState::NonPixelShaderRead: return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
         }
         return D3D12_RESOURCE_STATE_COMMON;
     };
@@ -1920,9 +1999,9 @@ void Device::delete_texture(Handle<Texture> const& texture) {
     _impl->delete_texture(texture);
 }
 
-Handle<Buffer> Device::create_buffer(size_t const size, BufferFlags const flags) {
+Handle<Buffer> Device::create_buffer(size_t const size, BufferFlags const flags, uint32_t const element_stride) {
 
-    return _impl->create_buffer(size, flags); 
+    return _impl->create_buffer(size, flags, element_stride); 
 }
 
 void Device::delete_buffer(Handle<Buffer> const& buffer) {
@@ -1977,9 +2056,9 @@ void Device::delete_shader(Handle<Shader> const& shader) {
     _impl->delete_shader(shader);
 }
 
-Handle<DescriptorLayout> Device::create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings) {
+Handle<DescriptorLayout> Device::create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings, bool const is_compute) {
 
-    return _impl->create_descriptor_layout(bindings);
+    return _impl->create_descriptor_layout(bindings, is_compute);
 }
 
 void Device::delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout) {
@@ -1997,8 +2076,15 @@ Handle<Pipeline> Device::create_pipeline(
     Handle<RenderPass> const& render_pass,
     Handle<CachePipeline> const& cache_pipeline
 ) {
-    
     return _impl->create_pipeline(descriptor_layout, vertex_descs, shaders, rasterizer_desc, depth_stencil_desc, blend_desc, render_pass, cache_pipeline);
+}
+
+Handle<Pipeline> Device::create_pipeline(
+    Handle<DescriptorLayout> const& descriptor_layout,
+    Handle<Shader> const& shader,
+    Handle<CachePipeline> const& cache_pipeline
+) {
+    return _impl->create_pipeline(descriptor_layout, shader, cache_pipeline);
 }
 
 void Device::delete_pipeline(Handle<Pipeline> const& pipeline) {

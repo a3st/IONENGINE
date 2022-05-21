@@ -22,25 +22,26 @@ enum class VertexUsage : uint16_t {
     BoneWeights = 8
 };
 
-enum class VertexFormat : uint16_t {
+/*enum class VertexFormat : uint16_t {
     F32x4x4,
     F32x4,
     F32x3,
     F32x2,
     F32
-};
+};*/
 
 enum class MeshError {
     IO,
     ParseError
 };
 
+/*
 struct MeshAttribute {
     VertexUsage usage;
     VertexFormat format;
     uint32_t index;
 };
-
+*/
 struct SurfaceData {
     lib::hash::Buffer<float> vertices;
     lib::hash::Buffer<uint32_t> indices;
@@ -65,7 +66,7 @@ private:
 
     Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const> const shapes, std::span<tinyobj::material_t const> const materials);
 
-    std::vector<MeshAttribute> _attributes;
+    //std::vector<MeshAttribute> _attributes;
     std::vector<SurfaceData> _surfaces;
     std::vector<AssetPtr<Material>> _materials;
 };

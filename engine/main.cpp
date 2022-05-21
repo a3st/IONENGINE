@@ -24,8 +24,15 @@ int main(int* argc, char** agrv) {
     try {
         platform::WindowLoop loop;
         platform::Window window("IONENGINE", 800, 600, false);
+        
         asset::AssetManager asset_manager(thread_pool);
-        renderer::Renderer renderer(window, asset_manager);
+
+        auto render_asset_desc = renderer::DefaultAssetDesc {
+            .deffered = asset_manager.get_technique("content/techniques/deffered.json5"),
+            .quad = asset_manager.get_mesh("content/objects/quad.obj")
+        };
+        renderer::Renderer renderer(window, asset_manager, render_asset_desc);
+        
         input::InputManager input_manager;
 
         window.cursor(false);

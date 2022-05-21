@@ -22,6 +22,8 @@ public:
 
     void bind(backend::Handle<backend::CommandList> const& command_list);
 
+    void draw(backend::Handle<backend::CommandList> const& command_list, uint32_t const instance_count);
+
 private:
 
     GeometryBuffer(backend::Device& device, uint32_t const vertices_size, uint32_t const indices_size);

@@ -49,8 +49,10 @@ enum class Format {
     RG32,
     R32,
     BC1,
+    BC4,
     BC5,
-    D32
+    D32,
+    RGBA16_FLOAT
 };
 
 enum class TextureFlags : uint8_t {
@@ -68,7 +70,8 @@ enum class BufferFlags : uint16_t {
     IndexBuffer = 1 << 2,
     UnorderedAccess = 1 << 3,
     HostWrite = 1 << 4,
-    HostRead = 1 << 5
+    HostRead = 1 << 5,
+    ShaderResource = 1 << 6
 };
 
 DECLARE_ENUM_CLASS_BIT_FLAG(BufferFlags)
@@ -115,7 +118,8 @@ enum class MemoryState : uint32_t {
     IndexBufferRead = 1 << 7,
     DepthRead = 1 << 8,
     DepthWrite = 1 << 9,
-    GenericRead = 1 << 10
+    GenericRead = 1 << 10,
+    NonPixelShaderRead = 1 << 11
 };
 
 DECLARE_ENUM_CLASS_BIT_FLAG(MemoryState)
@@ -269,7 +273,7 @@ public:
 
     void delete_texture(Handle<Texture> const& texture);
 
-    Handle<Buffer> create_buffer(size_t const size, BufferFlags const flags);
+    Handle<Buffer> create_buffer(size_t const size, BufferFlags const flags, uint32_t const element_stride = 0);
 
     void delete_buffer(Handle<Buffer> const& buffer);
 
@@ -299,7 +303,7 @@ public:
 
     void delete_shader(Handle<Shader> const& shader);
 
-    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings);
+    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings, bool const is_compute);
 
     void delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout);
 
@@ -311,6 +315,12 @@ public:
         DepthStencilDesc const& depth_stencil_desc,
         BlendDesc const& blend_desc,
         Handle<RenderPass> const& render_pass,
+        Handle<CachePipeline> const& cache_pipeline
+    );
+
+    Handle<Pipeline> create_pipeline(
+        Handle<DescriptorLayout> const& descriptor_layout,
+        Handle<Shader> const& shader,
         Handle<CachePipeline> const& cache_pipeline
     );
 

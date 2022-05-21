@@ -11,7 +11,9 @@ namespace ionengine::renderer {
 
 enum class ShaderUniformType {
     CBuffer,
-    Sampler2D
+    Sampler2D,
+    SBuffer,
+    RWBuffer
 };
 
 template<ShaderUniformType Type>
@@ -28,10 +30,24 @@ struct ShaderUniformData<ShaderUniformType::CBuffer> {
     std::unordered_map<std::string, uint64_t> offsets; 
 };
 
+template<>
+struct ShaderUniformData<ShaderUniformType::SBuffer> {
+    uint32_t index;
+    std::unordered_map<std::string, uint64_t> offsets; 
+};
+
+template<>
+struct ShaderUniformData<ShaderUniformType::RWBuffer> {
+    uint32_t index;
+    std::unordered_map<std::string, uint64_t> offsets; 
+};
+
 struct ShaderUniform {
     std::variant<
         ShaderUniformData<ShaderUniformType::Sampler2D>,
-        ShaderUniformData<ShaderUniformType::CBuffer>
+        ShaderUniformData<ShaderUniformType::CBuffer>,
+        ShaderUniformData<ShaderUniformType::SBuffer>,
+        ShaderUniformData<ShaderUniformType::RWBuffer>
     > data;
 };
 
@@ -46,6 +62,8 @@ public:
 
     std::span<backend::Handle<backend::Shader> const> shaders() const;
 
+    std::span<backend::VertexInputDesc const> attributes() const;
+
     uint32_t location_by_uniform_name(std::string const& name) const;
 
     std::unordered_map<std::string, ShaderUniform>& uniforms();
@@ -58,10 +76,13 @@ private:
 
     std::vector<backend::Handle<backend::Shader>> _shaders;
     backend::Handle<backend::DescriptorLayout> _descriptor_layout;
+    std::vector<backend::VertexInputDesc> _attributes;
 
     std::unordered_map<std::string, ShaderUniform> _uniforms;
 
     backend::ShaderFlags constexpr get_shader_flags(asset::ShaderFlags const shader_flags) const;
+
+    backend::Format constexpr get_attribute_format(asset::ShaderDataType const data_type) const;
 };
 
 class ShaderUniformBinder {

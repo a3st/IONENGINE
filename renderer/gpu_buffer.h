@@ -14,15 +14,19 @@ public:
 
     static std::shared_ptr<GPUBuffer> cbuffer(backend::Device& device, uint32_t const size);
 
+    static std::shared_ptr<GPUBuffer> sbuffer(backend::Device& device, uint32_t const size, uint32_t const element_stride);
+
     backend::Handle<backend::Buffer> as_buffer() const;
 
     void copy_data(UploadContext& context, std::span<uint8_t const> const data);
 
     bool is_cbuffer() const;
 
+    void barrier(backend::Handle<backend::CommandList> const& command_list, backend::MemoryState const memory_state);
+
 private:
 
-    GPUBuffer(backend::Device& device, size_t const size, backend::BufferFlags const flags);
+    GPUBuffer(backend::Device& device, size_t const size, backend::BufferFlags const flags, uint32_t const element_stride);
 
     backend::Device* _device;
 

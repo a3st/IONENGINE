@@ -35,7 +35,7 @@ void FrameGraph::add_pass(
         std::vector<std::shared_ptr<GPUTexture>> color_attachments;
         std::vector<backend::RenderPassLoadOp> color_ops;
         std::vector<lib::math::Color> color_clears;
-        std::vector<std::shared_ptr<GPUTexture>> inputs;
+        std::vector<std::shared_ptr<GPUTexture>> input_attachments;
 
         for(auto const& color : colors.value()) {
             color_attachments.emplace_back(color.attachment);
@@ -43,7 +43,11 @@ void FrameGraph::add_pass(
             color_clears.emplace_back(color.clear_color);
         }
 
-
+        if(inputs.has_value()) {
+            for(auto const& input : inputs.value()) {
+                input_attachments.emplace_back(input.attachment);
+            }
+        }
 
         auto depth_stencil_info = depth_stencil.value_or(
             CreateDepthStencilInfo { 
@@ -64,7 +68,7 @@ void FrameGraph::add_pass(
             .ds_attachment = depth_stencil_info.attachment,
             .ds_op = depth_stencil_info.load_op,
             .ds_clear = { depth_stencil_info.clear_depth, depth_stencil_info.clear_stencil },
-            .inputs = inputs,
+            .inputs = input_attachments,
             .func = func,
             .render_pass = compile_render_pass(color_attachments, color_ops, depth_stencil_info.attachment, depth_stencil_info.load_op),
             .command_list = _command_lists.at(_frame_index)

@@ -44,6 +44,7 @@ add_executable(Runtime-Win32
     scene/camera_node.cpp
     scene/mesh_node.cpp
     scene/scene.cpp
+    scene/point_light_node.cpp
 # ---------------------------    
     # Renderer Backend
     renderer/backend/d3d12x.cpp
