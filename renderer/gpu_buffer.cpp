@@ -43,6 +43,10 @@ void GPUBuffer::barrier(backend::Handle<backend::CommandList> const& command_lis
     _memory_state = memory_state;
 }
 
+backend::MemoryState GPUBuffer::memory_state() const {
+    return _memory_state;
+}
+
 void GPUBuffer::copy_data(UploadContext& context, std::span<uint8_t const> const data) {
     if(_flags & backend::BufferFlags::HostWrite) {
         _device->map_buffer_data(_buffer, 0, data);

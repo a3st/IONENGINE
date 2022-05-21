@@ -256,6 +256,8 @@ struct Device::Impl {
 
     void end_render_pass(Handle<CommandList> const& command_list);
 
+    void dispatch(Handle<CommandList> const& command_list, uint32_t const thread_group_x, uint32_t const thread_group_y, uint32_t const thread_group_z);
+
     void draw(Handle<CommandList> const& command_list, uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
 
     void draw_indexed(Handle<CommandList> const& command_list, uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
@@ -584,9 +586,6 @@ Handle<Texture> Device::Impl::create_texture(
     if(flags & TextureFlags::UnorderedAccess) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
-    if(!(flags & TextureFlags::ShaderResource)) {
-        resource_desc.Flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-    }
 
     auto allocation_desc = D3D12MA::ALLOCATION_DESC {};
     allocation_desc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
@@ -653,7 +652,29 @@ Handle<Texture> Device::Impl::create_texture(
     }
     if(flags & TextureFlags::UnorderedAccess) {
 
-        // TODO!
+        auto unordered_access_view_desc = D3D12_UNORDERED_ACCESS_VIEW_DESC {};
+        unordered_access_view_desc.Format = resource_desc.Format;
+        
+        switch(dimension) {
+            case Dimension::_1D: {
+                unordered_access_view_desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
+                unordered_access_view_desc.Texture1D.MipSlice = mip_levels;
+            } break;
+            case Dimension::_2D: {
+                unordered_access_view_desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+                unordered_access_view_desc.Texture2D.MipSlice = mip_levels - 1;
+            } break;
+            case Dimension::_3D: {
+                unordered_access_view_desc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+                unordered_access_view_desc.Texture3D.MipSlice = mip_levels;
+                unordered_access_view_desc.Texture3D.WSize = array_layers;
+            } break;
+        }
+
+        auto& cur_allocation = texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV];
+        THROW_IF_FAILED(cbv_srv_uav_pool->allocate(cur_allocation.GetAddressOf()));
+
+        device->CreateUnorderedAccessView(texture_data.resource.Get(), nullptr, &unordered_access_view_desc, cur_allocation->cpu_handle());
     }
     if(flags & TextureFlags::ShaderResource) {
 
@@ -743,6 +764,9 @@ Handle<Buffer> Device::Impl::create_buffer(size_t const size, BufferFlags const 
         auto unordered_access_view_desc = D3D12_UNORDERED_ACCESS_VIEW_DESC {};
         unordered_access_view_desc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
         unordered_access_view_desc.Format = resource_desc.Format;
+        unordered_access_view_desc.Buffer.FirstElement = 0;
+        unordered_access_view_desc.Buffer.NumElements = static_cast<uint32_t>(size) / element_stride;
+        unordered_access_view_desc.Buffer.StructureByteStride = element_stride;
 
         THROW_IF_FAILED(cbv_srv_uav_pool->allocate(buffer_data.descriptor_allocation.GetAddressOf()));
 
@@ -930,6 +954,7 @@ Handle<Shader> Device::Impl::create_shader(std::string_view const source, Shader
         switch(shader_flags) {
             case ShaderFlags::Vertex: return L"vs_6_0";
             case ShaderFlags::Pixel: return L"ps_6_0";
+            case ShaderFlags::Compute: return L"cs_6_0";
             default: return L"vs_6_0";
         }
     };
@@ -1315,6 +1340,7 @@ Handle<Pipeline> Device::Impl::create_pipeline(
     Handle<CachePipeline> const& cache_pipeline
 ) {
     auto pipeline_data = Pipeline {};
+    pipeline_data.is_compute = true;
 
     auto& descriptor_layout_data = descriptor_layouts[descriptor_layout];
     pipeline_data.root_signature = descriptor_layout_data.root_signature;
@@ -1650,6 +1676,7 @@ void Device::Impl::barrier(Handle<CommandList> const& command_list, ResourceHand
             case MemoryState::DepthRead: return D3D12_RESOURCE_STATE_DEPTH_READ;
             case MemoryState::GenericRead: return D3D12_RESOURCE_STATE_GENERIC_READ;
             case MemoryState::NonPixelShaderRead: return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+            case MemoryState::UnorderedAccess: return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
         }
         return D3D12_RESOURCE_STATE_COMMON;
     };
@@ -1729,6 +1756,17 @@ void Device::Impl::end_render_pass(Handle<CommandList> const& command_list) {
     command_list_data.command_list->EndRenderPass();
 }
 
+void Device::Impl::dispatch(Handle<CommandList> const& command_list, uint32_t const thread_group_x, uint32_t const thread_group_y, uint32_t const thread_group_z) {
+
+    auto& command_list_data = command_lists[command_list];
+
+    if(!command_list_data.is_reset) {
+        command_list_reset(command_list_data);
+    }
+
+    command_list_data.command_list->Dispatch(thread_group_x, thread_group_y, thread_group_z);
+}
+
 void Device::Impl::bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline) {
 
     auto& command_list_data = command_lists[command_list];
@@ -1742,9 +1780,9 @@ void Device::Impl::bind_pipeline(Handle<CommandList> const& command_list, Handle
     command_list_data.binded_pipeline = &pipeline_data;
 
     command_list_data.command_list->SetPipelineState(pipeline_data.pipeline_state.Get());
-    command_list_data.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     if(!pipeline_data.is_compute) {
+        command_list_data.command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         command_list_data.command_list->SetGraphicsRootSignature(pipeline_data.root_signature.Get());
     } else {
         command_list_data.command_list->SetComputeRootSignature(pipeline_data.root_signature.Get());
@@ -2174,12 +2212,14 @@ void Device::begin_render_pass(
 }
 
 void Device::end_render_pass(Handle<CommandList> const& command_list) {
-
     _impl->end_render_pass(command_list);
 }
 
-void Device::bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline) {
+void Device::dispatch(Handle<CommandList> const& command_list, uint32_t const thread_group_x, uint32_t const thread_group_y, uint32_t const thread_group_z) {
+    _impl->dispatch(command_list, thread_group_x, thread_group_y, thread_group_z);
+}
 
+void Device::bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline) {
     _impl->bind_pipeline(command_list, pipeline);
 }
 

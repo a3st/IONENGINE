@@ -13,7 +13,8 @@ enum class ShaderUniformType {
     CBuffer,
     Sampler2D,
     SBuffer,
-    RWBuffer
+    RWBuffer,
+    RWTexture2D
 };
 
 template<ShaderUniformType Type>
@@ -21,6 +22,11 @@ struct ShaderUniformData { };
 
 template<>
 struct ShaderUniformData<ShaderUniformType::Sampler2D> { 
+    uint32_t index;
+};
+
+template<>
+struct ShaderUniformData<ShaderUniformType::RWTexture2D> { 
     uint32_t index;
 };
 
@@ -47,7 +53,8 @@ struct ShaderUniform {
         ShaderUniformData<ShaderUniformType::Sampler2D>,
         ShaderUniformData<ShaderUniformType::CBuffer>,
         ShaderUniformData<ShaderUniformType::SBuffer>,
-        ShaderUniformData<ShaderUniformType::RWBuffer>
+        ShaderUniformData<ShaderUniformType::RWBuffer>,
+        ShaderUniformData<ShaderUniformType::RWTexture2D>
     > data;
 };
 
@@ -92,7 +99,7 @@ public:
         _device(&device), _shader_program(&shader_program) {
     }
 
-    void bind_cbuffer(uint32_t const index, GPUBuffer& buffer) {
+    void bind_buffer(uint32_t const index, GPUBuffer& buffer) {
         if(_updates.find(index) == _updates.end()) {
             _updates.insert({ index, static_cast<uint32_t>(_descriptor_writes.size()) });
             _descriptor_writes.emplace_back(index, buffer.as_buffer());
@@ -105,10 +112,14 @@ public:
         if(_updates.find(index) == _updates.end()) {
             _updates.insert({ index, static_cast<uint32_t>(_descriptor_writes.size()) });
             _descriptor_writes.emplace_back(index, texture.as_texture());
-            _descriptor_writes.emplace_back(index + 1, texture.as_sampler());
+            if(!texture.is_unordered_access()) {
+                _descriptor_writes.emplace_back(index + 1, texture.as_sampler());
+            }
         } else {
             _descriptor_writes.at(_updates.at(index)) = backend::DescriptorWriteDesc { .index = index, .data = texture.as_texture() };
-            _descriptor_writes.at(_updates.at(index) + 1) = backend::DescriptorWriteDesc { .index = index + 1, .data = texture.as_sampler() };
+            if(!texture.is_unordered_access()) {
+                _descriptor_writes.at(_updates.at(index) + 1) = backend::DescriptorWriteDesc { .index = index + 1, .data = texture.as_sampler() };
+            }
         }
     }
 

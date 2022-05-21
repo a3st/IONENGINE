@@ -8,15 +8,87 @@
 using namespace ionengine;
 using namespace ionengine::asset;
 
+void ionengine::asset::obj_shape_calculate_tangents(tinyobj::attrib_t const& attributes, tinyobj::shape_t const& shape, std::vector<float>& tangents, std::vector<float>& bitangents) {
+
+    for(size_t i = 0; i < shape.mesh.indices.size(); i += 3) {
+
+        auto v0 = lib::math::Vector3f(
+            attributes.vertices.at(3 * shape.mesh.indices[i + 0].vertex_index + 0),
+            attributes.vertices.at(3 * shape.mesh.indices[i + 0].vertex_index + 1),
+            attributes.vertices.at(3 * shape.mesh.indices[i + 0].vertex_index + 2)
+        );
+
+        auto v1 = lib::math::Vector3f(
+            attributes.vertices.at(3 * shape.mesh.indices[i + 1].vertex_index + 0),
+            attributes.vertices.at(3 * shape.mesh.indices[i + 1].vertex_index + 1),
+            attributes.vertices.at(3 * shape.mesh.indices[i + 1].vertex_index + 2)
+        );
+
+        auto v2 = lib::math::Vector3f(
+            attributes.vertices.at(3 * shape.mesh.indices[i + 2].vertex_index + 0),
+            attributes.vertices.at(3 * shape.mesh.indices[i + 2].vertex_index + 1),
+            attributes.vertices.at(3 * shape.mesh.indices[i + 2].vertex_index + 2)
+        );
+
+        auto uv0 = lib::math::Vector2f(
+            attributes.texcoords.at(2 * shape.mesh.indices[i + 0].texcoord_index + 0),
+            attributes.texcoords.at(2 * shape.mesh.indices[i + 0].texcoord_index + 1)
+        );
+
+        auto uv1 = lib::math::Vector2f(
+            attributes.texcoords.at(2 * shape.mesh.indices[i + 1].texcoord_index + 0),
+            attributes.texcoords.at(2 * shape.mesh.indices[i + 1].texcoord_index + 1)
+        );
+
+        auto uv2 = lib::math::Vector2f(
+            attributes.texcoords.at(2 * shape.mesh.indices[i + 2].texcoord_index + 0),
+            attributes.texcoords.at(2 * shape.mesh.indices[i + 2].texcoord_index + 1)
+        );
+
+        lib::math::Vector3f dt_v1 = v1 - v0;
+        lib::math::Vector3f dt_v2 = v2 - v0;
+        lib::math::Vector2f dt_uv1 = uv1 - uv0;
+        lib::math::Vector2f dt_uv2 = uv2 - uv0;
+
+        float r = 1.0f / (dt_uv1.x * dt_uv2.y - dt_uv1.y * dt_uv2.x);
+        lib::math::Vector3f tangent = (dt_v1 * dt_uv2.y - dt_v2 * dt_uv1.y) * r;
+        lib::math::Vector3f bitangent = (dt_v2 * dt_uv1.x - dt_v1 * dt_uv2.x) * r;
+
+        tangents.emplace_back(tangent.x);
+        tangents.emplace_back(tangent.y);
+        tangents.emplace_back(tangent.z);
+
+        tangents.emplace_back(tangent.x);
+        tangents.emplace_back(tangent.y);
+        tangents.emplace_back(tangent.z);
+
+        tangents.emplace_back(tangent.x);
+        tangents.emplace_back(tangent.y);
+        tangents.emplace_back(tangent.z);
+
+        bitangents.emplace_back(bitangent.x);
+        bitangents.emplace_back(bitangent.y);
+        bitangents.emplace_back(bitangent.z);
+
+        bitangents.emplace_back(bitangent.x);
+        bitangents.emplace_back(bitangent.y);
+        bitangents.emplace_back(bitangent.z);
+
+        bitangents.emplace_back(bitangent.x);
+        bitangents.emplace_back(bitangent.y);
+        bitangents.emplace_back(bitangent.z);
+    }
+}
+
 struct Vertex {
     lib::math::Vector3f position;
     lib::math::Vector2f uv;
     lib::math::Vector3f normal;
     lib::math::Vector3f tangent;
-    lib::math::Vector3f color;
+    lib::math::Vector3f bitangent;
 
     bool operator==(Vertex const& other) const {
-        return std::tie(position, uv, normal, tangent, color) == std::tie(other.position, other.uv, other.normal, other.tangent, other.color);
+        return std::tie(position, uv, normal, tangent, bitangent) == std::tie(other.position, other.uv, other.normal, other.tangent, other.bitangent);
     }
 };
 
@@ -30,7 +102,7 @@ struct hash<Vertex> {
             hash<lib::math::Vector2f>()(other.uv) ^ 
             hash<lib::math::Vector3f>()(other.normal) ^
             hash<lib::math::Vector3f>()(other.tangent) ^
-            hash<lib::math::Vector3f>()(other.color)
+            hash<lib::math::Vector3f>()(other.bitangent)
         ;
     }
 };
@@ -48,25 +120,38 @@ Mesh::Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const
         std::vector<float> vertices;
         std::vector<uint32_t> indices;
 
-        for(auto const& index : shape.mesh.indices) {
+        std::vector<float> tangents;
+        std::vector<float> bitangents;
+
+        obj_shape_calculate_tangents(attributes, shape, tangents, bitangents);
+
+        for(size_t i = 0; i < shape.mesh.indices.size(); ++i) {
 
             auto vertex = Vertex {
                 .position = lib::math::Vector3f(
-                    attributes.vertices.at(3 * index.vertex_index + 0), 
-                    attributes.vertices.at(3 * index.vertex_index + 1), 
-                    attributes.vertices.at(3 * index.vertex_index + 2)
+                    attributes.vertices.at(3 * shape.mesh.indices[i].vertex_index + 0), 
+                    attributes.vertices.at(3 * shape.mesh.indices[i].vertex_index + 1), 
+                    attributes.vertices.at(3 * shape.mesh.indices[i].vertex_index + 2)
                 ),
                 .uv = lib::math::Vector2f(
-                    attributes.texcoords.at(2 * index.texcoord_index + 0),
-                    attributes.texcoords.at(2 * index.texcoord_index + 1)
+                    attributes.texcoords.at(2 * shape.mesh.indices[i].texcoord_index + 0),
+                    attributes.texcoords.at(2 * shape.mesh.indices[i].texcoord_index + 1)
                 ),
                 .normal = lib::math::Vector3f(
-                    attributes.normals.at(3 * index.normal_index + 0),
-                    attributes.normals.at(3 * index.normal_index + 1),
-                    attributes.normals.at(3 * index.normal_index + 2)
+                    attributes.normals.at(3 * shape.mesh.indices[i].normal_index + 0),
+                    attributes.normals.at(3 * shape.mesh.indices[i].normal_index + 1),
+                    attributes.normals.at(3 * shape.mesh.indices[i].normal_index + 2)
                 ),
-                .tangent = lib::math::Vector3f(0.0f, 0.0f, 0.0f),
-                .color = lib::math::Vector3f(0.5f, 1.0f, 0.2f)
+                .tangent = lib::math::Vector3f(
+                    tangents.at(3 * i + 0), 
+                    tangents.at(3 * i + 1), 
+                    tangents.at(3 * i + 2)
+                ),
+                .bitangent = lib::math::Vector3f(
+                    bitangents.at(3 * i + 0), 
+                    bitangents.at(3 * i + 1), 
+                    bitangents.at(3 * i + 2)
+                )
             };
 
             if (unique_vertices.count(vertex) == 0) {
@@ -87,10 +172,11 @@ Mesh::Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const
                 vertices.emplace_back(vertex.tangent.y);
                 vertices.emplace_back(vertex.tangent.z);
 
-                vertices.emplace_back(vertex.color.x);
-                vertices.emplace_back(vertex.color.y);
-                vertices.emplace_back(vertex.color.z);
+                vertices.emplace_back(vertex.bitangent.x);
+                vertices.emplace_back(vertex.bitangent.y);
+                vertices.emplace_back(vertex.bitangent.z);
             }
+
             indices.push_back(unique_vertices[vertex]);
         }
 

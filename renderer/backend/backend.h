@@ -119,7 +119,8 @@ enum class MemoryState : uint32_t {
     DepthRead = 1 << 8,
     DepthWrite = 1 << 9,
     GenericRead = 1 << 10,
-    NonPixelShaderRead = 1 << 11
+    NonPixelShaderRead = 1 << 11,
+    UnorderedAccess = 1 << 12
 };
 
 DECLARE_ENUM_CLASS_BIT_FLAG(MemoryState)
@@ -389,6 +390,8 @@ public:
     );
 
     void end_render_pass(Handle<CommandList> const& command_list);
+
+    void dispatch(Handle<CommandList> const& command_list, uint32_t const thread_group_x, uint32_t const thread_group_y, uint32_t const thread_group_z);
 
     void draw(Handle<CommandList> const& command_list, uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
 

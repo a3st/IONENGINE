@@ -24,6 +24,8 @@ public:
 
     void barrier(backend::Handle<backend::CommandList> const& command_list, backend::MemoryState const memory_state);
 
+    backend::MemoryState memory_state() const;
+
 private:
 
     GPUBuffer(backend::Device& device, size_t const size, backend::BufferFlags const flags, uint32_t const element_stride);

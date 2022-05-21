@@ -20,6 +20,8 @@ Texture::Texture(DirectX::DDS_HEADER const& header, std::span<uint8_t const> con
             _format = TextureFormat::BC2;
         } else if(header.ddspf.fourCC == MAKEFOURCC('D', 'X', 'T', '5')) {
             _format = TextureFormat::BC3;
+        } else if(header.ddspf.fourCC == MAKEFOURCC('D', 'X', 'T', '2')) {
+            _format = TextureFormat::BC2;
         } else if(header.ddspf.fourCC == MAKEFOURCC('D', 'X', 'T', '4')) {
             _format = TextureFormat::BC3;
         } else if(header.ddspf.fourCC == MAKEFOURCC('B', 'C', '4', 'U')) {
@@ -33,6 +35,14 @@ Texture::Texture(DirectX::DDS_HEADER const& header, std::span<uint8_t const> con
         }
     } else if(header.ddspf.flags & DDS_RGB) {
 
+    } else if (header.ddspf.flags & DDS_RGB) {
+        switch(header.ddspf.RGBBitCount) {
+            case 32: {
+                if(ISBITMASK(0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000)) {
+                    _format = TextureFormat::RGBA8_UNORM;
+                }
+            } break;
+        }
     }
 
     _filter = TextureFilter::MinMagMipLinear;

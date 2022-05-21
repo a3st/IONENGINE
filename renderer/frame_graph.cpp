@@ -81,6 +81,37 @@ void FrameGraph::add_pass(
     _render_passes.emplace_back(&_render_pass_cache.at(render_pass_hash));
 }
 
+void FrameGraph::add_pass(
+    std::string_view const name, 
+    std::optional<std::span<CreateStorageInfo const>> const storages,
+    ComputePassFunc const& func
+) {
+    std::string compute_pass_name = std::format("{}_{}", name, _frame_index);
+    uint32_t const compute_pass_hash = lib::hash::ctcrc32(compute_pass_name.data(), compute_pass_name.size());
+
+    if(_compute_pass_cache.find(compute_pass_hash) == _compute_pass_cache.end()) {
+        std::vector<std::shared_ptr<GPUBuffer>> storage_buffers;
+
+        if(storages.has_value()) {
+            for(auto const& storage : storages.value()) {
+                storage_buffers.emplace_back(storage.buffer);
+            }
+        }
+
+        auto compute_pass = ComputePass {
+            .name = std::string(name),
+            .storages = storage_buffers,
+            .func = func,
+            .command_list = _command_lists.at(_frame_index)
+        };
+
+        _compute_pass_cache.insert({ compute_pass_hash, std::move(compute_pass) });
+    }
+
+    _ops.emplace_back(OpType::ComputePass, _compute_passes.size());
+    _compute_passes.emplace_back(&_compute_pass_cache.at(compute_pass_hash));
+}
+
 void FrameGraph::reset() {
     _device->wait_for_idle(backend::QueueFlags::Graphics | backend::QueueFlags::Compute);
 }
@@ -146,6 +177,22 @@ void FrameGraph::execute() {
                     _swapchain_memory_state = backend::MemoryState::Present;
                 }
             } break;
+
+            case OpType::ComputePass: {
+                auto& compute_pass = _compute_passes[op.index];
+
+                for(auto& buffer : compute_pass->storages) {
+                    if(buffer->memory_state() != backend::MemoryState::UnorderedAccess) {
+                        buffer->barrier(compute_pass->command_list, backend::MemoryState::UnorderedAccess);
+                    }
+                }
+
+                ComputePassContext context;
+                context._storages = compute_pass->storages;
+                context._command_list = compute_pass->command_list;
+
+                compute_pass->func(context);
+            } break;
         }
     }
 
@@ -159,6 +206,7 @@ void FrameGraph::execute() {
     _frame_index = (_frame_index + 1) % _frame_count;
 
     _render_passes.clear();
+    _compute_passes.clear();
     _ops.clear();
 }
 

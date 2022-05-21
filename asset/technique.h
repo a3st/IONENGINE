@@ -11,10 +11,11 @@ enum class JSON_ShaderUniformType {
     cbuffer,
     sbuffer,
     sampler2D,
-    rwbuffer
+    rwbuffer,
+    rwtexture2D
 };
 
-JSON5_ENUM(JSON_ShaderUniformType, cbuffer, sbuffer, rwbuffer, sampler2D)
+JSON5_ENUM(JSON_ShaderUniformType, cbuffer, sbuffer, rwbuffer, sampler2D, rwtexture2D)
 
 enum class JSON_ShaderDataType {
     f32x4x4,
@@ -94,7 +95,8 @@ enum class ShaderUniformType {
     CBuffer,
     SBuffer,
     Sampler2D,
-    RWBuffer
+    RWBuffer,
+    RWTexture2D
 };
 
 enum class ShaderDataType {
@@ -110,6 +112,9 @@ struct ShaderUniformData { };
 
 template<>
 struct ShaderUniformData<ShaderUniformType::Sampler2D> { };
+
+template<>
+struct ShaderUniformData<ShaderUniformType::RWTexture2D> { };
 
 struct ShaderBufferData {
     std::string name;
@@ -145,7 +150,8 @@ struct ShaderUniform {
         ShaderUniformData<ShaderUniformType::Sampler2D>,
         ShaderUniformData<ShaderUniformType::CBuffer>,
         ShaderUniformData<ShaderUniformType::SBuffer>,
-        ShaderUniformData<ShaderUniformType::RWBuffer>
+        ShaderUniformData<ShaderUniformType::RWBuffer>,
+        ShaderUniformData<ShaderUniformType::RWTexture2D>
     > data;
 
     ShaderFlags visibility;

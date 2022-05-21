@@ -13,7 +13,7 @@ public:
 
     ~GPUTexture();
 
-    static std::shared_ptr<GPUTexture> render_target(backend::Device& device, backend::Format const format, uint32_t const width, uint32_t const height);
+    static std::shared_ptr<GPUTexture> render_target(backend::Device& device, backend::Format const format, uint32_t const width, uint32_t const height, backend::TextureFlags const flags);
 
     static std::shared_ptr<GPUTexture> depth_stencil(backend::Device& device, backend::Format const format, uint32_t const width, uint32_t const height);
 
@@ -28,6 +28,8 @@ public:
     bool is_render_target() const;
 
     bool is_depth_stencil() const;
+
+    bool is_unordered_access() const;
 
     void barrier(backend::Handle<backend::CommandList> const& command_list, backend::MemoryState const memory_state);
 

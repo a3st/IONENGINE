@@ -4,71 +4,11 @@
 
 #include <renderer/backend/backend.h>
 #include <renderer/gpu_texture.h>
+#include <renderer/gpu_buffer.h>
 #include <lib/math/color.h>
 #include <lib/hash/crc32.h>
 
 namespace ionengine::renderer {
-
-struct AttachmentDesc {
-    std::string name;
-    backend::Format format;
-    uint32_t width;
-    uint32_t height;
-    backend::TextureFlags flags;
-};
-
-class RenderPass;
-
-class Attachment {
-
-    friend class FrameGraph;
-
-public:
-
-    Attachment(AttachmentDesc const& attachment_desc) {
-
-        _name = attachment_desc.name;
-        _format = attachment_desc.format;
-        _width = attachment_desc.width;
-        _height = attachment_desc.height;
-        _flags = attachment_desc.flags;
-        _is_persistent = false;
-
-        _hash = lib::hash::ctcrc32(_name.data(), _name.size());
-    }
-
-    Attachment(std::string_view const name, backend::MemoryState const before, backend::MemoryState const after) {
-
-        _name = name;
-        _before = before;
-        _after = after;
-        _is_persistent = true;
-
-        _hash = lib::hash::ctcrc32(_name.data(), _name.size());
-    }
-
-    bool is_persistent() const { return _is_persistent; }
-
-    backend::Handle<backend::Texture> attachment(uint32_t const frame_index) const { return _attachments.at(frame_index); }
-
-    void attachment(uint32_t const frame_index, backend::Handle<backend::Texture> const& texture) { _attachments[frame_index] = texture; }
-
-    uint32_t hash() const { return _hash; }
-
-private:
-
-    std::string _name;
-    backend::Format _format{backend::Format::Unknown};
-    uint32_t _width{0};
-    uint32_t _height{0};
-    backend::TextureFlags _flags;
-    backend::MemoryState _before;
-    backend::MemoryState _after;
-    bool _is_persistent{false};
-    std::vector<backend::Handle<backend::Texture>> _attachments;
-    std::vector<RenderPass*> _render_passes;
-    uint32_t _hash;
-};
 
 struct CreateColorInfo {
     std::shared_ptr<GPUTexture> attachment;
@@ -116,7 +56,37 @@ private:
 };
 
 using RenderPassFunc = std::function<void(RenderPassContext const&)>;
-inline RenderPassFunc RenderPassDefaultFunc = [&](RenderPassContext const& context) { };
+inline RenderPassFunc RenderPassDefaultFunc = [=](RenderPassContext const& context) { };
+
+struct CreateStorageInfo {
+    std::shared_ptr<GPUBuffer> buffer;
+};
+
+class ComputePassContext {
+
+    friend class FrameGraph;
+
+public:
+
+    ComputePassContext() = default;
+
+    std::shared_ptr<GPUBuffer> storage(uint32_t const index) const { 
+        return _storages[index];
+    }
+    
+    backend::Handle<backend::CommandList> command_list() const { 
+        return _command_list;
+    }
+
+private:
+
+    std::span<std::shared_ptr<GPUBuffer>> _storages;
+    
+    backend::Handle<backend::CommandList> _command_list;
+};
+
+using ComputePassFunc = std::function<void(ComputePassContext const&)>;
+inline ComputePassFunc ComputePassDefaultFunc = [=](ComputePassContext const& context) { };
 
 class FrameGraph {
 public:
@@ -131,6 +101,12 @@ public:
         std::optional<std::span<CreateInputInfo const>> const inputs,
         std::optional<CreateDepthStencilInfo> const depth_stencil,
         RenderPassFunc const& func
+    );
+
+    void add_pass(
+        std::string_view const name, 
+        std::optional<std::span<CreateStorageInfo const>> const storages,
+        ComputePassFunc const& func
     );
     
     void reset();
@@ -157,13 +133,22 @@ private:
         backend::Handle<backend::CommandList> command_list;
     };
 
+    struct ComputePass {
+        std::string name;
+        std::vector<std::shared_ptr<GPUBuffer>> storages;
+        ComputePassFunc func;
+        backend::Handle<backend::CommandList> command_list;
+    };
+
     std::vector<backend::Handle<backend::CommandList>> _command_lists;
 
     backend::Device* _device;
 
     std::unordered_map<uint32_t, RenderPass> _render_pass_cache;
+    std::unordered_map<uint32_t, ComputePass> _compute_pass_cache;
 
     std::vector<RenderPass*> _render_passes;
+    std::vector<ComputePass*> _compute_passes;
 
     enum class OpType {
         RenderPass,

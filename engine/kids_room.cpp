@@ -18,6 +18,7 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
     asset::AssetPtr<asset::Mesh> cube_mesh;
     asset::AssetPtr<asset::Mesh> cabinet_002_mesh;
     asset::AssetPtr<asset::Mesh> bed_mesh;
+    asset::AssetPtr<asset::Mesh> rocket_mesh;
 
     asset::AssetPtr<asset::Material> tv_default_material;
     asset::AssetPtr<asset::Material> tv_screen_default_material;
@@ -26,6 +27,9 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
     asset::AssetPtr<asset::Material> cube_default_material;
     asset::AssetPtr<asset::Material> cabinet_002_default_material;
     asset::AssetPtr<asset::Material> bed_default_material;
+    asset::AssetPtr<asset::Material> rocket_default_material;
+
+    asset_manager.get_texture("engine/editor/bulb.dds").wait();
 
     // Initialize assets
     {
@@ -35,6 +39,7 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         cube_mesh = asset_manager.get_mesh("content/objects/cube.obj");
         cabinet_002_mesh = asset_manager.get_mesh("content/objects/cabinet_002.obj");
         bed_mesh = asset_manager.get_mesh("content/objects/bed.obj");
+        rocket_mesh = asset_manager.get_mesh("content/objects/RocketLauncher.obj");
 
         tv_default_material = asset_manager.get_material("content/materials/tv_default.json5");
         tv_screen_default_material = asset_manager.get_material("content/materials/tv_screen_default.json5");
@@ -43,6 +48,7 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         cube_default_material = asset_manager.get_material("content/materials/cube_default.json5");
         cabinet_002_default_material = asset_manager.get_material("content/materials/cabinet_002_default.json5");
         bed_default_material = asset_manager.get_material("content/materials/bed_default.json5");
+        rocket_default_material = asset_manager.get_material("content/materials/rocket.json5");
 
         tv_mesh.wait();
         chair_mesh.wait();
@@ -50,6 +56,7 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         cube_mesh.wait();
         cabinet_002_mesh.wait();
         bed_mesh.wait();
+        rocket_mesh.wait();
 
         tv_default_material.wait();
         tv_screen_default_material.wait();
@@ -58,6 +65,7 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         cube_default_material.wait();
         cabinet_002_default_material.wait();
         bed_default_material.wait();
+        rocket_default_material.wait();
     }
 
     // Initialize scene objects
@@ -121,6 +129,14 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         cabinet_object_node->rotation(lib::math::Quaternionf::angle_axis(90.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
         cabinet_object_node->scale(lib::math::Vector3f(0.5f, 0.5f, 0.5f));
 
+        auto rocket_object_node = _scene.graph().add_node<scene::MeshNode>();
+        rocket_object_node->name("rocket_object");
+        rocket_object_node->mesh(rocket_mesh);
+        rocket_object_node->material(0, rocket_default_material);
+        rocket_object_node->position(lib::math::Vector3f(0.0f, 4.0f, 5.5f));
+        rocket_object_node->rotation(lib::math::Quaternionf::angle_axis(90.0f, lib::math::Vector3f(0.0f, 1.0f, 0.0f)));
+        rocket_object_node->scale(lib::math::Vector3f(0.5f, 0.5f, 0.5f));
+
         std::array<scene::MeshNode*, 3> cube_object_nodes;
 
         for(size_t i = 0; i < cube_object_nodes.size(); ++i) {
@@ -142,7 +158,9 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
 
         auto point_light_001_node = _scene.graph().add_node<scene::PointLightNode>();
         point_light_001_node->name("point_light_001");
-        point_light_001_node->position(lib::math::Vector3f(0.0f, 5.0f, 4.5f));
+        point_light_001_node->light_color(lib::math::Color(0.7f, 0.2f, 0.6f, 1.0f));
+        point_light_001_node->position(lib::math::Vector3f(1.5f, 4.0f, 5.0f));
+        point_light_001_node->editor_icon(asset_manager.get_texture("engine/editor/bulb.dds"));
 
         // Child objects to root scene node
         root_node->add_child(tv_object_node);
@@ -153,6 +171,7 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         root_node->add_child(cabinet_object_node);
         root_node->add_child(camera_object_node);
         root_node->add_child(bed_object_node);
+        root_node->add_child(rocket_object_node);
         for(size_t i = 0; i < cube_object_nodes.size(); ++i) {
             root_node->add_child(cube_object_nodes[i]);
         }

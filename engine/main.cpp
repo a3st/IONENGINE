@@ -29,9 +29,13 @@ int main(int* argc, char** agrv) {
 
         auto render_asset_desc = renderer::DefaultAssetDesc {
             .deffered = asset_manager.get_technique("content/techniques/deffered.json5"),
+            .lighting = asset_manager.get_technique("content/techniques/lighting.json5"),
+            .billboard = asset_manager.get_technique("content/techniques/billboard.json5"),
             .quad = asset_manager.get_mesh("content/objects/quad.obj")
         };
         renderer::Renderer renderer(window, asset_manager, render_asset_desc);
+
+        renderer.editor_mode(false);
         
         input::InputManager input_manager;
 
@@ -78,6 +82,14 @@ int main(int* argc, char** agrv) {
 
                         if(input_manager.key_down(input::KeyCode::F2)) {
                             window.cursor(true);
+                        }
+
+                        if(input_manager.key_down(input::KeyCode::F3)) {
+                            renderer.editor_mode(true);
+                        }
+
+                        if(input_manager.key_down(input::KeyCode::F4)) {
+                            renderer.editor_mode(false);
                         }
 
                         input_manager.update();

@@ -10,10 +10,11 @@ std::shared_ptr<GPUTexture> GPUTexture::render_target(
     backend::Device& device, 
     backend::Format const format, 
     uint32_t const width, 
-    uint32_t const height
+    uint32_t const height, 
+    backend::TextureFlags const flags
 ) {
 
-    return std::shared_ptr<GPUTexture>(new GPUTexture(device, format, width, height, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource));
+    return std::shared_ptr<GPUTexture>(new GPUTexture(device, format, width, height, 1, backend::TextureFlags::RenderTarget | flags));
 }
 
 std::shared_ptr<GPUTexture> GPUTexture::depth_stencil(
@@ -109,6 +110,10 @@ bool GPUTexture::is_depth_stencil() const {
     return _flags & backend::TextureFlags::DepthStencil;
 }
 
+bool GPUTexture::is_unordered_access() const {
+    return _flags & backend::TextureFlags::UnorderedAccess;
+}
+
 void GPUTexture::barrier(backend::Handle<backend::CommandList> const& command_list, backend::MemoryState const memory_state) {
     _device->barrier(command_list, _texture, _memory_state, memory_state);
     _memory_state = memory_state;
@@ -123,6 +128,7 @@ backend::Format constexpr GPUTexture::get_texture_format(asset::TextureFormat co
         case asset::TextureFormat::BC1: return backend::Format::BC1;
         case asset::TextureFormat::BC5: return backend::Format::BC5;
         case asset::TextureFormat::BC4: return backend::Format::BC4;
+        case asset::TextureFormat::RGBA8_UNORM: return backend::Format::RGBA8;
         default: return backend::Format::Unknown;
     }
 }

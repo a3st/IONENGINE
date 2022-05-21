@@ -104,6 +104,13 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
 
                 bindings.emplace_back(binding_index, backend::DescriptorType::UnorderedAccess, get_shader_flags(uniform.visibility));
                 ++binding_index;
+            },
+            [&](asset::ShaderUniformData<asset::ShaderUniformType::RWTexture2D> const& data) {
+
+                shader_uniform.data = ShaderUniformData<ShaderUniformType::RWTexture2D> { .index = binding_index };
+
+                bindings.emplace_back(binding_index, backend::DescriptorType::UnorderedAccess, get_shader_flags(uniform.visibility));
+                ++binding_index;
             }
         );
 
@@ -184,6 +191,9 @@ uint32_t ShaderProgram::location_by_uniform_name(std::string const& name) const 
         },
         [&](ShaderUniformData<ShaderUniformType::RWBuffer> const& data) {
             location = data.index;
+        },
+        [&](ShaderUniformData<ShaderUniformType::RWTexture2D> const& data) {
+            location = data.index;
         }
     );
 
@@ -202,6 +212,7 @@ backend::ShaderFlags constexpr ShaderProgram::get_shader_flags(asset::ShaderFlag
         case asset::ShaderFlags::Geometry: return backend::ShaderFlags::Geometry;
         case asset::ShaderFlags::Domain: return backend::ShaderFlags::Domain;
         case asset::ShaderFlags::Hull: return backend::ShaderFlags::Hull;
+        case asset::ShaderFlags::Compute: return backend::ShaderFlags::Compute;
         default: return backend::ShaderFlags::All;
     }
 }

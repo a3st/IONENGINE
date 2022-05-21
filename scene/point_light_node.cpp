@@ -33,3 +33,11 @@ float PointLightNode::light_range() const {
 float PointLightNode::light_attenuation() const {
     return _light_attenuation;
 }
+
+void PointLightNode::editor_icon(asset::AssetPtr<asset::Texture> const& texture) {
+    _editor_icon = texture;
+}
+
+asset::AssetPtr<asset::Texture>& PointLightNode::editor_icon() {
+    return _editor_icon;
+}

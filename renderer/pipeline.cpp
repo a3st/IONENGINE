@@ -38,6 +38,17 @@ Pipeline::Pipeline(
     );
 }
 
+Pipeline::Pipeline(
+    backend::Device& device,
+    std::shared_ptr<ShaderProgram> shader_program
+) : _device(&device) {
+    _pipeline = device.create_pipeline(
+        shader_program->descriptor_layout(),
+        shader_program->shaders()[0], 
+        backend::InvalidHandle<backend::CachePipeline>()
+    );
+}
+
 std::shared_ptr<Pipeline> Pipeline::from_data(
     backend::Device& device,
     std::shared_ptr<ShaderProgram> shader_program,
@@ -46,6 +57,13 @@ std::shared_ptr<Pipeline> Pipeline::from_data(
 ) {
 
     return std::shared_ptr<Pipeline>(new Pipeline(device, shader_program, parameters, render_pass));
+}
+
+std::shared_ptr<Pipeline> Pipeline::compute(
+    backend::Device& device,
+    std::shared_ptr<ShaderProgram> shader_program
+) {
+    return std::shared_ptr<Pipeline>(new Pipeline(device, shader_program));
 }
 
 Pipeline::~Pipeline() {

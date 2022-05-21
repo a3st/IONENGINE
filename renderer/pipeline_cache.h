@@ -28,6 +28,11 @@ public:
         backend::Handle<backend::RenderPass> const& render_pass
     );
 
+    std::tuple<std::shared_ptr<Pipeline>, std::shared_ptr<ShaderProgram>> get(
+        ShaderCache& shader_cache,
+        asset::Technique& technique
+    );
+
 private:
 
     backend::Device* _device;

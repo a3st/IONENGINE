@@ -15,7 +15,7 @@ Technique::Technique(JSON_TechniqueDefinition const& document) {
     std::unordered_map<ShaderUniformType, uint32_t> registers_count;
     registers_count.insert({ ShaderUniformType::CBuffer, 0 });
     registers_count.insert({ ShaderUniformType::Sampler2D, 0 });
-    registers_count.insert({ ShaderUniformType::RWBuffer, 0 });
+    registers_count.insert({ ShaderUniformType::RWTexture2D, 0 });
 
     std::unordered_map<std::string, uint32_t> locations;
 
@@ -56,8 +56,8 @@ Technique::Technique(JSON_TechniqueDefinition const& document) {
                         }
                     );
 
-                    locations.insert({ uniform.name, registers_count.at(ShaderUniformType::RWBuffer) });
-                    ++registers_count.at(ShaderUniformType::RWBuffer);
+                    locations.insert({ uniform.name, registers_count.at(ShaderUniformType::RWTexture2D) });
+                    ++registers_count.at(ShaderUniformType::RWTexture2D);
 
                 } else {
 
@@ -76,10 +76,21 @@ Technique::Technique(JSON_TechniqueDefinition const& document) {
                 }
                 
             } else {
-                _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::Sampler2D>>();
 
-                locations.insert({ uniform.name, registers_count.at(ShaderUniformType::Sampler2D) });
-                ++registers_count.at(ShaderUniformType::Sampler2D);
+                if(uniform.type == JSON_ShaderUniformType::rwtexture2D) {
+
+                    _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::RWTexture2D>>();
+
+                    locations.insert({ uniform.name, registers_count.at(ShaderUniformType::RWTexture2D) });
+                    ++registers_count.at(ShaderUniformType::RWTexture2D);
+
+                } else {
+
+                    _uniforms.back().data.emplace<ShaderUniformData<ShaderUniformType::Sampler2D>>();
+
+                    locations.insert({ uniform.name, registers_count.at(ShaderUniformType::Sampler2D) });
+                    ++registers_count.at(ShaderUniformType::Sampler2D);
+                }
             }
 
             _uniforms.back().visibility = get_shader_flags(uniform.visibility.value_or(static_cast<JSON_ShaderType>(-1)));
@@ -219,6 +230,10 @@ std::string Technique::generate_uniform_code(
         case JSON_ShaderUniformType::sampler2D: {
             generated_code += std::format("SamplerState {}_sampler : register(s{}); ", name, location);
             generated_code += std::format("Texture2D {}_texture : register(t{});\n", name, location);
+        } break;
+
+        case JSON_ShaderUniformType::rwtexture2D: {
+            generated_code += std::format("RWTexture2D<float> {}_texture : register(u{});\n", name, location);
         } break;
     }
 

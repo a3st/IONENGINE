@@ -59,6 +59,10 @@ namespace DirectX
                 | (static_cast<uint32_t>(static_cast<uint8_t>(ch3)) << 24))
 #endif /* MAKEFOURCC */
 
+#ifndef ISBITMASK
+#define ISBITMASK(r, g, b, a) (header.ddspf.RBitMask == r && header.ddspf.GBitMask == g && header.ddspf.BBitMask == b && header.ddspf.ABitMask == a)
+#endif /* ISBITMASK */
+
 #ifndef DDSGLOBALCONST
 #if defined(__GNUC__) && !defined(__MINGW32__)
 #define DDSGLOBALCONST extern const __attribute__((weak))

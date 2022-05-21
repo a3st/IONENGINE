@@ -22,26 +22,11 @@ enum class VertexUsage : uint16_t {
     BoneWeights = 8
 };
 
-/*enum class VertexFormat : uint16_t {
-    F32x4x4,
-    F32x4,
-    F32x3,
-    F32x2,
-    F32
-};*/
-
 enum class MeshError {
     IO,
     ParseError
 };
 
-/*
-struct MeshAttribute {
-    VertexUsage usage;
-    VertexFormat format;
-    uint32_t index;
-};
-*/
 struct SurfaceData {
     lib::hash::Buffer<float> vertices;
     lib::hash::Buffer<uint32_t> indices;
@@ -70,5 +55,7 @@ private:
     std::vector<SurfaceData> _surfaces;
     std::vector<AssetPtr<Material>> _materials;
 };
+
+void obj_shape_calculate_tangents(tinyobj::attrib_t const& attributes, tinyobj::shape_t const& shape, std::vector<float>& tangents, std::vector<float>& bitangents);
 
 }

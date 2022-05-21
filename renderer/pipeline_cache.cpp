@@ -30,3 +30,20 @@ std::tuple<std::shared_ptr<Pipeline>, std::shared_ptr<ShaderProgram>> PipelineCa
 
     return { _data.at(pipeline_hash), shader_program };
 }
+
+std::tuple<std::shared_ptr<Pipeline>, std::shared_ptr<ShaderProgram>> PipelineCache::get(
+    ShaderCache& shader_cache,
+    asset::Technique& technique
+) {
+    std::string const pipeline_name = std::format("{}", technique.name());
+    uint32_t const pipeline_hash = lib::hash::ctcrc32(pipeline_name.data(), pipeline_name.size());
+
+    auto shader_program = shader_cache.get(technique);
+
+    if(_data.find(pipeline_hash) == _data.end()) {
+        auto pipeline = Pipeline::compute(*_device, shader_program);
+        _data.insert({ pipeline_hash, pipeline });
+    }
+
+    return { _data.at(pipeline_hash), shader_program };
+}

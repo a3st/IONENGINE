@@ -7,14 +7,18 @@
 #include <scene/mesh_node.h>
 #include <scene/transform_node.h>
 #include <scene/camera_node.h>
+#include <scene/point_light_node.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
+namespace ionengine::renderer {
+
 class MeshVisitor : public scene::SceneVisitor {
 public:
 
-    MeshVisitor(RenderQueue& render_queue) : _render_queue(&render_queue) { }
+    MeshVisitor(RenderQueue& render_queue, std::vector<PointLightData>& point_lights, std::vector<EditorInstance>& editor_instances) : 
+        _render_queue(&render_queue), _point_lights(&point_lights), _editor_instances(&editor_instances) { }
 
     void operator()(scene::MeshNode& other) {
 
@@ -30,15 +34,32 @@ public:
         }
     }
 
+    void operator()(scene::PointLightNode& other) { 
+
+        auto point_light = PointLightData {
+            .position = other.position(),
+            .attenuation = other.light_attenuation(),
+            .range = other.light_range(),
+            .color = lib::math::Vector3f(other.light_color().r, other.light_color().g, other.light_color().b)
+        };
+
+        _point_lights->emplace_back(std::move(point_light));
+
+        _editor_instances->emplace_back(other.editor_icon(), lib::math::Matrixf::scale(lib::math::Vector3f(0.1f, 0.1f, 0.1f)) * lib::math::Matrixf::translate(other.position()));
+    }
+
     // Default
     void operator()(scene::TransformNode& other) { }
     void operator()(scene::CameraNode& other) { }
-    void operator()(scene::PointLightNode& other) { }
 
 private:
 
     RenderQueue* _render_queue;
+    std::vector<PointLightData>* _point_lights;
+    std::vector<EditorInstance>* _editor_instances;
 };
+
+}
 
 Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager, DefaultAssetDesc const& asset_desc) : 
     _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 }),
@@ -72,20 +93,25 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _gbuffer_normals.resize(2);
     _gbuffer_roughmetals.resize(2);
     _depth_stencils.resize(2);
+    _lighting_results.resize(2);
+    _point_light_buffers.resize(2);
 
     _material_buffer.resize(512);
 
     for(uint32_t i = 0; i < 2; ++i) {
 
-        _gbuffer_positions.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height);
-        _gbuffer_albedos.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height);
-        _gbuffer_normals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height);
-        _gbuffer_roughmetals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height);
+        _gbuffer_positions.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::ShaderResource);
+        _gbuffer_albedos.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
+        _gbuffer_normals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::ShaderResource);
+        _gbuffer_roughmetals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
         _depth_stencils.at(i) = GPUTexture::depth_stencil(_device, backend::Format::D32, _width, _height);
+        _lighting_results.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::UnorderedAccess);
 
         _world_cbuffer_pools.emplace_back(_device, 256, 32);
         _material_cbuffer_pools.emplace_back(_device, 512, 32);
         _object_sbuffer_pools.emplace_back(_device, 32 * static_cast<uint32_t>(sizeof(ObjectSBuffer)), static_cast<uint32_t>(sizeof(ObjectSBuffer)), 32);
+
+        _point_light_buffers.at(i) = GPUBuffer::sbuffer(_device, 512 * sizeof(PointLightData), sizeof(PointLightData));
     }
 
     _deffered_technique = asset_desc.deffered;
@@ -93,6 +119,12 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
 
     _quad_mesh = asset_desc.quad;
     _quad_mesh.wait();
+
+    _lighting_technique = asset_desc.lighting;
+    _lighting_technique.wait();
+
+    _billboard_technique = asset_desc.billboard;
+    _billboard_technique.wait();
 }
 
 void Renderer::update(float const delta_time) {
@@ -164,12 +196,14 @@ void Renderer::render(scene::Scene& scene) {
     scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("MainCamera");
 
     _deffered_queue.clear();
+    _point_lights.clear();
+    _editor_instances.clear();
 
     _world_cbuffer_pools.at(frame_index).reset();
     _material_cbuffer_pools.at(frame_index).reset();
     _object_sbuffer_pools.at(frame_index).reset();
 
-    MeshVisitor mesh_visitor(_deffered_queue);
+    MeshVisitor mesh_visitor(_deffered_queue, _point_lights, _editor_instances);
     scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
 
     camera->calculate_matrices();
@@ -215,12 +249,16 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         }
     };
 
-    auto world = WorldCBuffer {
-        .viewproj = camera->transform_view() * camera->transform_projection()
+    auto world = WorldData {
+        .viewproj = camera->transform_view() * camera->transform_projection(),
+        .camera_position = camera->position(),
+        .point_light_count = static_cast<float>(_point_lights.size())
     };
 
     std::shared_ptr<GPUBuffer> world_buffer = _world_cbuffer_pools.at(frame_index).allocate();
-    world_buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&world), sizeof(WorldCBuffer)));
+    world_buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&world), sizeof(WorldData)));
+
+    _point_light_buffers.at(frame_index)->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(_point_lights.data()), _point_lights.size() * sizeof(PointLightData)));
 
     _frame_graph.value().add_pass(
         "gbuffer", 
@@ -255,7 +293,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                 std::shared_ptr<GPUBuffer> objects_buffer = _object_sbuffer_pools.at(frame_index).allocate();
 
                 uint32_t const world_location = shader_program->location_by_uniform_name("world");
-                binder.bind_cbuffer(world_location, *world_buffer);
+                binder.bind_buffer(world_location, *world_buffer);
 
                 std::vector<ObjectSBuffer> objects;
 
@@ -266,7 +304,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                 objects_buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(objects.data()), objects.size() * sizeof(ObjectSBuffer)));
 
                 uint32_t const object_location = shader_program->location_by_uniform_name("object");
-                binder.bind_cbuffer(object_location, *objects_buffer);
+                binder.bind_buffer(object_location, *objects_buffer);
 
                 binder.update(context.command_list());
 
@@ -316,8 +354,24 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
             ShaderUniformBinder binder(_device, *shader_program);
 
+            uint32_t const world_index = shader_program->location_by_uniform_name("world");
+            binder.bind_buffer(world_index, *world_buffer);
+
+            uint32_t const point_light_index = shader_program->location_by_uniform_name("point_light");
+            binder.bind_buffer(point_light_index, *_point_light_buffers.at(frame_index));
+
+            uint32_t const positions_index = shader_program->location_by_uniform_name("positions");
+            binder.bind_texture(positions_index, *context.input(0));
+
             uint32_t const albedo_index = shader_program->location_by_uniform_name("albedo");
             binder.bind_texture(albedo_index, *context.input(1));
+
+            uint32_t const normals_index = shader_program->location_by_uniform_name("normal");
+            binder.bind_texture(normals_index, *context.input(2));
+
+            uint32_t const roughmetal_index = shader_program->location_by_uniform_name("roughmetal");
+            binder.bind_texture(roughmetal_index, *context.input(3));
+
             binder.update(context.command_list());
 
             geometry->bind(context.command_list());
@@ -325,6 +379,71 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             geometry->draw(context.command_list(), 1);
         }
     );
+
+    if(_editor_mode) {
+
+        CreateColorInfo editor_info = {
+            .attachment = nullptr,
+            .load_op = backend::RenderPassLoadOp::Load,
+            .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
+        };
+
+        _frame_graph.value().add_pass(
+            "editor",
+            width,
+            height,
+            std::span<CreateColorInfo const>(&editor_info, 1),
+            gbuffer_input_infos,
+            std::nullopt,
+            [=](RenderPassContext const& context) {
+
+                auto parameters = asset::MaterialPassParameters {
+                    .fill_mode = asset::MaterialPassFillMode::Solid,
+                    .cull_mode = asset::MaterialPassCullMode::None,
+                    .depth_stencil = false
+                };
+
+                auto geometry = _geometry_cache.value().get(_upload_context.value(), *_quad_mesh, 0);
+                auto [pipeline, shader_program] = _pipeline_cache.value().get(_shader_cache.value(), *_billboard_technique, parameters, context.render_pass());
+            
+                pipeline->bind(context.command_list());
+
+                ShaderUniformBinder binder(_device, *shader_program);
+
+                uint32_t const world_index = shader_program->location_by_uniform_name("world");
+                binder.bind_buffer(world_index, *world_buffer);
+
+                std::shared_ptr<GPUBuffer> objects_buffer = _object_sbuffer_pools.at(frame_index).allocate();
+
+                std::vector<ObjectSBuffer> objects;
+
+                std::shared_ptr<GPUTexture> gpu_texture;
+
+                for(auto const& instance : _editor_instances) {
+
+                    gpu_texture = _texture_cache.value().get(_upload_context.value(), *instance.icon);
+                    
+                    uint32_t const icon_index = shader_program->location_by_uniform_name("icon");
+                    binder.bind_texture(icon_index, *gpu_texture);
+
+                    objects.emplace_back(instance.model);
+                }
+
+                gpu_texture->barrier(context.command_list(), backend::MemoryState::ShaderRead);
+
+                objects_buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(objects.data()), objects.size() * sizeof(ObjectSBuffer)));
+
+                uint32_t const object_location = shader_program->location_by_uniform_name("object");
+                binder.bind_buffer(object_location, *objects_buffer);
+
+                binder.update(context.command_list());
+
+                geometry->draw(context.command_list(), static_cast<uint32_t>(_editor_instances.size()));
+
+                gpu_texture->barrier(context.command_list(), backend::MemoryState::Common);
+            }
+        );
+    }
 }
 
 void Renderer::apply_material_parameters(ShaderUniformBinder& binder, asset::Material& material, uint32_t const frame_index) {
@@ -350,7 +469,8 @@ void Renderer::apply_material_parameters(ShaderUniformBinder& binder, asset::Mat
                     // Default
                     [&](ShaderUniformData<ShaderUniformType::CBuffer> const& data) { },
                     [&](ShaderUniformData<ShaderUniformType::SBuffer> const& data) { },
-                    [&](ShaderUniformData<ShaderUniformType::RWBuffer> const& data) { }
+                    [&](ShaderUniformData<ShaderUniformType::RWBuffer> const& data) { },
+                    [&](ShaderUniformData<ShaderUniformType::RWTexture2D> const& data) { }
                 );
 
                 std::visit(uniform_visitor, it->second.data);
@@ -388,7 +508,8 @@ void Renderer::apply_material_parameters(ShaderUniformBinder& binder, asset::Mat
                 // Default
                 [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& uniform_data) { },
                 [&](ShaderUniformData<ShaderUniformType::SBuffer> const& data) { },
-                [&](ShaderUniformData<ShaderUniformType::RWBuffer> const& data) { }
+                [&](ShaderUniformData<ShaderUniformType::RWBuffer> const& data) { },
+                [&](ShaderUniformData<ShaderUniformType::RWTexture2D> const& data) { }
             );
 
             std::visit(uniform_visitor, it->second.data);
@@ -400,4 +521,8 @@ void Renderer::apply_material_parameters(ShaderUniformBinder& binder, asset::Mat
 
     //uint32_t const material_location = binder.shader_program().location_by_uniform_name("material");
     //binder.bind_cbuffer(material_location, *buffer);
+}
+
+void Renderer::editor_mode(bool const enable) {
+    _editor_mode = enable;
 }

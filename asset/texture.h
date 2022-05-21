@@ -19,7 +19,8 @@ enum class TextureFormat {
     BC2,
     BC3,
     BC4,
-    BC5
+    BC5,
+    RGBA8_UNORM
 };
 
 enum class TextureFilter {
