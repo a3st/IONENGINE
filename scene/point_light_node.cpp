@@ -30,6 +30,10 @@ float PointLightNode::light_range() const {
     return _light_range;
 }
 
+void PointLightNode::light_range(float const range) {
+    _light_range = range;
+}
+
 float PointLightNode::light_attenuation() const {
     return _light_attenuation;
 }

@@ -39,7 +39,8 @@ struct PointLightData {
 };
 
 struct WorldData {
-    lib::math::Matrixf viewproj;
+    lib::math::Matrixf view;
+    lib::math::Matrixf proj;
     lib::math::Vector3f camera_position;
     float point_light_count;
 };

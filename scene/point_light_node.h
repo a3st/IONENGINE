@@ -22,6 +22,8 @@ public:
 
     float light_range() const;
 
+    void light_range(float const range);
+
     float light_attenuation() const;
 
     void editor_icon(asset::AssetPtr<asset::Texture> const& texture);

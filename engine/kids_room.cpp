@@ -158,9 +158,24 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
 
         auto point_light_001_node = _scene.graph().add_node<scene::PointLightNode>();
         point_light_001_node->name("point_light_001");
-        point_light_001_node->light_color(lib::math::Color(0.7f, 0.2f, 0.6f, 1.0f));
+        point_light_001_node->light_color(lib::math::Color(0.3f, 0.5f, 0.0f, 1.0f));
+        point_light_001_node->light_range(15.0f);
         point_light_001_node->position(lib::math::Vector3f(1.5f, 4.0f, 5.0f));
         point_light_001_node->editor_icon(asset_manager.get_texture("engine/editor/bulb.dds"));
+
+        auto point_light_002_node = _scene.graph().add_node<scene::PointLightNode>();
+        point_light_002_node->name("point_light_002");
+        point_light_002_node->light_color(lib::math::Color(0.7f, 0.7f, 0.1f, 1.0f));
+        point_light_002_node->light_range(25.0f);
+        point_light_002_node->position(lib::math::Vector3f(2.5f, 3.0f, 5.0f));
+        point_light_002_node->editor_icon(asset_manager.get_texture("engine/editor/bulb.dds"));
+
+        auto point_light_003_node = _scene.graph().add_node<scene::PointLightNode>();
+        point_light_003_node->name("point_light_003");
+        point_light_003_node->light_color(lib::math::Color(0.5f, 0.5f, 0.4f, 1.0f));
+        point_light_003_node->light_range(25.0f);
+        point_light_003_node->position(lib::math::Vector3f(-2.5f, 3.0f, 5.0f));
+        point_light_003_node->editor_icon(asset_manager.get_texture("engine/editor/bulb.dds"));
 
         // Child objects to root scene node
         root_node->add_child(tv_object_node);

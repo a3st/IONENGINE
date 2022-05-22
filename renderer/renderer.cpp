@@ -45,7 +45,7 @@ public:
 
         _point_lights->emplace_back(std::move(point_light));
 
-        _editor_instances->emplace_back(other.editor_icon(), lib::math::Matrixf::scale(lib::math::Vector3f(0.1f, 0.1f, 0.1f)) * lib::math::Matrixf::translate(other.position()));
+        _editor_instances->emplace_back(other.editor_icon(), lib::math::Matrixf::translate(other.position()));
     }
 
     // Default
@@ -250,7 +250,8 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
     };
 
     auto world = WorldData {
-        .viewproj = camera->transform_view() * camera->transform_projection(),
+        .view = camera->transform_view(),
+        .proj = camera->transform_projection(),
         .camera_position = camera->position(),
         .point_light_count = static_cast<float>(_point_lights.size())
     };

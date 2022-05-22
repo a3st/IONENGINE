@@ -1,0 +1,96 @@
+{
+    name: "billboard",
+    uniforms: [
+        {
+            name: "world",
+            type: "cbuffer",
+            properties: [
+                { name: "view", type: "f32x4x4" },
+                { name: "proj", type: "f32x4x4" },
+                { name: "camera_position", type: "f32x3" }
+            ],
+            visibility: "vertex"
+        },
+        {
+            name: "icon",
+            type: "sampler2D",
+            visibility: "pixel"
+        },
+        { 
+            name: "object", 
+            type: "sbuffer", 
+            properties: [
+                { name: "model", type: "f32x4x4" }
+            ],
+            visibility: "vertex"
+        }
+    ],
+    shaders: [
+        {
+            type: "vertex",
+            inputs: [
+                { name: "position", type: "f32x3", semantic: "POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" },
+                { name: "normal", type: "f32x3", semantic: "NORMAL" },
+                { name: "tangent", type: "f32x3", semantic: "TANGENT" },
+                { name: "bitangent", type: "f32x3", semantic: "BITANGENT" }
+            ],
+            outputs: [
+                { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" },
+                { name: "normal", type: "f32x3", semantic: "NORMAL" },
+                { name: "tangent", type: "f32x3", semantic: "TANGENT" },
+                { name: "bitangent", type: "f32x3", semantic: "BITANGENT" }
+            ],
+            source: "
+
+                #define IONENGINE_OBJECT_TO_WORLD objects[instance].model
+                #define IONENGINE_MATRIX_V view
+                #define IONENGINE_MATRIX_P proj
+
+                vs_output main(vs_input input, uint instance : SV_InstanceID) {
+                    vs_output output;
+
+                    float4x4 model_view = mul(IONENGINE_OBJECT_TO_WORLD, IONENGINE_MATRIX_V);
+                    model_view[0][0] = 1;
+                    model_view[0][1] = 0;
+                    model_view[0][2] = 0;
+                    model_view[1][0] = 0;
+                    model_view[1][1] = 1;
+                    model_view[1][2] = 0;
+                    model_view[2][0] = 0;
+                    model_view[2][1] = 0;
+                    model_view[2][2] = 1;
+
+                    float4 view_position = mul(float4(input.position, 1.0f) * float4(0.15f, 0.15f, 1.0, 1.0), model_view);
+
+                    output.position = mul(view_position, IONENGINE_MATRIX_P);
+                    output.uv = float2(input.uv.x, 1.0 - input.uv.y);
+                    return output;
+                }
+            "
+        },
+        {
+            type: "pixel",
+            inputs: [
+                { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" },
+                { name: "normal", type: "f32x3", semantic: "NORMAL" },
+                { name: "tangent", type: "f32x3", semantic: "TANGENT" },
+                { name: "bitangent", type: "f32x3", semantic: "BITANGENT" }
+            ],
+            outputs: [
+                { name: "swapchain", type: "f32x4", semantic: "SV_TARGET0" }
+            ],
+            source: "   
+                ps_output main(ps_input input) {
+                    ps_output output;
+
+                    output.swapchain = icon_texture.Sample(icon_sampler, input.uv);
+
+                    return output;
+                }
+            "
+        }
+    ]
+}
