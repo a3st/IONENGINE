@@ -73,9 +73,9 @@ GPUTexture::GPUTexture(
 
     _sampler = _device->create_sampler(
         backend::Filter::MinMagMipLinear,
-        backend::AddressMode::Clamp,
-        backend::AddressMode::Clamp,
-        backend::AddressMode::Clamp,
+        backend::AddressMode::Wrap,
+        backend::AddressMode::Wrap,
+        backend::AddressMode::Wrap,
         2,
         backend::CompareOp::Always
     );

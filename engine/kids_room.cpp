@@ -11,7 +11,7 @@ using namespace ionengine::framework;
 
 KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& input_manager) :
     _input_manager(&input_manager),
-    _scene(scene::Scene::load_from_file("content/levels/kids_room.json5", asset_manager).value()) {
+    _scene(scene::Scene::load_from_file("content/levels/city17.json5", asset_manager).value()) {
 
     /*asset::AssetPtr<asset::Mesh> tv_mesh;
     asset::AssetPtr<asset::Mesh> chair_mesh;

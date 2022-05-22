@@ -33,7 +33,13 @@ Scene::Scene(JSON_SubSceneDefinition const& document, asset::AssetManager& asset
             }
 
             allocated_node->position(lib::math::Vector3f(node.values.position.at(0), node.values.position.at(1), node.values.position.at(2)));
-            // rot todo
+
+            lib::math::Quaternionf quat_x = lib::math::Quaternionf::angle_axis(node.values.rotation.at(0), lib::math::Vector3f(1.0f, 0.0f, 0.0f));
+            lib::math::Quaternionf quat_y = lib::math::Quaternionf::angle_axis(node.values.rotation.at(1), lib::math::Vector3f(0.0f, 1.0f, 0.0f));
+            lib::math::Quaternionf quat_z = lib::math::Quaternionf::angle_axis(node.values.rotation.at(2), lib::math::Vector3f(0.0f, 0.0f, 1.0f));
+
+            allocated_node->rotation(quat_x * quat_y * quat_z);
+
             allocated_node->scale(lib::math::Vector3f(node.values.scale.at(0), node.values.scale.at(1), node.values.scale.at(2)));
 
             node_cache.insert({ node.name, allocated_node });
@@ -49,7 +55,13 @@ Scene::Scene(JSON_SubSceneDefinition const& document, asset::AssetManager& asset
             allocated_node->light_range(point_light_info.range);
 
             allocated_node->position(lib::math::Vector3f(node.values.position.at(0), node.values.position.at(1), node.values.position.at(2)));
-            // rot todo
+           
+            lib::math::Quaternionf quat_x = lib::math::Quaternionf::angle_axis(node.values.rotation.at(0), lib::math::Vector3f(1.0f, 0.0f, 0.0f));
+            lib::math::Quaternionf quat_y = lib::math::Quaternionf::angle_axis(node.values.rotation.at(1), lib::math::Vector3f(0.0f, 1.0f, 0.0f));
+            lib::math::Quaternionf quat_z = lib::math::Quaternionf::angle_axis(node.values.rotation.at(2), lib::math::Vector3f(0.0f, 0.0f, 1.0f));
+
+            allocated_node->rotation(quat_x * quat_y * quat_z);
+
             allocated_node->scale(lib::math::Vector3f(node.values.scale.at(0), node.values.scale.at(1), node.values.scale.at(2)));
 
             allocated_node->editor_icon(asset_manager.get_texture("engine/editor/bulb.dds"));
