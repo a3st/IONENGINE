@@ -38,7 +38,10 @@ float PointLightNode::light_attenuation() const {
     return _light_attenuation;
 }
 
-void PointLightNode::editor_icon(asset::AssetPtr<asset::Texture> const& texture) {
+void PointLightNode::editor_icon(asset::AssetPtr<asset::Texture> texture) {
+    if(texture.is_pending()) {
+        texture.wait();
+    }
     _editor_icon = texture;
 }
 

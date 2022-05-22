@@ -10,9 +10,10 @@ using namespace ionengine;
 using namespace ionengine::framework;
 
 KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& input_manager) :
-    _input_manager(&input_manager) {
+    _input_manager(&input_manager),
+    _scene(scene::Scene::load_from_file("content/levels/kids_room.json5", asset_manager).value()) {
 
-    asset::AssetPtr<asset::Mesh> tv_mesh;
+    /*asset::AssetPtr<asset::Mesh> tv_mesh;
     asset::AssetPtr<asset::Mesh> chair_mesh;
     asset::AssetPtr<asset::Mesh> cabinet_mesh;
     asset::AssetPtr<asset::Mesh> cube_mesh;
@@ -28,8 +29,6 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
     asset::AssetPtr<asset::Material> cabinet_002_default_material;
     asset::AssetPtr<asset::Material> bed_default_material;
     asset::AssetPtr<asset::Material> rocket_default_material;
-
-    asset_manager.get_texture("engine/editor/bulb.dds").wait();
 
     // Initialize assets
     {
@@ -49,23 +48,6 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         cabinet_002_default_material = asset_manager.get_material("content/materials/cabinet_002_default.json5");
         bed_default_material = asset_manager.get_material("content/materials/bed_default.json5");
         rocket_default_material = asset_manager.get_material("content/materials/rocket.json5");
-
-        tv_mesh.wait();
-        chair_mesh.wait();
-        cabinet_mesh.wait();
-        cube_mesh.wait();
-        cabinet_002_mesh.wait();
-        bed_mesh.wait();
-        rocket_mesh.wait();
-
-        tv_default_material.wait();
-        tv_screen_default_material.wait();
-        chair_default_material.wait();
-        cabinet_default_material.wait();
-        cube_default_material.wait();
-        cabinet_002_default_material.wait();
-        bed_default_material.wait();
-        rocket_default_material.wait();
     }
 
     // Initialize scene objects
@@ -152,10 +134,6 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         cube_object_nodes[1]->position(lib::math::Vector3f(0.6f, -1.0f, 4.5f));
         cube_object_nodes[2]->position(lib::math::Vector3f(0.4f, -1.0f, 5.0f));
 
-        auto camera_object_node = _scene.graph().add_node<scene::CameraNode>();
-        camera_object_node->name("MainCamera");
-        camera_object_node->position(lib::math::Vector3f(0.0f, 1.0f, 3.0f));
-
         auto point_light_001_node = _scene.graph().add_node<scene::PointLightNode>();
         point_light_001_node->name("point_light_001");
         point_light_001_node->light_color(lib::math::Color(0.3f, 0.5f, 0.0f, 1.0f));
@@ -190,11 +168,15 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
         for(size_t i = 0; i < cube_object_nodes.size(); ++i) {
             root_node->add_child(cube_object_nodes[i]);
         }
+    }*/
 
-        _camera_node = camera_object_node;
+    auto camera_object_node = _scene.graph().add_node<scene::CameraNode>();
+    camera_object_node->name("MainCamera");
+    camera_object_node->position(lib::math::Vector3f(0.0f, 1.0f, 3.0f));
 
-        _original_rotation = _camera_node->rotation();
-    }
+    _camera_node = camera_object_node;
+
+    _original_rotation = _camera_node->rotation();
 }
 
 void KidsRoom::update(float const delta_time) {

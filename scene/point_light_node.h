@@ -26,7 +26,7 @@ public:
 
     float light_attenuation() const;
 
-    void editor_icon(asset::AssetPtr<asset::Texture> const& texture);
+    void editor_icon(asset::AssetPtr<asset::Texture> texture);
 
     asset::AssetPtr<asset::Texture>& editor_icon();
 

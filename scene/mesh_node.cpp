@@ -17,6 +17,10 @@ void MeshNode::accept(SceneVisitor& visitor) {
 }
 
 void MeshNode::mesh(asset::AssetPtr<asset::Mesh> mesh) {
+
+    if(mesh.is_pending()) {
+        mesh.wait();
+    }
     _mesh = mesh;
     
     _override_materials.resize(_mesh->materials_size());
@@ -34,5 +38,8 @@ asset::AssetPtr<asset::Material> MeshNode::material(uint32_t const index) {
 }
 
 void MeshNode::material(uint32_t const index, asset::AssetPtr<asset::Material> material) {
+    if(material.is_pending()) {
+        material.wait();
+    }
     _override_materials.at(index) = material;
 }
