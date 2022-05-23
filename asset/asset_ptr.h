@@ -127,7 +127,7 @@ public:
 
     void wait() {
         while(is_pending()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
 
