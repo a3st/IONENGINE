@@ -1468,6 +1468,39 @@ void Device::Impl::present() {
 
 void Device::Impl::recreate_swapchain(uint32_t const width, uint32_t const height, std::optional<SwapchainDesc> swapchain_desc) {
 
+    for(auto const& texture : swapchain_textures) {
+        delete_texture(texture);
+    }
+    swapchain_textures.clear();
+
+    auto _swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
+    swapchain->GetDesc1(&_swapchain_desc);
+
+    swapchain->ResizeBuffers(_swapchain_desc.BufferCount, width, height, _swapchain_desc.Format, 0);
+    swapchain_textures.resize(_swapchain_desc.BufferCount);
+
+    // Get Swapchain resources and create RTV's
+    {
+        for(uint32_t i = 0; i < _swapchain_desc.BufferCount; ++i) {
+
+            auto texture = Texture {};
+
+            THROW_IF_FAILED(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), reinterpret_cast<void**>(texture.resource.GetAddressOf())));
+
+            auto render_target_view_desc = D3D12_RENDER_TARGET_VIEW_DESC {};
+            render_target_view_desc.Format = _swapchain_desc.Format;
+            render_target_view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+            auto& cur_allocation = texture.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_RTV];
+            THROW_IF_FAILED(rtv_pool->allocate(cur_allocation.GetAddressOf()));
+
+            device->CreateRenderTargetView(texture.resource.Get(), &render_target_view_desc, cur_allocation->cpu_handle());
+
+            swapchain_textures[i] = textures.push(std::move(texture));
+        }
+    }
+
+    swapchain_index = swapchain->GetCurrentBackBufferIndex();
 }
 
 uint64_t Device::Impl::submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags) {

@@ -13,7 +13,7 @@
 #include <lib/algorithm.h>
 #include <lib/thread_pool.h>
 
-#include <engine/kids_room.h>
+#include <engine/framework.h>
 
 using namespace ionengine;
 
@@ -41,8 +41,8 @@ int main(int* argc, char** agrv) {
 
         window.cursor(false);
 
-        window.label("IONENGINE Kids Room Demo");
-        framework::KidsRoom framework(asset_manager, input_manager);
+        window.label("IONENGINE content/levels/city17.json5");
+        framework::Framework framework(asset_manager, input_manager);
 
         auto begin_time = std::chrono::high_resolution_clock::now();
         uint64_t frame_count = 0;
@@ -102,6 +102,9 @@ int main(int* argc, char** agrv) {
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {
                         renderer.resize(data.width, data.height);
+
+                        scene::CameraNode* camera = framework.scene().graph().find_by_name<scene::CameraNode>("MainCamera");
+                        camera->aspect_ratio(data.width / static_cast<float>(data.height));
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::KeyboardInput> const& data) {
                         input_manager.on_keyboard_event(data);

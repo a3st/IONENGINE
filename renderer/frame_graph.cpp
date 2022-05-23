@@ -114,6 +114,11 @@ void FrameGraph::add_pass(
 
 void FrameGraph::reset() {
     _device->wait_for_idle(backend::QueueFlags::Graphics | backend::QueueFlags::Compute);
+
+    _render_pass_cache.clear();
+    _compute_pass_cache.clear();
+    _render_passes.clear();
+    _compute_passes.clear();
 }
 
 void FrameGraph::execute() {

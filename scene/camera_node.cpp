@@ -10,7 +10,7 @@ using namespace ionengine::scene;
 CameraNode::CameraNode() {
 
     _aspect_ratio = 4 / 3.0f;
-    _field_of_view = 60.0f * static_cast<float>(M_PI) / 180.0f;
+    _field_of_view = 68.0f * static_cast<float>(M_PI) / 180.0f;
 }
 
 float CameraNode::aspect_ratio() const {

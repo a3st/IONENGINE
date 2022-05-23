@@ -93,7 +93,6 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _gbuffer_normals.resize(2);
     _gbuffer_roughmetals.resize(2);
     _depth_stencils.resize(2);
-    _lighting_results.resize(2);
     _point_light_buffers.resize(2);
 
     _material_buffer.resize(512);
@@ -105,7 +104,6 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
         _gbuffer_normals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::ShaderResource);
         _gbuffer_roughmetals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
         _depth_stencils.at(i) = GPUTexture::depth_stencil(_device, backend::Format::D32, _width, _height);
-        _lighting_results.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::UnorderedAccess);
 
         _world_cbuffer_pools.emplace_back(_device, 256, 32);
         _material_cbuffer_pools.emplace_back(_device, 512, 32);
@@ -215,6 +213,27 @@ void Renderer::render(scene::Scene& scene) {
 
 void Renderer::resize(uint32_t const width, uint32_t const height) {
 
+    _frame_graph.value().reset();
+
+    if(_width != width || _height != height) {
+        _device.recreate_swapchain(width, height);
+        _width = width;
+        _height = height;
+    }
+
+    _gbuffer_positions.resize(2);
+    _gbuffer_albedos.resize(2);
+    _gbuffer_normals.resize(2);
+    _gbuffer_roughmetals.resize(2);
+    _depth_stencils.resize(2);
+
+    for(uint32_t i = 0; i < 2; ++i) {
+        _gbuffer_positions.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::ShaderResource);
+        _gbuffer_albedos.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
+        _gbuffer_normals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::ShaderResource);
+        _gbuffer_roughmetals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
+        _depth_stencils.at(i) = GPUTexture::depth_stencil(_device, backend::Format::D32, _width, _height);
+    }
 }
 
 void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode* camera) {

@@ -9,10 +9,10 @@
 
 namespace ionengine::framework {
 
-class KidsRoom {
+class Framework {
 public:
 
-    KidsRoom(asset::AssetManager& asset_manager, input::InputManager& input_manager);
+    Framework(asset::AssetManager& asset_manager, input::InputManager& input_manager);
 
     void update(float const delta_time);
 

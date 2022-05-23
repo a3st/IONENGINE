@@ -1,7 +1,7 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <engine/kids_room.h>
+#include <engine/framework.h>
 #include <scene/mesh_node.h>
 #include <scene/camera_node.h>
 #include <scene/point_light_node.h>
@@ -9,7 +9,7 @@
 using namespace ionengine;
 using namespace ionengine::framework;
 
-KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& input_manager) :
+Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& input_manager) :
     _input_manager(&input_manager),
     _scene(scene::Scene::load_from_file("content/levels/city17.json5", asset_manager).value()) {
 
@@ -22,7 +22,7 @@ KidsRoom::KidsRoom(asset::AssetManager& asset_manager, input::InputManager& inpu
     _original_rotation = _camera_node->rotation();
 }
 
-void KidsRoom::update(float const delta_time) {
+void Framework::update(float const delta_time) {
 
     if(_input_manager->key(input::KeyCode::S)) {
         lib::math::Vector3f position = _camera_node->position();
@@ -60,6 +60,6 @@ void KidsRoom::update(float const delta_time) {
     _camera_node->rotation(_original_rotation * quat_x * quat_y);
 }
 
-scene::Scene& KidsRoom::scene() {
+scene::Scene& Framework::scene() {
     return _scene;
 }
