@@ -39,8 +39,8 @@ std::shared_ptr<GPUTexture> GPUTexture::sampler(backend::Device& device, UploadC
             backend::TextureFlags::ShaderResource
         )
     );
-
-    gpu_texture->copy_texture_data(upload_context, { 0, 1 }, texture.data());
+    
+    gpu_texture->copy_texture_data(upload_context, { 0, texture.mip_count() }, texture.data());
     return gpu_texture;
 }
 
@@ -57,13 +57,18 @@ GPUTexture::GPUTexture(
         backend::Dimension::_2D, 
         width, 
         height, 
-        1 /*mip_count*/, 
+        mip_count, /*mip_count*/
         1, 
         format,
         flags
     );
 
     _flags = flags;
+
+    _format = format;
+    
+    _width = width;
+    _height = height;
 
     if(flags & backend::TextureFlags::RenderTarget) {
         _memory_state = backend::MemoryState::RenderTarget;
@@ -87,8 +92,9 @@ GPUTexture::~GPUTexture() {
 }
 
 void GPUTexture::copy_texture_data(UploadContext& context, std::pair<uint32_t, uint32_t> const mip_range, std::span<uint8_t const> const data) {
+    
     context.begin();
-    context.copy_texture_data(_texture, mip_range, data);
+    context.copy_texture_data(_texture, _format, _width, _height, 1, mip_range.second, data);
     context.end();
 }
 

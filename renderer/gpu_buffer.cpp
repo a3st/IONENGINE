@@ -49,7 +49,9 @@ backend::MemoryState GPUBuffer::memory_state() const {
 
 void GPUBuffer::copy_data(UploadContext& context, std::span<uint8_t const> const data) {
     if(_flags & backend::BufferFlags::HostWrite) {
-        _device->map_buffer_data(_buffer, 0, data);
+        uint8_t* bytes = _device->map_buffer_data(_buffer, 0);
+        std::memcpy(bytes, data.data(), data.size_bytes());
+        _device->unmap_buffer_data(_buffer);
     } else {
         context.begin();
         context.copy_buffer_data(_buffer, 0, data);

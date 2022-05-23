@@ -196,7 +196,9 @@ struct Device::Impl {
 
     void delete_command_list(Handle<CommandList> const& command_list);
 
-    void map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);
+    uint8_t* map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset);
+
+    void unmap_buffer_data(Handle<Buffer> const& buffer);
     
     void present();
 
@@ -226,10 +228,8 @@ struct Device::Impl {
     void copy_texture_region(
         Handle<CommandList> const& command_list,
         Handle<Texture> const& dest,
-        std::pair<uint32_t, uint32_t> const mip_range, 
         Handle<Buffer> const& source,
-        uint64_t const source_offset,
-        size_t const size
+        std::span<TextureCopyRegion const> const regions
     );
 
     void bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
@@ -1430,24 +1430,29 @@ void Device::Impl::delete_command_list(Handle<CommandList> const& command_list) 
     command_lists.erase(command_list);
 }
 
-void Device::Impl::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data) {
+uint8_t* Device::Impl::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset) {
 
     auto& buffer_data = buffers[buffer];
 
     auto properties = D3D12_HEAP_PROPERTIES {};
     buffer_data.memory_allocation->GetResource()->GetHeapProperties(&properties, nullptr);
 
+    uint8_t* bytes = nullptr;
+
     if(properties.Type == D3D12_HEAP_TYPE_UPLOAD || properties.Type == D3D12_HEAP_TYPE_READBACK) {
-
-        char8_t* bytes = nullptr;
         auto range = D3D12_RANGE {};
-
         THROW_IF_FAILED(buffer_data.resource->Map(0, &range, reinterpret_cast<void**>(&bytes)));
-        std::memcpy(bytes + offset, data.data(), data.size());
-        buffer_data.resource->Unmap(0, &range);
+        bytes += offset;
     } else {
         assert(false && "invalid buffer heap type");
     }
+    return bytes;
+}
+
+void Device::Impl::unmap_buffer_data(Handle<Buffer> const& buffer) {
+    auto& buffer_data = buffers[buffer];
+    auto range = D3D12_RANGE {};
+    buffer_data.resource->Unmap(0, &range);
 }
 
 Handle<Texture> Device::Impl::acquire_next_texture() {
@@ -1620,7 +1625,6 @@ void Device::Impl::set_viewport(Handle<CommandList> const& command_list, uint32_
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -1640,7 +1644,6 @@ void Device::Impl::set_scissor(Handle<CommandList> const& command_list, uint32_t
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -1658,7 +1661,6 @@ void Device::Impl::barrier(Handle<CommandList> const& command_list, ResourceHand
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -1714,7 +1716,6 @@ void Device::Impl::begin_render_pass(
     auto& command_list_data = command_lists[command_list];
 
     if(!command_list_data.is_reset) {
-
         command_list_reset(command_list_data);
     }
 
@@ -1901,10 +1902,8 @@ void Device::Impl::bind_index_buffer(Handle<CommandList> const& command_list, Ha
 void Device::Impl::copy_texture_region(
     Handle<CommandList> const& command_list,
     Handle<Texture> const& dest,
-    std::pair<uint32_t, uint32_t> const mip_range, 
     Handle<Buffer> const& source,
-    uint64_t const source_offset,
-    size_t const size
+    std::span<TextureCopyRegion const> const regions
 ) {
     auto& command_list_data = command_lists[command_list];
 
@@ -1913,42 +1912,49 @@ void Device::Impl::copy_texture_region(
     }
 
     auto& texture_data = textures[dest];
+    auto& source_buffer_data = buffers[source];
 
-    D3D12_RESOURCE_DESC resource_desc = texture_data.resource->GetDesc();
+    auto resource_desc = texture_data.resource->GetDesc();
 
-    std::array<D3D12_PLACED_SUBRESOURCE_FOOTPRINT, 16> footprints;
-    std::array<uint32_t, 16> num_rows;
-    std::array<uint64_t, 16> row_sizes;
+    auto result = std::min_element(regions.begin(), regions.end(), [&](auto const& lhs, auto const& rhs) { return lhs.mip_index < rhs.mip_index; });
 
-    size_t total_bytes = 0;
+    std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprints(regions.size());
 
     device->GetCopyableFootprints(
         &resource_desc,
-        0,
-        1,
+        result->mip_index,
+        static_cast<uint32_t>(regions.size()),
         0,
         footprints.data(),
-        num_rows.data(),
-        row_sizes.data(),
-        &total_bytes
+        nullptr,
+        nullptr,
+        nullptr
     );
 
-    auto source_buffer_data = buffers[source];
+    for(auto const& region : regions) {
 
-    // auto& layout = footprints[0];
-    // const uint64_t subresource_pitch = layout.Footprint.RowPitch + (~layout.Footprint.RowPitch & D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+        footprints[region.mip_index].Offset = region.offset;
+        footprints[region.mip_index].Footprint.RowPitch = region.row_pitch;
 
-    auto dest_location = D3D12_TEXTURE_COPY_LOCATION {};
-    dest_location.pResource = texture_data.resource.Get();
-    dest_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dest_location.SubresourceIndex = 0;
- 
-    auto source_location = D3D12_TEXTURE_COPY_LOCATION {};
-    source_location.pResource = source_buffer_data.resource.Get();
-    source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-    source_location.PlacedFootprint = footprints[0];
+        /*std::cout << std::format("dx12 {} width, {} height, {} offset, {} row pitch", 
+            footprints[region.mip_index].Footprint.Width, 
+            footprints[region.mip_index].Footprint.Height, 
+            footprints[region.mip_index].Offset, 
+            footprints[region.mip_index].Footprint.RowPitch
+        ) << std::endl;*/
 
-    command_list_data.command_list->CopyTextureRegion(&dest_location, 0, 0, 0, &source_location, nullptr);
+        auto dest_location = D3D12_TEXTURE_COPY_LOCATION {};
+        dest_location.pResource = texture_data.resource.Get();
+        dest_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dest_location.SubresourceIndex = region.mip_index;
+        
+        auto source_location = D3D12_TEXTURE_COPY_LOCATION {};
+        source_location.pResource = source_buffer_data.resource.Get();
+        source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        source_location.PlacedFootprint = footprints[region.mip_index];
+
+        command_list_data.command_list->CopyTextureRegion(&dest_location, 0, 0, 0, &source_location, nullptr);
+    }
 }
 
 void Device::Impl::copy_buffer_region(
@@ -2140,9 +2146,12 @@ void Device::delete_command_list(Handle<CommandList> const& command_list) {
     _impl->delete_command_list(command_list);
 }
 
-void Device::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data) {
+uint8_t* Device::map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset) {
+    return _impl->map_buffer_data(buffer, offset);
+}
 
-    _impl->map_buffer_data(buffer, offset, data);
+void Device::unmap_buffer_data(Handle<Buffer> const& buffer) {
+    _impl->unmap_buffer_data(buffer);
 }
 
 void Device::present() {
@@ -2242,12 +2251,10 @@ void Device::copy_buffer_region(
 void Device::copy_texture_region(
     Handle<CommandList> const& command_list,
     Handle<Texture> const& dest,
-    std::pair<uint32_t, uint32_t> const mip_range, 
     Handle<Buffer> const& source,
-    uint64_t const source_offset,
-    size_t const size
+    std::span<TextureCopyRegion const> const regions
 ) {
-    _impl->copy_texture_region(command_list, dest, mip_range, source, source_offset, size);
+    _impl->copy_texture_region(command_list, dest, source, regions);
 }
 
 void Device::bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset) {

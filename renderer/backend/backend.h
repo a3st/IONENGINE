@@ -244,6 +244,12 @@ struct SwapchainDesc {
     uint32_t buffer_count;
 };
 
+struct TextureCopyRegion {
+    uint32_t mip_index;
+    uint32_t row_pitch;
+    uint32_t offset;
+};
+
 class Device {
 
     friend class Encoder;
@@ -331,7 +337,9 @@ public:
 
     void delete_command_list(Handle<CommandList> const& command_list);
 
-    void map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset, std::span<uint8_t const> const data);
+    uint8_t* map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset);
+
+    void unmap_buffer_data(Handle<Buffer> const& buffer);
 
     void present();
 
@@ -361,10 +369,8 @@ public:
     void copy_texture_region(
         Handle<CommandList> const& command_list,
         Handle<Texture> const& dest,
-        std::pair<uint32_t, uint32_t> const mip_range, 
         Handle<Buffer> const& source,
-        uint64_t const source_offset,
-        size_t const size
+        std::span<TextureCopyRegion const> const regions
     );
 
     void bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);

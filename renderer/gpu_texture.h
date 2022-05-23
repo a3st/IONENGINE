@@ -51,7 +51,11 @@ private:
     backend::Handle<backend::Texture> _texture;
     backend::Handle<backend::Sampler> _sampler;
 
+    uint32_t _width;
+    uint32_t _height;
+
     backend::TextureFlags _flags;
+    backend::Format _format;
 
     backend::MemoryState _memory_state;
 
