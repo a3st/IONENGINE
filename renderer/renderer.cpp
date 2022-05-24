@@ -105,9 +105,9 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
         _gbuffer_roughmetals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
         _depth_stencils.at(i) = GPUTexture::depth_stencil(_device, backend::Format::D32, _width, _height);
 
-        _world_cbuffer_pools.emplace_back(_device, 256, 32);
-        _material_cbuffer_pools.emplace_back(_device, 512, 32);
-        _object_sbuffer_pools.emplace_back(_device, 32 * static_cast<uint32_t>(sizeof(ObjectSBuffer)), static_cast<uint32_t>(sizeof(ObjectSBuffer)), 32);
+        _world_cbuffer_pools.emplace_back(_device, 256, 4);
+        _material_cbuffer_pools.emplace_back(_device, 512, 45);
+        _object_sbuffer_pools.emplace_back(_device, 4 * static_cast<uint32_t>(sizeof(ObjectSBuffer)), static_cast<uint32_t>(sizeof(ObjectSBuffer)), 45);
 
         _point_light_buffers.at(i) = GPUBuffer::sbuffer(_device, 512 * sizeof(PointLightData), sizeof(PointLightData));
     }

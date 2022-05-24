@@ -178,7 +178,7 @@ HRESULT DescriptorRange::allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range
             break;
         }
     }*/
-    cur_arena_block_index = cur_arena_block_index + 1 % static_cast<uint32_t>(_arena_block_ranges.size());
+    cur_arena_block_index = 0;
 
     auto& cur_allocation = _allocations[cur_arena_block_index * MAX_ALLOCATION_COUNT + _arena_block_ranges[cur_arena_block_index].offset];
     
@@ -230,7 +230,7 @@ HRESULT DescriptorRange::initialize(
     _size = size;
 
     //uint32_t const range_count = std::thread::hardware_concurrency();
-    uint32_t const range_count = 2;
+    uint32_t const range_count = 1;
 
     _arena_block_ranges.resize(range_count);
     _allocations = new DescriptorRangeAllocation[range_count * MAX_ALLOCATION_COUNT];
