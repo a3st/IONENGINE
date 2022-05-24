@@ -114,7 +114,7 @@
                     // vertex in screen space
                     output.position = mul(mul(world_pos, IONENGINE_MATRIX_V), IONENGINE_MATRIX_P);
                     
-                    output.uv = float2(input.uv.x, 1.0 - input.uv.y);
+                    output.uv = float2(input.uv.x, 1.0f - input.uv.y);
 
                     output.normal = mul(input.normal, (float3x3)transpose(inverse(IONENGINE_OBJECT_TO_WORLD)));
                     output.tangent = mul(input.tangent, (float3x3)IONENGINE_OBJECT_TO_WORLD);

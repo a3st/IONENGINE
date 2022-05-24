@@ -134,7 +134,7 @@
                     float3 F0 = float3(0.04f, 0.04f, 0.04f);
                     F0 = lerp(F0, albedo, metalness);
 
-                    float3 L = normalize(light.position - position);
+                    float3 L = normalize(position - light.position);
                     float3 H = normalize(V + L);
 
                     // calculate per-light radiance
@@ -161,7 +161,6 @@
 
                     // add to outgoing radiance Lo
                     float3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;
-
                     return Lo;
                 } 
 
@@ -171,7 +170,7 @@
                     float3 position = positions_texture.Sample(positions_sampler, input.uv).xyz;
                     float3 normal = normal_texture.Sample(normal_sampler, input.uv).xyz;
 
-                    float3 V = normalize(camera_position - position);
+                    float3 V = normalize(position - camera_position);
 
                     float3 albedo = albedo_texture.Sample(albedo_sampler, input.uv).rgb;
                     float2 roughness_metalness = roughmetal_texture.Sample(roughmetal_sampler, input.uv).rg;
@@ -183,8 +182,8 @@
                         Lo += calculate_point_light(point_lights[i], position, normal, V, albedo, metalness, roughness);
                     }
 
-                    float3 ambient = float3(0.03f, 0.03f, 0.03f) * albedo;
-                    float3 color = Lo;
+                    float3 ambient = float3(0.005f, 0.005f, 0.005f) * albedo;
+                    float3 color = Lo + ambient;
                     color = pow(color, float3(1.0f / 2.2f, 1.0f / 2.2f, 1.0f / 2.2f));
 
                     output.color = float4(color, 1.0f);
