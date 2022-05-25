@@ -42,7 +42,11 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
                 .hash = hash
             };
 
-            upload_manager.upload_geometry_data(cache_entry.value, mesh.surfaces()[index].vertices, mesh.surfaces()[index].indices);
+            upload_manager.upload_geometry_data(
+                cache_entry.value, 
+                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].vertices.data(), mesh.surfaces()[index].vertices.size()),
+                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].indices.data(), mesh.surfaces()[index].indices.size())
+            );
 
             mesh.surfaces()[index].cache_entry = _data.push(std::move(cache_entry));
         } else {

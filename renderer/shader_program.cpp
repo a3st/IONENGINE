@@ -7,8 +7,7 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& technique) :
-    _device(&device) {
+lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>> ShaderProgram::load_from_technique(backend::Device& device, asset::Technique const& technique) {
 
     bool is_compute = false;
 
@@ -16,7 +15,7 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
         if(shader.flags == asset::ShaderFlags::Compute) {
             is_compute = true;
         }
-        _shaders.emplace_back(device.create_shader(shader.source, get_shader_flags(shader.flags)));
+        shaders.emplace_back(device.create_shader(shader.source, get_shader_flags(shader.flags)));
     }
 
     std::vector<backend::DescriptorLayoutBinding> bindings;
@@ -24,7 +23,7 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
 
     for(auto const& uniform : technique.uniforms) {
 
-        auto shader_uniform = ShaderUniform { };
+        auto shader_uniform = ShaderUniform {};
 
         auto uniform_visitor = make_visitor(
             [&](asset::ShaderUniformData<asset::ShaderUniformType::Sampler2D> const& data) {
@@ -42,16 +41,8 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
                 uint64_t offset = 0;
 
                 for(auto const& data : data.data) {
-
                     cbuffer_uniform_data.offsets.insert({ data.name, offset });
-
-                    switch(data.type) {
-                        case asset::ShaderDataType::F32: { offset += sizeof(float); } break;
-                        case asset::ShaderDataType::F32x2: { offset += sizeof(float) * 2; } break;
-                        case asset::ShaderDataType::F32x3: { offset += sizeof(float) * 3; } break;
-                        case asset::ShaderDataType::F32x4: { offset += sizeof(lib::math::Vector4f); } break;
-                        case asset::ShaderDataType::F32x4x4: { offset += sizeof(lib::math::Matrixf); } break;
-                    }
+                    offset += get_shader_data_type_size(data.type);
                 }
 
                 shader_uniform.data = cbuffer_uniform_data;
@@ -65,16 +56,8 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
                 uint64_t offset = 0;
 
                 for(auto const& data : data.data) {
-
                     sbuffer_uniform_data.offsets.insert({ data.name, offset });
-
-                    switch(data.type) {
-                        case asset::ShaderDataType::F32: { offset += sizeof(float); } break;
-                        case asset::ShaderDataType::F32x2: { offset += sizeof(float) * 2; } break;
-                        case asset::ShaderDataType::F32x3: { offset += sizeof(float) * 3; } break;
-                        case asset::ShaderDataType::F32x4: { offset += sizeof(lib::math::Vector4f); } break;
-                        case asset::ShaderDataType::F32x4x4: { offset += sizeof(lib::math::Matrixf); } break;
-                    }
+                    offset += get_shader_data_type_size(data.type);
                 }
 
                 shader_uniform.data = sbuffer_uniform_data;
@@ -88,16 +71,8 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
                 uint64_t offset = 0;
 
                 for(auto const& data : data.data) {
-
                     rwbuffer_uniform_data.offsets.insert({ data.name, offset });
-
-                    switch(data.type) {
-                        case asset::ShaderDataType::F32: { offset += sizeof(float); } break;
-                        case asset::ShaderDataType::F32x2: { offset += sizeof(float) * 2; } break;
-                        case asset::ShaderDataType::F32x3: { offset += sizeof(float) * 3; } break;
-                        case asset::ShaderDataType::F32x4: { offset += sizeof(lib::math::Vector4f); } break;
-                        case asset::ShaderDataType::F32x4x4: { offset += sizeof(lib::math::Matrixf); } break;
-                    }
+                    offset += get_shader_data_type_size(data.type);
                 }
 
                 shader_uniform.data = rwbuffer_uniform_data;
@@ -116,7 +91,7 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
 
         std::visit(uniform_visitor, uniform.data);
 
-        _uniforms.insert({ uniform.name, shader_uniform });
+        uniforms.insert({ uniform.name, shader_uniform });
     }
 
     uint32_t attribute_index = 0;
@@ -134,41 +109,13 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
             }
         }
         
-        _attributes.emplace_back(semantic_only, attribute_index, get_attribute_format(attribute.type), 0, offset);
+        attributes.emplace_back(semantic_only, attribute_index, get_attribute_format(attribute.type), 0, offset);
 
-        switch(attribute.type) {
-            case asset::ShaderDataType::F32: { offset += static_cast<uint32_t>(sizeof(float)); } break;
-            case asset::ShaderDataType::F32x2: { offset += static_cast<uint32_t>(sizeof(float) * 2); } break;
-            case asset::ShaderDataType::F32x3: { offset += static_cast<uint32_t>(sizeof(float) * 3); } break;
-            case asset::ShaderDataType::F32x4: { offset += static_cast<uint32_t>(sizeof(lib::math::Vector4f)); } break;
-            case asset::ShaderDataType::F32x4x4: { offset += static_cast<uint32_t>(sizeof(lib::math::Matrixf)); } break;
-        }
+        offset += get_shader_data_type_size(attribute.type);
     }
 
-    _descriptor_layout = device.create_descriptor_layout(bindings, is_compute);
-}
+    descriptor_layout = device.create_descriptor_layout(bindings, is_compute);
 
-std::shared_ptr<ShaderProgram> ShaderProgram::from_technique(backend::Device& device, asset::Technique const& technique) {
-    return std::shared_ptr<ShaderProgram>(new ShaderProgram(device, technique));
-}
-
-ShaderProgram::~ShaderProgram() {
-    for(auto const& shader : _shaders) {
-        _device->delete_shader(shader);
-    }
-    _device->delete_descriptor_layout(_descriptor_layout);
-}
-
-backend::Handle<backend::DescriptorLayout> ShaderProgram::descriptor_layout() const { 
-    return _descriptor_layout; 
-}
-
-std::span<backend::Handle<backend::Shader> const> ShaderProgram::shaders() const { 
-    return _shaders;
-}
-
-std::span<backend::VertexInputDesc const> ShaderProgram::attributes() const {
-    return _attributes;
 }
 
 uint32_t ShaderProgram::location_by_uniform_name(std::string const& name) const {
@@ -201,11 +148,7 @@ uint32_t ShaderProgram::location_by_uniform_name(std::string const& name) const 
     return location;
 }
 
-std::unordered_map<std::string, ShaderUniform>& ShaderProgram::uniforms() {
-    return _uniforms;
-}
-
-backend::ShaderFlags constexpr ShaderProgram::get_shader_flags(asset::ShaderFlags const shader_flags) const {
+backend::ShaderFlags constexpr ionengine::renderer::get_shader_flags(asset::ShaderFlags const shader_flags) const {
     switch(shader_flags) {
         case asset::ShaderFlags::Vertex: return backend::ShaderFlags::Vertex;
         case asset::ShaderFlags::Pixel: return backend::ShaderFlags::Pixel;
@@ -217,12 +160,28 @@ backend::ShaderFlags constexpr ShaderProgram::get_shader_flags(asset::ShaderFlag
     }
 }
 
-backend::Format constexpr ShaderProgram::get_attribute_format(asset::ShaderDataType const data_type) const {
+backend::Format constexpr ionengine::renderer::get_attribute_format(asset::ShaderDataType const data_type) const {
     switch(data_type) {
         case asset::ShaderDataType::F32: return backend::Format::R32;
         case asset::ShaderDataType::F32x2: return backend::Format::RG32;
         case asset::ShaderDataType::F32x3: return backend::Format::RGB32;
         case asset::ShaderDataType::F32x4: return backend::Format::RGBA32;
         default: return backend::Format::Unknown;
+    }
+}
+
+uint64_t constexpr ionengine::renderer::get_shader_data_type_size(asset::ShaderDataType const data_type) {
+    switch(data_type) {
+        case asset::ShaderDataType::F32: return sizeof(float);
+        case asset::ShaderDataType::F32x2: return sizeof(float) * 2;
+        case asset::ShaderDataType::F32x3: return sizeof(float) * 3;
+        case asset::ShaderDataType::F32x4: return sizeof(lib::math::Vector4f);
+        case asset::ShaderDataType::F32x4x4: return sizeof(lib::math::Matrixf);
+        case asset::ShaderDataType::UInt32: return sizeof(uint32_t);
+        case asset::ShaderDataType::Boolean: return sizeof(bool);
+        default: {
+            assert(false && "invalid data type");
+            return 0;
+        }
     }
 }

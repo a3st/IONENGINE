@@ -3,11 +3,12 @@
 #pragma once
 
 #include <renderer/backend/backend.h>
-#include <renderer/gpu_buffer.h>
-#include <renderer/gpu_texture.h>
 #include <asset/technique.h>
+#include <lib/expected.h>
 
 namespace ionengine::renderer {
+
+enum class ShaderProgramError { };
 
 enum class ShaderUniformType {
     CBuffer,
@@ -58,84 +59,21 @@ struct ShaderUniform {
     > data;
 };
 
-class ShaderProgram {
-public:
+struct ShaderProgram {
+    std::vector<backend::Handle<backend::Shader>> shaders;
+    backend::Handle<backend::DescriptorLayout> descriptor_layout;
+    std::vector<backend::VertexInputDesc> attributes;
+    std::unordered_map<std::string, ShaderUniform> uniforms;
 
-    ~ShaderProgram();
+    uint32_t location_index
 
-    static std::shared_ptr<ShaderProgram> from_technique(backend::Device& device, asset::Technique const& technique);
-
-    backend::Handle<backend::DescriptorLayout> descriptor_layout() const;
-
-    std::span<backend::Handle<backend::Shader> const> shaders() const;
-
-    std::span<backend::VertexInputDesc const> attributes() const;
-
-    uint32_t location_by_uniform_name(std::string const& name) const;
-
-    std::unordered_map<std::string, ShaderUniform>& uniforms();
-
-private:
-
-    ShaderProgram(backend::Device& device, asset::Technique const& technique);
-
-    backend::Device* _device;
-
-    std::vector<backend::Handle<backend::Shader>> _shaders;
-    backend::Handle<backend::DescriptorLayout> _descriptor_layout;
-    std::vector<backend::VertexInputDesc> _attributes;
-
-    std::unordered_map<std::string, ShaderUniform> _uniforms;
-
-    backend::ShaderFlags constexpr get_shader_flags(asset::ShaderFlags const shader_flags) const;
-
-    backend::Format constexpr get_attribute_format(asset::ShaderDataType const data_type) const;
+    lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>> load_from_technique(backend::Device& device, asset::Technique const& technique);
 };
 
-class ShaderUniformBinder {
-public:
+backend::ShaderFlags constexpr get_shader_flags(asset::ShaderFlags const shader_flags);
 
-    ShaderUniformBinder(backend::Device& device, ShaderProgram& shader_program) :
-        _device(&device), _shader_program(&shader_program) {
-    }
+backend::Format constexpr get_attribute_format(asset::ShaderDataType const data_type);
 
-    void bind_buffer(uint32_t const index, GPUBuffer& buffer) {
-        if(_updates.find(index) == _updates.end()) {
-            _updates.insert({ index, static_cast<uint32_t>(_descriptor_writes.size()) });
-            _descriptor_writes.emplace_back(index, buffer.as_buffer());
-        } else {
-            _descriptor_writes.at(_updates.at(index)) = backend::DescriptorWriteDesc { .index = index, .data = buffer.as_buffer() };
-        }
-    }
-
-    void bind_texture(uint32_t const index, GPUTexture& texture) {
-        if(_updates.find(index) == _updates.end()) {
-            _updates.insert({ index, static_cast<uint32_t>(_descriptor_writes.size()) });
-            _descriptor_writes.emplace_back(index, texture.as_texture());
-            if(!texture.is_unordered_access()) {
-                _descriptor_writes.emplace_back(index + 1, texture.as_sampler());
-            }
-        } else {
-            _descriptor_writes.at(_updates.at(index)) = backend::DescriptorWriteDesc { .index = index, .data = texture.as_texture() };
-            if(!texture.is_unordered_access()) {
-                _descriptor_writes.at(_updates.at(index) + 1) = backend::DescriptorWriteDesc { .index = index + 1, .data = texture.as_sampler() };
-            }
-        }
-    }
-
-    void update(backend::Handle<backend::CommandList> const& command_list) {
-        _device->bind_resources(command_list, _shader_program->descriptor_layout(), _descriptor_writes);
-    }
-
-    ShaderProgram& shader_program() { return *_shader_program; }
-
-private:
-
-    backend::Device* _device;
-    ShaderProgram* _shader_program;
-
-    std::unordered_map<uint32_t, uint32_t> _updates;
-    std::vector<backend::DescriptorWriteDesc> _descriptor_writes;
-};
+uint64_t constexpr get_shader_data_type_size(asset::ShaderDataType const data_type);
 
 }
