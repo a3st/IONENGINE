@@ -22,7 +22,7 @@ ShaderCache& ShaderCache::operator=(ShaderCache&& other) noexcept {
     return *this;
 }
 
-std::shared_ptr<ShaderProgram> ShaderCache::get(asset::Technique& technique) {
+ResourcePtr<ShaderProgram> ShaderCache::get(asset::Technique& technique) {
 
     if(_data.is_valid(technique.cache_entry)) {
         auto& cache_entry = _data.get(technique.cache_entry);

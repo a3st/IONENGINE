@@ -3,6 +3,7 @@
 #pragma once
 
 #include <renderer/cache.h>
+#include <renderer/resource_ptr.h>
 #include <renderer/shader_program.h>
 #include <asset/technique.h>
 #include <lib/sparse_vector.h>
@@ -22,7 +23,7 @@ public:
 
     ShaderCache& operator=(ShaderCache&& other) noexcept;
 
-    std::shared_ptr<ShaderProgram> get(asset::Technique& technique);
+    ResourcePtr<ShaderProgram> get(asset::Technique& technique);
 
     void update(float const delta_time);
 
@@ -30,7 +31,7 @@ private:
 
     backend::Device* _device;
 
-    lib::SparseVector<CacheEntry<std::shared_ptr<ShaderProgram>>> _data;
+    lib::SparseVector<CacheEntry<ResourcePtr<ShaderProgram>>> _data;
 };
 
 }

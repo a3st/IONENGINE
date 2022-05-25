@@ -110,19 +110,16 @@ lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>> ShaderProgram::loa
         }
         
         attributes.emplace_back(semantic_only, attribute_index, get_attribute_format(attribute.type), 0, offset);
-
         offset += get_shader_data_type_size(attribute.type);
     }
 
     descriptor_layout = device.create_descriptor_layout(bindings, is_compute);
-
 }
 
-uint32_t ShaderProgram::location_by_uniform_name(std::string const& name) const {
-    auto it = _uniforms.find(name);
-    if(it == _uniforms.end()) {
-        throw lib::Exception("Invalid uniform location");
-    }
+uint32_t ShaderProgram::location_uniform_by_name(std::string_view const name) const {
+    
+    auto it = uniforms.find(std::string(name.begin(), name.end()));
+    assert(it != uniforms.end() && "invalid uniform location");
 
     uint32_t location = 0;
 

@@ -56,6 +56,7 @@ add_executable(Runtime-Win32
 
     # Renderer
     renderer/renderer.cpp
+    renderer/shader_uniform_binder.cpp
     renderer/shader_program.cpp
     renderer/shader_cache.cpp
     renderer/geometry_buffer.cpp

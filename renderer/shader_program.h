@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <renderer/backend/backend.h>
+#include <renderer/gpu_resource.h>
 #include <asset/technique.h>
 #include <lib/expected.h>
 
@@ -65,9 +65,18 @@ struct ShaderProgram {
     std::vector<backend::VertexInputDesc> attributes;
     std::unordered_map<std::string, ShaderUniform> uniforms;
 
-    uint32_t location_index
+    uint32_t location_uniform_by_name(std::string_view const name) const;
 
     lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>> load_from_technique(backend::Device& device, asset::Technique const& technique);
+};
+
+template<>
+struct GPUResourceDeleter<ShaderProgram> {
+    void operator()(backend::Device& device, ShaderProgram const& shader_program) const {
+        for(auto const& shader : shader_program.shaders) {
+            device.delete_shader(shader);
+        }
+    }
 };
 
 backend::ShaderFlags constexpr get_shader_flags(asset::ShaderFlags const shader_flags);
