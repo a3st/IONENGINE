@@ -18,7 +18,7 @@ std::tuple<std::shared_ptr<Pipeline>, std::shared_ptr<ShaderProgram>> PipelineCa
     backend::Handle<backend::RenderPass> const& render_pass
 ) {
 
-    std::string const pipeline_name = std::format("{}_{}", technique.name(), render_pass.index());
+    std::string const pipeline_name = std::format("{}_{}", technique.name, render_pass.index());
     uint32_t const pipeline_hash = lib::hash::ctcrc32(pipeline_name.data(), pipeline_name.size());
 
     auto shader_program = shader_cache.get(technique);
@@ -35,7 +35,7 @@ std::tuple<std::shared_ptr<Pipeline>, std::shared_ptr<ShaderProgram>> PipelineCa
     ShaderCache& shader_cache,
     asset::Technique& technique
 ) {
-    std::string const pipeline_name = std::format("{}", technique.name());
+    std::string const pipeline_name = std::format("{}", technique.name);
     uint32_t const pipeline_hash = lib::hash::ctcrc32(pipeline_name.data(), pipeline_name.size());
 
     auto shader_program = shader_cache.get(technique);

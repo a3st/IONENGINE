@@ -12,7 +12,7 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
 
     bool is_compute = false;
 
-    for(auto const& shader : technique.shaders()) {
+    for(auto const& shader : technique.shaders) {
         if(shader.flags == asset::ShaderFlags::Compute) {
             is_compute = true;
         }
@@ -22,7 +22,7 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
     std::vector<backend::DescriptorLayoutBinding> bindings;
     uint32_t binding_index = 0;
 
-    for(auto const& uniform : technique.uniforms()) {
+    for(auto const& uniform : technique.uniforms) {
 
         auto shader_uniform = ShaderUniform { };
 
@@ -122,7 +122,7 @@ ShaderProgram::ShaderProgram(backend::Device& device, asset::Technique const& te
     uint32_t attribute_index = 0;
     uint32_t offset = 0;
 
-    for(auto const& attribute : technique.attributes()) {
+    for(auto const& attribute : technique.attributes) {
 
         std::string const indices = "0123456789";
         std::string semantic_only = attribute.semantic;

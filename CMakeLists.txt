@@ -25,6 +25,7 @@ add_executable(Runtime-Win32
     
     lib/scope_profiler.cpp
     lib/logger.cpp
+    lib/algorithm.cpp
 # ---------------------------
     # Platform
     platform/window_win32.cpp

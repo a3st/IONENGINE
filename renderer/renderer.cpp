@@ -176,6 +176,8 @@ void Renderer::update(float const delta_time) {
         }
     }
 
+    _shader_cache.value().update(delta_time);
+
     // Texture Event Update
     {
         asset::AssetEvent<asset::Texture> texture_event;

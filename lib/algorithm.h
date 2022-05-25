@@ -6,19 +6,7 @@
 
 namespace ionengine::lib {
 
-inline std::span<uint8_t const> read_bytes(std::span<uint8_t const> const source, uint64_t& offset, size_t const size) {
-    
-    size_t read_bytes = 0;
-    std::span<uint8_t const> dest;
-
-    if(offset + size <= source.size()) {
-        read_bytes = size;
-        dest = std::span<uint8_t const>(source.data() + offset, size);
-    }
-
-    offset += read_bytes;
-    return dest;
-};
+std::span<uint8_t const> read_bytes(std::span<uint8_t const> const source, uint64_t& offset, size_t const size);
 
 inline size_t get_line(std::string_view const buffer, size_t& offset, std::string_view& line, char const delimeter) {
     
@@ -60,28 +48,7 @@ enum class IOError {
     OpenError
 };
 
-inline Expected<std::vector<uint8_t>, Result<IOError>> load_file(std::filesystem::path const& file_path) {
-
-    std::ifstream ifs(file_path, std::ios::beg | std::ios::binary);
-
-    if(!ifs.is_open()) {
-        return Expected<std::vector<uint8_t>, Result<IOError>>::error(
-            Result<IOError> { 
-                .errc = IOError::OpenError,
-                .message = "File is not open"
-            }
-        );
-    }
-
-    ifs.seekg(0, std::ios::end);
-    size_t total_bytes = ifs.tellg();
-    ifs.seekg(0, std::ios::beg);
-
-    std::vector<uint8_t> buffer(total_bytes);
-    ifs.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
-
-    return Expected<std::vector<uint8_t>, Result<IOError>>::ok(std::move(buffer));
-};
+Expected<std::vector<uint8_t>, Result<IOError>> load_file(std::filesystem::path const& file_path);
 
 inline bool save_bytes_to_file(std::filesystem::path const& file_path, std::span<uint8_t const> const data, std::ios::openmode const open_mode = std::ios::beg) {
     

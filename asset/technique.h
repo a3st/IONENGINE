@@ -22,10 +22,12 @@ enum class JSON_ShaderDataType {
     f32x4,
     f32x3,
     f32x2,
-    f32
+    f32,
+    uint32,
+    boolean
 };
 
-JSON5_ENUM(JSON_ShaderDataType, f32x4x4, f32x4, f32x3, f32x2, f32)
+JSON5_ENUM(JSON_ShaderDataType, f32x4x4, f32x4, f32x3, f32x2, f32, uint32, boolean)
 
 enum class JSON_ShaderType {
     vertex,
@@ -33,10 +35,11 @@ enum class JSON_ShaderType {
     hull,
     domain,
     pixel,
-    compute
+    compute,
+    all
 };
 
-JSON5_ENUM(JSON_ShaderType, vertex, geometry, hull, domain, pixel, compute)
+JSON5_ENUM(JSON_ShaderType, vertex, geometry, hull, domain, pixel, compute, all)
 
 struct JSON_ShaderStructDefinition {
     std::string name;
@@ -59,10 +62,11 @@ struct JSON_TechniqueShaderDefinition {
     JSON_ShaderType type;
     std::vector<JSON_ShaderStructDefinition> inputs;
     std::vector<JSON_ShaderStructDefinition> outputs;
+    std::optional<std::vector<std::string>> imports;
     std::string source;
 };
 
-JSON5_CLASS(JSON_TechniqueShaderDefinition, type, inputs, outputs, source)
+JSON5_CLASS(JSON_TechniqueShaderDefinition, type, inputs, outputs, imports, source)
 
 struct JSON_TechniqueDefinition {
     std::string name;
@@ -104,7 +108,9 @@ enum class ShaderDataType {
     F32x4,
     F32x3,
     F32x2,
-    F32
+    F32,
+    UInt32,
+    Boolean
 };
 
 template<ShaderUniformType Type>
@@ -160,6 +166,7 @@ struct ShaderUniform {
     DECLARE_SHADER_UNIFORM_CAST(as_cbuffer, ShaderUniformType::CBuffer)
     DECLARE_SHADER_UNIFORM_CAST(as_sbuffer, ShaderUniformType::SBuffer)
     DECLARE_SHADER_UNIFORM_CAST(as_rwbuffer, ShaderUniformType::RWBuffer)
+    DECLARE_SHADER_UNIFORM_CAST(as_rwtexture2D, ShaderUniformType::RWTexture2D)
 };
 
 struct VertexAttribute {
@@ -173,54 +180,35 @@ struct ShaderData {
     uint64_t hash;
 };
 
-class Technique {
-public:
+struct Technique {
+    std::string name;
+    std::vector<ShaderUniform> uniforms;
+    std::vector<ShaderData> shaders;
+    std::vector<VertexAttribute> attributes;
+    size_t cache_entry{std::numeric_limits<size_t>::max()};
+    uint64_t hash{0};
 
     static lib::Expected<Technique, lib::Result<TechniqueError>> load_from_file(std::filesystem::path const& file_path);
-
-    std::string_view name() const;
-
-    std::span<ShaderUniform const> uniforms() const;
-
-    std::span<ShaderData const> shaders() const;
-
-    std::span<VertexAttribute const> attributes() const;
-
-    uint64_t hash() const;
-
-    void cache_entry(size_t const value);
-
-    size_t cache_entry() const;
-
-private:
-
-    Technique(JSON_TechniqueDefinition const& document);
-
-    std::string _name;
-    std::vector<ShaderUniform> _uniforms;
-    std::vector<ShaderData> _shaders;
-    std::vector<VertexAttribute> _attributes;
-
-    size_t _cache_entry{std::numeric_limits<size_t>::max()};
-    uint64_t _total_hash{0};
-
-    std::string generate_uniform_code(
-        std::string_view const name, 
-        JSON_ShaderUniformType const uniform_type, 
-        uint32_t const location,
-        std::optional<std::span<JSON_ShaderStructDefinition const>> const properties = std::nullopt
-    ) const;
-
-    std::string generate_struct_code(
-        std::string_view const name, 
-        std::span<JSON_ShaderStructDefinition const> const properties
-    ) const;
-
-    std::string constexpr get_shader_data_string(JSON_ShaderDataType const data_type) const;
-
-    ShaderDataType constexpr get_shader_data_type(JSON_ShaderDataType const data_type) const;
-
-    ShaderFlags constexpr get_shader_flags(JSON_ShaderType const shader_type) const;
 };
+
+std::string generate_uniform_code(
+    std::string_view const name, 
+    JSON_ShaderUniformType const uniform_type, 
+    uint32_t const location,
+    std::optional<std::span<JSON_ShaderStructDefinition const>> const properties = std::nullopt
+);
+
+std::string generate_struct_code(
+    std::string_view const name, 
+    std::span<JSON_ShaderStructDefinition const> const properties
+);
+
+std::string generate_include_code(std::filesystem::path const& directory, std::filesystem::path const& include_path);
+
+std::string constexpr get_shader_data_type_string(JSON_ShaderDataType const data_type);
+
+ShaderDataType constexpr get_shader_data_type(JSON_ShaderDataType const data_type);
+
+ShaderFlags constexpr get_shader_flags(JSON_ShaderType const shader_type);
 
 }

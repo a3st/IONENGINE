@@ -30,6 +30,7 @@
 #include <span>
 #include <string_view>
 #include <charconv>
+#include <ranges>
 #include <tuple>
 #include <set>
 #include <unordered_set>

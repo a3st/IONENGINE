@@ -23,13 +23,11 @@ ShaderCache& ShaderCache::operator=(ShaderCache&& other) noexcept {
 }
 
 std::shared_ptr<ShaderProgram> ShaderCache::get(asset::Technique& technique) {
-        
-    uint64_t const total_hash = technique.hash();
 
-    if(_data.is_valid(technique.cache_entry())) {
-        auto& cache_entry = _data.get(technique.cache_entry());
+    if(_data.is_valid(technique.cache_entry)) {
+        auto& cache_entry = _data.get(technique.cache_entry);
             
-        if(cache_entry.hash != technique.cache_entry()) {
+        if(cache_entry.hash != technique.cache_entry) {
 
         }
 
@@ -42,12 +40,17 @@ std::shared_ptr<ShaderProgram> ShaderCache::get(asset::Technique& technique) {
 
             auto cache_entry = CacheEntry<std::shared_ptr<ShaderProgram>> {
                 .value = program,
-                .hash = total_hash
+                .hash = technique.hash
             };
 
-            technique.cache_entry(_data.push(std::move(cache_entry)));
+            technique.cache_entry = _data.push(std::move(cache_entry));
         }
-        auto& cache_entry = _data.get(technique.cache_entry());
+        auto& cache_entry = _data.get(technique.cache_entry);
         return cache_entry.value;
     }
+}
+
+void ShaderCache::update(float const delta_time) {
+
+    // for(auto& cache_entry : _data.has_values()) { }
 }

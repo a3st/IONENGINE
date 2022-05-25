@@ -24,6 +24,8 @@ public:
 
     std::shared_ptr<ShaderProgram> get(asset::Technique& technique);
 
+    void update(float const delta_time);
+
 private:
 
     backend::Device* _device;
