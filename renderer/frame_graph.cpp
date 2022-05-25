@@ -32,10 +32,10 @@ void FrameGraph::add_pass(
     uint32_t const render_pass_hash = lib::hash::ctcrc32(render_pass_name.data(), render_pass_name.size());
 
     if(_render_pass_cache.find(render_pass_hash) == _render_pass_cache.end()) {
-        std::vector<std::shared_ptr<GPUTexture>> color_attachments;
+        std::vector<ResourcePtr<GPUTexture>> color_attachments;
         std::vector<backend::RenderPassLoadOp> color_ops;
         std::vector<lib::math::Color> color_clears;
-        std::vector<std::shared_ptr<GPUTexture>> input_attachments;
+        std::vector<ResourcePtr<GPUTexture>> input_attachments;
 
         for(auto const& color : colors.value()) {
             color_attachments.emplace_back(color.attachment);
@@ -90,7 +90,7 @@ void FrameGraph::add_pass(
     uint32_t const compute_pass_hash = lib::hash::ctcrc32(compute_pass_name.data(), compute_pass_name.size());
 
     if(_compute_pass_cache.find(compute_pass_hash) == _compute_pass_cache.end()) {
-        std::vector<std::shared_ptr<GPUBuffer>> storage_buffers;
+        std::vector<ResourcePtr<GPUBuffer>> storage_buffers;
 
         if(storages.has_value()) {
             for(auto const& storage : storages.value()) {
@@ -168,11 +168,10 @@ void FrameGraph::execute() {
                     render_pass->ds_clear.second
                 );
 
-                RenderPassContext context;
-                context._inputs = render_pass->inputs;
-                context._render_pass = render_pass->render_pass;
-                context._command_list = render_pass->command_list;
-
+                auto context = RenderPassContext {
+                    .render_pass = render_pass->render_pass,
+                    .command_list = render_pass->command_list
+                };
                 render_pass->func(context);
 
                 _device->end_render_pass(render_pass->command_list);
@@ -192,10 +191,9 @@ void FrameGraph::execute() {
                     }
                 }
 
-                ComputePassContext context;
-                context._storages = compute_pass->storages;
-                context._command_list = compute_pass->command_list;
-
+                auto context = ComputePassContext {
+                    .command_list = compute_pass->command_list
+                };
                 compute_pass->func(context);
             } break;
         }
@@ -222,9 +220,9 @@ uint32_t FrameGraph::wait() {
 }
 
 backend::Handle<backend::RenderPass> FrameGraph::compile_render_pass(
-    std::span<std::shared_ptr<GPUTexture>> color_attachments,
+    std::span<ResourcePtr<GPUTexture>> color_attachments,
     std::span<backend::RenderPassLoadOp> color_ops,
-    std::shared_ptr<GPUTexture> depth_stencil_attachment,
+    ResourcePtr<GPUTexture> depth_stencil_attachment,
     backend::RenderPassLoadOp depth_stencil_op
 ) {
 
@@ -241,7 +239,7 @@ backend::Handle<backend::RenderPass> FrameGraph::compile_render_pass(
         if(!color_attachments[i]) {
             colors[i] = _swapchain_texture;
         } else {
-            colors[i] = color_attachments[i]->as_texture();
+            colors[i] = color_attachments[i]->texture;
         }
         color_descs[i] = backend::RenderPassColorDesc {
             .load_op = color_ops[i],
@@ -250,7 +248,7 @@ backend::Handle<backend::RenderPass> FrameGraph::compile_render_pass(
     }
 
     if(depth_stencil_attachment) {
-        backend::Handle<backend::Texture> depth_stencil = depth_stencil_attachment->as_texture();
+        backend::Handle<backend::Texture> depth_stencil = depth_stencil_attachment->texture;
 
         auto depth_stencil_desc = backend::RenderPassDepthStencilDesc {
             .depth_load_op = depth_stencil_op,

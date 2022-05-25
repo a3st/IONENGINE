@@ -141,7 +141,9 @@ void Renderer::update(float const delta_time) {
         while(_mesh_event_receiver.value().try_receive(mesh_event)) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Loaded>& event) {
-                    _geometry_cache.value().upload(_upload_manager.value(), *event.asset);
+                    for(size_t i = 0; i < event.asset->surfaces().size(); ++i) {
+                        _geometry_cache.value().get(_upload_manager.value(), *event.asset, i);
+                    }
                 },
                 // Default
                 [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Unloaded>& event) { },
@@ -177,8 +179,7 @@ void Renderer::update(float const delta_time) {
         while(_texture_event_receiver.value().try_receive(texture_event)) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Loaded>& event) {
-                    //std::cout << std::format("[Debug] Renderer created GPUTexture from '{}'", event.asset.path().string()) << std::endl;
-                    _texture_cache.value().get(_upload_context.value(), *event.asset);
+                    _texture_cache.value().get(_upload_manager.value(), *event.asset);
                 },
                 // Default
                 [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Unloaded>& event) { },

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <renderer/backend/backend.h>
+#include <renderer/resource_ptr.h>
 #include <renderer/gpu_texture.h>
 #include <renderer/gpu_buffer.h>
 #include <lib/math/color.h>
@@ -11,78 +12,36 @@
 namespace ionengine::renderer {
 
 struct CreateColorInfo {
-    std::shared_ptr<GPUTexture> attachment;
+    ResourcePtr<GPUTexture> attachment;
     backend::RenderPassLoadOp load_op;
     lib::math::Color clear_color;
 };
 
 struct CreateInputInfo {
-    std::shared_ptr<GPUTexture> attachment;
+    ResourcePtr<GPUTexture> attachment;
 };
 
 struct CreateDepthStencilInfo {
-    std::shared_ptr<GPUTexture> attachment;
+    ResourcePtr<GPUTexture> attachment;
     backend::RenderPassLoadOp load_op;
     float clear_depth;
     uint8_t clear_stencil;
 };
 
-class RenderPassContext {
-
-    friend class FrameGraph;
-
-public:
-
-    RenderPassContext() = default;
-
-    std::shared_ptr<GPUTexture> input(uint32_t const index) const { 
-        return _inputs[index];
-    }
-
-    backend::Handle<backend::RenderPass> render_pass() const { 
-        return _render_pass;
-    }
-    
-    backend::Handle<backend::CommandList> command_list() const { 
-        return _command_list;
-    }
-
-private:
-
-    std::span<std::shared_ptr<GPUTexture>> _inputs;
-    
-    backend::Handle<backend::RenderPass> _render_pass;
-    backend::Handle<backend::CommandList> _command_list;
+struct RenderPassContext {
+    backend::Handle<backend::RenderPass> render_pass;
+    backend::Handle<backend::CommandList> command_list;
 };
 
 using RenderPassFunc = std::function<void(RenderPassContext const&)>;
 inline RenderPassFunc RenderPassDefaultFunc = [=](RenderPassContext const& context) { };
 
 struct CreateStorageInfo {
-    std::shared_ptr<GPUBuffer> buffer;
+    ResourcePtr<GPUBuffer> buffer;
 };
 
-class ComputePassContext {
-
-    friend class FrameGraph;
-
-public:
-
-    ComputePassContext() = default;
-
-    std::shared_ptr<GPUBuffer> storage(uint32_t const index) const { 
-        return _storages[index];
-    }
-    
-    backend::Handle<backend::CommandList> command_list() const { 
-        return _command_list;
-    }
-
-private:
-
-    std::span<std::shared_ptr<GPUBuffer>> _storages;
-    
-    backend::Handle<backend::CommandList> _command_list;
+struct ComputePassContext {
+    backend::Handle<backend::CommandList> command_list;
 };
 
 using ComputePassFunc = std::function<void(ComputePassContext const&)>;
@@ -121,13 +80,13 @@ private:
         std::string name;
         uint32_t width;
         uint32_t height;
-        std::vector<std::shared_ptr<GPUTexture>> color_attachments;
+        std::vector<ResourcePtr<GPUTexture>> color_attachments;
         std::vector<backend::RenderPassLoadOp> color_ops;
         std::vector<lib::math::Color> color_clears;
-        std::shared_ptr<GPUTexture> ds_attachment;
+        ResourcePtr<GPUTexture> ds_attachment;
         backend::RenderPassLoadOp ds_op;
         std::pair<float, uint8_t> ds_clear;
-        std::vector<std::shared_ptr<GPUTexture>> inputs;
+        std::vector<ResourcePtr<GPUTexture>> inputs;
         RenderPassFunc func;
         backend::Handle<backend::RenderPass> render_pass;
         backend::Handle<backend::CommandList> command_list;
@@ -135,7 +94,7 @@ private:
 
     struct ComputePass {
         std::string name;
-        std::vector<std::shared_ptr<GPUBuffer>> storages;
+        std::vector<ResourcePtr<GPUBuffer>> storages;
         ComputePassFunc func;
         backend::Handle<backend::CommandList> command_list;
     };
@@ -172,9 +131,9 @@ private:
     backend::MemoryState _swapchain_memory_state;
 
     backend::Handle<backend::RenderPass> compile_render_pass(
-        std::span<std::shared_ptr<GPUTexture>> color_attachments,
+        std::span<ResourcePtr<GPUTexture>> color_attachments,
         std::span<backend::RenderPassLoadOp> color_ops,
-        std::shared_ptr<GPUTexture> depth_stencil_attachment,
+        ResourcePtr<GPUTexture> depth_stencil_attachment,
         backend::RenderPassLoadOp depth_stencil_op
     );
 };
