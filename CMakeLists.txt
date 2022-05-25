@@ -66,7 +66,7 @@ add_executable(Runtime-Win32
     renderer/texture_cache.cpp
     renderer/gpu_buffer.cpp
     renderer/render_queue.cpp
-    renderer/upload_context.cpp
+    renderer/upload_manager.cpp
     renderer/frame_graph.cpp
 # ---------------------------
     thirdparty/tinyobjloader/src/tiny_obj_loader.cc

@@ -261,6 +261,6 @@ backend::Handle<backend::RenderPass> FrameGraph::compile_render_pass(
 
         return _device->create_render_pass(colors, color_descs, depth_stencil, depth_stencil_desc);
     } else {
-        return _device->create_render_pass(colors, color_descs, backend::InvalidHandle<backend::Texture>(), {});
+        return _device->create_render_pass(colors, color_descs);
     }
 }

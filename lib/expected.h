@@ -42,6 +42,10 @@ public:
         return std::move(std::get<0>(_data));
     }
 
+    Error error_value() {
+        return std::move(std::get<1>(_data));
+    }
+
 private:
 
     Expected(std::variant<Type, Error>&& element) : _data(std::move(element)) { }

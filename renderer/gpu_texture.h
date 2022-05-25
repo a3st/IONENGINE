@@ -2,64 +2,68 @@
 
 #pragma once
 
-#include <renderer/backend/backend.h>
-#include <renderer/upload_context.h>
+#include <renderer/gpu_resource.h>
 #include <asset/texture.h>
 
 namespace ionengine::renderer {
 
-class GPUTexture {
-public:
+enum class GPUTextureError { };
 
-    ~GPUTexture();
+struct GPUTexture {
+    backend::Handle<backend::Texture> texture;
+    backend::Handle<backend::Sampler> sampler;
+    uint32_t width;
+    uint32_t height;
+    uint32_t mip_count;
+    backend::TextureFlags flags;
+    backend::Format format;
+    backend::MemoryState memory_state;
 
-    static std::shared_ptr<GPUTexture> render_target(backend::Device& device, backend::Format const format, uint32_t const width, uint32_t const height, backend::TextureFlags const flags);
+    bool is_render_target() const {
+        return flags & backend::TextureFlags::RenderTarget;
+    }
 
-    static std::shared_ptr<GPUTexture> depth_stencil(backend::Device& device, backend::Format const format, uint32_t const width, uint32_t const height);
+    bool is_sampler() const {
+        return flags & backend::TextureFlags::ShaderResource;
+    }
 
-    static std::shared_ptr<GPUTexture> sampler(backend::Device& device, UploadContext& upload_context, asset::Texture const& texture);
+    bool is_depth_stencil() const {
+        return flags & backend::TextureFlags::DepthStencil;
+    }
 
-    void copy_texture_data(UploadContext& context, std::pair<uint32_t, uint32_t> const mip_range, std::span<uint8_t const> const data);
+    bool is_rw_texture() const {
+        return flags & backend::TextureFlags::UnorderedAccess;
+    }
 
-    backend::Handle<backend::Texture> as_texture() const;
-
-    backend::Handle<backend::Sampler> as_sampler() const;
-
-    bool is_render_target() const;
-
-    bool is_depth_stencil() const;
-
-    bool is_unordered_access() const;
-
-    void barrier(backend::Handle<backend::CommandList> const& command_list, backend::MemoryState const memory_state);
-
-    backend::MemoryState memory_state() const;
-
-private:
-
-    GPUTexture(
-        backend::Device& device, 
+    static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> render_target(
+        backend::Device& device,
         backend::Format const format, 
         uint32_t const width, 
         uint32_t const height, 
-        uint32_t const mip_count,
         backend::TextureFlags const flags
     );
 
-    backend::Device* _device;
+    static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> depth_stencil(
+        backend::Device& device,
+        backend::Format const format, 
+        uint32_t const width, 
+        uint32_t const height, 
+        backend::TextureFlags const flags
+    );
 
-    backend::Handle<backend::Texture> _texture;
-    backend::Handle<backend::Sampler> _sampler;
-
-    uint32_t _width;
-    uint32_t _height;
-
-    backend::TextureFlags _flags;
-    backend::Format _format;
-
-    backend::MemoryState _memory_state;
-
-    static backend::Format constexpr get_texture_format(asset::TextureFormat const format);
+    static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> load_from_texture(backend::Device& device, asset::Texture const& texture);
 };
+
+template<>
+struct GPUResourceDeleter<GPUTexture> {
+    void operator()(backend::Device& device, GPUTexture const& texture) const {
+        device.delete_texture(texture.texture);
+        if(texture.is_sampler()) {
+            device.delete_sampler(texture.sampler);
+        }
+    }
+};
+
+backend::Format constexpr get_texture_format(asset::TextureFormat const format);
 
 }

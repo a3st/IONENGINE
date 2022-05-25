@@ -2,6 +2,7 @@
 
 #include <precompiled.h>
 #include <renderer/geometry_cache.h>
+#include <lib/exception.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -21,32 +22,33 @@ GeometryCache& GeometryCache::operator=(GeometryCache&& other) noexcept {
     return *this;
 }
 
-std::shared_ptr<GeometryBuffer> GeometryCache::get(UploadContext& context, asset::Mesh& mesh, uint32_t const surface_index) {
+ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, asset::Mesh& mesh, uint32_t const index) {
+
+    uint64_t const hash = mesh.surfaces()[index].vertices.hash() ^ mesh.surfaces()[index].indices.hash();
+
+    if(_data.is_valid(mesh.surfaces()[index].cache_entry)) {
+
+        auto& cache_entry = _data.get(mesh.surfaces()[index].cache_entry);
         
-    uint64_t const total_hash = mesh.surfaces()[surface_index].vertices.hash() ^ mesh.surfaces()[surface_index].indices.hash();
-
-    if(_data.is_valid(mesh.surfaces()[surface_index].cache_entry)) {
-        auto& cache_entry = _data.get(mesh.surfaces()[surface_index].cache_entry);
-            
-        if(cache_entry.hash != mesh.surfaces()[surface_index].cache_entry) {
-
-        }
-
         return cache_entry.value;
 
     } else {
 
-        {
-            auto buffer = GeometryBuffer::from_surface(*_device, context, mesh.surfaces()[surface_index]);
+        auto result = GeometryBuffer::load_from_surface(*_device, mesh.surfaces()[index]);
+        if(result.is_ok()) {
 
-            auto cache_entry = CacheEntry<std::shared_ptr<GeometryBuffer>> {
-                .value = buffer,
-                .hash = total_hash
+            auto cache_entry = CacheEntry<ResourcePtr<GeometryBuffer>> {
+                .value = std::move(result.value()),
+                .hash = hash
             };
 
-            mesh.surfaces()[surface_index].cache_entry = _data.push(std::move(cache_entry));
+            upload_manager.upload_geometry_data(cache_entry.value, mesh.surfaces()[index].vertices, mesh.surfaces()[index].indices);
+
+            mesh.surfaces()[index].cache_entry = _data.push(std::move(cache_entry));
+        } else {
+            throw lib::Exception(result.error_value().message);
         }
-        auto& cache_entry = _data.get(mesh.surfaces()[surface_index].cache_entry);
-        return cache_entry.value;
+
+        return nullptr;
     }
 }

@@ -3,8 +3,7 @@
 #pragma once
 
 #include <renderer/cache.h>
-#include <renderer/gpu_texture.h>
-#include <renderer/upload_context.h>
+#include <renderer/upload_manager.h>
 #include <asset/texture.h>
 #include <lib/sparse_vector.h>
 
@@ -23,13 +22,15 @@ public:
 
     TextureCache& operator=(TextureCache&& other) noexcept;
 
-    std::shared_ptr<GPUTexture> get(UploadContext& context, asset::Texture& texture);
+    void upload(UploadManager& upload_manager, asset::Texture& texture);
+
+    ResourcePtr<GPUTexture> get(asset::Texture& texture);
 
 private:
 
     backend::Device* _device;
 
-    lib::SparseVector<CacheEntry<std::shared_ptr<GPUTexture>>> _data;
+    lib::SparseVector<CacheEntry<ResourcePtr<GPUTexture>>> _data;
 };
 
 }

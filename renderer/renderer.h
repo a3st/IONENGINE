@@ -3,7 +3,7 @@
 #pragma once
 
 #include <renderer/render_queue.h>
-#include <renderer/upload_context.h>
+#include <renderer/upload_manager.h>
 #include <renderer/shader_cache.h>
 #include <renderer/geometry_cache.h>
 #include <renderer/texture_cache.h>
@@ -12,6 +12,7 @@
 #include <renderer/cbuffer_pool.h>
 #include <renderer/sbuffer_pool.h>
 #include <asset/asset_manager.h>
+#include <lib/thread_pool.h>
 
 namespace ionengine {
 
@@ -53,7 +54,7 @@ struct EditorInstance {
 class Renderer {
 public:
 
-    Renderer(platform::Window& window, asset::AssetManager& asset_manager, DefaultAssetDesc const& asset_desc);
+    Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool, DefaultAssetDesc const& asset_desc);
 
     ~Renderer();
 
@@ -83,7 +84,7 @@ private:
 
     backend::Device _device;
 
-    std::optional<UploadContext> _upload_context;
+    std::optional<UploadManager> _upload_manager;
 
     std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _mesh_event_receiver;
     std::optional<lib::Receiver<asset::AssetEvent<asset::Technique>>> _technique_event_receiver;

@@ -36,7 +36,7 @@ int main(int* argc, char** agrv) {
             .billboard = asset_manager.get_technique("engine/techniques/billboard.json5"),
             .quad = asset_manager.get_mesh("engine/quad.obj")
         };
-        renderer::Renderer renderer(window, asset_manager, render_asset_desc);
+        renderer::Renderer renderer(window, asset_manager, thread_pool, render_asset_desc);
 
         renderer.editor_mode(false);
         

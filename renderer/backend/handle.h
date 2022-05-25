@@ -60,7 +60,13 @@ private:
 
 public:
 
-    HandlePool() = default;
+    HandlePool(uint32_t const pool_size) {
+
+        _data.resize(pool_size);
+        _free_data.resize(pool_size);
+
+        fill_free_empty_data(pool_size);
+    }
 
     HandlePool(HandlePool const& other) = delete;
 
@@ -77,14 +83,6 @@ public:
         _data = other._data;
         _free_data = other._free_data;
         return *this;
-    }
-
-    HandlePool(uint32_t const pool_size) {
-
-        _data.resize(pool_size);
-        _free_data.resize(pool_size);
-
-        fill_free_empty_data(pool_size);
     }
 
     Handle<Type> push(Type const& element) {

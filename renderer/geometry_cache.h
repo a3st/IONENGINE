@@ -3,8 +3,7 @@
 #pragma once
 
 #include <renderer/cache.h>
-#include <renderer/geometry_buffer.h>
-#include <renderer/upload_context.h>
+#include <renderer/upload_manager.h>
 #include <asset/mesh.h>
 #include <lib/sparse_vector.h>
 
@@ -23,13 +22,13 @@ public:
 
     GeometryCache& operator=(GeometryCache&& other) noexcept;
 
-    std::shared_ptr<GeometryBuffer> get(UploadContext& context, asset::Mesh& mesh, uint32_t const surface_index);
+    ResourcePtr<GeometryBuffer> get(UploadManager& upload_manager, asset::Mesh& mesh, uint32_t const index);
 
 private:
 
     backend::Device* _device;
 
-    lib::SparseVector<CacheEntry<std::shared_ptr<GeometryBuffer>>> _data;
+    lib::SparseVector<CacheEntry<ResourcePtr<GeometryBuffer>>> _data;
 };
 
 }

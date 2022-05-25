@@ -19,18 +19,19 @@ struct CachePipeline;
 struct CommandList;
 
 enum class BackendLimits : uint32_t {
-    RenderPassCount = 256,
-    PipelineCount = 256,
+    Textures = 8192,
+    Buffers = 8192,
+    Samplers = 8192,
     ShaderCount = 512,
-    DescriptorLayoutCount = 4,
-    TextureCount = 4096,
-    SamplerCount = 128,
-    DescriptorSetCount = 512,
-    BufferCount = 512,
-    EncoderCount = 24,
-    DeviceCount = 3,
-    BufferedSwapCount = 3
+    DescriptorLayouts = 256,
+    Pipelines = 256,
+    Shaders = 1024,
+    RenderPasses = 32,
+    CommandLists = 64
 };
+
+inline uint32_t constexpr TEXTURE_ROW_PITCH_ALIGNMENT = 256;
+inline uint32_t constexpr TEXTURE_RESOURCE_ALIGNMENT = 512;
 
 enum class Dimension {
     _1D,
@@ -250,10 +251,13 @@ struct TextureCopyRegion {
     uint32_t offset;
 };
 
+struct MemoryBarrierDesc {
+    ResourceHandle target;
+    MemoryState before; 
+    MemoryState after;
+};
+
 class Device {
-
-    friend class Encoder;
-
 public:
 
     Device(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc);
@@ -262,11 +266,11 @@ public:
 
     Device(Device const&) = delete;
 
-    Device(Device&&) noexcept;
+    Device(Device&&) noexcept = default;
 
     Device& operator=(Device const&) = delete;
 
-    Device& operator=(Device&&) noexcept;
+    Device& operator=(Device&&) noexcept = default;
 
     Handle<Texture> create_texture(
         Dimension const dimension,
@@ -285,10 +289,10 @@ public:
     void delete_buffer(Handle<Buffer> const& buffer);
 
     Handle<RenderPass> create_render_pass(
-        std::span<Handle<Texture>> const& colors,
+        std::span<Handle<Texture> const> const& colors,
         std::span<RenderPassColorDesc const> const& color_descs,
-        Handle<Texture> const& depth_stencil,
-        RenderPassDepthStencilDesc const& depth_stencil_desc
+        Handle<Texture> const& depth_stencil = InvalidHandle<Texture>(),
+        std::optional<RenderPassDepthStencilDesc> const depth_stencil_desc = std::nullopt
     );
 
     void delete_render_pass(Handle<RenderPass> const& render_pass);
@@ -303,8 +307,6 @@ public:
     );
 
     void delete_sampler(Handle<Sampler> const& sampler);
-
-    Handle<Shader> create_shader(std::span<uint8_t const> const data, ShaderFlags const flags);
 
     Handle<Shader> create_shader(std::string_view const source, ShaderFlags const flags);
 
@@ -337,7 +339,7 @@ public:
 
     void delete_command_list(Handle<CommandList> const& command_list);
 
-    uint8_t* map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset);
+    uint8_t* map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset = 0);
 
     void unmap_buffer_data(Handle<Buffer> const& buffer);
 
@@ -377,7 +379,7 @@ public:
 
     void bind_index_buffer(Handle<CommandList> const& command_list, Handle<Buffer> const& buffer, uint64_t const offset);
 
-    void barrier(Handle<CommandList> const& command_list, ResourceHandle const& target, MemoryState const before, MemoryState const after);
+    void barrier(Handle<CommandList> const& command_list, std::span<MemoryBarrierDesc const> const barriers);
 
     void bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline);
 

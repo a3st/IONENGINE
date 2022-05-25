@@ -62,7 +62,7 @@ private:
 
 }
 
-Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager, DefaultAssetDesc const& asset_desc) : 
+Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool, DefaultAssetDesc const& asset_desc) : 
     _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 }),
     _asset_manager(&asset_manager) {
 
@@ -141,11 +141,7 @@ void Renderer::update(float const delta_time) {
         while(_mesh_event_receiver.value().try_receive(mesh_event)) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Loaded>& event) {
-                    // std::cout << std::format("[Debug] Renderer created GeometryBuffers from '{}'", event.asset.path().string()) << std::endl;
-
-                    for(size_t i = 0; i < event.asset->surfaces().size(); ++i) {
-                        _geometry_cache.value().get(_upload_context.value(), *event.asset, static_cast<uint32_t>(i));
-                    }
+                    _geometry_cache.value().upload(_upload_manager.value(), *event.asset);
                 },
                 // Default
                 [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Unloaded>& event) { },
@@ -163,7 +159,6 @@ void Renderer::update(float const delta_time) {
         while(_technique_event_receiver.value().try_receive(technique_event)) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Loaded>& event) {
-                    //std::cout << std::format("[Debug] Renderer created ShaderProgram from '{}'", event.asset.path().string()) << std::endl;
                     _shader_cache.value().get(*event.asset);
                 },
                 // Default
@@ -175,8 +170,6 @@ void Renderer::update(float const delta_time) {
             std::visit(event_visitor, technique_event.data);
         }
     }
-
-    _shader_cache.value().update(delta_time);
 
     // Texture Event Update
     {

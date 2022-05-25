@@ -2,39 +2,42 @@
 
 #pragma once
 
-#include <renderer/backend/backend.h>
-#include <renderer/upload_context.h>
+#include <renderer/gpu_resource.h>
 #include <asset/mesh.h>
 #include <lib/expected.h>
 
 namespace ionengine::renderer {
 
-class GeometryBuffer {
-public:
+enum class GeometryBufferError {
+    VertexSize,
+    IndexSize,
+    IndexOverflow
+};
 
-    ~GeometryBuffer();
+struct GeometryBuffer {
+    backend::Handle<backend::Buffer> vertex_buffer;
+    backend::Handle<backend::Buffer> index_buffer;
+    uint32_t vertices_size;
+    uint32_t indices_size;
+    backend::BufferFlags flags;
 
-    static std::shared_ptr<GeometryBuffer> from_surface(backend::Device& device, UploadContext& upload_context, asset::SurfaceData const& surface);
+    bool is_host_visible() const {
+        return flags & backend::BufferFlags::HostWrite;
+    }
 
-    void copy_vertex_data(UploadContext& context, std::span<float const> const data);
+    void bind(backend::Device& device, backend::Handle<backend::CommandList> const& command_list);
 
-    void copy_index_data(UploadContext& context, std::span<uint32_t const> const data);
+    void draw_indexed(backend::Device& device, backend::Handle<backend::CommandList> const& command_list, uint32_t const instance_count);
 
-    void bind(backend::Handle<backend::CommandList> const& command_list);
+    static lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> load_from_surface(backend::Device& device, asset::SurfaceData const& surface);
+};
 
-    void draw(backend::Handle<backend::CommandList> const& command_list, uint32_t const instance_count);
-
-private:
-
-    GeometryBuffer(backend::Device& device, uint32_t const vertices_size, uint32_t const indices_size);
-
-    backend::Device* _device;
-    
-    backend::Handle<backend::Buffer> _vertex_buffer;
-    backend::Handle<backend::Buffer> _index_buffer;
-
-    uint32_t _vertices_size{0};
-    uint32_t _indices_size{0};
+template<>
+struct GPUResourceDeleter<GeometryBuffer> {
+    void operator()(backend::Device& device, GeometryBuffer const& geometry_buffer) const {
+        device.delete_buffer(geometry_buffer.vertex_buffer);
+        device.delete_buffer(geometry_buffer.index_buffer);
+    }
 };
 
 }

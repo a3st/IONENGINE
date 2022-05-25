@@ -2,41 +2,45 @@
 
 #pragma once
 
-#include <renderer/backend/backend.h>
-#include <renderer/upload_context.h>
+#include <renderer/gpu_resource.h>
+#include <lib/expected.h>
 
 namespace ionengine::renderer {
 
-class GPUBuffer {
-public:
+enum class GPUBufferError { };
 
-    ~GPUBuffer();
+struct GPUBuffer {
+    backend::Handle<backend::Buffer> buffer;
+    size_t size;
+    backend::BufferFlags flags;
+    backend::MemoryState memory_state;
 
-    static std::shared_ptr<GPUBuffer> cbuffer(backend::Device& device, uint32_t const size);
+    bool is_cbuffer() const {
+        return flags & backend::BufferFlags::ConstantBuffer;
+    }
 
-    static std::shared_ptr<GPUBuffer> sbuffer(backend::Device& device, uint32_t const size, uint32_t const element_stride);
+    bool is_sbuffer() const {
+        return flags & backend::BufferFlags::ShaderResource;
+    }
 
-    backend::Handle<backend::Buffer> as_buffer() const;
+    bool is_rwbuffer() const {
+        return flags & backend::BufferFlags::UnorderedAccess;
+    }
 
-    void copy_data(UploadContext& context, std::span<uint8_t const> const data);
+    bool is_host_visible() const {
+        return flags & backend::BufferFlags::HostWrite;
+    }
 
-    bool is_cbuffer() const;
+    static lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> cbuffer(backend::Device& device, uint32_t const size, backend::BufferFlags const flags);
 
-    void barrier(backend::Handle<backend::CommandList> const& command_list, backend::MemoryState const memory_state);
+    static lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> sbuffer(backend::Device& device, uint32_t const size, backend::BufferFlags const flags, uint32_t const element_stride);
+};
 
-    backend::MemoryState memory_state() const;
-
-private:
-
-    GPUBuffer(backend::Device& device, size_t const size, backend::BufferFlags const flags, uint32_t const element_stride);
-
-    backend::Device* _device;
-
-    backend::Handle<backend::Buffer> _buffer;
-
-    backend::BufferFlags _flags;
-
-    backend::MemoryState _memory_state;
+template<>
+struct GPUResourceDeleter<GPUBuffer> {
+    void operator()(backend::Device& device, GPUBuffer const& buffer) const {
+        device.delete_buffer(buffer.buffer);
+    }
 };
 
 }

@@ -117,6 +117,17 @@ struct Device::Impl {
     uint32_t swapchain_index{0};
     std::vector<Handle<Texture>> swapchain_textures;
 
+    Impl(
+        uint32_t const texture_size, 
+        uint32_t const buffer_size, 
+        uint32_t const sampler_size, 
+        uint32_t const descriptor_layout_size, 
+        uint32_t const pipeline_size,
+        uint32_t const shader_size,
+        uint32_t const render_pass_size,
+        uint32_t const command_list_size
+    );
+
     void initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc);
 
     void deinitialize();
@@ -144,10 +155,10 @@ struct Device::Impl {
     void delete_buffer(Handle<Buffer> const& buffer);
     
     Handle<RenderPass> create_render_pass(
-        std::span<Handle<Texture>> const& colors, 
+        std::span<Handle<Texture> const> const& colors, 
         std::span<RenderPassColorDesc const> const& color_descs, 
-        Handle<Texture> const& depth_stencil, 
-        RenderPassDepthStencilDesc const& depth_stencil_desc
+        Handle<Texture> const& depth_stencil = InvalidHandle<Texture>(),
+        std::optional<RenderPassDepthStencilDesc> const depth_stencil_desc = std::nullopt
     );
     
     void delete_render_pass(Handle<RenderPass> const& render_pass);
@@ -162,8 +173,6 @@ struct Device::Impl {
     );
     
     void delete_sampler(Handle<Sampler> const& sampler);
-    
-    Handle<Shader> create_shader(std::span<uint8_t const> const data, ShaderFlags const flags);
 
     Handle<Shader> create_shader(std::string_view const source, ShaderFlags const flags);
     
@@ -196,7 +205,7 @@ struct Device::Impl {
 
     void delete_command_list(Handle<CommandList> const& command_list);
 
-    uint8_t* map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset);
+    uint8_t* map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset = 0);
 
     void unmap_buffer_data(Handle<Buffer> const& buffer);
     
@@ -236,7 +245,7 @@ struct Device::Impl {
 
     void bind_index_buffer(Handle<CommandList> const& command_list, Handle<Buffer> const& buffer, uint64_t const offset);
 
-    void barrier(Handle<CommandList> const& command_list, ResourceHandle const& target, MemoryState const before, MemoryState const after);
+    void barrier(Handle<CommandList> const& command_list, std::span<MemoryBarrierDesc const> const barriers);
 
     void bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline);
     
@@ -276,16 +285,28 @@ void Device::impl_deleter::operator()(Impl* ptr) const {
 //
 //===========================================================
 
-void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc) {
+Device::Impl::Impl(
+    uint32_t const texture_size, 
+    uint32_t const buffer_size, 
+    uint32_t const sampler_size, 
+    uint32_t const descriptor_layout_size, 
+    uint32_t const pipeline_size,
+    uint32_t const shader_size,
+    uint32_t const render_pass_size,
+    uint32_t const command_list_size
+) : 
+    textures(texture_size),
+    buffers(buffer_size),
+    samplers(sampler_size),
+    descriptor_layouts(descriptor_layout_size),
+    pipelines(pipeline_size),
+    shaders(shader_size),
+    render_passes(render_pass_size),
+    command_lists(command_list_size) {
 
-    textures = HandlePool<Texture>(4096);
-    buffers = HandlePool<Buffer>(4096);
-    samplers = HandlePool<Sampler>(1024);
-    descriptor_layouts = HandlePool<DescriptorLayout>(128);
-    pipelines = HandlePool<Pipeline>(1024);
-    shaders = HandlePool<Shader>(512);
-    render_passes = HandlePool<RenderPass>(128);
-    command_lists = HandlePool<CommandList>(64);
+}
+
+void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const& _swapchain_desc) {
 
     THROW_IF_FAILED(DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), reinterpret_cast<void**>(dxc_compiler.GetAddressOf())));
     THROW_IF_FAILED(DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), reinterpret_cast<void**>(dxc_utils.GetAddressOf())));
@@ -521,9 +542,7 @@ void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const&
 }
 
 void Device::Impl::deinitialize() {
-
     wait_for_idle(QueueFlags::Graphics | QueueFlags::Copy | QueueFlags::Compute);
-
     CloseHandle(fence_event);
 }
 
@@ -581,7 +600,6 @@ Handle<Texture> Device::Impl::create_texture(
     }
     if(flags & TextureFlags::RenderTarget) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        initial_state = D3D12_RESOURCE_STATE_RENDER_TARGET;
     }
     if(flags & TextureFlags::UnorderedAccess) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
@@ -796,10 +814,10 @@ void Device::Impl::delete_buffer(Handle<Buffer> const& buffer) {
 }
 
 Handle<RenderPass> Device::Impl::create_render_pass(
-    std::span<Handle<Texture>> const& colors, 
+    std::span<Handle<Texture> const> const& colors, 
     std::span<RenderPassColorDesc const> const& color_descs, 
-    Handle<Texture> const& depth_stencil, 
-    RenderPassDepthStencilDesc const& depth_stencil_desc
+    Handle<Texture> const& depth_stencil,
+    std::optional<RenderPassDepthStencilDesc> const depth_stencil_desc
 ) {
 
     auto get_render_pass_begin_type = [&](RenderPassLoadOp const load_op) {
@@ -843,18 +861,18 @@ Handle<RenderPass> Device::Impl::create_render_pass(
         auto& texture_data = textures[depth_stencil];
 
         auto depth_begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
-        depth_begin.Type = get_render_pass_begin_type(depth_stencil_desc.depth_load_op);
+        depth_begin.Type = get_render_pass_begin_type(depth_stencil_desc.value().depth_load_op);
         depth_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
 
         auto stencil_begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
-        stencil_begin.Type = get_render_pass_begin_type(depth_stencil_desc.stencil_load_op);
+        stencil_begin.Type = get_render_pass_begin_type(depth_stencil_desc.value().stencil_load_op);
         stencil_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
 
         auto depth_end = D3D12_RENDER_PASS_ENDING_ACCESS {};
-        depth_end.Type = get_render_pass_end_type(depth_stencil_desc.depth_store_op);
+        depth_end.Type = get_render_pass_end_type(depth_stencil_desc.value().depth_store_op);
 
         auto stencil_end = D3D12_RENDER_PASS_ENDING_ACCESS {};
-        stencil_end.Type = get_render_pass_end_type(depth_stencil_desc.stencil_store_op);
+        stencil_end.Type = get_render_pass_end_type(depth_stencil_desc.value().stencil_store_op);
 
         render_pass_data.depth_stencil_desc.DepthBeginningAccess = depth_begin;
         render_pass_data.depth_stencil_desc.StencilBeginningAccess = stencil_begin;
@@ -935,17 +953,6 @@ Handle<Sampler> Device::Impl::create_sampler(
 void Device::Impl::delete_sampler(Handle<Sampler> const& sampler) {
 
     samplers.erase(sampler);
-}
-
-Handle<Shader> Device::Impl::create_shader(std::span<uint8_t const> const data, ShaderFlags const flags) {
-
-    auto shader_data = Shader {};
-    shader_data.flags = flags;
-
-    shader_data.data.resize(data.size());
-    std::memcpy(shader_data.data.data(), data.data(), sizeof(char8_t) * data.size());
-    
-    return shaders.push(std::move(shader_data));
 }
 
 Handle<Shader> Device::Impl::create_shader(std::string_view const source, ShaderFlags const flags) {
@@ -1689,7 +1696,7 @@ void Device::Impl::set_scissor(Handle<CommandList> const& command_list, uint32_t
     command_list_data.command_list->RSSetScissorRects(1, &rect);
 }
 
-void Device::Impl::barrier(Handle<CommandList> const& command_list, ResourceHandle const& target, MemoryState const before, MemoryState const after) {
+void Device::Impl::barrier(Handle<CommandList> const& command_list, std::span<MemoryBarrierDesc const> const barriers) {
 
     auto& command_list_data = command_lists[command_list];
 
@@ -1716,26 +1723,32 @@ void Device::Impl::barrier(Handle<CommandList> const& command_list, ResourceHand
         return D3D12_RESOURCE_STATE_COMMON;
     };
 
-    auto resource_barrier = D3D12_RESOURCE_BARRIER {};
-    resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-    resource_barrier.Transition.StateBefore = get_memory_state(before);
-    resource_barrier.Transition.StateAfter = get_memory_state(after);
+    std::vector<D3D12_RESOURCE_BARRIER> resource_barriers;
+    for(auto const& barrier : barriers) {
 
-    auto barrier_visitor = make_visitor(
-        [&](Handle<Texture> const& target) {
-            resource_barrier.Transition.pResource = textures[target].resource.Get();
-        },
-        [&](Handle<Buffer> const& target) {
-            resource_barrier.Transition.pResource = buffers[target].resource.Get();
-        },
-        [&](Handle<Sampler> const& target) {
+        auto resource_barrier = D3D12_RESOURCE_BARRIER {};
+        resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        resource_barrier.Transition.StateBefore = get_memory_state(barrier.before);
+        resource_barrier.Transition.StateAfter = get_memory_state(barrier.after);
 
-        }
-    );
+        auto barrier_visitor = make_visitor(
+            [&](Handle<Texture> const& target) {
+                resource_barrier.Transition.pResource = textures[target].resource.Get();
+            },
+            [&](Handle<Buffer> const& target) {
+                resource_barrier.Transition.pResource = buffers[target].resource.Get();
+            },
+            [&](Handle<Sampler> const& target) {
 
-    std::visit(barrier_visitor, target);
+            }
+        );
 
-    command_list_data.command_list->ResourceBarrier(1, &resource_barrier);
+        std::visit(barrier_visitor, barrier.target);
+
+        resource_barriers.emplace_back(std::move(resource_barrier));
+    }
+
+    command_list_data.command_list->ResourceBarrier(static_cast<uint32_t>(resource_barriers.size()), resource_barriers.data());
 }
 
 void Device::Impl::begin_render_pass(
@@ -2048,7 +2061,16 @@ void Device::Impl::draw_indexed(Handle<CommandList> const& command_list, uint32_
 //===========================================================
 
 Device::Device(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc) : 
-    _impl(std::unique_ptr<Impl, impl_deleter>(new Impl())) {
+    _impl(std::unique_ptr<Impl, impl_deleter>(new Impl(
+        std::to_underlying(BackendLimits::Textures),
+        std::to_underlying(BackendLimits::Buffers),
+        std::to_underlying(BackendLimits::Samplers),
+        std::to_underlying(BackendLimits::DescriptorLayouts),
+        std::to_underlying(BackendLimits::Pipelines),
+        std::to_underlying(BackendLimits::Shaders),
+        std::to_underlying(BackendLimits::RenderPasses),
+        std::to_underlying(BackendLimits::CommandLists)))
+    ) {
 
     _impl->initialize(adapter_index, swapchain_desc);
 }
@@ -2087,12 +2109,11 @@ void Device::delete_buffer(Handle<Buffer> const& buffer) {
 }
 
 Handle<RenderPass> Device::create_render_pass(
-    std::span<Handle<Texture>> const& colors, 
+    std::span<Handle<Texture> const> const& colors, 
     std::span<RenderPassColorDesc const> const& color_descs, 
-    Handle<Texture> const& depth_stencil, 
-    RenderPassDepthStencilDesc const& depth_stencil_desc
+    Handle<Texture> const& depth_stencil,
+    std::optional<RenderPassDepthStencilDesc> const depth_stencil_desc
 ) {
-
     return _impl->create_render_pass(colors, color_descs, depth_stencil, depth_stencil_desc);
 }
 
@@ -2116,11 +2137,6 @@ Handle<Sampler> Device::create_sampler(
 void Device::delete_sampler(Handle<Sampler> const& sampler) {
 
     _impl->delete_sampler(sampler);
-}
-
-Handle<Shader> Device::create_shader(std::span<uint8_t const> const data, ShaderFlags const flags) {
-
-    return _impl->create_shader(data, flags);
 }
 
 Handle<Shader> Device::create_shader(std::string_view const source, ShaderFlags const flags) {
@@ -2223,23 +2239,19 @@ bool Device::is_completed(uint64_t const fence_result, QueueFlags const flags) c
 }
 
 void Device::wait_for_idle(QueueFlags const flags) {
-    
     return _impl->wait_for_idle(flags);
 }
 
 void Device::set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height) {
-
     _impl->set_viewport(command_list, x, y, width, height);
 }
 
 void Device::set_scissor(Handle<CommandList> const& command_list, uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom) {
-
     _impl->set_scissor(command_list, left, top, right, bottom);
 }
 
-void Device::barrier(Handle<CommandList> const& command_list, ResourceHandle const& target, MemoryState const before, MemoryState const after) {
-
-    _impl->barrier(command_list, target, before, after);
+void Device::barrier(Handle<CommandList> const& command_list, std::span<MemoryBarrierDesc const> const barriers) {
+    _impl->barrier(command_list, barriers);
 }
 
 void Device::begin_render_pass(
@@ -2249,7 +2261,6 @@ void Device::begin_render_pass(
     float const clear_depth, 
     uint8_t const clear_stencil
 ) {
-
     _impl->begin_render_pass(command_list, render_pass, clear_colors, clear_depth, clear_stencil);
 }
 
@@ -2277,7 +2288,6 @@ void Device::copy_buffer_region(
     uint64_t const source_offset,
     size_t const size
 ) {
-
     _impl->copy_buffer_region(command_list, dest, dest_offset, source, source_offset, size);
 }
 
