@@ -12,6 +12,8 @@
 #include <lib/exception.h>
 #include <lib/algorithm.h>
 #include <lib/thread_pool.h>
+#include <lib/logger.h>
+#include <lib/scope_profiler.h>
 
 #include <engine/framework.h>
 
@@ -19,13 +21,14 @@ using namespace ionengine;
 
 int main(int* argc, char** agrv) {
 
+    lib::Logger logger;
     lib::ThreadPool thread_pool(3);
 
     try {
         platform::WindowLoop loop;
         platform::Window window("IONENGINE", 800, 600, false);
         
-        asset::AssetManager asset_manager(thread_pool);
+        asset::AssetManager asset_manager(thread_pool, logger);
 
         auto render_asset_desc = renderer::DefaultAssetDesc {
             .deffered = asset_manager.get_technique("engine/techniques/deffered.json5"),
@@ -49,6 +52,8 @@ int main(int* argc, char** agrv) {
 
         float frame_timer = 0.0f;
 
+        logger.log(lib::LoggerCategoryType::Engine, "all systems initialized");
+
         loop.run(
             window,
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
@@ -63,11 +68,13 @@ int main(int* argc, char** agrv) {
                         std::chrono::duration<float> delta_time = end_time - begin_time;
                         begin_time = end_time;
 
+                        logger.throw_messages();
+
                         framework.update(delta_time.count());
 
                         frame_timer += delta_time.count();
                         if(frame_timer >= 1.0f) {
-                            window.label(std::format("IONENGINE KidsRoom Demo [{} fps]", frame_count, delta_time.count()));
+                            window.label(std::format("IONENGINE content/levels/city17.json5 [{} fps]", frame_count, delta_time.count()));
                             frame_timer = 0.0f;
                             frame_count = 0;
                         }
@@ -92,7 +99,7 @@ int main(int* argc, char** agrv) {
                             renderer.editor_mode(false);
                         }
 
-                        input_manager.update();
+                        input_manager.update();                          
                         framework.scene().graph().update_hierarchical_data();
                         asset_manager.update(delta_time.count());
                         renderer.update(delta_time.count());
@@ -119,11 +126,13 @@ int main(int* argc, char** agrv) {
         );
 
     } catch(lib::Exception& e) {
-        std::cerr << std::format("[Exception] {}", e.what()) << std::endl;
+        logger.log(lib::LoggerCategoryType::Engine, e.what());
+        logger.throw_messages();
         std::exit(EXIT_FAILURE);
     }
 
-    std::cout << "[Debug] Main: Exit" << std::endl;
+    logger.log(lib::LoggerCategoryType::Engine, "Main exit");
+    logger.throw_messages();
 
     thread_pool.join();
     return EXIT_SUCCESS;

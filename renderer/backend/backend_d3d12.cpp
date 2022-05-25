@@ -1476,7 +1476,7 @@ void Device::Impl::recreate_swapchain(uint32_t const width, uint32_t const heigh
     auto _swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
     swapchain->GetDesc1(&_swapchain_desc);
 
-    swapchain->ResizeBuffers(_swapchain_desc.BufferCount, width, height, _swapchain_desc.Format, 0);
+    THROW_IF_FAILED(swapchain->ResizeBuffers(_swapchain_desc.BufferCount, width, height, _swapchain_desc.Format, 0));
     swapchain_textures.resize(_swapchain_desc.BufferCount);
 
     // Get Swapchain resources and create RTV's
@@ -1500,7 +1500,7 @@ void Device::Impl::recreate_swapchain(uint32_t const width, uint32_t const heigh
         }
     }
 
-    swapchain_index = swapchain->GetCurrentBackBufferIndex();
+    swapchain_index = 0;
 }
 
 uint64_t Device::Impl::submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags) {

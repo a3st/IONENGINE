@@ -11,6 +11,7 @@
 #include <asset/texture_loader.h>
 #include <lib/event_dispatcher.h>
 #include <lib/thread_pool.h>
+#include <lib/logger.h>
 
 namespace ionengine::asset {
 
@@ -26,8 +27,8 @@ template<class Type>
 class AssetPool {
 public:
 
-    AssetPool(lib::ThreadPool& thread_pool, std::unique_ptr<AssetLoader<Type>> loader) :
-        _thread_pool(&thread_pool), _loader(std::move(loader)) {
+    AssetPool(lib::ThreadPool& thread_pool, lib::Logger& logger, std::unique_ptr<AssetLoader<Type>> loader) :
+        _thread_pool(&thread_pool), _logger(&logger), _loader(std::move(loader)) {
         
     }
 
@@ -42,7 +43,6 @@ public:
 
     void push(AssetPtr<Type> const& element) {
         _event_dispatcher.broadcast(AssetEvent<Type>::added(element));
-        std::cout << std::format("[Debug] Asset: '{}' is added", element.path().string()) << std::endl;
         _data.emplace_back(element, ASSET_DEFAULT_LIVE_TIME);
     }
 
@@ -55,7 +55,6 @@ public:
                     if(element.time_to_live <= 0.0f) {
                         std::filesystem::path path = element.value.path();
                         _event_dispatcher.broadcast(AssetEvent<Type>::removed(path));
-                        std::cout << std::format("[Debug] Asset: '{}' is removed", path.string()) << std::endl;
                         return true;
                     } else {
                         return false;
@@ -81,9 +80,12 @@ public:
             push(asset);
 
             _thread_pool->push(
-                [&, asset]() {
-                    _loader->load_asset(asset, _event_dispatcher);
-                }
+                [asset](AssetLoader<Type>& loader, lib::Logger& logger, lib::EventDispatcher<AssetEvent<Type>>& event_dispatcher) {
+                    loader.load_asset(logger, asset, event_dispatcher);
+                },
+                std::ref(*_loader),
+                std::ref(*_logger),
+                std::ref(_event_dispatcher)
             );
             return asset;
         }
@@ -94,6 +96,7 @@ public:
 private:
 
     lib::ThreadPool* _thread_pool;
+    lib::Logger* _logger;
 
     std::vector<TimedEntry<AssetPtr<Type>>> _data;
     lib::EventDispatcher<AssetEvent<Type>> _event_dispatcher;
@@ -104,7 +107,7 @@ private:
 class AssetManager {
 public:
 
-    AssetManager(lib::ThreadPool& thread_pool);
+    AssetManager(lib::ThreadPool& thread_pool, lib::Logger& logger);
 
     AssetPtr<Mesh> get_mesh(std::filesystem::path const& asset_path);
 

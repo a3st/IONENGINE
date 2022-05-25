@@ -8,6 +8,7 @@
 #include <scene/transform_node.h>
 #include <scene/camera_node.h>
 #include <scene/point_light_node.h>
+#include <lib/scope_profiler.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -125,7 +126,14 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _billboard_technique.wait();
 }
 
+Renderer::~Renderer() {
+
+    _frame_graph.value().reset();
+}
+
 void Renderer::update(float const delta_time) {
+
+    SCOPE_PROFILE()
 
     // Mesh Event Update
     {
@@ -133,7 +141,7 @@ void Renderer::update(float const delta_time) {
         while(_mesh_event_receiver.value().try_receive(mesh_event)) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Loaded>& event) {
-                    std::cout << std::format("[Debug] Renderer created GeometryBuffers from '{}'", event.asset.path().string()) << std::endl;
+                    // std::cout << std::format("[Debug] Renderer created GeometryBuffers from '{}'", event.asset.path().string()) << std::endl;
 
                     for(size_t i = 0; i < event.asset->surfaces().size(); ++i) {
                         _geometry_cache.value().get(_upload_context.value(), *event.asset, static_cast<uint32_t>(i));
@@ -155,7 +163,7 @@ void Renderer::update(float const delta_time) {
         while(_technique_event_receiver.value().try_receive(technique_event)) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Loaded>& event) {
-                    std::cout << std::format("[Debug] Renderer created ShaderProgram from '{}'", event.asset.path().string()) << std::endl;
+                    //std::cout << std::format("[Debug] Renderer created ShaderProgram from '{}'", event.asset.path().string()) << std::endl;
                     _shader_cache.value().get(*event.asset);
                 },
                 // Default
@@ -174,7 +182,7 @@ void Renderer::update(float const delta_time) {
         while(_texture_event_receiver.value().try_receive(texture_event)) {
             auto event_visitor = make_visitor(
                 [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Loaded>& event) {
-                    std::cout << std::format("[Debug] Renderer created GPUTexture from '{}'", event.asset.path().string()) << std::endl;
+                    //std::cout << std::format("[Debug] Renderer created GPUTexture from '{}'", event.asset.path().string()) << std::endl;
                     _texture_cache.value().get(_upload_context.value(), *event.asset);
                 },
                 // Default
@@ -189,6 +197,8 @@ void Renderer::update(float const delta_time) {
 }
 
 void Renderer::render(scene::Scene& scene) {
+
+    SCOPE_PROFILE()
 
     uint32_t const frame_index = _frame_graph.value().wait();
     scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("MainCamera");
@@ -213,26 +223,33 @@ void Renderer::render(scene::Scene& scene) {
 
 void Renderer::resize(uint32_t const width, uint32_t const height) {
 
-    _frame_graph.value().reset();
-
     if(_width != width || _height != height) {
+
+        _frame_graph.value().reset();
+
         _device.recreate_swapchain(width, height);
         _width = width;
         _height = height;
-    }
 
-    _gbuffer_positions.resize(2);
-    _gbuffer_albedos.resize(2);
-    _gbuffer_normals.resize(2);
-    _gbuffer_roughmetals.resize(2);
-    _depth_stencils.resize(2);
+        _gbuffer_positions.clear();
+        _gbuffer_albedos.clear();
+        _gbuffer_normals.clear();
+        _gbuffer_roughmetals.clear();
+        _depth_stencils.clear();
 
-    for(uint32_t i = 0; i < 2; ++i) {
-        _gbuffer_positions.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::ShaderResource);
-        _gbuffer_albedos.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
-        _gbuffer_normals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::ShaderResource);
-        _gbuffer_roughmetals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
-        _depth_stencils.at(i) = GPUTexture::depth_stencil(_device, backend::Format::D32, _width, _height);
+        _gbuffer_positions.resize(2);
+        _gbuffer_albedos.resize(2);
+        _gbuffer_normals.resize(2);
+        _gbuffer_roughmetals.resize(2);
+        _depth_stencils.resize(2);
+
+        for(uint32_t i = 0; i < 2; ++i) {
+            _gbuffer_positions.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::ShaderResource);
+            _gbuffer_albedos.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
+            _gbuffer_normals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::ShaderResource);
+            _gbuffer_roughmetals.at(i) = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::ShaderResource);
+            _depth_stencils.at(i) = GPUTexture::depth_stencil(_device, backend::Format::D32, _width, _height);
+        }
     }
 }
 

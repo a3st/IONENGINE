@@ -55,6 +55,8 @@ public:
 
     Renderer(platform::Window& window, asset::AssetManager& asset_manager, DefaultAssetDesc const& asset_desc);
 
+    ~Renderer();
+
     Renderer(Renderer const&) = delete;
 
     Renderer(Renderer&&) = delete;

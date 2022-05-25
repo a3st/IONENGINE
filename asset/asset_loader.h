@@ -5,6 +5,7 @@
 #include <asset/asset_event.h>
 #include <asset/asset_ptr.h>
 #include <lib/event_dispatcher.h>
+#include <lib/logger.h>
 
 namespace ionengine::asset {
 
@@ -14,7 +15,7 @@ public:
 
     AssetLoader() = default;
 
-    void load_asset(AssetPtr<Type> asset, lib::EventDispatcher<AssetEvent<Type>>& event_dispatcher);
+    void load_asset(lib::Logger& logger, AssetPtr<Type> asset, lib::EventDispatcher<AssetEvent<Type>>& event_dispatcher);
 };
 
 }

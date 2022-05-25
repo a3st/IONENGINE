@@ -18,7 +18,7 @@ public:
 
     }
 
-    void load_asset(AssetPtr<Material> asset, lib::EventDispatcher<AssetEvent<Material>>& event_dispatcher) {
+    void load_asset(lib::Logger& logger, AssetPtr<Material> asset, lib::EventDispatcher<AssetEvent<Material>>& event_dispatcher) {
 
         std::filesystem::path path = asset.path();
 
@@ -29,6 +29,7 @@ public:
             event_dispatcher.broadcast(asset::AssetEvent<Material>::loaded(asset));
         } else {
             asset.commit_error(path);
+            logger.warning(lib::LoggerCategoryType::Engine, std::format("the asset was not loaded, its path {}", path.string()));
         }
     }
 

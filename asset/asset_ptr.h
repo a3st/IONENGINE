@@ -67,20 +67,14 @@ public:
     uint32_t use_count() const { return _ptr.use_count(); }
 
     Type* operator->() const {
-
         std::unique_lock lock(_ptr->mutex);
-        if(_ptr->data.index() != 0) {
-            throw lib::Exception("Error while accessing an unloaded asset");
-        }
+        assert(_ptr->data.index() == 0 && "error while accessing an unloaded asset data");
         return &(std::get<0>(_ptr->data).asset); 
     }
 
     Type& operator*() const { 
-
         std::unique_lock lock(_ptr->mutex);
-        if(_ptr->data.index() != 0) {
-            throw lib::Exception("Error while accessing an unloaded asset");
-        }
+        assert(_ptr->data.index() == 0 && "error while accessing an unloaded asset data");
         return std::get<0>(_ptr->data).asset;
     }
 
@@ -101,7 +95,7 @@ public:
 
         std::unique_lock lock(_ptr->mutex);
         std::visit(state_visitor, _ptr->data);
-        return *path; 
+        return *path;
     }
 
     bool is_pending() const {

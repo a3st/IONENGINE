@@ -13,20 +13,13 @@ public:
     EventDispatcher() = default;
 
     void add(Sender<Type> const& sender) {
-
         _senders.emplace_back(sender);
     }
 
     void broadcast(Type const& event) {
-
-        std::for_each(
-            _senders.begin(),
-            _senders.end(),
-            [&](auto& element) {
-
-                element.send(event);
-            }
-        );
+        for(auto& sender : _senders) {
+            sender.send(event);
+        }
     }
 
 private:

@@ -56,7 +56,6 @@ D3D12_GPU_DESCRIPTOR_HANDLE DescriptorPoolAllocation::gpu_handle(uint32_t const 
 }
 
 void DescriptorPoolAllocation::ReleaseThis() {
-    
     _heap->indices.emplace_back(_offset);
 }
 
@@ -80,8 +79,8 @@ HRESULT DescriptorPool::allocate(DescriptorAllocation** allocation) {
         *allocation = &_allocations[i * DescriptorPool::DESCRIPTOR_HEAP_SIZE + offset];
 
         result = S_OK;
+        break;
     }
-
     return result;
 }
 

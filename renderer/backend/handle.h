@@ -125,7 +125,7 @@ public:
 
     void erase(Handle<Type> const& handle) {
 
-        _data[handle.index()].data = std::nullopt;
+        _data[handle.index()].data.reset();
         _free_data.push_back(handle.index());
     }
 

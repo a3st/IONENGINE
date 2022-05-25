@@ -22,6 +22,9 @@ add_executable(Runtime-Win32
     # Lib
     lib/thread_pool.cpp
     lib/math/color.cpp
+    
+    lib/scope_profiler.cpp
+    lib/logger.cpp
 # ---------------------------
     # Platform
     platform/window_win32.cpp

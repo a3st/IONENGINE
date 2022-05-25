@@ -67,7 +67,7 @@ public:
 
 protected:
 
-	virtual void ReleaseThis() = 0;
+	virtual void ReleaseThis() { delete this; }
 };
 
 namespace detail {

@@ -5,6 +5,7 @@
 #include <scene/mesh_node.h>
 #include <scene/camera_node.h>
 #include <scene/point_light_node.h>
+#include <lib/scope_profiler.h>
 
 using namespace ionengine;
 using namespace ionengine::framework;
