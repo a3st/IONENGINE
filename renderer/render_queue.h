@@ -10,6 +10,7 @@ namespace ionengine::renderer {
 
 struct SurfaceInstance {
     lib::math::Matrixf model;
+    lib::math::Matrixf inverse_model;
 };
 
 struct RenderBatch {
@@ -18,6 +19,10 @@ struct RenderBatch {
     std::vector<SurfaceInstance> instances;
     asset::AssetPtr<asset::Material> material;
     uint64_t sort_index;
+
+    bool operator<(RenderBatch const& other) const {
+        return sort_index < other.sort_index;
+    }
 };
 
 class RenderQueue {
@@ -41,11 +46,12 @@ public:
 
     void clear();
 
+    void sort();
+
 private:
 
+    std::unordered_map<uint64_t, size_t> _batches_cache;
     std::vector<RenderBatch> _batches;
-    std::vector<size_t> _sorted;
-
 };
 
 }

@@ -12,18 +12,28 @@ RenderQueue::RenderQueue() {
 
 void RenderQueue::push(asset::AssetPtr<asset::Mesh> mesh, uint32_t const surface_index, SurfaceInstance const& instance, asset::AssetPtr<asset::Material> material) {
 
-    std::vector<SurfaceInstance> instances;
-    instances.emplace_back(instance);
+    uint64_t const batch_hash = mesh->surfaces()[surface_index].vertices.hash() ^ mesh->surfaces()[surface_index].indices.hash() ^ material->hash();
 
-    auto render_batch = RenderBatch {
-        .mesh = mesh,
-        .surface_index = surface_index,
-        .instances = std::move(instances),
-        .material = material,
-        .sort_index = 0
-    };
+    if(_batches_cache.find(batch_hash) == _batches_cache.end()) {
 
-    _batches.emplace_back(std::move(render_batch));
+        auto render_batch = RenderBatch {
+            .mesh = mesh,
+            .surface_index = surface_index,
+            .instances = {},
+            .material = material,
+            .sort_index = material->hash()
+        };
+
+        _batches_cache.insert({ batch_hash, _batches.size() });
+        _batches.emplace_back(std::move(render_batch));
+    }
+
+    auto& batch = _batches.at(_batches_cache.at(batch_hash));
+    batch.instances.emplace_back(instance);
+}
+
+void RenderQueue::sort() {
+    std::sort(_batches.begin(), _batches.end());
 }
 
 RenderQueue::ConstIterator RenderQueue::begin() const {
@@ -44,4 +54,5 @@ RenderQueue::Iterator RenderQueue::end() {
 
 void RenderQueue::clear() {
     _batches.clear();
+    _batches_cache.clear();
 }

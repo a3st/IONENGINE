@@ -30,13 +30,7 @@ int main(int* argc, char** agrv) {
         
         asset::AssetManager asset_manager(thread_pool, logger);
 
-        auto renderer_assets = renderer::RendererAssets {
-            .deffered = asset_manager.get_technique("engine/techniques/deffered.json5"),
-            .lighting = asset_manager.get_technique("engine/techniques/lighting.json5"),
-            .billboard = asset_manager.get_technique("engine/techniques/billboard.json5"),
-            .quad = asset_manager.get_mesh("engine/quad.obj")
-        };
-        renderer::Renderer renderer(window, asset_manager, thread_pool, renderer_assets);
+        renderer::Renderer renderer(window, asset_manager, thread_pool);
 
         renderer.editor_mode(false);
         
@@ -49,10 +43,9 @@ int main(int* argc, char** agrv) {
 
         auto begin_time = std::chrono::high_resolution_clock::now();
         uint64_t frame_count = 0;
-
         float frame_timer = 0.0f;
 
-        logger.log(lib::LoggerCategoryType::Engine, "all systems initialized");
+        logger.log(lib::LoggerCategoryType::Engine, "engine initialized");
 
         loop.run(
             window,
@@ -126,12 +119,12 @@ int main(int* argc, char** agrv) {
         );
 
     } catch(lib::Exception& e) {
-        logger.log(lib::LoggerCategoryType::Engine, e.what());
+        logger.error(lib::LoggerCategoryType::Exception, e.what());
         logger.throw_messages();
         std::exit(EXIT_FAILURE);
     }
 
-    logger.log(lib::LoggerCategoryType::Engine, "Main exit");
+    logger.log(lib::LoggerCategoryType::Engine, "engine quit");
     logger.throw_messages();
 
     thread_pool.join();

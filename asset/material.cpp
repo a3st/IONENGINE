@@ -95,6 +95,8 @@ Material::Material(JSON_MaterialDefinition const& document, AssetManager& asset_
             }
         );
     }
+
+    _hash = XXHash64::hash(reinterpret_cast<void*>(_name.data()), _name.size(), 0);
 }
 
 lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std::filesystem::path const& file_path, AssetManager& asset_manager) {
@@ -129,6 +131,10 @@ std::span<MaterialPass const> Material::passes() const {
 
 std::unordered_map<std::string, MaterialParameter>& Material::parameters() {
     return _parameters;
+}
+
+uint64_t Material::hash() const {
+    return _hash;
 }
 
 MaterialPassFillMode constexpr Material::get_pass_fill_mode(JSON_PassFillMode const fill_mode) const {

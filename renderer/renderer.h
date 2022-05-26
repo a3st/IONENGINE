@@ -24,17 +24,9 @@ class CameraNode;
 }
 
 namespace ionengine::renderer {
-    
-struct RendererAssets {
-    asset::AssetPtr<asset::Technique> deffered;
-    asset::AssetPtr<asset::Technique> lighting;
-    asset::AssetPtr<asset::Technique> billboard;
-    asset::AssetPtr<asset::Mesh> quad;
-};
 
 struct PointLightData {
     lib::math::Vector3f position;
-    float attenuation;
     float range;
     lib::math::Vector3f color;
 };
@@ -44,12 +36,13 @@ struct WorldData {
     lib::math::Matrixf projection;
     lib::math::Vector3f camera_position;
     uint32_t point_light_count;
-    //uint32_t direction_light_count;
-    //uint32_t spot_light_count;
+    uint32_t direction_light_count;
+    uint32_t spot_light_count;
 };
 
 struct ObjectData {
     lib::math::Matrixf model;
+    lib::math::Matrixf inverse_model;
 };
 
 struct EditorInstance {
@@ -60,7 +53,7 @@ struct EditorInstance {
 class Renderer {
 public:
 
-    Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool, RendererAssets const& assets);
+    Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool);
 
     ~Renderer();
 
@@ -118,14 +111,15 @@ private:
     std::vector<uint8_t> _material_buffer;
     std::vector<backend::MemoryBarrierDesc> _material_barriers;
 
-    RendererAssets _default_assets;
-
     std::vector<EditorInstance> _editor_instances;
 
     RenderQueue _deffered_queue;
 
     uint32_t _width;
     uint32_t _height;
+
+    asset::AssetPtr<asset::Technique> _deffered_technique;
+    asset::AssetPtr<asset::Technique> _billboard_technique;
 
     bool _editor_mode;
 

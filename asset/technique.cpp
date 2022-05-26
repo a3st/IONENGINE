@@ -172,21 +172,21 @@ std::string ionengine::asset::generate_uniform_code(
     switch(uniform_type) {
 
         case JSON_ShaderUniformType::cbuffer: {
-            generated_code += std::format("cbuffer {} : register(b{}) {{ ", name, location);
-            for(auto& property : properties.value()) {
-                generated_code += std::format("{} {}; ", get_shader_data_type_string(property.type), property.name);
-            }
-            generated_code += "};\n";
+            std::string const struct_name = std::format("{}_data", name);
+            generated_code += generate_struct_code(struct_name, properties.value());
+            generated_code += std::format("ConstantBuffer<{}> {} : register(b{});\n", struct_name, name, location);
         } break;
 
         case JSON_ShaderUniformType::sbuffer: {
-            generated_code += generate_struct_code(name, properties.value());
-            generated_code += std::format("StructuredBuffer<{}> {}s : register(t{});\n", name, name, location);
+            std::string const struct_name = std::format("{}_data", name);
+            generated_code += generate_struct_code(struct_name, properties.value());
+            generated_code += std::format("StructuredBuffer<{}> {}s : register(t{});\n", struct_name, name, location);
         } break;
 
         case JSON_ShaderUniformType::rwbuffer: {
-            generated_code += generate_struct_code(name, properties.value());
-            generated_code += std::format("RWStructuredBuffer<{}> {}s : register(u{});\n", name, name, location);
+            std::string const struct_name = std::format("{}_data", name);
+            generated_code += generate_struct_code(struct_name, properties.value());
+            generated_code += std::format("RWStructuredBuffer<{}> {}s : register(u{});\n", struct_name, name, location);
         } break;
 
         case JSON_ShaderUniformType::sampler2D: {

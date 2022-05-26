@@ -92,6 +92,7 @@ struct Device::Impl {
 #ifdef _DEBUG
     ComPtr<ID3D12Debug> debug;
     ComPtr<ID3D12InfoQueue> info_queue;
+    ComPtr<ID3D12DeviceRemovedExtendedDataSettings1> dred_settings;
 #endif
 
     ComPtr<IDXGIFactory4> factory;
@@ -318,6 +319,10 @@ void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const&
     {
         THROW_IF_FAILED(D3D12GetDebugInterface(__uuidof(ID3D12Debug), reinterpret_cast<void**>(debug.GetAddressOf())));
         debug->EnableDebugLayer();
+
+        THROW_IF_FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&dred_settings)));
+        dred_settings->SetAutoBreadcrumbsEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
+        dred_settings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
 
         // Factory debug flags
         factory_flags = DXGI_CREATE_FACTORY_DEBUG;
@@ -1000,7 +1005,7 @@ Handle<Shader> Device::Impl::create_shader(std::string_view const source, Shader
     ComPtr<IDxcBlobUtf8> error_blob;
     result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), reinterpret_cast<void**>(error_blob.GetAddressOf()), nullptr);
     if (error_blob && error_blob->GetStringLength() > 0) {
-        throw lib::Exception(std::format("Shader compilation error ({})", std::string_view(error_blob->GetStringPointer(), error_blob->GetStringLength())));
+        throw lib::Exception(std::format("shader compilation error (\n{})", std::string_view(error_blob->GetStringPointer(), error_blob->GetStringLength())));
     }
 
     ComPtr<IDxcBlob> shader_blob;
@@ -1464,13 +1469,11 @@ void Device::Impl::unmap_buffer_data(Handle<Buffer> const& buffer) {
 }
 
 Handle<Texture> Device::Impl::acquire_next_texture() {
-
     swapchain_index = swapchain->GetCurrentBackBufferIndex();
     return Handle<Texture>(swapchain_textures[swapchain_index]);
 }
 
 void Device::Impl::present() {
-
     swapchain->Present(0, 0);
 }
 

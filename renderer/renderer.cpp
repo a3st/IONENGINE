@@ -25,9 +25,13 @@ public:
 
         if(other.mesh().is_ok()) {
             for(size_t i = 0; i < other.mesh()->surfaces().size(); ++i) {
+
+                lib::math::Matrixf inverse_model = other.transform_global();
+                inverse_model.inverse();
                 
                 auto instance = SurfaceInstance {
-                    .model = other.transform_global()
+                    .model = other.transform_global(),
+                    .inverse_model = inverse_model
                 };
 
                 _render_queue->push(other.mesh(), static_cast<uint32_t>(i), instance, other.material(other.mesh()->surfaces()[i].material_index));
@@ -39,7 +43,6 @@ public:
 
         auto point_light = PointLightData {
             .position = other.position(),
-            .attenuation = other.light_attenuation(),
             .range = other.light_range(),
             .color = lib::math::Vector3f(other.light_color().r, other.light_color().g, other.light_color().b)
         };
@@ -62,7 +65,7 @@ private:
 
 }
 
-Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool, RendererAssets const& assets) : 
+Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool) : 
     _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 }),
     _asset_manager(&asset_manager),
     _upload_manager(thread_pool, _device),
@@ -71,7 +74,8 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _geometry_cache(_device),
     _pipeline_cache(_device),
     _texture_cache(_device),
-    _default_assets(assets) {
+    _deffered_technique(asset_manager.get_technique("engine/techniques/deffered.json5")),
+    _billboard_technique(asset_manager.get_technique("engine/techniques/billboard.json5")) {
 
     auto [mesh_sender, mesh_receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
     asset_manager.mesh_pool().event_dispatcher().add(std::move(mesh_sender));
@@ -91,24 +95,22 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _material_buffer.resize(1024);
 
     for(uint32_t i = 0; i < 2; ++i) {
-        _world_pools.emplace_back(_device, 64, BufferPoolUsage::Dynamic);
+        _world_pools.emplace_back(_device, 4, BufferPoolUsage::Dynamic);
         _object_pools.emplace_back(_device, 32, 64, BufferPoolUsage::Dynamic);
         _point_light_pools.emplace_back(_device, 512, 2, BufferPoolUsage::Dynamic);
     }
-
-    _default_assets.deffered.wait();
-    _default_assets.billboard.wait();
-    _default_assets.quad.wait();
 
     recreate_gbuffer(_width, _height);
 
     for(uint32_t i = 0; i < 2; ++i) {
         _depth_stencils.emplace_back(GPUTexture::render_target(_device, backend::Format::D32, _width, _height, backend::TextureFlags::DepthStencil).value());
     }
+
+    _deffered_technique.wait();
+    _billboard_technique.wait();
 }
 
 Renderer::~Renderer() {
-
     _frame_graph.reset();
 }
 
@@ -194,6 +196,7 @@ void Renderer::render(scene::Scene& scene) {
     scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
 
     camera->calculate_matrices();
+    _deffered_queue.sort();
 
     build_frame_graph(_width, _height, frame_index, camera);
     
@@ -259,9 +262,9 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             .view = camera->transform_view(),
             .projection = camera->transform_projection(),
             .camera_position = camera->position(),
-            .point_light_count = static_cast<uint32_t>(_point_lights.size())
-            //.direction_light_count = 0,
-            //.spot_light_count = 0
+            .point_light_count = static_cast<uint32_t>(_point_lights.size()),
+            .direction_light_count = 0,
+            .spot_light_count = 0
         };
 
         world_buffer = _world_pools.at(frame_index).allocate();
@@ -365,7 +368,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                 .depth_stencil = false
             };
 
-            auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *_default_assets.deffered, parameters, context.render_pass);
+            auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *_deffered_technique, parameters, context.render_pass);
 
             _device.bind_pipeline(context.command_list, pipeline);
 
@@ -385,21 +388,21 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             binder.bind_resource(albedo_location, _gbuffers.at(frame_index).albedo->texture);
             binder.bind_resource(albedo_location + 1, _gbuffers.at(frame_index).albedo->sampler);
 
-            uint32_t const normals_location = shader_program->location_uniform_by_name("normal");
+            uint32_t const normals_location = shader_program->location_uniform_by_name("normals");
             binder.bind_resource(normals_location, _gbuffers.at(frame_index).normals->texture);
             binder.bind_resource(normals_location + 1, _gbuffers.at(frame_index).normals->sampler);
 
-            uint32_t const roughmetal_location = shader_program->location_uniform_by_name("roughmetal");
+            uint32_t const roughmetal_location = shader_program->location_uniform_by_name("roughness_metalness_ao");
             binder.bind_resource(roughmetal_location, _gbuffers.at(frame_index).roughness_metalness_ao->texture);
             binder.bind_resource(roughmetal_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->sampler);
 
             binder.update(context.command_list);
 
-            auto geometry_buffer = _geometry_cache.get(_upload_manager, *_default_assets.quad, 0);
+            /*auto geometry_buffer = _geometry_cache.get(_upload_manager, *_default_assets.quad, 0);
             if(geometry_buffer.is_ok()) {
                 geometry_buffer->bind(_device, context.command_list);
                 geometry_buffer->draw_indexed(_device, context.command_list, 1);
-            }
+            }*/
         }
     );
 
@@ -550,15 +553,18 @@ void Renderer::apply_material_parameters(
         }
     }
 
-    // MaterialData build buffer
-    /*ResourcePtr<GPUBuffer> material_buffer;
-    {
-        material_buffer = _material_pools.at(frame_index).allocate();
-        _upload_manager.upload_buffer_data(material_buffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(_material_buffer.data()), _material_buffer.size()));
-    }*/
+    auto it = shader_program.uniforms.find("material");
+    if(it != shader_program.uniforms.end()) {
+        // MaterialData build buffer
+        ResourcePtr<GPUBuffer> material_buffer;
+        {
+            material_buffer = _material_pools.at(frame_index).allocate();
+            _upload_manager.upload_buffer_data(material_buffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(_material_buffer.data()), _material_buffer.size()));
+        }
 
-    //uint32_t const material_location = binder.shader_program().location_by_uniform_name("material");
-    //binder.bind_cbuffer(material_location, *buffer);
+        uint32_t const material_location = shader_program.location_uniform_by_name("material");
+        binder.bind_resource(material_location, material_buffer->buffer);
+    }
 }
 
 void Renderer::editor_mode(bool const enable) {

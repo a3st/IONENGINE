@@ -8,7 +8,8 @@ namespace ionengine::lib {
 
 enum class LoggerCategoryType {
     Renderer,
-    Engine
+    Engine,
+    Exception
 };
 
 inline uint32_t constexpr LOGGER_CATEGORY_COUNT = 2;

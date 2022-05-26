@@ -236,7 +236,6 @@ void UploadManager::update() {
     if(upload_buffer.offset > 0 && !upload_buffer.is_close) {
 
         if(_device->is_completed(_fence_values.at(_buffer_index), backend::QueueFlags::Copy)) {
-
             _fence_values.at(_buffer_index) = _device->submit(std::span<backend::Handle<backend::CommandList> const>(&upload_buffer.command_list, 1), backend::QueueFlags::Copy);
             upload_buffer.is_close = true;
             upload_buffer.offset = 0;

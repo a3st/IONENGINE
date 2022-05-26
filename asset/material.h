@@ -198,6 +198,8 @@ public:
 
     std::unordered_map<std::string, MaterialParameter>& parameters();
 
+    uint64_t hash() const;
+
 private:
 
     Material(JSON_MaterialDefinition const& document, AssetManager& asset_manager);
@@ -205,6 +207,7 @@ private:
     std::string _name;
     std::unordered_map<std::string, MaterialParameter> _parameters;
     std::vector<MaterialPass> _passes;
+    uint64_t _hash;
 
     MaterialPassFillMode constexpr get_pass_fill_mode(JSON_PassFillMode const fill_mode) const;
 

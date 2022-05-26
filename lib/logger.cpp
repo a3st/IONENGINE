@@ -141,6 +141,7 @@ std::string constexpr Logger::logger_category_type_to_string(LoggerCategoryType 
     switch(category) {
         case LoggerCategoryType::Engine: return "Engine";
         case LoggerCategoryType::Renderer: return "Renderer";
+        case LoggerCategoryType::Exception: return "Exception";
         default: return "Unknown";
     }
 }
