@@ -32,6 +32,26 @@ struct RendererAssets {
     asset::AssetPtr<asset::Mesh> quad;
 };
 
+struct PointLightData {
+    lib::math::Vector3f position;
+    float attenuation;
+    float range;
+    lib::math::Vector3f color;
+};
+
+struct WorldData {
+    lib::math::Matrixf view;
+    lib::math::Matrixf projection;
+    lib::math::Vector3f camera_position;
+    uint32_t point_light_count;
+    //uint32_t direction_light_count;
+    //uint32_t spot_light_count;
+};
+
+struct ObjectData {
+    lib::math::Matrixf model;
+};
+
 struct EditorInstance {
     asset::AssetPtr<asset::Texture> icon;
     lib::math::Matrixf model;
@@ -69,26 +89,6 @@ private:
         ResourcePtr<GPUTexture> roughness_metalness_ao;
     };
 
-    struct PointLightData {
-        lib::math::Vector3f position;
-        float attenuation;
-        float range;
-        lib::math::Vector3f color;
-    };
-
-    struct WorldData {
-        lib::math::Matrixf view;
-        lib::math::Matrixf projection;
-        lib::math::Vector3f camera_position;
-        uint32_t point_light_count;
-        uint32_t direction_light_count;
-        uint32_t spot_light_count;
-    };
-
-    struct ObjectData {
-        lib::math::Matrixf model;
-    };
-
     asset::AssetManager* _asset_manager;
 
     backend::Device _device;
@@ -97,13 +97,13 @@ private:
     std::optional<lib::Receiver<asset::AssetEvent<asset::Technique>>> _technique_event_receiver;
     std::optional<lib::Receiver<asset::AssetEvent<asset::Texture>>> _texture_event_receiver;
 
-    std::optional<UploadManager> _upload_manager;
+    UploadManager _upload_manager;
+    FrameGraph _frame_graph;
 
-    std::optional<ShaderCache> _shader_cache;
-    std::optional<GeometryCache> _geometry_cache;
-    std::optional<FrameGraph> _frame_graph;
-    std::optional<PipelineCache> _pipeline_cache;
-    std::optional<TextureCache> _texture_cache;
+    ShaderCache _shader_cache;
+    GeometryCache _geometry_cache;
+    PipelineCache _pipeline_cache;
+    TextureCache _texture_cache;
 
     std::vector<GBufferData> _gbuffers;
     std::vector<ResourcePtr<GPUTexture>> _depth_stencils;
@@ -111,17 +111,14 @@ private:
     std::vector<PointLightData> _point_lights;
 
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(ObjectData)>> _object_pools;
-    std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(WorldData)>> _world_pools;
+    std::vector<BufferPool<BufferPoolType::CBuffer, 256>> _world_pools;
     std::vector<BufferPool<BufferPoolType::CBuffer, 1024>> _material_pools;
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(PointLightData)>> _point_light_pools;
 
     std::vector<uint8_t> _material_buffer;
-    // std::vector<std::shared_ptr<GPUTexture>> _material_samplers;
+    std::vector<backend::MemoryBarrierDesc> _material_barriers;
 
-    asset::AssetPtr<asset::Technique> _deffered_technique;
-    asset::AssetPtr<asset::Technique> _lighting_technique;
-    asset::AssetPtr<asset::Technique> _billboard_technique;
-    asset::AssetPtr<asset::Mesh> _quad_mesh;
+    RendererAssets _default_assets;
 
     std::vector<EditorInstance> _editor_instances;
 
@@ -132,9 +129,17 @@ private:
 
     bool _editor_mode;
 
+    void recreate_gbuffer(uint32_t const width, uint32_t const height);
+
     void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode* camera);
 
-    void apply_material_parameters(ShaderUniformBinder& binder, asset::Material& material, uint32_t const frame_index);
+    void apply_material_parameters(
+        ShaderUniformBinder& binder, 
+        ShaderProgram& shader_program,
+        asset::Material& material, 
+        uint32_t const frame_index, 
+        std::vector<backend::MemoryBarrierDesc>& barriers
+    );
 };
 
 }

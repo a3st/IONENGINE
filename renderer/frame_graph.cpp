@@ -132,32 +132,42 @@ void FrameGraph::execute() {
                 _device->set_viewport(render_pass->command_list, 0, 0, render_pass->width, render_pass->height);
                 _device->set_scissor(render_pass->command_list, 0, 0, render_pass->width, render_pass->height);
 
+                std::vector<backend::MemoryBarrierDesc> barriers;
+
                 for(auto& attachment : render_pass->color_attachments) {
                     if(!attachment) {
                         if(_swapchain_memory_state != backend::MemoryState::RenderTarget) {
-                            _device->barrier(render_pass->command_list, _swapchain_texture, backend::MemoryState::Present, backend::MemoryState::RenderTarget);
+                            barriers.emplace_back(_swapchain_texture, backend::MemoryState::Present, backend::MemoryState::RenderTarget);
                             _swapchain_memory_state = backend::MemoryState::RenderTarget;
                         }
                     } else {
-                        if(attachment->memory_state() != backend::MemoryState::RenderTarget) {
-                            attachment->barrier(render_pass->command_list, backend::MemoryState::RenderTarget);
+                        if(attachment->memory_state != backend::MemoryState::RenderTarget) {
+                            barriers.emplace_back(attachment->texture, attachment->memory_state, backend::MemoryState::RenderTarget);
+                            attachment->memory_state = backend::MemoryState::RenderTarget;
                         }
                     }
                 }
 
                 if(auto& attachment = render_pass->ds_attachment) {
-                    if(attachment->memory_state() != backend::MemoryState::DepthWrite) {
-                        attachment->barrier(render_pass->command_list, backend::MemoryState::DepthWrite);
+                    if(attachment->memory_state != backend::MemoryState::DepthWrite) {
+                        barriers.emplace_back(attachment->texture, attachment->memory_state, backend::MemoryState::DepthWrite);
+                        attachment->memory_state = backend::MemoryState::DepthWrite;
                     }
                 }
 
                 for(auto& attachment : render_pass->inputs) {
-                    if(attachment->memory_state() != backend::MemoryState::ShaderRead && attachment->is_render_target()) {
-                        attachment->barrier(render_pass->command_list, backend::MemoryState::ShaderRead);
+                    if(attachment->memory_state != backend::MemoryState::ShaderRead && attachment->is_render_target()) {
+                        barriers.emplace_back(attachment->texture, attachment->memory_state, backend::MemoryState::ShaderRead);
+                        attachment->memory_state = backend::MemoryState::ShaderRead;
                     }
-                    if(attachment->memory_state() != backend::MemoryState::DepthRead && attachment->is_depth_stencil()) {
-                        attachment->barrier(render_pass->command_list, backend::MemoryState::DepthRead);
+                    if(attachment->memory_state != backend::MemoryState::DepthRead && attachment->is_depth_stencil()) {
+                        barriers.emplace_back(attachment->texture, attachment->memory_state, backend::MemoryState::DepthRead);
+                        attachment->memory_state = backend::MemoryState::DepthRead;
                     }
+                }
+
+                if(!barriers.empty()) {
+                    _device->barrier(render_pass->command_list, barriers);
                 }
 
                 _device->begin_render_pass(
@@ -176,13 +186,18 @@ void FrameGraph::execute() {
 
                 _device->end_render_pass(render_pass->command_list);
 
+                barriers.clear();
                 if(_swapchain_memory_state != backend::MemoryState::Present) {
-                    _device->barrier(render_pass->command_list, _swapchain_texture, _swapchain_memory_state, backend::MemoryState::Present);
+                    barriers.emplace_back(_swapchain_texture, _swapchain_memory_state, backend::MemoryState::Present);
                     _swapchain_memory_state = backend::MemoryState::Present;
+                }
+                
+                if(!barriers.empty()) {
+                    _device->barrier(render_pass->command_list, barriers);
                 }
             } break;
 
-            case OpType::ComputePass: {
+            /*case OpType::ComputePass: {
                 auto& compute_pass = _compute_passes[op.index];
 
                 for(auto& buffer : compute_pass->storages) {
@@ -196,6 +211,7 @@ void FrameGraph::execute() {
                 };
                 compute_pass->func(context);
             } break;
+            */ 
         }
     }
 

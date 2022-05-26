@@ -23,7 +23,7 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::render_targe
             1,
             1, 
             format,
-            backend::TextureFlags::RenderTarget | flags
+            flags
         );
 
         if(flags & backend::TextureFlags::ShaderResource) {
@@ -42,50 +42,13 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::render_targe
         gpu_texture.height = height;
         gpu_texture.mip_count = 1;
 
-        gpu_texture.memory_state = backend::MemoryState::Common;
-        gpu_texture.flags = backend::TextureFlags::RenderTarget | flags;
-    }
-    return lib::Expected<GPUTexture, lib::Result<GPUTextureError>>::ok(std::move(gpu_texture));
-}
-
-lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::depth_stencil(
-    backend::Device& device,
-    backend::Format const format, 
-    uint32_t const width, 
-    uint32_t const height, 
-    backend::TextureFlags const flags
-) {
-
-    auto gpu_texture = GPUTexture {};
-    {
-        gpu_texture.texture = device.create_texture(
-            backend::Dimension::_2D, 
-            width, 
-            height, 
-            1,
-            1, 
-            format,
-            backend::TextureFlags::DepthStencil | flags
-        );
-
-        if(flags & backend::TextureFlags::ShaderResource) {
-            gpu_texture.sampler = device.create_sampler(
-                backend::Filter::MinMagMipLinear,
-                backend::AddressMode::Clamp,
-                backend::AddressMode::Clamp,
-                backend::AddressMode::Clamp,
-                2,
-                backend::CompareOp::Always
-            );
+        if(flags & backend::TextureFlags::RenderTarget) {
+            gpu_texture.memory_state = backend::MemoryState::RenderTarget;
+        } else {
+            gpu_texture.memory_state = backend::MemoryState::Common;
         }
-
-        gpu_texture.format = format;
-        gpu_texture.width = width;
-        gpu_texture.height = height;
-        gpu_texture.mip_count = 1;
-
-        gpu_texture.memory_state = backend::MemoryState::Common;
-        gpu_texture.flags = backend::TextureFlags::DepthStencil | flags;
+       
+        gpu_texture.flags = flags;
     }
     return lib::Expected<GPUTexture, lib::Result<GPUTextureError>>::ok(std::move(gpu_texture));
 }
@@ -116,7 +79,7 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
         gpu_texture.format = get_texture_format(texture.format());
         gpu_texture.width = texture.width();
         gpu_texture.height = texture.height();
-        gpu_texture.mip_count = 1;
+        gpu_texture.mip_count = texture.mip_count();
 
         gpu_texture.memory_state = backend::MemoryState::Common;
         gpu_texture.flags = backend::TextureFlags::ShaderResource;

@@ -11,11 +11,13 @@ lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>> ShaderProgram::loa
 
     bool is_compute = false;
 
+    auto shader_program = ShaderProgram {};
+
     for(auto const& shader : technique.shaders) {
         if(shader.flags == asset::ShaderFlags::Compute) {
             is_compute = true;
         }
-        shaders.emplace_back(device.create_shader(shader.source, get_shader_flags(shader.flags)));
+        shader_program.shaders.emplace_back(device.create_shader(shader.source, get_shader_flags(shader.flags)));
     }
 
     std::vector<backend::DescriptorLayoutBinding> bindings;
@@ -91,7 +93,7 @@ lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>> ShaderProgram::loa
 
         std::visit(uniform_visitor, uniform.data);
 
-        uniforms.insert({ uniform.name, shader_uniform });
+        shader_program.uniforms.insert({ uniform.name, shader_uniform });
     }
 
     uint32_t attribute_index = 0;
@@ -109,11 +111,13 @@ lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>> ShaderProgram::loa
             }
         }
         
-        attributes.emplace_back(semantic_only, attribute_index, get_attribute_format(attribute.type), 0, offset);
-        offset += get_shader_data_type_size(attribute.type);
+        shader_program.attributes.emplace_back(semantic_only, attribute_index, get_attribute_format(attribute.type), 0, offset);
+        offset += static_cast<uint32_t>(get_shader_data_type_size(attribute.type));
     }
 
-    descriptor_layout = device.create_descriptor_layout(bindings, is_compute);
+    shader_program.descriptor_layout = device.create_descriptor_layout(bindings, is_compute);
+
+    return lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>>::ok(std::move(shader_program));
 }
 
 uint32_t ShaderProgram::location_uniform_by_name(std::string_view const name) const {
@@ -145,7 +149,7 @@ uint32_t ShaderProgram::location_uniform_by_name(std::string_view const name) co
     return location;
 }
 
-backend::ShaderFlags constexpr ionengine::renderer::get_shader_flags(asset::ShaderFlags const shader_flags) const {
+backend::ShaderFlags constexpr ionengine::renderer::get_shader_flags(asset::ShaderFlags const shader_flags) {
     switch(shader_flags) {
         case asset::ShaderFlags::Vertex: return backend::ShaderFlags::Vertex;
         case asset::ShaderFlags::Pixel: return backend::ShaderFlags::Pixel;
@@ -157,7 +161,7 @@ backend::ShaderFlags constexpr ionengine::renderer::get_shader_flags(asset::Shad
     }
 }
 
-backend::Format constexpr ionengine::renderer::get_attribute_format(asset::ShaderDataType const data_type) const {
+backend::Format constexpr ionengine::renderer::get_attribute_format(asset::ShaderDataType const data_type) {
     switch(data_type) {
         case asset::ShaderDataType::F32: return backend::Format::R32;
         case asset::ShaderDataType::F32x2: return backend::Format::RG32;

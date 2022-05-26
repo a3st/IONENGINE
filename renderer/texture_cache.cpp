@@ -28,7 +28,11 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
     if(_data.is_valid(texture.cache_entry())) {
 
         auto& cache_entry = _data.get(texture.cache_entry());
-        
+
+        if(cache_entry.value.is_common()) {
+            upload_manager.upload_texture_data(cache_entry.value, texture.data());
+        }
+
         return cache_entry.value;
 
     } else {
@@ -47,6 +51,7 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
             throw lib::Exception(result.error_value().message);
         }
 
-        return nullptr;
+        auto& cache_entry = _data.get(texture.cache_entry());
+        return cache_entry.value;
     }
 }

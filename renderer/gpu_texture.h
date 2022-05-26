@@ -43,14 +43,6 @@ struct GPUTexture {
         backend::TextureFlags const flags
     );
 
-    static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> depth_stencil(
-        backend::Device& device,
-        backend::Format const format, 
-        uint32_t const width, 
-        uint32_t const height, 
-        backend::TextureFlags const flags
-    );
-
     static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> load_from_texture(backend::Device& device, asset::Texture const& texture);
 };
 

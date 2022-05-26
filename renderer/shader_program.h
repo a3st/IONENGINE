@@ -57,6 +57,12 @@ struct ShaderUniform {
         ShaderUniformData<ShaderUniformType::RWBuffer>,
         ShaderUniformData<ShaderUniformType::RWTexture2D>
     > data;
+
+    DECLARE_SHADER_UNIFORM_CAST(as_sampler2D, ShaderUniformType::Sampler2D)
+    DECLARE_SHADER_UNIFORM_CAST(as_cbuffer, ShaderUniformType::CBuffer)
+    DECLARE_SHADER_UNIFORM_CAST(as_sbuffer, ShaderUniformType::SBuffer)
+    DECLARE_SHADER_UNIFORM_CAST(as_rwbuffer, ShaderUniformType::RWBuffer)
+    DECLARE_SHADER_UNIFORM_CAST(as_rwtexture2D, ShaderUniformType::RWTexture2D)
 };
 
 struct ShaderProgram {
@@ -67,7 +73,7 @@ struct ShaderProgram {
 
     uint32_t location_uniform_by_name(std::string_view const name) const;
 
-    lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>> load_from_technique(backend::Device& device, asset::Technique const& technique);
+    static lib::Expected<ShaderProgram, lib::Result<ShaderProgramError>> load_from_technique(backend::Device& device, asset::Technique const& technique);
 };
 
 template<>

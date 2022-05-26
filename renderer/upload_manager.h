@@ -36,6 +36,7 @@ private:
     struct UploadBuffer {
         backend::Handle<backend::CommandList> command_list;
         backend::Handle<backend::Buffer> buffer;
+        uint32_t size;
         uint64_t offset;
         bool is_close;
     };
@@ -46,7 +47,7 @@ private:
     std::array<UploadBuffer, UPLOAD_MANAGER_BUFFER_COUNT> _upload_buffers;
     uint32_t _buffer_index{0};
 
-    std::array<uint64_t, 2> _fence_values;
+    std::array<uint64_t, UPLOAD_MANAGER_BUFFER_COUNT> _fence_values;
 
     std::array<std::queue<UploadData<GPUTexture>>, UPLOAD_MANAGER_BUFFER_COUNT> _textures;
     std::array<std::queue<UploadData<GPUBuffer>>, UPLOAD_MANAGER_BUFFER_COUNT> _buffers;

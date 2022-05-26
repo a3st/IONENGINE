@@ -29,7 +29,15 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
     if(_data.is_valid(mesh.surfaces()[index].cache_entry)) {
 
         auto& cache_entry = _data.get(mesh.surfaces()[index].cache_entry);
-        
+
+        if(cache_entry.value.is_common()) {
+            upload_manager.upload_geometry_data(
+                cache_entry.value, 
+                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].vertices.data(), mesh.surfaces()[index].vertices.size() * sizeof(float)),
+                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].indices.data(), mesh.surfaces()[index].indices.size() * sizeof(uint32_t))
+            );
+        }
+
         return cache_entry.value;
 
     } else {
@@ -44,8 +52,8 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
 
             upload_manager.upload_geometry_data(
                 cache_entry.value, 
-                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].vertices.data(), mesh.surfaces()[index].vertices.size()),
-                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].indices.data(), mesh.surfaces()[index].indices.size())
+                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].vertices.data(), mesh.surfaces()[index].vertices.size() * sizeof(float)),
+                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].indices.data(), mesh.surfaces()[index].indices.size() * sizeof(uint32_t))
             );
 
             mesh.surfaces()[index].cache_entry = _data.push(std::move(cache_entry));
@@ -53,6 +61,7 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
             throw lib::Exception(result.error_value().message);
         }
 
-        return nullptr;
+        auto& cache_entry = _data.get(mesh.surfaces()[index].cache_entry);
+        return cache_entry.value;
     }
 }

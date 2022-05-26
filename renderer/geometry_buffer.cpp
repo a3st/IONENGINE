@@ -30,8 +30,8 @@ lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::
 
         geometry_buffer.flags = backend::BufferFlags::VertexBuffer | backend::BufferFlags::IndexBuffer;
 
-        geometry_buffer.vertices_size = surface.vertices.size();
-        geometry_buffer.indices_size = surface.indices.size();
+        geometry_buffer.vertices_size = static_cast<uint32_t>(surface.vertices.size());
+        geometry_buffer.indices_size = static_cast<uint32_t>(surface.indices.size());
     }
     return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::ok(std::move(geometry_buffer));
 }
@@ -44,24 +44,3 @@ void GeometryBuffer::bind(backend::Device& device, backend::Handle<backend::Comm
 void GeometryBuffer::draw_indexed(backend::Device& device, backend::Handle<backend::CommandList> const& command_list, uint32_t const instance_count) {
     device.draw_indexed(command_list, indices_size, instance_count, 0);
 }
-
-/*
-std::shared_ptr<GeometryBuffer> GeometryBuffer::from_surface(backend::Device& device, UploadContext& upload_context, asset::SurfaceData const& surface) {
-    auto buffer = std::shared_ptr<GeometryBuffer>(new GeometryBuffer(device, static_cast<uint32_t>(surface.vertices.size()), static_cast<uint32_t>(surface.indices.size())));
-    buffer->copy_vertex_data(upload_context, std::span<float const>(surface.vertices.data(), surface.vertices.size()));
-    buffer->copy_index_data(upload_context, std::span<uint32_t const>(surface.indices.data(), surface.indices.size()));
-    return buffer;
-}
-
-void GeometryBuffer::copy_vertex_data(UploadContext& context, std::span<float const> const data) {
-    context.begin();
-    context.copy_buffer_data(_vertex_buffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(data.data()), data.size() * sizeof(float)));
-    context.end();
-}
-
-void GeometryBuffer::copy_index_data(UploadContext& context, std::span<uint32_t const> const data) {
-    context.begin();
-    context.copy_buffer_data(_index_buffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(data.data()), data.size() * sizeof(uint32_t)));
-    context.end();
-}
-*/

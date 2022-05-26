@@ -30,13 +30,13 @@ int main(int* argc, char** agrv) {
         
         asset::AssetManager asset_manager(thread_pool, logger);
 
-        auto render_asset_desc = renderer::DefaultAssetDesc {
+        auto renderer_assets = renderer::RendererAssets {
             .deffered = asset_manager.get_technique("engine/techniques/deffered.json5"),
             .lighting = asset_manager.get_technique("engine/techniques/lighting.json5"),
             .billboard = asset_manager.get_technique("engine/techniques/billboard.json5"),
             .quad = asset_manager.get_mesh("engine/quad.obj")
         };
-        renderer::Renderer renderer(window, asset_manager, thread_pool, render_asset_desc);
+        renderer::Renderer renderer(window, asset_manager, thread_pool, renderer_assets);
 
         renderer.editor_mode(false);
         

@@ -8,6 +8,7 @@ namespace ionengine::renderer {
 
 enum class ResourceStateType {
     Pending,
+    Common,
     Ok
 };
 
@@ -22,11 +23,17 @@ struct ResourceStateData<ResourceType, ResourceStateType::Ok> {
 template<class ResourceType>
 struct ResourceStateData<ResourceType, ResourceStateType::Pending> { };
 
+template<class ResourceType>
+struct ResourceStateData<ResourceType, ResourceStateType::Common> {
+    ResourceType resource;
+};
+
 template<class Type>
 struct ResourceState {
     std::variant<
         ResourceStateData<Type, ResourceStateType::Ok>,
-        ResourceStateData<Type, ResourceStateType::Pending>
+        ResourceStateData<Type, ResourceStateType::Pending>,
+        ResourceStateData<Type, ResourceStateType::Common>
     > data;
 };
 
@@ -40,7 +47,7 @@ public:
 
     ResourcePtr(Type&& element) {
         _ptr = std::make_shared<ResourceState<Type>>(
-            ResourceStateData<Type, ResourceStateType::Ok> { .resource = std::move(element) }
+            ResourceStateData<Type, ResourceStateType::Common> { .resource = std::move(element) }
         );
     }
 
@@ -55,21 +62,53 @@ public:
     uint32_t use_count() const { return _ptr.use_count(); }
 
     Type* operator->() const {
-        assert(_ptr->data.index() == 0 && "error while accessing an unloaded resource data");
-        return &(std::get<0>(_ptr->data).resource); 
+        assert((_ptr->data.index() == 0 || _ptr->data.index() == 2) && "error while accessing an unloaded resource data");
+
+        Type* resource = nullptr;
+
+        auto state_visitor = make_visitor(
+            [&](ResourceStateData<Type, ResourceStateType::Ok>& data) {
+                resource = &data.resource;
+            },
+            [&](ResourceStateData<Type, ResourceStateType::Common>& data) {
+                resource = &data.resource;
+            },
+            [&](ResourceStateData<Type, ResourceStateType::Pending>& data) { }
+        );
+
+        std::visit(state_visitor, _ptr->data);
+        return resource; 
     }
 
     Type& operator*() const { 
-        assert(_ptr->data.index() == 0 && "error while accessing an unloaded resource data");
-        return std::get<0>(_ptr->data).resource;
+        assert((_ptr->data.index() == 0 || _ptr->data.index() == 2) && "error while accessing an unloaded resource data");
+        
+        Type* resource = nullptr;
+
+        auto state_visitor = make_visitor(
+            [&](ResourceStateData<Type, ResourceStateType::Ok>& data) {
+                resource = &data.resource;
+            },
+            [&](ResourceStateData<Type, ResourceStateType::Common>& data) {
+                resource = &data.resource;
+            },
+            [&](ResourceStateData<Type, ResourceStateType::Pending>& data) { }
+        );
+
+        std::visit(state_visitor, _ptr->data);
+        return *resource; 
     }
 
     bool is_pending() const {
-        return _ptr->data.index() == 2;
+        return _ptr->data.index() == 1;
     }
 
     bool is_ok() const {
         return _ptr->data.index() == 0;
+    }
+
+    bool is_common() const {
+        return _ptr->data.index() == 2;
     }
 
     void wait() {
@@ -83,7 +122,7 @@ public:
     }
 
     Type commit_pending() {
-        Type element = std::move(std::get<0>(_ptr->data).resource);
+        Type element = std::move(std::get<2>(_ptr->data).resource);
         _ptr->data = ResourceStateData<Type, ResourceStateType::Pending> { };
         return std::move(element);
     }

@@ -600,6 +600,7 @@ Handle<Texture> Device::Impl::create_texture(
     }
     if(flags & TextureFlags::RenderTarget) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        initial_state = D3D12_RESOURCE_STATE_RENDER_TARGET;
     }
     if(flags & TextureFlags::UnorderedAccess) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
@@ -1738,9 +1739,7 @@ void Device::Impl::barrier(Handle<CommandList> const& command_list, std::span<Me
             [&](Handle<Buffer> const& target) {
                 resource_barrier.Transition.pResource = buffers[target].resource.Get();
             },
-            [&](Handle<Sampler> const& target) {
-
-            }
+            [&](Handle<Sampler> const& target) { }
         );
 
         std::visit(barrier_visitor, barrier.target);
@@ -1982,22 +1981,23 @@ void Device::Impl::copy_texture_region(
         footprints[region.mip_index].Offset = region.offset;
         footprints[region.mip_index].Footprint.RowPitch = region.row_pitch;
 
-        /*std::cout << std::format("dx12 {} width, {} height, {} offset, {} row pitch", 
+        /*std::cout << std::format("{} width, {} height, {} offset, {} row pitch", 
             footprints[region.mip_index].Footprint.Width, 
             footprints[region.mip_index].Footprint.Height, 
             footprints[region.mip_index].Offset, 
             footprints[region.mip_index].Footprint.RowPitch
-        ) << std::endl;*/
+        ) << std::endl;
+        */
+
+        auto source_location = D3D12_TEXTURE_COPY_LOCATION {};
+        source_location.pResource = source_buffer_data.resource.Get();
+        source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        source_location.PlacedFootprint = footprints[region.mip_index];
 
         auto dest_location = D3D12_TEXTURE_COPY_LOCATION {};
         dest_location.pResource = texture_data.resource.Get();
         dest_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
         dest_location.SubresourceIndex = region.mip_index;
-        
-        auto source_location = D3D12_TEXTURE_COPY_LOCATION {};
-        source_location.pResource = source_buffer_data.resource.Get();
-        source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-        source_location.PlacedFootprint = footprints[region.mip_index];
 
         command_list_data.command_list->CopyTextureRegion(&dest_location, 0, 0, 0, &source_location, nullptr);
     }

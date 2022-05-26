@@ -248,7 +248,7 @@ struct SwapchainDesc {
 struct TextureCopyRegion {
     uint32_t mip_index;
     uint32_t row_pitch;
-    uint32_t offset;
+    uint64_t offset;
 };
 
 struct MemoryBarrierDesc {
