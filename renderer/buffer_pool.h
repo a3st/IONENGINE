@@ -6,13 +6,23 @@
 
 namespace ionengine::renderer {
 
-class SBufferPool {
+enum class BufferPoolType {
+    SBuffer,
+    CBuffer,
+    RWBuffer
+};
+
+template<BufferPoolType PoolType, size_t DataSize>
+class BufferPool { };
+
+template<size_t DataSize>
+class BufferPool<BufferPoolType::CBuffer, DataSize> {
 public:
 
-    SBufferPool(backend::Device& device, uint32_t const buffer_size, uint32_t const element_stride, uint32_t const pool_size) {
+    BufferPool(backend::Device& device, uint32_t const buffer_size, uint32_t const pool_size) {
         _data.resize(pool_size);
         for(uint32_t i = 0; i < pool_size; ++i) {
-            _data.at(i) = GPUBuffer::sbuffer(device, buffer_size, element_stride);
+            _data.at(i) = GPUBuffer::cbuffer(device, buffer_size);
         }
     }
 

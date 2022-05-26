@@ -4,13 +4,13 @@
 
 #include <renderer/render_queue.h>
 #include <renderer/upload_manager.h>
+#include <renderer/shader_uniform_binder.h>
 #include <renderer/shader_cache.h>
 #include <renderer/geometry_cache.h>
 #include <renderer/texture_cache.h>
 #include <renderer/pipeline_cache.h>
 #include <renderer/frame_graph.h>
-#include <renderer/cbuffer_pool.h>
-#include <renderer/sbuffer_pool.h>
+#include <renderer/buffer_pool.h>
 #include <asset/asset_manager.h>
 #include <lib/thread_pool.h>
 
@@ -25,25 +25,11 @@ class CameraNode;
 
 namespace ionengine::renderer {
     
-struct DefaultAssetDesc {
+struct RendererAssets {
     asset::AssetPtr<asset::Technique> deffered;
     asset::AssetPtr<asset::Technique> lighting;
     asset::AssetPtr<asset::Technique> billboard;
     asset::AssetPtr<asset::Mesh> quad;
-};
-
-struct PointLightData {
-    lib::math::Vector3f position;
-    float attenuation;
-    float range;
-    lib::math::Vector3f color;
-};
-
-struct WorldData {
-    lib::math::Matrixf view;
-    lib::math::Matrixf proj;
-    lib::math::Vector3f camera_position;
-    float point_light_count;
 };
 
 struct EditorInstance {
@@ -54,7 +40,7 @@ struct EditorInstance {
 class Renderer {
 public:
 
-    Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool, DefaultAssetDesc const& asset_desc);
+    Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool, RendererAssets const& assets);
 
     ~Renderer();
 
@@ -76,7 +62,30 @@ public:
 
 private:
 
-    struct ObjectSBuffer {
+    struct GBufferData {
+        ResourcePtr<GPUTexture> positions;
+        ResourcePtr<GPUTexture> albedo;
+        ResourcePtr<GPUTexture> normals;
+        ResourcePtr<GPUTexture> roughness_metalness_ao;
+    };
+
+    struct PointLightData {
+        lib::math::Vector3f position;
+        float attenuation;
+        float range;
+        lib::math::Vector3f color;
+    };
+
+    struct WorldData {
+        lib::math::Matrixf view;
+        lib::math::Matrixf projection;
+        lib::math::Vector3f camera_position;
+        uint32_t point_light_count;
+        uint32_t direction_light_count;
+        uint32_t spot_light_count;
+    };
+
+    struct ObjectData {
         lib::math::Matrixf model;
     };
 
@@ -84,11 +93,11 @@ private:
 
     backend::Device _device;
 
-    std::optional<UploadManager> _upload_manager;
-
     std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _mesh_event_receiver;
     std::optional<lib::Receiver<asset::AssetEvent<asset::Technique>>> _technique_event_receiver;
     std::optional<lib::Receiver<asset::AssetEvent<asset::Texture>>> _texture_event_receiver;
+
+    std::optional<UploadManager> _upload_manager;
 
     std::optional<ShaderCache> _shader_cache;
     std::optional<GeometryCache> _geometry_cache;
@@ -96,25 +105,18 @@ private:
     std::optional<PipelineCache> _pipeline_cache;
     std::optional<TextureCache> _texture_cache;
 
-    std::vector<uint8_t> _material_buffer;
-    std::vector<std::shared_ptr<GPUTexture>> _material_samplers;
+    std::vector<GBufferData> _gbuffers;
+    std::vector<ResourcePtr<GPUTexture>> _depth_stencils;
 
     std::vector<PointLightData> _point_lights;
 
-    std::vector<std::shared_ptr<GPUTexture>> _gbuffer_positions;
-    std::vector<std::shared_ptr<GPUTexture>> _gbuffer_albedos;
-    std::vector<std::shared_ptr<GPUTexture>> _gbuffer_normals;
-    std::vector<std::shared_ptr<GPUTexture>> _gbuffer_roughmetals;
+    std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(ObjectData)>> _object_pools;
+    std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(WorldData)>> _world_pools;
+    std::vector<BufferPool<BufferPoolType::CBuffer, 1024>> _material_pools;
+    std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(PointLightData)>> _point_light_pools;
 
-    std::vector<std::shared_ptr<GPUTexture>> _lighting_results;
-
-    std::vector<std::shared_ptr<GPUTexture>> _depth_stencils;
-
-    std::vector<std::shared_ptr<GPUBuffer>> _point_light_buffers;
-
-    std::vector<SBufferPool> _object_sbuffer_pools;
-    std::vector<CBufferPool> _world_cbuffer_pools;
-    std::vector<CBufferPool> _material_cbuffer_pools;
+    std::vector<uint8_t> _material_buffer;
+    // std::vector<std::shared_ptr<GPUTexture>> _material_samplers;
 
     asset::AssetPtr<asset::Technique> _deffered_technique;
     asset::AssetPtr<asset::Technique> _lighting_technique;
