@@ -23,7 +23,6 @@ public:
     std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> get(
         ShaderCache& shader_cache,
         asset::Technique& technique,
-        asset::MaterialPassParameters const& parameters,
         backend::Handle<backend::RenderPass> const& render_pass
     );
 
@@ -39,8 +38,8 @@ private:
     std::unordered_map<uint32_t, backend::Handle<backend::Pipeline>> _data;
 };
 
-backend::FillMode constexpr get_fill_mode(asset::MaterialPassFillMode const fill_mode);
+backend::FillMode constexpr get_fill_mode(asset::FillMode const fill_mode);
 
-backend::CullMode constexpr get_cull_mode(asset::MaterialPassCullMode const cull_mode);
+backend::CullMode constexpr get_cull_mode(asset::CullMode const cull_mode);
 
 }

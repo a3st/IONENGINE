@@ -99,6 +99,12 @@ lib::Expected<Technique, lib::Result<TechniqueError>> Technique::load_from_file(
             technique.uniforms.back().visibility = get_shader_flags(uniform.visibility.value_or(JSON_ShaderType::all));
         }
 
+        technique.draw_parameters = DrawParameters {
+            .fill_mode = get_fill_mode(document.draw_parameters.fill_mode),
+            .cull_mode = get_cull_mode(document.draw_parameters.cull_mode),
+            .depth_stencil = document.draw_parameters.depth_stencil
+        };
+
         std::vector<uint64_t> hashes;
 
         for(auto const& shader : document.shaders) {
@@ -261,6 +267,29 @@ ShaderFlags constexpr ionengine::asset::get_shader_flags(JSON_ShaderType const s
         default: {
             assert(false && "invalid data type");
             return ShaderFlags::All;
+        }
+    }
+}
+
+FillMode constexpr ionengine::asset::get_fill_mode(JSON_FillMode const fill_mode) {
+    switch(fill_mode) {
+        case JSON_FillMode::solid: return FillMode::Solid;
+        case JSON_FillMode::wireframe: return FillMode::Wireframe;
+        default: {
+            assert(false && "invalid data type");
+            return FillMode::Solid;
+        } 
+    }
+}
+
+CullMode constexpr ionengine::asset::get_cull_mode(JSON_CullMode const cull_mode) {
+    switch(cull_mode) {
+        case JSON_CullMode::front: return CullMode::Front;
+        case JSON_CullMode::back: return CullMode::Back;
+        case JSON_CullMode::none: return CullMode::None;
+        default: {
+            assert(false && "invalid data type");
+            return CullMode::None;
         }
     }
 }

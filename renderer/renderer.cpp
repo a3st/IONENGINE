@@ -288,6 +288,8 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         std::nullopt,
         depth_stencil_info,
         [=](RenderPassContext const& context) {
+
+            backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
             
             for(auto const& batch : _deffered_queue) {
 
@@ -301,9 +303,12 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
                     }
                 );
                 
-                auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *result->technique, result->parameters, context.render_pass);
+                auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *result->technique, context.render_pass);
                 
-                _device.bind_pipeline(context.command_list, pipeline);
+                if(current_pipeline != pipeline) {
+                    _device.bind_pipeline(context.command_list, pipeline);
+                    current_pipeline = pipeline;
+                }
                 
                 ShaderUniformBinder binder(_device, *shader_program);
 
@@ -364,13 +369,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         std::nullopt,
         [=](RenderPassContext const& context) {
 
-            auto parameters = asset::MaterialPassParameters {
-                .fill_mode = asset::MaterialPassFillMode::Solid,
-                .cull_mode = asset::MaterialPassCullMode::None,
-                .depth_stencil = false
-            };
-
-            auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *_deffered_technique, parameters, context.render_pass);
+            auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *_deffered_technique, context.render_pass);
 
             _device.bind_pipeline(context.command_list, pipeline);
 

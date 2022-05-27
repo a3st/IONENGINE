@@ -25,7 +25,6 @@ PipelineCache& PipelineCache::operator=(PipelineCache&& other) noexcept {
 std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> PipelineCache::get(
     ShaderCache& shader_cache,
     asset::Technique& technique,
-    asset::MaterialPassParameters const& parameters,
     backend::Handle<backend::RenderPass> const& render_pass
 ) {
 
@@ -37,11 +36,11 @@ std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> Pipel
     if(_data.find(pipeline_hash) == _data.end()) {
 
         backend::RasterizerDesc rasterizer_desc = {
-            .fill_mode = get_fill_mode(parameters.fill_mode),
-            .cull_mode = get_cull_mode(parameters.cull_mode)
+            .fill_mode = get_fill_mode(technique.draw_parameters.fill_mode),
+            .cull_mode = get_cull_mode(technique.draw_parameters.cull_mode)
         };
 
-        backend::DepthStencilDesc depth_stencil_desc = { backend::CompareOp::Less, parameters.depth_stencil };
+        backend::DepthStencilDesc depth_stencil_desc = { backend::CompareOp::Less, technique.draw_parameters.depth_stencil };
 
         backend::BlendDesc blend_desc = { 
             false, 
@@ -88,10 +87,10 @@ std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> Pipel
     return { _data.at(pipeline_hash), shader_program };
 }
 
-backend::FillMode constexpr ionengine::renderer::get_fill_mode(asset::MaterialPassFillMode const fill_mode) {
+backend::FillMode constexpr ionengine::renderer::get_fill_mode(asset::FillMode const fill_mode) {
     switch(fill_mode) {
-        case asset::MaterialPassFillMode::Solid: return backend::FillMode::Solid;
-        case asset::MaterialPassFillMode::Wireframe: return backend::FillMode::Wireframe;
+        case asset::FillMode::Solid: return backend::FillMode::Solid;
+        case asset::FillMode::Wireframe: return backend::FillMode::Wireframe;
         default: {
             assert(false && "invalid data type");
             return backend::FillMode::Solid; 
@@ -99,11 +98,11 @@ backend::FillMode constexpr ionengine::renderer::get_fill_mode(asset::MaterialPa
     }
 }
 
-backend::CullMode constexpr ionengine::renderer::get_cull_mode(asset::MaterialPassCullMode const cull_mode) {
+backend::CullMode constexpr ionengine::renderer::get_cull_mode(asset::CullMode const cull_mode) {
     switch(cull_mode) {
-        case asset::MaterialPassCullMode::Back: return backend::CullMode::Back;
-        case asset::MaterialPassCullMode::Front: return backend::CullMode::Front;
-        case asset::MaterialPassCullMode::None: return backend::CullMode::None;
+        case asset::CullMode::Back: return backend::CullMode::Back;
+        case asset::CullMode::Front: return backend::CullMode::Front;
+        case asset::CullMode::None: return backend::CullMode::None;
         default: {
             assert(false && "invalid data type");
             return backend::CullMode::None; 

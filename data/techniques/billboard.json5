@@ -6,13 +6,16 @@
             type: "cbuffer",
             properties: [
                 { name: "view", type: "f32x4x4" },
-                { name: "proj", type: "f32x4x4" },
-                { name: "camera_position", type: "f32x3" }
+                { name: "projection", type: "f32x4x4" },
+                { name: "camera_position", type: "f32x3" },
+                { name: "point_light_count", type: "uint32" },
+                { name: "direction_light_count", type: "uint32" },
+                { name: "spot_light_count", type: "uint32" }
             ],
             visibility: "vertex"
         },
         {
-            name: "icon",
+            name: "color",
             type: "sampler2D",
             visibility: "pixel"
         },
@@ -20,38 +23,39 @@
             name: "object", 
             type: "sbuffer", 
             properties: [
-                { name: "model", type: "f32x4x4" }
+                { name: "model", type: "f32x4x4" },
+                { name: "inverse_model", type: "f32x4x4" }
             ],
             visibility: "vertex"
         }
     ],
+    draw_parameters: {
+        fill_mode: "solid",
+        cull_mode: "none",
+        depth_stencil: false
+    },
     shaders: [
         {
             type: "vertex",
             inputs: [
                 { name: "position", type: "f32x3", semantic: "POSITION" },
-                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" },
-                { name: "normal", type: "f32x3", semantic: "NORMAL" },
-                { name: "tangent", type: "f32x3", semantic: "TANGENT" },
-                { name: "bitangent", type: "f32x3", semantic: "BITANGENT" }
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             outputs: [
                 { name: "position", type: "f32x4", semantic: "SV_POSITION" },
-                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" },
-                { name: "normal", type: "f32x3", semantic: "NORMAL" },
-                { name: "tangent", type: "f32x3", semantic: "TANGENT" },
-                { name: "bitangent", type: "f32x3", semantic: "BITANGENT" }
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             source: "
 
-                #define IONENGINE_OBJECT_TO_WORLD objects[instance].model
-                #define IONENGINE_MATRIX_V view
-                #define IONENGINE_MATRIX_P proj
+                #define IONENGINE_MATRIX_M objects[instance].model
+                #define IONENGINE_MATRIX_V world.view
+                #define IONENGINE_MATRIX_P world.projection
+                #define IONENGINE_MATRIX_INV_M objects[instance].inverse_model
 
                 vs_output main(vs_input input, uint instance : SV_InstanceID) {
                     vs_output output;
 
-                    float4x4 model_view = mul(IONENGINE_OBJECT_TO_WORLD, IONENGINE_MATRIX_V);
+                    float4x4 model_view = mul(IONENGINE_MATRIX_M, IONENGINE_MATRIX_V);
                     model_view[0][0] = 1;
                     model_view[0][1] = 0;
                     model_view[0][2] = 0;
@@ -74,10 +78,7 @@
             type: "pixel",
             inputs: [
                 { name: "position", type: "f32x4", semantic: "SV_POSITION" },
-                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" },
-                { name: "normal", type: "f32x3", semantic: "NORMAL" },
-                { name: "tangent", type: "f32x3", semantic: "TANGENT" },
-                { name: "bitangent", type: "f32x3", semantic: "BITANGENT" }
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             outputs: [
                 { name: "swapchain", type: "f32x4", semantic: "SV_TARGET0" }
@@ -85,9 +86,7 @@
             source: "   
                 ps_output main(ps_input input) {
                     ps_output output;
-
-                    output.swapchain = icon_texture.Sample(icon_sampler, input.uv);
-
+                    output.swapchain = color_texture.Sample(color_sampler, input.uv);
                     return output;
                 }
             "

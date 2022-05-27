@@ -31,7 +31,7 @@ struct PointLightData {
     lib::math::Vector3f color;
 };
 
-struct WorldData {
+__declspec(align(256)) struct WorldData {
     lib::math::Matrixf view;
     lib::math::Matrixf projection;
     lib::math::Vector3f camera_position;
@@ -106,7 +106,7 @@ private:
     std::vector<PointLightData> _point_lights;
 
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(ObjectData)>> _object_pools;
-    std::vector<BufferPool<BufferPoolType::CBuffer, 256>> _world_pools;
+    std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(WorldData)>> _world_pools;
     std::vector<BufferPool<BufferPoolType::CBuffer, 1024>> _material_pools;
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(PointLightData)>> _point_light_pools;
 

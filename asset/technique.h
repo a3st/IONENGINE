@@ -41,6 +41,21 @@ enum class JSON_ShaderType {
 
 JSON5_ENUM(JSON_ShaderType, vertex, geometry, hull, domain, pixel, compute, all)
 
+enum class JSON_FillMode {
+    wireframe,
+    solid
+};
+
+JSON5_ENUM(JSON_FillMode, wireframe, solid)
+
+enum class JSON_CullMode {
+    front,
+    back,
+    none
+};
+
+JSON5_ENUM(JSON_CullMode, front, back, none)
+
 struct JSON_ShaderStructDefinition {
     std::string name;
     JSON_ShaderDataType type;
@@ -67,13 +82,22 @@ struct JSON_TechniqueShaderDefinition {
 
 JSON5_CLASS(JSON_TechniqueShaderDefinition, type, inputs, outputs, source)
 
+struct JSON_TechniqueDrawParametersDefinition {
+    JSON_FillMode fill_mode;
+    JSON_CullMode cull_mode;
+    bool depth_stencil;
+};
+
+JSON5_CLASS(JSON_TechniqueDrawParametersDefinition, fill_mode, cull_mode, depth_stencil)
+
 struct JSON_TechniqueDefinition {
     std::string name;
     std::vector<JSON_TechniqueUniformDefinition> uniforms;
+    JSON_TechniqueDrawParametersDefinition draw_parameters;
     std::vector<JSON_TechniqueShaderDefinition> shaders;
 };
 
-JSON5_CLASS(JSON_TechniqueDefinition, name, uniforms, shaders)
+JSON5_CLASS(JSON_TechniqueDefinition, name, uniforms, draw_parameters, shaders)
 
 namespace ionengine::asset {
 
@@ -110,6 +134,17 @@ enum class ShaderDataType {
     F32,
     UInt32,
     Boolean
+};
+
+enum class FillMode {
+    Wireframe,
+    Solid
+};
+
+enum class CullMode {
+    Front,
+    Back,
+    None
 };
 
 template<ShaderUniformType Type>
@@ -179,11 +214,18 @@ struct ShaderData {
     uint64_t hash;
 };
 
+struct DrawParameters {
+    FillMode fill_mode;
+    CullMode cull_mode;
+    bool depth_stencil;
+};
+
 struct Technique {
     std::string name;
     std::vector<ShaderUniform> uniforms;
     std::vector<ShaderData> shaders;
     std::vector<VertexAttribute> attributes;
+    DrawParameters draw_parameters;
     size_t cache_entry{std::numeric_limits<size_t>::max()};
     uint64_t hash{0};
 
@@ -207,5 +249,9 @@ std::string constexpr get_shader_data_type_string(JSON_ShaderDataType const data
 ShaderDataType constexpr get_shader_data_type(JSON_ShaderDataType const data_type);
 
 ShaderFlags constexpr get_shader_flags(JSON_ShaderType const shader_type);
+
+FillMode constexpr get_fill_mode(JSON_FillMode const fill_mode);
+
+CullMode constexpr get_cull_mode(JSON_CullMode const cull_mode);
 
 }
