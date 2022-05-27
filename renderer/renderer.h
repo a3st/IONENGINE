@@ -115,7 +115,8 @@ private:
 
     std::vector<EditorInstance> _editor_instances;
 
-    RenderQueue _deffered_queue;
+    RenderQueue _opaque_queue;
+    RenderQueue _transculent_queue;
 
     uint32_t _width;
     uint32_t _height;

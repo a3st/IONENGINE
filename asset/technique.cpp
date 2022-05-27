@@ -102,7 +102,8 @@ lib::Expected<Technique, lib::Result<TechniqueError>> Technique::load_from_file(
         technique.draw_parameters = DrawParameters {
             .fill_mode = get_fill_mode(document.draw_parameters.fill_mode),
             .cull_mode = get_cull_mode(document.draw_parameters.cull_mode),
-            .depth_stencil = document.draw_parameters.depth_stencil
+            .depth_stencil = document.draw_parameters.depth_stencil,
+            .blend = document.draw_parameters.blend
         };
 
         std::vector<uint64_t> hashes;

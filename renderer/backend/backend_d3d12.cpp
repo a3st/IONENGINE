@@ -577,6 +577,7 @@ Handle<Texture> Device::Impl::create_texture(
             case Format::BGRA8: return DXGI_FORMAT_B8G8R8A8_UNORM;
             case Format::BGR8: return DXGI_FORMAT_B8G8R8X8_UNORM;
             case Format::BC1: return DXGI_FORMAT_BC1_UNORM;
+            case Format::BC3: return DXGI_FORMAT_BC3_UNORM;
             case Format::BC4: return DXGI_FORMAT_BC4_UNORM;
             case Format::BC5: return DXGI_FORMAT_BC5_UNORM;
             case Format::D32: return DXGI_FORMAT_D32_FLOAT;
@@ -1183,7 +1184,8 @@ Handle<Pipeline> Device::Impl::create_pipeline(
             case Blend::InvSrcAlpha: return D3D12_BLEND_INV_SRC_ALPHA;
             case Blend::One: return D3D12_BLEND_ONE;
             case Blend::SrcAlpha: return D3D12_BLEND_SRC_ALPHA;
-            case Blend::Zero: return D3D12_BLEND_ZERO; 
+            case Blend::Zero: return D3D12_BLEND_ZERO;
+            case Blend::BlendFactor: return D3D12_BLEND_BLEND_FACTOR;
         }
         return D3D12_BLEND_ZERO;
     };

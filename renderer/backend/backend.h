@@ -50,6 +50,7 @@ enum class Format {
     RG32,
     R32,
     BC1,
+    BC3,
     BC4,
     BC5,
     D32,
@@ -159,7 +160,8 @@ enum class Blend {
     Zero,
     One,
     SrcAlpha,
-    InvSrcAlpha
+    InvSrcAlpha,
+    BlendFactor
 };
 
 enum class BlendOp {

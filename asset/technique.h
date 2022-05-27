@@ -86,9 +86,10 @@ struct JSON_TechniqueDrawParametersDefinition {
     JSON_FillMode fill_mode;
     JSON_CullMode cull_mode;
     bool depth_stencil;
+    bool blend;
 };
 
-JSON5_CLASS(JSON_TechniqueDrawParametersDefinition, fill_mode, cull_mode, depth_stencil)
+JSON5_CLASS(JSON_TechniqueDrawParametersDefinition, fill_mode, cull_mode, depth_stencil, blend)
 
 struct JSON_TechniqueDefinition {
     std::string name;
@@ -218,6 +219,7 @@ struct DrawParameters {
     FillMode fill_mode;
     CullMode cull_mode;
     bool depth_stencil;
+    bool blend;
 };
 
 struct Technique {

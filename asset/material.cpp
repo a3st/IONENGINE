@@ -8,97 +8,6 @@
 using namespace ionengine;
 using namespace ionengine::asset;
 
-Material::Material(JSON_MaterialDefinition const& document, AssetManager& asset_manager) {
-
-    _name = document.name;
-
-    for(auto const& parameter : document.parameters) {
-
-        if(parameter.type == JSON_MaterialParameterType::sampler2D) {
-            _parameters.insert(
-                { 
-                    parameter.name, 
-                    MaterialParameter { 
-                        .data = MaterialParameterData<asset::MaterialParameterType::Sampler2D> { 
-                            .asset = asset_manager.get_texture(parameter.value.path.value())
-                        } 
-                    } 
-                }
-            );
-        } else {
-            switch(parameter.type) {
-                case JSON_MaterialParameterType::f32: {
-                    auto value = parameter.value.value.value();
-                    _parameters.insert(
-                        {
-                            parameter.name,
-                            MaterialParameter {
-                                .data = MaterialParameterData<asset::MaterialParameterType::F32> {
-                                    .value = value
-                                }
-                            }
-                        }
-                    );
-                } break;
-                case JSON_MaterialParameterType::f32x2: {
-                    auto value = parameter.value.vec2.value();
-                    _parameters.insert(
-                        {
-                            parameter.name,
-                            MaterialParameter {
-                                .data = MaterialParameterData<asset::MaterialParameterType::F32x2> {
-                                    .value = lib::math::Vector2f(value.at(0), value.at(1))
-                                }
-                            }
-                        }
-                    );
-                } break;
-                case JSON_MaterialParameterType::f32x3: {
-                    auto value = parameter.value.vec3.value();
-                    _parameters.insert(
-                        {
-                            parameter.name,
-                            MaterialParameter {
-                                .data = MaterialParameterData<asset::MaterialParameterType::F32x3> {
-                                    .value = lib::math::Vector3f(value.at(0), value.at(1), value.at(2))
-                                }
-                            }
-                        }
-                    );
-                } break;
-                case JSON_MaterialParameterType::f32x4: {
-                    auto value = parameter.value.vec4.value();
-                    _parameters.insert(
-                        {
-                            parameter.name,
-                            MaterialParameter {
-                                .data = MaterialParameterData<asset::MaterialParameterType::F32x4> {
-                                    .value = lib::math::Vector4f(value.at(0), value.at(1), value.at(2), value.at(3))
-                                }
-                            }
-                        }
-                    );
-                } break;
-            }
-        }
-    }
-
-    for(auto const& pass : document.passes) {
-
-        _passes.emplace_back(
-            pass.name,
-            asset_manager.get_technique(pass.technique), 
-            MaterialPassParameters {
-                .fill_mode = get_pass_fill_mode(pass.parameters.fill_mode),
-                .cull_mode = get_pass_cull_mode(pass.parameters.cull_mode),
-                .depth_stencil = pass.parameters.depth_stencil
-            }
-        );
-    }
-
-    _hash = XXHash64::hash(reinterpret_cast<void*>(_name.data()), _name.size(), 0);
-}
-
 lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std::filesystem::path const& file_path, AssetManager& asset_manager) {
 
     std::string path_string = file_path.string();
@@ -118,38 +27,113 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
         );
     }
 
-    return lib::Expected<Material, lib::Result<MaterialError>>::ok(Material(document, asset_manager));
+    auto material = Material {};
+    {
+        material.name = document.name;
+        material.domain = get_material_domain(document.tags.domain);
+        material.blend_mode = get_material_blend_mode(document.tags.blend_mode);
+
+        for(auto const& parameter : document.parameters) {
+
+            if(parameter.type == JSON_MaterialParameterType::sampler2D) {
+                material.parameters.insert(
+                    { 
+                        parameter.name, 
+                        MaterialParameter { 
+                            .data = MaterialParameterData<asset::MaterialParameterType::Sampler2D> { 
+                                .asset = asset_manager.get_texture(parameter.value.path.value())
+                            } 
+                        } 
+                    }
+                );
+            } else {
+                switch(parameter.type) {
+                    case JSON_MaterialParameterType::f32: {
+                        auto value = parameter.value.value.value();
+                        material.parameters.insert(
+                            {
+                                parameter.name,
+                                MaterialParameter {
+                                    .data = MaterialParameterData<asset::MaterialParameterType::F32> {
+                                        .value = value
+                                    }
+                                }
+                            }
+                        );
+                    } break;
+                    case JSON_MaterialParameterType::f32x2: {
+                        auto value = parameter.value.vec2.value();
+                        material.parameters.insert(
+                            {
+                                parameter.name,
+                                MaterialParameter {
+                                    .data = MaterialParameterData<asset::MaterialParameterType::F32x2> {
+                                        .value = lib::math::Vector2f(value.at(0), value.at(1))
+                                    }
+                                }
+                            }
+                        );
+                    } break;
+                    case JSON_MaterialParameterType::f32x3: {
+                        auto value = parameter.value.vec3.value();
+                        material.parameters.insert(
+                            {
+                                parameter.name,
+                                MaterialParameter {
+                                    .data = MaterialParameterData<asset::MaterialParameterType::F32x3> {
+                                        .value = lib::math::Vector3f(value.at(0), value.at(1), value.at(2))
+                                    }
+                                }
+                            }
+                        );
+                    } break;
+                    case JSON_MaterialParameterType::f32x4: {
+                        auto value = parameter.value.vec4.value();
+                        material.parameters.insert(
+                            {
+                                parameter.name,
+                                MaterialParameter {
+                                    .data = MaterialParameterData<asset::MaterialParameterType::F32x4> {
+                                        .value = lib::math::Vector4f(value.at(0), value.at(1), value.at(2), value.at(3))
+                                    }
+                                }
+                            }
+                        );
+                    } break;
+
+                    default: {
+                        assert(false && "invalid data type");
+                    } break;
+                }
+            }
+        }
+
+        for(auto const& pass : document.passes) {
+            material.techniques.insert({ pass.name, asset_manager.get_technique(pass.technique) });
+        }
+
+        material.hash = XXHash64::hash(reinterpret_cast<void*>(material.name.data()), material.name.size(), 0);
+    }
+    return lib::Expected<Material, lib::Result<MaterialError>>::ok(std::move(material));
 }
 
-std::string_view Material::name() const {
-    return _name;
-}
-
-std::span<MaterialPass const> Material::passes() const {
-    return _passes;
-}
-
-std::unordered_map<std::string, MaterialParameter>& Material::parameters() {
-    return _parameters;
-}
-
-uint64_t Material::hash() const {
-    return _hash;
-}
-
-MaterialPassFillMode constexpr Material::get_pass_fill_mode(JSON_PassFillMode const fill_mode) const {
-    switch(fill_mode) {
-        case JSON_PassFillMode::solid: return MaterialPassFillMode::Solid;
-        case JSON_PassFillMode::wireframe: return MaterialPassFillMode::Wireframe;
-        default: return MaterialPassFillMode::Solid;
+MaterialDomain constexpr ionengine::asset::get_material_domain(JSON_MaterialDomain const domain) {
+    switch(domain) {
+        case JSON_MaterialDomain::surface: return MaterialDomain::Surface;
+        default: {
+            assert(false && "invalid data type");
+            return MaterialDomain::Surface;
+        }
     }
 }
 
-MaterialPassCullMode constexpr Material::get_pass_cull_mode(JSON_PassCullMode const cull_mode) const {
-    switch(cull_mode) {
-        case JSON_PassCullMode::front: return MaterialPassCullMode::Front;
-        case JSON_PassCullMode::back: return MaterialPassCullMode::Back;
-        case JSON_PassCullMode::none: return MaterialPassCullMode::None;
-        default: return MaterialPassCullMode::None;
+MaterialBlendMode constexpr ionengine::asset::get_material_blend_mode(JSON_MaterialBlendMode const blend_mode) {
+    switch(blend_mode) {
+        case JSON_MaterialBlendMode::opaque: return MaterialBlendMode::Opaque;
+        case JSON_MaterialBlendMode::transculent: return MaterialBlendMode::Transculent;
+        default: {
+            assert(false && "invalid data type");
+            return MaterialBlendMode::Opaque;
+        }
     }
 }

@@ -90,6 +90,7 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
 backend::Format constexpr ionengine::renderer::get_texture_format(asset::TextureFormat const format) {
     switch(format) {
         case asset::TextureFormat::BC1: return backend::Format::BC1;
+        case asset::TextureFormat::BC3: return backend::Format::BC3;
         case asset::TextureFormat::BC5: return backend::Format::BC5;
         case asset::TextureFormat::BC4: return backend::Format::BC4;
         case asset::TextureFormat::RGBA8_UNORM: return backend::Format::RGBA8;

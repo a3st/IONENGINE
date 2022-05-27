@@ -46,7 +46,8 @@
     draw_parameters: {
         fill_mode: "solid",
         cull_mode: "back",
-        depth_stencil: false
+        depth_stencil: false,
+        blend: false
     },
     shaders: [
         {

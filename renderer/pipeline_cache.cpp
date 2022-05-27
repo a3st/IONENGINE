@@ -43,8 +43,8 @@ std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> Pipel
         backend::DepthStencilDesc depth_stencil_desc = { backend::CompareOp::Less, technique.draw_parameters.depth_stencil };
 
         backend::BlendDesc blend_desc = { 
-            false, 
-            backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add, 
+            technique.draw_parameters.blend, 
+            backend::Blend::SrcAlpha, backend::Blend::InvSrcAlpha, backend::BlendOp::Add, 
             backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add 
         };
 

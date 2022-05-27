@@ -18,8 +18,8 @@ namespace ionengine::renderer {
 class MeshVisitor : public scene::SceneVisitor {
 public:
 
-    MeshVisitor(RenderQueue& render_queue, std::vector<PointLightData>& point_lights, std::vector<EditorInstance>& editor_instances) : 
-        _render_queue(&render_queue), _point_lights(&point_lights), _editor_instances(&editor_instances) { }
+    MeshVisitor(RenderQueue& opaque_queue, RenderQueue& transculent_queue, std::vector<PointLightData>& point_lights, std::vector<EditorInstance>& editor_instances) : 
+        _opaque_queue(&opaque_queue), _transculent_queue(&transculent_queue), _point_lights(&point_lights), _editor_instances(&editor_instances) { }
 
     void operator()(scene::MeshNode& other) {
 
@@ -34,7 +34,11 @@ public:
                     .inverse_model = inverse_model
                 };
 
-                _render_queue->push(other.mesh(), static_cast<uint32_t>(i), instance, other.material(other.mesh()->surfaces()[i].material_index));
+                if(other.material(other.mesh()->surfaces()[i].material_index)->blend_mode == asset::MaterialBlendMode::Opaque) {
+                    _opaque_queue->push(other.mesh(), static_cast<uint32_t>(i), instance, other.material(other.mesh()->surfaces()[i].material_index));
+                } else {
+                    _transculent_queue->push(other.mesh(), static_cast<uint32_t>(i), instance, other.material(other.mesh()->surfaces()[i].material_index));
+                }
             }
         }
     }
@@ -58,7 +62,8 @@ public:
 
 private:
 
-    RenderQueue* _render_queue;
+    RenderQueue* _opaque_queue;
+    RenderQueue* _transculent_queue;
     std::vector<PointLightData>* _point_lights;
     std::vector<EditorInstance>* _editor_instances;
 };
@@ -186,7 +191,8 @@ void Renderer::render(scene::Scene& scene) {
     uint32_t const frame_index = _frame_graph.wait();
     scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("MainCamera");
 
-    _deffered_queue.clear();
+    _opaque_queue.clear();
+    _transculent_queue.clear();
     _point_lights.clear();
     _editor_instances.clear();
 
@@ -194,11 +200,12 @@ void Renderer::render(scene::Scene& scene) {
     _object_pools.at(frame_index).reset();
     _point_light_pools.at(frame_index).reset();
 
-    MeshVisitor mesh_visitor(_deffered_queue, _point_lights, _editor_instances);
+    MeshVisitor mesh_visitor(_opaque_queue, _transculent_queue, _point_lights, _editor_instances);
     scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
 
     camera->calculate_matrices();
-    _deffered_queue.sort();
+    _opaque_queue.sort();
+    _transculent_queue.sort();
 
     build_frame_graph(_width, _height, frame_index, camera);
     
@@ -291,19 +298,11 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
             backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
             
-            for(auto const& batch : _deffered_queue) {
+            for(auto const& batch : _opaque_queue) {
 
                 _material_barriers.clear();
-
-                auto result = std::find_if(
-                    batch.material->passes().begin(), 
-                    batch.material->passes().end(), 
-                    [&](auto const& element) { 
-                        return element.name == "gbuffer"; 
-                    }
-                );
                 
-                auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *result->technique, context.render_pass);
+                auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *batch.material->techniques.at("gbuffer"), context.render_pass);
                 
                 if(current_pipeline != pipeline) {
                     _device.bind_pipeline(context.command_list, pipeline);
@@ -347,7 +346,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         }
     );
 
-    CreateColorInfo swapchain_info = {
+    auto swapchain_info = CreateColorInfo {
         .attachment = nullptr,
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
@@ -401,6 +400,78 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
             _geometry_buffer_quad->bind(_device, context.command_list);
             _geometry_buffer_quad->draw_indexed(_device, context.command_list, 1);
+        }
+    );
+
+    swapchain_info = CreateColorInfo {
+        .attachment = nullptr,
+        .load_op = backend::RenderPassLoadOp::Load,
+        .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
+    };
+
+    depth_stencil_info = CreateDepthStencilInfo {
+        .attachment = _depth_stencils.at(frame_index),
+        .load_op = backend::RenderPassLoadOp::Load,
+        .clear_depth = 1.0f,
+        .clear_stencil = 0x0
+    };
+
+    _frame_graph.add_pass(
+        "forward",
+        width,
+        height,
+        std::span<CreateColorInfo const>(&swapchain_info, 1),
+        std::nullopt,
+        depth_stencil_info,
+        [=](RenderPassContext const& context) {
+
+            backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
+
+            for(auto const& batch : _transculent_queue) {
+
+                _material_barriers.clear();
+                
+                auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *batch.material->techniques.at("forward"), context.render_pass);
+                
+                if(current_pipeline != pipeline) {
+                    _device.bind_pipeline(context.command_list, pipeline);
+                    current_pipeline = pipeline;
+                }
+                
+                ShaderUniformBinder binder(_device, *shader_program);
+
+                apply_material_parameters(binder, *shader_program, *batch.material, frame_index, _material_barriers);
+
+                if(!_material_barriers.empty()) {
+                    _device.barrier(context.command_list, _material_barriers);
+                }
+
+                std::vector<ObjectData> object_datas;
+                for(auto const& instance : batch.instances) {
+                    object_datas.emplace_back(instance.model, instance.inverse_model);
+                }
+
+                // ObjectData build buffer
+                ResourcePtr<GPUBuffer> object_buffer;
+                {
+                    object_buffer = _object_pools.at(frame_index).allocate();
+                    _upload_manager.upload_buffer_data(object_buffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(object_datas.data()), object_datas.size() * sizeof(ObjectData)));
+                }
+
+                uint32_t const world_location = shader_program->location_uniform_by_name("world");
+                binder.bind_resource(world_location, world_buffer->buffer);
+
+                uint32_t const object_location = shader_program->location_uniform_by_name("object");
+                binder.bind_resource(object_location, object_buffer->buffer);
+
+                binder.update(context.command_list);
+
+                auto geometry_buffer = _geometry_cache.get(_upload_manager, *batch.mesh, batch.surface_index);
+                if(geometry_buffer.is_ok()) {
+                    geometry_buffer->bind(_device, context.command_list);
+                    geometry_buffer->draw_indexed(_device, context.command_list, static_cast<uint32_t>(batch.instances.size()));
+                }
+            }
         }
     );
 
@@ -495,7 +566,7 @@ void Renderer::apply_material_parameters(
     std::vector<backend::MemoryBarrierDesc>& barriers
 ) {
 
-    for(auto& [parameter_name, parameter] : material.parameters()) {
+    for(auto& [parameter_name, parameter] : material.parameters) {
 
         if(parameter.is_sampler2D()) {
 

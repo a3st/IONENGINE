@@ -22,20 +22,18 @@ enum class JSON_MaterialParameterType {
 
 JSON5_ENUM(JSON_MaterialParameterType, sampler2D, f32x4x4, f32x4, f32x3, f32x2, f32)
 
-enum class JSON_PassFillMode {
-    wireframe,
-    solid
+enum class JSON_MaterialDomain {
+    surface
 };
 
-JSON5_ENUM(JSON_PassFillMode, wireframe, solid)
+JSON5_ENUM(JSON_MaterialDomain, surface)
 
-enum class JSON_PassCullMode {
-    front,
-    back,
-    none
+enum class JSON_MaterialBlendMode {
+    opaque,
+    transculent
 };
 
-JSON5_ENUM(JSON_PassCullMode, front, back, none)
+JSON5_ENUM(JSON_MaterialBlendMode, opaque, transculent)
 
 struct JSON_MaterialParameterValueDefinition {
     std::optional<std::string> path;
@@ -55,29 +53,28 @@ struct JSON_MaterialParameterDefinition {
 
 JSON5_CLASS(JSON_MaterialParameterDefinition, name, type, value)
 
-struct JSON_MaterialPassParametersDefinition {
-    JSON_PassFillMode fill_mode;
-    JSON_PassCullMode cull_mode;
-    bool depth_stencil;
+struct JSON_MaterialTagsDefinition {
+    JSON_MaterialDomain domain;
+    JSON_MaterialBlendMode blend_mode;
 };
 
-JSON5_CLASS(JSON_MaterialPassParametersDefinition, fill_mode, cull_mode, depth_stencil)
+JSON5_CLASS(JSON_MaterialTagsDefinition, domain, blend_mode)
 
 struct JSON_MaterialPassDefinition {
     std::string name;
-    JSON_MaterialPassParametersDefinition parameters;
     std::string technique;
 };
 
-JSON5_CLASS(JSON_MaterialPassDefinition, name, parameters, technique)
+JSON5_CLASS(JSON_MaterialPassDefinition, name, technique)
 
 struct JSON_MaterialDefinition {
     std::string name;
+    JSON_MaterialTagsDefinition tags;
     std::vector<JSON_MaterialParameterDefinition> parameters;
     std::vector<JSON_MaterialPassDefinition> passes;
 };
 
-JSON5_CLASS(JSON_MaterialDefinition, name, parameters, passes)
+JSON5_CLASS(JSON_MaterialDefinition, name, tags, parameters, passes)
 
 namespace ionengine::asset {
 
@@ -97,15 +94,13 @@ enum class MaterialParameterType {
     F32
 };
 
-enum class MaterialPassFillMode {
-    Wireframe,
-    Solid
+enum class MaterialDomain {
+    Surface
 };
 
-enum class MaterialPassCullMode {
-    Front,
-    Back,
-    None
+enum class MaterialBlendMode {
+    Opaque,
+    Transculent
 };
 
 template<MaterialParameterType Type>
@@ -175,43 +170,19 @@ struct MaterialParameter {
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32x4, MaterialParameterType::F32x4)
 };
 
-struct MaterialPassParameters {
-    MaterialPassFillMode fill_mode;
-    MaterialPassCullMode cull_mode;
-    bool depth_stencil;
-};
-
-struct MaterialPass {
+struct Material {
     std::string name;
-    asset::AssetPtr<asset::Technique> technique;
-    MaterialPassParameters parameters;
-};
+    MaterialDomain domain;
+    MaterialBlendMode blend_mode;
+    std::unordered_map<std::string, MaterialParameter> parameters;
+    std::unordered_map<std::string, asset::AssetPtr<asset::Technique>> techniques;
+    uint64_t hash{0};
 
-class Material {
-public:
-    
     static lib::Expected<Material, lib::Result<MaterialError>> load_from_file(std::filesystem::path const& file_path, AssetManager& asset_manager);
-
-    std::string_view name() const;
-
-    std::span<MaterialPass const> passes() const;
-
-    std::unordered_map<std::string, MaterialParameter>& parameters();
-
-    uint64_t hash() const;
-
-private:
-
-    Material(JSON_MaterialDefinition const& document, AssetManager& asset_manager);
-
-    std::string _name;
-    std::unordered_map<std::string, MaterialParameter> _parameters;
-    std::vector<MaterialPass> _passes;
-    uint64_t _hash;
-
-    MaterialPassFillMode constexpr get_pass_fill_mode(JSON_PassFillMode const fill_mode) const;
-
-    MaterialPassCullMode constexpr get_pass_cull_mode(JSON_PassCullMode const cull_mode) const;
 };
+
+MaterialDomain constexpr get_material_domain(JSON_MaterialDomain const domain);
+
+MaterialBlendMode constexpr get_material_blend_mode(JSON_MaterialBlendMode const blend_mode);
 
 }

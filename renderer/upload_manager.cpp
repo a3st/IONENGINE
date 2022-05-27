@@ -39,6 +39,7 @@ void UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
             bc = true;
             bpe = 8;
         } break;
+        case backend::Format::BC3:
         case backend::Format::BC5: {
             bc = true;
             bpe = 16;
