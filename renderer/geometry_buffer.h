@@ -29,6 +29,8 @@ struct GeometryBuffer {
 
     void draw_indexed(backend::Device& device, backend::Handle<backend::CommandList> const& command_list, uint32_t const instance_count);
 
+    static lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> procedural(backend::Device& device, uint32_t const vertices_size, uint32_t const indices_size);
+
     static lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> load_from_surface(backend::Device& device, asset::SurfaceData const& surface);
 };
 

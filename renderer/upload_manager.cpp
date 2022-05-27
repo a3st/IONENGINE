@@ -149,51 +149,64 @@ void UploadManager::upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t
 
 void UploadManager::upload_geometry_data(ResourcePtr<GeometryBuffer> resource, std::span<uint8_t const> const vertex_data, std::span<uint8_t const> const index_data, bool const async) {
     
-    if(_upload_buffers.at(_buffer_index).offset + vertex_data.size_bytes() + index_data.size_bytes() + 1024 * 1024 * 4 > _upload_buffers.at(_buffer_index).size) {
-        return;
+    if(resource->is_host_visible()) {
+
+        uint8_t* bytes = _device->map_buffer_data(resource->vertex_buffer, 0);
+        std::memcpy(bytes, vertex_data.data(), vertex_data.size_bytes());
+        _device->unmap_buffer_data(resource->vertex_buffer);
+
+        bytes = _device->map_buffer_data(resource->index_buffer, 0);
+        std::memcpy(bytes, index_data.data(), index_data.size_bytes());
+        _device->unmap_buffer_data(resource->index_buffer);
+
+    } else {
+
+        if(_upload_buffers.at(_buffer_index).offset + vertex_data.size_bytes() + index_data.size_bytes() + 1024 * 1024 * 4 > _upload_buffers.at(_buffer_index).size) {
+            return;
+        }
+
+        auto& upload_buffer = _upload_buffers.at(_buffer_index);
+
+        uint8_t* bytes = _device->map_buffer_data(upload_buffer.buffer);
+        std::memcpy(bytes + upload_buffer.offset, vertex_data.data(), vertex_data.size_bytes());
+        uint64_t const vertex_offset = upload_buffer.offset;
+        upload_buffer.offset = (upload_buffer.offset + vertex_data.size_bytes() + (backend::TEXTURE_RESOURCE_ALIGNMENT - 1)) & ~(backend::TEXTURE_RESOURCE_ALIGNMENT - 1);
+        std::memcpy(bytes + upload_buffer.offset, index_data.data(), index_data.size_bytes());
+        uint64_t const index_offset = upload_buffer.offset;
+        upload_buffer.offset = (upload_buffer.offset + index_data.size_bytes() + (backend::TEXTURE_RESOURCE_ALIGNMENT - 1)) & ~(backend::TEXTURE_RESOURCE_ALIGNMENT - 1);
+        _device->unmap_buffer_data(upload_buffer.buffer);
+
+        std::array<backend::MemoryBarrierDesc, 2> barriers;
+
+        barriers.at(0) = backend::MemoryBarrierDesc {
+            .target = resource->vertex_buffer,
+            .before = backend::MemoryState::Common,
+            .after = backend::MemoryState::CopyDest
+        };
+        barriers.at(1) = backend::MemoryBarrierDesc {
+            .target = resource->index_buffer,
+            .before = backend::MemoryState::Common,
+            .after = backend::MemoryState::CopyDest
+        };
+        _device->barrier(upload_buffer.command_list, barriers);
+
+        _device->copy_buffer_region(upload_buffer.command_list, resource->vertex_buffer, 0, upload_buffer.buffer, vertex_offset, vertex_data.size_bytes());
+        _device->copy_buffer_region(upload_buffer.command_list, resource->index_buffer, 0, upload_buffer.buffer, index_offset, index_data.size_bytes());
+
+        barriers.at(0) = backend::MemoryBarrierDesc {
+            .target = resource->vertex_buffer,
+            .before = backend::MemoryState::CopyDest,
+            .after = backend::MemoryState::Common
+        };
+        barriers.at(1) = backend::MemoryBarrierDesc {
+            .target = resource->index_buffer,
+            .before = backend::MemoryState::CopyDest,
+            .after = backend::MemoryState::Common
+        };
+        _device->barrier(upload_buffer.command_list, barriers);
+
+        _geometry_buffers.at(_buffer_index).emplace(resource, resource.commit_pending());
     }
-
-    auto& upload_buffer = _upload_buffers.at(_buffer_index);
-
-    uint8_t* bytes = _device->map_buffer_data(upload_buffer.buffer);
-    std::memcpy(bytes + upload_buffer.offset, vertex_data.data(), vertex_data.size_bytes());
-    uint64_t const vertex_offset = upload_buffer.offset;
-    upload_buffer.offset = (upload_buffer.offset + vertex_data.size_bytes() + (backend::TEXTURE_RESOURCE_ALIGNMENT - 1)) & ~(backend::TEXTURE_RESOURCE_ALIGNMENT - 1);
-    std::memcpy(bytes + upload_buffer.offset, index_data.data(), index_data.size_bytes());
-    uint64_t const index_offset = upload_buffer.offset;
-    upload_buffer.offset = (upload_buffer.offset + index_data.size_bytes() + (backend::TEXTURE_RESOURCE_ALIGNMENT - 1)) & ~(backend::TEXTURE_RESOURCE_ALIGNMENT - 1);
-    _device->unmap_buffer_data(upload_buffer.buffer);
-
-    std::array<backend::MemoryBarrierDesc, 2> barriers;
-
-    barriers.at(0) = backend::MemoryBarrierDesc {
-        .target = resource->vertex_buffer,
-        .before = backend::MemoryState::Common,
-        .after = backend::MemoryState::CopyDest
-    };
-    barriers.at(1) = backend::MemoryBarrierDesc {
-        .target = resource->index_buffer,
-        .before = backend::MemoryState::Common,
-        .after = backend::MemoryState::CopyDest
-    };
-    _device->barrier(upload_buffer.command_list, barriers);
-
-    _device->copy_buffer_region(upload_buffer.command_list, resource->vertex_buffer, 0, upload_buffer.buffer, vertex_offset, vertex_data.size_bytes());
-    _device->copy_buffer_region(upload_buffer.command_list, resource->index_buffer, 0, upload_buffer.buffer, index_offset, index_data.size_bytes());
-
-    barriers.at(0) = backend::MemoryBarrierDesc {
-        .target = resource->vertex_buffer,
-        .before = backend::MemoryState::CopyDest,
-        .after = backend::MemoryState::Common
-    };
-    barriers.at(1) = backend::MemoryBarrierDesc {
-        .target = resource->index_buffer,
-        .before = backend::MemoryState::CopyDest,
-        .after = backend::MemoryState::Common
-    };
-    _device->barrier(upload_buffer.command_list, barriers);
-
-    _geometry_buffers.at(_buffer_index).emplace(resource, resource.commit_pending());
 }
 
 void UploadManager::update() {

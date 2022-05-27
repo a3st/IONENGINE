@@ -105,12 +105,6 @@ lib::Expected<Technique, lib::Result<TechniqueError>> Technique::load_from_file(
 
             std::string shader_code = "";
 
-            if(shader.imports.has_value()) {
-                for(auto const& import : shader.imports.value()) {
-                    generate_include_code(file_path.parent_path(), import);
-                }
-            }
-
             switch(shader.type) {
                 case JSON_ShaderType::vertex: {
                     shader_code += generate_struct_code("vs_input", shader.inputs);
@@ -220,11 +214,6 @@ std::string ionengine::asset::generate_struct_code(
     }
     generated_code += "};\n";
     return generated_code;
-}
-
-std::string ionengine::asset::generate_include_code(std::filesystem::path const& directory, std::filesystem::path const& include_path) {
-    std::filesystem::path const absolute_path = directory / include_path;
-    return std::format("#include \"{}\"", absolute_path.string());
 }
 
 std::string constexpr ionengine::asset::get_shader_data_type_string(JSON_ShaderDataType const data_type) {

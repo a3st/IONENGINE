@@ -6,6 +6,24 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
+lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::procedural(backend::Device& device, uint32_t const vertices_size, uint32_t const indices_size) {
+
+    auto geometry_buffer = GeometryBuffer {};
+    {
+        size_t const vertices_size_bytes = vertices_size * sizeof(float);
+        geometry_buffer.vertex_buffer = device.create_buffer(vertices_size_bytes, backend::BufferFlags::VertexBuffer | backend::BufferFlags::HostWrite);
+
+        size_t const indices_size_bytes = indices_size * sizeof(uint32_t);
+        geometry_buffer.index_buffer = device.create_buffer(indices_size_bytes, backend::BufferFlags::IndexBuffer | backend::BufferFlags::HostWrite);
+
+        geometry_buffer.flags = backend::BufferFlags::VertexBuffer | backend::BufferFlags::IndexBuffer | backend::BufferFlags::HostWrite;
+
+        geometry_buffer.vertices_size = vertices_size;
+        geometry_buffer.indices_size = indices_size;
+    }
+    return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::ok(std::move(geometry_buffer));
+}
+
 lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::load_from_surface(backend::Device& device, asset::SurfaceData const& surface) {
 
     if(surface.indices.size() % 3 != 0) {

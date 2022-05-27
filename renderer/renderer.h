@@ -101,6 +101,8 @@ private:
     std::vector<GBufferData> _gbuffers;
     std::vector<ResourcePtr<GPUTexture>> _depth_stencils;
 
+    ResourcePtr<GeometryBuffer> _geometry_buffer_quad;
+
     std::vector<PointLightData> _point_lights;
 
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(ObjectData)>> _object_pools;
@@ -134,6 +136,8 @@ private:
         uint32_t const frame_index, 
         std::vector<backend::MemoryBarrierDesc>& barriers
     );
+
+    ResourcePtr<GeometryBuffer> create_quad(backend::Device& device, UploadManager& upload_manager);
 };
 
 }

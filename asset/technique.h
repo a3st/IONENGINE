@@ -62,11 +62,10 @@ struct JSON_TechniqueShaderDefinition {
     JSON_ShaderType type;
     std::vector<JSON_ShaderStructDefinition> inputs;
     std::vector<JSON_ShaderStructDefinition> outputs;
-    std::optional<std::vector<std::string>> imports;
     std::string source;
 };
 
-JSON5_CLASS(JSON_TechniqueShaderDefinition, type, inputs, outputs, imports, source)
+JSON5_CLASS(JSON_TechniqueShaderDefinition, type, inputs, outputs, source)
 
 struct JSON_TechniqueDefinition {
     std::string name;
@@ -202,8 +201,6 @@ std::string generate_struct_code(
     std::string_view const name, 
     std::span<JSON_ShaderStructDefinition const> const properties
 );
-
-std::string generate_include_code(std::filesystem::path const& directory, std::filesystem::path const& include_path);
 
 std::string constexpr get_shader_data_type_string(JSON_ShaderDataType const data_type);
 

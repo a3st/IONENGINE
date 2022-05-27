@@ -108,6 +108,8 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
 
     _deffered_technique.wait();
     _billboard_technique.wait();
+
+    _geometry_buffer_quad = create_quad(_device, _upload_manager);
 }
 
 Renderer::~Renderer() {
@@ -313,7 +315,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
                 std::vector<ObjectData> object_datas;
                 for(auto const& instance : batch.instances) {
-                    object_datas.emplace_back(instance.model);
+                    object_datas.emplace_back(instance.model, instance.inverse_model);
                 }
 
                 // ObjectData build buffer
@@ -392,17 +394,14 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
             binder.bind_resource(normals_location, _gbuffers.at(frame_index).normals->texture);
             binder.bind_resource(normals_location + 1, _gbuffers.at(frame_index).normals->sampler);
 
-            uint32_t const roughmetal_location = shader_program->location_uniform_by_name("roughness_metalness_ao");
-            binder.bind_resource(roughmetal_location, _gbuffers.at(frame_index).roughness_metalness_ao->texture);
-            binder.bind_resource(roughmetal_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->sampler);
+            uint32_t const roughness_metalness_ao_location = shader_program->location_uniform_by_name("roughness_metalness_ao");
+            binder.bind_resource(roughness_metalness_ao_location, _gbuffers.at(frame_index).roughness_metalness_ao->texture);
+            binder.bind_resource(roughness_metalness_ao_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->sampler);
 
             binder.update(context.command_list);
 
-            /*auto geometry_buffer = _geometry_cache.get(_upload_manager, *_default_assets.quad, 0);
-            if(geometry_buffer.is_ok()) {
-                geometry_buffer->bind(_device, context.command_list);
-                geometry_buffer->draw_indexed(_device, context.command_list, 1);
-            }*/
+            _geometry_buffer_quad->bind(_device, context.command_list);
+            _geometry_buffer_quad->draw_indexed(_device, context.command_list, 1);
         }
     );
 
@@ -569,4 +568,33 @@ void Renderer::apply_material_parameters(
 
 void Renderer::editor_mode(bool const enable) {
     _editor_mode = enable;
+}
+
+ResourcePtr<GeometryBuffer> Renderer::create_quad(backend::Device& device, UploadManager& upload_manager) {
+
+    auto result = GeometryBuffer::procedural(device, 20, 6);
+    if(result.is_ok()) {
+
+        auto geometry_buffer = ResourcePtr<GeometryBuffer>(std::move(result.value()));
+        
+        auto vertex_data = std::vector<float> {
+            1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+            -1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+            1.0f, 1.0f, 0.0f, 1.0f, 1.0f
+        };
+
+        auto index_data = std::vector<uint32_t> { 0, 1, 2, 0, 3, 1 };
+
+        upload_manager.upload_geometry_data(
+            geometry_buffer, 
+            std::span<uint8_t const>((uint8_t const*)vertex_data.data(), vertex_data.size() * sizeof(float)),
+            std::span<uint8_t const>((uint8_t const*)index_data.data(), index_data.size() * sizeof(uint32_t))
+        );
+
+        return geometry_buffer;
+
+    } else {
+        throw lib::Exception(result.error_value().message);
+    }
 }
