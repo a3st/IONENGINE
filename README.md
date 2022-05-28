@@ -6,16 +6,35 @@ Lightweight renderer project for exploring and learning Graphics API
 
 - Module architecture
 - C++latest
-- Graphics Multi-Api (Lightweight Backend)
-- Minimum third-party dependinices
-- Cross-platform (Windows/Linux not yet)
+- Graphics API backend
+- Deffered/forward shading PBR
+- Flexible material system
+- Asset system with thread pool
+- Async upload manager for GPU resources
+- Minimum thirdparty dependinices
 
 ## Tasks
 
-- [x] Cross-platform Windowing
-- [x] Math Library
-- [x] Thread Pool
-- [x] Frame Graph
-- [x] Graphics Backend (D3D12)
-- [x] HLSL-SPIRV Package Tool
-- [ ] Asset Cache System
+- Renderer
+  - [x] Async upload manager
+  - [x] Frame graph
+  - [ ] RmlUi integration
+  - [x] Deffered shading PBR
+  - [ ] Forward shading PBR
+
+- Library / platform
+  - [x] Math library
+  - [x] Cross-platform windowing
+  - [x] Thread pool
+  - [x] Logger
+  - [x] Channel / event dispatcher
+
+- Asset
+  - [x] Technique
+  - [x] Texture
+  - [x] Mesh
+  - [x] Material
+  - [ ] Subscene
+
+# <p align="center"> Screenshots </p>
+![City17-Scene](data/screenshots/city17_scene.png)
