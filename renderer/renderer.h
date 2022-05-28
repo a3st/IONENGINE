@@ -40,6 +40,8 @@ __declspec(align(256)) struct WorldData {
     uint32_t spot_light_count;
 };
 
+uint32_t constexpr MATERIAL_DATA_SIZE = 1024;
+
 struct ObjectData {
     lib::math::Matrixf model;
     lib::math::Matrixf inverse_model;
@@ -107,7 +109,7 @@ private:
 
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(ObjectData)>> _object_pools;
     std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(WorldData)>> _world_pools;
-    std::vector<BufferPool<BufferPoolType::CBuffer, 1024>> _material_pools;
+    std::vector<BufferPool<BufferPoolType::CBuffer, MATERIAL_DATA_SIZE>> _material_pools;
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(PointLightData)>> _point_light_pools;
 
     std::vector<uint8_t> _material_buffer;

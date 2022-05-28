@@ -97,7 +97,7 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _width = window.client_width();
     _height = window.client_height();
 
-    _material_buffer.resize(1024);
+    _material_buffer.resize(MATERIAL_DATA_SIZE);
 
     for(uint32_t i = 0; i < 2; ++i) {
         _world_pools.emplace_back(_device, 4, BufferPoolUsage::Dynamic);
