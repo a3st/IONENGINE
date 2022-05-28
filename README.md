@@ -15,26 +15,26 @@ Lightweight renderer project for exploring and learning Graphics API
 
 ## Tasks
 
-- Renderer
+Renderer
   - [x] Async upload manager
   - [x] Frame graph
   - [ ] RmlUi integration
   - [x] Deffered shading PBR
   - [ ] Forward shading PBR
 
-- Library / platform
+Library / platform
   - [x] Math library
   - [x] Cross-platform windowing
   - [x] Thread pool
   - [x] Logger
   - [x] Channel / event dispatcher
 
-- Asset
+Asset
   - [x] Technique
   - [x] Texture
   - [x] Mesh
   - [x] Material
   - [ ] Subscene
 
-# <p align="center"> Screenshots </p>
+## Screenshots </p>
 ![City17-Scene](data/screenshots/city17_scene.png)
