@@ -16,6 +16,10 @@ add_executable(Runtime-Win32
 
     engine/framework.cpp
 
+    # UI
+    ui/user_interface.cpp
+    ui/render_interface.cpp
+
     # Engine
     engine/main.cpp
 # ---------------------------
@@ -87,6 +91,7 @@ target_include_directories(Runtime-Win32 PRIVATE
     thirdparty/xxhash/include
     thirdparty/tinyobjloader/include
     thirdparty/dds/include
+    thirdparty/rmlui/include
 )
 
 # Link Libs
@@ -96,11 +101,16 @@ target_link_libraries(Runtime-Win32
     dxguid.lib
     D3D12MA.lib
     dxcompiler.lib
+    freetype.lib
+    RmlCore.lib
+    RmlDebugger.lib
 )
 
 # Link Dirs
 target_link_directories(Runtime-Win32 PRIVATE
     thirdparty/d3d12_ma/build/${CMAKE_BUILD_TYPE}
+    thirdparty/rmlui/build/${CMAKE_BUILD_TYPE}
+    thirdparty/freetype/build/${CMAKE_BUILD_TYPE}
 )
 
 # Preprocessor
