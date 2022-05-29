@@ -573,14 +573,14 @@ Handle<Texture> Device::Impl::create_texture(
     auto get_format = [&](Format const format) -> DXGI_FORMAT {
         switch(format) {
             case Format::Unknown: return DXGI_FORMAT_UNKNOWN;
-            case Format::RGBA8: return DXGI_FORMAT_R8G8B8A8_UNORM;
-            case Format::BGRA8: return DXGI_FORMAT_B8G8R8A8_UNORM;
-            case Format::BGR8: return DXGI_FORMAT_B8G8R8X8_UNORM;
+            case Format::RGBA8_UNORM: return DXGI_FORMAT_R8G8B8A8_UNORM;
+            case Format::BGRA8_UNORM: return DXGI_FORMAT_B8G8R8A8_UNORM;
+            case Format::BGR8_UNORM: return DXGI_FORMAT_B8G8R8X8_UNORM;
             case Format::BC1: return DXGI_FORMAT_BC1_UNORM;
             case Format::BC3: return DXGI_FORMAT_BC3_UNORM;
             case Format::BC4: return DXGI_FORMAT_BC4_UNORM;
             case Format::BC5: return DXGI_FORMAT_BC5_UNORM;
-            case Format::D32: return DXGI_FORMAT_D32_FLOAT;
+            case Format::D32_FLOAT: return DXGI_FORMAT_D32_FLOAT;
             case Format::RGBA16_FLOAT: return DXGI_FORMAT_R16G16B16A16_FLOAT;
             default: assert(false && "invalid format specified"); break;
         }
@@ -613,8 +613,13 @@ Handle<Texture> Device::Impl::create_texture(
     }
 
     auto allocation_desc = D3D12MA::ALLOCATION_DESC {};
-    allocation_desc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
-
+    if(flags & TextureFlags::HostWrite) {
+        allocation_desc.HeapType = D3D12_HEAP_TYPE_UPLOAD;
+        initial_state = D3D12_RESOURCE_STATE_GENERIC_READ;
+    } else {
+        allocation_desc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
+    }
+    
     THROW_IF_FAILED(memory_allocator->CreateResource(
         &allocation_desc,
         &resource_desc,

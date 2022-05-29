@@ -142,6 +142,7 @@ std::string constexpr Logger::logger_category_type_to_string(LoggerCategoryType 
         case LoggerCategoryType::Engine: return "Engine";
         case LoggerCategoryType::Renderer: return "Renderer";
         case LoggerCategoryType::Exception: return "Exception";
+        case LoggerCategoryType::Ui: return "Ui";
         default: return "Unknown";
     }
 }

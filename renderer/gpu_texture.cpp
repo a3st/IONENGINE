@@ -6,11 +6,13 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::render_target(
+lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::procedural(
     backend::Device& device,
     backend::Format const format, 
     uint32_t const width, 
     uint32_t const height, 
+    uint32_t const depth,
+    uint32_t const mip_count,
     backend::TextureFlags const flags
 ) {
 
@@ -20,7 +22,7 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::render_targe
             backend::Dimension::_2D, 
             width, 
             height, 
-            1,
+            mip_count,
             1, 
             format,
             flags
@@ -40,12 +42,16 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::render_targe
         gpu_texture.format = format;
         gpu_texture.width = width;
         gpu_texture.height = height;
-        gpu_texture.mip_count = 1;
+        gpu_texture.mip_count = mip_count;
 
         if(flags & backend::TextureFlags::RenderTarget) {
             gpu_texture.memory_state = backend::MemoryState::RenderTarget;
         } else {
             gpu_texture.memory_state = backend::MemoryState::Common;
+        }
+
+        if(flags & backend::TextureFlags::HostWrite) {
+            gpu_texture.memory_state = backend::MemoryState::GenericRead;
         }
        
         gpu_texture.flags = flags;
@@ -93,7 +99,7 @@ backend::Format constexpr ionengine::renderer::get_texture_format(asset::Texture
         case asset::TextureFormat::BC3: return backend::Format::BC3;
         case asset::TextureFormat::BC5: return backend::Format::BC5;
         case asset::TextureFormat::BC4: return backend::Format::BC4;
-        case asset::TextureFormat::RGBA8_UNORM: return backend::Format::RGBA8;
+        case asset::TextureFormat::RGBA8_UNORM: return backend::Format::RGBA8_UNORM;
         default: return backend::Format::Unknown;
     }
 }

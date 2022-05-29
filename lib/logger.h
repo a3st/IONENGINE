@@ -9,6 +9,7 @@ namespace ionengine::lib {
 enum class LoggerCategoryType {
     Renderer,
     Engine,
+    Ui,
     Exception
 };
 

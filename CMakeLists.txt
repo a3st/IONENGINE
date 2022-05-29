@@ -19,6 +19,7 @@ add_executable(Runtime-Win32
     # UI
     ui/user_interface.cpp
     ui/render_interface.cpp
+    ui/system_interface.cpp
 
     # Engine
     engine/main.cpp
@@ -117,49 +118,5 @@ target_link_directories(Runtime-Win32 PRIVATE
 target_compile_definitions(Runtime-Win32 PRIVATE 
     IONENGINE_PLATFORM_WIN32
     IONENGINE_RENDERER_BACKEND_D3D12
+    RMLUI_STATIC_LIB
 )
-
-#[[
-    HLSL SPIRV Package Build Target
-#
-add_executable(HLSL_SPIRV_Package hlsl_spirv_package/main.cpp)
-target_precompile_headers(HLSL_SPIRV_Package PRIVATE precompiled.h)
-
-# Build Output
-set_target_properties(HLSL_SPIRV_Package PROPERTIES
-    OUTPUT_NAME "hlsl_spirv_package" 
-    COMPILE_FLAGS "${COMPILE_FLAGS}"
-)
-
-# Include Dirs
-target_include_directories(HLSL_SPIRV_Package PRIVATE
-    ${PROJECT_SOURCE_DIR}/thirdparty/tclap/include
-    ${PROJECT_SOURCE_DIR}/thirdparty/inipp/include
-)
-
-#[[
-    Asset Compiler Build Target
-#
-add_executable(AssetCompiler
-
-    asset_compiler/main.cpp
-    asset_compiler/asset_compiler.cpp
-
-    asset_compiler/obj_loader.cpp
-    #asset_compiler/dds_loader.cpp
-    asset_compiler/hlsv_loader.cpp
-)
-
-target_precompile_headers(AssetCompiler PRIVATE precompiled.h)
-
-# Build Output
-set_target_properties(AssetCompiler PROPERTIES
-    OUTPUT_NAME "asset_compiler" 
-    COMPILE_FLAGS "${COMPILE_FLAGS}"
-)
-
-# Include Dirs
-target_include_directories(AssetCompiler PRIVATE
-    ${PROJECT_SOURCE_DIR}/thirdparty/tclap/include
-)
-#]]

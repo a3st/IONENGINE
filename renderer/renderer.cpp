@@ -3,6 +3,7 @@
 #include <precompiled.h>
 #include <renderer/renderer.h>
 #include <scene/scene.h>
+#include <ui/user_interface.h>
 #include <scene/scene_visitor.h>
 #include <scene/mesh_node.h>
 #include <scene/transform_node.h>
@@ -108,7 +109,7 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     recreate_gbuffer(_width, _height);
 
     for(uint32_t i = 0; i < 2; ++i) {
-        _depth_stencils.emplace_back(GPUTexture::render_target(_device, backend::Format::D32, _width, _height, backend::TextureFlags::DepthStencil).value());
+        _depth_stencils.emplace_back(GPUTexture::procedural(_device, backend::Format::D32_FLOAT, _width, _height, 1, 1, backend::TextureFlags::DepthStencil).value());
     }
 
     _deffered_technique.wait();
@@ -182,7 +183,7 @@ void Renderer::update(float const delta_time) {
     }*/
 }
 
-void Renderer::render(scene::Scene& scene) {
+void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
 
     SCOPE_PROFILE()
 
@@ -227,7 +228,7 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
         _depth_stencils.clear();
         
         for(uint32_t i = 0; i < 2; ++i) {
-            _depth_stencils.emplace_back(GPUTexture::render_target(_device, backend::Format::D32, _width, _height, backend::TextureFlags::DepthStencil).value());
+            _depth_stencils.emplace_back(GPUTexture::procedural(_device, backend::Format::D32_FLOAT, _width, _height, 1, 1, backend::TextureFlags::DepthStencil).value());
         }
     }
 }
@@ -548,10 +549,10 @@ void Renderer::recreate_gbuffer(uint32_t const width, uint32_t const height) {
     for(uint32_t i = 0; i < 2; ++i) {
 
         auto gbuffer = GBufferData {
-            .positions = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .albedo = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .normals = GPUTexture::render_target(_device, backend::Format::RGBA16_FLOAT, _width, _height, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .roughness_metalness_ao = GPUTexture::render_target(_device, backend::Format::RGBA8, _width, _height, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()
+            .positions = GPUTexture::procedural(_device, backend::Format::RGBA16_FLOAT, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
+            .albedo = GPUTexture::procedural(_device, backend::Format::RGBA8_UNORM, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
+            .normals = GPUTexture::procedural(_device, backend::Format::RGBA16_FLOAT, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
+            .roughness_metalness_ao = GPUTexture::procedural(_device, backend::Format::RGBA8_UNORM, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));

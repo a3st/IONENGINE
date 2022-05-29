@@ -4,6 +4,7 @@
 #include <platform/window.h>
 #include <platform/window_loop.h>
 #include <renderer/renderer.h>
+#include <ui/user_interface.h>
 #include <asset/asset_manager.h>
 #include <input/input_manager.h>
 #include <scene/scene.h>
@@ -31,8 +32,9 @@ int main(int* argc, char** agrv) {
         asset::AssetManager asset_manager(thread_pool, logger);
 
         renderer::Renderer renderer(window, asset_manager, thread_pool);
-
         renderer.editor_mode(false);
+
+        ui::UserInterface user_interface(renderer, window, logger);
         
         input::InputManager input_manager;
 
@@ -92,11 +94,12 @@ int main(int* argc, char** agrv) {
                             renderer.editor_mode(false);
                         }
 
-                        input_manager.update();                          
+                        user_interface.update();
+                        input_manager.update();
                         framework.scene().graph().update_hierarchical_data();
                         asset_manager.update(delta_time.count());
                         renderer.update(delta_time.count());
-                        renderer.render(framework.scene());
+                        renderer.render(framework.scene(), user_interface);
 
                         ++frame_count;
                     },

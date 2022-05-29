@@ -42,9 +42,9 @@ enum class Dimension {
 
 enum class Format {
     Unknown,
-    BGRA8,
-    BGR8,
-    RGBA8,
+    BGRA8_UNORM,
+    BGR8_UNORM,
+    RGBA8_UNORM,
     RGBA32,
     RGB32,
     RG32,
@@ -53,7 +53,7 @@ enum class Format {
     BC3,
     BC4,
     BC5,
-    D32,
+    D32_FLOAT,
     RGBA16_FLOAT
 };
 
@@ -62,6 +62,7 @@ enum class TextureFlags : uint8_t {
     RenderTarget = 1 << 1,
     DepthStencil = 1 << 2,
     UnorderedAccess = 1 << 3,
+    HostWrite = 1 << 4
 };
 
 DECLARE_ENUM_CLASS_BIT_FLAG(TextureFlags)

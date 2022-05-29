@@ -21,6 +21,10 @@ class Scene;
 class CameraNode;
 }
 
+namespace ui {
+class UserInterface;
+};
+
 }
 
 namespace ionengine::renderer {
@@ -69,7 +73,7 @@ public:
 
     void update(float const delta_time);
 
-    void render(scene::Scene& scene);
+    void render(scene::Scene& scene, ui::UserInterface& ui);
 
     void resize(uint32_t const width, uint32_t const height);
 

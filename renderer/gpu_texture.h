@@ -35,11 +35,13 @@ struct GPUTexture {
         return flags & backend::TextureFlags::UnorderedAccess;
     }
 
-    static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> render_target(
+    static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> procedural(
         backend::Device& device,
         backend::Format const format, 
         uint32_t const width, 
         uint32_t const height, 
+        uint32_t const depth,
+        uint32_t const mip_count,
         backend::TextureFlags const flags
     );
 
