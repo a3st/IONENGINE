@@ -3,7 +3,6 @@
 #pragma once
 
 #include <RmlUi/Core.h>
-#include <ui/render_interface.h>
 #include <ui/system_interface.h>
 #include <renderer/renderer.h>
 
@@ -22,12 +21,17 @@ public:
 
     void update();
 
+    Rml::Context& context();
+
+    void element_text(std::string_view const text);
+
 private:
 
     Rml::Context* _context;
 
+    Rml::ElementDocument* _document;
+
     SystemInterface _system_interface;
-    RenderInterface _render_interface;
 };
 
 }

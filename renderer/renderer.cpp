@@ -76,12 +76,14 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _asset_manager(&asset_manager),
     _upload_manager(thread_pool, _device),
     _frame_graph(_device),
+    _ui_renderer(_device, _upload_manager),
     _shader_cache(_device),
     _geometry_cache(_device),
     _pipeline_cache(_device),
     _texture_cache(_device),
     _deffered_technique(asset_manager.get_technique("engine/techniques/deffered.json5")),
-    _billboard_technique(asset_manager.get_technique("engine/techniques/billboard.json5")) {
+    _billboard_technique(asset_manager.get_technique("engine/techniques/billboard.json5")),
+    _ui_technique(asset_manager.get_technique("engine/techniques/ui.json5")) {
 
     auto [mesh_sender, mesh_receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
     asset_manager.mesh_pool().event_dispatcher().add(std::move(mesh_sender));
@@ -109,11 +111,12 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     recreate_gbuffer(_width, _height);
 
     for(uint32_t i = 0; i < 2; ++i) {
-        _depth_stencils.emplace_back(GPUTexture::procedural(_device, backend::Format::D32_FLOAT, _width, _height, 1, 1, backend::TextureFlags::DepthStencil).value());
+        _depth_stencils.emplace_back(GPUTexture::create(_device, backend::Format::D32_FLOAT, _width, _height, 1, 1, backend::TextureFlags::DepthStencil).value());
     }
 
     _deffered_technique.wait();
     _billboard_technique.wait();
+    _ui_technique.wait();
 
     _geometry_buffer_quad = create_quad(_device, _upload_manager);
 }
@@ -200,6 +203,7 @@ void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
     _world_pools.at(frame_index).reset();
     _object_pools.at(frame_index).reset();
     _point_light_pools.at(frame_index).reset();
+    _ui_renderer.reset(frame_index);
 
     MeshVisitor mesh_visitor(_opaque_queue, _transculent_queue, _point_lights, _editor_instances);
     scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
@@ -208,7 +212,7 @@ void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
     _opaque_queue.sort();
     _transculent_queue.sort();
 
-    build_frame_graph(_width, _height, frame_index, camera);
+    build_frame_graph(_width, _height, frame_index, camera, ui);
     
     _frame_graph.execute();
 }
@@ -228,12 +232,12 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
         _depth_stencils.clear();
         
         for(uint32_t i = 0; i < 2; ++i) {
-            _depth_stencils.emplace_back(GPUTexture::procedural(_device, backend::Format::D32_FLOAT, _width, _height, 1, 1, backend::TextureFlags::DepthStencil).value());
+            _depth_stencils.emplace_back(GPUTexture::create(_device, backend::Format::D32_FLOAT, _width, _height, 1, 1, backend::TextureFlags::DepthStencil).value());
         }
     }
 }
 
-void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode* camera) {
+void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode* camera, ui::UserInterface& ui) {
 
     auto depth_stencil_info = CreateDepthStencilInfo {
         .attachment = _depth_stencils.at(frame_index),
@@ -338,7 +342,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
                 binder.update(context.command_list);
 
-                auto geometry_buffer = _geometry_cache.get(_upload_manager, *batch.mesh, batch.surface_index);
+                auto geometry_buffer = _geometry_cache.get(_upload_manager, batch.mesh->surfaces()[batch.surface_index]);
                 if(geometry_buffer.is_ok()) {
                     geometry_buffer->bind(_device, context.command_list);
                     geometry_buffer->draw_indexed(_device, context.command_list, static_cast<uint32_t>(batch.instances.size()));
@@ -467,7 +471,7 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
 
                 binder.update(context.command_list);
 
-                auto geometry_buffer = _geometry_cache.get(_upload_manager, *batch.mesh, batch.surface_index);
+                auto geometry_buffer = _geometry_cache.get(_upload_manager, batch.mesh->surfaces()[batch.surface_index]);
                 if(geometry_buffer.is_ok()) {
                     geometry_buffer->bind(_device, context.command_list);
                     geometry_buffer->draw_indexed(_device, context.command_list, static_cast<uint32_t>(batch.instances.size()));
@@ -476,70 +480,25 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         }
     );
 
-    /*if(_editor_mode) {
+    _frame_graph.add_pass(
+        "ui",
+        width,
+        height,
+        std::span<CreateColorInfo const>(&swapchain_info, 1),
+        std::nullopt,
+        std::nullopt,
+        [=, &ui](RenderPassContext const& context) {
 
-        CreateColorInfo editor_info = {
-            .attachment = nullptr,
-            .load_op = backend::RenderPassLoadOp::Load,
-            .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
-        };
+            auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *_ui_technique, context.render_pass);
 
-        _frame_graph.value().add_pass(
-            "editor",
-            width,
-            height,
-            std::span<CreateColorInfo const>(&editor_info, 1),
-            gbuffer_input_infos,
-            std::nullopt,
-            [=](RenderPassContext const& context) {
+            _device.bind_pipeline(context.command_list, pipeline);
 
-                auto parameters = asset::MaterialPassParameters {
-                    .fill_mode = asset::MaterialPassFillMode::Solid,
-                    .cull_mode = asset::MaterialPassCullMode::None,
-                    .depth_stencil = false
-                };
+            ShaderUniformBinder binder(_device, *shader_program);
 
-                auto geometry = _geometry_cache.value().get(_upload_context.value(), *_quad_mesh, 0);
-                auto [pipeline, shader_program] = _pipeline_cache.value().get(_shader_cache.value(), *_billboard_technique, parameters, context.render_pass());
-            
-                pipeline->bind(context.command_list());
-
-                ShaderUniformBinder binder(_device, *shader_program);
-
-                uint32_t const world_index = shader_program->location_by_uniform_name("world");
-                binder.bind_buffer(world_index, *world_buffer);
-
-                std::shared_ptr<GPUBuffer> objects_buffer = _object_sbuffer_pools.at(frame_index).allocate();
-
-                std::vector<ObjectSBuffer> objects;
-
-                std::shared_ptr<GPUTexture> gpu_texture;
-
-                for(auto const& instance : _editor_instances) {
-
-                    gpu_texture = _texture_cache.value().get(_upload_context.value(), *instance.icon);
-                    
-                    uint32_t const icon_index = shader_program->location_by_uniform_name("icon");
-                    binder.bind_texture(icon_index, *gpu_texture);
-
-                    objects.emplace_back(instance.model);
-                }
-
-                gpu_texture->barrier(context.command_list(), backend::MemoryState::ShaderRead);
-
-                objects_buffer->copy_data(_upload_context.value(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(objects.data()), objects.size() * sizeof(ObjectSBuffer)));
-
-                uint32_t const object_location = shader_program->location_by_uniform_name("object");
-                binder.bind_buffer(object_location, *objects_buffer);
-
-                binder.update(context.command_list());
-
-                geometry->draw(context.command_list(), static_cast<uint32_t>(_editor_instances.size()));
-
-                gpu_texture->barrier(context.command_list(), backend::MemoryState::Common);
-            }
-        );
-    }*/
+            _ui_renderer.apply_command_list(context.command_list, binder, *shader_program, frame_index);
+            ui.context().Render();
+        }
+    );
 }
 
 void Renderer::recreate_gbuffer(uint32_t const width, uint32_t const height) {
@@ -549,10 +508,10 @@ void Renderer::recreate_gbuffer(uint32_t const width, uint32_t const height) {
     for(uint32_t i = 0; i < 2; ++i) {
 
         auto gbuffer = GBufferData {
-            .positions = GPUTexture::procedural(_device, backend::Format::RGBA16_FLOAT, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .albedo = GPUTexture::procedural(_device, backend::Format::RGBA8_UNORM, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .normals = GPUTexture::procedural(_device, backend::Format::RGBA16_FLOAT, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .roughness_metalness_ao = GPUTexture::procedural(_device, backend::Format::RGBA8_UNORM, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()
+            .positions = GPUTexture::create(_device, backend::Format::RGBA16_FLOAT, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
+            .albedo = GPUTexture::create(_device, backend::Format::RGBA8_UNORM, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
+            .normals = GPUTexture::create(_device, backend::Format::RGBA16_FLOAT, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
+            .roughness_metalness_ao = GPUTexture::create(_device, backend::Format::RGBA8_UNORM, _width, _height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));
@@ -668,4 +627,9 @@ ResourcePtr<GeometryBuffer> Renderer::create_quad(backend::Device& device, Uploa
     } else {
         throw lib::Exception(result.error_value().message);
     }
+}
+
+UiRenderer& Renderer::ui_renderer() {
+
+    return _ui_renderer;
 }

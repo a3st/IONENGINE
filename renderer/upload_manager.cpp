@@ -64,9 +64,12 @@ void UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
         if(bc) {
             uint64_t const block_wide = std::max<uint64_t>(1u, (static_cast<uint64_t>(mip_width) + 3u) / 4u);
             uint64_t const block_high = std::max<uint64_t>(1u, (static_cast<uint64_t>(mip_height) + 3u) / 4u);
-
             row_bytes = block_wide * bpe;
             row_count = static_cast<uint32_t>(block_high);
+        } else {
+            size_t const bpp = 32;
+            row_bytes = (mip_width * bpp + 7) / 8;
+            row_count = mip_height;
         }
 
         uint32_t const row_pitch = (mip_width * stride + (backend::TEXTURE_ROW_PITCH_ALIGNMENT - 1)) & ~(backend::TEXTURE_ROW_PITCH_ALIGNMENT - 1);

@@ -181,8 +181,8 @@ Mesh::Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const
         }
 
         auto surface = SurfaceData {
-            .vertices = lib::hash::Buffer<float>(vertices),
-            .indices = lib::hash::Buffer<uint32_t>(indices),
+            .vertices = std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(vertices.data()), vertices.size() * sizeof(float)),
+            .indices = std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(indices.data()), indices.size() * sizeof(uint32_t)),
             .material_index = material_index
         };
 

@@ -6,7 +6,7 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::procedural(
+lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::create(
     backend::Device& device,
     backend::Format const format, 
     uint32_t const width, 

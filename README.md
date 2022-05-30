@@ -18,7 +18,7 @@ Lightweight renderer project for exploring and learning Graphics API
 Renderer
   - [x] Async upload manager
   - [x] Frame graph
-  - [ ] RmlUi integration
+  - [x] RmlUi integration
   - [x] Deffered shading PBR
   - [ ] Forward shading PBR
 
@@ -35,6 +35,7 @@ Asset
   - [x] Mesh
   - [x] Material
   - [ ] Subscene
+  - [ ] Widget
 
 ## Screenshots </p>
 ![City17-Scene](data/screenshots/city17_scene.png)

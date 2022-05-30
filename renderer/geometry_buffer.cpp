@@ -26,13 +26,7 @@ lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::
 
 lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::load_from_surface(backend::Device& device, asset::SurfaceData const& surface) {
 
-    if(surface.indices.size() % 3 != 0) {
-        return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::error(
-            lib::Result<GeometryBufferError> { .errc = GeometryBufferError::IndexSize, .message = "Index size error" }
-        );
-    }
-
-    if(surface.indices.size() > std::numeric_limits<uint16_t>::max()) {
+    if(surface.indices.size() / sizeof(uint32_t) > std::numeric_limits<uint16_t>::max()) {
         return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::error(
             lib::Result<GeometryBufferError> { .errc = GeometryBufferError::IndexOverflow, .message = "Index size overflow" }
         );

@@ -18,7 +18,7 @@ add_executable(Runtime-Win32
 
     # UI
     ui/user_interface.cpp
-    ui/render_interface.cpp
+    renderer/ui_renderer.cpp
     ui/system_interface.cpp
 
     # Engine

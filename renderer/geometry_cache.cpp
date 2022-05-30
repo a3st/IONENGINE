@@ -22,19 +22,19 @@ GeometryCache& GeometryCache::operator=(GeometryCache&& other) noexcept {
     return *this;
 }
 
-ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, asset::Mesh& mesh, uint32_t const index) {
+ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, asset::SurfaceData& surface) {
 
-    uint64_t const hash = mesh.surfaces()[index].vertices.hash() ^ mesh.surfaces()[index].indices.hash();
+    uint64_t const hash = surface.vertices.hash() ^ surface.indices.hash();
 
-    if(_data.is_valid(mesh.surfaces()[index].cache_entry)) {
+    if(_data.is_valid(surface.cache_entry)) {
 
-        auto& cache_entry = _data.get(mesh.surfaces()[index].cache_entry);
+        auto& cache_entry = _data.get(surface.cache_entry);
 
         if(cache_entry.value.is_common()) {
             upload_manager.upload_geometry_data(
                 cache_entry.value, 
-                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].vertices.data(), mesh.surfaces()[index].vertices.size() * sizeof(float)),
-                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].indices.data(), mesh.surfaces()[index].indices.size() * sizeof(uint32_t))
+                std::span<uint8_t const>(surface.vertices.data(), surface.vertices.size()),
+                std::span<uint8_t const>(surface.indices.data(), surface.indices.size())
             );
         }
 
@@ -42,7 +42,7 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
 
     } else {
 
-        auto result = GeometryBuffer::load_from_surface(*_device, mesh.surfaces()[index]);
+        auto result = GeometryBuffer::load_from_surface(*_device, surface);
         if(result.is_ok()) {
 
             auto cache_entry = CacheEntry<ResourcePtr<GeometryBuffer>> {
@@ -52,16 +52,16 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
 
             upload_manager.upload_geometry_data(
                 cache_entry.value, 
-                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].vertices.data(), mesh.surfaces()[index].vertices.size() * sizeof(float)),
-                std::span<uint8_t const>((uint8_t const*)mesh.surfaces()[index].indices.data(), mesh.surfaces()[index].indices.size() * sizeof(uint32_t))
+                std::span<uint8_t const>(surface.vertices.data(), surface.vertices.size()),
+                std::span<uint8_t const>(surface.indices.data(), surface.indices.size())
             );
 
-            mesh.surfaces()[index].cache_entry = _data.push(std::move(cache_entry));
+            surface.cache_entry = _data.push(std::move(cache_entry));
         } else {
             throw lib::Exception(result.error_value().message);
         }
 
-        auto& cache_entry = _data.get(mesh.surfaces()[index].cache_entry);
+        auto& cache_entry = _data.get(surface.cache_entry);
         return cache_entry.value;
     }
 }

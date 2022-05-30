@@ -69,7 +69,7 @@ int main(int* argc, char** agrv) {
 
                         frame_timer += delta_time.count();
                         if(frame_timer >= 1.0f) {
-                            window.label(std::format("IONENGINE content/levels/city17.json5 [{} fps]", frame_count, delta_time.count()));
+                            user_interface.element_text(std::format("{}", frame_count));
                             frame_timer = 0.0f;
                             frame_count = 0;
                         }
@@ -99,6 +99,7 @@ int main(int* argc, char** agrv) {
                         framework.scene().graph().update_hierarchical_data();
                         asset_manager.update(delta_time.count());
                         renderer.update(delta_time.count());
+                        
                         renderer.render(framework.scene(), user_interface);
 
                         ++frame_count;

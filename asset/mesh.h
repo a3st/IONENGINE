@@ -28,8 +28,8 @@ enum class MeshError {
 };
 
 struct SurfaceData {
-    lib::hash::Buffer<float> vertices;
-    lib::hash::Buffer<uint32_t> indices;
+    lib::hash::Buffer<uint8_t> vertices;
+    lib::hash::Buffer<uint8_t> indices;
     uint32_t material_index;
     size_t cache_entry{std::numeric_limits<size_t>::max()};
 };

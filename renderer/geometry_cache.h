@@ -22,7 +22,7 @@ public:
 
     GeometryCache& operator=(GeometryCache&& other) noexcept;
 
-    ResourcePtr<GeometryBuffer> get(UploadManager& upload_manager, asset::Mesh& mesh, uint32_t const index);
+    ResourcePtr<GeometryBuffer> get(UploadManager& upload_manager, asset::SurfaceData& surface);
 
 private:
 

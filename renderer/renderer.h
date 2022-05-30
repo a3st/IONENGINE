@@ -11,6 +11,7 @@
 #include <renderer/pipeline_cache.h>
 #include <renderer/frame_graph.h>
 #include <renderer/buffer_pool.h>
+#include <renderer/ui_renderer.h>
 #include <asset/asset_manager.h>
 #include <lib/thread_pool.h>
 
@@ -79,6 +80,8 @@ public:
 
     void editor_mode(bool const enable);
 
+    UiRenderer& ui_renderer();
+
 private:
 
     struct GBufferData {
@@ -98,6 +101,8 @@ private:
 
     UploadManager _upload_manager;
     FrameGraph _frame_graph;
+
+    UiRenderer _ui_renderer;
 
     ShaderCache _shader_cache;
     GeometryCache _geometry_cache;
@@ -129,12 +134,13 @@ private:
 
     asset::AssetPtr<asset::Technique> _deffered_technique;
     asset::AssetPtr<asset::Technique> _billboard_technique;
+    asset::AssetPtr<asset::Technique> _ui_technique;
 
     bool _editor_mode;
 
     void recreate_gbuffer(uint32_t const width, uint32_t const height);
 
-    void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode* camera);
+    void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode* camera, ui::UserInterface& ui);
 
     void apply_material_parameters(
         ShaderUniformBinder& binder, 

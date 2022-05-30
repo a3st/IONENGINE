@@ -293,20 +293,19 @@ struct Matrix {
 		return mat;
 	}
 
-	static Matrix orthographic(
+	static Matrix orthographic_rh(
 		Type const left, Type const right,
 		Type const bottom, Type const top,
 		Type const near_dst, Type const far_dst
 	) {
 
-		auto mat = Matrix<Type> {};
-		mat.m00 = 2 / (right - left);
-		mat.m11 = 2 / (top - bottom);
-		mat.m22 = -2 / (far_dst - near_dst);
-		mat.m30 = -(right + left) / (right - left);
-		mat.m31 = -(top + bottom) / (top - bottom);
-		mat.m32 = -(far_dst + near_dst) / (far_dst - near_dst);
-		mat.m33 = 1;
+		auto mat = Matrix<Type>::identity();
+		mat.m00 = static_cast<Type>(2) / (right - left);
+		mat.m11 = static_cast<Type>(2) / (top - bottom);
+		mat.m22 = - static_cast<Type>(1) / (far_dst - near_dst);
+		mat.m30 = - (right + left) / (right - left);
+		mat.m31 = - (top + bottom) / (top - bottom);
+		mat.m32 = - near_dst / (far_dst - near_dst);
 		return mat;
 	}
 
