@@ -35,7 +35,11 @@ public:
 
     BufferPool(backend::Device& device, uint32_t const pool_size, BufferPoolUsage const usage) {
         for(uint32_t i = 0; i < pool_size; ++i) {
-            _data.emplace_back(GPUBuffer::cbuffer(device, DataSize, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).value());
+            if(usage == BufferPoolUsage::Dynamic) {
+                _data.emplace_back(GPUBuffer::create(device, DataSize, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).value());\
+            } else {
+                _data.emplace_back(GPUBuffer::create(device, DataSize, backend::BufferFlags::ConstantBuffer).value());
+            }
         }
     }
 
@@ -62,9 +66,9 @@ public:
     BufferPool(backend::Device& device, uint32_t const element_count, uint32_t const pool_size, BufferPoolUsage const usage) {
         for(uint32_t i = 0; i < pool_size; ++i) {
             if(usage == BufferPoolUsage::Dynamic) {
-                _data.emplace_back(GPUBuffer::sbuffer(device, DataSize * element_count, backend::BufferFlags::ShaderResource | backend::BufferFlags::HostWrite, DataSize).value());
+                _data.emplace_back(GPUBuffer::create(device, DataSize * element_count, backend::BufferFlags::ShaderResource | backend::BufferFlags::HostWrite, DataSize).value());
             } else {
-                _data.emplace_back(GPUBuffer::sbuffer(device, DataSize * element_count, backend::BufferFlags::ShaderResource, DataSize).value());
+                _data.emplace_back(GPUBuffer::create(device, DataSize * element_count, backend::BufferFlags::ShaderResource, DataSize).value());
             }
         }
     }

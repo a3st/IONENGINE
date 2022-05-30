@@ -23,10 +23,25 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::create(
             width, 
             height, 
             mip_count,
-            1, 
+            depth, 
             format,
             flags
         );
+        gpu_texture.format = format;
+        gpu_texture.width = width;
+        gpu_texture.height = height;
+        gpu_texture.mip_count = mip_count;
+        gpu_texture.flags = flags;
+
+        if(flags & backend::TextureFlags::RenderTarget) {
+            gpu_texture.memory_state = backend::MemoryState::RenderTarget;
+        } else if(flags & backend::TextureFlags::DepthStencil) {
+            gpu_texture.memory_state = backend::MemoryState::DepthWrite;
+        } else if(flags & backend::TextureFlags::HostWrite) {
+            gpu_texture.memory_state = backend::MemoryState::GenericRead;
+        } else {
+            gpu_texture.memory_state = backend::MemoryState::Common;
+        }
 
         if(flags & backend::TextureFlags::ShaderResource) {
             gpu_texture.sampler = device.create_sampler(
@@ -38,23 +53,6 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::create(
                 backend::CompareOp::Always
             );
         }
-
-        gpu_texture.format = format;
-        gpu_texture.width = width;
-        gpu_texture.height = height;
-        gpu_texture.mip_count = mip_count;
-
-        if(flags & backend::TextureFlags::RenderTarget) {
-            gpu_texture.memory_state = backend::MemoryState::RenderTarget;
-        } else {
-            gpu_texture.memory_state = backend::MemoryState::Common;
-        }
-
-        if(flags & backend::TextureFlags::HostWrite) {
-            gpu_texture.memory_state = backend::MemoryState::GenericRead;
-        }
-       
-        gpu_texture.flags = flags;
     }
     return lib::Expected<GPUTexture, lib::Result<GPUTextureError>>::ok(std::move(gpu_texture));
 }
@@ -86,7 +84,6 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
         gpu_texture.width = texture.width;
         gpu_texture.height = texture.height;
         gpu_texture.mip_count = texture.mip_count;
-
         gpu_texture.memory_state = backend::MemoryState::Common;
         gpu_texture.flags = backend::TextureFlags::ShaderResource;
     }
@@ -101,5 +98,17 @@ backend::Format constexpr ionengine::renderer::get_texture_format(asset::Texture
         case asset::TextureFormat::BC4: return backend::Format::BC4;
         case asset::TextureFormat::RGBA8_UNORM: return backend::Format::RGBA8_UNORM;
         default: return backend::Format::Unknown;
+    }
+}
+
+backend::AddressMode constexpr ionengine::renderer::get_texture_address(asset::TextureAddress const address) {
+    switch(address) {
+        case asset::TextureAddress::Clamp: return backend::AddressMode::Clamp;
+        case asset::TextureAddress::Mirror: return backend::AddressMode::Mirror;
+        case asset::TextureAddress::Wrap: return backend::AddressMode::Wrap;
+        default: {
+            assert(false && "invalid data type");
+            return backend::AddressMode::Clamp;
+        }
     }
 }

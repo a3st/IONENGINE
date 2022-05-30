@@ -9,7 +9,6 @@
 namespace ionengine::renderer {
 
 enum class GeometryBufferError {
-    VertexSize,
     IndexSize,
     IndexOverflow
 };
@@ -17,19 +16,25 @@ enum class GeometryBufferError {
 struct GeometryBuffer {
     backend::Handle<backend::Buffer> vertex_buffer;
     backend::Handle<backend::Buffer> index_buffer;
-    uint32_t vertices_size;
-    uint32_t indices_size;
+    size_t vertex_size;
+    size_t index_size;
     backend::BufferFlags flags;
 
     bool is_host_visible() const {
         return flags & backend::BufferFlags::HostWrite;
     }
 
+    bool is_vertex_buffer() const {
+        return flags & backend::BufferFlags::VertexBuffer;
+    }
+
+    bool is_index_buffer() const {
+        return flags & backend::BufferFlags::IndexBuffer;
+    }
+
     void bind(backend::Device& device, backend::Handle<backend::CommandList> const& command_list);
 
-    void draw_indexed(backend::Device& device, backend::Handle<backend::CommandList> const& command_list, uint32_t const instance_count);
-
-    static lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> procedural(backend::Device& device, uint32_t const vertices_size, uint32_t const indices_size);
+    static lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> create(backend::Device& device, size_t const vertex_size, size_t const index_size, backend::BufferFlags const flags = backend::BufferFlags::VertexBuffer | backend::BufferFlags::IndexBuffer);
 
     static lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> load_from_surface(backend::Device& device, asset::SurfaceData const& surface);
 };

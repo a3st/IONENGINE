@@ -73,18 +73,16 @@ private:
 
 Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool) : 
     _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 }),
-    _asset_manager(&asset_manager),
     _upload_manager(thread_pool, _device),
     _frame_graph(_device),
-    _ui_renderer(_device, _upload_manager),
+    _ui_renderer(_device, _upload_manager, window, asset_manager),
+    _mesh_renderer(_device, _upload_manager, window, asset_manager),
     _shader_cache(_device),
-    _geometry_cache(_device),
     _pipeline_cache(_device),
-    _texture_cache(_device),
-    _deffered_technique(asset_manager.get_technique("engine/techniques/deffered.json5")),
-    _billboard_technique(asset_manager.get_technique("engine/techniques/billboard.json5")),
-    _ui_technique(asset_manager.get_technique("engine/techniques/ui.json5")) {
+    _width(window.client_width()),
+    _height(window.client_height()) {
 
+    /*
     auto [mesh_sender, mesh_receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
     asset_manager.mesh_pool().event_dispatcher().add(std::move(mesh_sender));
     _mesh_event_receiver.emplace(std::move(mesh_receiver));
@@ -95,13 +93,10 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
 
     auto [texture_sender, texture_receiver] = lib::make_channel<asset::AssetEvent<asset::Texture>>();
     asset_manager.texture_pool().event_dispatcher().add(std::move(texture_sender));
-    _texture_event_receiver.emplace(std::move(texture_receiver));
+    _texture_event_receiver.emplace(std::move(texture_receiver)); 
+    */
 
-    _width = window.client_width();
-    _height = window.client_height();
-
-    _material_buffer.resize(MATERIAL_DATA_SIZE);
-
+    /*
     for(uint32_t i = 0; i < 2; ++i) {
         _world_pools.emplace_back(_device, 4, BufferPoolUsage::Dynamic);
         _object_pools.emplace_back(_device, 32, 64, BufferPoolUsage::Dynamic);
@@ -113,12 +108,7 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     for(uint32_t i = 0; i < 2; ++i) {
         _depth_stencils.emplace_back(GPUTexture::create(_device, backend::Format::D32_FLOAT, _width, _height, 1, 1, backend::TextureFlags::DepthStencil).value());
     }
-
-    _deffered_technique.wait();
-    _billboard_technique.wait();
-    _ui_technique.wait();
-
-    _geometry_buffer_quad = create_quad(_device, _upload_manager);
+    */
 }
 
 Renderer::~Renderer() {
@@ -126,11 +116,9 @@ Renderer::~Renderer() {
 }
 
 void Renderer::update(float const delta_time) {
-
     SCOPE_PROFILE()
-
-    // Mesh Event Update
-    /*{
+    /*
+    {
         asset::AssetEvent<asset::Mesh> mesh_event;
         while(_mesh_event_receiver.value().try_receive(mesh_event)) {
             auto event_visitor = make_visitor(
@@ -148,46 +136,10 @@ void Renderer::update(float const delta_time) {
             std::visit(event_visitor, mesh_event.data);
         }
     }
-
-    // Technique Event Update
-    {
-        asset::AssetEvent<asset::Technique> technique_event;
-        while(_technique_event_receiver.value().try_receive(technique_event)) {
-            auto event_visitor = make_visitor(
-                [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Loaded>& event) {
-                    //_shader_cache.get(*event.asset);
-                },
-                // Default
-                [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Unloaded>& event) { },
-                [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Added>& event) { },
-                [&](asset::AssetEventData<asset::Technique, asset::AssetEventType::Removed>& event) { }
-            );
-
-            std::visit(event_visitor, technique_event.data);
-        }
-    }
-
-    // Texture Event Update
-    {
-        asset::AssetEvent<asset::Texture> texture_event;
-        while(_texture_event_receiver.value().try_receive(texture_event)) {
-            auto event_visitor = make_visitor(
-                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Loaded>& event) {
-                    //_texture_cache.get(_upload_manager, *event.asset);
-                },
-                // Default
-                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Unloaded>& event) { },
-                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Added>& event) { },
-                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Removed>& event) { }
-            );
-
-            std::visit(event_visitor, texture_event.data);
-        }
-    }*/
+    */
 }
 
 void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
-
     SCOPE_PROFILE()
 
     _upload_manager.update();
@@ -300,6 +252,8 @@ void Renderer::build_frame_graph(uint32_t const width, uint32_t const height, ui
         std::nullopt,
         depth_stencil_info,
         [=](RenderPassContext const& context) {
+
+            _mesh_renderer.render(_pipeline_cache, _shader_cache, context.command_list, frame_index);
 
             backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
             
@@ -596,10 +550,6 @@ void Renderer::apply_material_parameters(
     }
 }
 
-void Renderer::editor_mode(bool const enable) {
-    _editor_mode = enable;
-}
-
 ResourcePtr<GeometryBuffer> Renderer::create_quad(backend::Device& device, UploadManager& upload_manager) {
 
     auto result = GeometryBuffer::procedural(device, 20, 6);
@@ -630,6 +580,9 @@ ResourcePtr<GeometryBuffer> Renderer::create_quad(backend::Device& device, Uploa
 }
 
 UiRenderer& Renderer::ui_renderer() {
-
     return _ui_renderer;
+}
+
+MeshRenderer& Renderer::mesh_renderer() {
+    return _mesh_renderer;
 }

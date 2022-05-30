@@ -6,29 +6,20 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> GPUBuffer::cbuffer(backend::Device& device, uint32_t const size, backend::BufferFlags const flags) {
+lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> GPUBuffer::create(backend::Device& device, size_t const size, backend::BufferFlags const flags, uint32_t const element_stride) {
 
-    auto gpu_buffer = GPUBuffer {};
-    {
-        gpu_buffer.buffer = device.create_buffer(size, flags);
-        gpu_buffer.flags = flags;
-        gpu_buffer.size = size;
-        if(flags & backend::BufferFlags::HostWrite) {
-            gpu_buffer.memory_state = backend::MemoryState::GenericRead;
-        } else {
-            gpu_buffer.memory_state = backend::MemoryState::Common;
-        }
+    if(flags & backend::BufferFlags::ConstantBuffer && size != ((size + (backend::TEXTURE_ROW_PITCH_ALIGNMENT - 1)) & ~(backend::TEXTURE_ROW_PITCH_ALIGNMENT - 1))) {
+        return lib::Expected<GPUBuffer, lib::Result<GPUBufferError>>::error(
+            lib::Result<GPUBufferError> { .errc = GPUBufferError::ConstantAlignment, .message = "constant buffer not 256 byte aligned" }
+        );
     }
-    return lib::Expected<GPUBuffer, lib::Result<GPUBufferError>>::ok(std::move(gpu_buffer));
-}
-
-lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> GPUBuffer::sbuffer(backend::Device& device, uint32_t const size, backend::BufferFlags const flags, uint32_t const element_stride) {
 
     auto gpu_buffer = GPUBuffer {};
     {
         gpu_buffer.buffer = device.create_buffer(size, flags, element_stride);
         gpu_buffer.flags = flags;
         gpu_buffer.size = size;
+
         if(flags & backend::BufferFlags::HostWrite) {
             gpu_buffer.memory_state = backend::MemoryState::GenericRead;
         } else {

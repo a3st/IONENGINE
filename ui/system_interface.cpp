@@ -22,12 +22,12 @@ bool SystemInterface::LogMessage(Rml::Log::Type type, const Rml::String& message
         case Rml::Log::LT_ALWAYS: {
             _logger->log(lib::LoggerCategoryType::Ui, message);
         } break;
+        case Rml::Log::LT_WARNING: {
+            _logger->warning(lib::LoggerCategoryType::Ui, message);
+        } break;
         case Rml::Log::LT_ASSERT:
         case Rml::Log::LT_ERROR: {
             _logger->error(lib::LoggerCategoryType::Ui, message);
-        } break;
-        case Rml::Log::LT_WARNING: {
-            _logger->warning(lib::LoggerCategoryType::Ui, message);
         } break;
 	}
     return true;

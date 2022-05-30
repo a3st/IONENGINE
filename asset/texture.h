@@ -26,6 +26,12 @@ enum class TextureFilter {
     MinMagMipLinear
 };
 
+enum class TextureAddress {
+    Wrap,
+    Clamp,
+    Mirror
+};
+
 class Texture {
 public:
 
@@ -34,6 +40,8 @@ public:
     uint32_t height;
     TextureFormat format;
     TextureFilter filter;
+    TextureAddress s_address_mode;
+    TextureAddress t_address_mode;
     uint32_t mip_count;
     uint64_t hash;
 

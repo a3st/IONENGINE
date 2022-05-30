@@ -7,7 +7,9 @@
 
 namespace ionengine::renderer {
 
-enum class GPUBufferError { };
+enum class GPUBufferError { 
+    ConstantAlignment
+};
 
 struct GPUBuffer {
     backend::Handle<backend::Buffer> buffer;
@@ -31,9 +33,7 @@ struct GPUBuffer {
         return flags & backend::BufferFlags::HostWrite;
     }
 
-    static lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> cbuffer(backend::Device& device, uint32_t const size, backend::BufferFlags const flags);
-
-    static lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> sbuffer(backend::Device& device, uint32_t const size, backend::BufferFlags const flags, uint32_t const element_stride);
+    static lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> create(backend::Device& device, size_t const size, backend::BufferFlags const flags, uint32_t const element_stride = 0);
 };
 
 template<>

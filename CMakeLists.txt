@@ -18,8 +18,8 @@ add_executable(Runtime-Win32
 
     # UI
     ui/user_interface.cpp
-    renderer/ui_renderer.cpp
     ui/system_interface.cpp
+    ui/render_interface.cpp
 
     # Engine
     engine/main.cpp
@@ -61,6 +61,8 @@ add_executable(Runtime-Win32
 
     # Renderer
     renderer/renderer.cpp
+    renderer/ui_renderer.cpp
+    renderer/mesh_renderer.cpp
     renderer/shader_uniform_binder.cpp
     renderer/shader_program.cpp
     renderer/shader_cache.cpp

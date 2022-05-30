@@ -7,16 +7,23 @@
 
 namespace ionengine::renderer {
 
-enum class GPUTextureError { };
+enum class GPUTextureError { 
+    /*
+        Someday there will be errors here, but so far it is empty to maintain the general style.
+    */
+};
 
 struct GPUTexture {
     backend::Handle<backend::Texture> texture;
     backend::Handle<backend::Sampler> sampler;
     uint32_t width;
     uint32_t height;
+    uint32_t depth;
     uint32_t mip_count;
     backend::TextureFlags flags;
     backend::Format format;
+    backend::AddressMode s_address_mode;
+    backend::AddressMode t_address_mode;
     backend::MemoryState memory_state;
 
     bool is_render_target() const {
@@ -34,6 +41,8 @@ struct GPUTexture {
     bool is_rw_texture() const {
         return flags & backend::TextureFlags::UnorderedAccess;
     }
+
+    void recreate_sampler(backend::Filter const filter, uint16_t const anisotropic);
 
     static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> create(
         backend::Device& device,
@@ -59,5 +68,7 @@ struct GPUResourceDeleter<GPUTexture> {
 };
 
 backend::Format constexpr get_texture_format(asset::TextureFormat const format);
+
+backend::AddressMode constexpr get_texture_address(asset::TextureAddress const address);
 
 }

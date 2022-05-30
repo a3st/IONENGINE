@@ -6,7 +6,7 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager) :
+UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, platform::Window& window, asset::AssetManager& asset_manager) :
     _device(&device),
     _texture_cache(device),
     _upload_manager(&upload_manager) {

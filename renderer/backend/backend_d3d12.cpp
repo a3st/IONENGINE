@@ -603,6 +603,7 @@ Handle<Texture> Device::Impl::create_texture(
 
     if(flags & TextureFlags::DepthStencil) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        initial_state = D3D12_RESOURCE_STATE_DEPTH_WRITE;
     }
     if(flags & TextureFlags::RenderTarget) {
         resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
