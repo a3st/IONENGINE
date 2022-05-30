@@ -65,11 +65,11 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
     {
         gpu_texture.texture = device.create_texture(
             backend::Dimension::_2D, 
-            texture.width(), 
-            texture.height(), 
-            texture.mip_count(),
+            texture.width, 
+            texture.height, 
+            texture.mip_count,
             1, 
-            get_texture_format(texture.format()),
+            get_texture_format(texture.format),
             backend::TextureFlags::ShaderResource
         );
 
@@ -82,10 +82,10 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
             backend::CompareOp::Always
         );
 
-        gpu_texture.format = get_texture_format(texture.format());
-        gpu_texture.width = texture.width();
-        gpu_texture.height = texture.height();
-        gpu_texture.mip_count = texture.mip_count();
+        gpu_texture.format = get_texture_format(texture.format);
+        gpu_texture.width = texture.width;
+        gpu_texture.height = texture.height;
+        gpu_texture.mip_count = texture.mip_count;
 
         gpu_texture.memory_state = backend::MemoryState::Common;
         gpu_texture.flags = backend::TextureFlags::ShaderResource;

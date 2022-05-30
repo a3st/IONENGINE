@@ -23,14 +23,14 @@ TextureCache& TextureCache::operator=(TextureCache&& other) noexcept {
 
 ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::Texture& texture) {
         
-    uint64_t const hash = texture.hash();
+    uint64_t const hash = texture.hash;
 
-    if(_data.is_valid(texture.cache_entry())) {
+    if(_data.is_valid(texture.cache_entry)) {
 
-        auto& cache_entry = _data.get(texture.cache_entry());
+        auto& cache_entry = _data.get(texture.cache_entry);
 
         if(cache_entry.value.is_common()) {
-            upload_manager.upload_texture_data(cache_entry.value, texture.data());
+            upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
         }
 
         return cache_entry.value;
@@ -45,13 +45,13 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
                 .hash = hash
             };
 
-            upload_manager.upload_texture_data(cache_entry.value, texture.data());
-            texture.cache_entry(_data.push(std::move(cache_entry)));
+            upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
+            texture.cache_entry = _data.push(std::move(cache_entry));
         } else {
             throw lib::Exception(result.error_value().message);
         }
 
-        auto& cache_entry = _data.get(texture.cache_entry());
+        auto& cache_entry = _data.get(texture.cache_entry);
         return cache_entry.value;
     }
 }

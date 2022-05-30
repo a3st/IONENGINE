@@ -60,7 +60,7 @@ namespace DirectX
 #endif /* MAKEFOURCC */
 
 #ifndef ISBITMASK
-#define ISBITMASK(r, g, b, a) (header.ddspf.RBitMask == r && header.ddspf.GBitMask == g && header.ddspf.BBitMask == b && header.ddspf.ABitMask == a)
+#define ISBITMASK(r, g, b, a) (dds_header.ddspf.RBitMask == r && dds_header.ddspf.GBitMask == g && dds_header.ddspf.BBitMask == b && dds_header.ddspf.ABitMask == a)
 #endif /* ISBITMASK */
 
 #ifndef DDSGLOBALCONST
