@@ -19,7 +19,7 @@ public:
     GeometryPool(backend::Device& device, uint32_t const pool_size, GeometryPoolUsage const usage) {
         for(uint32_t i = 0; i < pool_size; ++i) {
             if(usage == GeometryPoolUsage::Dynamic) {
-                _data.emplace_back(GeometryBuffer::procedural(device, VertexSize, IndexSize).value());
+                _data.emplace_back(GeometryBuffer::create(device, VertexSize, IndexSize, backend::BufferFlags::VertexBuffer | backend::BufferFlags::IndexBuffer | backend::BufferFlags::HostWrite).value());
             } else {
                 
             }

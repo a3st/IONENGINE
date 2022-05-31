@@ -4,7 +4,7 @@
 
 #include <RmlUi/Core.h>
 #include <ui/system_interface.h>
-#include <renderer/renderer.h>
+#include <ui/render_interface.h>
 
 namespace ionengine::platform {
 class Window;
@@ -15,7 +15,7 @@ namespace ionengine::ui {
 class UserInterface {
 public:
 
-    UserInterface(renderer::Renderer& renderer, platform::Window& window, lib::Logger& logger);
+    UserInterface(platform::Window& window, lib::Logger& logger);
 
     ~UserInterface();
 
@@ -23,15 +23,17 @@ public:
 
     Rml::Context& context();
 
+    RenderInterface& render_interface();
+
     void element_text(std::string_view const text);
 
 private:
 
     Rml::Context* _context;
-
     Rml::ElementDocument* _document;
 
     SystemInterface _system_interface;
+    RenderInterface _render_interface;
 };
 
 }

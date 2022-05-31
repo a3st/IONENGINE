@@ -7,10 +7,10 @@
 using namespace ionengine;
 using namespace ionengine::ui;
 
-UserInterface::UserInterface(renderer::Renderer& renderer, platform::Window& window, lib::Logger& logger) : 
+UserInterface::UserInterface(platform::Window& window, lib::Logger& logger) : 
     _system_interface(logger) {
 
-    Rml::SetRenderInterface(&renderer.ui_renderer());
+    Rml::SetRenderInterface(&_render_interface);
     Rml::SetSystemInterface(&_system_interface);
     Rml::Initialise();
 
@@ -40,4 +40,8 @@ void UserInterface::update() {
 
 Rml::Context& UserInterface::context() {
     return *_context;
+}
+
+RenderInterface& UserInterface::render_interface() {
+    return _render_interface;
 }

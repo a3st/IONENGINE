@@ -15,7 +15,7 @@ Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& in
     _scene(scene::Scene::load_from_file("content/levels/city17.json5", asset_manager).value()) {
 
     auto camera_object_node = _scene.graph().add_node<scene::CameraNode>();
-    camera_object_node->name("MainCamera");
+    camera_object_node->name("main_camera");
     camera_object_node->position(lib::math::Vector3f(0.0f, 1.0f, 3.0f));
 
     _camera_node = camera_object_node;

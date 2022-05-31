@@ -59,7 +59,7 @@ private:
 	TextureCache _texture_cache;
 
 	std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(UIElementData)>> _ui_element_pools;
-	std::vector<GeometryPool<2048, 512>> _geometry_pools;
+	std::vector<GeometryPool<8192, 2136>> _geometry_pools;
 
     uint32_t _width;
     uint32_t _height;

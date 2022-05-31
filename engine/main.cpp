@@ -34,7 +34,7 @@ int main(int* argc, char** agrv) {
         
         asset::AssetManager asset_manager(thread_pool, logger);
         renderer::Renderer renderer(window, asset_manager, thread_pool);
-        ui::UserInterface user_interface(renderer, window, logger);
+        ui::UserInterface user_interface(window, logger);
         input::InputManager input_manager;
 
         window.label("IONENGINE content/levels/city17.json5");
@@ -96,7 +96,7 @@ int main(int* argc, char** agrv) {
                     [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {
                         renderer.resize(data.width, data.height);
 
-                        scene::CameraNode* camera = framework.scene().graph().find_by_name<scene::CameraNode>("MainCamera");
+                        scene::CameraNode* camera = framework.scene().graph().find_by_name<scene::CameraNode>("main_camera");
                         camera->aspect_ratio(data.width / static_cast<float>(data.height));
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::KeyboardInput> const& data) {

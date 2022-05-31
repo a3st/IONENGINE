@@ -2,6 +2,7 @@
 
 #include <precompiled.h>
 #include <renderer/ui_renderer.h>
+#include <renderer/shader_binder.h>
 #include <ui/user_interface.h>
 
 using namespace ionengine;
@@ -16,6 +17,11 @@ UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, p
     _height(window.client_height()),
     _ui_technique(asset_manager.get_technique(UI_TECHNIQUE_PATH)) {
     
+    for(uint32_t i = 0; i < 2; ++i) {
+        _ui_element_pools.emplace_back(*_device, 32, BufferPoolUsage::Dynamic);
+        _geometry_pools.emplace_back(*_device, 128, GeometryPoolUsage::Dynamic);
+    }
+
     _ui_technique.wait();
 }
 
@@ -48,16 +54,26 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         std::nullopt,
-        [=](RenderPassContext const& context) {
+        [=, &pipeline_cache, &shader_cache, &ui](RenderPassContext const& context) {
 
-            /*auto [pipeline, shader_program] = _pipeline_cache.get(_shader_cache, *_ui_technique, context.render_pass);
+            auto [pipeline, shader_program] = pipeline_cache.get(shader_cache, *_ui_technique, context.render_pass);
 
-            _device.bind_pipeline(context.command_list, pipeline);
+            _device->bind_pipeline(context.command_list, pipeline);
 
-            ShaderUniformBinder binder(_device, *shader_program);
+            ShaderBinder binder(*shader_program);
 
-            _ui_renderer.apply_command_list(context.command_list, binder, *shader_program, frame_index);
-            ui.context().Render();*/
+            ui.render_interface()._device = _device;
+            ui.render_interface()._upload_manager = _upload_manager;
+            ui.render_interface()._texture_cache = &_texture_cache;
+            ui.render_interface()._ui_element_pool = &_ui_element_pools.at(frame_index);
+            ui.render_interface()._geometry_pool = &_geometry_pools.at(frame_index);
+            ui.render_interface()._command_list = context.command_list;
+            ui.render_interface()._width = _width;
+            ui.render_interface()._height = _height;
+            ui.render_interface()._binder = &binder;
+            ui.render_interface()._shader_program = &*shader_program;
+
+            ui.context().Render();
         }
     );
 }
