@@ -30,6 +30,16 @@ void UserInterface::element_text(std::string_view const text) {
     element->SetInnerRML(std::string(text.data(), text.size()));
 }
 
+void UserInterface::element_text_2(std::string_view const text) {
+    Rml::Element* element = _document->GetElementById("frame_count");
+    element->SetInnerRML(std::string(text.data(), text.size()));
+}
+
+void UserInterface::element_text_3(std::string_view const text) {
+    Rml::Element* element = _document->GetElementById("frame_time");
+    element->SetInnerRML(std::string(text.data(), text.size()));
+}
+
 UserInterface::~UserInterface() {
     Rml::Shutdown();
 }

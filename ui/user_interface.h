@@ -27,6 +27,10 @@ public:
 
     void element_text(std::string_view const text);
 
+    void element_text_2(std::string_view const text);
+
+    void element_text_3(std::string_view const text);
+
 private:
 
     Rml::Context* _context;

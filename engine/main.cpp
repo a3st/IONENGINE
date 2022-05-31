@@ -42,6 +42,7 @@ int main(int* argc, char** agrv) {
 
         auto begin_time = std::chrono::high_resolution_clock::now();
         uint64_t frame_count = 0;
+        uint64_t frame_count_previous = 0;
         float frame_timer = 0.0f;
 
         logger.log(lib::LoggerCategoryType::Engine, "engine initialized");
@@ -66,10 +67,13 @@ int main(int* argc, char** agrv) {
 
                         frame_timer += delta_time.count();
                         if(frame_timer >= 1.0f) {
-                            user_interface.element_text(std::format("{}", frame_count));
+                            user_interface.element_text(std::format("{}", frame_count - frame_count_previous));
+                            user_interface.element_text_3(std::format("{:.2f}ms", 1000.0f / (frame_count - frame_count_previous)));
                             frame_timer = 0.0f;
-                            frame_count = 0;
+                            frame_count_previous = frame_count;
                         }
+
+                        user_interface.element_text_2(std::format("{}", frame_count));
 
                         if(input_manager.key_down(input::KeyCode::Escape)) {
                             flow = platform::WindowEventFlow::Exit;
