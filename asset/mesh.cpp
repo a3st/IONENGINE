@@ -109,6 +109,23 @@ struct hash<Vertex> {
 
 }
 
+SurfaceData SurfaceData::make_quad() {
+    auto vertex_data = std::vector<float> {
+        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 0.0f, 1.0f, 1.0f
+    };
+
+    auto index_data = std::vector<uint32_t> { 0, 1, 2, 0, 3, 1 };
+
+    return SurfaceData {
+        .vertices = std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(vertex_data.data()), vertex_data.size() * sizeof(float)),
+        .indices = std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(index_data.data()), index_data.size() * sizeof(uint32_t)),
+        .material_index = 0
+    };
+}
+
 Mesh::Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const> const shapes, std::span<tinyobj::material_t const> const materials) {
 
     uint32_t material_index = 0;

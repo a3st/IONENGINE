@@ -52,6 +52,10 @@ public:
         return _data.size();
     }
 
+    std::span<Type const> to_span() {
+        return std::span<Type const>(_data.data(), _data.size());
+    }
+
 private:
     
     std::vector<Type> _data;

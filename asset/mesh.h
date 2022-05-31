@@ -32,6 +32,8 @@ struct SurfaceData {
     lib::hash::Buffer<uint8_t> indices;
     uint32_t material_index;
     size_t cache_entry{std::numeric_limits<size_t>::max()};
+
+    static SurfaceData make_quad();
 };
 
 class Mesh {

@@ -16,6 +16,7 @@ namespace ionengine {
 
 namespace scene {
 class Scene;
+class CameraNode;
 };
 
 }
@@ -63,11 +64,11 @@ public:
 
     MeshRenderer& operator=(MeshRenderer&&) = delete;
 
-    void update(float const delta_time, scene::Scene& scene, uint32_t const frame_index);
+    void update(float const delta_time);
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index);
 
 private:
 
@@ -97,6 +98,8 @@ private:
     std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(WorldData)>> _world_pools;
     std::vector<BufferPool<BufferPoolType::CBuffer, MATERIAL_DATA_SIZE>> _material_pools;
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(PointLightData)>> _point_light_pools;
+
+    ResourcePtr<GeometryBuffer> _quad;
 
     uint16_t _anisotropic;
     backend::Filter _filter;

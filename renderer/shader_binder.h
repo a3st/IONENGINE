@@ -6,7 +6,7 @@
 
 namespace ionengine::renderer {
 
-class ShaderProgram;
+struct ShaderProgram;
 
 class ShaderBinder {
 public:

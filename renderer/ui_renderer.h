@@ -8,9 +8,16 @@
 #include <renderer/buffer_pool.h>
 #include <renderer/frame_graph.h>
 #include <renderer/pipeline_cache.h>
-#include <renderer/shader_uniform_binder.h>
 #include <asset/asset_manager.h>
 #include <lib/math/matrix.h>
+
+namespace ionengine {
+
+namespace ui {
+class UserInterface;    
+};
+
+}
 
 namespace ionengine::renderer {
 
@@ -19,6 +26,8 @@ __declspec(align(256)) struct UIElementData {
     lib::math::Matrixf transform;
     lib::math::Vector2f translation;
 };
+
+inline std::filesystem::path const UI_TECHNIQUE_PATH = "engine/techniques/ui.json5";
 
 class UiRenderer {
 public:
@@ -35,15 +44,16 @@ public:
 
     UiRenderer& operator=(UiRenderer&&) = delete;
 
-    void update(float const delta_time, uint32_t const frame_index);
+    void update(float const delta_time);
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, ui::UserInterface& ui, uint32_t const frame_index);
 
 private:
 
 	backend::Device* _device;
+    asset::AssetManager* _asset_manager;
 	UploadManager* _upload_manager;
 
 	TextureCache _texture_cache;
@@ -53,6 +63,8 @@ private:
 
     uint32_t _width;
     uint32_t _height;
+
+    asset::AssetPtr<asset::Technique> _ui_technique;
 };
 
 }

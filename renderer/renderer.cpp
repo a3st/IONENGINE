@@ -38,16 +38,6 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     asset_manager.texture_pool().event_dispatcher().add(std::move(texture_sender));
     _texture_event_receiver.emplace(std::move(texture_receiver)); 
     */
-
-    /*
-    
-
-    recreate_gbuffer(_width, _height);
-
-    for(uint32_t i = 0; i < 2; ++i) {
-        
-    }
-    */
 }
 
 Renderer::~Renderer() {
@@ -56,53 +46,17 @@ Renderer::~Renderer() {
 
 void Renderer::update(float const delta_time) {
     SCOPE_PROFILE()
-    /*
-    {
-        asset::AssetEvent<asset::Mesh> mesh_event;
-        while(_mesh_event_receiver.value().try_receive(mesh_event)) {
-            auto event_visitor = make_visitor(
-                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Loaded>& event) {
-                    for(size_t i = 0; i < event.asset->surfaces().size(); ++i) {
-                        //_geometry_cache.get(_upload_manager, *event.asset, static_cast<uint32_t>(i));
-                    }
-                },
-                // Default
-                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Unloaded>& event) { },
-                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Added>& event) { },
-                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Removed>& event) { }
-            );
-
-            std::visit(event_visitor, mesh_event.data);
-        }
-    }
-    */
+    
+    _upload_manager.update();
 }
 
 void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
     SCOPE_PROFILE()
 
-    _upload_manager.update();
-
     uint32_t const frame_index = _frame_graph.wait();
-    
-    /*scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("MainCamera");
 
-    _opaque_queue.clear();
-    _transculent_queue.clear();
-    _point_lights.clear();
-    _editor_instances.clear();
-
-    _world_pools.at(frame_index).reset();
-    _object_pools.at(frame_index).reset();
-    _point_light_pools.at(frame_index).reset();
-    _ui_renderer.reset(frame_index);
-
-    MeshVisitor mesh_visitor(_opaque_queue, _transculent_queue, _point_lights, _editor_instances);
-    scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
-
-    camera->calculate_matrices();
-    _opaque_queue.sort();
-    _transculent_queue.sort();*/
+    _mesh_renderer.render(_pipeline_cache, _shader_cache, _frame_graph, scene, frame_index);
+    _ui_renderer.render(_pipeline_cache, _shader_cache, _frame_graph, ui, frame_index);
     
     _frame_graph.execute();
 }
@@ -126,35 +80,3 @@ UiRenderer& Renderer::ui_renderer() {
 MeshRenderer& Renderer::mesh_renderer() {
     return _mesh_renderer;
 }
-
-/*
-
-ResourcePtr<GeometryBuffer> Renderer::create_quad(backend::Device& device, UploadManager& upload_manager) {
-
-    auto result = GeometryBuffer::procedural(device, 20, 6);
-    if(result.is_ok()) {
-
-        auto geometry_buffer = ResourcePtr<GeometryBuffer>(std::move(result.value()));
-        
-        auto vertex_data = std::vector<float> {
-            1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-            -1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-            1.0f, 1.0f, 0.0f, 1.0f, 1.0f
-        };
-
-        auto index_data = std::vector<uint32_t> { 0, 1, 2, 0, 3, 1 };
-
-        upload_manager.upload_geometry_data(
-            geometry_buffer, 
-            std::span<uint8_t const>((uint8_t const*)vertex_data.data(), vertex_data.size() * sizeof(float)),
-            std::span<uint8_t const>((uint8_t const*)index_data.data(), index_data.size() * sizeof(uint32_t))
-        );
-
-        return geometry_buffer;
-
-    } else {
-        throw lib::Exception(result.error_value().message);
-    }
-}
-*/
