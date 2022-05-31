@@ -2,16 +2,24 @@
 
 #pragma once
 
-#include <renderer/backend/backend.h>
+#include <renderer/resource_ptr.h>
+#include <renderer/gpu_buffer.h>
+#include <renderer/gpu_texture.h>
 
 namespace ionengine::renderer {
 
 struct ShaderProgram;
 
+struct NullData {
+    ResourcePtr<GPUBuffer> cbuffer;
+    ResourcePtr<GPUBuffer> sbuffer;
+    ResourcePtr<GPUTexture> texture;
+};
+
 class ShaderBinder {
 public:
 
-    ShaderBinder(ShaderProgram& shader_program);
+    ShaderBinder(ShaderProgram& shader_program, NullData& null);
 
     ShaderBinder(ShaderBinder&) = delete;
 
@@ -28,8 +36,7 @@ public:
 private:
 
     backend::Handle<backend::DescriptorLayout> _descriptor_layout;
-
-    std::unordered_map<uint32_t, uint32_t> _exist_updates;
+    std::unordered_map<uint32_t, size_t> _exist_updates;
     std::vector<backend::DescriptorWriteDesc> _update_resources;
 };
 

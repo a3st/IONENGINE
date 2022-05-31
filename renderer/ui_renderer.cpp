@@ -37,7 +37,7 @@ void UiRenderer::resize(uint32_t const width, uint32_t const height) {
 
 }
 
-void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, ui::UserInterface& ui, uint32_t const frame_index) {
+void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, uint32_t const frame_index) {
     _ui_element_pools.at(frame_index).reset();
     _geometry_pools.at(frame_index).reset();
     
@@ -54,13 +54,13 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         std::nullopt,
-        [=, &pipeline_cache, &shader_cache, &ui](RenderPassContext const& context) {
+        [=, &pipeline_cache, &shader_cache, &ui, &null](RenderPassContext const& context) {
 
             auto [pipeline, shader_program] = pipeline_cache.get(shader_cache, *_ui_technique, context.render_pass);
 
             _device->bind_pipeline(context.command_list, pipeline);
 
-            ShaderBinder binder(*shader_program);
+            ShaderBinder binder(*shader_program, null);
 
             ui.render_interface()._device = _device;
             ui.render_interface()._upload_manager = _upload_manager;

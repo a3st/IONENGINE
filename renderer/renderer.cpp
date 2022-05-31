@@ -38,6 +38,12 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     asset_manager.texture_pool().event_dispatcher().add(std::move(texture_sender));
     _texture_event_receiver.emplace(std::move(texture_receiver)); 
     */
+
+    _null = NullData {
+        .cbuffer = ResourcePtr<GPUBuffer>(GPUBuffer::create(_device, 256, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).value()),
+        .sbuffer = ResourcePtr<GPUBuffer>(GPUBuffer::create(_device, 256, backend::BufferFlags::ShaderResource | backend::BufferFlags::HostWrite, 256).value()),
+        .texture = ResourcePtr<GPUTexture>(GPUTexture::create(_device, backend::Format::RGBA8_UNORM, 1, 1, 1, 1, backend::TextureFlags::ShaderResource).value())
+    };
 }
 
 Renderer::~Renderer() {
@@ -55,8 +61,8 @@ void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
 
     uint32_t const frame_index = _frame_graph.wait();
 
-    _mesh_renderer.render(_pipeline_cache, _shader_cache, _frame_graph, scene, frame_index);
-    _ui_renderer.render(_pipeline_cache, _shader_cache, _frame_graph, ui, frame_index);
+    _mesh_renderer.render(_pipeline_cache, _shader_cache, _null, _frame_graph, scene, frame_index);
+    _ui_renderer.render(_pipeline_cache, _shader_cache, _null, _frame_graph, ui, frame_index);
     
     _frame_graph.execute();
 }

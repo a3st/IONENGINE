@@ -129,7 +129,7 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
     }
 }
 
-void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index) {
+void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index) {
 
     _object_pools.at(frame_index).reset();
     _world_pools.at(frame_index).reset();
@@ -202,7 +202,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         gbuffer_color_infos,
         std::nullopt,
         depth_stencil_info,
-        [=, &pipeline_cache, &shader_cache](RenderPassContext const& context) {
+        [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
 
             backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
             
@@ -215,7 +215,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                     current_pipeline = pipeline;
                 }
 
-                ShaderBinder binder(*shader_program);
+                ShaderBinder binder(*shader_program, null);
 
                 apply_material(binder, *shader_program, *batch.material, frame_index);
 
@@ -270,13 +270,13 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         gbuffer_input_infos,
         std::nullopt,
-        [=, &pipeline_cache, &shader_cache](RenderPassContext const& context) {
+        [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
 
             auto [pipeline, shader_program] = pipeline_cache.get(shader_cache, *_deffered_technique, context.render_pass);
 
             _device->bind_pipeline(context.command_list, pipeline);
 
-            ShaderBinder binder(*shader_program);
+            ShaderBinder binder(*shader_program, null);
 
             uint32_t const world_location = shader_program->location_uniform_by_name("world");
             uint32_t const point_light_location = shader_program->location_uniform_by_name("point_light");
@@ -329,7 +329,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         depth_stencil_info,
-        [=, &pipeline_cache, &shader_cache](RenderPassContext const& context) {
+        [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
 
             backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
 
@@ -342,7 +342,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                     current_pipeline = pipeline;
                 }
                 
-                ShaderBinder binder(*shader_program);
+                ShaderBinder binder(*shader_program, null);
 
                 apply_material(binder, *shader_program, *batch.material, frame_index);
 

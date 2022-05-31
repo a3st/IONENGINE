@@ -21,6 +21,8 @@ class UserInterface;
 
 namespace ionengine::renderer {
 
+struct NullData;
+
 __declspec(align(256)) struct UIElementData {
 	lib::math::Matrixf projection;
     lib::math::Matrixf transform;
@@ -48,7 +50,7 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, ui::UserInterface& ui, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, uint32_t const frame_index);
 
 private:
 

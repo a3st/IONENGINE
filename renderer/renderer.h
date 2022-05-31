@@ -9,6 +9,7 @@
 #include <renderer/frame_graph.h>
 #include <renderer/mesh_renderer.h>
 #include <renderer/ui_renderer.h>
+#include <renderer/shader_binder.h>
 #include <asset/asset_manager.h>
 #include <lib/thread_pool.h>
 
@@ -66,6 +67,8 @@ private:
 
     uint32_t _width;
     uint32_t _height;
+
+    NullData _null;
 };
 
 }

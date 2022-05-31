@@ -24,6 +24,7 @@ class CameraNode;
 namespace ionengine::renderer {
 
 class ShaderBinder;
+struct NullData;
 
 struct PointLightData {
     lib::math::Vector3f position;
@@ -68,7 +69,7 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index);
 
 private:
 
