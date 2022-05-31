@@ -3,14 +3,26 @@
 #pragma once
 
 #include <renderer/backend/backend.h>
+#include <renderer/frame_graph.h>
 #include <renderer/geometry_cache.h>
 #include <renderer/texture_cache.h>
 #include <renderer/pipeline_cache.h>
 #include <renderer/render_queue.h>
 #include <renderer/buffer_pool.h>
+#include <asset/asset_manager.h>
 #include <lib/math/matrix.h>
 
+namespace ionengine {
+
+namespace scene {
+class Scene;
+};
+
+}
+
 namespace ionengine::renderer {
+
+class ShaderBinder;
 
 struct PointLightData {
     lib::math::Vector3f position;
@@ -34,6 +46,8 @@ struct ObjectData {
     lib::math::Matrixf inverse_model;
 };
 
+inline std::filesystem::path const DEFFERED_TECHNIQUE_PATH = "engine/techniques/deffered.json5";
+
 class MeshRenderer {
 public:
 
@@ -49,11 +63,11 @@ public:
 
     MeshRenderer& operator=(MeshRenderer&&) = delete;
 
-    void update(float const delta_time);
+    void update(float const delta_time, scene::Scene& scene, uint32_t const frame_index);
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, backend::Handle<backend::CommandList> const& command_list, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, uint32_t const frame_index);
 
 private:
 
@@ -77,6 +91,7 @@ private:
     std::vector<PointLightData> _point_lights;
     RenderQueue _opaque_queue;
     RenderQueue _transculent_queue;
+    scene::CameraNode* _render_camera;
 
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(ObjectData)>> _object_pools;
     std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(WorldData)>> _world_pools;
@@ -86,7 +101,14 @@ private:
     uint16_t _anisotropic;
     backend::Filter _filter;
 
+    uint32_t _width;
+    uint32_t _height;
+
     asset::AssetPtr<asset::Technique> _deffered_technique;
+
+    std::vector<backend::MemoryBarrierDesc> _memory_barriers;
+
+    void apply_material(ShaderBinder& binder, ShaderProgram& shader_program, asset::Material& material, uint32_t const frame_index);
 };
 
 }

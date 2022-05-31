@@ -42,6 +42,8 @@ struct GPUTexture {
         return flags & backend::TextureFlags::UnorderedAccess;
     }
 
+    backend::MemoryBarrierDesc barrier(backend::MemoryState const after);
+
     void recreate_sampler(backend::Filter const filter, uint16_t const anisotropic);
 
     static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> create(

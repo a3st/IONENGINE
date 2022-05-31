@@ -4,13 +4,9 @@
 
 #include <renderer/render_queue.h>
 #include <renderer/upload_manager.h>
-#include <renderer/shader_uniform_binder.h>
 #include <renderer/shader_cache.h>
-#include <renderer/geometry_cache.h>
-#include <renderer/texture_cache.h>
 #include <renderer/pipeline_cache.h>
 #include <renderer/frame_graph.h>
-#include <renderer/buffer_pool.h>
 #include <renderer/mesh_renderer.h>
 #include <renderer/ui_renderer.h>
 #include <asset/asset_manager.h>
@@ -20,7 +16,6 @@ namespace ionengine {
 
 namespace scene {
 class Scene;
-class CameraNode;
 }
 
 namespace ui {
@@ -71,20 +66,6 @@ private:
 
     uint32_t _width;
     uint32_t _height;
-
-    void recreate_gbuffer(uint32_t const width, uint32_t const height);
-
-    void build_frame_graph(uint32_t const width, uint32_t const height, uint32_t const frame_index, scene::CameraNode *camera, ui::UserInterface &ui);
-
-    void apply_material_parameters(
-        ShaderUniformBinder &binder,
-        ShaderProgram &shader_program,
-        asset::Material &material,
-        uint32_t const frame_index,
-        std::vector<backend::MemoryBarrierDesc> &barriers
-    );
-
-    ResourcePtr<GeometryBuffer> create_quad(backend::Device &device, UploadManager &upload_manager);
 };
 
 }

@@ -90,6 +90,16 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
     return lib::Expected<GPUTexture, lib::Result<GPUTextureError>>::ok(std::move(gpu_texture));
 }
 
+backend::MemoryBarrierDesc GPUTexture::barrier(backend::MemoryState const after) {
+    auto barrier = backend::MemoryBarrierDesc {
+        .target = texture,
+        .before = memory_state,
+        .after = after 
+    };
+    memory_state = after;
+    return barrier;
+}
+
 backend::Format constexpr ionengine::renderer::get_texture_format(asset::TextureFormat const format) {
     switch(format) {
         case asset::TextureFormat::BC1: return backend::Format::BC1;

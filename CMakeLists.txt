@@ -63,7 +63,7 @@ add_executable(Runtime-Win32
     renderer/renderer.cpp
     renderer/ui_renderer.cpp
     renderer/mesh_renderer.cpp
-    renderer/shader_uniform_binder.cpp
+    renderer/shader_binder.cpp
     renderer/shader_program.cpp
     renderer/shader_cache.cpp
     renderer/geometry_buffer.cpp

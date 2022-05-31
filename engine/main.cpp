@@ -20,6 +20,9 @@
 
 using namespace ionengine;
 
+/*
+    Implementation of the main function for the Windows platform
+*/
 int main(int* argc, char** agrv) {
 
     lib::Logger logger;
@@ -30,15 +33,9 @@ int main(int* argc, char** agrv) {
         platform::Window window("IONENGINE", 800, 600, false);
         
         asset::AssetManager asset_manager(thread_pool, logger);
-
         renderer::Renderer renderer(window, asset_manager, thread_pool);
-        renderer.editor_mode(false);
-
         ui::UserInterface user_interface(renderer, window, logger);
-        
         input::InputManager input_manager;
-
-        window.cursor(false);
 
         window.label("IONENGINE content/levels/city17.json5");
         framework::Framework framework(asset_manager, input_manager);
@@ -84,14 +81,6 @@ int main(int* argc, char** agrv) {
 
                         if(input_manager.key_down(input::KeyCode::F2)) {
                             window.cursor(true);
-                        }
-
-                        if(input_manager.key_down(input::KeyCode::F3)) {
-                            renderer.editor_mode(true);
-                        }
-
-                        if(input_manager.key_down(input::KeyCode::F4)) {
-                            renderer.editor_mode(false);
                         }
 
                         user_interface.update();

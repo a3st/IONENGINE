@@ -36,7 +36,7 @@ public:
     BufferPool(backend::Device& device, uint32_t const pool_size, BufferPoolUsage const usage) {
         for(uint32_t i = 0; i < pool_size; ++i) {
             if(usage == BufferPoolUsage::Dynamic) {
-                _data.emplace_back(GPUBuffer::create(device, DataSize, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).value());\
+                _data.emplace_back(GPUBuffer::create(device, DataSize, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).value());
             } else {
                 _data.emplace_back(GPUBuffer::create(device, DataSize, backend::BufferFlags::ConstantBuffer).value());
             }

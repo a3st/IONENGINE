@@ -6,7 +6,10 @@
 #include <renderer/texture_cache.h>
 #include <renderer/geometry_pool.h>
 #include <renderer/buffer_pool.h>
+#include <renderer/frame_graph.h>
+#include <renderer/pipeline_cache.h>
 #include <renderer/shader_uniform_binder.h>
+#include <asset/asset_manager.h>
 #include <lib/math/matrix.h>
 
 namespace ionengine::renderer {
@@ -32,11 +35,11 @@ public:
 
     UiRenderer& operator=(UiRenderer&&) = delete;
 
-    void update(float const delta_time);
+    void update(float const delta_time, uint32_t const frame_index);
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, backend::Handle<backend::CommandList> const& command_list, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, FrameGraph& frame_graph, uint32_t const frame_index);
 
 private:
 
@@ -47,7 +50,9 @@ private:
 
 	std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(UIElementData)>> _ui_element_pools;
 	std::vector<GeometryPool<2048, 512>> _geometry_pools;
-	
+
+    uint32_t _width;
+    uint32_t _height;
 };
 
 }
