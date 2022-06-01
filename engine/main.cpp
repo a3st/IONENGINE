@@ -37,7 +37,6 @@ int main(int* argc, char** agrv) {
         ui::UserInterface user_interface(window, logger);
         input::InputManager input_manager;
 
-        window.label("IONENGINE content/levels/city17.json5");
         framework::Framework framework(asset_manager, input_manager);
 
         auto begin_time = std::chrono::high_resolution_clock::now();

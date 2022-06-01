@@ -25,20 +25,6 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _width(window.client_width()),
     _height(window.client_height()) {
 
-    /*
-    auto [mesh_sender, mesh_receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
-    asset_manager.mesh_pool().event_dispatcher().add(std::move(mesh_sender));
-    _mesh_event_receiver.emplace(std::move(mesh_receiver));
-
-    auto [technique_sender, technique_receiver] = lib::make_channel<asset::AssetEvent<asset::Technique>>();
-    asset_manager.technique_pool().event_dispatcher().add(std::move(technique_sender));
-    _technique_event_receiver.emplace(std::move(technique_receiver));
-
-    auto [texture_sender, texture_receiver] = lib::make_channel<asset::AssetEvent<asset::Texture>>();
-    asset_manager.texture_pool().event_dispatcher().add(std::move(texture_sender));
-    _texture_event_receiver.emplace(std::move(texture_receiver)); 
-    */
-
     _null = NullData {
         .cbuffer = ResourcePtr<GPUBuffer>(GPUBuffer::create(_device, 256, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).value()),
         .sbuffer = ResourcePtr<GPUBuffer>(GPUBuffer::create(_device, 256, backend::BufferFlags::ShaderResource | backend::BufferFlags::HostWrite, 256).value()),
@@ -74,8 +60,12 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
         _frame_graph.reset();
 
         _device.recreate_swapchain(width, height);
+        
         _width = width;
         _height = height;
+
+        // _mesh_renderer.resize(width, height);
+        // _ui_renderer.resize(width, height);
     }
 }
 

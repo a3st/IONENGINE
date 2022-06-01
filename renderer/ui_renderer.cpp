@@ -34,7 +34,7 @@ void UiRenderer::update(float const delta_time) {
 }
 
 void UiRenderer::resize(uint32_t const width, uint32_t const height) {
-
+    
 }
 
 void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, uint32_t const frame_index) {

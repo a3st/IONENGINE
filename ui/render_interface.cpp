@@ -51,10 +51,10 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
         std::memcpy(vertex_data.data() + offset, &vertices[i].position, sizeof(Rml::Vector2f));
         offset += sizeof(Rml::Vector2f);
 
-        float const r = static_cast<float>(static_cast<uint32_t>(vertices[i].colour.red) / 255);
-        float const g = static_cast<float>(static_cast<uint32_t>(vertices[i].colour.green) / 255);
-        float const b = static_cast<float>(static_cast<uint32_t>(vertices[i].colour.blue) / 255);
-        float const a = static_cast<float>(static_cast<uint32_t>(vertices[i].colour.alpha) / 255);
+        float const r = static_cast<float>(vertices[i].colour.red) / 255.0f;
+        float const g = static_cast<float>(vertices[i].colour.green) / 255.0f;
+        float const b = static_cast<float>(vertices[i].colour.blue) / 255.0f;
+        float const a = static_cast<float>(vertices[i].colour.alpha) / 255.0f;
 
         std::memcpy(vertex_data.data() + offset, &r, sizeof(float));
         offset += sizeof(float);
@@ -111,5 +111,11 @@ bool RenderInterface::GenerateTexture(Rml::TextureHandle& texture_handle, const 
 }
 
 void RenderInterface::ReleaseTexture(Rml::TextureHandle texture_handle) {
+    asset::Texture* texture_data = reinterpret_cast<asset::Texture*>(texture_handle);
 
+    _texture_handles.remove_if(
+        [&](auto const& element) {
+            return element.hash == texture_data->hash;
+        }
+    );
 }

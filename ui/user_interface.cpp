@@ -17,6 +17,7 @@ UserInterface::UserInterface(platform::Window& window, lib::Logger& logger) :
     _context = Rml::CreateContext("main", Rml::Vector2i(window.client_width(), window.client_height()));
 
     Rml::LoadFontFace("content/ui/LatoLatin-Regular.ttf");
+    Rml::LoadFontFace("content/ui/LucidaConsole-Regular.ttf");
 
     _document = _context->LoadDocument("content/ui/demo.rml");
 
