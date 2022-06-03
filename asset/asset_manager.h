@@ -41,7 +41,7 @@ public:
         return nullptr;
     }
 
-    void push(AssetPtr<Type> const& element) {
+    void push(AssetPtr<Type> element) {
         _event_dispatcher.broadcast(AssetEvent<Type>::added(element));
         _data.emplace_back(element, ASSET_DEFAULT_LIVE_TIME);
     }

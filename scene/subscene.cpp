@@ -1,11 +1,15 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <asset/subscene.h>
+#include <scene/subscene.h>
+#include <scene/camera_node.h>
+#include <scene/mesh_node.h>
+#include <scene/transform_node.h>
+#include <scene/point_light_node.h>
 #include <asset/asset_manager.h>
 
 using namespace ionengine;
-using namespace ionengine::asset;
+using namespace ionengine::scene;
 
 lib::Expected<Subscene, lib::Result<SubsceneError>> Subscene::load_from_file(std::filesystem::path const& file_path, asset::AssetManager& asset_manager) {
 
@@ -28,18 +32,19 @@ lib::Expected<Subscene, lib::Result<SubsceneError>> Subscene::load_from_file(std
 
     auto subscene = Subscene {};
     subscene.name = document.name;
+
+    std::unordered_map<std::string, SceneNode*> node_names_cache;
     
     for(auto const& node : document.nodes) {
 
-        subscene.nodes.emplace_back();
-        subscene.nodes.back().name = node.name;
+        std::unique_ptr<SceneNode> alloc_node = nullptr;
 
         auto position = lib::math::Vector3f(node.values.position.at(0), node.values.position.at(1), node.values.position.at(2));
 
         auto quat_x = lib::math::Quaternionf::angle_axis(node.values.rotation.at(0), lib::math::Vector3f(1.0f, 0.0f, 0.0f));
         auto quat_y = lib::math::Quaternionf::angle_axis(node.values.rotation.at(1), lib::math::Vector3f(0.0f, 1.0f, 0.0f));
         auto quat_z = lib::math::Quaternionf::angle_axis(node.values.rotation.at(2), lib::math::Vector3f(0.0f, 0.0f, 1.0f));
-        auto quat_final = quat_x * quat_y * quat_z;
+        auto rotation = quat_x * quat_y * quat_z;
 
         auto scale = lib::math::Vector3f(node.values.scale.at(0), node.values.scale.at(1), node.values.scale.at(2));
 
@@ -47,13 +52,11 @@ lib::Expected<Subscene, lib::Result<SubsceneError>> Subscene::load_from_file(std
 
             case JSON_SubSceneNodeType::empty: {
 
-                auto data = SubsceneNodeData<SubsceneNodeType::Empty> { 
-                    .position = position,
-                    .rotation = quat_final,
-                    .scale = scale
-                };
-
-                subscene.nodes.back().data = std::move(data);
+                alloc_node = std::make_unique<TransformNode>();
+                auto casted_node = static_cast<TransformNode*>(alloc_node.get());
+                casted_node->position(position);
+                casted_node->rotation(rotation);
+                casted_node->scale(scale);
 
             } break;
 
@@ -61,22 +64,15 @@ lib::Expected<Subscene, lib::Result<SubsceneError>> Subscene::load_from_file(std
 
                 auto& mesh_node_data = node.values.mesh.value();
 
-                asset::AssetPtr<asset::Mesh> mesh = asset_manager.get_mesh(mesh_node_data.mesh);
-
-                std::vector<asset::AssetPtr<asset::Material>> materials;
-                for(auto const& material : mesh_node_data.materials) {
-                    materials.push_back(asset_manager.get_material(material));
+                alloc_node = std::make_unique<MeshNode>();
+                auto casted_node = static_cast<MeshNode*>(alloc_node.get());
+                casted_node->mesh(asset_manager.get_mesh(mesh_node_data.mesh));
+                for(size_t i = 0; i < mesh_node_data.materials.size(); ++i) {
+                    casted_node->material(static_cast<uint32_t>(i), asset_manager.get_material(mesh_node_data.materials.at(i)));
                 }
-
-                auto data = SubsceneNodeData<SubsceneNodeType::Mesh> {
-                    .mesh = std::move(mesh),
-                    .materials = std::move(materials),
-                    .position = std::move(position),
-                    .rotation = std::move(quat_final),
-                    .scale = std::move(scale)
-                };
-
-                subscene.nodes.back().data = std::move(data);
+                casted_node->position(position);
+                casted_node->rotation(rotation);
+                casted_node->scale(scale);
 
             } break;
 
@@ -86,28 +82,38 @@ lib::Expected<Subscene, lib::Result<SubsceneError>> Subscene::load_from_file(std
 
                 auto color = lib::math::Color(point_light_data.color.at(0), point_light_data.color.at(1), point_light_data.color.at(2), 1.0f);
 
-                auto data = SubsceneNodeData<SubsceneNodeType::PointLight> {
-                    .color = std::move(color),
-                    .range = point_light_data.range,
-                    .position = std::move(position),
-                    .rotation = std::move(quat_final),
-                    .scale = std::move(scale)
-                };
+                alloc_node = std::make_unique<PointLightNode>();
+                auto casted_node = static_cast<PointLightNode*>(alloc_node.get());
+                casted_node->color(color);
+                casted_node->range(point_light_data.range);
+                casted_node->position(position);
+                casted_node->rotation(rotation);
+                casted_node->scale(scale);
 
-                subscene.nodes.back().data = std::move(data);
             } break;
         }
+
+        if(node.name == "root") {
+            alloc_node->name(std::format("{}_root", document.name));
+            subscene.root_node = alloc_node.get();
+        } else {
+            alloc_node->name(node.name);
+        }
+
+        node_names_cache.insert({ std::string(alloc_node->name().begin(), alloc_node->name().end()), alloc_node.get() });
+        subscene.nodes.push_back(std::move(alloc_node));
     }
     
     for(auto const& link : document.links) {
         
-        std::vector<std::string> childrens;
-        
         for(auto const& children : link.childrens) {
-            childrens.emplace_back(children);
-        }
 
-        subscene.links.insert({ link.name, std::move(childrens) });
+            if(link.name == "root") {
+                node_names_cache.at(std::format("{}_root", document.name))->add_child(node_names_cache.at(children));
+            } else {
+                node_names_cache.at(link.name)->add_child(node_names_cache.at(children));
+            }
+        }
     }
 
     return lib::Expected<Subscene, lib::Result<SubsceneError>>::ok(std::move(subscene));

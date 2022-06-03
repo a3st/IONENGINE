@@ -26,7 +26,8 @@ UserInterface::UserInterface(renderer::Renderer& renderer, platform::Window& win
     _document->Show();
 
     _document_editor = _context->LoadDocument("engine/editor/ui/editor.rml");
-    _document_editor->Show();
+    //_document_editor->Show();
+
     _document->PullToFront();
 
     Rml::Debugger::Initialise(_context);

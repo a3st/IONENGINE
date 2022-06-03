@@ -32,14 +32,3 @@ float PointLightNode::range() const {
 void PointLightNode::range(float const range) {
     _range = range;
 }
-
-void PointLightNode::editor_icon(asset::AssetPtr<asset::Texture> texture) {
-    if(texture.is_pending()) {
-        texture.wait();
-    }
-    _editor_icon = texture;
-}
-
-asset::AssetPtr<asset::Texture>& PointLightNode::editor_icon() {
-    return _editor_icon;
-}

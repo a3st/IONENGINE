@@ -36,8 +36,11 @@ int main(int* argc, char** agrv) {
         renderer::Renderer renderer(window, asset_manager, thread_pool);
         ui::UserInterface user_interface(renderer, window, logger);
         input::InputManager input_manager;
+        scene::Scene scene(asset_manager);
 
-        framework::Framework framework(asset_manager, input_manager);
+        framework::Framework framework(asset_manager, input_manager, scene, user_interface);
+
+        scene.print_structure();
 
         auto begin_time = std::chrono::high_resolution_clock::now();
         uint64_t frame_count = 0;
@@ -103,18 +106,18 @@ int main(int* argc, char** agrv) {
 
                         user_interface.update();
                         input_manager.update();
-                        framework.scene().graph().update_hierarchical_data();
+                        scene.update(delta_time.count());
                         asset_manager.update(delta_time.count());
                         renderer.update(delta_time.count());
                         
-                        renderer.render(framework.scene(), user_interface);
+                        renderer.render(scene, user_interface);
 
                         ++frame_count;
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {
                         renderer.resize(data.width, data.height);
 
-                        scene::CameraNode* camera = framework.scene().graph().find_by_name<scene::CameraNode>("main_camera");
+                        scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("main_camera");
                         camera->aspect_ratio(data.width / static_cast<float>(data.height));
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::KeyboardInput> const& data) {

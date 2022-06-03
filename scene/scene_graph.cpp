@@ -6,7 +6,8 @@
 
 using namespace ionengine::scene;
 
-SceneGraph::SceneGraph() {
+SceneGraph::SceneGraph(SceneNode* root_node) : 
+    _root_node(root_node) {
 
 }
 
@@ -28,9 +29,9 @@ void SceneGraph::update_hierarchical_data() {
         auto transform_node = static_cast<TransformNode*>(node);
 
         transform_node->_model_local = 
-            lib::math::Matrixf::scale(transform_node->_scale) *
-            transform_node->_rotation.matrix() *
-            lib::math::Matrixf::translate(transform_node->_position)
+            transform_node->_rotation.to_matrix() *
+            lib::math::Matrixf::translate(transform_node->_position) *
+            lib::math::Matrixf::scale(transform_node->_scale)
         ;
 
         lib::math::Matrixf parent_global_transform;
@@ -39,10 +40,10 @@ void SceneGraph::update_hierarchical_data() {
             auto parent_transform_node = static_cast<TransformNode*>(transform_node->parent());
             parent_global_transform = parent_transform_node->_model_global;
         } else {
-            parent_global_transform = lib::math::Matrixf::identity();
+            parent_global_transform = transform_node->_model_local;
         }
 
-        lib::math::Matrixf new_global_transform = parent_global_transform * transform_node->_model_local;
+        lib::math::Matrixf new_global_transform = transform_node->_model_local * parent_global_transform;
 
         transform_node->_model_global = new_global_transform;
 

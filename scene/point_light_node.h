@@ -24,16 +24,10 @@ public:
 
     void range(float const range);
 
-    void editor_icon(asset::AssetPtr<asset::Texture> texture);
-
-    asset::AssetPtr<asset::Texture>& editor_icon();
-
 private:
 
     lib::math::Color _color;
     float _range;
-
-    asset::AssetPtr<asset::Texture> _editor_icon;
 };
 
 }

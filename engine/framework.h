@@ -5,6 +5,7 @@
 #include <asset/asset_manager.h>
 #include <input/input_manager.h>
 #include <scene/scene.h>
+#include <ui/user_interface.h>
 #include <scene/camera_node.h>
 #include <lib/math/vector.h>
 
@@ -13,11 +14,9 @@ namespace ionengine::framework {
 class Framework {
 public:
 
-    Framework(asset::AssetManager& asset_manager, input::InputManager& input_manager);
+    Framework(asset::AssetManager& asset_manager, input::InputManager& input_manager, scene::Scene& scene, ui::UserInterface& ui);
 
     void update(float const delta_time);
-
-    scene::Scene& scene();
 
 private:
 
@@ -29,8 +28,6 @@ private:
     float _rotation_y = 0.0f;
 
     lib::math::Quaternionf _original_rotation;
-
-    scene::Scene _scene;
 };
 
 }

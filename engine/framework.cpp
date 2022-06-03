@@ -10,13 +10,17 @@
 using namespace ionengine;
 using namespace ionengine::framework;
 
-Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& input_manager) :
-    _input_manager(&input_manager),
-    _scene(scene::Scene::load_from_file("content/levels/city17.json5", asset_manager).value()) {
+Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& input_manager, scene::Scene& scene, ui::UserInterface& ui) :
+    _input_manager(&input_manager) {
 
-    auto camera_object_node = _scene.graph().add_node<scene::CameraNode>();
+    scene.load("content/levels/city17.subscene");
+    scene.load("content/levels/city17_2.subscene");
+
+    auto camera_object_node = scene.graph().add_node<scene::CameraNode>();
     camera_object_node->name("main_camera");
     camera_object_node->position(lib::math::Vector3f(0.0f, 1.0f, 3.0f));
+
+    scene.graph().root()->add_child(camera_object_node);
 
     _camera_node = camera_object_node;
 
@@ -59,8 +63,4 @@ void Framework::update(float const delta_time) {
     lib::math::Quaternionf quat_y = lib::math::Quaternionf::angle_axis(_rotation_y, lib::math::Vector3f(1.0f, 0.0f, 0.0f));
 
     _camera_node->rotation(_original_rotation * quat_x * quat_y);
-}
-
-scene::Scene& Framework::scene() {
-    return _scene;
 }

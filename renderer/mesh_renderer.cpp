@@ -48,8 +48,14 @@ public:
 
     void operator()(scene::PointLightNode& other) { 
 
+        auto global_position = lib::math::Vector3f(
+            other.model_global().m30,
+            other.model_global().m31,
+            other.model_global().m32
+        );
+
         auto point_light = PointLightData {
-            .position = other.position(),
+            .position = global_position,
             .range = other.range(),
             .color = lib::math::Vector3f(other.color().r, other.color().g, other.color().b)
         };
@@ -83,7 +89,7 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     _height(window.client_height()) {
 
     for(uint32_t i = 0; i < 2; ++i) {
-        _object_pools.emplace_back(*_device, 32, 64, BufferPoolUsage::Dynamic);
+        _object_pools.emplace_back(*_device, 32, 256, BufferPoolUsage::Dynamic);
         _world_pools.emplace_back(*_device, 4, BufferPoolUsage::Dynamic);
         _point_light_pools.emplace_back(*_device, 512, 2, BufferPoolUsage::Dynamic);
 
@@ -153,7 +159,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     _memory_barriers.clear();
 
     MeshVisitor mesh_visitor(_opaque_queue, _transculent_queue, _point_lights);
-    scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
+    // scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
+    scene.visit_culling_nodes(mesh_visitor);
 
     _render_camera = scene.graph().find_by_name<scene::CameraNode>("main_camera");
 

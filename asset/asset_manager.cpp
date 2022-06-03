@@ -14,6 +14,7 @@ AssetManager::AssetManager(lib::ThreadPool& thread_pool, lib::Logger& logger) :
     _technique_pool(thread_pool, logger, std::make_unique<AssetLoader<Technique>>()),
     _material_pool(thread_pool, logger, std::make_unique<AssetLoader<Material>>(*this)),
     _texture_pool(thread_pool, logger, std::make_unique<AssetLoader<Texture>>()) {
+
 }
 
 AssetPtr<Mesh> AssetManager::get_mesh(std::filesystem::path const& asset_path) {

@@ -11,7 +11,7 @@ public:
 
     using Iterator = std::vector<std::unique_ptr<SceneNode>>::iterator;
 
-    SceneGraph();
+    SceneGraph(SceneNode* root_node);
 
     void update_hierarchical_data();
 

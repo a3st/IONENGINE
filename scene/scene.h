@@ -5,28 +5,44 @@
 #include <scene/scene_node.h>
 #include <scene/scene_graph.h>
 #include <scene/camera_node.h>
-#include <scene/streaming_scene_cache.h>
+#include <scene/subscene_cache.h>
+
+namespace ionengine {
+
+namespace asset {
+class AssetManager;
+};
+
+}
 
 namespace ionengine::scene {
 
 class Scene {
 public:
 
-    Scene();
+    Scene(asset::AssetManager& asset_manager);
 
     SceneGraph& graph();
 
     void update(float const delta_time);
 
-    void load_subscene(asset::AssetPtr<asset::Subscene> subscene);
+    void load(std::filesystem::path const& subscene_path);
+
+    void visit_culling_nodes(SceneVisitor& visitor);
+
+    void print_structure();
 
 private:
 
-    SceneGraph _scene_graph;
-
-    StreamingSceneCache _subscene_cache;
+    asset::AssetManager* _asset_manager;
 
     std::unique_ptr<SceneNode> _root_node;
+
+    SceneGraph _scene_graph;
+
+    SubsceneCache _subscene_cache;
+
+    std::vector<Subscene*> loaded_subscenes;
 
     std::vector<CameraNode*> _camera_nodes_cache;
 };

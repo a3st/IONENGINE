@@ -45,7 +45,6 @@ add_executable(Runtime-Win32
     asset/texture.cpp
     asset/material.cpp
     asset/technique.cpp
-    asset/subscene.cpp
 # ---------------------------
     # Scene
     scene/scene_node.cpp
@@ -55,7 +54,7 @@ add_executable(Runtime-Win32
     scene/mesh_node.cpp
     scene/scene.cpp
     scene/point_light_node.cpp
-    scene/streaming_scene.cpp
+    scene/subscene.cpp
 # ---------------------------    
     # Renderer Backend
     renderer/backend/d3d12x.cpp
@@ -161,7 +160,6 @@ add_executable(Editor-Win32
     asset/texture.cpp
     asset/material.cpp
     asset/technique.cpp
-    asset/subscene.cpp
 # ---------------------------
     # Scene
     scene/scene_node.cpp
@@ -171,7 +169,7 @@ add_executable(Editor-Win32
     scene/mesh_node.cpp
     scene/scene.cpp
     scene/point_light_node.cpp
-    scene/streaming_scene.cpp
+    scene/subscene.cpp
 # ---------------------------    
     # Renderer Backend
     renderer/backend/d3d12x.cpp

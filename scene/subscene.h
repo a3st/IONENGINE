@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <scene/scene_node.h>
 #include <asset/mesh.h>
 #include <asset/material.h>
 #include <lib/math/vector.h>
@@ -70,7 +71,7 @@ struct JSON_SubSceneDefinition {
 
 JSON5_CLASS(JSON_SubSceneDefinition, name, nodes, links)
 
-namespace ionengine::asset {
+namespace ionengine::scene {
 
 class AssetManager;
 
@@ -79,58 +80,10 @@ enum class SubsceneError {
     ParseError
 };
 
-enum class SubsceneNodeType {
-    Empty,
-    Mesh,
-    PointLight,
-    SpotLight,
-    DirectionalLight,
-    Camera
-};
-
-template<SubsceneNodeType Type>
-struct SubsceneNodeData {};
-
-template<>
-struct SubsceneNodeData<SubsceneNodeType::Empty> {
-    lib::math::Vector3f position;
-    lib::math::Quaternionf rotation;
-    lib::math::Vector3f scale;
-};
-
-template<>
-struct SubsceneNodeData<SubsceneNodeType::Mesh> {
-    asset::AssetPtr<asset::Mesh> mesh;
-    std::vector<asset::AssetPtr<asset::Material>> materials;
-    lib::math::Vector3f position;
-    lib::math::Quaternionf rotation;
-    lib::math::Vector3f scale;
-};
-
-template<>
-struct SubsceneNodeData<SubsceneNodeType::PointLight> {
-    lib::math::Color color;
-    float range;
-    lib::math::Vector3f position;
-    lib::math::Quaternionf rotation;
-    lib::math::Vector3f scale;
-};
-
-struct SubsceneNode {
-    std::string name;
-
-    std::variant<
-        SubsceneNodeData<SubsceneNodeType::Empty>,
-        SubsceneNodeData<SubsceneNodeType::Mesh>,
-        SubsceneNodeData<SubsceneNodeType::PointLight>
-    > data;
-};
-
 struct Subscene {
     std::string name;
-    std::vector<SubsceneNode> nodes;
-    std::unordered_map<std::string, std::vector<std::string>> links;
-    uint64_t hash;
+    SceneNode* root_node;
+    std::vector<std::unique_ptr<SceneNode>> nodes;
 
     static lib::Expected<Subscene, lib::Result<SubsceneError>> load_from_file(std::filesystem::path const& file_path, asset::AssetManager& asset_manager);
 };

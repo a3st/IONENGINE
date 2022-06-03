@@ -59,24 +59,29 @@ struct Quaternion {
 		return std::sqrt(x * x + y * y + z * z + w * w);
 	}
 
-	Matrix<Type> matrix() const {
+	Matrix<Type> to_matrix() const {
+        Type xy = x * y;
+        Type xz = x * z;
+        Type xw = x * w;
+        Type yz = y * z;
+        Type yw = y * w;
+        Type zw = z * w;
+        Type x_squared = x * x;
+        Type y_squared = y * y;
+        Type z_squared = z * z;
 
-        Type sqw = w * w;
-        Type sqx = x * x;
-        Type sqy = y * y;
-        Type sqz = z * z;
-        Type inverse = 1 / (sqx + sqy + sqz + sqw);
-
-        Matrix<Type> mat = Matrix<Type>::identity();
-        mat.m00 = (sqx - sqy - sqz + sqw) * inverse;
-        mat.m11 = (-sqx + sqy - sqz + sqw) * inverse;
-        mat.m22 = (-sqx - sqy + sqz + sqw) * inverse;
-        mat.m10 = 2 * (x * y + z * w) * inverse;
-        mat.m01 = 2 * (x * y - z * w) * inverse;
-        mat.m20 = 2 * (x * z - y * w) * inverse;
-        mat.m02 = 2 * (x * z + y * w) * inverse;
-        mat.m21 = 2 * (y * z + x * w) * inverse;
-        mat.m12 = 2 * (y * z - x * w) * inverse;
+        auto mat = Matrix<Type>::identity();
+        mat.m00 = 1.0f - 2.0f * (y_squared + z_squared);
+        mat.m01 = 2.0f * (xy - zw);
+        mat.m02 = 2.0f * (xz + yw);
+        mat.m03 = 0.0f;
+        mat.m10 = 2.0f * (xy + zw);
+        mat.m11 = 1.0f - 2.0f * (x_squared + z_squared);
+        mat.m12 = 2.0f * (yz - xw);
+        mat.m13 = 0.0f;
+        mat.m20 = 2.0f * (xz - yw);
+        mat.m21 = 2.0f * (yz + xw);
+        mat.m22 = 1.0f - 2.0f * (x_squared + y_squared);
         return mat;
     }
 

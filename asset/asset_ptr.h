@@ -56,15 +56,27 @@ public:
         );
     }
 
-    AssetPtr(AssetPtr const& other) = default;
+    AssetPtr(AssetPtr const& other) {
+        _ptr = other._ptr;
+    }
 
-    AssetPtr(AssetPtr&&) noexcept = default;
+    AssetPtr(AssetPtr&& other) noexcept {
+        _ptr = std::move(other._ptr);
+    }
 
-    AssetPtr& operator=(AssetPtr const&) = default;
+    AssetPtr& operator=(AssetPtr const& other) {
+        _ptr = other._ptr;
+        return *this;
+    }
 
-    AssetPtr& operator=(AssetPtr&&) noexcept = default;
+    AssetPtr& operator=(AssetPtr&& other) noexcept {
+        _ptr = std::move(other._ptr);
+        return *this;
+    }
 
-    uint32_t use_count() const { return _ptr.use_count(); }
+    uint32_t use_count() const { 
+        return _ptr.use_count(); 
+    }
 
     Type* operator->() const {
         std::unique_lock lock(_ptr->mutex);
@@ -79,8 +91,8 @@ public:
     }
 
     std::filesystem::path const& path() const { 
+        std::filesystem::path* path = nullptr;
 
-        std::filesystem::path* path;
         auto state_visitor = make_visitor(
             [&](AssetStateData<Type, AssetStateType::Ok>& state) {
                 path = &state.path;
@@ -99,8 +111,11 @@ public:
     }
 
     bool is_pending() const {
-        std::unique_lock lock(_ptr->mutex);
-        return _ptr->data.index() == 2;
+        if(_ptr->mutex.try_lock()) {
+            std::unique_lock lock(_ptr->mutex, std::adopt_lock);
+            return _ptr->data.index() == 2;
+        }
+        return false;
     }
 
     bool is_ok() const {
@@ -135,7 +150,9 @@ public:
         _ptr->data = AssetStateData<Type, AssetStateType::Error> { .path = asset_path };
     }
 
-    explicit operator bool() const noexcept { return _ptr.operator bool(); }
+    explicit operator bool() const noexcept { 
+        return _ptr.operator bool(); 
+    }
 
 private:
 

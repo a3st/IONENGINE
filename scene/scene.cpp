@@ -9,78 +9,44 @@
 using namespace ionengine;
 using namespace ionengine::scene;
 
-Scene::Scene() {
-    _root_node = std::make_unique<TransformNode>();
+Scene::Scene(asset::AssetManager& asset_manager) :
+    _asset_manager(&asset_manager),
+    _root_node(std::make_unique<TransformNode>()),
+    _scene_graph(_root_node.get()) {
+
     _root_node->name("root");
 }
 
-Scene::Scene(JSON_SubSceneDefinition const& document, asset::AssetManager& asset_manager) {
+void Scene::load(std::filesystem::path const& subscene_path) {
 
-    std::unordered_map<std::string, SceneNode*> node_cache;
-    node_cache.insert({ "root", _scene_graph.root() });
+    Subscene& subscene = _subscene_cache.get(*_asset_manager, subscene_path);
     
-    for(auto const& node : document.nodes) {
+    _scene_graph.root()->add_child(subscene.root_node);
 
-        if(node.type == JSON_SubSceneNodeType::mesh) {
-
-           
-            
-            auto allocated_node = _scene_graph.add_node<MeshNode>();
-            allocated_node->name(node.name);
-            allocated_node->mesh(asset_manager.get_mesh(mesh_info.mesh));
-
-            for(size_t i = 0; i < mesh_info.materials.size(); ++i) {
-                allocated_node->material(static_cast<uint32_t>(i), asset_manager.get_material(mesh_info.materials[i]));
-            }
-
-            allocated_node->position();
-
-            
-
-            
-
-            allocated_node->scale();
-
-            node_cache.insert({ node.name, allocated_node });
-
-        } else if(node.type == JSON_SubSceneNodeType::point_light) {
-
-            auto& point_light_info = node.values.point_light.value();
-
-            auto allocated_node = _scene_graph.add_node<PointLightNode>();
-            allocated_node->name(node.name);
-
-            allocated_node->light_color();
-            allocated_node->light_range(point_light_info.range);
-
-            allocated_node->position(lib::math::Vector3f(node.values.position.at(0), node.values.position.at(1), node.values.position.at(2)));
-           
-            lib::math::Quaternionf quat_x = lib::math::Quaternionf::angle_axis(node.values.rotation.at(0), lib::math::Vector3f(1.0f, 0.0f, 0.0f));
-            lib::math::Quaternionf quat_y = lib::math::Quaternionf::angle_axis(node.values.rotation.at(1), lib::math::Vector3f(0.0f, 1.0f, 0.0f));
-            lib::math::Quaternionf quat_z = lib::math::Quaternionf::angle_axis(node.values.rotation.at(2), lib::math::Vector3f(0.0f, 0.0f, 1.0f));
-
-            allocated_node->rotation(quat_x * quat_y * quat_z);
-
-            allocated_node->scale(lib::math::Vector3f(node.values.scale.at(0), node.values.scale.at(1), node.values.scale.at(2)));
-
-            allocated_node->editor_icon(asset_manager.get_texture("engine/editor/bulb.dds"));
-
-            node_cache.insert({ node.name, allocated_node });
-        }
-    }
-
-    for(auto const& link : document.links) {
-        for(auto const& children : link.childrens) {
-            node_cache.at(link.name)->add_child(node_cache.at(children));
-        }
-    }
+    loaded_subscenes.emplace_back(&subscene);
 }
 
 SceneGraph& Scene::graph() {
-
     return _scene_graph;
 }
 
 void Scene::update(float const delta_time) {
+    _scene_graph.update_hierarchical_data();
+}
+
+void Scene::print_structure() {
     
+    for(auto const& node : _scene_graph.root()->childrens()) {
+
+        std::cout << node->name() << std::endl;
+    }
+}
+
+void Scene::visit_culling_nodes(SceneVisitor& visitor) {
+
+    for(auto const& subscene : loaded_subscenes) {
+        for(auto const& node : subscene->nodes) {
+            node->accept(visitor);
+        }
+    }
 }
