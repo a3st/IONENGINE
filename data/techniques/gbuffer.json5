@@ -78,19 +78,19 @@
                 vs_output main(vs_input input, uint instance : SV_InstanceID) {
                     vs_output output;
 
-                    float4 world_pos = mul(float4(input.position, 1.0f), IONENGINE_MATRIX_M);
+                    float4 world_pos = mul(IONENGINE_MATRIX_M, float4(input.position, 1.0f));
                     
                     // vertex in world space
                     output.world_position = world_pos.xyz;
 
                     // vertex in screen space
-                    output.position = mul(mul(world_pos, IONENGINE_MATRIX_V), IONENGINE_MATRIX_P);
+                    output.position = mul(IONENGINE_MATRIX_P, mul(IONENGINE_MATRIX_V, world_pos));
                     
                     output.uv = float2(input.uv.x, 1.0f - input.uv.y);
 
-                    output.normal = mul(input.normal, (float3x3)transpose(IONENGINE_MATRIX_INV_M));
-                    output.tangent = mul(input.tangent, (float3x3)IONENGINE_MATRIX_M);
-                    output.bitangent = mul(input.bitangent, (float3x3)IONENGINE_MATRIX_M);
+                    output.normal = mul((float3x3)transpose(IONENGINE_MATRIX_INV_M), input.normal);
+                    output.tangent = mul((float3x3)IONENGINE_MATRIX_M, input.tangent);
+                    output.bitangent = mul((float3x3)IONENGINE_MATRIX_M, input.bitangent);
 
                     return output;
                 }
@@ -129,7 +129,7 @@
                     float3 tangent = normalize(input.tangent);
                     float3 bitangent = normalize(input.bitangent);
                     float3x3 tbn = float3x3(tangent, bitangent, normal);
-                    float3 normal_map = normal_texture.Sample(normal_sampler, input.uv).xyz * 2.0 - 1.0;
+                    float3 normal_map = normal_texture.Sample(normal_sampler, input.uv).xyz * 2.0 - float3(1.0f, 1.0f, 1.0f);
 
                     float3 albedo = albedo_texture.Sample(albedo_sampler, input.uv).rgb;
                     float roughness = roughness_texture.Sample(roughness_sampler, input.uv).r;
