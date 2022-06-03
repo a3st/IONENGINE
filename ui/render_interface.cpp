@@ -4,37 +4,72 @@
 #include <ui/render_interface.h>
 #include <renderer/ui_renderer.h>
 #include <renderer/shader_binder.h>
+#include <lib/algorithm.h>
 
 using namespace ionengine;
 using namespace ionengine::ui;
 
+RenderInterface::RenderInterface(renderer::UiRenderer& ui_renderer) :
+    _device(ui_renderer._device),
+    _upload_manager(ui_renderer._upload_manager),
+    _asset_manager(ui_renderer._asset_manager),
+    _texture_cache(&ui_renderer._texture_cache) {
+
+}
+
 void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, Rml::TextureHandle texture, const Rml::Vector2f& translation) {
 
-    asset::Texture* texture_data = reinterpret_cast<asset::Texture*>(texture);
+    int32_t has_texture = 0;
 
-    auto gpu_texture = _texture_cache->get(*_upload_manager, *texture_data);
+    if(texture) {
+        asset::Texture* texture_data = reinterpret_cast<asset::Texture*>(texture);
 
-    if(gpu_texture.is_ok()) {
+        if(texture_data->is_render_target) {
 
-        uint32_t const albedo_location = _shader_program->location_uniform_by_name("albedo");
-        _binder->update_resource(albedo_location, gpu_texture->texture);
-        // the sampler position is always 1 greater than the texture position
-        _binder->update_resource(albedo_location + 1, gpu_texture->sampler);
+            renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _rt_texture_cache->get(*texture_data);
 
-        if(gpu_texture->memory_state != renderer::backend::MemoryState::ShaderRead) {
-            gpu_texture->barrier(renderer::backend::MemoryState::ShaderRead);
+            if(gpu_texture.is_ok()) {
+
+                uint32_t const albedo_location = _shader_program->location_uniform_by_name("albedo");
+                _binder->update_resource(albedo_location, gpu_texture->texture);
+                // the sampler position is always 1 greater than the texture position
+                _binder->update_resource(albedo_location + 1, gpu_texture->sampler);
+
+                if(gpu_texture->memory_state != renderer::backend::MemoryState::ShaderRead) {
+                    _memory_barriers.push_back(gpu_texture->barrier(renderer::backend::MemoryState::ShaderRead));
+                }
+            }
+
+        } else {
+
+            renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _texture_cache->get(*_upload_manager, *texture_data);
+
+            if(gpu_texture.is_ok()) {
+
+                uint32_t const albedo_location = _shader_program->location_uniform_by_name("albedo");
+                _binder->update_resource(albedo_location, gpu_texture->texture);
+                // the sampler position is always 1 greater than the texture position
+                _binder->update_resource(albedo_location + 1, gpu_texture->sampler);
+
+                if(gpu_texture->memory_state != renderer::backend::MemoryState::ShaderRead) {
+                    _memory_barriers.push_back(gpu_texture->barrier(renderer::backend::MemoryState::ShaderRead));
+                }
+            }
         }
+
+        has_texture = 1;
     }
 
-    if(!memory_barriers.empty()) {
-        _device->barrier(_command_list, memory_barriers);
-        memory_barriers.clear();
+    if(!_memory_barriers.empty()) {
+        _device->barrier(_command_list, _memory_barriers);
+        _memory_barriers.clear();
     }
 
     auto ui_element_buffer = renderer::UIElementData {
         .projection = lib::math::Matrixf::orthographic_rh(0.0f, static_cast<float>(_width), static_cast<float>(_height), 0.0f, 0.0f, 1.0f),
         .transform = lib::math::Matrixf::identity(),
-        .translation = lib::math::Vector2f(translation.x, translation.y)
+        .translation = lib::math::Vector2f(translation.x, translation.y),
+        .has_texture = has_texture
     };
 
     renderer::ResourcePtr<renderer::GPUBuffer> ui_element_cbuffer = _ui_element_pool->allocate();
@@ -80,16 +115,72 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
 }
 
 void RenderInterface::EnableScissorRegion(bool enable) {
-
+    if(!enable) {
+        _device->set_scissor(_command_list, 0, 0, _width, _height);
+    }
+    _is_scissor = enable;
 }
 
 void RenderInterface::SetScissorRegion(int x, int y, int width, int height) {
-    _device->set_scissor(_command_list, x, y, width, height);
+    if(_is_scissor) {
+        //_device->set_scissor(_command_list, x, y, width, height);
+    }
 }
 
 bool RenderInterface::LoadTexture(Rml::TextureHandle& texture_handle, Rml::Vector2i& texture_dimensions, const Rml::String& source) {
 
-    return false;
+    if(source.contains("RT[")) {
+
+        uint64_t offset = 0;
+        std::string_view buffer = lib::get_line(source, offset, '[');
+        buffer = lib::get_line(source, offset, 'x');
+    
+        uint32_t width = 0;
+        std::from_chars(buffer.data(), buffer.data() + buffer.size(), width);
+
+        buffer = lib::get_line(source, offset, ']');
+
+        uint32_t height = 0;
+        std::from_chars(buffer.data(), buffer.data() + buffer.size(), height);
+
+        buffer = lib::get_line(source, offset, '{');
+        buffer = lib::get_line(source, offset, '}');
+
+        uint64_t hash = 0;
+        std::from_chars(buffer.data(), buffer.data() + buffer.size(), hash);
+
+        auto texture = asset::Texture {
+            .width = width,
+            .height = height,
+            .format = asset::TextureFormat::RGBA8_UNORM,
+            .filter = asset::TextureFilter::MinMagMipLinear,
+            .s_address_mode = asset::TextureAddress::Clamp,
+            .t_address_mode = asset::TextureAddress::Clamp,
+            .mip_count = 1,
+            .hash = hash,
+            .is_render_target = true
+        };
+            
+        texture_dimensions = Rml::Vector2i(texture.width, texture.height);
+        texture_handle = (Rml::TextureHandle)&_texture_handles.emplace_back(std::move(texture));
+        return true;
+
+    } else {
+
+        auto result = asset::Texture::load_from_file(source);
+
+        if(result.is_ok()) {
+
+            auto texture = std::move(result.value());
+            _texture_cache->get(*_upload_manager, texture);
+            texture_dimensions = Rml::Vector2i(texture.width, texture.height);
+            texture_handle = (Rml::TextureHandle)&_texture_handles.emplace_back(std::move(texture));
+            return true;
+
+        } else {
+            return false;
+        }
+    }
 }
 
 bool RenderInterface::GenerateTexture(Rml::TextureHandle& texture_handle, const Rml::byte* source, const Rml::Vector2i& source_dimensions) {

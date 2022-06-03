@@ -200,7 +200,7 @@ class DescriptorRange : public IUnknownImpl {
 
 public:
 
-    static uint32_t const MAX_ALLOCATION_COUNT = 256;
+    static uint32_t const MAX_ALLOCATION_COUNT = 1024;
 
     HRESULT allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range, DescriptorAllocation** allocation);
 

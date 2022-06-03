@@ -16,7 +16,7 @@
 #include <lib/logger.h>
 #include <lib/scope_profiler.h>
 
-#include <engine/framework.h>
+#include <editor/framework.h>
 
 using namespace ionengine;
 
@@ -30,15 +30,18 @@ int main(int* argc, char** agrv) {
 
     try {
         platform::WindowLoop loop;
-        platform::Window window("IONENGINE", 1280, 720, false);
+        platform::Window window("IONENGINE Editor", 1280, 720, false);
         
         asset::AssetManager asset_manager(thread_pool, logger);
         renderer::Renderer renderer(window, asset_manager, thread_pool);
         ui::UserInterface user_interface(renderer, window, logger);
         input::InputManager input_manager;
 
-        framework::Framework framework(asset_manager, input_manager);
+        renderer.mesh_renderer().resize(900, 500);
+        renderer.mesh_renderer().scissor(35, 20);
 
+        framework::Framework framework(asset_manager, input_manager, user_interface);
+        
         auto begin_time = std::chrono::high_resolution_clock::now();
         uint64_t frame_count = 0;
         uint64_t frame_count_previous = 0;
@@ -66,7 +69,7 @@ int main(int* argc, char** agrv) {
 
                         logger.throw_messages();
 
-                        framework.update(delta_time.count());
+                        //framework.update(delta_time.count());
 
                         frame_timer += delta_time.count();
                         if(frame_timer >= 1.0f) {

@@ -6,6 +6,7 @@
 #include <renderer/frame_graph.h>
 #include <renderer/geometry_cache.h>
 #include <renderer/texture_cache.h>
+#include <renderer/rt_texture_cache.h>
 #include <renderer/pipeline_cache.h>
 #include <renderer/render_queue.h>
 #include <renderer/buffer_pool.h>
@@ -53,7 +54,7 @@ inline std::filesystem::path const DEFFERED_TECHNIQUE_PATH = "engine/techniques/
 class MeshRenderer {
 public:
 
-    MeshRenderer(backend::Device& device, UploadManager& upload_manager, platform::Window& window, asset::AssetManager& asset_manager);
+    MeshRenderer(backend::Device& device, UploadManager& upload_manager, std::vector<RTTextureCache>& rt_texture_caches, platform::Window& window, asset::AssetManager& asset_manager);
 
     ~MeshRenderer();
 
@@ -69,6 +70,8 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
+    void scissor(int32_t const x, int32_t const y);
+
     void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index);
 
 private:
@@ -83,6 +86,7 @@ private:
     backend::Device* _device;
     asset::AssetManager* _asset_manager;
     UploadManager* _upload_manager;
+    std::vector<RTTextureCache>* _rt_texture_caches;
 
     TextureCache _texture_cache;
     GeometryCache _geometry_cache;
@@ -107,8 +111,12 @@ private:
 
     uint32_t _width;
     uint32_t _height;
+    int32_t _x{0};
+    int32_t _y{0};
 
     asset::AssetPtr<asset::Technique> _deffered_technique;
+
+    asset::AssetPtr<asset::Technique> _postfx_technique;
 
     std::vector<backend::MemoryBarrierDesc> _memory_barriers;
 

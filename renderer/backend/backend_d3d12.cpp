@@ -252,9 +252,9 @@ struct Device::Impl {
     
     void bind_resources(Handle<CommandList> const& command_list, Handle<DescriptorLayout> const& descriptor_layout, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
+    void set_viewport(Handle<CommandList> const& command_list, int32_t const x, int32_t const y, uint32_t const width, uint32_t const height);
 
-    void set_scissor(Handle<CommandList> const& command_list, uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
+    void set_scissor(Handle<CommandList> const& command_list, int32_t const left, int32_t const top, int32_t const right, int32_t const bottom);
 
     void begin_render_pass(
         Handle<CommandList> const& command_list,
@@ -1672,7 +1672,7 @@ void Device::Impl::command_list_reset(CommandList& command_list) {
     command_list.is_reset = true;
 }
 
-void Device::Impl::set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height) {
+void Device::Impl::set_viewport(Handle<CommandList> const& command_list, int32_t const x, int32_t const y, uint32_t const width, uint32_t const height) {
 
     auto& command_list_data = command_lists[command_list];
 
@@ -1691,7 +1691,7 @@ void Device::Impl::set_viewport(Handle<CommandList> const& command_list, uint32_
     command_list_data.command_list->RSSetViewports(1, &viewport);
 }
 
-void Device::Impl::set_scissor(Handle<CommandList> const& command_list, uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom) {
+void Device::Impl::set_scissor(Handle<CommandList> const& command_list, int32_t const left, int32_t const top, int32_t const right, int32_t const bottom) {
 
     auto& command_list_data = command_lists[command_list];
 
@@ -2253,11 +2253,11 @@ void Device::wait_for_idle(QueueFlags const flags) {
     return _impl->wait_for_idle(flags);
 }
 
-void Device::set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height) {
+void Device::set_viewport(Handle<CommandList> const& command_list, int32_t const x, int32_t const y, uint32_t const width, uint32_t const height) {
     _impl->set_viewport(command_list, x, y, width, height);
 }
 
-void Device::set_scissor(Handle<CommandList> const& command_list, uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom) {
+void Device::set_scissor(Handle<CommandList> const& command_list, int32_t const left, int32_t const top, int32_t const right, int32_t const bottom) {
     _impl->set_scissor(command_list, left, top, right, bottom);
 }
 

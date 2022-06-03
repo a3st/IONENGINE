@@ -22,8 +22,8 @@ void InputManager::on_keyboard_event(platform::WindowEventData<platform::WindowE
 }
 
 void InputManager::on_mouse_moved_event(platform::WindowEventData<platform::WindowEventType::MouseMoved> const& event) {
-    _axis_values.at(static_cast<uint32_t>(AxisCode::MouseX)) = static_cast<float>(event.x);
-    _axis_values.at(static_cast<uint32_t>(AxisCode::MouseY)) = static_cast<float>(event.y);
+    _axis_values.at(static_cast<uint32_t>(AxisCode::MouseX)) = static_cast<float>(event.x_relative);
+    _axis_values.at(static_cast<uint32_t>(AxisCode::MouseY)) = static_cast<float>(event.y_relative);
 }
 
 bool InputManager::key_down(KeyCode const key_code) const {

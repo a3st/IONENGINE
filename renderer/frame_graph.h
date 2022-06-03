@@ -56,6 +56,8 @@ public:
         std::string_view const name, 
         uint32_t const width,
         uint32_t const height,
+        int32_t const x,
+        int32_t const y,
         std::optional<std::span<CreateColorInfo const>> const colors,
         std::optional<std::span<CreateInputInfo const>> const inputs,
         std::optional<CreateDepthStencilInfo> const depth_stencil,
@@ -80,6 +82,8 @@ private:
         std::string name;
         uint32_t width;
         uint32_t height;
+        int32_t x;
+        int32_t y;
         std::vector<ResourcePtr<GPUTexture>> color_attachments;
         std::vector<backend::RenderPassLoadOp> color_ops;
         std::vector<lib::math::Color> color_clears;

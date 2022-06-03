@@ -35,6 +35,10 @@ public:
 
     lib::math::Matrixf const& transform_projection() const;
 
+    void render_target(asset::AssetPtr<asset::Texture> texture);
+
+    asset::AssetPtr<asset::Texture>& render_target();
+
 private:
 
     CameraProjectionType _projection_type{CameraProjectionType::Perspective};

@@ -20,6 +20,23 @@ std::span<uint8_t const> ionengine::lib::read_bytes(std::span<uint8_t const> con
     return dest;
 };
 
+std::string_view ionengine::lib::get_line(std::string_view const buffer, size_t& offset, char const delimeter) {
+    
+    size_t read_bytes = 0;
+    std::string_view line;
+    
+    for(size_t i = offset; i < buffer.size(); ++i) {
+        ++read_bytes;
+        if(buffer[i] == delimeter) {
+            line = std::string_view(buffer.data() + offset, buffer.data() + i);
+            break;
+        }
+    }
+
+    offset += read_bytes;
+    return line;
+}
+
 Expected<std::vector<uint8_t>, Result<IOError>> ionengine::lib::load_file(std::filesystem::path const& file_path) {
 
     std::ifstream ifs(file_path, std::ios::beg | std::ios::binary);

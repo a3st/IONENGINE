@@ -11,6 +11,7 @@ namespace ionengine::renderer {
 class UploadManager;
 class UiRenderer;
 class TextureCache;
+class RTTextureCache;
 struct ShaderProgram;
 class ShaderBinder;
 
@@ -24,7 +25,7 @@ class RenderInterface : public Rml::RenderInterface {
 
 public:
 
-    RenderInterface() = default;
+    RenderInterface(renderer::UiRenderer& ui_renderer);
 
     void RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices, Rml::TextureHandle texture, const Rml::Vector2f& translation) override;
 
@@ -42,10 +43,12 @@ private:
 
     renderer::backend::Device* _device;
     renderer::UploadManager* _upload_manager;
+    asset::AssetManager* _asset_manager;
 
     renderer::TextureCache* _texture_cache;
     renderer::BufferPool<renderer::BufferPoolType::CBuffer, 256>* _ui_element_pool;
     renderer::GeometryPool<8192, 2136>* _geometry_pool;
+    renderer::RTTextureCache* _rt_texture_cache;
 	renderer::backend::Handle<renderer::backend::CommandList> _command_list;
 
     renderer::ShaderBinder* _binder;
@@ -53,8 +56,10 @@ private:
 
     uint32_t _width;
     uint32_t _height;
+    
+    bool _is_scissor{false};
 
-    std::vector<renderer::backend::MemoryBarrierDesc> memory_barriers;
+    std::vector<renderer::backend::MemoryBarrierDesc> _memory_barriers;
 
 	std::list<asset::Texture> _texture_handles;
 };

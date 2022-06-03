@@ -22,6 +22,8 @@ void FrameGraph::add_pass(
     std::string_view const name, 
     uint32_t const width,
     uint32_t const height,
+    int32_t const x,
+    int32_t const y,
     std::optional<std::span<CreateColorInfo const>> const colors,
     std::optional<std::span<CreateInputInfo const>> const inputs, 
     std::optional<CreateDepthStencilInfo> const depth_stencil,
@@ -62,6 +64,8 @@ void FrameGraph::add_pass(
             .name = std::string(name),
             .width = width,
             .height = height,
+            .x = x,
+            .y = y,
             .color_attachments = color_attachments,
             .color_ops = color_ops,
             .color_clears = color_clears,
@@ -130,7 +134,7 @@ void FrameGraph::execute() {
                 auto& render_pass = _render_passes[op.index];
 
                 _device->set_viewport(render_pass->command_list, 0, 0, render_pass->width, render_pass->height);
-                _device->set_scissor(render_pass->command_list, 0, 0, render_pass->width, render_pass->height);
+                _device->set_scissor(render_pass->command_list, render_pass->x, render_pass->y, render_pass->width, render_pass->height);
 
                 std::vector<backend::MemoryBarrierDesc> barriers;
 
@@ -142,8 +146,7 @@ void FrameGraph::execute() {
                         }
                     } else {
                         if(attachment->memory_state != backend::MemoryState::RenderTarget) {
-                            barriers.emplace_back(attachment->texture, attachment->memory_state, backend::MemoryState::RenderTarget);
-                            attachment->memory_state = backend::MemoryState::RenderTarget;
+                            barriers.emplace_back(attachment->barrier(backend::MemoryState::RenderTarget));
                         }
                     }
                 }
@@ -168,6 +171,7 @@ void FrameGraph::execute() {
 
                 if(!barriers.empty()) {
                     _device->barrier(render_pass->command_list, barriers);
+                    barriers.clear();
                 }
 
                 _device->begin_render_pass(
@@ -186,7 +190,6 @@ void FrameGraph::execute() {
 
                 _device->end_render_pass(render_pass->command_list);
 
-                barriers.clear();
                 if(_swapchain_memory_state != backend::MemoryState::Present) {
                     barriers.emplace_back(_swapchain_texture, _swapchain_memory_state, backend::MemoryState::Present);
                     _swapchain_memory_state = backend::MemoryState::Present;

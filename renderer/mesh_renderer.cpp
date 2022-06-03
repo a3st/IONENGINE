@@ -29,11 +29,11 @@ public:
         if(other.mesh().is_ok()) {
             for(size_t i = 0; i < other.mesh()->surfaces().size(); ++i) {
 
-                lib::math::Matrixf inverse_model = other.transform_global();
+                lib::math::Matrixf inverse_model = other.model_global();
                 inverse_model.inverse();
                 
                 auto instance = SurfaceInstance {
-                    .model = other.transform_global(),
+                    .model = other.model_global(),
                     .inverse_model = inverse_model
                 };
 
@@ -50,8 +50,8 @@ public:
 
         auto point_light = PointLightData {
             .position = other.position(),
-            .range = other.light_range(),
-            .color = lib::math::Vector3f(other.light_color().r, other.light_color().g, other.light_color().b)
+            .range = other.range(),
+            .color = lib::math::Vector3f(other.color().r, other.color().g, other.color().b)
         };
 
         _point_lights->emplace_back(std::move(point_light));
@@ -70,13 +70,15 @@ private:
 
 }
 
-MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manager, platform::Window& window, asset::AssetManager& asset_manager) :
+MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manager, std::vector<RTTextureCache>& rt_texture_caches, platform::Window& window, asset::AssetManager& asset_manager) :
     _device(&device),
     _asset_manager(&asset_manager),
     _upload_manager(&upload_manager),
+    _rt_texture_caches(&rt_texture_caches),
     _texture_cache(device),
     _geometry_cache(device),
     _deffered_technique(asset_manager.get_technique(DEFFERED_TECHNIQUE_PATH)),
+    _postfx_technique(asset_manager.get_technique("engine/techniques/postfx.json5")),
     _width(window.client_width()),
     _height(window.client_height()) {
 
@@ -101,6 +103,7 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     _upload_manager->upload_geometry_data(_quad, quad_surface_data.vertices.to_span(), quad_surface_data.indices.to_span());
 
     _deffered_technique.wait();
+    //_postfx_technique.wait();
 }
 
 MeshRenderer::~MeshRenderer() {
@@ -112,6 +115,9 @@ void MeshRenderer::update(float const delta_time) {
 }
 
 void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
+
+    _width = width;
+    _height = height;
 
     _gbuffers.clear();
     _depth_stencils.clear();
@@ -127,6 +133,11 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
         _gbuffers.emplace_back(std::move(gbuffer));
         _depth_stencils.emplace_back(GPUTexture::create(*_device, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil).value());
     }
+}
+
+void MeshRenderer::scissor(int32_t const x, int32_t const y) {
+    _x = x;
+    _y = y;
 }
 
 void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index) {
@@ -199,6 +210,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         "gbuffer",
         _width,
         _height,
+        _x,
+        _y,
         gbuffer_color_infos,
         std::nullopt,
         depth_stencil_info,
@@ -250,10 +263,14 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         }
     );
 
-    auto swapchain_color_info = CreateColorInfo {
-        .attachment = nullptr,
-        .load_op = backend::RenderPassLoadOp::Clear,
-        .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
+    auto swapchain_color_info = CreateColorInfo {};
+    if(_render_camera->render_target()) {
+        auto gpu_texture = _rt_texture_caches->at(frame_index).get(*_render_camera->render_target());
+        swapchain_color_info.attachment = gpu_texture;
+    } else {
+        swapchain_color_info.attachment = nullptr;
+        swapchain_color_info.load_op = backend::RenderPassLoadOp::Clear;
+        swapchain_color_info.clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f);
     };
 
     auto gbuffer_input_infos = std::array<CreateInputInfo, 4> {
@@ -267,6 +284,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         "deffered",
         _width,
         _height,
+        _x,
+        _y,
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         gbuffer_input_infos,
         std::nullopt,
@@ -309,11 +328,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         }
     );
 
-    swapchain_color_info = CreateColorInfo {
-        .attachment = nullptr,
-        .load_op = backend::RenderPassLoadOp::Load,
-        .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
-    };
+    swapchain_color_info.load_op = backend::RenderPassLoadOp::Load;
 
     depth_stencil_info = CreateDepthStencilInfo {
         .attachment = _depth_stencils.at(frame_index),
@@ -326,6 +341,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         "forward",
         _width,
         _height,
+        _x,
+        _y,
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         depth_stencil_info,

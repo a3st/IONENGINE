@@ -9,7 +9,16 @@ enum class WindowEventType {
     Sized,
     Updated,
     KeyboardInput,
+    MouseInput,
     MouseMoved
+};
+
+enum class MouseButton {
+	Left,
+	Right,
+	Middle,
+	Four,
+	Five
 };
 
 enum class InputState {
@@ -33,9 +42,17 @@ struct WindowEventData<WindowEventType::KeyboardInput> {
 };
 
 template<>
+struct WindowEventData<WindowEventType::MouseInput> {
+    MouseButton button;
+    InputState input_state;
+};
+
+template<>
 struct WindowEventData<WindowEventType::MouseMoved> {
     int32_t x;
     int32_t y;
+    int32_t x_relative;
+    int32_t y_relative;
 };
 
 struct WindowEvent {
@@ -44,7 +61,8 @@ struct WindowEvent {
         WindowEventData<WindowEventType::Sized>,
         WindowEventData<WindowEventType::Updated>,
         WindowEventData<WindowEventType::KeyboardInput>,
-        WindowEventData<WindowEventType::MouseMoved>
+        WindowEventData<WindowEventType::MouseMoved>,
+        WindowEventData<WindowEventType::MouseInput>
     > data;
 
     static WindowEvent sized(uint32_t const width, uint32_t const height) {
@@ -63,8 +81,12 @@ struct WindowEvent {
         return WindowEvent { .data = WindowEventData<WindowEventType::KeyboardInput> { .scan_code = scan_code, .input_state = input_state } };
     }
 
-    static WindowEvent mouse_moved(int32_t const x, int32_t const y) {
-        return WindowEvent { .data = WindowEventData<WindowEventType::MouseMoved> { .x = x, .y = y } };
+    static WindowEvent mouse_input(MouseButton const button, InputState const input_state) {
+        return WindowEvent { .data = WindowEventData<WindowEventType::MouseInput> { .button = button, .input_state = input_state } };
+    }
+
+    static WindowEvent mouse_moved(int32_t const x, int32_t const y, int32_t const x_relative, int32_t const y_relative) {
+        return WindowEvent { .data = WindowEventData<WindowEventType::MouseMoved> { .x = x, .y = y, .x_relative = x_relative, .y_relative = y_relative } };
     }
 };
 

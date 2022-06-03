@@ -38,6 +38,7 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
     } else {
 
         auto result = GPUTexture::load_from_texture(*_device, texture);
+
         if(result.is_ok()) {
 
             auto cache_entry = CacheEntry<ResourcePtr<GPUTexture>> {
@@ -47,10 +48,11 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
 
             upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
             texture.cache_entry = _data.push(std::move(cache_entry));
+
         } else {
             throw lib::Exception(result.error_value().message);
         }
-
+        
         auto& cache_entry = _data.get(texture.cache_entry);
         return cache_entry.value;
     }

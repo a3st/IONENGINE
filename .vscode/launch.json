@@ -5,6 +5,17 @@
     "version": "1.0.0",
     "configurations": [
         {
+            "name": "(Windows) Launch Editor Debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/editor.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/Debug",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "(Windows) Launch Runtime Debug",
             "type": "cppvsdbg",
             "request": "launch",

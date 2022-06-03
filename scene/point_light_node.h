@@ -16,15 +16,13 @@ public:
 
     virtual void accept(SceneVisitor& visitor);
 
-    void light_color(lib::math::Color const& color);
+    void color(lib::math::Color const& color);
 
-    lib::math::Color const& light_color() const;
+    lib::math::Color const& color() const;
 
-    float light_range() const;
+    float range() const;
 
-    void light_range(float const range);
-
-    float light_attenuation() const;
+    void range(float const range);
 
     void editor_icon(asset::AssetPtr<asset::Texture> texture);
 
@@ -32,9 +30,8 @@ public:
 
 private:
 
-    lib::math::Color _light_color;
-    float _light_range;
-    float _light_attenuation;
+    lib::math::Color _color;
+    float _range;
 
     asset::AssetPtr<asset::Texture> _editor_icon;
 };

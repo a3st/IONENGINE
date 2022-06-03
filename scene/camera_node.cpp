@@ -58,3 +58,11 @@ lib::math::Matrixf const& CameraNode::transform_projection() const {
 
     return _projection;
 }
+
+void CameraNode::render_target(asset::AssetPtr<asset::Texture> texture) {
+    _render_target = texture;
+}
+
+asset::AssetPtr<asset::Texture>& CameraNode::render_target() {
+    return _render_target;
+}

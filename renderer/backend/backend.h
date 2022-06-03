@@ -388,9 +388,9 @@ public:
 
     void bind_resources(Handle<CommandList> const& command_list, Handle<DescriptorLayout> const& descriptor_layout, std::span<DescriptorWriteDesc const> const write_descs);
 
-    void set_viewport(Handle<CommandList> const& command_list, uint32_t const x, uint32_t const y, uint32_t const width, uint32_t const height);
+    void set_viewport(Handle<CommandList> const& command_list, int32_t const x, int32_t const y, uint32_t const width, uint32_t const height);
 
-    void set_scissor(Handle<CommandList> const& command_list, uint32_t const left, uint32_t const top, uint32_t const right, uint32_t const bottom);
+    void set_scissor(Handle<CommandList> const& command_list, int32_t const left, int32_t const top, int32_t const right, int32_t const bottom);
 
     void begin_render_pass(
         Handle<CommandList> const& command_list,

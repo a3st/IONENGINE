@@ -8,9 +8,6 @@ using namespace ionengine::scene;
 
 SceneGraph::SceneGraph() {
 
-    _nodes.push_back(std::make_unique<TransformNode>());
-    _root_node = _nodes.back().get();
-    _root_node->name("root");
 }
 
 void SceneGraph::visit(Iterator const& begin, Iterator const& end, SceneVisitor& visitor) {

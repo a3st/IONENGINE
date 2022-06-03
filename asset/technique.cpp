@@ -232,7 +232,7 @@ std::string constexpr ionengine::asset::get_shader_data_type_string(JSON_ShaderD
         case JSON_ShaderDataType::f32x2: return "float2";
         case JSON_ShaderDataType::f32: return "float";
         case JSON_ShaderDataType::uint32: return "uint";
-        case JSON_ShaderDataType::boolean: return "boolean";
+        case JSON_ShaderDataType::boolean: return "bool";
         default: {
             assert(false && "invalid data type");
             return "float";

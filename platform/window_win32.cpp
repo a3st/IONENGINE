@@ -271,8 +271,50 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
 				LONG x = raw_input->data.mouse.lLastX;
 				LONG y = raw_input->data.mouse.lLastY;
+				ULONG buttons = raw_input->data.mouse.ulButtons;
+				USHORT flags = raw_input->data.mouse.usFlags;
+				USHORT button_flags = raw_input->data.mouse.usButtonFlags;
+				USHORT button_data = raw_input->data.mouse.usButtonData;
 
-				window_impl->events.push(WindowEvent::mouse_moved(static_cast<int32_t>(x), static_cast<int32_t>(y)));
+				switch (buttons) {
+					case RI_MOUSE_LEFT_BUTTON_DOWN: {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Left, InputState::Pressed));
+					} break;
+					case RI_MOUSE_RIGHT_BUTTON_DOWN:  {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Right, InputState::Pressed));
+					} break;
+					case RI_MOUSE_MIDDLE_BUTTON_DOWN:  {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Middle, InputState::Pressed));
+					} break;
+					case RI_MOUSE_BUTTON_4_DOWN:  {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Four, InputState::Pressed));
+					} break;
+					case RI_MOUSE_BUTTON_5_DOWN:  {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Five, InputState::Pressed));
+					} break;
+					case RI_MOUSE_LEFT_BUTTON_UP:  {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Left, InputState::Released));
+					} break;
+					case RI_MOUSE_RIGHT_BUTTON_UP:  {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Right, InputState::Released));
+					} break;
+					case RI_MOUSE_MIDDLE_BUTTON_UP:  {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Middle, InputState::Released));
+					} break;
+					case RI_MOUSE_BUTTON_4_UP:  {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Four, InputState::Released));
+					} break;
+					case RI_MOUSE_BUTTON_5_UP: {
+						window_impl->events.push(WindowEvent::mouse_input(MouseButton::Five, InputState::Released));
+					} break;
+				}
+
+				auto cursor_point = POINT {};
+				if(GetCursorPos(&cursor_point)) {
+					ScreenToClient(window_impl->hwnd, &cursor_point);
+				}
+
+				window_impl->events.push(WindowEvent::mouse_moved(static_cast<int32_t>(cursor_point.x), static_cast<int32_t>(cursor_point.y), static_cast<int32_t>(x), static_cast<int32_t>(y)));
 			}
 
 		} break;

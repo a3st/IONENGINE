@@ -51,7 +51,6 @@ public:
 private:
 
     SceneNode* _root_node;
-
     std::vector<std::unique_ptr<SceneNode>> _nodes;
 };
 

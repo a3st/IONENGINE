@@ -32,9 +32,7 @@ enum class TextureAddress {
     Mirror
 };
 
-class Texture {
-public:
-
+struct Texture {
     lib::hash::Buffer<uint8_t> data;
     uint32_t width;
     uint32_t height;
@@ -45,8 +43,11 @@ public:
     uint32_t mip_count;
     uint64_t hash;
 
+    bool is_render_target{false};
     size_t cache_entry{std::numeric_limits<size_t>::max()};
 
+    static lib::Expected<Texture, lib::Result<TextureError>> create(uint32_t const width, uint32_t const height, bool const is_render_target);
+    
     static lib::Expected<Texture, lib::Result<TextureError>> load_from_file(std::filesystem::path const& file_path);
 };
 

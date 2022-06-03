@@ -18,10 +18,10 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 }),
     _upload_manager(thread_pool, _device),
     _frame_graph(_device),
-    _ui_renderer(_device, _upload_manager, window, asset_manager),
-    _mesh_renderer(_device, _upload_manager, window, asset_manager),
     _shader_cache(_device),
     _pipeline_cache(_device),
+    _ui_renderer(_device, _upload_manager, _rt_texture_caches, window, asset_manager),
+    _mesh_renderer(_device, _upload_manager, _rt_texture_caches, window, asset_manager),
     _width(window.client_width()),
     _height(window.client_height()) {
 
@@ -30,6 +30,10 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
         .sbuffer = ResourcePtr<GPUBuffer>(GPUBuffer::create(_device, 256, backend::BufferFlags::ShaderResource | backend::BufferFlags::HostWrite, 256).value()),
         .texture = ResourcePtr<GPUTexture>(GPUTexture::create(_device, backend::Format::RGBA8_UNORM, 1, 1, 1, 1, backend::TextureFlags::ShaderResource).value())
     };
+
+    for(uint32_t i = 0; i < 2; ++i) {
+        _rt_texture_caches.emplace_back(_device);
+    }
 }
 
 Renderer::~Renderer() {

@@ -61,22 +61,43 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
 
     auto gpu_texture = GPUTexture {};
     {
-        gpu_texture.texture = device.create_texture(
-            backend::Dimension::_2D, 
-            texture.width, 
-            texture.height, 
-            texture.mip_count,
-            1, 
-            get_texture_format(texture.format),
-            backend::TextureFlags::ShaderResource
-        );
+        if(texture.is_render_target) {
+
+            gpu_texture.texture = device.create_texture(
+                backend::Dimension::_2D, 
+                texture.width, 
+                texture.height, 
+                texture.mip_count,
+                1, 
+                get_texture_format(texture.format),
+                backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource
+            );
+
+            gpu_texture.memory_state = backend::MemoryState::RenderTarget;
+            gpu_texture.flags = backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource;
+
+        } else {
+
+            gpu_texture.texture = device.create_texture(
+                backend::Dimension::_2D, 
+                texture.width, 
+                texture.height, 
+                texture.mip_count,
+                1, 
+                get_texture_format(texture.format),
+                backend::TextureFlags::ShaderResource
+            );
+
+            gpu_texture.memory_state = backend::MemoryState::Common;
+            gpu_texture.flags = backend::TextureFlags::ShaderResource;
+        }
 
         gpu_texture.sampler = device.create_sampler(
             backend::Filter::MinMagMipLinear,
             backend::AddressMode::Wrap,
             backend::AddressMode::Wrap,
             backend::AddressMode::Wrap,
-            2,
+            16,
             backend::CompareOp::Always
         );
 
@@ -84,8 +105,6 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
         gpu_texture.width = texture.width;
         gpu_texture.height = texture.height;
         gpu_texture.mip_count = texture.mip_count;
-        gpu_texture.memory_state = backend::MemoryState::Common;
-        gpu_texture.flags = backend::TextureFlags::ShaderResource;
     }
     return lib::Expected<GPUTexture, lib::Result<GPUTextureError>>::ok(std::move(gpu_texture));
 }

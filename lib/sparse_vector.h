@@ -85,7 +85,7 @@ public:
     }
 
     bool is_valid(size_t const index) const {
-        if(index == std::numeric_limits<size_t>::max()) {
+        if(index == std::numeric_limits<size_t>::max() || _sparse.empty() || index >= _sparse.size()) {
             return false;
         }
         return _sparse[index].has_value();

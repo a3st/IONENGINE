@@ -8,18 +8,19 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, platform::Window& window, asset::AssetManager& asset_manager) :
+UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, std::vector<RTTextureCache>& rt_texture_caches, platform::Window& window, asset::AssetManager& asset_manager) :
     _device(&device),
     _asset_manager(&asset_manager),
     _upload_manager(&upload_manager),
+    _rt_texture_caches(&rt_texture_caches),
     _texture_cache(device),
     _width(window.client_width()),
     _height(window.client_height()),
     _ui_technique(asset_manager.get_technique(UI_TECHNIQUE_PATH)) {
     
     for(uint32_t i = 0; i < 2; ++i) {
-        _ui_element_pools.emplace_back(*_device, 32, BufferPoolUsage::Dynamic);
-        _geometry_pools.emplace_back(*_device, 128, GeometryPoolUsage::Dynamic);
+        _ui_element_pools.emplace_back(*_device, 512, BufferPoolUsage::Dynamic);
+        _geometry_pools.emplace_back(*_device, 512, GeometryPoolUsage::Dynamic);
     }
 
     _ui_technique.wait();
@@ -51,6 +52,8 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
         "ui",
         _width,
         _height,
+        0,
+        0,
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         std::nullopt,
@@ -62,11 +65,9 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
 
             ShaderBinder binder(*shader_program, null);
 
-            ui.render_interface()._device = _device;
-            ui.render_interface()._upload_manager = _upload_manager;
-            ui.render_interface()._texture_cache = &_texture_cache;
             ui.render_interface()._ui_element_pool = &_ui_element_pools.at(frame_index);
             ui.render_interface()._geometry_pool = &_geometry_pools.at(frame_index);
+            ui.render_interface()._rt_texture_cache = &_rt_texture_caches->at(frame_index);
             ui.render_interface()._command_list = context.command_list;
             ui.render_interface()._width = _width;
             ui.render_interface()._height = _height;

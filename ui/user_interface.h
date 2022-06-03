@@ -5,9 +5,18 @@
 #include <RmlUi/Core.h>
 #include <ui/system_interface.h>
 #include <ui/render_interface.h>
+#include <asset/asset_manager.h>
 
-namespace ionengine::platform {
+namespace ionengine {
+
+namespace platform {
 class Window;
+}
+
+namespace renderer {
+class Renderer;
+}
+
 }
 
 namespace ionengine::ui {
@@ -15,7 +24,7 @@ namespace ionengine::ui {
 class UserInterface {
 public:
 
-    UserInterface(platform::Window& window, lib::Logger& logger);
+    UserInterface(renderer::Renderer& renderer, platform::Window& window, lib::Logger& logger);
 
     ~UserInterface();
 
@@ -31,10 +40,20 @@ public:
 
     void element_text_3(std::string_view const text);
 
+    void hot_reload();
+
+    void show_debug(bool const show);
+
+    void show_debugger(bool const show);
+
+    void render_target_sel(asset::AssetPtr<asset::Texture> texture);
+
 private:
 
     Rml::Context* _context;
     Rml::ElementDocument* _document;
+
+    Rml::ElementDocument* _document_editor;
 
     SystemInterface _system_interface;
     RenderInterface _render_interface;

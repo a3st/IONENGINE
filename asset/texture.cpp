@@ -8,6 +8,25 @@
 using namespace ionengine;
 using namespace ionengine::asset;
 
+lib::Expected<Texture, lib::Result<TextureError>> Texture::create(uint32_t const width, uint32_t const height, bool const is_render_target) {
+
+    auto texture = Texture {};
+    texture.width = width;
+    texture.height = height;
+    texture.mip_count = 1;
+    texture.format = TextureFormat::RGBA8_UNORM;
+    texture.filter = TextureFilter::MinMagMipLinear;
+    texture.s_address_mode = TextureAddress::Clamp;
+    texture.t_address_mode = TextureAddress::Clamp;
+    texture.is_render_target = is_render_target;
+
+    std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::string const render_target_hash = std::format("RT{{{}}}", time);
+    texture.hash = XXHash64::hash(render_target_hash.data(), render_target_hash.size(), 0);
+
+    return lib::Expected<Texture, lib::Result<TextureError>>::ok(std::move(texture));
+}
+
 lib::Expected<Texture, lib::Result<TextureError>> Texture::load_from_file(std::filesystem::path const& file_path) {
 
     std::filesystem::path const extension = file_path.extension();

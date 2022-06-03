@@ -6,6 +6,7 @@
 #include <renderer/texture_cache.h>
 #include <renderer/geometry_pool.h>
 #include <renderer/buffer_pool.h>
+#include <renderer/rt_texture_cache.h>
 #include <renderer/frame_graph.h>
 #include <renderer/pipeline_cache.h>
 #include <asset/asset_manager.h>
@@ -14,7 +15,8 @@
 namespace ionengine {
 
 namespace ui {
-class UserInterface;    
+class UserInterface;
+class RenderInterface;
 };
 
 }
@@ -27,14 +29,18 @@ __declspec(align(256)) struct UIElementData {
 	lib::math::Matrixf projection;
     lib::math::Matrixf transform;
     lib::math::Vector2f translation;
+    int32_t has_texture;
 };
 
 inline std::filesystem::path const UI_TECHNIQUE_PATH = "engine/techniques/ui.json5";
 
 class UiRenderer {
+
+    friend class ui::RenderInterface;
+
 public:
 
-	UiRenderer(backend::Device& device, UploadManager& upload_manager, platform::Window& window, asset::AssetManager& asset_manager);
+	UiRenderer(backend::Device& device, UploadManager& upload_manager, std::vector<RTTextureCache>& rt_texture_caches, platform::Window& window, asset::AssetManager& asset_manager);
 
 	~UiRenderer();
 
@@ -57,6 +63,7 @@ private:
 	backend::Device* _device;
     asset::AssetManager* _asset_manager;
 	UploadManager* _upload_manager;
+    std::vector<RTTextureCache>* _rt_texture_caches;
 
 	TextureCache _texture_cache;
 

@@ -31,15 +31,14 @@ public:
 
     lib::math::Vector3f const& scale() const;
 
-    lib::math::Matrixf const& transform_local() const;
+    lib::math::Matrixf const& model_local() const;
 
-    lib::math::Matrixf const& transform_global() const;
+    lib::math::Matrixf const& model_global() const;
 
 private:
 
     lib::math::Matrixf _model_local;
     lib::math::Matrixf _model_global;
-
     lib::math::Vector3f _position;
     lib::math::Quaternionf _rotation;
     lib::math::Vector3f _scale;
