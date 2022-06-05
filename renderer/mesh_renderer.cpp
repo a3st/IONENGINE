@@ -385,9 +385,11 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
                 uint32_t const world_location = shader_program->location_uniform_by_name("world");
                 uint32_t const object_location = shader_program->location_uniform_by_name("object");
+                uint32_t const point_light_location = shader_program->location_uniform_by_name("point_light");
 
                 binder.update_resource(world_location, world_cbuffer->buffer);
                 binder.update_resource(object_location, object_sbuffer->buffer);
+                binder.update_resource(point_light_location, point_light_sbuffer->buffer);
 
                 binder.bind(*_device, context.command_list);
 
