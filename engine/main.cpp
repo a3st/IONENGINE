@@ -53,6 +53,9 @@ int main(int* argc, char** agrv) {
 
         logger.log(lib::LoggerCategoryType::Engine, "engine initialized");
 
+        renderer::backend::AdapterDesc adapter_desc = renderer.adapter_desc();
+        user_interface.element_text_gpu_name(adapter_desc.name);
+
         loop.run(
             window,
             [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
@@ -73,13 +76,16 @@ int main(int* argc, char** agrv) {
 
                         frame_timer += delta_time.count();
                         if(frame_timer >= 1.0f) {
-                            user_interface.element_text(std::format("{}", frame_count - frame_count_previous));
-                            user_interface.element_text_3(std::format("{:.2f}ms", 1000.0f / (frame_count - frame_count_previous)));
+                            user_interface.element_text_fps(std::format("{}", frame_count - frame_count_previous));
+                            user_interface.element_text_frame_time(std::format("{:.2f}ms", 1000.0f / (frame_count - frame_count_previous)));
                             frame_timer = 0.0f;
                             frame_count_previous = frame_count;
+
+                            renderer::backend::AdapterDesc adapter_desc = renderer.adapter_desc();
+                            user_interface.element_text_gpu_memory_usage(std::format("{} / {} MB", adapter_desc.local_memory_usage / (1024 * 1024), adapter_desc.local_memory_size / (1024 * 1024)));
                         }
 
-                        user_interface.element_text_2(std::format("{}", frame_count));
+                        user_interface.element_text_frame_count(std::format("{}", frame_count));
 
                         if(input_manager.key_down(input::KeyCode::Escape)) {
                             flow = platform::WindowEventFlow::Exit;

@@ -19,18 +19,16 @@ UserInterface::UserInterface(renderer::Renderer& renderer, platform::Window& win
     _context = Rml::CreateContext("main", Rml::Vector2i(window.client_width(), window.client_height()));
 
     Rml::LoadFontFace("engine/editor/fonts/Roboto-Regular.ttf");
-    Rml::LoadFontFace("content/ui/LucidaConsole-Regular.ttf");
-
-    _document = _context->LoadDocument("content/ui/demo.rml");
-
-    _document->Show();
-
-    _document_editor = _context->LoadDocument("engine/editor/ui/editor.rml");
-    //_document_editor->Show();
-
-    _document->PullToFront();
+    Rml::LoadFontFace("engine/fonts/LucidaConsole-Regular.ttf");
 
     Rml::Debugger::Initialise(_context);
+
+    _debug_document = _context->LoadDocument("engine/ui/debug.html");
+    _debug_document->Show();
+
+    //_document_editor = _context->LoadDocument("engine/editor/ui/editor.rml");
+    //_document_editor->Show();
+    //_document->PullToFront();
 }
 
 void UserInterface::render_target_sel(asset::AssetPtr<asset::Texture> texture) {
@@ -54,9 +52,9 @@ void UserInterface::hot_reload() {
 
 void UserInterface::show_debug(bool const show) {
     if(show) {
-        _document->Show();
+        _debug_document->Show();
     } else {
-        _document->Hide();
+        _debug_document->Hide();
     }
 }
 
@@ -68,18 +66,28 @@ void UserInterface::show_debugger(bool const show) {
     }
 }
 
-void UserInterface::element_text(std::string_view const text) {
-    Rml::Element* element = _document->GetElementById("fps_count");
+void UserInterface::element_text_fps(std::string_view const text) {
+    Rml::Element* element = _debug_document->GetElementById("fps_count");
     element->SetInnerRML(std::string(text.data(), text.size()));
 }
 
-void UserInterface::element_text_2(std::string_view const text) {
-    Rml::Element* element = _document->GetElementById("frame_count");
+void UserInterface::element_text_frame_count(std::string_view const text) {
+    Rml::Element* element = _debug_document->GetElementById("frame_count");
     element->SetInnerRML(std::string(text.data(), text.size()));
 }
 
-void UserInterface::element_text_3(std::string_view const text) {
-    Rml::Element* element = _document->GetElementById("frame_time");
+void UserInterface::element_text_frame_time(std::string_view const text) {
+    Rml::Element* element = _debug_document->GetElementById("frame_time");
+    element->SetInnerRML(std::string(text.data(), text.size()));
+}
+
+void UserInterface::element_text_gpu_name(std::string_view const text) {
+    Rml::Element* element = _debug_document->GetElementById("gpu_name");
+    element->SetInnerRML(std::string(text.data(), text.size()));
+}
+
+void UserInterface::element_text_gpu_memory_usage(std::string_view const text) {
+    Rml::Element* element = _debug_document->GetElementById("gpu_memory_usage");
     element->SetInnerRML(std::string(text.data(), text.size()));
 }
 

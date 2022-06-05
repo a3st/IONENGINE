@@ -51,6 +51,10 @@ public:
 
     void load_shaders(std::span<std::filesystem::path const> const shader_paths);
 
+    backend::AdapterDesc adapter_desc() const {
+        return _device.adapter_desc();
+    }
+
     UiRenderer& ui_renderer();
 
     MeshRenderer& mesh_renderer();

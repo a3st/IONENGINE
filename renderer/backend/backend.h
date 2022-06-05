@@ -240,6 +240,8 @@ struct BlendDesc {
 
 struct AdapterDesc {
     std::string name;
+    size_t local_memory_size;
+    size_t local_memory_usage;
 };
 
 struct SwapchainDesc {
@@ -407,6 +409,8 @@ public:
     void draw(Handle<CommandList> const& command_list, uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
 
     void draw_indexed(Handle<CommandList> const& command_list, uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
+
+    AdapterDesc adapter_desc() const;
 
 private:
 

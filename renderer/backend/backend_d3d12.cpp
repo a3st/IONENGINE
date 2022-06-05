@@ -271,6 +271,8 @@ struct Device::Impl {
     void draw(Handle<CommandList> const& command_list, uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
 
     void draw_indexed(Handle<CommandList> const& command_list, uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
+
+    AdapterDesc adapter_desc() const;
 };
 
 void Device::impl_deleter::operator()(Impl* ptr) const {
@@ -2064,6 +2066,28 @@ void Device::Impl::draw_indexed(Handle<CommandList> const& command_list, uint32_
     command_list_data.command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
 }
 
+AdapterDesc Device::Impl::adapter_desc() const {
+
+    auto adapter_desc = DXGI_ADAPTER_DESC1 {};
+    adapter->GetDesc1(&adapter_desc);
+    
+    auto local_budget = D3D12MA::Budget {};
+    memory_allocator->GetBudget(&local_budget, nullptr);
+
+    size_t length = wcslen(adapter_desc.Description) + 1;
+    size_t result = 0;
+	
+	std::string out_str(length - 1, 0);
+
+    wcstombs_s(&result, reinterpret_cast<char*>(out_str.data()), length, reinterpret_cast<const wchar_t*>(adapter_desc.Description), length - 1);
+
+    return AdapterDesc {
+        .name = out_str,
+        .local_memory_size = adapter_desc.DedicatedVideoMemory,
+        .local_memory_usage = local_budget.UsageBytes
+    };
+}
+
 //===========================================================
 //
 //
@@ -2313,21 +2337,21 @@ void Device::copy_texture_region(
 }
 
 void Device::bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset) {
-
     _impl->bind_vertex_buffer(command_list, index, buffer, offset);
 }
 
 void Device::bind_index_buffer(Handle<CommandList> const& command_list, Handle<Buffer> const& buffer, uint64_t const offset) {
-
     _impl->bind_index_buffer(command_list, buffer, offset);
 }
 
 void Device::draw(Handle<CommandList> const& command_list, uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset) {
-
     _impl->draw(command_list, vertex_count, instance_count, vertex_offset);
 }
 
 void Device::draw_indexed(Handle<CommandList> const& command_list, uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) {
-
     _impl->draw_indexed(command_list, index_count, instance_count, instance_offset);
+}
+
+AdapterDesc Device::adapter_desc() const {
+    return _impl->adapter_desc();
 }
