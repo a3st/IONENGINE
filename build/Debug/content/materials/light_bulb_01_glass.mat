@@ -1,0 +1,37 @@
+{
+    name: "light_bulb_01_glass",
+    domain: "surface",
+    blend_mode: "transculent",
+    parameters: [
+        {
+            name: "albedo",
+            type: "sampler2D",
+            value: { path: "content/textures/light_bulb_01_a_d.dds" }
+        },
+        {
+            name: "normal",
+            type: "sampler2D",
+            value: { path: "content/textures/light_bulb_01_a_n.dds" }
+        },
+        {
+            name: "roughness",
+            type: "sampler2D",
+            value: { path: "content/textures/roughness_30_percent.dds" }
+        },
+        {
+            name: "metalness",
+            type: "sampler2D",
+            value: { path: "content/textures/metalness_60_percent.dds" }
+        }
+    ],
+    passes: [
+        {
+            name: "gbuffer",
+            shader: "gbuffer_pc"
+        },
+        {
+            name: "forward",
+            shader: "forward_pc"
+        }
+    ]
+}

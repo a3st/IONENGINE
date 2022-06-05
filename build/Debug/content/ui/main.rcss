@@ -1,0 +1,11 @@
+
+body {
+    font-family: Lucida Console;
+    font-weight: normal;
+	font-style: normal;
+    font-size: 16dp;
+    text-align: right;
+    position: absolute; 
+    right: 0px;
+    color: white;
+}

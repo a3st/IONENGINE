@@ -1,0 +1,60 @@
+<rml>
+	<head>
+		<title>Editor</title>
+		<link type="text/rcss" href="main.rcss"/>
+	</head>
+	<body>
+		<!-- Header Editor -->
+		<div class = "header_editor_toolbar"> 
+			<span class = "header_editor_toolbar_button">File</span>
+			<span class = "header_editor_toolbar_button">Edit</span>
+			<span class = "header_editor_toolbar_button">Window</span>
+			<span class = "header_editor_toolbar_button">Help</span>
+		</div>
+
+		<!-- Center Editor -->
+		<div class = "body_editor_toolbar">
+			<!-- Left Editor Toolbar -->
+			<div class = "left_editor_toolbar">
+				<!-- Select Tool -->
+				<span class = "left_editor_toolbar_button"><img src = "../textures/select_tool.dds" width = "24px" height = "24px" /></span>
+				<!-- Move Tool -->
+				<span class = "left_editor_toolbar_button"><img src = "../textures/move_tool.dds" width = "24px" height = "24px" /></span>
+				<!-- Rotate Tool -->
+				<span class = "left_editor_toolbar_button"><img src = "../textures/rotate_tool.dds" width = "24px" height = "24px" /></span>
+				<!-- Scale Tool -->
+				<span class = "left_editor_toolbar_button"><img src = "../textures/scale_tool.dds" width = "24px" height = "24px" /></span>
+			</div>
+
+			<!-- Center Editor Toolbar -->
+			<div class = "center_editor_toolbar">
+				<div class = "center_top_editor_toolbar"></div>
+				<div class = "center_bottom_editor_toolbar"></div>
+			</div>
+
+			<!-- Right Editor Toolbar -->
+			<div class = "right_editor_toolbar"> 
+				<div class = "panel_editor_tool">
+					<span class = "title_editor_tool"><img src = "../textures/world_outliner.dds" width = "14px" height = "14px" /> World outliner</span>
+					<span class = "toolbar_editor_tool"><img src = "../textures/view_options.dds" width = "14px" height = "14px" /> View options</span>
+					<div class = "content_editor_tool">
+						
+					</div>
+				</div>
+
+				<div class = "panel_editor_tool">
+					<span class = "title_editor_tool"><img src = "../textures/details.dds" width = "14px" height = "14px" /> Details</span>
+					<span class = "toolbar_editor_tool">
+						prop_bike_01_object
+						<!--<input type = "text" value = "prop_bike_01" /> -->
+					</span>
+					<div class = "content_editor_tool">
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Footer Editor -->
+		<div class = "footer_editor_toolbar"></div>
+	</body>
+</rml>

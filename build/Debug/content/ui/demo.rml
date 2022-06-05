@@ -1,0 +1,15 @@
+<rml>
+	<head>
+		<link type="text/rcss" href="main.rcss"/>
+		<title>Demo</title>
+	</head>
+	<body>
+		<span id="fps_count">FPS_COUNT</span> FPS<br/>
+		<span id="frame_time">6.1ms</span><br/>
+		Frame : <span id="frame_count">0</span>
+		<br/>
+		DirectX12<br/>
+		AMD Radeon RX Vega 56<br/>
+		<!-- VRAM : 1212 MB / 8192 MB<br/> -->
+	</body>
+</rml>

@@ -1,0 +1,37 @@
+{
+    name: "prop_box_plastic_01",
+    domain: "surface",
+    blend_mode: "transculent",
+    parameters: [
+        {
+            name: "albedo",
+            type: "sampler2D",
+            value: { path: "content/textures/prop_box_plastic_01_d.dds" }
+        },
+        {
+            name: "normal",
+            type: "sampler2D",
+            value: { path: "content/textures/prop_box_plastic_01_n.dds" }
+        },
+        {
+            name: "roughness",
+            type: "sampler2D",
+            value: { path: "content/textures/roughness_10_percent.dds" }
+        },
+        {
+            name: "metalness",
+            type: "sampler2D",
+            value: { path: "content/textures/metalness_0_percent.dds" }
+        }
+    ],
+    passes: [
+        {
+            name: "gbuffer",
+            shader: "gbuffer_pc"
+        },
+        {
+            name: "forward",
+            shader: "forward_pc"
+        }
+    ]
+}

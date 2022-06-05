@@ -33,8 +33,10 @@
 
 # Folders
 /build/*
-!/build/Debug/content/*
-!/build/Debug/engine/*
+!/build/Debug/
+/build/Debug/*
+!/build/Debug/engine
+!/build/Debug/content
 /.gradle/*
 /thirdparty/d3d12_ma/build/*
 /thirdparty/rmlui/build/*

@@ -1,0 +1,541 @@
+{
+    name: "city17",
+    nodes: [
+        {
+            name: "root",
+            type: "empty",
+            values: {
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "walls_stairwell_bottom_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/walls_stairwell_bottom_01.obj",
+                    materials: [
+                        "content/materials/plaster_01_a.mat",
+                        "content/materials/wood_trims_01.mat",
+                        "content/materials/plaster_01_b.mat",
+                        "content/materials/plaster_strip_01_a.mat",
+                    ]
+                },
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "walls_stairwell_bottom_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/walls_stairwell_bottom_01_b.obj",
+                    materials: [
+                        "content/materials/plaster_01_a.mat",
+                        "content/materials/wood_trims_01.mat",
+                        "content/materials/plaster_01_b.mat",
+                        "content/materials/plaster_strip_01_a.mat",
+                    ]
+                },
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "walls_stairwell_mid_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/walls_stairwell_mid_01.obj",
+                    materials: [
+                        "content/materials/plaster_01_a.mat",
+                        "content/materials/wood_trims_01.mat",
+                        "content/materials/plaster_01_b.mat",
+                        "content/materials/plaster_strip_01_a.mat",
+                    ]
+                },
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "ceiling_stairwell_bottom_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/ceiling_stairwell_bottom_01.obj",
+                    materials: [
+                        "content/materials/plaster_01_c.mat",
+                        "content/materials/plaster_01_a.mat"
+                    ]
+                },
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "ceiling_stairwell_mid_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/ceiling_stairwell_mid_01.obj",
+                    materials: [
+                        "content/materials/plaster_01_c.mat"
+                    ]
+                },
+                position: [-2.6, 5.75, 4.7],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "floor_stairwell_bottom_tiles_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/floor_stairwell_bottom_tiles_01.obj",
+                    materials: [
+                        "content/materials/tiles_hexagon_01.mat",
+                        "content/materials/plaster_01_a.mat"
+                    ]
+                },
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "stairs_01_a_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/stairs_01_a.obj",
+                    materials: [
+                        "content/materials/lift_cage_01.mat"
+                    ]
+                },
+                position: [-2.6, 0.0, 1.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "stairs_02_a_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/stairs_01_a.obj",
+                    materials: [
+                        "content/materials/lift_cage_01.mat"
+                    ]
+                },
+                position: [-1.1, 1.5, 4.7],
+                rotation: [0.0, -90.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "floor_150x150_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/floor_150x150.obj",
+                    materials: [
+                        "content/materials/wood_parquet_01.mat"
+                    ]
+                },
+                position: [-1.85, 1.5, 4.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "lift_cage_door_a_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/lift_cage_door_a_01.obj",
+                    materials: [
+                        "content/materials/lift_cage_01.mat",
+                        "content/materials/metal_mesh_01.mat"
+                    ]
+                },
+                position: [0.0, 0.0, 1.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "lift_cage_stairs_a_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/lift_cage_stairs_a_01.obj",
+                    materials: [
+                        "content/materials/lift_cage_01.mat",
+                        "content/materials/metal_mesh_01.mat"
+                    ]
+                },
+                position: [0.0, 0.0, 2.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "lift_mechanism_car_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/lift_mechanism_car_01.obj",
+                    materials: [
+                        "content/materials/lift_mechanism_car_01.mat"
+                    ]
+                },
+                position: [0.0, 0.0, 2.3],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "stairs_handrail_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/stairs_handrail_01_a_joint_end.obj",
+                    materials: [
+                        "content/materials/stairs_handrail_01.mat"
+                    ]
+                },
+                position: [-2.6, 0.0, 1.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "stairs_handrail_02_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/stairs_handrail_02_a.obj",
+                    materials: [
+                        "content/materials/stairs_handrail_01.mat"
+                    ]
+                },
+                position: [-2.6, 0.0, 1.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "prop_radiator_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/prop_radiator_01.obj",
+                    materials: [
+                        "content/materials/prop_radiator_01.mat"
+                    ]
+                },
+                position: [-2.45, 0.0, -0.6],
+                rotation: [0.0, 90.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "wall_clock_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/wall_clock_01.obj",
+                    materials: [
+                        "content/materials/prop_wall_sockets_01.mat"
+                    ]
+                },
+                position: [-2.6, 2.4, -0.4],
+                rotation: [0.0, 180.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "prop_bike_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/prop_bike_01_b.obj",
+                    materials: [
+                        "content/materials/prop_bike_01.mat",
+                        "content/materials/prop_bike_01_wheels.mat"
+                    ]
+                },
+                position: [1.35, 0.0, -1.5],
+                rotation: [10.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "pipes_stairwell_bottom_01_b_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/pipes_stairwell_bottom_01_b.obj",
+                    materials: [
+                        "content/materials/pipes_water_small_01.mat"
+                    ]
+                },
+                position: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "light_bulb_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/light_bulb_01_a.obj",
+                    materials: [
+                        "content/materials/light_bulb_01_glass.mat",
+                        "content/materials/light_bulb_01.mat"
+                    ]
+                },
+                position: [-1.8, 4.5, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "door_wooden_single_01_a_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/door_wooden_single_01_a.obj",
+                    materials: [
+                        "content/materials/door_wooden_single_01.mat"
+                    ]
+                },
+                position: [3.05, 0.0, 1.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "frame_wooden_single_01_a_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/frame_wooden_single_01_a.obj",
+                    materials: [
+                        "content/materials/door_wooden_single_01.mat"
+                    ]
+                },
+                position: [3.05, 0.0, 1.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "frame_wooden_double_01_a_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/frame_wooden_double_01_a.obj",
+                    materials: [
+                        "content/materials/door_wooden_single_01.mat"
+                    ]
+                },
+                position: [-0.95, 0.0, -2.45],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "door_wooden_double_01_a_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/door_wooden_double_01_a.obj",
+                    materials: [
+                        "content/materials/door_wooden_single_01.mat",
+                        "content/materials/door_wooden_single_01.mat"
+                    ]
+                },
+                position: [-0.95, 0.0, -2.5],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "wall_socket_lightswitch_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/wall_socket_lightswitch_01.obj",
+                    materials: [
+                        "content/materials/prop_wall_sockets_01.mat"
+                    ]
+                },
+                position: [0.5, 1.5, -1.90],
+                rotation: [0.0, -90.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "prop_box_plastic_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/prop_box_plastic_01_a.obj",
+                    materials: [
+                        "content/materials/prop_box_plastic_01.mat"
+                    ]
+                },
+                position: [-1.95, 0.0, -1.35],
+                rotation: [0.0, 10.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "prop_box_plastic_02_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/prop_box_plastic_01_a.obj",
+                    materials: [
+                        "content/materials/prop_box_plastic_01.mat"
+                    ]
+                },
+                position: [2.8, 0.1, -1.35],
+                rotation: [0.0, -60.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "prop_doormat_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/prop_doormat_01_a.obj",
+                    materials: [
+                        "content/materials/prop_doormat_01.mat"
+                    ]
+                },
+                position: [3.0, 0.0, 0.5],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        { 
+            name: "wall_vent_01_object",
+            type: "mesh",
+            values: {
+                mesh: {
+                    mesh: "content/objects/wall_vent_01.obj",
+                    materials: [
+                        "content/materials/prop_wall_sockets_01.mat"
+                    ]
+                },
+                position: [1.8, 0.5, 1.0],
+                rotation: [0.0, 90.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        {
+            name: "point_light_001_object",
+            type: "point_light",
+            values: {
+                point_light: {
+                    color: [1.0, 1.0, 1.0],
+                    range: 3.0
+                },
+                position: [2.0, 2.0, -1.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        {
+            name: "point_light_002_object",
+            type: "point_light",
+            values: {
+                point_light: {
+                    color: [1.0, 1.0, 1.0],
+                    range: 2.0
+                },
+                position: [0.0, 2.0, 2.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        {
+            name: "point_light_003_object",
+            type: "point_light",
+            values: {
+                point_light: {
+                    color: [1.0, 1.0, 1.0],
+                    range: 3.0
+                },
+                position: [-1.8, 2.9, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        },
+        {
+            name: "point_light_004_object",
+            type: "point_light",
+            values: {
+                point_light: {
+                    color: [1.0, 1.0, 1.0],
+                    range: 4.0
+                },
+                position: [-1.8, 1.9, 0.0],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
+        }
+    ],
+    links: [
+        {
+            name: "root",
+            childrens: [
+                "walls_stairwell_bottom_01_object",
+                "ceiling_stairwell_bottom_01_object",
+                "walls_stairwell_bottom_01_object",
+                "floor_stairwell_bottom_tiles_01_object",
+                "walls_stairwell_mid_01_object",
+                "wall_socket_lightswitch_01_object",
+                "door_wooden_single_01_a_object",
+                "frame_wooden_single_01_a_object",
+                "frame_wooden_double_01_a_object",
+                "door_wooden_double_01_a_object",
+                "ceiling_stairwell_mid_01_object",
+                "prop_box_plastic_01_object",
+                "wall_vent_01_object",
+                "lift_cage_door_a_01_object",
+                "lift_mechanism_car_01_object",
+                "lift_cage_stairs_a_01_object",
+                "pipes_stairwell_bottom_01_b_object",
+                "prop_radiator_01_object",
+                "prop_doormat_01_object",
+                "stairs_handrail_01_object",
+                "stairs_handrail_02_object",
+                "light_bulb_01_object",
+                "prop_bike_01_object",
+                "prop_box_plastic_02_object",
+                "stairs_01_a_object",
+                "wall_clock_01_object",
+                "stairs_02_a_object",
+                "floor_150x150_object",
+                "point_light_001_object",
+                "point_light_002_object",
+                "point_light_003_object",
+                "point_light_004_object"
+            ]
+        }
+    ]
+}

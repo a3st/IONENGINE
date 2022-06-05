@@ -1,0 +1,37 @@
+{
+    name: "plaster_01_b",
+    domain: "surface",
+    blend_mode: "opaque",
+    parameters: [
+        {
+            name: "albedo",
+            type: "sampler2D",
+            value: { path: "content/textures/plaster_01_b_d.dds" }
+        },
+        {
+            name: "normal",
+            type: "sampler2D",
+            value: { path: "content/textures/plaster_01_a_n.dds" }
+        },
+        {
+            name: "roughness",
+            type: "sampler2D",
+            value: { path: "content/textures/roughness_10_percent.dds" }
+        },
+        {
+            name: "metalness",
+            type: "sampler2D",
+            value: { path: "content/textures/metalness_0_percent.dds" }
+        }
+    ],
+    passes: [
+        {
+            name: "gbuffer",
+            shader: "gbuffer_pc"
+        },
+        {
+            name: "forward",
+            shader: "forward_pc"
+        }
+    ]
+}
