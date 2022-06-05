@@ -49,6 +49,8 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
+    void load_shaders(std::span<std::filesystem::path const> const shader_paths);
+
     UiRenderer& ui_renderer();
 
     MeshRenderer& mesh_renderer();

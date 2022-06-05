@@ -3,10 +3,8 @@
 #pragma once
 
 #include <renderer/cache.h>
-#include <renderer/resource_ptr.h>
-#include <renderer/shader_program.h>
-#include <asset/technique.h>
-#include <lib/sparse_vector.h>
+#include <renderer/shader.h>
+#include <lib/object_ptr.h>
 
 namespace ionengine::renderer {
 
@@ -23,7 +21,7 @@ public:
 
     ShaderCache& operator=(ShaderCache&& other) noexcept;
 
-    ResourcePtr<ShaderProgram> get(asset::Technique& technique);
+    lib::ObjectPtr<Shader> get(std::string_view const shader_name, std::optional<std::filesystem::path> const shader_path = std::nullopt);
 
     void update(float const delta_time);
 
@@ -31,7 +29,7 @@ private:
 
     backend::Device* _device;
 
-    lib::SparseVector<CacheEntry<ResourcePtr<ShaderProgram>>> _data;
+    std::unordered_map<std::string, CacheEntry<lib::ObjectPtr<Shader>>> _data;
 };
 
 }

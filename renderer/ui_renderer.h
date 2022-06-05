@@ -72,8 +72,6 @@ private:
 
     uint32_t _width;
     uint32_t _height;
-
-    asset::AssetPtr<asset::Technique> _ui_technique;
 };
 
 }

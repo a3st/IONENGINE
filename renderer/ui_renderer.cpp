@@ -15,15 +15,12 @@ UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, s
     _rt_texture_caches(&rt_texture_caches),
     _texture_cache(device),
     _width(window.client_width()),
-    _height(window.client_height()),
-    _ui_technique(asset_manager.get_technique(UI_TECHNIQUE_PATH)) {
+    _height(window.client_height()) {
     
     for(uint32_t i = 0; i < 2; ++i) {
         _ui_element_pools.emplace_back(*_device, 512, BufferPoolUsage::Dynamic);
         _geometry_pools.emplace_back(*_device, 512, GeometryPoolUsage::Dynamic);
     }
-
-    _ui_technique.wait();
 }
 
 UiRenderer::~UiRenderer() {
@@ -59,11 +56,12 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
         std::nullopt,
         [=, &pipeline_cache, &shader_cache, &ui, &null](RenderPassContext const& context) {
 
-            auto [pipeline, shader_program] = pipeline_cache.get(shader_cache, *_ui_technique, context.render_pass);
+            lib::ObjectPtr<Shader> shader = shader_cache.get("ui_pc");
+            auto pipeline = pipeline_cache.get(*shader, context.render_pass);
 
             _device->bind_pipeline(context.command_list, pipeline);
 
-            ShaderBinder binder(*shader_program, null);
+            ShaderBinder binder(*shader, null);
 
             ui.render_interface()._ui_element_pool = &_ui_element_pools.at(frame_index);
             ui.render_interface()._geometry_pool = &_geometry_pools.at(frame_index);
@@ -72,7 +70,7 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
             ui.render_interface()._width = _width;
             ui.render_interface()._height = _height;
             ui.render_interface()._binder = &binder;
-            ui.render_interface()._shader_program = &*shader_program;
+            ui.render_interface()._shader = &*shader;
 
             ui.context().Render();
         }

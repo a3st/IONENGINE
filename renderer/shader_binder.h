@@ -8,7 +8,7 @@
 
 namespace ionengine::renderer {
 
-struct ShaderProgram;
+struct Shader;
 
 struct NullData {
     ResourcePtr<GPUBuffer> cbuffer;
@@ -19,7 +19,7 @@ struct NullData {
 class ShaderBinder {
 public:
 
-    ShaderBinder(ShaderProgram& shader_program, NullData& null);
+    ShaderBinder(Shader& shader, NullData& null);
 
     ShaderBinder(ShaderBinder&) = delete;
 

@@ -4,7 +4,6 @@
 
 #include <asset/asset_ptr.h>
 #include <asset/texture.h>
-#include <asset/technique.h>
 #include <lib/math/vector.h>
 #include <lib/expected.h>
 #include <json5/json5.hpp>
@@ -53,28 +52,22 @@ struct JSON_MaterialParameterDefinition {
 
 JSON5_CLASS(JSON_MaterialParameterDefinition, name, type, value)
 
-struct JSON_MaterialTagsDefinition {
-    JSON_MaterialDomain domain;
-    JSON_MaterialBlendMode blend_mode;
-};
-
-JSON5_CLASS(JSON_MaterialTagsDefinition, domain, blend_mode)
-
 struct JSON_MaterialPassDefinition {
     std::string name;
-    std::string technique;
+    std::string shader;
 };
 
-JSON5_CLASS(JSON_MaterialPassDefinition, name, technique)
+JSON5_CLASS(JSON_MaterialPassDefinition, name, shader)
 
 struct JSON_MaterialDefinition {
     std::string name;
-    JSON_MaterialTagsDefinition tags;
+    JSON_MaterialDomain domain;
+    JSON_MaterialBlendMode blend_mode;
     std::vector<JSON_MaterialParameterDefinition> parameters;
     std::vector<JSON_MaterialPassDefinition> passes;
 };
 
-JSON5_CLASS(JSON_MaterialDefinition, name, tags, parameters, passes)
+JSON5_CLASS(JSON_MaterialDefinition, name, domain, blend_mode, parameters, passes)
 
 namespace ionengine::asset {
 
@@ -175,7 +168,7 @@ struct Material {
     MaterialDomain domain;
     MaterialBlendMode blend_mode;
     std::unordered_map<std::string, MaterialParameter> parameters;
-    std::unordered_map<std::string, asset::AssetPtr<asset::Technique>> techniques;
+    std::unordered_map<std::string, std::string> passes;
     uint64_t hash{0};
 
     static lib::Expected<Material, lib::Result<MaterialError>> load_from_file(std::filesystem::path const& file_path, AssetManager& asset_manager);

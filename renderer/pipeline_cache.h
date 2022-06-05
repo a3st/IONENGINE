@@ -3,7 +3,6 @@
 #pragma once
 
 #include <renderer/shader_cache.h>
-#include <asset/material.h>
 
 namespace ionengine::renderer {
 
@@ -20,16 +19,7 @@ public:
 
     PipelineCache& operator=(PipelineCache&& other) noexcept;
 
-    std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> get(
-        ShaderCache& shader_cache,
-        asset::Technique& technique,
-        backend::Handle<backend::RenderPass> const& render_pass
-    );
-
-    std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> get(
-        ShaderCache& shader_cache,
-        asset::Technique& technique
-    );
+    backend::Handle<backend::Pipeline> get(Shader& shader, backend::Handle<backend::RenderPass> const& render_pass = backend::InvalidHandle<backend::RenderPass>());
 
 private:
 
@@ -37,9 +27,5 @@ private:
 
     std::unordered_map<uint32_t, backend::Handle<backend::Pipeline>> _data;
 };
-
-backend::FillMode constexpr get_fill_mode(asset::FillMode const fill_mode);
-
-backend::CullMode constexpr get_cull_mode(asset::CullMode const cull_mode);
 
 }

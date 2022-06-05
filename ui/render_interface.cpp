@@ -30,7 +30,7 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
 
             if(gpu_texture.is_ok()) {
 
-                uint32_t const albedo_location = _shader_program->location_uniform_by_name("albedo");
+                uint32_t const albedo_location = _shader->location_uniform_by_name("albedo");
                 _binder->update_resource(albedo_location, gpu_texture->texture);
                 // the sampler position is always 1 greater than the texture position
                 _binder->update_resource(albedo_location + 1, gpu_texture->sampler);
@@ -46,7 +46,7 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
 
             if(gpu_texture.is_ok()) {
 
-                uint32_t const albedo_location = _shader_program->location_uniform_by_name("albedo");
+                uint32_t const albedo_location = _shader->location_uniform_by_name("albedo");
                 _binder->update_resource(albedo_location, gpu_texture->texture);
                 // the sampler position is always 1 greater than the texture position
                 _binder->update_resource(albedo_location + 1, gpu_texture->sampler);
@@ -75,7 +75,7 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
     renderer::ResourcePtr<renderer::GPUBuffer> ui_element_cbuffer = _ui_element_pool->allocate();
     _upload_manager->upload_buffer_data(ui_element_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&ui_element_buffer), sizeof(renderer::UIElementData)));
 
-    uint32_t const ui_element_location = _shader_program->location_uniform_by_name("ui_element");
+    uint32_t const ui_element_location = _shader->location_uniform_by_name("ui_element");
     _binder->update_resource(ui_element_location, ui_element_cbuffer->buffer);
     _binder->bind(*_device, _command_list);
 

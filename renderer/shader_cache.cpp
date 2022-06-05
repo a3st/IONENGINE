@@ -22,36 +22,59 @@ ShaderCache& ShaderCache::operator=(ShaderCache&& other) noexcept {
     return *this;
 }
 
-ResourcePtr<ShaderProgram> ShaderCache::get(asset::Technique& technique) {
+lib::ObjectPtr<Shader> ShaderCache::get(std::string_view const shader_name, std::optional<std::filesystem::path> const shader_path) {
 
-    uint64_t const hash = technique.hash;
+    auto it = _data.find(std::string(shader_name.begin(), shader_name.end()));
 
-    if(_data.is_valid(technique.cache_entry)) {
+    if(it != _data.end()) {
 
-        auto& cache_entry = _data.get(technique.cache_entry);   
-        return cache_entry.value;
+        if(shader_path.has_value()) {
 
+            auto result = Shader::load_from_file(shader_path.value(), *_device);
+
+            if(result.is_ok()) {
+
+                Shader shader = std::move(result.value());
+            
+                if(shader.hash != it->second.hash) {
+
+                    uint64_t const hash = shader.hash;
+
+                    auto cache_entry = CacheEntry<lib::ObjectPtr<Shader>> {
+                        .value = std::move(shader),
+                        .hash = hash
+                    };
+
+                    it->second = std::move(cache_entry);
+                }
+            } else {
+                throw lib::Exception(result.error_value().message);
+            }
+        } else {
+            return it->second.value;
+        }
     } else {
 
-        auto result = ShaderProgram::load_from_technique(*_device, technique);
+        auto result = Shader::load_from_file(shader_path.value(), *_device);
+        
         if(result.is_ok()) {
 
-            auto cache_entry = CacheEntry<ResourcePtr<ShaderProgram>> {
-                .value = std::move(result.value()),
+            Shader shader = std::move(result.value());
+            uint64_t const hash = shader.hash;
+            std::string const new_shader_name = shader.name;
+
+            auto cache_entry = CacheEntry<lib::ObjectPtr<Shader>> {
+                .value = std::move(shader),
                 .hash = hash
             };
 
-            auto resource = std::move(cache_entry.value.commit_pending());
-            cache_entry.value.commit_ok(std::move(resource));
-
-            technique.cache_entry = _data.push(std::move(cache_entry));
+            return _data.insert({ new_shader_name, std::move(cache_entry) }).first->second.value;
         } else {
             throw lib::Exception(result.error_value().message);
         }
-
-        auto& cache_entry = _data.get(technique.cache_entry);
-        return cache_entry.value;
     }
+
+    return nullptr;
 }
 
 void ShaderCache::update(float const delta_time) {

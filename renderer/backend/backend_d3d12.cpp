@@ -1077,21 +1077,17 @@ Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<Descri
 
             descriptor_layout_data.bindings.insert({ binding.index, { it->second, descriptor_layout_data.ranges.at(it->second).NumDescriptors } });
             ++descriptor_layout_data.ranges.at(it->second).NumDescriptors;
-            ++registers_count.at(get_descriptor_range_type(binding.type));
 
         } else {
 
             auto range = D3D12_DESCRIPTOR_RANGE {};
             range.RangeType = get_descriptor_range_type(binding.type);
-            range.BaseShaderRegister = registers_count.at(get_descriptor_range_type(binding.type));
             range.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
             descriptor_layout_data.bindings.insert({ binding.index, { static_cast<uint32_t>(descriptor_layout_data.ranges.size()), 0 } });
             ++range.NumDescriptors;
-            ++registers_count.at(get_descriptor_range_type(binding.type));
 
             ranges_index.insert({ { range.RangeType, get_shader_visibility(binding.flags) }, static_cast<uint32_t>(descriptor_layout_data.ranges.size()) });
-
             descriptor_layout_data.ranges.emplace_back(std::move(range));
 
             auto parameter = D3D12_ROOT_PARAMETER {};
@@ -1102,8 +1098,13 @@ Handle<DescriptorLayout> Device::Impl::create_descriptor_layout(std::span<Descri
         }
     }
 
-    for(size_t i = 0; i < parameters.size(); ++i) {
+    for(auto& range : descriptor_layout_data.ranges) {
+        auto& register_count = registers_count.at(range.RangeType);
+        range.BaseShaderRegister = register_count;
+        register_count += range.NumDescriptors;
+    }
 
+    for(size_t i = 0; i < parameters.size(); ++i) {
         parameters.at(i).DescriptorTable.pDescriptorRanges = &descriptor_layout_data.ranges.at(i);
         parameters.at(i).DescriptorTable.NumDescriptorRanges = 1;
     }

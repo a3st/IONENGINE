@@ -22,39 +22,20 @@ PipelineCache& PipelineCache::operator=(PipelineCache&& other) noexcept {
     return *this;
 }
 
-std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> PipelineCache::get(
-    ShaderCache& shader_cache,
-    asset::Technique& technique,
-    backend::Handle<backend::RenderPass> const& render_pass
-) {
+backend::Handle<backend::Pipeline> PipelineCache::get(Shader& shader, backend::Handle<backend::RenderPass> const& render_pass) {
 
-    std::string const pipeline_name = std::format("{}_{}", technique.name, render_pass.index());
+    std::string const pipeline_name = std::format("{}_{}", shader.name, render_pass.index());
     uint32_t const pipeline_hash = lib::hash::ctcrc32(pipeline_name.data(), pipeline_name.size());
-
-    auto shader_program = shader_cache.get(technique);
 
     if(_data.find(pipeline_hash) == _data.end()) {
 
-        backend::RasterizerDesc rasterizer_desc = {
-            .fill_mode = get_fill_mode(technique.draw_parameters.fill_mode),
-            .cull_mode = get_cull_mode(technique.draw_parameters.cull_mode)
-        };
-
-        backend::DepthStencilDesc depth_stencil_desc = { backend::CompareOp::Less, technique.draw_parameters.depth_stencil };
-
-        backend::BlendDesc blend_desc = { 
-            technique.draw_parameters.blend, 
-            backend::Blend::SrcAlpha, backend::Blend::InvSrcAlpha, backend::BlendOp::Add, 
-            backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add 
-        };
-
         auto pipeline = _device->create_pipeline(
-            shader_program->descriptor_layout, 
-            shader_program->attributes, 
-            shader_program->shaders, 
-            rasterizer_desc, 
-            depth_stencil_desc, 
-            blend_desc, 
+            shader.descriptor_layout, 
+            shader.attributes, 
+            shader.stages, 
+            shader.rasterizer, 
+            shader.depth_stencil, 
+            shader.blend, 
             render_pass, 
             backend::InvalidHandle<backend::CachePipeline>()
         );
@@ -62,50 +43,5 @@ std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> Pipel
         _data.insert({ pipeline_hash, pipeline });
     }
 
-    return { _data.at(pipeline_hash), shader_program };
-}
-
-std::tuple<backend::Handle<backend::Pipeline>, ResourcePtr<ShaderProgram>> PipelineCache::get(
-    ShaderCache& shader_cache,
-    asset::Technique& technique
-) {
-    std::string const pipeline_name = std::format("{}", technique.name);
-    uint32_t const pipeline_hash = lib::hash::ctcrc32(pipeline_name.data(), pipeline_name.size());
-
-    auto shader_program = shader_cache.get(technique);
-
-    if(_data.find(pipeline_hash) == _data.end()) {
-        auto pipeline = _device->create_pipeline(
-            shader_program->descriptor_layout,
-            shader_program->shaders.at(0), 
-            backend::InvalidHandle<backend::CachePipeline>()
-        );
-
-        _data.insert({ pipeline_hash, pipeline });
-    }
-
-    return { _data.at(pipeline_hash), shader_program };
-}
-
-backend::FillMode constexpr ionengine::renderer::get_fill_mode(asset::FillMode const fill_mode) {
-    switch(fill_mode) {
-        case asset::FillMode::Solid: return backend::FillMode::Solid;
-        case asset::FillMode::Wireframe: return backend::FillMode::Wireframe;
-        default: {
-            assert(false && "invalid data type");
-            return backend::FillMode::Solid; 
-        }
-    }
-}
-
-backend::CullMode constexpr ionengine::renderer::get_cull_mode(asset::CullMode const cull_mode) {
-    switch(cull_mode) {
-        case asset::CullMode::Back: return backend::CullMode::Back;
-        case asset::CullMode::Front: return backend::CullMode::Front;
-        case asset::CullMode::None: return backend::CullMode::None;
-        default: {
-            assert(false && "invalid data type");
-            return backend::CullMode::None; 
-        }
-    }
+    return _data.at(pipeline_hash);
 }

@@ -2,15 +2,15 @@
 
 #include <precompiled.h>
 #include <renderer/shader_binder.h>
-#include <renderer/shader_program.h>
+#include <renderer/shader.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-ShaderBinder::ShaderBinder(ShaderProgram& shader_program, NullData& null) :
-    _descriptor_layout(shader_program.descriptor_layout) {
+ShaderBinder::ShaderBinder(Shader& shader, NullData& null) :
+    _descriptor_layout(shader.descriptor_layout) {
 
-    for(auto const [uniform_name, uniform_data] : shader_program.uniforms) {
+    for(auto const [uniform_name, uniform_data] : shader.uniforms) {
         
         auto uniform_visitor = make_visitor(
             [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& data) {
@@ -28,10 +28,12 @@ ShaderBinder::ShaderBinder(ShaderProgram& shader_program, NullData& null) :
                 _update_resources.emplace_back(data.index, null.sbuffer->buffer);
             },
             [&](ShaderUniformData<ShaderUniformType::RWBuffer> const& data) {
-                
+                _exist_updates.insert({ data.index, _update_resources.size() });
+                _update_resources.emplace_back(data.index, null.sbuffer->buffer);
             },
             [&](ShaderUniformData<ShaderUniformType::RWTexture2D> const& data) {
-                
+                _exist_updates.insert({ data.index, _update_resources.size() });
+                _update_resources.emplace_back(data.index, null.texture->texture);
             }
         );
 

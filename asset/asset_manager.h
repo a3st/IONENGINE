@@ -5,7 +5,6 @@
 #include <asset/asset_event.h>
 #include <asset/asset_ptr.h>
 #include <asset/asset_loader.h>
-#include <asset/technique_loader.h>
 #include <asset/mesh_loader.h>
 #include <asset/material_loader.h>
 #include <asset/texture_loader.h>
@@ -111,8 +110,6 @@ public:
 
     AssetPtr<Mesh> get_mesh(std::filesystem::path const& asset_path);
 
-    AssetPtr<Technique> get_technique(std::filesystem::path const& asset_path);
-
     AssetPtr<Material> get_material(std::filesystem::path const& asset_path);
     
     AssetPtr<Texture> get_texture(std::filesystem::path const& asset_path);
@@ -121,8 +118,6 @@ public:
 
     AssetPool<Mesh>& mesh_pool();
 
-    AssetPool<Technique>& technique_pool();
-
     AssetPool<Material>& material_pool();
 
     AssetPool<Texture>& texture_pool();
@@ -130,7 +125,6 @@ public:
 private:
 
     AssetPool<Mesh> _mesh_pool;
-    AssetPool<Technique> _technique_pool;
     AssetPool<Material> _material_pool;
     AssetPool<Texture> _texture_pool;
 };

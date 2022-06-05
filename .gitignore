@@ -33,6 +33,9 @@
 
 # Folders
 /build/*
-/.idea/*
+!/build/Debug/content/*
+!/build/Debug/engine/*
 /.gradle/*
 /thirdparty/d3d12_ma/build/*
+/thirdparty/rmlui/build/*
+

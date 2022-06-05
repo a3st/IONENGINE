@@ -12,7 +12,7 @@ class UploadManager;
 class UiRenderer;
 class TextureCache;
 class RTTextureCache;
-struct ShaderProgram;
+struct Shader;
 class ShaderBinder;
 
 }
@@ -52,7 +52,7 @@ private:
 	renderer::backend::Handle<renderer::backend::CommandList> _command_list;
 
     renderer::ShaderBinder* _binder;
-    renderer::ShaderProgram* _shader_program;
+    renderer::Shader* _shader;
 
     uint32_t _width;
     uint32_t _height;

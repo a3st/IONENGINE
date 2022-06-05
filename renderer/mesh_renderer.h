@@ -49,8 +49,6 @@ struct ObjectData {
     lib::math::Matrixf inverse_model;
 };
 
-inline std::filesystem::path const DEFFERED_TECHNIQUE_PATH = "engine/techniques/deffered.json5";
-
 class MeshRenderer {
 public:
 
@@ -114,13 +112,9 @@ private:
     int32_t _x{0};
     int32_t _y{0};
 
-    asset::AssetPtr<asset::Technique> _deffered_technique;
-
-    asset::AssetPtr<asset::Technique> _postfx_technique;
-
     std::vector<backend::MemoryBarrierDesc> _memory_barriers;
 
-    void apply_material(ShaderBinder& binder, ShaderProgram& shader_program, asset::Material& material, uint32_t const frame_index);
+    void apply_material(ShaderBinder& binder, Shader& shader, asset::Material& material, uint32_t const frame_index);
 };
 
 }

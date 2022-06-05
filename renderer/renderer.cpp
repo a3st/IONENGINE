@@ -34,6 +34,15 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     for(uint32_t i = 0; i < 2; ++i) {
         _rt_texture_caches.emplace_back(_device);
     }
+
+    auto default_shader_paths = std::vector<std::filesystem::path> {
+        "engine/shaders/deffered.shader",
+        "engine/shaders/forward.shader",
+        "engine/shaders/gbuffer.shader",
+        "engine/shaders/ui.shader"
+    };
+
+    load_shaders(default_shader_paths);
 }
 
 Renderer::~Renderer() {
@@ -70,6 +79,12 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
 
         // _mesh_renderer.resize(width, height);
         // _ui_renderer.resize(width, height);
+    }
+}
+
+void Renderer::load_shaders(std::span<std::filesystem::path const> const shader_paths) {
+    for(auto const& shader_path : shader_paths) {
+        _shader_cache.get("_", shader_path);
     }
 }
 

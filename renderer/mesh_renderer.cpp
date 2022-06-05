@@ -83,8 +83,6 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     _rt_texture_caches(&rt_texture_caches),
     _texture_cache(device),
     _geometry_cache(device),
-    _deffered_technique(asset_manager.get_technique(DEFFERED_TECHNIQUE_PATH)),
-    _postfx_technique(asset_manager.get_technique("engine/techniques/postfx.json5")),
     _width(window.client_width()),
     _height(window.client_height()) {
 
@@ -107,9 +105,6 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     auto quad_surface_data = asset::SurfaceData::make_quad();
     _quad = ResourcePtr<GeometryBuffer>(GeometryBuffer::load_from_surface(*_device, quad_surface_data).value());
     _upload_manager->upload_geometry_data(_quad, quad_surface_data.vertices.to_span(), quad_surface_data.indices.to_span());
-
-    _deffered_technique.wait();
-    //_postfx_technique.wait();
 }
 
 MeshRenderer::~MeshRenderer() {
@@ -228,16 +223,17 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
             
             for(auto const& batch : _opaque_queue) {
 
-                auto [pipeline, shader_program] = pipeline_cache.get(shader_cache, *batch.material->techniques.at("gbuffer"), context.render_pass);
+                lib::ObjectPtr<Shader> shader = shader_cache.get(batch.material->passes.at("gbuffer"));
+                auto pipeline = pipeline_cache.get(*shader, context.render_pass);
                 
                 if(current_pipeline != pipeline) {
                     _device->bind_pipeline(context.command_list, pipeline);
                     current_pipeline = pipeline;
                 }
 
-                ShaderBinder binder(*shader_program, null);
+                ShaderBinder binder(*shader, null);
 
-                apply_material(binder, *shader_program, *batch.material, frame_index);
+                apply_material(binder, *shader, *batch.material, frame_index);
 
                 if(!_memory_barriers.empty()) {
                     _device->barrier(context.command_list, _memory_barriers);
@@ -252,8 +248,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                 ResourcePtr<GPUBuffer> object_sbuffer = _object_pools.at(frame_index).allocate();
                 _upload_manager->upload_buffer_data(object_sbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(object_buffers.data()), object_buffers.size() * sizeof(ObjectData)));
 
-                uint32_t const world_location = shader_program->location_uniform_by_name("world");
-                uint32_t const object_location = shader_program->location_uniform_by_name("object");
+                uint32_t const world_location = shader->location_uniform_by_name("world");
+                uint32_t const object_location = shader->location_uniform_by_name("object");
 
                 binder.update_resource(world_location, world_cbuffer->buffer);
                 binder.update_resource(object_location, object_sbuffer->buffer);
@@ -298,18 +294,19 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         std::nullopt,
         [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
 
-            auto [pipeline, shader_program] = pipeline_cache.get(shader_cache, *_deffered_technique, context.render_pass);
+            lib::ObjectPtr<Shader> shader = shader_cache.get("deffered_pc");
+            auto pipeline = pipeline_cache.get(*shader, context.render_pass);
 
             _device->bind_pipeline(context.command_list, pipeline);
 
-            ShaderBinder binder(*shader_program, null);
+            ShaderBinder binder(*shader, null);
 
-            uint32_t const world_location = shader_program->location_uniform_by_name("world");
-            uint32_t const point_light_location = shader_program->location_uniform_by_name("point_light");
-            uint32_t const positions_location = shader_program->location_uniform_by_name("positions");
-            uint32_t const normals_location = shader_program->location_uniform_by_name("normals");
-            uint32_t const albedo_location = shader_program->location_uniform_by_name("albedo");
-            uint32_t const roughness_metalness_ao_location = shader_program->location_uniform_by_name("roughness_metalness_ao");
+            uint32_t const world_location = shader->location_uniform_by_name("world");
+            uint32_t const point_light_location = shader->location_uniform_by_name("point_light");
+            uint32_t const positions_location = shader->location_uniform_by_name("positions");
+            uint32_t const normals_location = shader->location_uniform_by_name("normals");
+            uint32_t const albedo_location = shader->location_uniform_by_name("albedo");
+            uint32_t const roughness_metalness_ao_location = shader->location_uniform_by_name("roughness_metalness_ao");
 
             binder.update_resource(world_location, world_cbuffer->buffer);
             binder.update_resource(point_light_location, point_light_sbuffer->buffer);
@@ -359,16 +356,17 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
             for(auto const& batch : _transculent_queue) {
 
-                auto [pipeline, shader_program] = pipeline_cache.get(shader_cache, *batch.material->techniques.at("forward"), context.render_pass);
+                lib::ObjectPtr<Shader> shader = shader_cache.get(batch.material->passes.at("forward"));
+                auto pipeline = pipeline_cache.get(*shader, context.render_pass);
                 
                 if(current_pipeline != pipeline) {
                     _device->bind_pipeline(context.command_list, pipeline);
                     current_pipeline = pipeline;
                 }
-                
-                ShaderBinder binder(*shader_program, null);
 
-                apply_material(binder, *shader_program, *batch.material, frame_index);
+                ShaderBinder binder(*shader, null);
+
+                apply_material(binder, *shader, *batch.material, frame_index);
 
                 if(!_memory_barriers.empty()) {
                     _device->barrier(context.command_list, _memory_barriers);
@@ -383,9 +381,9 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                 ResourcePtr<GPUBuffer> object_sbuffer = _object_pools.at(frame_index).allocate();
                 _upload_manager->upload_buffer_data(object_sbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(object_buffers.data()), object_buffers.size() * sizeof(ObjectData)));
 
-                uint32_t const world_location = shader_program->location_uniform_by_name("world");
-                uint32_t const object_location = shader_program->location_uniform_by_name("object");
-                uint32_t const point_light_location = shader_program->location_uniform_by_name("point_light");
+                uint32_t const world_location = shader->location_uniform_by_name("world");
+                uint32_t const object_location = shader->location_uniform_by_name("object");
+                uint32_t const point_light_location = shader->location_uniform_by_name("point_light");
 
                 binder.update_resource(world_location, world_cbuffer->buffer);
                 binder.update_resource(object_location, object_sbuffer->buffer);
@@ -404,7 +402,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     );
 }
 
-void MeshRenderer::apply_material(ShaderBinder& binder, ShaderProgram& shader_program, asset::Material& material, uint32_t const frame_index) {
+void MeshRenderer::apply_material(ShaderBinder& binder, Shader& shader, asset::Material& material, uint32_t const frame_index) {
 
     std::vector<uint8_t> material_buffer(1024);
 
@@ -412,8 +410,8 @@ void MeshRenderer::apply_material(ShaderBinder& binder, ShaderProgram& shader_pr
 
         if(parameter.is_sampler2D()) {
 
-            auto it = shader_program.uniforms.find(parameter_name);
-            if(it == shader_program.uniforms.end()) {
+            auto it = shader.uniforms.find(parameter_name);
+            if(it == shader.uniforms.end()) {
                 break;
             }
 
@@ -436,8 +434,8 @@ void MeshRenderer::apply_material(ShaderBinder& binder, ShaderProgram& shader_pr
 
         } else {
                         
-            auto it = shader_program.uniforms.find("material");
-            if(it == shader_program.uniforms.end()) {
+            auto it = shader.uniforms.find("material");
+            if(it == shader.uniforms.end()) {
                 break;
             }
 
@@ -464,12 +462,12 @@ void MeshRenderer::apply_material(ShaderBinder& binder, ShaderProgram& shader_pr
         }
     }
 
-    auto it = shader_program.uniforms.find("material");
-    if(it != shader_program.uniforms.end()) {
+    auto it = shader.uniforms.find("material");
+    if(it != shader.uniforms.end()) {
         ResourcePtr<GPUBuffer> material_cbuffer = _material_pools.at(frame_index).allocate();
         _upload_manager->upload_buffer_data(material_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(material_buffer.data()), material_buffer.size()));
 
-        uint32_t const material_location = shader_program.location_uniform_by_name("material");
+        uint32_t const material_location = shader.location_uniform_by_name("material");
         binder.update_resource(material_location, material_cbuffer->buffer);
     }
 }

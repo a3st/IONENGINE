@@ -30,8 +30,8 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
     auto material = Material {};
     {
         material.name = document.name;
-        material.domain = get_material_domain(document.tags.domain);
-        material.blend_mode = get_material_blend_mode(document.tags.blend_mode);
+        material.domain = get_material_domain(document.domain);
+        material.blend_mode = get_material_blend_mode(document.blend_mode);
 
         for(auto const& parameter : document.parameters) {
 
@@ -109,7 +109,7 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
         }
 
         for(auto const& pass : document.passes) {
-            material.techniques.insert({ pass.name, asset_manager.get_technique(pass.technique) });
+            material.passes.insert({ pass.name, pass.shader });
         }
 
         material.hash = XXHash64::hash(reinterpret_cast<void*>(material.name.data()), material.name.size(), 0);

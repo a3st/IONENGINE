@@ -20,7 +20,7 @@ Renderer
   - [x] Frame graph
   - [x] RmlUi integration
   - [x] Deffered shading PBR
-  - [ ] Forward shading PBR
+  - [x] Forward shading PBR
 
 Library / platform
   - [x] Math library
@@ -34,8 +34,5 @@ Asset
   - [x] Texture
   - [x] Mesh
   - [x] Material
-  - [ ] Subscene
+  - [x] Subscene
   - [ ] Widget
-
-## Screenshots </p>
-![City17-Scene](data/screenshots/city17_scene.png)
