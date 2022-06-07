@@ -99,6 +99,7 @@ HRESULT DescriptorPool::initialize(
 
     for(uint32_t i = 0; i < heap_count; ++i) {
         auto pool_heap = detail::DescriptorHeap {};
+        pool_heap.size = heap_size;
 
         auto descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
         descriptor_heap_desc.NumDescriptors = heap_size;
@@ -168,7 +169,7 @@ HRESULT DescriptorRange::allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range
 }
 
 void DescriptorRange::reset() {
-    _arena_block_index.store(0, std::memory_order_acquire);
+    _arena_block_index.store(0);
     for(auto& range : _arena_block_ranges) {
         range.offset = 0;
     }
