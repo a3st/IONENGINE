@@ -75,6 +75,7 @@ namespace detail {
 struct DescriptorHeap {
     ComPtr<ID3D12DescriptorHeap> heap;
     std::list<uint32_t> indices;
+    uint32_t size;
     uint32_t offset;
 };
 
@@ -100,7 +101,7 @@ private:
     uint32_t _offset{0};
     uint32_t _descriptor_size{0};
 
-    DescriptorPoolAllocation();
+    DescriptorPoolAllocation() = default;
 
     virtual ~DescriptorPoolAllocation() = default;
 
@@ -121,8 +122,6 @@ class DescriptorPool : public IUnknownImpl {
 
 public:
 
-    static uint32_t const DESCRIPTOR_HEAP_SIZE = 256;
-
     HRESULT allocate(DescriptorAllocation** allocation);
 
 protected:
@@ -131,9 +130,11 @@ protected:
 
 private:
 
-    std::vector<detail::DescriptorHeap> _heaps;
-    DescriptorPoolAllocation* _allocations;
     uint32_t _descriptor_size{0};
+
+    std::vector<detail::DescriptorHeap> _heaps;
+
+    DescriptorPoolAllocation* _allocations;
 
     HRESULT initialize(
         ID3D12Device4* const device, 
@@ -142,7 +143,7 @@ private:
         uint32_t const size
     );
         
-    DescriptorPool();
+    DescriptorPool() = default;
 
     virtual ~DescriptorPool() = default;
 
@@ -179,7 +180,7 @@ private:
     uint32_t _offset{0};
     uint32_t _descriptor_size{0};
 
-    DescriptorRangeAllocation();
+    DescriptorRangeAllocation() = default;
 
     virtual ~DescriptorRangeAllocation() = default;
 
@@ -199,8 +200,6 @@ class DescriptorRange : public IUnknownImpl {
     );
 
 public:
-
-    static uint32_t const MAX_ALLOCATION_COUNT = 1024;
 
     HRESULT allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range, DescriptorAllocation** allocation);
 
@@ -237,7 +236,7 @@ private:
         uint32_t const size
     );
 
-    DescriptorRange();
+    DescriptorRange() = default;
 
     virtual ~DescriptorRange() = default;
 
