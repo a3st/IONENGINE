@@ -6,7 +6,7 @@
         {
             name: "albedo",
             type: "sampler2D",
-            value: { path: "content/textures/light_bulb_01_a_d.dds" }
+            value: { path: "content/textures/light_bulb_01_glass_d.dds" }
         },
         {
             name: "normal",
@@ -21,7 +21,7 @@
         {
             name: "metalness",
             type: "sampler2D",
-            value: { path: "content/textures/metalness_60_percent.dds" }
+            value: { path: "content/textures/metalness_0_percent.dds" }
         }
     ],
     passes: [
