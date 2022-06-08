@@ -75,7 +75,7 @@
                         "content/materials/plaster_01_a.mat"
                     ]
                 },
-                position: [0.0, 0.0, 0.0],
+                position: [0.0, -0.1, 0.0],
                 rotation: [0.0, 0.0, 0.0],
                 scale: [1.0, 1.0, 1.0]
             }
@@ -90,7 +90,7 @@
                         "content/materials/plaster_01_c.mat"
                     ]
                 },
-                position: [-2.6, 5.75, 4.7],
+                position: [-2.6, 5.65, 4.7],
                 rotation: [0.0, 0.0, 0.0],
                 scale: [1.0, 1.0, 1.0]
             }
@@ -136,7 +136,7 @@
                         "content/materials/lift_cage_01.mat"
                     ]
                 },
-                position: [-1.1, 1.5, 4.7],
+                position: [-1.1, 1.5, 4.75],
                 rotation: [0.0, -90.0, 0.0],
                 scale: [1.0, 1.0, 1.0]
             }
@@ -363,7 +363,7 @@
                     mesh: "content/objects/door_wooden_double_01_a.obj",
                     materials: [
                         "content/materials/door_wooden_single_01.mat",
-                        "content/materials/door_wooden_single_01.mat"
+                        "content/materials/door_wooden_glass_01.mat"
                     ]
                 },
                 position: [-0.95, 0.0, -2.5],

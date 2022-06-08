@@ -73,7 +73,7 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
 
         _frame_graph.reset();
 
-        _device.recreate_swapchain(width, height);
+        //_device.recreate_swapchain(width, height);
         
         _width = width;
         _height = height;
