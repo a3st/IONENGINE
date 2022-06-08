@@ -16,12 +16,12 @@
         {
             name: "roughness",
             type: "sampler2D",
-            value: { path: "content/textures/roughness_10_percent.dds" }
+            value: { path: "content/textures/wood_parquet_01_r.dds" }
         },
         {
             name: "metalness",
             type: "sampler2D",
-            value: { path: "content/textures/metalness_0_percent.dds" }
+            value: { path: "content/textures/wood_parquet_01_m.dds" }
         }
     ],
     passes: [
