@@ -15,7 +15,7 @@ using namespace ionengine;
 using namespace ionengine::renderer;
 
 Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool) : 
-    _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = 2 }),
+    _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = backend::BACKEND_BACK_BUFFER_COUNT }),
     _upload_manager(thread_pool, _device),
     _frame_graph(_device),
     _shader_cache(_device),
@@ -31,7 +31,7 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
         .texture = ResourcePtr<GPUTexture>(GPUTexture::create(_device, backend::Format::RGBA8_UNORM, 1, 1, 1, 1, backend::TextureFlags::ShaderResource).value())
     };
 
-    for(uint32_t i = 0; i < 2; ++i) {
+    for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         _rt_texture_caches.emplace_back(_device);
     }
 
@@ -39,7 +39,8 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
         "engine/shaders/deffered.shader",
         "engine/shaders/forward.shader",
         "engine/shaders/gbuffer.shader",
-        "engine/shaders/ui.shader"
+        "engine/shaders/ui.shader",
+        "engine/shaders/fxaa.shader"
     };
 
     load_shaders(default_shader_paths);

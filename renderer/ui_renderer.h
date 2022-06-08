@@ -32,8 +32,6 @@ __declspec(align(256)) struct UIElementData {
     int32_t has_texture;
 };
 
-inline std::filesystem::path const UI_TECHNIQUE_PATH = "engine/techniques/ui.json5";
-
 class UiRenderer {
 
     friend class ui::RenderInterface;

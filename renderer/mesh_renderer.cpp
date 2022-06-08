@@ -86,7 +86,7 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     _width(window.client_width()),
     _height(window.client_height()) {
 
-    for(uint32_t i = 0; i < 2; ++i) {
+    for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         _object_pools.emplace_back(*_device, 32, 256, BufferPoolUsage::Dynamic);
         _world_pools.emplace_back(*_device, 4, BufferPoolUsage::Dynamic);
         _point_light_pools.emplace_back(*_device, 512, 2, BufferPoolUsage::Dynamic);
@@ -100,6 +100,7 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
 
         _gbuffers.emplace_back(std::move(gbuffer));
         _depth_stencils.emplace_back(GPUTexture::create(*_device, backend::Format::D32_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::DepthStencil).value());
+        _final_images.emplace_back(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value());
     }
 
     auto quad_surface_data = asset::SurfaceData::make_quad();
@@ -123,7 +124,7 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
     _gbuffers.clear();
     _depth_stencils.clear();
 
-    for(uint32_t i = 0; i < 2; ++i) {
+    for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         auto gbuffer = GBufferData {
             .positions = GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
             .albedo = GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
@@ -133,6 +134,7 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
 
         _gbuffers.emplace_back(std::move(gbuffer));
         _depth_stencils.emplace_back(GPUTexture::create(*_device, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil).value());
+        _final_images.emplace_back(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value());
     }
 }
 
@@ -154,7 +156,6 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     _memory_barriers.clear();
 
     MeshVisitor mesh_visitor(_opaque_queue, _transculent_queue, _point_lights);
-    // scene.graph().visit(scene.graph().begin(), scene.graph().end(), mesh_visitor);
     scene.visit_culling_nodes(mesh_visitor);
 
     _render_camera = scene.graph().find_by_name<scene::CameraNode>("main_camera");
@@ -266,14 +267,14 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         }
     );
 
-    auto swapchain_color_info = CreateColorInfo {};
+    auto final_color_info = CreateColorInfo {};
     if(_render_camera->render_target()) {
         auto gpu_texture = _rt_texture_caches->at(frame_index).get(*_render_camera->render_target());
-        swapchain_color_info.attachment = gpu_texture;
+        final_color_info.attachment = gpu_texture;
     } else {
-        swapchain_color_info.attachment = nullptr;
-        swapchain_color_info.load_op = backend::RenderPassLoadOp::Clear;
-        swapchain_color_info.clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f);
+        final_color_info.attachment = _final_images.at(frame_index);
+        final_color_info.load_op = backend::RenderPassLoadOp::Clear;
+        final_color_info.clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f);
     };
 
     auto gbuffer_input_infos = std::array<CreateInputInfo, 4> {
@@ -289,7 +290,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         _height,
         _x,
         _y,
-        std::span<CreateColorInfo const>(&swapchain_color_info, 1),
+        std::span<CreateColorInfo const>(&final_color_info, 1),
         gbuffer_input_infos,
         std::nullopt,
         [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
@@ -332,7 +333,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         }
     );
 
-    swapchain_color_info.load_op = backend::RenderPassLoadOp::Load;
+    final_color_info.load_op = backend::RenderPassLoadOp::Load;
 
     depth_stencil_info = CreateDepthStencilInfo {
         .attachment = _depth_stencils.at(frame_index),
@@ -347,7 +348,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         _height,
         _x,
         _y,
-        std::span<CreateColorInfo const>(&swapchain_color_info, 1),
+        std::span<CreateColorInfo const>(&final_color_info, 1),
         std::nullopt,
         depth_stencil_info,
         [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
@@ -397,6 +398,45 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                     geometry_buffer->bind(*_device, context.command_list);
                     _device->draw_indexed(context.command_list, static_cast<uint32_t>(geometry_buffer->index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
                 }
+            }
+        }
+    );
+
+    auto swapchain_color_info = CreateColorInfo {
+        .attachment = nullptr,
+        .load_op = backend::RenderPassLoadOp::Clear,
+        .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
+    };
+
+    frame_graph.add_pass(
+        "fxaa",
+        _width,
+        _height,
+        _x,
+        _y,
+        std::span<CreateColorInfo const>(&swapchain_color_info, 1),
+        std::nullopt,
+        depth_stencil_info,
+        [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
+
+            lib::ObjectPtr<Shader> shader = shader_cache.get("fxaa_pc");
+            auto pipeline = pipeline_cache.get(*shader, context.render_pass);
+
+            _device->bind_pipeline(context.command_list, pipeline);
+
+            ShaderBinder binder(*shader, null);
+
+            uint32_t const color = shader->location_uniform_by_name("color");
+
+            binder.update_resource(color, _final_images.at(frame_index)->texture);
+            // the sampler position is always 1 greater than the texture.
+            binder.update_resource(color + 1, _final_images.at(frame_index)->sampler);
+
+            binder.bind(*_device, context.command_list);
+
+            if(_quad.is_ok()) {
+                _quad->bind(*_device, context.command_list);
+                _device->draw_indexed(context.command_list, static_cast<uint32_t>(_quad->index_size / sizeof(uint32_t)), 1, 0);
             }
         }
     );

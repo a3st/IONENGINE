@@ -18,11 +18,12 @@ struct DescriptorLayout;
 struct CachePipeline;
 struct CommandList;
 
+// BackendLimits describes limit of using resources.
+// It is ideal to choose the values ​​for each platform, but here the optimal ones are selected.
 enum class BackendLimits : uint32_t {
     Textures = 8192,
     Buffers = 8192,
     Samplers = 8192,
-    ShaderCount = 512,
     DescriptorLayouts = 256,
     Pipelines = 256,
     Shaders = 1024,
@@ -30,6 +31,10 @@ enum class BackendLimits : uint32_t {
     CommandLists = 64
 };
 
+// Maximum number of back buffers for swap chain.
+inline uint32_t constexpr BACKEND_BACK_BUFFER_COUNT = 2;
+
+// Alignment values that are optimal for Direct3D12 and Vulkan.
 inline uint32_t constexpr TEXTURE_ROW_PITCH_ALIGNMENT = 256;
 inline uint32_t constexpr TEXTURE_RESOURCE_ALIGNMENT = 512;
 

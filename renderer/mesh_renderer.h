@@ -91,6 +91,7 @@ private:
 
     std::vector<GBufferData> _gbuffers;
     std::vector<ResourcePtr<GPUTexture>> _depth_stencils;
+    std::vector<ResourcePtr<GPUTexture>> _final_images;
 
     std::vector<PointLightData> _point_lights;
     RenderQueue _opaque_queue;

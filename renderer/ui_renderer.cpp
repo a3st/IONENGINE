@@ -17,7 +17,7 @@ UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, s
     _width(window.client_width()),
     _height(window.client_height()) {
     
-    for(uint32_t i = 0; i < 2; ++i) {
+    for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         _ui_element_pools.emplace_back(*_device, 512, BufferPoolUsage::Dynamic);
         _geometry_pools.emplace_back(*_device, 512, GeometryPoolUsage::Dynamic);
     }
