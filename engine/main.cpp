@@ -40,7 +40,7 @@ int main(int* argc, char** agrv) {
 
         framework::Framework framework(asset_manager, input_manager, scene, user_interface);
 
-        scene.print_structure();
+        // scene.print_structure();
 
         auto begin_time = std::chrono::high_resolution_clock::now();
         uint64_t frame_count = 0;
