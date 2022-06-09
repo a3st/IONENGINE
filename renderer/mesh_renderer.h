@@ -109,9 +109,7 @@ private:
     uint32_t _width;
     uint32_t _height;
 
-    std::vector<backend::MemoryBarrierDesc> _memory_barriers;
-
-    void apply_material(ShaderBinder& binder, Shader& shader, asset::Material& material, uint32_t const frame_index);
+    void apply_material(ShaderBinder& binder, Shader& shader, asset::Material& material, backend::Handle<backend::CommandList> const& command_list, uint32_t const frame_index);
 };
 
 }

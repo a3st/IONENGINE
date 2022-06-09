@@ -26,11 +26,22 @@ public:
         }
     }
 
+    GeometryPool(GeometryPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
+    GeometryPool& operator=(GeometryPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
     void reset() {
         _offset = 0;
     }
 
     ResourcePtr<GeometryBuffer> allocate() {
+        std::unique_lock lock(_mutex);
         auto buffer = _data.at(_offset);
         ++_offset;
         return buffer;
@@ -39,6 +50,9 @@ public:
 private:
 
     std::vector<ResourcePtr<GeometryBuffer>> _data;
+
+    std::mutex _mutex;
+
     uint32_t _offset{0};
 };
 

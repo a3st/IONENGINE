@@ -28,6 +28,8 @@ private:
 
     backend::Device* _device;
 
+    std::mutex _mutex;
+
     std::unordered_map<uint64_t, CacheEntry<ResourcePtr<GPUTexture>>> _data;
 };
 

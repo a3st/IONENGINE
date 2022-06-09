@@ -8,7 +8,6 @@ namespace ionengine::renderer {
 
 enum class ResourceStateType {
     Pending,
-    Common,
     Ok
 };
 
@@ -18,120 +17,85 @@ struct ResourceStateData { };
 template<class ResourceType>
 struct ResourceStateData<ResourceType, ResourceStateType::Ok> {
     ResourceType resource;
+    bool is_wait_for_upload;
 };
 
 template<class ResourceType>
 struct ResourceStateData<ResourceType, ResourceStateType::Pending> { };
 
-template<class ResourceType>
-struct ResourceStateData<ResourceType, ResourceStateType::Common> {
-    ResourceType resource;
+template<class Type>
+class MutexProxy {
+public:
+
+    MutexProxy(Type* const ptr, std::mutex& mutex) : _ptr(ptr), _lock(mutex) { }
+
+    Type* operator->() { 
+        return _ptr; 
+    }
+        
+    const Type* operator->() const {
+        return _ptr;
+    }
+
+private:
+
+    Type* const _ptr;
+    std::unique_lock<std::mutex> _lock;
 };
+
+#ifndef DECLARE_RESOURCE_STATE_CAST
+#define DECLARE_RESOURCE_STATE_CAST(Name, State) \
+MutexProxy<ResourceStateData<Type, State>> Name() { \
+    return MutexProxy<ResourceStateData<Type, State>>(&std::get<ResourceStateData<Type, State>>(data), mutex); \
+}
+#endif
+
+#ifndef DECLARE_RESOURCE_STATE_CONST_CAST
+#define DECLARE_RESOURCE_STATE_CONST_CAST(Name, State) \
+ResourceStateData<Type, State> const& Name() { \
+    return std::get<ResourceStateData<Type, State>>(data); \
+}
+#endif
 
 template<class Type>
 struct ResourceState {
     std::variant<
         ResourceStateData<Type, ResourceStateType::Ok>,
-        ResourceStateData<Type, ResourceStateType::Pending>,
-        ResourceStateData<Type, ResourceStateType::Common>
+        ResourceStateData<Type, ResourceStateType::Pending>
     > data;
-};
 
-template<class Type>
-class ResourcePtr {
-public:
+    std::mutex mutex;
 
-    ResourcePtr() = default;
+    DECLARE_RESOURCE_STATE_CAST(as_ok, ResourceStateType::Ok)
+    DECLARE_RESOURCE_STATE_CONST_CAST(as_const_ok, ResourceStateType::Ok)
 
-    constexpr ResourcePtr(std::nullptr_t) noexcept { }
-
-    ResourcePtr(Type&& element) {
-        _ptr = std::make_shared<ResourceState<Type>>(
-            ResourceStateData<Type, ResourceStateType::Common> { .resource = std::move(element) }
-        );
-    }
-
-    ResourcePtr(ResourcePtr const& other) = default;
-
-    ResourcePtr(ResourcePtr&&) noexcept = default;
-
-    ResourcePtr& operator=(ResourcePtr const&) = default;
-
-    ResourcePtr& operator=(ResourcePtr&&) noexcept = default;
-
-    uint32_t use_count() const { return _ptr.use_count(); }
-
-    Type* operator->() const {
-        assert((_ptr->data.index() == 0 || _ptr->data.index() == 2) && "error while accessing an unloaded resource data");
-
-        Type* resource = nullptr;
-
-        auto state_visitor = make_visitor(
-            [&](ResourceStateData<Type, ResourceStateType::Ok>& data) {
-                resource = &data.resource;
-            },
-            [&](ResourceStateData<Type, ResourceStateType::Common>& data) {
-                resource = &data.resource;
-            },
-            [&](ResourceStateData<Type, ResourceStateType::Pending>& data) { }
-        );
-
-        std::visit(state_visitor, _ptr->data);
-        return resource; 
-    }
-
-    Type& operator*() const { 
-        assert((_ptr->data.index() == 0 || _ptr->data.index() == 2) && "error while accessing an unloaded resource data");
-        
-        Type* resource = nullptr;
-
-        auto state_visitor = make_visitor(
-            [&](ResourceStateData<Type, ResourceStateType::Ok>& data) {
-                resource = &data.resource;
-            },
-            [&](ResourceStateData<Type, ResourceStateType::Common>& data) {
-                resource = &data.resource;
-            },
-            [&](ResourceStateData<Type, ResourceStateType::Pending>& data) { }
-        );
-
-        std::visit(state_visitor, _ptr->data);
-        return *resource; 
+    bool is_ok() const {
+        return data.index() == 0;
     }
 
     bool is_pending() const {
-        return _ptr->data.index() == 1;
-    }
-
-    bool is_ok() const {
-        return _ptr->data.index() == 0;
-    }
-
-    bool is_common() const {
-        return _ptr->data.index() == 2;
-    }
-
-    void wait() {
-        while(is_pending()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
+        return data.index() == 1;
     }
 
     void commit_ok(Type&& element) {
-        _ptr->data = ResourceStateData<Type, ResourceStateType::Ok> { .resource = std::move(element) };
+        std::lock_guard lock(mutex);
+        data = ResourceStateData<Type, ResourceStateType::Ok> { .resource = std::move(element) };
     }
 
     Type commit_pending() {
-        Type element = std::move(std::get<2>(_ptr->data).resource);
-        _ptr->data = ResourceStateData<Type, ResourceStateType::Pending> { };
+        std::lock_guard lock(mutex);
+        Type element = std::move(std::get<2>(data).resource);
+        data = ResourceStateData<Type, ResourceStateType::Pending> { };
         return std::move(element);
     }
-
-    explicit operator bool() const noexcept { return _ptr.operator bool(); }
-
-private:
-
-    std::shared_ptr<ResourceState<Type>> _ptr;
 };
+
+template<class Type>
+using ResourcePtr = std::shared_ptr<ResourceState<Type>>;
+
+template<class Type>
+ResourcePtr<Type> make_resource_ptr(Type&& from) {
+    return std::make_shared<ResourceState<Type>>(ResourceStateData<Type, ResourceStateType::Ok> { .resource = std::move(from) });
+}
 
 }

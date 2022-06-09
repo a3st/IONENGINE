@@ -25,6 +25,8 @@ private:
 
     backend::Device* _device;
 
+    std::mutex _mutex;
+
     std::unordered_map<uint32_t, backend::Handle<backend::Pipeline>> _data;
 };
 

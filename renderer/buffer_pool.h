@@ -43,11 +43,22 @@ public:
         }
     }
 
+    BufferPool(BufferPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
+    BufferPool& operator=(BufferPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
     void reset() {
         _offset = 0;
     }
 
     ResourcePtr<GPUBuffer> allocate() {
+        std::unique_lock lock(_mutex);
         auto buffer = _data.at(_offset);
         ++_offset;
         return buffer;
@@ -56,6 +67,9 @@ public:
 private:
 
     std::vector<ResourcePtr<GPUBuffer>> _data;
+
+    std::mutex _mutex;
+
     uint32_t _offset{0};
 };
 
@@ -73,11 +87,22 @@ public:
         }
     }
 
+    BufferPool(BufferPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
+    BufferPool& operator=(BufferPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
     void reset() {
         _offset = 0;
     }
 
     ResourcePtr<GPUBuffer> allocate() {
+        std::unique_lock lock(_mutex);
         auto buffer = _data.at(_offset);
         ++_offset;
         return buffer;
@@ -86,6 +111,9 @@ public:
 private:
 
     std::vector<ResourcePtr<GPUBuffer>> _data;
+
+    std::mutex _mutex;
+
     uint32_t _offset{0};
 };
 

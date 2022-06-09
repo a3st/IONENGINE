@@ -28,6 +28,8 @@ private:
 
     backend::Device* _device;
 
+    std::mutex _mutex;
+
     lib::SparseVector<CacheEntry<ResourcePtr<GPUTexture>>> _data;
 };
 

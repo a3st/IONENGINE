@@ -24,18 +24,22 @@ GeometryCache& GeometryCache::operator=(GeometryCache&& other) noexcept {
 
 ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, asset::SurfaceData& surface) {
 
+    std::unique_lock lock(_mutex);
+
     uint64_t const hash = surface.vertices.hash() ^ surface.indices.hash();
 
     if(_data.is_valid(surface.cache_entry)) {
 
         auto& cache_entry = _data.get(surface.cache_entry);
 
-        if(cache_entry.value.is_common()) {
-            upload_manager.upload_geometry_data(
-                cache_entry.value, 
-                std::span<uint8_t const>(surface.vertices.data(), surface.vertices.size()),
-                std::span<uint8_t const>(surface.indices.data(), surface.indices.size())
-            );
+        if(cache_entry.value->is_ok() ) {
+            if(cache_entry.value->as_ok()->is_wait_for_upload) {
+                upload_manager.upload_geometry_data(
+                    cache_entry.value, 
+                    surface.vertices.to_span(),
+                    surface.indices.to_span()
+                );
+            }
         }
 
         return cache_entry.value;
@@ -46,14 +50,14 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
         if(result.is_ok()) {
 
             auto cache_entry = CacheEntry<ResourcePtr<GeometryBuffer>> {
-                .value = std::move(result.value()),
+                .value = make_resource_ptr(result.value()),
                 .hash = hash
             };
 
             upload_manager.upload_geometry_data(
                 cache_entry.value, 
-                std::span<uint8_t const>(surface.vertices.data(), surface.vertices.size()),
-                std::span<uint8_t const>(surface.indices.data(), surface.indices.size())
+                surface.vertices.to_span(),
+                surface.indices.to_span()
             );
 
             surface.cache_entry = _data.push(std::move(cache_entry));

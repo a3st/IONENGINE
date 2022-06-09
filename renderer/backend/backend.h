@@ -28,7 +28,7 @@ enum class BackendLimits : uint32_t {
     Pipelines = 256,
     Shaders = 1024,
     RenderPasses = 32,
-    CommandLists = 256
+    CommandLists = 512
 };
 
 // Maximum number of back buffers for swap chain.

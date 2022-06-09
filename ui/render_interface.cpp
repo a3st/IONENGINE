@@ -28,15 +28,15 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
 
             renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _rt_texture_cache->get(*texture_data);
 
-            if(gpu_texture.is_ok()) {
+            if(gpu_texture->is_ok()) {
 
                 uint32_t const albedo_location = _shader->location_uniform_by_name("albedo");
-                _binder->update_resource(albedo_location, gpu_texture->texture);
+                _binder->update_resource(albedo_location, gpu_texture->as_const_ok().resource.texture);
                 // the sampler position is always 1 greater than the texture position
-                _binder->update_resource(albedo_location + 1, gpu_texture->sampler);
+                _binder->update_resource(albedo_location + 1, gpu_texture->as_const_ok().resource.sampler);
 
-                if(gpu_texture->memory_state != renderer::backend::MemoryState::ShaderRead) {
-                    _memory_barriers.push_back(gpu_texture->barrier(renderer::backend::MemoryState::ShaderRead));
+                if(gpu_texture->as_const_ok().resource.memory_state != renderer::backend::MemoryState::ShaderRead) {
+                    _memory_barriers.push_back(gpu_texture->as_ok()->resource.barrier(renderer::backend::MemoryState::ShaderRead));
                 }
             }
 
@@ -44,15 +44,15 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
 
             renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _texture_cache->get(*_upload_manager, *texture_data);
 
-            if(gpu_texture.is_ok()) {
+            if(gpu_texture->is_ok()) {
 
                 uint32_t const albedo_location = _shader->location_uniform_by_name("albedo");
-                _binder->update_resource(albedo_location, gpu_texture->texture);
+                _binder->update_resource(albedo_location, gpu_texture->as_const_ok().resource.texture);
                 // the sampler position is always 1 greater than the texture position
-                _binder->update_resource(albedo_location + 1, gpu_texture->sampler);
+                _binder->update_resource(albedo_location + 1, gpu_texture->as_const_ok().resource.sampler);
 
-                if(gpu_texture->memory_state != renderer::backend::MemoryState::ShaderRead) {
-                    _memory_barriers.push_back(gpu_texture->barrier(renderer::backend::MemoryState::ShaderRead));
+                if(gpu_texture->as_const_ok().resource.memory_state != renderer::backend::MemoryState::ShaderRead) {
+                    _memory_barriers.push_back(gpu_texture->as_ok()->resource.barrier(renderer::backend::MemoryState::ShaderRead));
                 }
             }
         }
@@ -76,7 +76,7 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
     _upload_manager->upload_buffer_data(ui_element_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&ui_element_buffer), sizeof(renderer::UIElementData)));
 
     uint32_t const ui_element_location = _shader->location_uniform_by_name("ui_element");
-    _binder->update_resource(ui_element_location, ui_element_cbuffer->buffer);
+    _binder->update_resource(ui_element_location, ui_element_cbuffer->as_const_ok().resource.buffer);
     _binder->bind(*_device, _command_list);
 
     uint64_t offset = 0;
@@ -110,7 +110,7 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
     renderer::ResourcePtr<renderer::GeometryBuffer> geometry_buffer = _geometry_pool->allocate();
     _upload_manager->upload_geometry_data(geometry_buffer, vertex_data, index_data);
     
-    geometry_buffer->bind(*_device, _command_list);
+    geometry_buffer->as_ok()->resource.bind(*_device, _command_list);
     _device->draw_indexed(_command_list, num_indices, 1, 0);
 }
 

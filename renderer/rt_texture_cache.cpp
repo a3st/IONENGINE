@@ -23,6 +23,8 @@ RTTextureCache& RTTextureCache::operator=(RTTextureCache&& other) noexcept {
 
 ResourcePtr<GPUTexture> RTTextureCache::get(asset::Texture& texture) {
         
+    std::unique_lock lock(_mutex);
+
     uint64_t const hash = texture.hash;
 
     auto it = _data.find(hash);
@@ -38,12 +40,9 @@ ResourcePtr<GPUTexture> RTTextureCache::get(asset::Texture& texture) {
         if(result.is_ok()) {
 
             auto cache_entry = CacheEntry<ResourcePtr<GPUTexture>> {
-                .value = std::move(result.value()),
+                .value = make_resource_ptr(result.value()),
                 .hash = hash
             };
-
-            auto resource = std::move(cache_entry.value.commit_pending());
-            cache_entry.value.commit_ok(std::move(resource));
             
             auto inserted = _data.insert({ hash, std::move(cache_entry) });
             return inserted.first->second.value;

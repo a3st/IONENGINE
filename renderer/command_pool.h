@@ -34,6 +34,16 @@ public:
         }
     }
 
+    CommandPool(CommandPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
+    CommandPool& operator=(CommandPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
     void reset() {
         _offset = 0;
     }
@@ -60,11 +70,22 @@ public:
         }
     }
 
+    CommandPool(CommandPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
+    CommandPool& operator=(CommandPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
     void reset() {
         _offset = 0;
     }
 
     ResourcePtr<CommandList> allocate() {
+        std::unique_lock lock(_mutex);
         auto command_list = _data.at(_offset);
         ++_offset;
         return command_list;
@@ -73,6 +94,9 @@ public:
 private:
 
     std::vector<ResourcePtr<CommandList>> _data;
+
+    std::mutex _mutex;
+
     uint32_t _offset{0};
 };
 

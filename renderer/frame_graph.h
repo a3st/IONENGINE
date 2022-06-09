@@ -56,6 +56,22 @@ struct ComputePassContext {
 using ComputePassFunc = std::function<void(ComputePassContext const&)>;
 inline ComputePassFunc ComputePassDefaultFunc = [=](ComputePassContext const& context) { };
 
+struct RenderPass {
+    std::string name;
+    uint32_t width;
+    uint32_t height;
+    std::vector<ResourcePtr<GPUTexture>> color_attachments;
+    std::vector<backend::RenderPassLoadOp> color_ops;
+    std::vector<lib::math::Color> color_clears;
+    ResourcePtr<GPUTexture> ds_attachment;
+    backend::RenderPassLoadOp ds_op;
+    std::pair<float, uint8_t> ds_clear;
+    std::vector<ResourcePtr<GPUTexture>> inputs;
+    TaskExecution task_execution;
+    RenderPassFunc func;
+    backend::Handle<backend::RenderPass> render_pass;
+};
+
 class FrameGraph {
 public:
 
@@ -85,22 +101,6 @@ public:
     uint32_t wait();
 
 private:
-
-    struct RenderPass {
-        std::string name;
-        uint32_t width;
-        uint32_t height;
-        std::vector<ResourcePtr<GPUTexture>> color_attachments;
-        std::vector<backend::RenderPassLoadOp> color_ops;
-        std::vector<lib::math::Color> color_clears;
-        ResourcePtr<GPUTexture> ds_attachment;
-        backend::RenderPassLoadOp ds_op;
-        std::pair<float, uint8_t> ds_clear;
-        std::vector<ResourcePtr<GPUTexture>> inputs;
-        TaskExecution task_execution;
-        RenderPassFunc func;
-        backend::Handle<backend::RenderPass> render_pass;
-    };
 
     struct ComputePass {
         std::string name;
@@ -147,5 +147,7 @@ private:
         backend::RenderPassLoadOp depth_stencil_op
     );
 };
+
+void worker_render_pass_command_list(backend::Device& device, backend::Handle<backend::CommandList> const& command_list, uint16_t const thread_index, RenderPass& render_pass);
 
 }

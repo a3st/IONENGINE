@@ -24,6 +24,8 @@ PipelineCache& PipelineCache::operator=(PipelineCache&& other) noexcept {
 
 backend::Handle<backend::Pipeline> PipelineCache::get(Shader& shader, backend::Handle<backend::RenderPass> const& render_pass) {
 
+    std::unique_lock lock(_mutex);
+
     std::string const pipeline_name = std::format("{}_{}", shader.name, render_pass.index());
     uint32_t const pipeline_hash = lib::hash::ctcrc32(pipeline_name.data(), pipeline_name.size());
 

@@ -1,6 +1,9 @@
 {
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "files.associations": {
+        ".clang-format": "yaml",
+        "*.shader": "json5",
+        "*.subscene": "json5",
         "stdio.h": "c",
         "precompiled.h": "c",
         "d3d12.h": "c",
@@ -101,6 +104,7 @@
         "shared_mutex": "cpp",
         "valarray": "cpp",
         "future": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "regex": "cpp"
     }
 }

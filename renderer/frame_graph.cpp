@@ -12,8 +12,8 @@ FrameGraph::FrameGraph(lib::ThreadPool& thread_pool, backend::Device& device) :
     uint16_t const thread_count = 7;
 
     for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
-        _graphics_command_pools.emplace_back(*_device, thread_count * 4);
-        _compute_command_pools.emplace_back(*_device, thread_count * 4);
+        _graphics_command_pools.emplace_back(*_device, thread_count * 16);
+        _compute_command_pools.emplace_back(*_device, thread_count * 16);
     }
 
     _fence_values.resize(backend::BACKEND_BACK_BUFFER_COUNT);
@@ -127,7 +127,7 @@ void FrameGraph::reset() {
 
 void FrameGraph::execute() {
 
-    auto make_present_barrier_command_list = [&](backend::Handle<backend::CommandList> const& command_list, RenderPass& render_pass) {
+    auto make_present_barrier_command_list = [&](backend::Device& device, backend::Handle<backend::CommandList> const& command_list, RenderPass& render_pass) {
         std::vector<backend::MemoryBarrierDesc> barriers;
 
         if(_swapchain_memory_state != backend::MemoryState::Present) {
@@ -136,11 +136,11 @@ void FrameGraph::execute() {
         }
                 
         if(!barriers.empty()) {
-            _device->barrier(command_list, barriers);
+            device.barrier(command_list, barriers);
         }
     };
 
-    auto make_barrier_command_list = [&](backend::Handle<backend::CommandList> const& command_list, RenderPass& render_pass) {
+    auto make_barrier_command_list = [&](backend::Device& device, backend::Handle<backend::CommandList> const& command_list, RenderPass& render_pass) {
         std::vector<backend::MemoryBarrierDesc> barriers;
         
         for(auto& attachment : render_pass.color_attachments) {
@@ -173,34 +173,9 @@ void FrameGraph::execute() {
         }
 
         if(!barriers.empty()) {
-            _device->barrier(command_list, barriers);
+            device.barrier(command_list, barriers);
         }
     };
-
-    auto make_render_pass_command_list = [&](backend::Handle<backend::CommandList> const& command_list, uint16_t const thread_index, RenderPass& render_pass) {
-        _device->set_viewport(command_list, 0, 0, render_pass.width, render_pass.height);
-        _device->set_scissor(command_list, 0, 0, render_pass.width, render_pass.height);
-
-        _device->begin_render_pass(
-            command_list,
-            render_pass.render_pass,
-            render_pass.color_clears,
-            render_pass.ds_clear.first,
-            render_pass.ds_clear.second
-        );
-
-        auto context = RenderPassContext {
-            .thread_index = thread_index,
-            .command_list = command_list,
-            .render_pass = render_pass.render_pass
-        };
-        render_pass.func(context);
-
-        _device->end_render_pass(command_list);
-    };
-
-    std::vector<backend::Handle<backend::CommandList>> command_lists;
-    std::vector<std::future<void>> jobs;
 
     _graphics_command_pools.at(_frame_index).reset();
     _compute_command_pools.at(_frame_index).reset();
@@ -218,50 +193,54 @@ void FrameGraph::execute() {
 
                     ResourcePtr<CommandList> command_list = _graphics_command_pools.at(_frame_index).allocate();
 
-                    command_lists.emplace_back(command_list->command_list);
+                    make_barrier_command_list(*_device, command_list->command_list, *render_pass);
+                    worker_render_pass_command_list(*_device, command_list->command_list, 0, *render_pass);
+                    make_present_barrier_command_list(*_device, command_list->command_list, *render_pass);
 
-                    make_barrier_command_list(command_list->command_list, *render_pass);
-                    make_render_pass_command_list(command_list->command_list, 0, *render_pass);
-                    make_present_barrier_command_list(command_list->command_list, *render_pass);
+                    _fence_values.at(_frame_index) = _device->submit(std::span<backend::Handle<backend::CommandList>>(&command_list->command_list, 1), backend::QueueFlags::Graphics);
 
                 } else {
+
+                    std::vector<std::future<void>> jobs(thread_count);
+                    std::vector<backend::Handle<backend::CommandList>> command_lists;
 
                     ResourcePtr<CommandList> command_list = _graphics_command_pools.at(_frame_index).allocate();
 
                     command_lists.emplace_back(command_list->command_list);
 
-                    jobs.emplace_back(_thread_pool->push(
-                        [&](RenderPass& render_pass) {
-                            make_barrier_command_list(command_list->command_list, render_pass);
-                            make_render_pass_command_list(command_list->command_list, 0, render_pass);
+                    jobs.at(0) = _thread_pool->push(
+                        [&, command_list](backend::Device& device, RenderPass& render_pass) {
+                            //make_barrier_command_list(device, command_list->command_list, render_pass);
+                            worker_render_pass_command_list(device, command_list->command_list, 0, render_pass);
                         },
-                        std::ref(*render_pass))
+                        std::ref(*_device),
+                        std::ref(*render_pass)
                     );
 
-                    for(uint16_t i = 1; i < thread_count - 1; ++i) {
+                    for(uint16_t i = 1; i < thread_count; ++i) {
 
-                        command_list = _graphics_command_pools.at(_frame_index).allocate();
+                        ResourcePtr<CommandList> _command_list = _graphics_command_pools.at(_frame_index).allocate();
 
-                        command_lists.emplace_back(command_list->command_list);
+                        command_lists.emplace_back(_command_list->command_list);
 
-                        jobs.emplace_back(_thread_pool->push(
-                            [&](RenderPass& render_pass) {
-                                make_barrier_command_list(command_list->command_list, render_pass);
-                                make_render_pass_command_list(command_list->command_list, i, render_pass);
+                        jobs.at(i) = _thread_pool->push(
+                            [&, _command_list, i](backend::Device& device, RenderPass& render_pass) {
+                                worker_render_pass_command_list(device, _command_list->command_list, i, render_pass);
                             },
-                            std::ref(*render_pass))
+                            std::ref(*_device),
+                            std::ref(*render_pass)
                         );
                     }
+
+                    for(auto const& job : jobs) {
+                        job.wait();
+                    }
+
+                    _fence_values.at(_frame_index) = _device->submit(command_lists, backend::QueueFlags::Graphics);
                 }
             } break;
         }
     }
-
-    for(auto const& job : jobs) {
-        job.wait();
-    }
-
-    _fence_values.at(_frame_index) = _device->submit(command_lists, backend::QueueFlags::Graphics);
 
     _device->present();
 
@@ -320,4 +299,26 @@ backend::Handle<backend::RenderPass> FrameGraph::compile_render_pass(
     } else {
         return _device->create_render_pass(colors, color_descs);
     }
+}
+
+void ionengine::renderer::worker_render_pass_command_list(backend::Device& device, backend::Handle<backend::CommandList> const& command_list, uint16_t const thread_index, RenderPass& render_pass) {
+    device.set_viewport(command_list, 0, 0, render_pass.width, render_pass.height);
+    device.set_scissor(command_list, 0, 0, render_pass.width, render_pass.height);
+
+    device.begin_render_pass(
+        command_list,
+        render_pass.render_pass,
+        render_pass.color_clears,
+        render_pass.ds_clear.first,
+        render_pass.ds_clear.second
+    );
+
+    auto context = RenderPassContext {
+        .thread_index = thread_index,
+        .command_list = command_list,
+        .render_pass = render_pass.render_pass
+    };
+    render_pass.func(context);
+
+    device.end_render_pass(command_list);
 }

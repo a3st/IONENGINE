@@ -49,6 +49,8 @@ private:
 
     std::array<uint64_t, UPLOAD_MANAGER_BUFFER_COUNT> _fence_values;
 
+    std::mutex _mutex;
+
     std::array<std::queue<UploadData<GPUTexture>>, UPLOAD_MANAGER_BUFFER_COUNT> _textures;
     std::array<std::queue<UploadData<GPUBuffer>>, UPLOAD_MANAGER_BUFFER_COUNT> _buffers;
     std::array<std::queue<UploadData<GeometryBuffer>>, UPLOAD_MANAGER_BUFFER_COUNT> _geometry_buffers;

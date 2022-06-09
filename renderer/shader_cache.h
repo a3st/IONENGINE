@@ -29,6 +29,8 @@ private:
 
     backend::Device* _device;
 
+    std::mutex _mutex;
+
     std::unordered_map<std::string, CacheEntry<lib::ObjectPtr<Shader>>> _data;
 };
 

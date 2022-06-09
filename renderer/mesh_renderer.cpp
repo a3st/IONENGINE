@@ -8,6 +8,7 @@
 #include <scene/mesh_node.h>
 #include <scene/point_light_node.h>
 #include <scene/scene_visitor.h>
+#include <range/v3/view/chunk.hpp>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -92,19 +93,19 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
         _point_light_pools.emplace_back(*_device, 512, 2, BufferPoolUsage::Dynamic);
 
         auto gbuffer = GBufferData {
-            .positions = GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .albedo = GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .normals = GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .roughness_metalness_ao = GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()
+            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
+            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
+            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
+            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value())
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));
-        _depth_stencils.emplace_back(GPUTexture::create(*_device, backend::Format::D32_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::DepthStencil).value());
-        _final_images.emplace_back(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value());
+        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::DepthStencil).value()));
+        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()));
     }
 
     auto quad_surface_data = asset::SurfaceData::make_quad();
-    _quad = ResourcePtr<GeometryBuffer>(GeometryBuffer::load_from_surface(*_device, quad_surface_data).value());
+    _quad = make_resource_ptr(GeometryBuffer::load_from_surface(*_device, quad_surface_data).value());
     _upload_manager->upload_geometry_data(_quad, quad_surface_data.vertices.to_span(), quad_surface_data.indices.to_span());
 }
 
@@ -126,15 +127,15 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
 
     for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         auto gbuffer = GBufferData {
-            .positions = GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .albedo = GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .normals = GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value(),
-            .roughness_metalness_ao = GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()
+            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
+            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
+            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
+            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value())
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));
-        _depth_stencils.emplace_back(GPUTexture::create(*_device, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil).value());
-        _final_images.emplace_back(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value());
+        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil).value()));
+        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()));
     }
 }
 
@@ -147,8 +148,6 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     _opaque_queue.clear();
     _transculent_queue.clear();
     _point_lights.clear();
-
-    _memory_barriers.clear();
 
     MeshVisitor mesh_visitor(_opaque_queue, _transculent_queue, _point_lights);
     scene.visit_culling_nodes(mesh_visitor);
@@ -211,12 +210,15 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         gbuffer_color_infos,
         std::nullopt,
         depth_stencil_info,
-        TaskExecution::Single,
-        [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
+        TaskExecution::Multithreading,
+        [&, frame_index](RenderPassContext const& context) {
 
             backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
             
-            for(auto const& batch : _opaque_queue) {
+            uint16_t const thread_count = 7;
+            auto chunks = _opaque_queue | ranges::views::chunk(thread_count);
+
+            for(auto const& batch : chunks.at(context.thread_index)) {
 
                 lib::ObjectPtr<Shader> shader = shader_cache.get(batch.material->passes.at("gbuffer"));
                 auto pipeline = pipeline_cache.get(*shader, context.render_pass);
@@ -228,12 +230,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
                 ShaderBinder binder(*shader, null);
 
-                apply_material(binder, *shader, *batch.material, frame_index);
-
-                if(!_memory_barriers.empty()) {
-                    _device->barrier(context.command_list, _memory_barriers);
-                    _memory_barriers.clear();
-                }
+                apply_material(binder, *shader, *batch.material, context.command_list, frame_index);
 
                 std::vector<ObjectData> object_buffers;
                 for(auto const& instance : batch.instances) {
@@ -246,16 +243,16 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                 uint32_t const world_location = shader->location_uniform_by_name("world");
                 uint32_t const object_location = shader->location_uniform_by_name("object");
 
-                binder.update_resource(world_location, world_cbuffer->buffer);
-                binder.update_resource(object_location, object_sbuffer->buffer);
+                binder.update_resource(world_location, world_cbuffer->as_ok()->resource.buffer);
+                binder.update_resource(object_location, object_sbuffer->as_ok()->resource.buffer);
 
                 binder.bind(*_device, context.command_list);
 
                 ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->surfaces()[batch.surface_index]);
                 
-                if(geometry_buffer.is_ok()) {
-                    geometry_buffer->bind(*_device, context.command_list);
-                    _device->draw_indexed(context.command_list, static_cast<uint32_t>(geometry_buffer->index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
+                if(geometry_buffer->is_ok()) {
+                    geometry_buffer->as_ok()->resource.bind(*_device, context.command_list);
+                    _device->draw_indexed(context.command_list, static_cast<uint32_t>(geometry_buffer->as_ok()->resource.index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
                 }
             }
         }
@@ -302,26 +299,26 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
             uint32_t const albedo_location = shader->location_uniform_by_name("albedo");
             uint32_t const roughness_metalness_ao_location = shader->location_uniform_by_name("roughness_metalness_ao");
 
-            binder.update_resource(world_location, world_cbuffer->buffer);
-            binder.update_resource(point_light_location, point_light_sbuffer->buffer);
-            binder.update_resource(positions_location, _gbuffers.at(frame_index).positions->texture);
+            binder.update_resource(world_location, world_cbuffer->as_const_ok().resource.buffer);
+            binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().resource.buffer);
+            binder.update_resource(positions_location, _gbuffers.at(frame_index).positions->as_const_ok().resource.texture);
             // the sampler position is always 1 greater than the texture position
-            binder.update_resource(positions_location + 1, _gbuffers.at(frame_index).positions->sampler);
-            binder.update_resource(albedo_location, _gbuffers.at(frame_index).albedo->texture);
+            binder.update_resource(positions_location + 1, _gbuffers.at(frame_index).positions->as_const_ok().resource.sampler);
+            binder.update_resource(albedo_location, _gbuffers.at(frame_index).albedo->as_const_ok().resource.texture);
             // the sampler position is always 1 greater than the texture position
-            binder.update_resource(albedo_location + 1, _gbuffers.at(frame_index).albedo->sampler);
-            binder.update_resource(normals_location, _gbuffers.at(frame_index).normals->texture);
+            binder.update_resource(albedo_location + 1, _gbuffers.at(frame_index).albedo->as_const_ok().resource.sampler);
+            binder.update_resource(normals_location, _gbuffers.at(frame_index).normals->as_const_ok().resource.texture);
             // the sampler position is always 1 greater than the texture position
-            binder.update_resource(normals_location + 1, _gbuffers.at(frame_index).normals->sampler);
-            binder.update_resource(roughness_metalness_ao_location, _gbuffers.at(frame_index).roughness_metalness_ao->texture);
+            binder.update_resource(normals_location + 1, _gbuffers.at(frame_index).normals->as_const_ok().resource.sampler);
+            binder.update_resource(roughness_metalness_ao_location, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().resource.texture);
             // the sampler position is always 1 greater than the texture position
-            binder.update_resource(roughness_metalness_ao_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->sampler);
+            binder.update_resource(roughness_metalness_ao_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().resource.sampler);
 
             binder.bind(*_device, context.command_list);
 
-            if(_quad.is_ok()) {
-                _quad->bind(*_device, context.command_list);
-                _device->draw_indexed(context.command_list, static_cast<uint32_t>(_quad->index_size / sizeof(uint32_t)), 1, 0);
+            if(_quad->is_ok()) {
+                _quad->as_ok()->resource.bind(*_device, context.command_list);
+                _device->draw_indexed(context.command_list, static_cast<uint32_t>(_quad->as_ok()->resource.index_size / sizeof(uint32_t)), 1, 0);
             }
         }
     );
@@ -347,7 +344,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
             backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
 
-            for(auto const& batch : _transculent_queue) {
+            uint16_t const thread_count = 7;
+            auto chunks = _transculent_queue | ranges::views::chunk(thread_count);
+
+            for(auto const& batch : chunks.at(context.thread_index)) {
 
                 lib::ObjectPtr<Shader> shader = shader_cache.get(batch.material->passes.at("forward"));
                 auto pipeline = pipeline_cache.get(*shader, context.render_pass);
@@ -359,12 +359,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
                 ShaderBinder binder(*shader, null);
 
-                apply_material(binder, *shader, *batch.material, frame_index);
-
-                if(!_memory_barriers.empty()) {
-                    _device->barrier(context.command_list, _memory_barriers);
-                    _memory_barriers.clear();
-                }
+                apply_material(binder, *shader, *batch.material, context.command_list, frame_index);
 
                 std::vector<ObjectData> object_buffers;
                 for(auto const& instance : batch.instances) {
@@ -378,17 +373,17 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                 uint32_t const object_location = shader->location_uniform_by_name("object");
                 uint32_t const point_light_location = shader->location_uniform_by_name("point_light");
 
-                binder.update_resource(world_location, world_cbuffer->buffer);
-                binder.update_resource(object_location, object_sbuffer->buffer);
-                binder.update_resource(point_light_location, point_light_sbuffer->buffer);
+                binder.update_resource(world_location, world_cbuffer->as_const_ok().resource.buffer);
+                binder.update_resource(object_location, object_sbuffer->as_const_ok().resource.buffer);
+                binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().resource.buffer);
 
                 binder.bind(*_device, context.command_list);
 
                 ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->surfaces()[batch.surface_index]);
                 
-                if(geometry_buffer.is_ok()) {
-                    geometry_buffer->bind(*_device, context.command_list);
-                    _device->draw_indexed(context.command_list, static_cast<uint32_t>(geometry_buffer->index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
+                if(geometry_buffer->is_ok()) {
+                    geometry_buffer->as_ok()->resource.bind(*_device, context.command_list);
+                    _device->draw_indexed(context.command_list, static_cast<uint32_t>(geometry_buffer->as_ok()->resource.index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
                 }
             }
         }
@@ -419,22 +414,23 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
             uint32_t const color = shader->location_uniform_by_name("color");
 
-            binder.update_resource(color, _final_images.at(frame_index)->texture);
+            binder.update_resource(color, _final_images.at(frame_index)->as_ok()->resource.texture);
             // the sampler position is always 1 greater than the texture.
-            binder.update_resource(color + 1, _final_images.at(frame_index)->sampler);
+            binder.update_resource(color + 1, _final_images.at(frame_index)->as_ok()->resource.sampler);
 
             binder.bind(*_device, context.command_list);
 
-            if(_quad.is_ok()) {
-                _quad->bind(*_device, context.command_list);
-                _device->draw_indexed(context.command_list, static_cast<uint32_t>(_quad->index_size / sizeof(uint32_t)), 1, 0);
+            if(_quad->is_ok()) {
+                _quad->as_ok()->resource.bind(*_device, context.command_list);
+                _device->draw_indexed(context.command_list, static_cast<uint32_t>(_quad->as_ok()->resource.index_size / sizeof(uint32_t)), 1, 0);
             }
         }
     );
 }
 
-void MeshRenderer::apply_material(ShaderBinder& binder, Shader& shader, asset::Material& material, uint32_t const frame_index) {
+void MeshRenderer::apply_material(ShaderBinder& binder, Shader& shader, asset::Material& material, backend::Handle<backend::CommandList> const& command_list, uint32_t const frame_index) {
 
+    std::vector<backend::MemoryBarrierDesc> memory_barriers;
     std::vector<uint8_t> material_buffer(1024);
 
     for(auto& [parameter_name, parameter] : material.parameters) {
@@ -450,15 +446,16 @@ void MeshRenderer::apply_material(ShaderBinder& binder, Shader& shader, asset::M
 
                 ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(*_upload_manager, *parameter.as_sampler2D().asset);
 
-                if(gpu_texture.is_ok()) {
+                if(gpu_texture->is_ok()) {
                     
                     uint32_t const texture_location = it->second.as_sampler2D().index;
-                    binder.update_resource(texture_location, gpu_texture->texture);
+                    binder.update_resource(texture_location, gpu_texture->as_const_ok().resource.texture);
                     // the sampler position is always 1 greater than the texture position
-                    binder.update_resource(texture_location + 1, gpu_texture->sampler);
+                    binder.update_resource(texture_location + 1, gpu_texture->as_const_ok().resource.sampler);
 
-                    if(gpu_texture->memory_state != backend::MemoryState::ShaderRead) {
-                        _memory_barriers.push_back(gpu_texture->barrier(backend::MemoryState::ShaderRead));
+                    auto mutex_resource = gpu_texture->as_ok();
+                    if(mutex_resource->resource.memory_state != backend::MemoryState::ShaderRead) {
+                        memory_barriers.push_back(mutex_resource->resource.barrier(backend::MemoryState::ShaderRead));
                     }
                 }
             }
@@ -499,6 +496,10 @@ void MeshRenderer::apply_material(ShaderBinder& binder, Shader& shader, asset::M
         _upload_manager->upload_buffer_data(material_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(material_buffer.data()), material_buffer.size()));
 
         uint32_t const material_location = shader.location_uniform_by_name("material");
-        binder.update_resource(material_location, material_cbuffer->buffer);
+        binder.update_resource(material_location, material_cbuffer->as_const_ok().resource.buffer);
+    }
+
+    if(!memory_barriers.empty()) {
+        _device->barrier(command_list, memory_barriers);
     }
 }

@@ -15,25 +15,25 @@ ShaderBinder::ShaderBinder(Shader& shader, NullData& null) :
         auto uniform_visitor = make_visitor(
             [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& data) {
                 _exist_updates.insert({ data.index, _update_resources.size() });
-                _update_resources.emplace_back(data.index, null.texture->texture);
+                _update_resources.emplace_back(data.index, null.texture->as_const_ok().resource.texture);
                 _exist_updates.insert({ data.index + 1, _update_resources.size() });
-                _update_resources.emplace_back(data.index + 1, null.texture->sampler);
+                _update_resources.emplace_back(data.index + 1, null.texture->as_const_ok().resource.sampler);
             },
             [&](ShaderUniformData<ShaderUniformType::CBuffer> const& data) {
                 _exist_updates.insert({ data.index, _update_resources.size() });
-                _update_resources.emplace_back(data.index, null.cbuffer->buffer);
+                _update_resources.emplace_back(data.index, null.cbuffer->as_const_ok().resource.buffer);
             },
             [&](ShaderUniformData<ShaderUniformType::SBuffer> const& data) {
                 _exist_updates.insert({ data.index, _update_resources.size() });
-                _update_resources.emplace_back(data.index, null.sbuffer->buffer);
+                _update_resources.emplace_back(data.index, null.sbuffer->as_const_ok().resource.buffer);
             },
             [&](ShaderUniformData<ShaderUniformType::RWBuffer> const& data) {
                 _exist_updates.insert({ data.index, _update_resources.size() });
-                _update_resources.emplace_back(data.index, null.sbuffer->buffer);
+                _update_resources.emplace_back(data.index, null.sbuffer->as_const_ok().resource.buffer);
             },
             [&](ShaderUniformData<ShaderUniformType::RWTexture2D> const& data) {
                 _exist_updates.insert({ data.index, _update_resources.size() });
-                _update_resources.emplace_back(data.index, null.texture->texture);
+                _update_resources.emplace_back(data.index, null.texture->as_const_ok().resource.texture);
             }
         );
 

@@ -24,6 +24,8 @@ ShaderCache& ShaderCache::operator=(ShaderCache&& other) noexcept {
 
 lib::ObjectPtr<Shader> ShaderCache::get(std::string_view const shader_name, std::optional<std::filesystem::path> const shader_path) {
 
+    std::unique_lock lock(_mutex);
+
     auto it = _data.find(std::string(shader_name.begin(), shader_name.end()));
 
     if(it != _data.end()) {
