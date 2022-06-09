@@ -30,7 +30,7 @@ int main(int* argc, char** agrv) {
 
     try {
         platform::WindowLoop loop;
-        platform::Window window("IONENGINE", 1280, 720, false);
+        platform::Window window("Project", 1280, 720, false);
         
         asset::AssetManager asset_manager(thread_pool, logger);
         renderer::Renderer renderer(window, asset_manager, thread_pool);
