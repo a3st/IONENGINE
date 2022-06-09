@@ -17,7 +17,7 @@ using namespace ionengine::renderer;
 Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool) : 
     _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = backend::BACKEND_BACK_BUFFER_COUNT }),
     _upload_manager(thread_pool, _device),
-    _frame_graph(_device),
+    _frame_graph(thread_pool, _device),
     _shader_cache(_device),
     _pipeline_cache(_device),
     _ui_renderer(_device, _upload_manager, _rt_texture_caches, window, asset_manager),

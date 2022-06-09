@@ -1485,6 +1485,9 @@ Handle<Texture> Device::Impl::acquire_next_texture() {
 }
 
 void Device::Impl::present() {
+    cbv_srv_uav_ranges[swapchain_index]->reset();
+    sampler_ranges[swapchain_index]->reset();
+
     swapchain->Present(0, 0);
 }
 
@@ -1662,9 +1665,6 @@ void Device::Impl::command_list_reset(CommandList& command_list) {
     THROW_IF_FAILED(command_list.command_list->Reset(command_list.command_allocator.Get(), nullptr));
 
     if(command_list.command_list->GetType() == D3D12_COMMAND_LIST_TYPE_DIRECT) {
-        cbv_srv_uav_ranges[swapchain_index]->reset();
-        sampler_ranges[swapchain_index]->reset();
-
         std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
         descriptor_heaps[0] = cbv_srv_uav_ranges[swapchain_index]->heap();
         descriptor_heaps[1] = sampler_ranges[swapchain_index]->heap();

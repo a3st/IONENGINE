@@ -76,6 +76,7 @@ add_executable(Runtime-Win32
     renderer/render_queue.cpp
     renderer/upload_manager.cpp
     renderer/frame_graph.cpp
+    renderer/command_list.cpp
 # ---------------------------
     thirdparty/tinyobjloader/src/tiny_obj_loader.cc
 )
@@ -190,6 +191,7 @@ add_executable(Editor-Win32
     renderer/render_queue.cpp
     renderer/upload_manager.cpp
     renderer/frame_graph.cpp
+    renderer/command_list.cpp
 # ---------------------------
     thirdparty/tinyobjloader/src/tiny_obj_loader.cc
 )

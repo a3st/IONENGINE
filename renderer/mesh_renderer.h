@@ -68,8 +68,6 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void scissor(int32_t const x, int32_t const y);
-
     void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index);
 
 private:
@@ -110,8 +108,6 @@ private:
 
     uint32_t _width;
     uint32_t _height;
-    int32_t _x{0};
-    int32_t _y{0};
 
     std::vector<backend::MemoryBarrierDesc> _memory_barriers;
 

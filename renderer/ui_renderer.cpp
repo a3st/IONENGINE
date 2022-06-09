@@ -49,11 +49,10 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
         "ui",
         _width,
         _height,
-        0,
-        0,
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         std::nullopt,
+        TaskExecution::Single,
         [=, &pipeline_cache, &shader_cache, &ui, &null](RenderPassContext const& context) {
 
             lib::ObjectPtr<Shader> shader = shader_cache.get("ui_pc");

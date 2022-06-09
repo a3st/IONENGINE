@@ -138,11 +138,6 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
     }
 }
 
-void MeshRenderer::scissor(int32_t const x, int32_t const y) {
-    _x = x;
-    _y = y;
-}
-
 void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index) {
 
     _object_pools.at(frame_index).reset();
@@ -213,11 +208,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         "gbuffer",
         _width,
         _height,
-        _x,
-        _y,
         gbuffer_color_infos,
         std::nullopt,
         depth_stencil_info,
+        TaskExecution::Single,
         [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
 
             backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
@@ -288,11 +282,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         "deffered",
         _width,
         _height,
-        _x,
-        _y,
         std::span<CreateColorInfo const>(&final_color_info, 1),
         gbuffer_input_infos,
         std::nullopt,
+        TaskExecution::Single,
         [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
 
             lib::ObjectPtr<Shader> shader = shader_cache.get("deffered_pc");
@@ -346,11 +339,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         "forward",
         _width,
         _height,
-        _x,
-        _y,
         std::span<CreateColorInfo const>(&final_color_info, 1),
         std::nullopt,
         depth_stencil_info,
+        TaskExecution::Single,
         [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
 
             backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
@@ -412,11 +404,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         "fxaa",
         _width,
         _height,
-        _x,
-        _y,
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         depth_stencil_info,
+        TaskExecution::Single,
         [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
 
             lib::ObjectPtr<Shader> shader = shader_cache.get("fxaa_pc");

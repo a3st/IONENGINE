@@ -26,7 +26,7 @@ using namespace ionengine;
 int main(int* argc, char** agrv) {
 
     lib::Logger logger;
-    lib::ThreadPool thread_pool(3);
+    lib::ThreadPool thread_pool(11);
 
     try {
         platform::WindowLoop loop;

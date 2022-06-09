@@ -6,10 +6,17 @@
 #include <renderer/resource_ptr.h>
 #include <renderer/gpu_texture.h>
 #include <renderer/gpu_buffer.h>
+#include <renderer/command_pool.h>
 #include <lib/math/color.h>
 #include <lib/hash/crc32.h>
+#include <lib/thread_pool.h>
 
 namespace ionengine::renderer {
+
+enum class TaskExecution {
+    Single,
+    Multithreading
+};
 
 struct CreateColorInfo {
     ResourcePtr<GPUTexture> attachment;
@@ -29,8 +36,9 @@ struct CreateDepthStencilInfo {
 };
 
 struct RenderPassContext {
-    backend::Handle<backend::RenderPass> render_pass;
+    uint16_t thread_index;
     backend::Handle<backend::CommandList> command_list;
+    backend::Handle<backend::RenderPass> render_pass;
 };
 
 using RenderPassFunc = std::function<void(RenderPassContext const&)>;
@@ -41,6 +49,7 @@ struct CreateStorageInfo {
 };
 
 struct ComputePassContext {
+    uint16_t thread_index;
     backend::Handle<backend::CommandList> command_list;
 };
 
@@ -50,17 +59,16 @@ inline ComputePassFunc ComputePassDefaultFunc = [=](ComputePassContext const& co
 class FrameGraph {
 public:
 
-    FrameGraph(backend::Device& device);
+    FrameGraph(lib::ThreadPool& thread_pool, backend::Device& device);
     
     void add_pass(
         std::string_view const name, 
         uint32_t const width,
         uint32_t const height,
-        int32_t const x,
-        int32_t const y,
         std::optional<std::span<CreateColorInfo const>> const colors,
         std::optional<std::span<CreateInputInfo const>> const inputs,
         std::optional<CreateDepthStencilInfo> const depth_stencil,
+        TaskExecution const task_execution,
         RenderPassFunc const& func
     );
 
@@ -82,8 +90,6 @@ private:
         std::string name;
         uint32_t width;
         uint32_t height;
-        int32_t x;
-        int32_t y;
         std::vector<ResourcePtr<GPUTexture>> color_attachments;
         std::vector<backend::RenderPassLoadOp> color_ops;
         std::vector<lib::math::Color> color_clears;
@@ -91,21 +97,22 @@ private:
         backend::RenderPassLoadOp ds_op;
         std::pair<float, uint8_t> ds_clear;
         std::vector<ResourcePtr<GPUTexture>> inputs;
+        TaskExecution task_execution;
         RenderPassFunc func;
         backend::Handle<backend::RenderPass> render_pass;
-        backend::Handle<backend::CommandList> command_list;
     };
 
     struct ComputePass {
         std::string name;
         std::vector<ResourcePtr<GPUBuffer>> storages;
         ComputePassFunc func;
-        backend::Handle<backend::CommandList> command_list;
     };
 
-    std::vector<backend::Handle<backend::CommandList>> _command_lists;
-
     backend::Device* _device;
+    lib::ThreadPool* _thread_pool;
+
+    std::vector<CommandPool<CommandPoolType::Graphics>> _graphics_command_pools;
+    std::vector<CommandPool<CommandPoolType::Compute>> _compute_command_pools;
 
     std::unordered_map<uint32_t, RenderPass> _render_pass_cache;
     std::unordered_map<uint32_t, ComputePass> _compute_pass_cache;
@@ -127,7 +134,6 @@ private:
     std::vector<OpData> _ops;
 
     uint32_t _frame_index{0};
-    uint32_t _frame_count{2};
 
     std::vector<uint64_t> _fence_values;
 
