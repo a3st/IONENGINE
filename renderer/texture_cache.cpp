@@ -22,8 +22,8 @@ TextureCache& TextureCache::operator=(TextureCache&& other) noexcept {
 }
 
 ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::Texture& texture) {
-        
-    std::unique_lock lock(_mutex);
+
+    std::lock_guard lock(_mutex);
 
     uint64_t const hash = texture.hash;
 
@@ -31,10 +31,8 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
 
         auto& cache_entry = _data.get(texture.cache_entry);
 
-        if(cache_entry.value->is_ok()) {
-            if(cache_entry.value->as_ok()->is_wait_for_upload) {
-                upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
-            }
+        if(cache_entry.value->is_wait_for_upload.load()) {
+            upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
         }
 
         return cache_entry.value;
@@ -49,6 +47,8 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
                 .value = make_resource_ptr(result.value()),
                 .hash = hash
             };
+
+            cache_entry.value->is_wait_for_upload.store(true);
 
             upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
             texture.cache_entry = _data.push(std::move(cache_entry));

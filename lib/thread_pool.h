@@ -18,23 +18,21 @@ public:
     ThreadPool& operator=(ThreadPool&&) noexcept = delete;
     
     template<class Func, class... Args>
-    std::future<void> push(Func&& func, Args&&... args) {
+    void push(Func&& func, Args&&... args) {
 
-        std::packaged_task<void()> pending_task(std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
-        std::future<void> future = pending_task.get_future();
+        std::function<void()> pending_task(std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
         {
-            std::unique_lock lock(_mutex);
+            std::lock_guard lock(_mutex);
             _workers[_current_worker].tasks.emplace(std::move(pending_task));
         }
+        _available_tasks.notify_all();
         _current_worker = (_current_worker + 1) % _worker_count;
         ++_pending_tasks_count;
-
-        return future;
     }
 
     size_t size() const;
 
-    void wait_all() const;
+    void wait_all();
 
     void join();
 
@@ -42,12 +40,13 @@ private:
 
     struct Worker {
         std::thread thread;
-        std::queue<std::packaged_task<void()>> tasks;
+        std::queue<std::function<void()>> tasks;
     };
 
     bool _is_exec{false};
 
     std::mutex _mutex;
+    std::condition_variable _available_tasks;
 
     uint32_t _worker_count{0};
     std::unique_ptr<Worker[]> _workers;

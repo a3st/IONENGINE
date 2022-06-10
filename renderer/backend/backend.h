@@ -345,7 +345,7 @@ public:
 
     void delete_pipeline(Handle<Pipeline> const& pipeline);
 
-    Handle<CommandList> create_command_list(QueueFlags const flags);
+    Handle<CommandList> create_command_list(QueueFlags const flags, bool const bundle = false);
 
     void delete_command_list(Handle<CommandList> const& command_list);
 
@@ -408,6 +408,12 @@ public:
     );
 
     void end_render_pass(Handle<CommandList> const& command_list);
+
+    void begin_command_list(Handle<CommandList> const& command_list);
+
+    void close_command_list(Handle<CommandList> const& command_list);
+
+    void execute_bundle(Handle<CommandList> const& command_list, Handle<CommandList> const& bundle_command_list);
 
     void dispatch(Handle<CommandList> const& command_list, uint32_t const thread_group_x, uint32_t const thread_group_y, uint32_t const thread_group_z);
 

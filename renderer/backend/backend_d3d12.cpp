@@ -202,7 +202,7 @@ struct Device::Impl {
     
     void delete_pipeline(Handle<Pipeline> const& pipeline);
 
-    Handle<CommandList> create_command_list(QueueFlags const flags);
+    Handle<CommandList> create_command_list(QueueFlags const flags, bool const bundle = false);
 
     void delete_command_list(Handle<CommandList> const& command_list);
 
@@ -265,6 +265,12 @@ struct Device::Impl {
     );
 
     void end_render_pass(Handle<CommandList> const& command_list);
+
+    void begin_command_list(Handle<CommandList> const& command_list);
+
+    void close_command_list(Handle<CommandList> const& command_list);
+
+    void execute_bundle(Handle<CommandList> const& command_list, Handle<CommandList> const& bundle_command_list);
 
     void dispatch(Handle<CommandList> const& command_list, uint32_t const thread_group_x, uint32_t const thread_group_y, uint32_t const thread_group_z);
 
@@ -1419,7 +1425,7 @@ void Device::Impl::delete_pipeline(Handle<Pipeline> const& pipeline) {
     pipelines.erase(pipeline);
 }
 
-Handle<CommandList> Device::Impl::create_command_list(QueueFlags const flags) {
+Handle<CommandList> Device::Impl::create_command_list(QueueFlags const flags, bool const bundle) {
 
     auto get_command_list_type = [&](QueueFlags const queue_flags) -> D3D12_COMMAND_LIST_TYPE {
         switch(queue_flags) {
@@ -1431,20 +1437,39 @@ Handle<CommandList> Device::Impl::create_command_list(QueueFlags const flags) {
     };
 
     auto command_list_data = CommandList {};
-    
-    THROW_IF_FAILED(device->CreateCommandAllocator(
-        get_command_list_type(flags), 
-        __uuidof(ID3D12CommandAllocator), 
-        reinterpret_cast<void**>(command_list_data.command_allocator.GetAddressOf()))
-    );
-        
-    THROW_IF_FAILED(device->CreateCommandList1(
-        0, 
-        get_command_list_type(flags), 
-        D3D12_COMMAND_LIST_FLAG_NONE,
-        __uuidof(ID3D12GraphicsCommandList4),
-        reinterpret_cast<void**>(command_list_data.command_list.GetAddressOf()))
-    );
+
+    if(bundle) {
+
+        THROW_IF_FAILED(device->CreateCommandAllocator(
+            D3D12_COMMAND_LIST_TYPE_BUNDLE, 
+            __uuidof(ID3D12CommandAllocator), 
+            reinterpret_cast<void**>(command_list_data.command_allocator.GetAddressOf()))
+        );
+            
+        THROW_IF_FAILED(device->CreateCommandList1(
+            0, 
+            D3D12_COMMAND_LIST_TYPE_BUNDLE, 
+            D3D12_COMMAND_LIST_FLAG_NONE,
+            __uuidof(ID3D12GraphicsCommandList4),
+            reinterpret_cast<void**>(command_list_data.command_list.GetAddressOf()))
+        );
+
+    } else {
+
+        THROW_IF_FAILED(device->CreateCommandAllocator(
+            get_command_list_type(flags), 
+            __uuidof(ID3D12CommandAllocator), 
+            reinterpret_cast<void**>(command_list_data.command_allocator.GetAddressOf()))
+        );
+            
+        THROW_IF_FAILED(device->CreateCommandList1(
+            0, 
+            get_command_list_type(flags), 
+            D3D12_COMMAND_LIST_FLAG_NONE,
+            __uuidof(ID3D12GraphicsCommandList4),
+            reinterpret_cast<void**>(command_list_data.command_list.GetAddressOf()))
+        );
+    }
 
     return command_lists.push(std::move(command_list_data));
 }
@@ -1481,13 +1506,12 @@ void Device::Impl::unmap_buffer_data(Handle<Buffer> const& buffer) {
 
 Handle<Texture> Device::Impl::acquire_next_texture() {
     swapchain_index = swapchain->GetCurrentBackBufferIndex();
+    cbv_srv_uav_ranges[swapchain_index]->reset();
+    sampler_ranges[swapchain_index]->reset();
     return Handle<Texture>(swapchain_textures[swapchain_index]);
 }
 
 void Device::Impl::present() {
-    cbv_srv_uav_ranges[swapchain_index]->reset();
-    sampler_ranges[swapchain_index]->reset();
-
     swapchain->Present(0, 0);
 }
 
@@ -1664,12 +1688,16 @@ void Device::Impl::command_list_reset(CommandList& command_list) {
     THROW_IF_FAILED(command_list.command_allocator->Reset());
     THROW_IF_FAILED(command_list.command_list->Reset(command_list.command_allocator.Get(), nullptr));
 
-    if(command_list.command_list->GetType() == D3D12_COMMAND_LIST_TYPE_DIRECT) {
-        std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
-        descriptor_heaps[0] = cbv_srv_uav_ranges[swapchain_index]->heap();
-        descriptor_heaps[1] = sampler_ranges[swapchain_index]->heap();
+    switch(command_list.command_list->GetType()) {
+        case D3D12_COMMAND_LIST_TYPE_DIRECT:
+        case D3D12_COMMAND_LIST_TYPE_BUNDLE:
+        case D3D12_COMMAND_LIST_TYPE_COMPUTE: {
+            std::array<ID3D12DescriptorHeap*, 2> descriptor_heaps;
+            descriptor_heaps[0] = cbv_srv_uav_ranges[swapchain_index]->heap();
+            descriptor_heaps[1] = sampler_ranges[swapchain_index]->heap();
 
-        command_list.command_list->SetDescriptorHeaps(2, descriptor_heaps.data());
+            command_list.command_list->SetDescriptorHeaps(2, descriptor_heaps.data());
+        } break;
     }
 
     command_list.is_reset = true;
@@ -1814,6 +1842,29 @@ void Device::Impl::end_render_pass(Handle<CommandList> const& command_list) {
     }
 
     command_list_data.command_list->EndRenderPass();
+}
+
+void Device::Impl::begin_command_list(Handle<CommandList> const& command_list) {
+
+}
+
+void Device::Impl::close_command_list(Handle<CommandList> const& command_list) {
+    auto& command_list_data = command_lists[command_list];
+    THROW_IF_FAILED(command_list_data.command_list->Close());
+    command_list_data.is_reset = false;
+}
+
+void Device::Impl::execute_bundle(Handle<CommandList> const& command_list, Handle<CommandList> const& bundle_command_list) {
+
+    auto& command_list_data = command_lists[command_list];
+
+    if(!command_list_data.is_reset) {
+        command_list_reset(command_list_data);
+    }
+
+    auto& bundle_command_list_data = command_lists[bundle_command_list];
+
+    command_list_data.command_list->ExecuteBundle(bundle_command_list_data.command_list.Get());
 }
 
 void Device::Impl::dispatch(Handle<CommandList> const& command_list, uint32_t const thread_group_x, uint32_t const thread_group_y, uint32_t const thread_group_z) {
@@ -2221,9 +2272,9 @@ void Device::delete_pipeline(Handle<Pipeline> const& pipeline) {
     _impl->delete_pipeline(pipeline);
 }
 
-Handle<CommandList> Device::create_command_list(QueueFlags const flags) {
+Handle<CommandList> Device::create_command_list(QueueFlags const flags, bool const bundle) {
 
-    return _impl->create_command_list(flags);
+    return _impl->create_command_list(flags, bundle);
 }
 
 void Device::delete_command_list(Handle<CommandList> const& command_list) {
@@ -2302,6 +2353,18 @@ void Device::begin_render_pass(
 
 void Device::end_render_pass(Handle<CommandList> const& command_list) {
     _impl->end_render_pass(command_list);
+}
+
+void Device::begin_command_list(Handle<CommandList> const& command_list) {
+    _impl->begin_command_list(command_list);
+}
+
+void Device::close_command_list(Handle<CommandList> const& command_list) {
+    _impl->close_command_list(command_list);
+}
+
+void Device::execute_bundle(Handle<CommandList> const& command_list, Handle<CommandList> const& bundle_command_list) {
+    _impl->execute_bundle(command_list, bundle_command_list);
 }
 
 void Device::dispatch(Handle<CommandList> const& command_list, uint32_t const thread_group_x, uint32_t const thread_group_y, uint32_t const thread_group_z) {

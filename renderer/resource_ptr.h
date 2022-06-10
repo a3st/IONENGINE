@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <lib/exception.h>
-
 namespace ionengine::renderer {
 
 enum class ResourceStateType {
@@ -17,7 +15,6 @@ struct ResourceStateData { };
 template<class ResourceType>
 struct ResourceStateData<ResourceType, ResourceStateType::Ok> {
     ResourceType resource;
-    bool is_wait_for_upload;
 };
 
 template<class ResourceType>
@@ -45,8 +42,8 @@ private:
 
 #ifndef DECLARE_RESOURCE_STATE_CAST
 #define DECLARE_RESOURCE_STATE_CAST(Name, State) \
-MutexProxy<ResourceStateData<Type, State>> Name() { \
-    return MutexProxy<ResourceStateData<Type, State>>(&std::get<ResourceStateData<Type, State>>(data), mutex); \
+ResourceStateData<Type, State>& Name() { \
+    return std::get<ResourceStateData<Type, State>>(data); \
 }
 #endif
 
@@ -66,6 +63,8 @@ struct ResourceState {
 
     std::mutex mutex;
 
+    std::atomic<bool> is_wait_for_upload;
+
     DECLARE_RESOURCE_STATE_CAST(as_ok, ResourceStateType::Ok)
     DECLARE_RESOURCE_STATE_CONST_CAST(as_const_ok, ResourceStateType::Ok)
 
@@ -84,7 +83,7 @@ struct ResourceState {
 
     Type commit_pending() {
         std::lock_guard lock(mutex);
-        Type element = std::move(std::get<2>(data).resource);
+        Type element = std::move(std::get<ResourceStateData<Type, ResourceStateType::Ok>>(data).resource);
         data = ResourceStateData<Type, ResourceStateType::Pending> { };
         return std::move(element);
     }
@@ -94,8 +93,8 @@ template<class Type>
 using ResourcePtr = std::shared_ptr<ResourceState<Type>>;
 
 template<class Type>
-ResourcePtr<Type> make_resource_ptr(Type&& from) {
-    return std::make_shared<ResourceState<Type>>(ResourceStateData<Type, ResourceStateType::Ok> { .resource = std::move(from) });
+inline ResourcePtr<Type> make_resource_ptr(Type&& from) {
+    return ResourcePtr<Type>(new ResourceState<Type> { .data = ResourceStateData<Type, ResourceStateType::Ok> { .resource = std::move(from) } });
 }
 
 }

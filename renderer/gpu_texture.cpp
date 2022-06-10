@@ -88,7 +88,7 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
                 backend::TextureFlags::ShaderResource
             );
 
-            gpu_texture.memory_state = backend::MemoryState::Common;
+            gpu_texture.memory_state.store(backend::MemoryState::Common);
             gpu_texture.flags = backend::TextureFlags::ShaderResource;
         }
 
@@ -115,7 +115,7 @@ backend::MemoryBarrierDesc GPUTexture::barrier(backend::MemoryState const after)
         .before = memory_state,
         .after = after 
     };
-    memory_state = after;
+    memory_state.store(after);
     return barrier;
 }
 

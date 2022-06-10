@@ -29,15 +29,13 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
             renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _rt_texture_cache->get(*texture_data);
 
             if(gpu_texture->is_ok()) {
-
                 uint32_t const albedo_location = _shader->location_uniform_by_name("albedo");
                 _binder->update_resource(albedo_location, gpu_texture->as_const_ok().resource.texture);
-                // the sampler position is always 1 greater than the texture position
                 _binder->update_resource(albedo_location + 1, gpu_texture->as_const_ok().resource.sampler);
 
-                if(gpu_texture->as_const_ok().resource.memory_state != renderer::backend::MemoryState::ShaderRead) {
-                    _memory_barriers.push_back(gpu_texture->as_ok()->resource.barrier(renderer::backend::MemoryState::ShaderRead));
-                }
+                //if(gpu_texture->as_ok().resource.memory_state.load() != renderer::backend::MemoryState::ShaderRead) {
+                //    _memory_barriers.push_back(gpu_texture->as_ok().resource.barrier(renderer::backend::MemoryState::ShaderRead));
+                //}
             }
 
         } else {
@@ -45,15 +43,13 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
             renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _texture_cache->get(*_upload_manager, *texture_data);
 
             if(gpu_texture->is_ok()) {
-
                 uint32_t const albedo_location = _shader->location_uniform_by_name("albedo");
                 _binder->update_resource(albedo_location, gpu_texture->as_const_ok().resource.texture);
-                // the sampler position is always 1 greater than the texture position
                 _binder->update_resource(albedo_location + 1, gpu_texture->as_const_ok().resource.sampler);
 
-                if(gpu_texture->as_const_ok().resource.memory_state != renderer::backend::MemoryState::ShaderRead) {
-                    _memory_barriers.push_back(gpu_texture->as_ok()->resource.barrier(renderer::backend::MemoryState::ShaderRead));
-                }
+                //if(gpu_texture->as_ok().resource.memory_state.load() != renderer::backend::MemoryState::ShaderRead) {
+                //    _memory_barriers.push_back(gpu_texture->as_ok().resource.barrier(renderer::backend::MemoryState::ShaderRead));
+                //}
             }
         }
 
@@ -110,15 +106,15 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
     renderer::ResourcePtr<renderer::GeometryBuffer> geometry_buffer = _geometry_pool->allocate();
     _upload_manager->upload_geometry_data(geometry_buffer, vertex_data, index_data);
     
-    geometry_buffer->as_ok()->resource.bind(*_device, _command_list);
+    geometry_buffer->as_ok().resource.bind(*_device, _command_list);
     _device->draw_indexed(_command_list, num_indices, 1, 0);
 }
 
 void RenderInterface::EnableScissorRegion(bool enable) {
     if(!enable) {
-        _device->set_scissor(_command_list, 0, 0, _width, _height);
+        //_device->set_scissor(_command_list, 0, 0, _width, _height);
     }
-    _is_scissor = enable;
+    //_is_scissor = enable;
 }
 
 void RenderInterface::SetScissorRegion(int x, int y, int width, int height) {

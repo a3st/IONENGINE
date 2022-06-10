@@ -52,26 +52,32 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         std::nullopt,
-        TaskExecution::Single,
-        [=, &pipeline_cache, &shader_cache, &ui, &null](RenderPassContext const& context) {
+        [&, frame_index](RenderPassContext& context) {
 
-            lib::ObjectPtr<Shader> shader = shader_cache.get("ui_pc");
-            auto pipeline = pipeline_cache.get(*shader, context.render_pass);
+            auto command_lists = context.single_for(
+                [&](backend::Handle<backend::CommandList> const& command_list, backend::Handle<backend::RenderPass> const& render_pass) {
 
-            _device->bind_pipeline(context.command_list, pipeline);
+                    lib::ObjectPtr<Shader> shader = shader_cache.get("ui_pc");
+                    auto pipeline = pipeline_cache.get(*shader, context.render_pass->render_pass);
 
-            ShaderBinder binder(*shader, null);
+                    _device->bind_pipeline(command_list, pipeline);
 
-            ui.render_interface()._ui_element_pool = &_ui_element_pools.at(frame_index);
-            ui.render_interface()._geometry_pool = &_geometry_pools.at(frame_index);
-            ui.render_interface()._rt_texture_cache = &_rt_texture_caches->at(frame_index);
-            ui.render_interface()._command_list = context.command_list;
-            ui.render_interface()._width = _width;
-            ui.render_interface()._height = _height;
-            ui.render_interface()._binder = &binder;
-            ui.render_interface()._shader = &*shader;
+                    ShaderBinder binder(*shader, null);
 
-            ui.context().Render();
+                    ui.render_interface()._ui_element_pool = &_ui_element_pools.at(frame_index);
+                    ui.render_interface()._geometry_pool = &_geometry_pools.at(frame_index);
+                    ui.render_interface()._rt_texture_cache = &_rt_texture_caches->at(frame_index);
+                    ui.render_interface()._command_list = command_list;
+                    ui.render_interface()._width = _width;
+                    ui.render_interface()._height = _height;
+                    ui.render_interface()._binder = &binder;
+                    ui.render_interface()._shader = &*shader;
+
+                    ui.context().Render();
+                }
+            );
+
+            return TaskCreateInfo { TaskExecution::Single, std::move(command_lists) }; 
         }
     );
 }

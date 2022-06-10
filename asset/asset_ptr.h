@@ -111,27 +111,15 @@ public:
     }
 
     bool is_pending() const {
-        if(_ptr->mutex.try_lock()) {
-            std::unique_lock lock(_ptr->mutex, std::adopt_lock);
-            return _ptr->data.index() == 2;
-        }
-        return false;
+        return _ptr->data.index() == 2;
     }
 
     bool is_ok() const {
-        if(_ptr->mutex.try_lock()) {
-            std::unique_lock lock(_ptr->mutex, std::adopt_lock);
-            return _ptr->data.index() == 0;
-        }
-        return false;
+        return _ptr->data.index() == 0;
     }
 
     bool is_error() const {
-        if(_ptr->mutex.try_lock()) {
-            std::unique_lock lock(_ptr->mutex, std::adopt_lock);
-            return _ptr->data.index() == 1;
-        }
-        return false;
+        return _ptr->data.index() == 1;
     }
 
     void wait() {

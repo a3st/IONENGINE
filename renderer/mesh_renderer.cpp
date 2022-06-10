@@ -210,51 +210,70 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         gbuffer_color_infos,
         std::nullopt,
         depth_stencil_info,
-        TaskExecution::Multithreading,
-        [&, frame_index](RenderPassContext const& context) {
-
-            backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
+        [&, frame_index, world_cbuffer](RenderPassContext& context) -> TaskCreateInfo {
             
-            uint16_t const thread_count = 7;
+            uint16_t const thread_count = 16;
             auto chunks = _opaque_queue | ranges::views::chunk(thread_count);
 
-            for(auto const& batch : chunks.at(context.thread_index)) {
+            std::vector<ResourcePtr<CommandList>> command_lists(chunks.size());
 
-                lib::ObjectPtr<Shader> shader = shader_cache.get(batch.material->passes.at("gbuffer"));
-                auto pipeline = pipeline_cache.get(*shader, context.render_pass);
-                
-                if(current_pipeline != pipeline) {
-                    _device->bind_pipeline(context.command_list, pipeline);
-                    current_pipeline = pipeline;
-                }
+            for(size_t i = 0; i < chunks.size(); ++i) {
 
-                ShaderBinder binder(*shader, null);
+                ResourcePtr<CommandList> command_list = context.command_pool->allocate();
+                command_lists.at(i) = command_list;
 
-                apply_material(binder, *shader, *batch.material, context.command_list, frame_index);
+                context.thread_pool->push(
+                    [&, command_list, i, chunks]() {
 
-                std::vector<ObjectData> object_buffers;
-                for(auto const& instance : batch.instances) {
-                    object_buffers.emplace_back(instance.model, instance.inverse_model);
-                }
+                        backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
 
-                ResourcePtr<GPUBuffer> object_sbuffer = _object_pools.at(frame_index).allocate();
-                _upload_manager->upload_buffer_data(object_sbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(object_buffers.data()), object_buffers.size() * sizeof(ObjectData)));
+                        for(auto const& batch : chunks.at(i)) {
+                            
+                            lib::ObjectPtr<Shader> shader;
+                            backend::Handle<backend::Pipeline> pipeline;
 
-                uint32_t const world_location = shader->location_uniform_by_name("world");
-                uint32_t const object_location = shader->location_uniform_by_name("object");
+                            shader = shader_cache.get(batch.material->passes.at("gbuffer"));
+                            pipeline = pipeline_cache.get(*shader, context.render_pass->render_pass);
+                            
+                            if(current_pipeline != pipeline) {
+                                _device->bind_pipeline(command_list->as_const_ok().resource.command_list, pipeline);
+                                current_pipeline = pipeline;
+                            }
 
-                binder.update_resource(world_location, world_cbuffer->as_ok()->resource.buffer);
-                binder.update_resource(object_location, object_sbuffer->as_ok()->resource.buffer);
+                            ShaderBinder binder(*shader, null);
 
-                binder.bind(*_device, context.command_list);
+                            apply_material(binder, *shader, *batch.material, command_list->as_const_ok().resource.command_list, frame_index);
 
-                ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->surfaces()[batch.surface_index]);
-                
-                if(geometry_buffer->is_ok()) {
-                    geometry_buffer->as_ok()->resource.bind(*_device, context.command_list);
-                    _device->draw_indexed(context.command_list, static_cast<uint32_t>(geometry_buffer->as_ok()->resource.index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
-                }
+                            std::vector<ObjectData> object_buffers;
+                            for(auto const& instance : batch.instances) {
+                                object_buffers.emplace_back(instance.model, instance.inverse_model);
+                            }
+
+                            ResourcePtr<GPUBuffer> object_sbuffer = _object_pools.at(frame_index).allocate();
+                            _upload_manager->upload_buffer_data(object_sbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(object_buffers.data()), object_buffers.size() * sizeof(ObjectData)));
+
+                            uint32_t const world_location = shader->location_uniform_by_name("world");
+                            uint32_t const object_location = shader->location_uniform_by_name("object");
+
+                            binder.update_resource(world_location, world_cbuffer->as_const_ok().resource.buffer);
+                            binder.update_resource(object_location, object_sbuffer->as_const_ok().resource.buffer);
+
+                            binder.bind(*_device, command_list->as_const_ok().resource.command_list);
+
+                            ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->surfaces()[batch.surface_index]);
+                                
+                            if(geometry_buffer->is_ok()) {
+                                geometry_buffer->as_ok().resource.bind(*_device, command_list->as_const_ok().resource.command_list);
+                                _device->draw_indexed(command_list->as_const_ok().resource.command_list, static_cast<uint32_t>(geometry_buffer->as_ok().resource.index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
+                            }
+                        }
+
+                        _device->close_command_list(command_list->as_const_ok().resource.command_list);
+                    }
+                );
             }
+
+            return TaskCreateInfo { TaskExecution::Multithreading, std::move(command_lists) };
         }
     );
 
@@ -282,44 +301,45 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         std::span<CreateColorInfo const>(&final_color_info, 1),
         gbuffer_input_infos,
         std::nullopt,
-        TaskExecution::Single,
-        [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
+        [&, world_cbuffer, point_light_sbuffer, frame_index](RenderPassContext& context) -> TaskCreateInfo {
 
-            lib::ObjectPtr<Shader> shader = shader_cache.get("deffered_pc");
-            auto pipeline = pipeline_cache.get(*shader, context.render_pass);
+            auto command_lists = context.single_for(
+                [&](backend::Handle<backend::CommandList> const& command_list, backend::Handle<backend::RenderPass> const& render_pass) {
+                    lib::ObjectPtr<Shader> shader = shader_cache.get("deffered_pc");
+                    auto pipeline = pipeline_cache.get(*shader, context.render_pass->render_pass);
 
-            _device->bind_pipeline(context.command_list, pipeline);
+                    _device->bind_pipeline(command_list, pipeline);
 
-            ShaderBinder binder(*shader, null);
+                    ShaderBinder binder(*shader, null);
 
-            uint32_t const world_location = shader->location_uniform_by_name("world");
-            uint32_t const point_light_location = shader->location_uniform_by_name("point_light");
-            uint32_t const positions_location = shader->location_uniform_by_name("positions");
-            uint32_t const normals_location = shader->location_uniform_by_name("normals");
-            uint32_t const albedo_location = shader->location_uniform_by_name("albedo");
-            uint32_t const roughness_metalness_ao_location = shader->location_uniform_by_name("roughness_metalness_ao");
+                    uint32_t const world_location = shader->location_uniform_by_name("world");
+                    uint32_t const point_light_location = shader->location_uniform_by_name("point_light");
+                    uint32_t const positions_location = shader->location_uniform_by_name("positions");
+                    uint32_t const normals_location = shader->location_uniform_by_name("normals");
+                    uint32_t const albedo_location = shader->location_uniform_by_name("albedo");
+                    uint32_t const roughness_metalness_ao_location = shader->location_uniform_by_name("roughness_metalness_ao");
 
-            binder.update_resource(world_location, world_cbuffer->as_const_ok().resource.buffer);
-            binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().resource.buffer);
-            binder.update_resource(positions_location, _gbuffers.at(frame_index).positions->as_const_ok().resource.texture);
-            // the sampler position is always 1 greater than the texture position
-            binder.update_resource(positions_location + 1, _gbuffers.at(frame_index).positions->as_const_ok().resource.sampler);
-            binder.update_resource(albedo_location, _gbuffers.at(frame_index).albedo->as_const_ok().resource.texture);
-            // the sampler position is always 1 greater than the texture position
-            binder.update_resource(albedo_location + 1, _gbuffers.at(frame_index).albedo->as_const_ok().resource.sampler);
-            binder.update_resource(normals_location, _gbuffers.at(frame_index).normals->as_const_ok().resource.texture);
-            // the sampler position is always 1 greater than the texture position
-            binder.update_resource(normals_location + 1, _gbuffers.at(frame_index).normals->as_const_ok().resource.sampler);
-            binder.update_resource(roughness_metalness_ao_location, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().resource.texture);
-            // the sampler position is always 1 greater than the texture position
-            binder.update_resource(roughness_metalness_ao_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().resource.sampler);
+                    binder.update_resource(world_location, world_cbuffer->as_const_ok().resource.buffer);
+                    binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().resource.buffer);
+                    binder.update_resource(positions_location, _gbuffers.at(frame_index).positions->as_const_ok().resource.texture);
+                    binder.update_resource(positions_location + 1, _gbuffers.at(frame_index).positions->as_const_ok().resource.sampler);
+                    binder.update_resource(albedo_location, _gbuffers.at(frame_index).albedo->as_const_ok().resource.texture);
+                    binder.update_resource(albedo_location + 1, _gbuffers.at(frame_index).albedo->as_const_ok().resource.sampler);
+                    binder.update_resource(normals_location, _gbuffers.at(frame_index).normals->as_const_ok().resource.texture);
+                    binder.update_resource(normals_location + 1, _gbuffers.at(frame_index).normals->as_const_ok().resource.sampler);
+                    binder.update_resource(roughness_metalness_ao_location, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().resource.texture);
+                    binder.update_resource(roughness_metalness_ao_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().resource.sampler);
 
-            binder.bind(*_device, context.command_list);
+                    binder.bind(*_device, command_list);
 
-            if(_quad->is_ok()) {
-                _quad->as_ok()->resource.bind(*_device, context.command_list);
-                _device->draw_indexed(context.command_list, static_cast<uint32_t>(_quad->as_ok()->resource.index_size / sizeof(uint32_t)), 1, 0);
-            }
+                    if(_quad->is_ok()) {
+                        _quad->as_ok().resource.bind(*_device, command_list);
+                        _device->draw_indexed(command_list, static_cast<uint32_t>(_quad->as_ok().resource.index_size / sizeof(uint32_t)), 1, 0);
+                    }
+                }
+            );
+
+            return TaskCreateInfo { TaskExecution::Single, std::move(command_lists) }; 
         }
     );
 
@@ -339,53 +359,55 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         std::span<CreateColorInfo const>(&final_color_info, 1),
         std::nullopt,
         depth_stencil_info,
-        TaskExecution::Single,
-        [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
+        [&, frame_index, world_cbuffer, point_light_sbuffer](RenderPassContext& context) -> TaskCreateInfo {
 
-            backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
+            auto command_lists = context.single_for(
+                [&](backend::Handle<backend::CommandList> const& command_list, backend::Handle<backend::RenderPass> const& render_pass) {
 
-            uint16_t const thread_count = 7;
-            auto chunks = _transculent_queue | ranges::views::chunk(thread_count);
+                    backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
 
-            for(auto const& batch : chunks.at(context.thread_index)) {
+                    for(auto const& batch : _transculent_queue) {
 
-                lib::ObjectPtr<Shader> shader = shader_cache.get(batch.material->passes.at("forward"));
-                auto pipeline = pipeline_cache.get(*shader, context.render_pass);
-                
-                if(current_pipeline != pipeline) {
-                    _device->bind_pipeline(context.command_list, pipeline);
-                    current_pipeline = pipeline;
+                        lib::ObjectPtr<Shader> shader = shader_cache.get(batch.material->passes.at("forward"));
+                        auto pipeline = pipeline_cache.get(*shader, context.render_pass->render_pass);
+                        
+                        if(current_pipeline != pipeline) {
+                            _device->bind_pipeline(command_list, pipeline);
+                            current_pipeline = pipeline;
+                        }
+
+                        ShaderBinder binder(*shader, null);
+
+                        apply_material(binder, *shader, *batch.material, command_list, frame_index);
+
+                        std::vector<ObjectData> object_buffers;
+                        for(auto const& instance : batch.instances) {
+                            object_buffers.emplace_back(instance.model, instance.inverse_model);
+                        }
+
+                        ResourcePtr<GPUBuffer> object_sbuffer = _object_pools.at(frame_index).allocate();
+                        _upload_manager->upload_buffer_data(object_sbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(object_buffers.data()), object_buffers.size() * sizeof(ObjectData)));
+
+                        uint32_t const world_location = shader->location_uniform_by_name("world");
+                        uint32_t const object_location = shader->location_uniform_by_name("object");
+                        uint32_t const point_light_location = shader->location_uniform_by_name("point_light");
+
+                        binder.update_resource(world_location, world_cbuffer->as_const_ok().resource.buffer);
+                        binder.update_resource(object_location, object_sbuffer->as_const_ok().resource.buffer);
+                        binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().resource.buffer);
+
+                        binder.bind(*_device, command_list);
+
+                        ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->surfaces()[batch.surface_index]);
+                        
+                        if(geometry_buffer->is_ok()) {
+                            geometry_buffer->as_ok().resource.bind(*_device, command_list);
+                            _device->draw_indexed(command_list, static_cast<uint32_t>(geometry_buffer->as_ok().resource.index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
+                        }
+                    }
                 }
-
-                ShaderBinder binder(*shader, null);
-
-                apply_material(binder, *shader, *batch.material, context.command_list, frame_index);
-
-                std::vector<ObjectData> object_buffers;
-                for(auto const& instance : batch.instances) {
-                    object_buffers.emplace_back(instance.model, instance.inverse_model);
-                }
-
-                ResourcePtr<GPUBuffer> object_sbuffer = _object_pools.at(frame_index).allocate();
-                _upload_manager->upload_buffer_data(object_sbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(object_buffers.data()), object_buffers.size() * sizeof(ObjectData)));
-
-                uint32_t const world_location = shader->location_uniform_by_name("world");
-                uint32_t const object_location = shader->location_uniform_by_name("object");
-                uint32_t const point_light_location = shader->location_uniform_by_name("point_light");
-
-                binder.update_resource(world_location, world_cbuffer->as_const_ok().resource.buffer);
-                binder.update_resource(object_location, object_sbuffer->as_const_ok().resource.buffer);
-                binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().resource.buffer);
-
-                binder.bind(*_device, context.command_list);
-
-                ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->surfaces()[batch.surface_index]);
-                
-                if(geometry_buffer->is_ok()) {
-                    geometry_buffer->as_ok()->resource.bind(*_device, context.command_list);
-                    _device->draw_indexed(context.command_list, static_cast<uint32_t>(geometry_buffer->as_ok()->resource.index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
-                }
-            }
+            );
+            return TaskCreateInfo { TaskExecution::Single, std::move(command_lists) }; 
         }
     );
 
@@ -402,28 +424,33 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         depth_stencil_info,
-        TaskExecution::Single,
-        [=, &pipeline_cache, &shader_cache, &null](RenderPassContext const& context) {
+        [&, frame_index](RenderPassContext& context) -> TaskCreateInfo {
 
-            lib::ObjectPtr<Shader> shader = shader_cache.get("fxaa_pc");
-            auto pipeline = pipeline_cache.get(*shader, context.render_pass);
+            auto command_lists = context.single_for(
+                [&](backend::Handle<backend::CommandList> const& command_list, backend::Handle<backend::RenderPass> const& render_pass) {
 
-            _device->bind_pipeline(context.command_list, pipeline);
+                    lib::ObjectPtr<Shader> shader = shader_cache.get("fxaa_pc");
+                    auto pipeline = pipeline_cache.get(*shader, context.render_pass->render_pass);
 
-            ShaderBinder binder(*shader, null);
+                    _device->bind_pipeline(command_list, pipeline);
 
-            uint32_t const color = shader->location_uniform_by_name("color");
+                    ShaderBinder binder(*shader, null);
 
-            binder.update_resource(color, _final_images.at(frame_index)->as_ok()->resource.texture);
-            // the sampler position is always 1 greater than the texture.
-            binder.update_resource(color + 1, _final_images.at(frame_index)->as_ok()->resource.sampler);
+                    uint32_t const color = shader->location_uniform_by_name("color");
 
-            binder.bind(*_device, context.command_list);
+                    binder.update_resource(color, _final_images.at(frame_index)->as_const_ok().resource.texture);
+                    binder.update_resource(color + 1, _final_images.at(frame_index)->as_const_ok().resource.sampler);
 
-            if(_quad->is_ok()) {
-                _quad->as_ok()->resource.bind(*_device, context.command_list);
-                _device->draw_indexed(context.command_list, static_cast<uint32_t>(_quad->as_ok()->resource.index_size / sizeof(uint32_t)), 1, 0);
-            }
+                    binder.bind(*_device, command_list);
+
+                    if(_quad->is_ok()) {
+                        _quad->as_ok().resource.bind(*_device, command_list);
+                        _device->draw_indexed(command_list, static_cast<uint32_t>(_quad->as_ok().resource.index_size / sizeof(uint32_t)), 1, 0);
+                    }
+                }
+            );
+
+            return TaskCreateInfo { TaskExecution::Single, std::move(command_lists) }; 
         }
     );
 }
@@ -443,20 +470,16 @@ void MeshRenderer::apply_material(ShaderBinder& binder, Shader& shader, asset::M
             }
 
             if(parameter.as_sampler2D().asset.is_ok()) {
-
                 ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(*_upload_manager, *parameter.as_sampler2D().asset);
 
                 if(gpu_texture->is_ok()) {
-                    
                     uint32_t const texture_location = it->second.as_sampler2D().index;
                     binder.update_resource(texture_location, gpu_texture->as_const_ok().resource.texture);
-                    // the sampler position is always 1 greater than the texture position
                     binder.update_resource(texture_location + 1, gpu_texture->as_const_ok().resource.sampler);
 
-                    auto mutex_resource = gpu_texture->as_ok();
-                    if(mutex_resource->resource.memory_state != backend::MemoryState::ShaderRead) {
-                        memory_barriers.push_back(mutex_resource->resource.barrier(backend::MemoryState::ShaderRead));
-                    }
+                    //if(gpu_texture->as_ok().resource.memory_state.load() != backend::MemoryState::ShaderRead) {
+                    //    memory_barriers.push_back(gpu_texture->as_ok().resource.barrier(backend::MemoryState::ShaderRead));
+                    //}
                 }
             }
 

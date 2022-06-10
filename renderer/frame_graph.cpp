@@ -12,14 +12,17 @@ FrameGraph::FrameGraph(lib::ThreadPool& thread_pool, backend::Device& device) :
     uint16_t const thread_count = 7;
 
     for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
-        _graphics_command_pools.emplace_back(*_device, thread_count * 16);
-        _compute_command_pools.emplace_back(*_device, thread_count * 16);
+        _graphics_command_pools.emplace_back(*_device, 24);
+        _compute_command_pools.emplace_back(*_device, 24);
+        _graphics_bundle_command_pools.emplace_back(*_device, thread_count * 16);
     }
 
     _fence_values.resize(backend::BACKEND_BACK_BUFFER_COUNT);
 
-    _swapchain_texture = _device->acquire_next_texture();
-    _swapchain_memory_state = backend::MemoryState::Present;
+    _swapchain = SwapchainTexture {
+        .texture = _device->acquire_next_texture(),
+        .memory_state = backend::MemoryState::Present
+    };
 }
 
 void FrameGraph::add_pass(
@@ -29,7 +32,6 @@ void FrameGraph::add_pass(
     std::optional<std::span<CreateColorInfo const>> const colors,
     std::optional<std::span<CreateInputInfo const>> const inputs, 
     std::optional<CreateDepthStencilInfo> const depth_stencil,
-    TaskExecution const task_execution,
     RenderPassFunc const& func
 ) {
 
@@ -74,7 +76,6 @@ void FrameGraph::add_pass(
             .ds_op = depth_stencil_info.load_op,
             .ds_clear = { depth_stencil_info.clear_depth, depth_stencil_info.clear_stencil },
             .inputs = input_attachments,
-            .task_execution = task_execution,
             .func = func,
             .render_pass = compile_render_pass(color_attachments, color_ops, depth_stencil_info.attachment, depth_stencil_info.load_op)
         };
@@ -127,58 +128,9 @@ void FrameGraph::reset() {
 
 void FrameGraph::execute() {
 
-    auto make_present_barrier_command_list = [&](backend::Device& device, backend::Handle<backend::CommandList> const& command_list, RenderPass& render_pass) {
-        std::vector<backend::MemoryBarrierDesc> barriers;
-
-        if(_swapchain_memory_state != backend::MemoryState::Present) {
-            barriers.emplace_back(_swapchain_texture, _swapchain_memory_state, backend::MemoryState::Present);
-            _swapchain_memory_state = backend::MemoryState::Present;
-        }
-                
-        if(!barriers.empty()) {
-            device.barrier(command_list, barriers);
-        }
-    };
-
-    auto make_barrier_command_list = [&](backend::Device& device, backend::Handle<backend::CommandList> const& command_list, RenderPass& render_pass) {
-        std::vector<backend::MemoryBarrierDesc> barriers;
-        
-        for(auto& attachment : render_pass.color_attachments) {
-            if(!attachment) {
-                if(_swapchain_memory_state != backend::MemoryState::RenderTarget) {
-                    barriers.emplace_back(_swapchain_texture, backend::MemoryState::Present, backend::MemoryState::RenderTarget);
-                    _swapchain_memory_state = backend::MemoryState::RenderTarget;
-                }
-            } else {
-                if(attachment->memory_state != backend::MemoryState::RenderTarget) {
-                    barriers.emplace_back(attachment->barrier(backend::MemoryState::RenderTarget));
-                }
-            }
-        }
-
-        if(auto& attachment = render_pass.ds_attachment) {
-            if(attachment->memory_state != backend::MemoryState::DepthWrite) {
-                barriers.emplace_back(attachment->texture, attachment->memory_state, backend::MemoryState::DepthWrite);
-                attachment->memory_state = backend::MemoryState::DepthWrite;
-            }
-        }
-
-        for(auto& attachment : render_pass.inputs) {
-            if(attachment->memory_state != backend::MemoryState::ShaderRead && attachment->is_render_target()) {
-                barriers.emplace_back(attachment->barrier(backend::MemoryState::ShaderRead));
-            }
-            if(attachment->memory_state != backend::MemoryState::DepthRead && attachment->is_depth_stencil()) {
-                barriers.emplace_back(attachment->barrier(backend::MemoryState::DepthRead));
-            }
-        }
-
-        if(!barriers.empty()) {
-            device.barrier(command_list, barriers);
-        }
-    };
-
     _graphics_command_pools.at(_frame_index).reset();
     _compute_command_pools.at(_frame_index).reset();
+    _graphics_bundle_command_pools.at(_frame_index).reset();
 
     for(auto const& op : _ops) {
 
@@ -187,57 +139,87 @@ void FrameGraph::execute() {
             case OpType::RenderPass: {
                 auto& render_pass = _render_passes[op.index];
 
-                uint16_t const thread_count = 7;
+                auto context = RenderPassContext {
+                    .render_pass = render_pass,
+                    .command_pool = &_graphics_bundle_command_pools.at(_frame_index),
+                    .thread_pool = _thread_pool,
+                    .device = _device,
+                    .swapchain = &_swapchain
+                };
+                TaskCreateInfo create_info = render_pass->func(context);
 
-                if(render_pass->task_execution == TaskExecution::Single) {
+                ResourcePtr<CommandList> command_list = _graphics_command_pools.at(_frame_index).allocate();
 
-                    ResourcePtr<CommandList> command_list = _graphics_command_pools.at(_frame_index).allocate();
+                _device->set_viewport(command_list->as_const_ok().resource.command_list, 0, 0, render_pass->width, render_pass->height);
+                _device->set_scissor(command_list->as_const_ok().resource.command_list, 0, 0, render_pass->width, render_pass->height);
 
-                    make_barrier_command_list(*_device, command_list->command_list, *render_pass);
-                    worker_render_pass_command_list(*_device, command_list->command_list, 0, *render_pass);
-                    make_present_barrier_command_list(*_device, command_list->command_list, *render_pass);
-
-                    _fence_values.at(_frame_index) = _device->submit(std::span<backend::Handle<backend::CommandList>>(&command_list->command_list, 1), backend::QueueFlags::Graphics);
-
-                } else {
-
-                    std::vector<std::future<void>> jobs(thread_count);
-                    std::vector<backend::Handle<backend::CommandList>> command_lists;
-
-                    ResourcePtr<CommandList> command_list = _graphics_command_pools.at(_frame_index).allocate();
-
-                    command_lists.emplace_back(command_list->command_list);
-
-                    jobs.at(0) = _thread_pool->push(
-                        [&, command_list](backend::Device& device, RenderPass& render_pass) {
-                            //make_barrier_command_list(device, command_list->command_list, render_pass);
-                            worker_render_pass_command_list(device, command_list->command_list, 0, render_pass);
-                        },
-                        std::ref(*_device),
-                        std::ref(*render_pass)
-                    );
-
-                    for(uint16_t i = 1; i < thread_count; ++i) {
-
-                        ResourcePtr<CommandList> _command_list = _graphics_command_pools.at(_frame_index).allocate();
-
-                        command_lists.emplace_back(_command_list->command_list);
-
-                        jobs.at(i) = _thread_pool->push(
-                            [&, _command_list, i](backend::Device& device, RenderPass& render_pass) {
-                                worker_render_pass_command_list(device, _command_list->command_list, i, render_pass);
-                            },
-                            std::ref(*_device),
-                            std::ref(*render_pass)
-                        );
+                std::vector<backend::MemoryBarrierDesc> memory_barriers;
+                bool is_swapchain_used = false;
+        
+                for(auto& attachment : render_pass->color_attachments) {
+                    if(!attachment) {
+                        if(_swapchain.memory_state != backend::MemoryState::RenderTarget) {
+                            memory_barriers.emplace_back(_swapchain.texture, backend::MemoryState::Present, backend::MemoryState::RenderTarget);
+                            _swapchain.memory_state = backend::MemoryState::RenderTarget;
+                            is_swapchain_used = true;
+                        }
+                    } else {
+                        if(attachment->as_ok().resource.memory_state.load() != backend::MemoryState::RenderTarget) {
+                            memory_barriers.emplace_back(attachment->as_ok().resource.barrier(backend::MemoryState::RenderTarget));
+                        }
                     }
-
-                    for(auto const& job : jobs) {
-                        job.wait();
-                    }
-
-                    _fence_values.at(_frame_index) = _device->submit(command_lists, backend::QueueFlags::Graphics);
                 }
+
+                if(auto& attachment = render_pass->ds_attachment) {
+                    if(attachment->as_ok().resource.memory_state.load() != backend::MemoryState::DepthWrite) {
+                        memory_barriers.emplace_back(attachment->as_ok().resource.barrier(backend::MemoryState::DepthWrite));
+                    }
+                }
+
+                for(auto& attachment : render_pass->inputs) {
+                    if(attachment->as_ok().resource.memory_state.load() != backend::MemoryState::ShaderRead && attachment->as_const_ok().resource.is_render_target()) {
+                        memory_barriers.emplace_back(attachment->as_ok().resource.barrier(backend::MemoryState::ShaderRead));
+                    }
+                    if(attachment->as_ok().resource.memory_state.load() != backend::MemoryState::DepthRead && attachment->as_const_ok().resource.is_depth_stencil()) {
+                        memory_barriers.emplace_back(attachment->as_ok().resource.barrier(backend::MemoryState::DepthRead));
+                    }
+                }
+
+                if(!memory_barriers.empty()) {
+                    _device->barrier(command_list->as_const_ok().resource.command_list, memory_barriers);
+                }
+
+                _device->begin_render_pass(
+                    command_list->as_const_ok().resource.command_list,
+                    render_pass->render_pass,
+                    render_pass->color_clears,
+                    render_pass->ds_clear.first,
+                    render_pass->ds_clear.second
+                );
+
+                _thread_pool->wait_all();
+
+                for(auto const& bundle_command_list : create_info.command_lists) {
+                    _device->execute_bundle(command_list->as_const_ok().resource.command_list, bundle_command_list->as_const_ok().resource.command_list);
+                }
+
+                _device->end_render_pass(command_list->as_const_ok().resource.command_list);
+
+                if(is_swapchain_used) {
+                    if(_swapchain.memory_state != backend::MemoryState::Common) {
+                        
+                        auto memory_barrier = backend::MemoryBarrierDesc {
+                            .target = _swapchain.texture,
+                            .before = backend::MemoryState::RenderTarget,
+                            .after = backend::MemoryState::Common
+                        };
+
+                        _device->barrier(command_list->as_const_ok().resource.command_list, std::span<backend::MemoryBarrierDesc const>(&memory_barrier, 1));
+                        _swapchain.memory_state = backend::MemoryState::Common;
+                    }
+                }
+
+                _fence_values.at(_frame_index) = _device->submit(std::span<backend::Handle<backend::CommandList> const>(&command_list->as_const_ok().resource.command_list, 1), backend::QueueFlags::Graphics);
             } break;
         }
     }
@@ -253,7 +235,7 @@ void FrameGraph::execute() {
 
 uint32_t FrameGraph::wait() {
     _device->wait(_fence_values.at(_frame_index), backend::QueueFlags::Graphics);
-    _swapchain_texture = _device->acquire_next_texture();
+    _swapchain.texture = _device->acquire_next_texture();
     return _frame_index;
 }
 
@@ -275,9 +257,9 @@ backend::Handle<backend::RenderPass> FrameGraph::compile_render_pass(
 
     for(size_t i = 0; i < color_attachments_size; ++i) {
         if(!color_attachments[i]) {
-            colors[i] = _swapchain_texture;
+            colors[i] = _swapchain.texture;
         } else {
-            colors[i] = color_attachments[i]->texture;
+            colors[i] = color_attachments[i]->as_const_ok().resource.texture;
         }
         color_descs[i] = backend::RenderPassColorDesc {
             .load_op = color_ops[i],
@@ -286,7 +268,7 @@ backend::Handle<backend::RenderPass> FrameGraph::compile_render_pass(
     }
 
     if(depth_stencil_attachment) {
-        backend::Handle<backend::Texture> depth_stencil = depth_stencil_attachment->texture;
+        backend::Handle<backend::Texture> depth_stencil = depth_stencil_attachment->as_const_ok().resource.texture;
 
         auto depth_stencil_desc = backend::RenderPassDepthStencilDesc {
             .depth_load_op = depth_stencil_op,
@@ -301,24 +283,39 @@ backend::Handle<backend::RenderPass> FrameGraph::compile_render_pass(
     }
 }
 
-void ionengine::renderer::worker_render_pass_command_list(backend::Device& device, backend::Handle<backend::CommandList> const& command_list, uint16_t const thread_index, RenderPass& render_pass) {
-    device.set_viewport(command_list, 0, 0, render_pass.width, render_pass.height);
-    device.set_scissor(command_list, 0, 0, render_pass.width, render_pass.height);
+std::vector<ResourcePtr<CommandList>> RenderPassContext::parallel_for(
+    size_t const chunk_size, 
+    std::function<void(size_t const, backend::Handle<backend::CommandList> const&, backend::Handle<backend::RenderPass> const&)> func
+) {
+    std::vector<ResourcePtr<CommandList>> command_lists(chunk_size);
+    std::vector<std::future<void>> tasks(chunk_size);
 
-    device.begin_render_pass(
-        command_list,
-        render_pass.render_pass,
-        render_pass.color_clears,
-        render_pass.ds_clear.first,
-        render_pass.ds_clear.second
-    );
+    for(size_t i = 0; i < chunk_size; ++i) {
 
-    auto context = RenderPassContext {
-        .thread_index = thread_index,
-        .command_list = command_list,
-        .render_pass = render_pass.render_pass
-    };
-    render_pass.func(context);
+        ResourcePtr<CommandList> command_list = command_pool->allocate();
+        command_lists.at(i) = command_list;
 
-    device.end_render_pass(command_list);
+        thread_pool->push(
+            [&, command_list, i]() {
+                func(i, command_list->as_const_ok().resource.command_list, render_pass->render_pass);
+                device->close_command_list(command_list->as_const_ok().resource.command_list);
+            }
+        );
+    }
+
+    return std::move(command_lists);
+}
+
+std::vector<ResourcePtr<CommandList>> RenderPassContext::single_for(
+    std::function<void(backend::Handle<backend::CommandList> const&, backend::Handle<backend::RenderPass> const&)> func
+) {
+    std::vector<ResourcePtr<CommandList>> command_lists(1);
+
+    ResourcePtr<CommandList> command_list = command_pool->allocate();
+    command_lists.at(0) = command_list;
+
+    func(command_list->as_const_ok().resource.command_list, render_pass->render_pass);
+    device->close_command_list(command_list->as_const_ok().resource.command_list);
+
+    return std::move(command_lists);
 }

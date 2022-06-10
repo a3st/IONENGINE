@@ -13,6 +13,9 @@
 
 namespace ionengine::renderer {
 
+struct RenderPass;
+struct SwapchainTexture;
+
 enum class TaskExecution {
     Single,
     Multithreading
@@ -36,13 +39,28 @@ struct CreateDepthStencilInfo {
 };
 
 struct RenderPassContext {
-    uint16_t thread_index;
-    backend::Handle<backend::CommandList> command_list;
-    backend::Handle<backend::RenderPass> render_pass;
+    RenderPass const* render_pass;
+    CommandPool<CommandPoolType::Bundle>* command_pool;
+    lib::ThreadPool* thread_pool;
+    backend::Device* device;
+    SwapchainTexture* swapchain;
+
+    std::vector<ResourcePtr<CommandList>> parallel_for(
+        size_t const chunk_size, 
+        std::function<void(size_t const, backend::Handle<backend::CommandList> const&, backend::Handle<backend::RenderPass> const&)> func
+    );
+
+    std::vector<ResourcePtr<CommandList>> single_for(
+        std::function<void(backend::Handle<backend::CommandList> const&, backend::Handle<backend::RenderPass> const&)> func
+    );
 };
 
-using RenderPassFunc = std::function<void(RenderPassContext const&)>;
-inline RenderPassFunc RenderPassDefaultFunc = [=](RenderPassContext const& context) { };
+struct TaskCreateInfo {
+    TaskExecution task_execution;
+    std::vector<ResourcePtr<CommandList>> command_lists;
+};
+
+using RenderPassFunc = std::function<TaskCreateInfo(RenderPassContext&)>;
 
 struct CreateStorageInfo {
     ResourcePtr<GPUBuffer> buffer;
@@ -67,9 +85,13 @@ struct RenderPass {
     backend::RenderPassLoadOp ds_op;
     std::pair<float, uint8_t> ds_clear;
     std::vector<ResourcePtr<GPUTexture>> inputs;
-    TaskExecution task_execution;
     RenderPassFunc func;
     backend::Handle<backend::RenderPass> render_pass;
+};
+
+struct SwapchainTexture {
+    backend::Handle<backend::Texture> texture;
+    backend::MemoryState memory_state;
 };
 
 class FrameGraph {
@@ -84,7 +106,6 @@ public:
         std::optional<std::span<CreateColorInfo const>> const colors,
         std::optional<std::span<CreateInputInfo const>> const inputs,
         std::optional<CreateDepthStencilInfo> const depth_stencil,
-        TaskExecution const task_execution,
         RenderPassFunc const& func
     );
 
@@ -113,6 +134,7 @@ private:
 
     std::vector<CommandPool<CommandPoolType::Graphics>> _graphics_command_pools;
     std::vector<CommandPool<CommandPoolType::Compute>> _compute_command_pools;
+    std::vector<CommandPool<CommandPoolType::Bundle>> _graphics_bundle_command_pools;
 
     std::unordered_map<uint32_t, RenderPass> _render_pass_cache;
     std::unordered_map<uint32_t, ComputePass> _compute_pass_cache;
@@ -137,8 +159,7 @@ private:
 
     std::vector<uint64_t> _fence_values;
 
-    backend::Handle<backend::Texture> _swapchain_texture;
-    backend::MemoryState _swapchain_memory_state;
+    SwapchainTexture _swapchain;
 
     backend::Handle<backend::RenderPass> compile_render_pass(
         std::span<ResourcePtr<GPUTexture>> color_attachments,
@@ -147,7 +168,5 @@ private:
         backend::RenderPassLoadOp depth_stencil_op
     );
 };
-
-void worker_render_pass_command_list(backend::Device& device, backend::Handle<backend::CommandList> const& command_list, uint16_t const thread_index, RenderPass& render_pass);
 
 }

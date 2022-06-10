@@ -24,7 +24,7 @@ struct GPUTexture {
     backend::Format format;
     backend::AddressMode s_address_mode;
     backend::AddressMode t_address_mode;
-    backend::MemoryState memory_state;
+    std::atomic<backend::MemoryState> memory_state;
 
     bool is_render_target() const {
         return flags & backend::TextureFlags::RenderTarget;
@@ -45,6 +45,37 @@ struct GPUTexture {
     backend::MemoryBarrierDesc barrier(backend::MemoryState const after);
 
     void recreate_sampler(backend::Filter const filter, uint16_t const anisotropic);
+
+    GPUTexture() = default;
+
+    GPUTexture(GPUTexture&& other) noexcept {
+        texture = std::move(other.texture);
+        sampler = std::move(other.sampler);
+        width = std::move(other.width);
+        height = std::move(other.height);
+        depth = std::move(other.depth);
+        mip_count = std::move(other.mip_count);
+        flags = std::move(other.flags);
+        format = std::move(other.format);
+        s_address_mode = std::move(other.s_address_mode);
+        t_address_mode = std::move(other.t_address_mode);
+        memory_state.store(other.memory_state.load());
+    }
+
+    GPUTexture& operator=(GPUTexture&& other) noexcept {
+        texture = std::move(other.texture);
+        sampler = std::move(other.sampler);
+        width = std::move(other.width);
+        height = std::move(other.height);
+        depth = std::move(other.depth);
+        mip_count = std::move(other.mip_count);
+        flags = std::move(other.flags);
+        format = std::move(other.format);
+        s_address_mode = std::move(other.s_address_mode);
+        t_address_mode = std::move(other.t_address_mode);
+        memory_state.store(other.memory_state.load());
+        return *this;
+    }
 
     static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> create(
         backend::Device& device,

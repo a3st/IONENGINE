@@ -26,9 +26,13 @@ UploadManager::UploadManager(lib::ThreadPool& thread_pool, backend::Device& devi
 
 void UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::span<uint8_t const> const data, bool const async) {
 
+    std::lock_guard lock(_mutex);
+
     if(_upload_buffers.at(_buffer_index).offset + data.size_bytes() + 1024 * 1024 * 4 > _upload_buffers.at(_buffer_index).size) {
         return;
     }
+
+    resource->is_wait_for_upload.store(false);
 
     bool bc = false;
     uint32_t bpe = 0;
@@ -114,19 +118,21 @@ void UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
 
 void UploadManager::upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t const offset, std::span<uint8_t const> const data, bool const async) {
 
-    std::unique_lock lock(_mutex);
+    std::lock_guard lock(_mutex);
 
-    if(resource->is_host_visible()) {
+    if(resource->as_const_ok().resource.is_host_visible()) {
 
-        uint8_t* bytes = _device->map_buffer_data(resource->buffer, offset);
+        uint8_t* bytes = _device->map_buffer_data(resource->as_const_ok().resource.buffer, offset);
         std::memcpy(bytes, data.data(), data.size_bytes());
-        _device->unmap_buffer_data(resource->buffer);
+        _device->unmap_buffer_data(resource->as_const_ok().resource.buffer);
 
     } else {
 
         if(_upload_buffers.at(_buffer_index).offset + data.size_bytes() + 1024 * 1024 * 4 > _upload_buffers.at(_buffer_index).size) {
             return;
         }
+
+        resource->is_wait_for_upload.store(false);
 
         auto& upload_buffer = _upload_buffers.at(_buffer_index);
 
@@ -135,45 +141,47 @@ void UploadManager::upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t
         _device->unmap_buffer_data(upload_buffer.buffer);
 
         auto barrier = backend::MemoryBarrierDesc {
-            .target = resource->buffer,
+            .target = resource->as_const_ok().resource.buffer,
             .before = backend::MemoryState::Common,
             .after = backend::MemoryState::CopyDest
         };
         _device->barrier(upload_buffer.command_list, std::span<backend::MemoryBarrierDesc const>(&barrier, 1));
 
-        _device->copy_buffer_region(upload_buffer.command_list, resource->buffer, offset, upload_buffer.buffer, upload_buffer.offset, data.size_bytes());
+        _device->copy_buffer_region(upload_buffer.command_list, resource->as_const_ok().resource.buffer, offset, upload_buffer.buffer, upload_buffer.offset, data.size_bytes());
         upload_buffer.offset += data.size_bytes();
 
         barrier = backend::MemoryBarrierDesc {
-            .target = resource->buffer,
+            .target = resource->as_const_ok().resource.buffer,
             .before = backend::MemoryState::CopyDest,
             .after = backend::MemoryState::Common
         };
         _device->barrier(upload_buffer.command_list, std::span<backend::MemoryBarrierDesc const>(&barrier, 1));
 
-        _buffers.at(_buffer_index).emplace(resource, resource.commit_pending());
+        _buffers.at(_buffer_index).emplace(resource, resource->commit_pending());
     }
 }
 
 void UploadManager::upload_geometry_data(ResourcePtr<GeometryBuffer> resource, std::span<uint8_t const> const vertex_data, std::span<uint8_t const> const index_data, bool const async) {
-    
-    std::unique_lock lock(_mutex);
 
-    if(resource->is_host_visible()) {
+    std::lock_guard lock(_mutex);
 
-        uint8_t* bytes = _device->map_buffer_data(resource->vertex_buffer, 0);
+    if(resource->as_const_ok().resource.is_host_visible()) {
+
+        uint8_t* bytes = _device->map_buffer_data(resource->as_const_ok().resource.vertex_buffer, 0);
         std::memcpy(bytes, vertex_data.data(), vertex_data.size_bytes());
-        _device->unmap_buffer_data(resource->vertex_buffer);
+        _device->unmap_buffer_data(resource->as_const_ok().resource.vertex_buffer);
 
-        bytes = _device->map_buffer_data(resource->index_buffer, 0);
+        bytes = _device->map_buffer_data(resource->as_const_ok().resource.index_buffer, 0);
         std::memcpy(bytes, index_data.data(), index_data.size_bytes());
-        _device->unmap_buffer_data(resource->index_buffer);
+        _device->unmap_buffer_data(resource->as_const_ok().resource.index_buffer);
 
     } else {
 
         if(_upload_buffers.at(_buffer_index).offset + vertex_data.size_bytes() + index_data.size_bytes() + 1024 * 1024 * 4 > _upload_buffers.at(_buffer_index).size) {
             return;
         }
+
+        resource->is_wait_for_upload.store(false);
 
         auto& upload_buffer = _upload_buffers.at(_buffer_index);
 
@@ -189,33 +197,33 @@ void UploadManager::upload_geometry_data(ResourcePtr<GeometryBuffer> resource, s
         std::array<backend::MemoryBarrierDesc, 2> barriers;
 
         barriers.at(0) = backend::MemoryBarrierDesc {
-            .target = resource->vertex_buffer,
+            .target = resource->as_const_ok().resource.vertex_buffer,
             .before = backend::MemoryState::Common,
             .after = backend::MemoryState::CopyDest
         };
         barriers.at(1) = backend::MemoryBarrierDesc {
-            .target = resource->index_buffer,
+            .target = resource->as_const_ok().resource.index_buffer,
             .before = backend::MemoryState::Common,
             .after = backend::MemoryState::CopyDest
         };
         _device->barrier(upload_buffer.command_list, barriers);
 
-        _device->copy_buffer_region(upload_buffer.command_list, resource->vertex_buffer, 0, upload_buffer.buffer, vertex_offset, vertex_data.size_bytes());
-        _device->copy_buffer_region(upload_buffer.command_list, resource->index_buffer, 0, upload_buffer.buffer, index_offset, index_data.size_bytes());
+        _device->copy_buffer_region(upload_buffer.command_list, resource->as_const_ok().resource.vertex_buffer, 0, upload_buffer.buffer, vertex_offset, vertex_data.size_bytes());
+        _device->copy_buffer_region(upload_buffer.command_list, resource->as_const_ok().resource.index_buffer, 0, upload_buffer.buffer, index_offset, index_data.size_bytes());
 
         barriers.at(0) = backend::MemoryBarrierDesc {
-            .target = resource->vertex_buffer,
+            .target = resource->as_const_ok().resource.vertex_buffer,
             .before = backend::MemoryState::CopyDest,
             .after = backend::MemoryState::Common
         };
         barriers.at(1) = backend::MemoryBarrierDesc {
-            .target = resource->index_buffer,
+            .target = resource->as_const_ok().resource.index_buffer,
             .before = backend::MemoryState::CopyDest,
             .after = backend::MemoryState::Common
         };
         _device->barrier(upload_buffer.command_list, barriers);
 
-        _geometry_buffers.at(_buffer_index).emplace(resource, resource.commit_pending());
+        _geometry_buffers.at(_buffer_index).emplace(resource, resource->commit_pending());
     }
 }
 
@@ -232,21 +240,21 @@ void UploadManager::update() {
                 while(!buffers.empty()) {
                     UploadData<GPUBuffer> upload_data = std::move(buffers.front());
                     buffers.pop();
-                    upload_data.ptr.commit_ok(std::move(upload_data.resource));
+                    upload_data.ptr->commit_ok(std::move(upload_data.resource));
                 }
 
                 auto& textures = _textures.at(i);
                 while(!textures.empty()) {
                     UploadData<GPUTexture> upload_data = std::move(textures.front());
                     textures.pop();
-                    upload_data.ptr.commit_ok(std::move(upload_data.resource));
+                    upload_data.ptr->commit_ok(std::move(upload_data.resource));
                 }
 
                 auto geometry_buffers = _geometry_buffers.at(i);
                 while(!geometry_buffers.empty()) {
                     UploadData<GeometryBuffer> upload_data = std::move(geometry_buffers.front());
                     geometry_buffers.pop();
-                    upload_data.ptr.commit_ok(std::move(upload_data.resource));
+                    upload_data.ptr->commit_ok(std::move(upload_data.resource));
                 }
 
                 upload_buffer.is_close = false;
