@@ -6,6 +6,7 @@
 #include <renderer/resource_ptr.h>
 #include <renderer/shader.h>
 #include <asset/material.h>
+#include <lib/sparse_vector.h>
 
 namespace ionengine::renderer {
 
@@ -22,7 +23,7 @@ public:
 
     ShaderCache& operator=(ShaderCache&& other) noexcept;
 
-    void cache_shaders(std::span<std::filesystem::path const> const shader_pathes);
+    void cache_shader(std::filesystem::path const shader_path);
 
     ResourcePtr<Shader> get(asset::AssetPtr<asset::Material> material, std::string_view const pass_name);
 
@@ -32,9 +33,10 @@ private:
 
     backend::Device* _device;
 
-    std::mutex _mutex;
+    std::shared_mutex _mutex;
 
-    std::unordered_map<std::string, CacheEntry<ResourcePtr<Shader>>> _data;
+    std::unordered_map<std::string, size_t> _pass_hashes;
+    lib::SparseVector<CacheEntry<ResourcePtr<Shader>>> _data;
 };
 
 }

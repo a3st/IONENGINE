@@ -14,10 +14,10 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool) : 
+Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager) : 
     _device(0, backend::SwapchainDesc { .window = &window, .sample_count = 1, .buffer_count = backend::BACKEND_BACK_BUFFER_COUNT }),
-    _upload_manager(thread_pool, _device),
-    _frame_graph(thread_pool, _device),
+    _upload_manager(_device),
+    _frame_graph(_device),
     _shader_cache(_device),
     _pipeline_cache(_device),
     _ui_renderer(_device, _upload_manager, _rt_texture_caches, window, asset_manager),
@@ -35,15 +35,11 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
         _rt_texture_caches.emplace_back(_device);
     }
 
-    auto default_shader_paths = std::vector<std::filesystem::path> {
-        "engine/shaders/deffered.shader",
-        "engine/shaders/forward.shader",
-        "engine/shaders/gbuffer.shader",
-        "engine/shaders/ui.shader",
-        "engine/shaders/fxaa.shader"
-    };
-
-    load_shaders(default_shader_paths);
+    load_shader("engine/shaders/gbuffer.shader");
+    load_shader("engine/shaders/deffered.shader");
+    load_shader("engine/shaders/forward.shader");
+    load_shader("engine/shaders/ui.shader");
+    load_shader("engine/shaders/fxaa.shader");
 }
 
 Renderer::~Renderer() {
@@ -68,7 +64,6 @@ void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
 }
 
 void Renderer::resize(uint32_t const width, uint32_t const height) {
-
     if(_width != width || _height != height) {
 
         _frame_graph.reset();
@@ -78,8 +73,8 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
     }
 }
 
-void Renderer::load_shaders(std::span<std::filesystem::path const> const shader_paths) {
-    
+void Renderer::load_shader(std::filesystem::path const shader_path) {
+    _shader_cache.cache_shader(shader_path);
 }
 
 UiRenderer& Renderer::ui_renderer() {

@@ -7,10 +7,10 @@
 using namespace ionengine;
 using namespace ionengine::asset;
 
-AssetManager::AssetManager(lib::ThreadPool& thread_pool, lib::Logger& logger) :
-    _mesh_pool(thread_pool, logger, std::make_unique<AssetLoader<Mesh>>()),
-    _material_pool(thread_pool, logger, std::make_unique<AssetLoader<Material>>(*this)),
-    _texture_pool(thread_pool, logger, std::make_unique<AssetLoader<Texture>>()) {
+AssetManager::AssetManager() :
+    _mesh_pool(std::make_unique<AssetLoader<Mesh>>()),
+    _material_pool(std::make_unique<AssetLoader<Material>>(*this)),
+    _texture_pool(std::make_unique<AssetLoader<Texture>>()) {
 
 }
 

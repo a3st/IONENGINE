@@ -20,21 +20,22 @@
 
 using namespace ionengine;
 
+INITIALIZE_LOGGER()
+
 /*
     Implementation of the main function for the Windows platform
 */
 int main(int* argc, char** agrv) {
 
-    lib::Logger logger;
     lib::ThreadPool thread_pool(11);
 
     try {
         platform::WindowLoop loop;
         platform::Window window("Project", 1280, 720, false);
         
-        asset::AssetManager asset_manager(thread_pool, logger);
-        renderer::Renderer renderer(window, asset_manager, thread_pool);
-        ui::UserInterface user_interface(renderer, window, logger);
+        asset::AssetManager asset_manager;
+        renderer::Renderer renderer(window, asset_manager);
+        ui::UserInterface user_interface(renderer, window);
         input::InputManager input_manager;
         scene::Scene scene(asset_manager);
 
@@ -48,8 +49,8 @@ int main(int* argc, char** agrv) {
         bool debug_mode = false;
         bool cursor = true;
         bool ui_debug = false;
-
-        logger.log(lib::LoggerCategoryType::Engine, "engine initialized");
+        
+        lib::logger().log(lib::LoggerCategoryType::Engine, "engine initialized");
 
         renderer::backend::AdapterDesc adapter_desc = renderer.adapter_desc();
         user_interface.element_text_gpu_name(adapter_desc.name);
@@ -68,7 +69,7 @@ int main(int* argc, char** agrv) {
                         std::chrono::duration<float> delta_time = end_time - begin_time;
                         begin_time = end_time;
 
-                        logger.throw_messages();
+                        lib::logger().throw_messages();
 
                         framework.update(delta_time.count());
 
@@ -159,13 +160,13 @@ int main(int* argc, char** agrv) {
         );
 
     } catch(lib::Exception& e) {
-        logger.error(lib::LoggerCategoryType::Exception, e.what());
-        logger.throw_messages();
+        lib::logger().error(lib::LoggerCategoryType::Exception, e.what());
+        lib::logger().throw_messages();
         std::exit(EXIT_FAILURE);
     }
 
-    logger.log(lib::LoggerCategoryType::Engine, "engine quit");
-    logger.throw_messages();
+    lib::logger().log(lib::LoggerCategoryType::Engine, "engine quit");
+    lib::logger().throw_messages();
     
     return EXIT_SUCCESS;
 }

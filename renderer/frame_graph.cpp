@@ -6,8 +6,8 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-FrameGraph::FrameGraph(lib::ThreadPool& thread_pool, backend::Device& device) :
-    _device(&device), _thread_pool(&thread_pool) {
+FrameGraph::FrameGraph(backend::Device& device) :
+    _device(&device) {
 
     uint16_t const thread_count = 7;
 
@@ -142,7 +142,6 @@ void FrameGraph::execute() {
                 auto context = RenderPassContext {
                     .render_pass = render_pass,
                     .command_pool = &_graphics_bundle_command_pools.at(_frame_index),
-                    .thread_pool = _thread_pool,
                     .device = _device,
                     .swapchain = &_swapchain
                 };

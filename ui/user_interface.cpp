@@ -8,8 +8,7 @@
 using namespace ionengine;
 using namespace ionengine::ui;
 
-UserInterface::UserInterface(renderer::Renderer& renderer, platform::Window& window, lib::Logger& logger) : 
-    _system_interface(logger),
+UserInterface::UserInterface(renderer::Renderer& renderer, platform::Window& window) : 
     _render_interface(renderer.ui_renderer()) {
 
     Rml::SetRenderInterface(&_render_interface);

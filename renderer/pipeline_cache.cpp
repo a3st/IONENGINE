@@ -2,7 +2,6 @@
 
 #include <precompiled.h>
 #include <renderer/pipeline_cache.h>
-#include <lib/hash/crc32.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -22,28 +21,35 @@ PipelineCache& PipelineCache::operator=(PipelineCache&& other) noexcept {
     return *this;
 }
 
-backend::Handle<backend::Pipeline> PipelineCache::get(Shader& shader, backend::Handle<backend::RenderPass> const& render_pass) {
+ResourcePtr<GPUPipeline> PipelineCache::get(ResourcePtr<Shader> shader, ResourcePtr<RenderPass> render_pass) {
+    uint64_t hash;
+    std::unordered_map<uint64_t, CacheEntry<ResourcePtr<GPUPipeline>>>::iterator it;
+    {
+        std::shared_lock lock(_mutex);
+        hash = shader->get().hash ^ render_pass->get().hash;
+
+        it = _data.find(hash);
+
+        if(it != _data.end()) {
+            return it->second.value;
+        }
+    }
 
     std::lock_guard lock(_mutex);
 
-    std::string const pipeline_name = std::format("{}_{}", shader.name, render_pass.index());
-    uint32_t const pipeline_hash = lib::hash::ctcrc32(pipeline_name.data(), pipeline_name.size());
+    auto result = GPUPipeline::create();
 
-    if(_data.find(pipeline_hash) == _data.end()) {
+    if(result.is_ok()) {
 
-        auto pipeline = _device->create_pipeline(
-            shader.descriptor_layout, 
-            shader.attributes, 
-            shader.stages, 
-            shader.rasterizer, 
-            shader.depth_stencil, 
-            shader.blend, 
-            render_pass, 
-            backend::InvalidHandle<backend::CachePipeline>()
-        );
+        GPUPipeline gpu_pipeline = std::move(result.as_ok());
 
-        _data.insert({ pipeline_hash, pipeline });
+        auto cache_entry = CacheEntry<ResourcePtr<GPUPipeline>> {
+            .value = make_resource_ptr(std::move(gpu_pipeline)),
+            .hash = hash
+        };
+        
+        return _data.insert({ hash, std::move(cache_entry) }).first->second.value;
+    } else {
+        throw lib::Exception(result.as_error().message);
     }
-
-    return _data.at(pipeline_hash);
 }

@@ -77,6 +77,7 @@ add_executable(Runtime-Win32
     renderer/upload_manager.cpp
     renderer/frame_graph.cpp
     renderer/command_list.cpp
+    renderer/gpu_pipeline.cpp
 # ---------------------------
     thirdparty/tinyobjloader/src/tiny_obj_loader.cc
 )

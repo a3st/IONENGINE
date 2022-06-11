@@ -172,7 +172,7 @@ struct Material {
 
     uint64_t hash;
 
-    std::unordered_map<std::string, size_t> entry_caches;
+    std::unordered_map<std::string, size_t> cache_entries;
 
     static lib::Expected<Material, lib::Result<MaterialError>> load_from_file(std::filesystem::path const& file_path, AssetManager& asset_manager);
 };

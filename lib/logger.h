@@ -13,8 +13,6 @@ enum class LoggerCategoryType {
     Exception
 };
 
-inline uint32_t constexpr LOGGER_CATEGORY_COUNT = 2;
-
 enum class LoggerMessageType {
     Log,
     Warning,
@@ -56,5 +54,15 @@ private:
     std::string const _warning_color_code{"\x1B[33m"};
     std::string const _error_color_code{"\x1B[31m"};
 };
+
+extern Logger _logger;
+
+#ifndef INITIALIZE_LOGGER
+#define INITIALIZE_LOGGER() lib::Logger lib::_logger;
+#endif
+
+inline Logger& logger() {
+    return _logger;
+}
 
 }

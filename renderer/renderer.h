@@ -31,7 +31,7 @@ namespace ionengine::renderer {
 class Renderer {
 public:
 
-    Renderer(platform::Window& window, asset::AssetManager& asset_manager, lib::ThreadPool& thread_pool);
+    Renderer(platform::Window& window, asset::AssetManager& asset_manager);
 
     ~Renderer();
 
@@ -49,7 +49,7 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void load_shaders(std::span<std::filesystem::path const> const shader_paths);
+    inline void load_shader(std::filesystem::path const shader_path);
 
     backend::AdapterDesc adapter_desc() const {
         return _device.adapter_desc();

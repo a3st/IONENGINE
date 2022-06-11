@@ -15,7 +15,7 @@ inline uint32_t constexpr UPLOAD_MANAGER_BUFFER_COUNT = 2;
 class UploadManager {
 public:
 
-    UploadManager(lib::ThreadPool& thread_pool, backend::Device& device);
+    UploadManager(backend::Device& device);
 
     void upload_texture_data(ResourcePtr<GPUTexture> resource, std::span<uint8_t const> const data, bool const async = true);
 
@@ -42,7 +42,6 @@ private:
     };
 
     backend::Device* _device;
-    lib::ThreadPool* _thread_pool;
 
     std::array<UploadBuffer, UPLOAD_MANAGER_BUFFER_COUNT> _upload_buffers;
     uint32_t _buffer_index{0};

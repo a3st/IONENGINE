@@ -6,8 +6,8 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-UploadManager::UploadManager(lib::ThreadPool& thread_pool, backend::Device& device) :
-    _thread_pool(&thread_pool), _device(&device) {
+UploadManager::UploadManager(backend::Device& device) :
+    _device(&device) {
 
     for(uint32_t i = 0; i < UPLOAD_MANAGER_BUFFER_COUNT; ++i) {
 

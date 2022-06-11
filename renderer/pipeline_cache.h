@@ -2,7 +2,11 @@
 
 #pragma once
 
-#include <renderer/shader_cache.h>
+#include <renderer/cache.h>
+#include <renderer/resource_ptr.h>
+#include <renderer/shader.h>
+#include <renderer/gpu_pipeline.h>
+#include <renderer/frame_graph.h>
 
 namespace ionengine::renderer {
 
@@ -19,15 +23,15 @@ public:
 
     PipelineCache& operator=(PipelineCache&& other) noexcept;
 
-    backend::Handle<backend::Pipeline> get(Shader& shader, backend::Handle<backend::RenderPass> const& render_pass = backend::InvalidHandle<backend::RenderPass>());
+    ResourcePtr<GPUPipeline> get(ResourcePtr<Shader> shader, ResourcePtr<RenderPass> render_pass);
 
 private:
 
     backend::Device* _device;
 
-    std::mutex _mutex;
+    std::shared_mutex _mutex;
 
-    std::unordered_map<uint32_t, backend::Handle<backend::Pipeline>> _data;
+    std::unordered_map<uint64_t, CacheEntry<ResourcePtr<GPUPipeline>>> _data;
 };
 
 }

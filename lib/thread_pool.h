@@ -68,4 +68,14 @@ private:
     uint16_t _current_worker{0};
 };
 
+extern ThreadPool _thread_pool;
+
+#ifndef INITIALIZE_THREAD_POOL
+#define INITIALIZE_THREAD_POOL() lib::ThreadPool lib::_thread_pool;
+#endif
+
+inline ThreadPool& thread_pool() {
+    return _thread_pool;
+}
+
 }

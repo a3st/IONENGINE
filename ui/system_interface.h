@@ -10,7 +10,7 @@ namespace ionengine::ui {
 class SystemInterface : public Rml::SystemInterface {
 public:
 
-    SystemInterface(lib::Logger& logger);
+    SystemInterface();
 
     ~SystemInterface();
 

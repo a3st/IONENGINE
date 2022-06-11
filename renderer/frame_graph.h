@@ -82,6 +82,7 @@ struct RenderPass {
     std::vector<ResourcePtr<GPUTexture>> inputs;
     RenderPassFunc func;
     backend::Handle<backend::RenderPass> render_pass;
+    uint64_t hash;
 };
 
 struct SwapchainTexture {
@@ -92,7 +93,7 @@ struct SwapchainTexture {
 class FrameGraph {
 public:
 
-    FrameGraph(lib::ThreadPool& thread_pool, backend::Device& device);
+    FrameGraph(backend::Device& device);
     
     void add_pass(
         std::string_view const name, 
@@ -125,7 +126,6 @@ private:
     };
 
     backend::Device* _device;
-    lib::ThreadPool* _thread_pool;
 
     std::vector<CommandPool<CommandPoolType::Graphics>> _graphics_command_pools;
     std::vector<CommandPool<CommandPoolType::Compute>> _compute_command_pools;

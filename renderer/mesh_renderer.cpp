@@ -222,18 +222,16 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                 ResourcePtr<CommandList> command_list = context.command_pool->allocate();
                 command_lists.at(i) = command_list;
 
-                context.thread_pool->push(
+                lib::thread_pool().push(
                     lib::TaskPriorityFlags::High,
                     [&, command_list, i, chunks]() {
 
                         backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
 
                         for(auto const& batch : chunks.at(i)) {
-                            
-                            lib::ObjectPtr<Shader> shader;
-                            backend::Handle<backend::Pipeline> pipeline;
 
                             ResourcePtr<Shader> shader = shader_cache.get(batch.material, "gbuffer");
+
                             pipeline = pipeline_cache.get(*shader, context.render_pass->render_pass);
                             
                             if(current_pipeline != pipeline) {

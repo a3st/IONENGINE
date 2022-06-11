@@ -24,7 +24,7 @@ namespace ionengine::ui {
 class UserInterface {
 public:
 
-    UserInterface(renderer::Renderer& renderer, platform::Window& window, lib::Logger& logger);
+    UserInterface(renderer::Renderer& renderer, platform::Window& window);
 
     ~UserInterface();
 

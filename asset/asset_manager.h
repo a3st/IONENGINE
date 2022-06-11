@@ -26,8 +26,8 @@ template<class Type>
 class AssetPool {
 public:
 
-    AssetPool(lib::ThreadPool& thread_pool, lib::Logger& logger, std::unique_ptr<AssetLoader<Type>> loader) :
-        _thread_pool(&thread_pool), _logger(&logger), _loader(std::move(loader)) {
+    AssetPool(std::unique_ptr<AssetLoader<Type>> loader) :
+        _loader(std::move(loader)) {
         
     }
 
@@ -78,13 +78,12 @@ public:
             asset = make_asset_ptr<Type>(asset_path);
             push(asset);
 
-            _thread_pool->push(
+            lib::thread_pool().push(
                 lib::TaskPriorityFlags::Low,
-                [asset](AssetLoader<Type>& loader, lib::Logger& logger, lib::EventDispatcher<AssetEvent<Type>>& event_dispatcher) {
-                    loader.load_asset(logger, asset, event_dispatcher);
+                [asset](AssetLoader<Type>& loader, lib::EventDispatcher<AssetEvent<Type>>& event_dispatcher) {
+                    loader.load_asset(asset, event_dispatcher);
                 },
                 std::ref(*_loader),
-                std::ref(*_logger),
                 std::ref(_event_dispatcher)
             );
             return asset;
@@ -95,9 +94,6 @@ public:
 
 private:
 
-    lib::ThreadPool* _thread_pool;
-    lib::Logger* _logger;
-
     std::vector<TimedEntry<AssetPtr<Type>>> _data;
     lib::EventDispatcher<AssetEvent<Type>> _event_dispatcher;
     
@@ -107,7 +103,7 @@ private:
 class AssetManager {
 public:
 
-    AssetManager(lib::ThreadPool& thread_pool, lib::Logger& logger);
+    AssetManager();
 
     AssetPtr<Mesh> get_mesh(std::filesystem::path const& asset_path);
 
