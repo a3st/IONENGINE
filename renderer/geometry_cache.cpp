@@ -48,7 +48,7 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
         if(result.is_ok()) {
 
             auto cache_entry = CacheEntry<ResourcePtr<GeometryBuffer>> {
-                .value = make_resource_ptr(result.value()),
+                .value = make_resource_ptr(result.as_ok()),
                 .hash = hash
             };
 
@@ -62,7 +62,7 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
 
             surface.cache_entry = _data.push(std::move(cache_entry));
         } else {
-            throw lib::Exception(result.error_value().message);
+            throw lib::Exception(result.as_error().message);
         }
 
         auto& cache_entry = _data.get(surface.cache_entry);

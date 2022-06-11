@@ -227,11 +227,11 @@ lib::Expected<Mesh, lib::Result<MeshError>> Mesh::load_from_file(std::filesystem
 
         tinyobj::LoadObj(&attributes, &shapes, &materials, &warn, &err, input_file.c_str());
 
-        return lib::Expected<Mesh, lib::Result<MeshError>>::ok(Mesh(attributes, shapes, materials));
+        return lib::make_expected<Mesh, lib::Result<MeshError>>(Mesh(attributes, shapes, materials));
 
     } else {
 
-        return lib::Expected<Mesh, lib::Result<MeshError>>::error(
+        return lib::make_expected<Mesh, lib::Result<MeshError>>(
             lib::Result<MeshError> { 
                 .errc = MeshError::ParseError,
                 .message = "Invalid format"
@@ -241,6 +241,10 @@ lib::Expected<Mesh, lib::Result<MeshError>> Mesh::load_from_file(std::filesystem
 }
 
 std::span<SurfaceData> Mesh::surfaces() {
+    return _surfaces;
+}
+
+std::span<SurfaceData const> Mesh::surfaces() const {
     return _surfaces;
 }
 

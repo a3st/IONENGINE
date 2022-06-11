@@ -36,7 +36,7 @@ lib::ObjectPtr<Shader> ShaderCache::get(std::string_view const shader_name, std:
 
             if(result.is_ok()) {
 
-                Shader shader = std::move(result.value());
+                Shader shader = std::move(result.as_ok());
             
                 if(shader.hash != it->second.hash) {
 
@@ -50,7 +50,7 @@ lib::ObjectPtr<Shader> ShaderCache::get(std::string_view const shader_name, std:
                     it->second = std::move(cache_entry);
                 }
             } else {
-                throw lib::Exception(result.error_value().message);
+                throw lib::Exception(result.as_error().message);
             }
         } else {
             return it->second.value;
@@ -61,7 +61,7 @@ lib::ObjectPtr<Shader> ShaderCache::get(std::string_view const shader_name, std:
         
         if(result.is_ok()) {
 
-            Shader shader = std::move(result.value());
+            Shader shader = std::move(result.as_ok());
             uint64_t const hash = shader.hash;
             std::string const new_shader_name = shader.name;
 
@@ -72,7 +72,7 @@ lib::ObjectPtr<Shader> ShaderCache::get(std::string_view const shader_name, std:
 
             return _data.insert({ new_shader_name, std::move(cache_entry) }).first->second.value;
         } else {
-            throw lib::Exception(result.error_value().message);
+            throw lib::Exception(result.as_error().message);
         }
     }
 

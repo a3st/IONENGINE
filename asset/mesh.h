@@ -43,6 +43,8 @@ public:
 
     std::span<SurfaceData> surfaces();
 
+    std::span<SurfaceData const> surfaces() const;
+
     void material(uint32_t const index, AssetPtr<Material> material);
 
     AssetPtr<Material> material(uint32_t const index);

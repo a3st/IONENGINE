@@ -42,7 +42,7 @@ Expected<std::vector<uint8_t>, Result<IOError>> ionengine::lib::load_file(std::f
     std::ifstream ifs(file_path, std::ios::beg | std::ios::binary);
 
     if(!ifs.is_open()) {
-        return Expected<std::vector<uint8_t>, Result<IOError>>::error(
+        return lib::make_expected<std::vector<uint8_t>, Result<IOError>>(
             Result<IOError> { 
                 .errc = IOError::OpenError,
                 .message = "File is not open"
@@ -57,5 +57,5 @@ Expected<std::vector<uint8_t>, Result<IOError>> ionengine::lib::load_file(std::f
     std::vector<uint8_t> buffer(total_bytes);
     ifs.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
 
-    return Expected<std::vector<uint8_t>, Result<IOError>>::ok(std::move(buffer));
+    return lib::make_expected<std::vector<uint8_t>, Result<IOError>>(std::move(buffer));
 };

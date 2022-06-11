@@ -44,7 +44,7 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
         if(result.is_ok()) {
 
             auto cache_entry = CacheEntry<ResourcePtr<GPUTexture>> {
-                .value = make_resource_ptr(result.value()),
+                .value = make_resource_ptr(result.as_ok()),
                 .hash = hash
             };
 
@@ -54,7 +54,7 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
             texture.cache_entry = _data.push(std::move(cache_entry));
 
         } else {
-            throw lib::Exception(result.error_value().message);
+            throw lib::Exception(result.as_error().message);
         }
         
         auto& cache_entry = _data.get(texture.cache_entry);

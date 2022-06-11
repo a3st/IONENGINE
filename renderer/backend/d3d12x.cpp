@@ -196,7 +196,7 @@ HRESULT DescriptorRange::initialize(
     _offset = offset;
     _size = size;
 
-    uint32_t const arena_range_count = std::thread::hardware_concurrency() > 16 ? 16 : std::thread::hardware_concurrency();
+    uint32_t const arena_range_count = std::thread::hardware_concurrency();
 
     _arena_block_ranges.resize(arena_range_count);
     _allocations = new DescriptorRangeAllocation[(size / arena_range_count) * arena_range_count];

@@ -2,56 +2,73 @@
 
 #include <precompiled.h>
 #include <lib/thread_pool.h>
-#include <lib/exception.h>
 
 using namespace ionengine;
 using namespace ionengine::lib;
 
-ThreadPool::ThreadPool(uint32_t const thread_count) : 
-    _worker_count(thread_count),
-    _workers(std::make_unique<Worker[]>(thread_count)), 
-    _is_exec(true) {
+ThreadPool::Worker::Worker() : is_alive(true) {
+    thread = std::thread(&ThreadPool::Worker::worker_loop, this);
+}
+        
+ThreadPool::Worker::~Worker() {
+    if(thread.joinable()) {
+        is_alive = false;
+        available_tasks.notify_one();
+        thread.join();
+    }
+}
 
-    for(uint32_t i = 0; i < thread_count; ++i) {
-        _workers[i].thread = std::thread(
-            [&](Worker& worker) {
-                while(_is_exec) {
-                    if(worker.tasks.empty()) {
-                        std::unique_lock lock(_mutex);
-                        _available_tasks.wait(lock, [&] { return !worker.tasks.empty() || !_is_exec; });
-                    } else {
-                        std::function<void()> task = std::move(worker.tasks.front());
-                        worker.tasks.pop();
-                        task();
-                        --_pending_tasks_count;
-                    }
+void ThreadPool::Worker::worker_loop() {
+    while(true) {
+        uint8_t priority;
+        std::function<void()> task;
+        {
+            std::unique_lock lock(mutex);
+            available_tasks.wait(
+                lock, 
+                [&] { 
+                    return !tasks.at(0).empty() || !tasks.at(1).empty() || !is_alive; 
                 }
-            },
-            std::ref(_workers[i])
-        );
+            );
+
+            if(!is_alive) {
+                break;
+            }
+
+            priority = !tasks.at(0).empty() ? 0 : 1; 
+            task = std::move(tasks.at(priority).front());
+        }
+
+        task();
+                        
+        std::lock_guard lock(mutex);
+        tasks.at(priority).pop();
+        available_tasks.notify_one();
+    }
+}
+
+void ThreadPool::Worker::wait(TaskPriorityFlags const flags) {
+    if(flags & TaskPriorityFlags::High) {
+        std::unique_lock lock(mutex);
+        available_tasks.wait(lock, [&] { return tasks.at(0).empty(); });
+    } else if(flags & TaskPriorityFlags::Low) {
+        std::unique_lock lock(mutex);
+        available_tasks.wait(lock, [&] { return tasks.at(1).empty(); });
+    }
+}
+
+ThreadPool::ThreadPool(uint16_t const thread_count) {
+    for(uint16_t i = 0; i < thread_count; ++i) {
+        _workers.emplace_back(std::make_unique<ThreadPool::Worker>());
     }
 }
 
 size_t ThreadPool::size() const { 
-    return static_cast<size_t>(_worker_count); 
+    return _workers.size();
 }
 
-void ThreadPool::wait_all() {
-    assert(_is_exec && "An error occurred while waiting for the completion of tasks in the thread pool");
-
-    _available_tasks.notify_all();
-
-    while(_pending_tasks_count.load() > 0) {
-        std::this_thread::yield();
-    }
-}
-
-void ThreadPool::join() {
-    _is_exec = false;
-
-    _available_tasks.notify_all();
-    
-    for(size_t i = 0; i < size(); ++i) {
-        _workers[i].thread.join();
+void ThreadPool::wait_all(TaskPriorityFlags const flags) {
+    for(auto& worker : _workers) {
+        worker->wait(flags);
     }
 }

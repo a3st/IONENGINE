@@ -26,7 +26,7 @@ public:
         auto result = Subscene::load_from_file(subscene_path, asset_manager);
     
         if(result.is_ok()) {
-            auto subscene = result.value();
+            auto subscene = result.as_ok();
             return _data.emplace_back(std::move(subscene));
         } else {
             throw lib::Exception("123");

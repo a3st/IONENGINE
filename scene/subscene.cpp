@@ -19,13 +19,13 @@ lib::Expected<Subscene, lib::Result<SubsceneError>> Subscene::load_from_file(std
     json5::error result = json5::from_file(path_string, document);
 
     if(result == json5::error::could_not_open) {
-        return lib::Expected<Subscene, lib::Result<SubsceneError>>::error(
+        return lib::make_expected<Subscene, lib::Result<SubsceneError>>(
             lib::Result<SubsceneError> { .errc = SubsceneError::IO, .message = "Could not open a file" }
         );
     }
 
     if(result != json5::error::none) {
-        return lib::Expected<Subscene, lib::Result<SubsceneError>>::error(
+        return lib::make_expected<Subscene, lib::Result<SubsceneError>>(
             lib::Result<SubsceneError> { .errc = SubsceneError::ParseError, .message = "Parse file error" }
         );
     }
@@ -116,5 +116,5 @@ lib::Expected<Subscene, lib::Result<SubsceneError>> Subscene::load_from_file(std
         }
     }
 
-    return lib::Expected<Subscene, lib::Result<SubsceneError>>::ok(std::move(subscene));
+    return lib::make_expected<Subscene, lib::Result<SubsceneError>>(std::move(subscene));
 }

@@ -54,7 +54,7 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::create(
             );
         }
     }
-    return lib::Expected<GPUTexture, lib::Result<GPUTextureError>>::ok(std::move(gpu_texture));
+    return lib::make_expected<GPUTexture, lib::Result<GPUTextureError>>(std::move(gpu_texture));
 }
 
 lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_texture(backend::Device& device, asset::Texture const& texture) {
@@ -106,7 +106,7 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
         gpu_texture.height = texture.height;
         gpu_texture.mip_count = texture.mip_count;
     }
-    return lib::Expected<GPUTexture, lib::Result<GPUTextureError>>::ok(std::move(gpu_texture));
+    return lib::make_expected<GPUTexture, lib::Result<GPUTextureError>>(std::move(gpu_texture));
 }
 
 backend::MemoryBarrierDesc GPUTexture::barrier(backend::MemoryState const after) {

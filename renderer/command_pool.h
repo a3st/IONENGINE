@@ -31,7 +31,7 @@ public:
 
     CommandPool(backend::Device& device, uint32_t const pool_size) {
         for(uint32_t i = 0; i < pool_size; ++i) {
-            _data.emplace_back(make_resource_ptr(CommandList::create(device, backend::QueueFlags::Graphics).value()));
+            _data.emplace_back(make_resource_ptr(CommandList::create(device, backend::QueueFlags::Graphics).as_ok()));
         }
     }
 
@@ -67,7 +67,7 @@ public:
 
     CommandPool(backend::Device& device, uint32_t const pool_size) {
         for(uint32_t i = 0; i < pool_size; ++i) {
-            _data.emplace_back(make_resource_ptr(CommandList::create(device, backend::QueueFlags::Graphics, true).value()));
+            _data.emplace_back(make_resource_ptr(CommandList::create(device, backend::QueueFlags::Graphics, true).as_ok()));
         }
     }
 
@@ -103,7 +103,7 @@ public:
 
     CommandPool(backend::Device& device, uint32_t const pool_size) {
         for(uint32_t i = 0; i < pool_size; ++i) {
-            _data.emplace_back(make_resource_ptr(CommandList::create(device, backend::QueueFlags::Compute).value()));
+            _data.emplace_back(make_resource_ptr(CommandList::create(device, backend::QueueFlags::Compute).as_ok()));
         }
     }
 

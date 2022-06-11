@@ -27,8 +27,8 @@ public:
 
     void operator()(scene::MeshNode& other) {
 
-        if(other.mesh().is_ok()) {
-            for(size_t i = 0; i < other.mesh()->surfaces().size(); ++i) {
+        if(other.mesh()->is_ok()) {
+            for(size_t i = 0; i < other.mesh()->as_const_ok().surfaces().size(); ++i) {
 
                 lib::math::Matrixf inverse_model = other.model_global();
                 inverse_model.inverse();
@@ -38,10 +38,10 @@ public:
                     .inverse_model = inverse_model
                 };
 
-                if(other.material(other.mesh()->surfaces()[i].material_index)->blend_mode == asset::MaterialBlendMode::Opaque) {
-                    _opaque_queue->push(other.mesh(), static_cast<uint32_t>(i), instance, other.material(other.mesh()->surfaces()[i].material_index));
+                if(other.material(other.mesh()->as_const_ok().surfaces()[i].material_index)->as_const_ok().blend_mode == asset::MaterialBlendMode::Opaque) {
+                    _opaque_queue->push(other.mesh(), static_cast<uint32_t>(i), instance, other.material(other.mesh()->as_const_ok().surfaces()[i].material_index));
                 } else {
-                    _transculent_queue->push(other.mesh(), static_cast<uint32_t>(i), instance, other.material(other.mesh()->surfaces()[i].material_index));
+                    _transculent_queue->push(other.mesh(), static_cast<uint32_t>(i), instance, other.material(other.mesh()->as_const_ok().surfaces()[i].material_index));
                 }
             }
         }
@@ -93,19 +93,19 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
         _point_light_pools.emplace_back(*_device, 512, 2, BufferPoolUsage::Dynamic);
 
         auto gbuffer = GBufferData {
-            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
-            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
-            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
-            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value())
+            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok())
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));
-        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::DepthStencil).value()));
-        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()));
+        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::DepthStencil).as_ok()));
+        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
     }
 
     auto quad_surface_data = asset::SurfaceData::make_quad();
-    _quad = make_resource_ptr(GeometryBuffer::load_from_surface(*_device, quad_surface_data).value());
+    _quad = make_resource_ptr(GeometryBuffer::load_from_surface(*_device, quad_surface_data).as_ok());
     _upload_manager->upload_geometry_data(_quad, quad_surface_data.vertices.to_span(), quad_surface_data.indices.to_span());
 }
 
@@ -127,15 +127,15 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
 
     for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         auto gbuffer = GBufferData {
-            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
-            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
-            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()),
-            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value())
+            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok())
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));
-        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil).value()));
-        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).value()));
+        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil).as_ok()));
+        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
     }
 }
 
@@ -223,6 +223,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                 command_lists.at(i) = command_list;
 
                 context.thread_pool->push(
+                    lib::TaskPriorityFlags::High,
                     [&, command_list, i, chunks]() {
 
                         backend::Handle<backend::Pipeline> current_pipeline = backend::InvalidHandle<backend::Pipeline>();
@@ -319,22 +320,22 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                     uint32_t const albedo_location = shader->location_uniform_by_name("albedo");
                     uint32_t const roughness_metalness_ao_location = shader->location_uniform_by_name("roughness_metalness_ao");
 
-                    binder.update_resource(world_location, world_cbuffer->as_const_ok().resource.buffer);
-                    binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().resource.buffer);
-                    binder.update_resource(positions_location, _gbuffers.at(frame_index).positions->as_const_ok().resource.texture);
-                    binder.update_resource(positions_location + 1, _gbuffers.at(frame_index).positions->as_const_ok().resource.sampler);
-                    binder.update_resource(albedo_location, _gbuffers.at(frame_index).albedo->as_const_ok().resource.texture);
-                    binder.update_resource(albedo_location + 1, _gbuffers.at(frame_index).albedo->as_const_ok().resource.sampler);
-                    binder.update_resource(normals_location, _gbuffers.at(frame_index).normals->as_const_ok().resource.texture);
-                    binder.update_resource(normals_location + 1, _gbuffers.at(frame_index).normals->as_const_ok().resource.sampler);
-                    binder.update_resource(roughness_metalness_ao_location, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().resource.texture);
-                    binder.update_resource(roughness_metalness_ao_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().resource.sampler);
+                    binder.update_resource(world_location, world_cbuffer->as_const_ok().buffer);
+                    binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().buffer);
+                    binder.update_resource(positions_location, _gbuffers.at(frame_index).positions->as_const_ok().texture);
+                    binder.update_resource(positions_location + 1, _gbuffers.at(frame_index).positions->as_const_ok().sampler);
+                    binder.update_resource(albedo_location, _gbuffers.at(frame_index).albedo->as_const_ok().texture);
+                    binder.update_resource(albedo_location + 1, _gbuffers.at(frame_index).albedo->as_const_ok().sampler);
+                    binder.update_resource(normals_location, _gbuffers.at(frame_index).normals->as_const_ok().texture);
+                    binder.update_resource(normals_location + 1, _gbuffers.at(frame_index).normals->as_const_ok().sampler);
+                    binder.update_resource(roughness_metalness_ao_location, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().texture);
+                    binder.update_resource(roughness_metalness_ao_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->as_const_ok().sampler);
 
                     binder.bind(*_device, command_list);
 
                     if(_quad->is_ok()) {
-                        _quad->as_ok().resource.bind(*_device, command_list);
-                        _device->draw_indexed(command_list, static_cast<uint32_t>(_quad->as_ok().resource.index_size / sizeof(uint32_t)), 1, 0);
+                        _quad->as_ok()->bind(*_device, command_list);
+                        _device->draw_indexed(command_list, static_cast<uint32_t>(_quad->as_ok()->index_size / sizeof(uint32_t)), 1, 0);
                     }
                 }
             );
@@ -392,17 +393,17 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                         uint32_t const object_location = shader->location_uniform_by_name("object");
                         uint32_t const point_light_location = shader->location_uniform_by_name("point_light");
 
-                        binder.update_resource(world_location, world_cbuffer->as_const_ok().resource.buffer);
-                        binder.update_resource(object_location, object_sbuffer->as_const_ok().resource.buffer);
-                        binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().resource.buffer);
+                        binder.update_resource(world_location, world_cbuffer->as_const_ok().buffer);
+                        binder.update_resource(object_location, object_sbuffer->as_const_ok().buffer);
+                        binder.update_resource(point_light_location, point_light_sbuffer->as_const_ok().buffer);
 
                         binder.bind(*_device, command_list);
 
                         ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->surfaces()[batch.surface_index]);
                         
                         if(geometry_buffer->is_ok()) {
-                            geometry_buffer->as_ok().resource.bind(*_device, command_list);
-                            _device->draw_indexed(command_list, static_cast<uint32_t>(geometry_buffer->as_ok().resource.index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
+                            geometry_buffer->as_ok()->bind(*_device, command_list);
+                            _device->draw_indexed(command_list, static_cast<uint32_t>(geometry_buffer->as_ok()->index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
                         }
                     }
                 }
@@ -438,14 +439,14 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
                     uint32_t const color = shader->location_uniform_by_name("color");
 
-                    binder.update_resource(color, _final_images.at(frame_index)->as_const_ok().resource.texture);
-                    binder.update_resource(color + 1, _final_images.at(frame_index)->as_const_ok().resource.sampler);
+                    binder.update_resource(color, _final_images.at(frame_index)->as_const_ok().texture);
+                    binder.update_resource(color + 1, _final_images.at(frame_index)->as_const_ok().sampler);
 
                     binder.bind(*_device, command_list);
 
                     if(_quad->is_ok()) {
-                        _quad->as_ok().resource.bind(*_device, command_list);
-                        _device->draw_indexed(command_list, static_cast<uint32_t>(_quad->as_ok().resource.index_size / sizeof(uint32_t)), 1, 0);
+                        _quad->as_ok()->bind(*_device, command_list);
+                        _device->draw_indexed(command_list, static_cast<uint32_t>(_quad->as_ok().index_size / sizeof(uint32_t)), 1, 0);
                     }
                 }
             );
@@ -469,13 +470,13 @@ void MeshRenderer::apply_material(ShaderBinder& binder, Shader& shader, asset::M
                 break;
             }
 
-            if(parameter.as_sampler2D().asset.is_ok()) {
-                ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(*_upload_manager, *parameter.as_sampler2D().asset);
+            if(parameter.as_sampler2D().asset->is_ok()) {
+                ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(*_upload_manager, parameter.as_sampler2D().asset->as_ok());
 
                 if(gpu_texture->is_ok()) {
                     uint32_t const texture_location = it->second.as_sampler2D().index;
-                    binder.update_resource(texture_location, gpu_texture->as_const_ok().resource.texture);
-                    binder.update_resource(texture_location + 1, gpu_texture->as_const_ok().resource.sampler);
+                    binder.update_resource(texture_location, gpu_texture->as_const_ok().texture);
+                    binder.update_resource(texture_location + 1, gpu_texture->as_const_ok().sampler);
 
                     //if(gpu_texture->as_ok().resource.memory_state.load() != backend::MemoryState::ShaderRead) {
                     //    memory_barriers.push_back(gpu_texture->as_ok().resource.barrier(backend::MemoryState::ShaderRead));
@@ -519,7 +520,7 @@ void MeshRenderer::apply_material(ShaderBinder& binder, Shader& shader, asset::M
         _upload_manager->upload_buffer_data(material_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(material_buffer.data()), material_buffer.size()));
 
         uint32_t const material_location = shader.location_uniform_by_name("material");
-        binder.update_resource(material_location, material_cbuffer->as_const_ok().resource.buffer);
+        binder.update_resource(material_location, material_cbuffer->as_const_ok().buffer);
     }
 
     if(!memory_barriers.empty()) {

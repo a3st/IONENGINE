@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <lib/exception.h>
+#include <lib/proxy_mutex.h>
 
 namespace ionengine::asset {
 
@@ -18,18 +18,13 @@ struct AssetStateData { };
 template<class AssetType>
 struct AssetStateData<AssetType, AssetStateType::Ok> {
     AssetType asset;
-    std::filesystem::path path;
 };
 
 template<class AssetType>
-struct AssetStateData<AssetType, AssetStateType::Error> {
-    std::filesystem::path path;
-};
+struct AssetStateData<AssetType, AssetStateType::Error> { };
 
 template<class AssetType>
-struct AssetStateData<AssetType, AssetStateType::Pending> {
-    std::filesystem::path path;
-};
+struct AssetStateData<AssetType, AssetStateType::Pending> { };
 
 template<class Type>
 struct AssetState {
@@ -40,111 +35,50 @@ struct AssetState {
     > data;
 
     std::mutex mutex;
-};
 
-template<class Type>
-class AssetPtr {
-public:
+    std::filesystem::path asset_path;
 
-    AssetPtr() = default;
-
-    constexpr AssetPtr(std::nullptr_t) noexcept { }
-
-    AssetPtr(std::filesystem::path const& asset_path) {
-        _ptr = std::make_shared<AssetState<Type>>(
-            AssetStateData<Type, AssetStateType::Pending> { .path = asset_path }
-        );
+    Type const& as_const_ok() const {
+        return std::get<AssetStateData<Type, AssetStateType::Ok>>(data).asset;
     }
 
-    AssetPtr(AssetPtr const& other) {
-        _ptr = other._ptr;
-    }
-
-    AssetPtr(AssetPtr&& other) noexcept {
-        _ptr = std::move(other._ptr);
-    }
-
-    AssetPtr& operator=(AssetPtr const& other) {
-        _ptr = other._ptr;
-        return *this;
-    }
-
-    AssetPtr& operator=(AssetPtr&& other) noexcept {
-        _ptr = std::move(other._ptr);
-        return *this;
-    }
-
-    uint32_t use_count() const { 
-        return _ptr.use_count(); 
-    }
-
-    Type* operator->() const {
-        std::unique_lock lock(_ptr->mutex);
-        assert(_ptr->data.index() == 0 && "error while accessing an unloaded asset data");
-        return &(std::get<0>(_ptr->data).asset); 
-    }
-
-    Type& operator*() const { 
-        std::unique_lock lock(_ptr->mutex);
-        assert(_ptr->data.index() == 0 && "error while accessing an unloaded asset data");
-        return std::get<0>(_ptr->data).asset;
-    }
-
-    std::filesystem::path const& path() const { 
-        std::filesystem::path* path = nullptr;
-
-        auto state_visitor = make_visitor(
-            [&](AssetStateData<Type, AssetStateType::Ok>& state) {
-                path = &state.path;
-            },
-            [&](AssetStateData<Type, AssetStateType::Error>& state) {
-                path = &state.path;
-            },
-            [&](AssetStateData<Type, AssetStateType::Pending>& state) {
-                path = &state.path;
-            }
-        );
-
-        std::unique_lock lock(_ptr->mutex);
-        std::visit(state_visitor, _ptr->data);
-        return *path;
-    }
-
-    bool is_pending() const {
-        return _ptr->data.index() == 2;
+    lib::ProxyMutex<Type> as_ok() {
+        return lib::ProxyMutex<Type>(&std::get<AssetStateData<Type, AssetStateType::Ok>>(data).asset, mutex);
     }
 
     bool is_ok() const {
-        return _ptr->data.index() == 0;
+        return data.index() == 0;
     }
 
     bool is_error() const {
-        return _ptr->data.index() == 1;
+        return data.index() == 1;
     }
 
-    void wait() {
-        while(is_pending()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
+    bool is_pending() const {
+        return data.index() == 2;
     }
 
-    void commit_ok(Type&& element, std::filesystem::path const& asset_path) {
-        std::unique_lock lock(_ptr->mutex);
-        _ptr->data = AssetStateData<Type, AssetStateType::Ok> { .asset = std::move(element), .path = asset_path };
+    std::filesystem::path const& path() const { 
+        return asset_path;
     }
 
-    void commit_error(std::filesystem::path const& asset_path) {
-        std::unique_lock lock(_ptr->mutex);
-        _ptr->data = AssetStateData<Type, AssetStateType::Error> { .path = asset_path };
+    void commit_ok(Type&& element) {
+        std::lock_guard lock(mutex);
+        data = AssetStateData<Type, AssetStateType::Ok> { .asset = std::move(element) };
     }
 
-    explicit operator bool() const noexcept { 
-        return _ptr.operator bool(); 
+    void commit_error() {
+        std::lock_guard lock(mutex);
+        data = AssetStateData<Type, AssetStateType::Error> { };
     }
-
-private:
-
-    std::shared_ptr<AssetState<Type>> _ptr;
 };
+
+template<class Type>
+using AssetPtr = std::shared_ptr<AssetState<Type>>;
+
+template<class Type>
+inline AssetPtr<Type> make_asset_ptr(std::filesystem::path const& asset_path) {
+    return AssetPtr<Type>(new AssetState<Type> { .data = AssetStateData<Type, AssetStateType::Pending> { }, .asset_path = asset_path });
+}
 
 }

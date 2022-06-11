@@ -9,13 +9,13 @@ using namespace ionengine::renderer;
 lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::create(backend::Device& device, size_t const vertex_size, size_t const index_size, backend::BufferFlags const flags) {
 
     if(index_size / sizeof(uint32_t) > std::numeric_limits<uint16_t>::max()) {
-        return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::error(
+        return lib::make_expected<GeometryBuffer, lib::Result<GeometryBufferError>>(
             lib::Result<GeometryBufferError> { .errc = GeometryBufferError::IndexOverflow, .message = "index buffer has overflow" }
         );
     }
 
     if((index_size / sizeof(uint32_t)) % 3 != 0) {
-        return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::error(
+        return lib::make_expected<GeometryBuffer, lib::Result<GeometryBufferError>>(
             lib::Result<GeometryBufferError> { .errc = GeometryBufferError::IndexSize, .message = "index buffer contains no triangles" }
         );
     }
@@ -28,19 +28,19 @@ lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::
         geometry_buffer.vertex_size = vertex_size;
         geometry_buffer.index_size = index_size;
     }
-    return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::ok(std::move(geometry_buffer));
+    return lib::make_expected<GeometryBuffer, lib::Result<GeometryBufferError>>(std::move(geometry_buffer));
 }
 
 lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::load_from_surface(backend::Device& device, asset::SurfaceData const& surface) {
 
     if(surface.indices.size() / sizeof(uint32_t) > std::numeric_limits<uint16_t>::max()) {
-        return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::error(
+        return lib::make_expected<GeometryBuffer, lib::Result<GeometryBufferError>>(
             lib::Result<GeometryBufferError> { .errc = GeometryBufferError::IndexOverflow, .message = "index buffer has overflow" }
         );
     }
 
     if((surface.indices.size() / sizeof(uint32_t)) % 3 != 0) {
-        return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::error(
+        return lib::make_expected<GeometryBuffer, lib::Result<GeometryBufferError>>(
             lib::Result<GeometryBufferError> { .errc = GeometryBufferError::IndexSize, .message = "index buffer contains no triangles" }
         );
     }
@@ -53,7 +53,7 @@ lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::
         geometry_buffer.vertex_size = surface.vertices.size();
         geometry_buffer.index_size = surface.indices.size();
     }
-    return lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>>::ok(std::move(geometry_buffer));
+    return lib::make_expected<GeometryBuffer, lib::Result<GeometryBufferError>>(std::move(geometry_buffer));
 }
 
 void GeometryBuffer::bind(backend::Device& device, backend::Handle<backend::CommandList> const& command_list) {

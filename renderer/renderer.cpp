@@ -26,9 +26,9 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager,
     _height(window.client_height()) {
 
     _null = NullData {
-        .cbuffer = make_resource_ptr(GPUBuffer::create(_device, 256, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).value()),
-        .sbuffer = make_resource_ptr(GPUBuffer::create(_device, 256, backend::BufferFlags::ShaderResource | backend::BufferFlags::HostWrite, 256).value()),
-        .texture = make_resource_ptr(GPUTexture::create(_device, backend::Format::RGBA8_UNORM, 1, 1, 1, 1, backend::TextureFlags::ShaderResource).value())
+        .cbuffer = make_resource_ptr(GPUBuffer::create(_device, 256, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).as_ok()),
+        .sbuffer = make_resource_ptr(GPUBuffer::create(_device, 256, backend::BufferFlags::ShaderResource | backend::BufferFlags::HostWrite, 256).as_ok()),
+        .texture = make_resource_ptr(GPUTexture::create(_device, backend::Format::RGBA8_UNORM, 1, 1, 1, 1, backend::TextureFlags::ShaderResource).as_ok())
     };
 
     for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {

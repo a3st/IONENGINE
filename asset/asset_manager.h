@@ -33,7 +33,7 @@ public:
 
     AssetPtr<Type> find(std::filesystem::path const& asset_path) {
         for(auto& entry : _data) {
-            if(entry.value.path() == asset_path) {
+            if(entry.value->path() == asset_path) {
                 return entry.value;
             }
         }
@@ -52,7 +52,7 @@ public:
                 if(element.value.use_count() <= 1) {
                     element.time_to_live -= delta_time;
                     if(element.time_to_live <= 0.0f) {
-                        std::filesystem::path path = element.value.path();
+                        std::filesystem::path const& path = element.value->path();
                         _event_dispatcher.broadcast(AssetEvent<Type>::removed(path));
                         return true;
                     } else {
@@ -75,10 +75,11 @@ public:
         if(asset) {
             return asset;
         } else {
-            asset = AssetPtr<Type>(asset_path);
+            asset = make_asset_ptr<Type>(asset_path);
             push(asset);
 
             _thread_pool->push(
+                lib::TaskPriorityFlags::Low,
                 [asset](AssetLoader<Type>& loader, lib::Logger& logger, lib::EventDispatcher<AssetEvent<Type>>& event_dispatcher) {
                     loader.load_asset(logger, asset, event_dispatcher);
                 },

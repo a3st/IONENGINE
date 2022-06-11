@@ -9,7 +9,7 @@ using namespace ionengine::renderer;
 lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> GPUBuffer::create(backend::Device& device, size_t const size, backend::BufferFlags const flags, uint32_t const element_stride) {
 
     if(flags & backend::BufferFlags::ConstantBuffer && size != ((size + (backend::TEXTURE_ROW_PITCH_ALIGNMENT - 1)) & ~(backend::TEXTURE_ROW_PITCH_ALIGNMENT - 1))) {
-        return lib::Expected<GPUBuffer, lib::Result<GPUBufferError>>::error(
+        return lib::make_expected<GPUBuffer, lib::Result<GPUBufferError>>(
             lib::Result<GPUBufferError> { .errc = GPUBufferError::ConstantAlignment, .message = "constant buffer not 256 byte aligned" }
         );
     }
@@ -26,5 +26,5 @@ lib::Expected<GPUBuffer, lib::Result<GPUBufferError>> GPUBuffer::create(backend:
             gpu_buffer.memory_state = backend::MemoryState::Common;
         }
     }
-    return lib::Expected<GPUBuffer, lib::Result<GPUBufferError>>::ok(std::move(gpu_buffer));
+    return lib::make_expected<GPUBuffer, lib::Result<GPUBufferError>>(std::move(gpu_buffer));
 }

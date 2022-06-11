@@ -16,13 +16,13 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
     json5::error const result = json5::from_file(path_string, document);
 
     if(result == json5::error::could_not_open) {
-        return lib::Expected<Shader, lib::Result<ShaderError>>::error(
+        return lib::make_expected<Shader, lib::Result<ShaderError>>(
             lib::Result<ShaderError> { .errc = ShaderError::IO, .message = "Could not open a file" }
         );
     }
 
     if(result != json5::error::none) {
-        return lib::Expected<Shader, lib::Result<ShaderError>>::error(
+        return lib::make_expected<Shader, lib::Result<ShaderError>>(
             lib::Result<ShaderError> { .errc = ShaderError::ParseError, .message = std::format("Parse file error '{}'", shader_path.string()) }
         );
     }
@@ -189,7 +189,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
 
     shader.hash = XXHash64::hash(shader.name.data(), shader.name.size(), 0);
 
-    return lib::Expected<Shader, lib::Result<ShaderError>>::ok(std::move(shader));
+    return lib::make_expected<Shader, lib::Result<ShaderError>>(std::move(shader));
 }
 
 uint32_t Shader::location_uniform_by_name(std::string_view const name) const {

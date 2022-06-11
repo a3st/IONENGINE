@@ -16,13 +16,13 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
     json5::error result = json5::from_file(path_string, document);
 
     if(result == json5::error::could_not_open) {
-        return lib::Expected<Material, lib::Result<MaterialError>>::error(
+        return lib::make_expected<Material, lib::Result<MaterialError>>(
             lib::Result<MaterialError> { .errc = MaterialError::IO, .message = "Could not open a file" }
         );
     }
 
     if(result != json5::error::none) {
-        return lib::Expected<Material, lib::Result<MaterialError>>::error(
+        return lib::make_expected<Material, lib::Result<MaterialError>>(
             lib::Result<MaterialError> { .errc = MaterialError::ParseError, .message = "Parse file error" }
         );
     }
@@ -114,7 +114,7 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
 
         material.hash = XXHash64::hash(reinterpret_cast<void*>(material.name.data()), material.name.size(), 0);
     }
-    return lib::Expected<Material, lib::Result<MaterialError>>::ok(std::move(material));
+    return lib::make_expected<Material, lib::Result<MaterialError>>(std::move(material));
 }
 
 MaterialDomain constexpr ionengine::asset::get_material_domain(JSON_MaterialDomain const domain) {

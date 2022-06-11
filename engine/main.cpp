@@ -26,7 +26,7 @@ using namespace ionengine;
 int main(int* argc, char** agrv) {
 
     lib::Logger logger;
-    lib::ThreadPool thread_pool(4);
+    lib::ThreadPool thread_pool(11);
 
     try {
         platform::WindowLoop loop;
@@ -39,8 +39,6 @@ int main(int* argc, char** agrv) {
         scene::Scene scene(asset_manager);
 
         framework::Framework framework(asset_manager, input_manager, scene, user_interface);
-
-        // scene.print_structure();
 
         auto begin_time = std::chrono::high_resolution_clock::now();
         uint64_t frame_count = 0;
@@ -168,7 +166,6 @@ int main(int* argc, char** agrv) {
 
     logger.log(lib::LoggerCategoryType::Engine, "engine quit");
     logger.throw_messages();
-
-    thread_pool.join();
+    
     return EXIT_SUCCESS;
 }

@@ -36,9 +36,9 @@ public:
     BufferPool(backend::Device& device, uint32_t const pool_size, BufferPoolUsage const usage) {
         for(uint32_t i = 0; i < pool_size; ++i) {
             if(usage == BufferPoolUsage::Dynamic) {
-                _data.emplace_back(make_resource_ptr(GPUBuffer::create(device, DataSize, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).value()));
+                _data.emplace_back(make_resource_ptr(GPUBuffer::create(device, DataSize, backend::BufferFlags::ConstantBuffer | backend::BufferFlags::HostWrite).as_ok()));
             } else {
-                _data.emplace_back(make_resource_ptr(GPUBuffer::create(device, DataSize, backend::BufferFlags::ConstantBuffer).value()));
+                _data.emplace_back(make_resource_ptr(GPUBuffer::create(device, DataSize, backend::BufferFlags::ConstantBuffer).as_ok()));
             }
         }
     }
@@ -80,9 +80,9 @@ public:
     BufferPool(backend::Device& device, uint32_t const element_count, uint32_t const pool_size, BufferPoolUsage const usage) {
         for(uint32_t i = 0; i < pool_size; ++i) {
             if(usage == BufferPoolUsage::Dynamic) {
-                _data.emplace_back(make_resource_ptr(GPUBuffer::create(device, DataSize * element_count, backend::BufferFlags::ShaderResource | backend::BufferFlags::HostWrite, DataSize).value()));
+                _data.emplace_back(make_resource_ptr(GPUBuffer::create(device, DataSize * element_count, backend::BufferFlags::ShaderResource | backend::BufferFlags::HostWrite, DataSize).as_ok()));
             } else {
-                _data.emplace_back(make_resource_ptr(GPUBuffer::create(device, DataSize * element_count, backend::BufferFlags::ShaderResource, DataSize).value()));
+                _data.emplace_back(make_resource_ptr(GPUBuffer::create(device, DataSize * element_count, backend::BufferFlags::ShaderResource, DataSize).as_ok()));
             }
         }
     }

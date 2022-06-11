@@ -12,6 +12,11 @@ struct Result {
 
 template<class Type, class Error>
 class Expected {
+
+    friend Expected make_expected<Type, Error>(Type&& element);
+    
+    friend Expected make_expected<Type, Error>(Error&& element);
+
 public:
 
     Expected(Expected const&) = default;
@@ -22,14 +27,6 @@ public:
 
     Expected& operator=(Expected&&) noexcept = default;
 
-    static Expected ok(Type&& element) {
-        return Expected(std::move(element));
-    }
-
-    static Expected error(Error const& element) {
-        return Expected(element);
-    }
-
     bool is_ok() const {
         return _data.index() == 0;
     }
@@ -38,11 +35,11 @@ public:
         return _data.index() == 1;
     }
 
-    Type value() {
+    Type as_ok() {
         return std::move(std::get<0>(_data));
     }
 
-    Error error_value() {
+    Error as_error() {
         return std::move(std::get<1>(_data));
     }
 
@@ -52,5 +49,15 @@ private:
 
     std::variant<Type, Error> _data;
 };
+
+template<class Type, class Error>
+inline Expected<Type, Error> make_expected(Type&& element) {
+    return Expected<Type, Error>(std::move(element));
+}
+
+template<class Type, class Error>
+inline Expected<Type, Error> make_expected(Error&& element) {
+    return Expected<Type, Error>(std::move(element));
+}
 
 }

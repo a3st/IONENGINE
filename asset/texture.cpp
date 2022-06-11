@@ -24,7 +24,7 @@ lib::Expected<Texture, lib::Result<TextureError>> Texture::create(uint32_t const
     std::string const render_target_hash = std::format("RT{{{}}}", time);
     texture.hash = XXHash64::hash(render_target_hash.data(), render_target_hash.size(), 0);
 
-    return lib::Expected<Texture, lib::Result<TextureError>>::ok(std::move(texture));
+    return lib::make_expected<Texture, lib::Result<TextureError>>(std::move(texture));
 }
 
 lib::Expected<Texture, lib::Result<TextureError>> Texture::load_from_file(std::filesystem::path const& file_path) {
@@ -36,7 +36,7 @@ lib::Expected<Texture, lib::Result<TextureError>> Texture::load_from_file(std::f
         auto result = lib::load_file(file_path);
 
         if(result.is_error()) {
-            return lib::Expected<Texture, lib::Result<TextureError>>::error(
+            return lib::make_expected<Texture, lib::Result<TextureError>>(
                 lib::Result<TextureError> { 
                     .errc = TextureError::IO,
                     .message = "IO error"
@@ -44,7 +44,7 @@ lib::Expected<Texture, lib::Result<TextureError>> Texture::load_from_file(std::f
             );
         }
 
-        auto file_data = std::move(result.value());
+        auto file_data = std::move(result.as_ok());
         
         uint64_t offset = 0;
 
@@ -53,7 +53,7 @@ lib::Expected<Texture, lib::Result<TextureError>> Texture::load_from_file(std::f
         uint32_t dds_magic = *reinterpret_cast<uint32_t const*>(dds_magic_bytes.data());
 
         if(dds_magic != DirectX::DDS_MAGIC) {
-            return lib::Expected<Texture, lib::Result<TextureError>>::error(
+            return lib::make_expected<Texture, lib::Result<TextureError>>(
                 lib::Result<TextureError> { 
                     .errc = TextureError::ParseError,
                     .message = "Invalid format"
@@ -111,11 +111,11 @@ lib::Expected<Texture, lib::Result<TextureError>> Texture::load_from_file(std::f
 
             texture.hash = texture.data.hash();
         }
-        return lib::Expected<Texture, lib::Result<TextureError>>::ok(std::move(texture));
+        return lib::make_expected<Texture, lib::Result<TextureError>>(std::move(texture));
 
     } else {
 
-        return lib::Expected<Texture, lib::Result<TextureError>>::error(
+        return lib::make_expected<Texture, lib::Result<TextureError>>(
             lib::Result<TextureError> { 
                 .errc = TextureError::ParseError,
                 .message = "Invalid format"

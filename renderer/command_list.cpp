@@ -13,5 +13,5 @@ lib::Expected<CommandList, lib::Result<CommandListError>> CommandList::create(ba
     command_list.flags = flags;
     command_list.is_bundle = bundle;
 
-    return lib::Expected<CommandList, lib::Result<CommandListError>>::ok(std::move(command_list));
+    return lib::make_expected<CommandList, lib::Result<CommandListError>>(std::move(command_list));
 }

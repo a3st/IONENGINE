@@ -45,11 +45,6 @@ struct RenderPassContext {
     backend::Device* device;
     SwapchainTexture* swapchain;
 
-    std::vector<ResourcePtr<CommandList>> parallel_for(
-        size_t const chunk_size, 
-        std::function<void(size_t const, backend::Handle<backend::CommandList> const&, backend::Handle<backend::RenderPass> const&)> func
-    );
-
     std::vector<ResourcePtr<CommandList>> single_for(
         std::function<void(backend::Handle<backend::CommandList> const&, backend::Handle<backend::RenderPass> const&)> func
     );

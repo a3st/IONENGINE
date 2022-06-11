@@ -40,7 +40,7 @@ ResourcePtr<GPUTexture> RTTextureCache::get(asset::Texture& texture) {
         if(result.is_ok()) {
 
             auto cache_entry = CacheEntry<ResourcePtr<GPUTexture>> {
-                .value = make_resource_ptr(result.value()),
+                .value = make_resource_ptr(result.as_ok()),
                 .hash = hash
             };
             
@@ -48,7 +48,7 @@ ResourcePtr<GPUTexture> RTTextureCache::get(asset::Texture& texture) {
             return inserted.first->second.value;
 
         } else {
-            throw lib::Exception(result.error_value().message);
+            throw lib::Exception(result.as_error().message);
         }
     }
 }

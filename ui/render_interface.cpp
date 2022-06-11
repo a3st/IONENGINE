@@ -30,8 +30,8 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
 
             if(gpu_texture->is_ok()) {
                 uint32_t const albedo_location = _shader->location_uniform_by_name("albedo");
-                _binder->update_resource(albedo_location, gpu_texture->as_const_ok().resource.texture);
-                _binder->update_resource(albedo_location + 1, gpu_texture->as_const_ok().resource.sampler);
+                _binder->update_resource(albedo_location, gpu_texture->as_const_ok().texture);
+                _binder->update_resource(albedo_location + 1, gpu_texture->as_const_ok().sampler);
 
                 //if(gpu_texture->as_ok().resource.memory_state.load() != renderer::backend::MemoryState::ShaderRead) {
                 //    _memory_barriers.push_back(gpu_texture->as_ok().resource.barrier(renderer::backend::MemoryState::ShaderRead));
@@ -44,8 +44,8 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
 
             if(gpu_texture->is_ok()) {
                 uint32_t const albedo_location = _shader->location_uniform_by_name("albedo");
-                _binder->update_resource(albedo_location, gpu_texture->as_const_ok().resource.texture);
-                _binder->update_resource(albedo_location + 1, gpu_texture->as_const_ok().resource.sampler);
+                _binder->update_resource(albedo_location, gpu_texture->as_const_ok().texture);
+                _binder->update_resource(albedo_location + 1, gpu_texture->as_const_ok().sampler);
 
                 //if(gpu_texture->as_ok().resource.memory_state.load() != renderer::backend::MemoryState::ShaderRead) {
                 //    _memory_barriers.push_back(gpu_texture->as_ok().resource.barrier(renderer::backend::MemoryState::ShaderRead));
@@ -72,7 +72,7 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
     _upload_manager->upload_buffer_data(ui_element_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&ui_element_buffer), sizeof(renderer::UIElementData)));
 
     uint32_t const ui_element_location = _shader->location_uniform_by_name("ui_element");
-    _binder->update_resource(ui_element_location, ui_element_cbuffer->as_const_ok().resource.buffer);
+    _binder->update_resource(ui_element_location, ui_element_cbuffer->as_const_ok().buffer);
     _binder->bind(*_device, _command_list);
 
     uint64_t offset = 0;
@@ -106,7 +106,7 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
     renderer::ResourcePtr<renderer::GeometryBuffer> geometry_buffer = _geometry_pool->allocate();
     _upload_manager->upload_geometry_data(geometry_buffer, vertex_data, index_data);
     
-    geometry_buffer->as_ok().resource.bind(*_device, _command_list);
+    geometry_buffer->as_ok()->bind(*_device, _command_list);
     _device->draw_indexed(_command_list, num_indices, 1, 0);
 }
 
@@ -167,7 +167,7 @@ bool RenderInterface::LoadTexture(Rml::TextureHandle& texture_handle, Rml::Vecto
 
         if(result.is_ok()) {
 
-            auto texture = std::move(result.value());
+            auto texture = std::move(result.as_ok());
             _texture_cache->get(*_upload_manager, texture);
             texture_dimensions = Rml::Vector2i(texture.width, texture.height);
             texture_handle = (Rml::TextureHandle)&_texture_handles.emplace_back(std::move(texture));
