@@ -22,6 +22,12 @@ ShaderCache& ShaderCache::operator=(ShaderCache&& other) noexcept {
     return *this;
 }
 
+ResourcePtr<Shader> ShaderCache::get(asset::AssetPtr<asset::Material> material, std::string_view const pass_name) {
+
+    
+}
+
+/*
 lib::ObjectPtr<Shader> ShaderCache::get(std::string_view const shader_name, std::optional<std::filesystem::path> const shader_path) {
 
     std::lock_guard lock(_mutex);
@@ -78,8 +84,8 @@ lib::ObjectPtr<Shader> ShaderCache::get(std::string_view const shader_name, std:
 
     return nullptr;
 }
+*/
 
 void ShaderCache::update(float const delta_time) {
 
-    // for(auto& cache_entry : _data.has_values()) { }
 }

@@ -169,7 +169,10 @@ struct Material {
     MaterialBlendMode blend_mode;
     std::unordered_map<std::string, MaterialParameter> parameters;
     std::unordered_map<std::string, std::string> passes;
-    uint64_t hash{0};
+
+    uint64_t hash;
+
+    std::unordered_map<std::string, size_t> entry_caches;
 
     static lib::Expected<Material, lib::Result<MaterialError>> load_from_file(std::filesystem::path const& file_path, AssetManager& asset_manager);
 };

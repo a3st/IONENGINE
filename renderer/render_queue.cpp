@@ -12,7 +12,7 @@ RenderQueue::RenderQueue() {
 
 void RenderQueue::push(asset::AssetPtr<asset::Mesh> mesh, uint32_t const surface_index, SurfaceInstance const& instance, asset::AssetPtr<asset::Material> material) {
 
-    uint64_t const batch_hash = mesh->as_const_ok().surfaces()[surface_index].vertices.hash() ^ mesh->as_const_ok().surfaces()[surface_index].indices.hash() ^ material->as_const_ok().hash;
+    uint64_t const batch_hash = mesh->get().surfaces()[surface_index].vertices.hash() ^ mesh->get().surfaces()[surface_index].indices.hash() ^ material->get().hash;
 
     if(_batches_cache.find(batch_hash) == _batches_cache.end()) {
 
@@ -21,7 +21,7 @@ void RenderQueue::push(asset::AssetPtr<asset::Mesh> mesh, uint32_t const surface
             .surface_index = surface_index,
             .instances = {},
             .material = material,
-            .sort_index = material->as_const_ok().hash
+            .sort_index = material->get().hash
         };
 
         _batches_cache.insert({ batch_hash, _batches.size() });

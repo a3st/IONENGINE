@@ -4,11 +4,11 @@
 
 namespace ionengine::lib {
 
-template<class Type>
+template<class Type, class Mutex = std::shared_mutex, class Lock = std::unique_lock<Mutex>>
 class ProxyMutex {
 public:
 
-    ProxyMutex(Type* const ptr, std::mutex& mutex) : 
+    ProxyMutex(Type* const ptr, Mutex& mutex) : 
         _ptr(ptr), _lock(mutex) { }
 
     Type* operator->() { 
@@ -22,7 +22,24 @@ public:
 private:
 
     Type* const _ptr;
-    std::unique_lock<std::mutex> _lock;
+    Lock _lock;
+};
+
+template<class Type, class Mutex>
+class ProxyMutex<Type, Mutex, std::shared_lock<Mutex>> {
+public:
+
+    ProxyMutex(Type* const ptr, Mutex& mutex) : 
+        _ptr(ptr), _lock(mutex) { }
+
+    Type const* operator->() const {
+        return _ptr;
+    }
+
+private:
+
+    Type* const _ptr;
+    std::shared_lock<Mutex> _lock;
 };
 
 }

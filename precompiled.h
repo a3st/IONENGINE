@@ -17,6 +17,7 @@
 #include <exception>
 #include <cassert>
 #include <mutex>
+#include <shared_mutex>
 #include <vector>
 #include <numeric>
 #include <memory>

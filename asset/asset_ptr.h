@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <lib/proxy_mutex.h>
-
 namespace ionengine::asset {
 
 enum class AssetStateType {
@@ -34,31 +32,34 @@ struct AssetState {
         AssetStateData<Type, AssetStateType::Pending>
     > data;
 
-    std::mutex mutex;
+    std::shared_mutex mutex;
 
     std::filesystem::path asset_path;
 
-    Type const& as_const_ok() const {
+    Type const& get() const {
         return std::get<AssetStateData<Type, AssetStateType::Ok>>(data).asset;
     }
 
-    lib::ProxyMutex<Type> as_ok() {
-        return lib::ProxyMutex<Type>(&std::get<AssetStateData<Type, AssetStateType::Ok>>(data).asset, mutex);
+    Type& get() {
+        return std::get<AssetStateData<Type, AssetStateType::Ok>>(data).asset;
     }
 
     bool is_ok() const {
+        std::shared_lock lock(mutex);
         return data.index() == 0;
     }
 
     bool is_error() const {
+        std::shared_lock lock(mutex);
         return data.index() == 1;
     }
 
     bool is_pending() const {
+        std::shared_lock lock(mutex);
         return data.index() == 2;
     }
 
-    std::filesystem::path const& path() const { 
+    std::filesystem::path const& path() const {
         return asset_path;
     }
 

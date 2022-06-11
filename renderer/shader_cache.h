@@ -3,8 +3,9 @@
 #pragma once
 
 #include <renderer/cache.h>
+#include <renderer/resource_ptr.h>
 #include <renderer/shader.h>
-#include <lib/object_ptr.h>
+#include <asset/material.h>
 
 namespace ionengine::renderer {
 
@@ -21,7 +22,9 @@ public:
 
     ShaderCache& operator=(ShaderCache&& other) noexcept;
 
-    lib::ObjectPtr<Shader> get(std::string_view const shader_name, std::optional<std::filesystem::path> const shader_path = std::nullopt);
+    void cache_shaders(std::span<std::filesystem::path const> const shader_pathes);
+
+    ResourcePtr<Shader> get(asset::AssetPtr<asset::Material> material, std::string_view const pass_name);
 
     void update(float const delta_time);
 
@@ -31,7 +34,7 @@ private:
 
     std::mutex _mutex;
 
-    std::unordered_map<std::string, CacheEntry<lib::ObjectPtr<Shader>>> _data;
+    std::unordered_map<std::string, CacheEntry<ResourcePtr<Shader>>> _data;
 };
 
 }

@@ -63,19 +63,16 @@ inline static constexpr uint32_t crc_table[256] = {
 };
 
 inline constexpr uint32_t combine_crc32(const char c, uint32_t part) {
-
     return (part >> 8) ^ crc_table[(part ^ c) & 0x000000FF];
 }
 
 inline constexpr uint32_t crc32(const char * str, size_t idx) {
-
     return combine_crc32(str[idx], idx ? crc32(str, idx - 1) : 0xFFFFFFFF);
 }
 
 }
 
 inline constexpr uint32_t ctcrc32(const char* str, size_t len) {
-
     return detail::crc32(str, len) ^ 0xFFFFFFFF;
 }
 

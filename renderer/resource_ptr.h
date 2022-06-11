@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <lib/proxy_mutex.h>
-
 namespace ionengine::renderer {
 
 enum class ResourceStateType {
@@ -29,23 +27,25 @@ struct ResourceState {
         ResourceStateData<Type, ResourceStateType::Pending>
     > data;
 
-    std::mutex mutex;
+    std::shared_mutex mutex;
 
     std::atomic<bool> is_wait_for_upload;
 
-    Type const& as_const_ok() const {
+    Type const& get() const {
         return std::get<ResourceStateData<Type, ResourceStateType::Ok>>(data).resource;
     }
 
-    lib::ProxyMutex<Type> as_ok() {
-        return lib::ProxyMutex<Type>(&std::get<ResourceStateData<Type, ResourceStateType::Ok>>(data).resource, mutex);
+    Type& get() {
+        return std::get<ResourceStateData<Type, ResourceStateType::Ok>>(data).resource;
     }
 
     bool is_ok() const {
+        std::shared_lock lock(mutex);
         return data.index() == 0;
     }
 
     bool is_pending() const {
+        std::shared_lock lock(mutex);
         return data.index() == 1;
     }
 

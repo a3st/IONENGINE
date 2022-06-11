@@ -233,7 +233,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                             lib::ObjectPtr<Shader> shader;
                             backend::Handle<backend::Pipeline> pipeline;
 
-                            shader = shader_cache.get(batch.material->passes.at("gbuffer"));
+                            ResourcePtr<Shader> shader = shader_cache.get(batch.material, "gbuffer");
                             pipeline = pipeline_cache.get(*shader, context.render_pass->render_pass);
                             
                             if(current_pipeline != pipeline) {

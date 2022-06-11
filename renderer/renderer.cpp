@@ -72,21 +72,14 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
     if(_width != width || _height != height) {
 
         _frame_graph.reset();
-
-        //_device.recreate_swapchain(width, height);
         
         _width = width;
         _height = height;
-
-        // _mesh_renderer.resize(width, height);
-        // _ui_renderer.resize(width, height);
     }
 }
 
 void Renderer::load_shaders(std::span<std::filesystem::path const> const shader_paths) {
-    for(auto const& shader_path : shader_paths) {
-        _shader_cache.get("_", shader_path);
-    }
+    
 }
 
 UiRenderer& Renderer::ui_renderer() {
