@@ -4,8 +4,9 @@
 
 #include <renderer/gpu_resource.h>
 #include <lib/expected.h>
-#include <renderer/shader.h>
+#include <renderer/gpu_program.h>
 #include <renderer/frame_graph.h>
+#include <asset/shader.h>
 
 namespace ionengine::renderer {
 
@@ -17,11 +18,10 @@ enum class GPUPipelineError {
 
 struct GPUPipeline {
     backend::Handle<backend::Pipeline> pipeline;
-    uint64_t hash;
 
     void bind(backend::Device& device, CommandList& command_list);
 
-    static lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> create_from_shader(backend::Device& device, Shader const& shader, RenderPass const& render_pass);
+    static lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> create(backend::Device& device, asset::Shader const& shader, GPUProgram const& program, RenderPass const& render_pass);
 };
 
 template<>
@@ -30,5 +30,9 @@ struct GPUResourceDeleter<GPUPipeline> {
         device.delete_pipeline(pipeline.pipeline);
     }
 };
+
+backend::FillMode constexpr get_shader_fill_mode(asset::ShaderFillMode const fill_mode);
+
+backend::CullMode constexpr get_shader_cull_mode(asset::ShaderCullMode const cull_mode);
 
 }

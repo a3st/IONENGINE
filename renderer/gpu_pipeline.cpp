@@ -6,16 +6,32 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> GPUPipeline::create_from_shader(backend::Device& device, Shader const& shader, RenderPass const& render_pass) {
+lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> GPUPipeline::create(backend::Device& device, asset::Shader const& shader, GPUProgram const& program, RenderPass const& render_pass) {
     auto gpu_pipeline = GPUPipeline {};
 
+    auto rasterizer_desc = backend::RasterizerDesc {
+        .fill_mode = get_shader_fill_mode(shader.draw_parameters.fill_mode),
+        .cull_mode = get_shader_cull_mode(shader.draw_parameters.cull_mode)
+    };
+
+    auto depth_stencil_desc = backend::DepthStencilDesc {
+        .depth_func = backend::CompareOp::Less,
+        .write_enable = shader.draw_parameters.depth_stencil
+    };
+
+    auto blend_desc = backend::BlendDesc { 
+        shader.draw_parameters.blend,
+        backend::Blend::SrcAlpha, backend::Blend::InvSrcAlpha, backend::BlendOp::Add, 
+        backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add 
+    };
+
     gpu_pipeline.pipeline = device.create_pipeline(
-        shader.descriptor_layout, 
-        shader.attributes, 
-        shader.stages, 
-        shader.rasterizer, 
-        shader.depth_stencil, 
-        shader.blend, 
+        program.descriptor_layout, 
+        program.attributes, 
+        program.stages, 
+        rasterizer_desc, 
+        depth_stencil_desc, 
+        blend_desc, 
         render_pass.render_pass, 
         backend::InvalidHandle<backend::CachePipeline>()
     );
@@ -25,4 +41,27 @@ lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> GPUPipeline::create_fr
 
 void GPUPipeline::bind(backend::Device& device, CommandList& command_list) {
     device.bind_pipeline(command_list.command_list, pipeline);
+}
+
+backend::FillMode constexpr ionengine::renderer::get_shader_fill_mode(asset::ShaderFillMode const fill_mode) {
+    switch(fill_mode) {
+        case asset::ShaderFillMode::Solid: return backend::FillMode::Solid;
+        case asset::ShaderFillMode::Wireframe: return backend::FillMode::Wireframe;
+        default: {
+            assert(false && "invalid data type");
+            return backend::FillMode::Solid;
+        } 
+    }
+}
+
+backend::CullMode constexpr ionengine::renderer::get_shader_cull_mode(asset::ShaderCullMode const cull_mode) {
+    switch(cull_mode) {
+        case asset::ShaderCullMode::Front: return backend::CullMode::Front;
+        case asset::ShaderCullMode::Back: return backend::CullMode::Back;
+        case asset::ShaderCullMode::None: return backend::CullMode::None;
+        default: {
+            assert(false && "invalid data type");
+            return backend::CullMode::None;
+        }
+    }
 }

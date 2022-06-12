@@ -64,12 +64,6 @@ private:
 	UploadManager* _upload_manager;
     std::vector<RTTextureCache>* _rt_texture_caches;
 
-    struct PassCacheEntry {
-        uint64_t ui;
-    };
-
-    std::vector<PassCacheEntry> _cache_entries;
-
 	TextureCache _texture_cache;
 
 	std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(UIElementData)>> _ui_element_pools;

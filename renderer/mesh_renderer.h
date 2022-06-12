@@ -110,16 +110,7 @@ private:
     uint32_t _width;
     uint32_t _height;
 
-    struct PassCacheEntry {
-        uint64_t gbuffer;
-        uint64_t deffered;
-        uint64_t forward;
-        uint64_t fxaa;
-    };
-
-    std::vector<PassCacheEntry> _cache_entries;
-
-    void apply_material(ShaderBinder& binder, Shader const& shader, asset::Material& material, uint32_t const frame_index);
+    void apply_material(DescriptorBinder& binder, GPUProgram const& program, asset::Material& material, uint32_t const frame_index);
 };
 
 }

@@ -10,7 +10,8 @@ using namespace ionengine::asset;
 AssetManager::AssetManager() :
     _mesh_pool(std::make_unique<AssetLoader<Mesh>>()),
     _material_pool(std::make_unique<AssetLoader<Material>>(*this)),
-    _texture_pool(std::make_unique<AssetLoader<Texture>>()) {
+    _texture_pool(std::make_unique<AssetLoader<Texture>>()),
+    _shader_pool(std::make_unique<AssetLoader<Shader>>()) {
 
 }
 
@@ -26,12 +27,17 @@ AssetPtr<Texture> AssetManager::get_texture(std::filesystem::path const& asset_p
     return _texture_pool.get(asset_path);
 }
 
+AssetPtr<Shader> AssetManager::get_shader(std::filesystem::path const& asset_path) {
+    return _shader_pool.get(asset_path);
+}
+
 void AssetManager::update(float const delta_time) {
     SCOPE_PROFILE()
 
     _mesh_pool.update(delta_time);
     _material_pool.update(delta_time);
     _texture_pool.update(delta_time);
+    _shader_pool.update(delta_time);
 }
 
 AssetPool<Mesh>& AssetManager::mesh_pool() {
@@ -44,4 +50,8 @@ AssetPool<Material>& AssetManager::material_pool() {
 
 AssetPool<Texture>& AssetManager::texture_pool() {
     return _texture_pool;
+}
+
+AssetPool<Shader>& AssetManager::shader_pool() {
+    return _shader_pool;
 }

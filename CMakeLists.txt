@@ -44,6 +44,7 @@ add_executable(Runtime-Win32
     asset/mesh.cpp
     asset/texture.cpp
     asset/material.cpp
+    asset/shader.cpp
 # ---------------------------
     # Scene
     scene/scene_node.cpp
@@ -63,8 +64,8 @@ add_executable(Runtime-Win32
     renderer/renderer.cpp
     renderer/ui_renderer.cpp
     renderer/mesh_renderer.cpp
-    renderer/shader_binder.cpp
-    renderer/shader.cpp
+    renderer/descriptor_binder.cpp
+    renderer/gpu_program.cpp
     renderer/shader_cache.cpp
     renderer/geometry_buffer.cpp
     renderer/geometry_cache.cpp
@@ -181,8 +182,8 @@ add_executable(Editor-Win32
     renderer/renderer.cpp
     renderer/ui_renderer.cpp
     renderer/mesh_renderer.cpp
-    renderer/shader_binder.cpp
-    renderer/shader.cpp
+    renderer/descriptor_binder.cpp
+    renderer/gpu_program.cpp
     renderer/rt_texture_cache.cpp
     renderer/shader_cache.cpp
     renderer/geometry_buffer.cpp

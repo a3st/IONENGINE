@@ -23,11 +23,7 @@ public:
 
     ShaderCache& operator=(ShaderCache&& other) noexcept;
 
-    void cache_shader(std::filesystem::path const shader_path);
-
     ResourcePtr<Shader> get(asset::AssetPtr<asset::Material> material, std::string_view const pass_shader_name);
-
-    void update(float const delta_time);
 
 private:
 

@@ -7,6 +7,81 @@
 
 namespace ionengine::renderer {
 
+enum class PassTaskType {
+    RenderPass,
+    ComputePass
+};
+
+enum class PassTaskResultType {
+    Single,
+    Multithreading
+};
+
+template<PassTaskType Type>
+struct PassTaskData { };
+
+template<>
+struct PassTaskData<PassTaskType::RenderPass> {  
+    uint32_t width;
+    uint32_t height;
+    std::vector<ResourcePtr<GPUTexture>> colors;
+    std::vector<lib::math::Color> color_clears;
+    std::vector<ResourcePtr<GPUTexture>> inputs;
+    ResourcePtr<GPUTexture> depth_stencil;
+    std::pair<float, uint8_t> depth_stencil_clear;
+    //std::vector<backend::RenderPassLoadOp> color_ops;
+    //backend::RenderPassLoadOp ds_op;
+    RenderPassFunc func;
+    ResourcePtr<RenderPass> render_pass;
+};
+
+template<>
+struct PassTaskData<PassTaskType::ComputePass> { };
+
+struct PassTask {
+    std::string name;
+
+    std::variant<
+        PassTaskData<PassTaskType::RenderPass>,
+        PassTaskData<PassTaskType::ComputePass>
+    > data;
+};
+
+template<PassTaskResultType Type>
+struct PassTaskResultData { };
+
+template<>
+struct PassTaskResultData<PassTaskResultType::Single> {  
+    ResourcePtr<CommandList> command_list;
+};
+
+template<>
+struct PassTaskResultData<PassTaskResultType::Multithreading> {  
+    std::vector<ResourcePtr<CommandList>> command_lists;
+};
+
+struct PassTaskResult {
+    std::variant<
+        PassTaskResultData<PassTaskResultType::Single>,
+        PassTaskResultData<PassTaskResultType::Multithreading>
+    > data;
+
+    static PassTaskResult singlethread(ResourcePtr<CommandList>&& command_list) {
+        return PassTaskResult { .data = PassTaskResultData<PassTaskResultType::Single> { .command_list = std::move(command_list) } };
+    }
+
+    static PassTaskResult multithread(std::vector<ResourcePtr<CommandList>>&& command_lists) {
+        return PassTaskResult { .data = PassTaskResultData<PassTaskResultType::Multithreading> { .command_lists = std::move(command_lists) } };
+    }
+};
+
+struct RenderPassContext {
+    ResourcePtr<RenderPass> render_pass;
+    CommandPool<CommandPoolType::Bundle>* command_pool;
+};
+
+using RenderPassFunc = std::function<PassTaskResult(RenderPassContext&)>;
+
 class FrameGraph {
 public:
 
@@ -20,7 +95,7 @@ public:
         std::optional<std::span<CreateInputInfo const>> const inputs,
         std::optional<CreateDepthStencilInfo> const depth_stencil,
         RenderPassFunc const& func,
-        uint64_t& cache
+        RenderPassHash& cache
     );
     
     void reset();
@@ -37,21 +112,9 @@ private:
     std::vector<CommandPool<CommandPoolType::Compute>> _compute_command_pools;
     std::vector<CommandPool<CommandPoolType::Bundle>> _graphics_bundle_command_pools;
 
-    std::unordered_map<uint64_t, ResourcePtr<RenderPass>> _render_pass_cache;
+    std::unordered_map<RenderPassHash, ResourcePtr<RenderPass>> _render_pass_cache;
 
-    std::vector<ResourcePtr<RenderPass>> _render_passes;
-
-    enum class OpType {
-        RenderPass,
-        ComputePass
-    };
-
-    struct OpData {
-        OpType op_type;
-        size_t index;
-    };
-
-    std::vector<OpData> _ops;
+    std::vector<PassTask> _tasks;
 
     uint32_t _frame_index{0};
 

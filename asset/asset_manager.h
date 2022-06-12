@@ -8,6 +8,7 @@
 #include <asset/mesh_loader.h>
 #include <asset/material_loader.h>
 #include <asset/texture_loader.h>
+#include <asset/shader_loader.h>
 #include <lib/event_dispatcher.h>
 #include <lib/thread_pool.h>
 #include <lib/logger.h>
@@ -111,6 +112,8 @@ public:
     
     AssetPtr<Texture> get_texture(std::filesystem::path const& asset_path);
 
+    AssetPtr<Shader> get_shader(std::filesystem::path const& asset_path);
+
     void update(float const delta_time);
 
     AssetPool<Mesh>& mesh_pool();
@@ -119,11 +122,14 @@ public:
 
     AssetPool<Texture>& texture_pool();
 
+    AssetPool<Shader>& shader_pool();
+
 private:
 
     AssetPool<Mesh> _mesh_pool;
     AssetPool<Material> _material_pool;
     AssetPool<Texture> _texture_pool;
+    AssetPool<Shader> _shader_pool;
 };
 
 }

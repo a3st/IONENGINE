@@ -72,7 +72,3 @@ ResourcePtr<Shader> ShaderCache::get(asset::AssetPtr<asset::Material> material, 
         throw lib::Exception("");
     }
 }
-
-void ShaderCache::update(float const delta_time) {
-
-}

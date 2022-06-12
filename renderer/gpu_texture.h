@@ -25,7 +25,7 @@ struct GPUTexture {
     backend::AddressMode s_address_mode;
     backend::AddressMode t_address_mode;
     backend::MemoryState memory_state;
-    bool is_swap_chain;
+    bool is_swapchain;
 
     bool is_render_target() const {
         return flags & backend::TextureFlags::RenderTarget;
