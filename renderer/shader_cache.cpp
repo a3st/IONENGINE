@@ -55,34 +55,21 @@ void ShaderCache::cache_shader(std::filesystem::path const shader_path) {
 
 ResourcePtr<Shader> ShaderCache::get(asset::AssetPtr<asset::Material> material, std::string_view const pass_shader_name) {
     std::string const pass_name_string = std::string(pass_shader_name);
-
+    std::string shader_name = pass_name_string;
     if(material) {
-        std::string shader_name;
-        {
-            auto it = material->get().passes.find(pass_name_string);
+        auto it = material->get().passes.find(pass_name_string);
 
-            if(it != material->get().passes.end()) {
-                shader_name = it->second;
-            }
+        if(it != material->get().passes.end()) {
+            shader_name = it->second;
         }
-        
-        auto it = _data.find(shader_name);
+    }
 
-        if(it != _data.end()) {
-            return it->second.value;
-        } else {
-            throw lib::Exception("");
-        }
+    auto it = _data.find(shader_name);
 
+    if(it != _data.end()) {
+        return it->second.value;
     } else {
-
-        auto it = _data.find(pass_name_string);
-
-        if(it != _data.end()) {
-            return it->second.value;
-        } else {
-            throw lib::Exception("");
-        }
+        throw lib::Exception("");
     }
 }
 

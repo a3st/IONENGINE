@@ -28,8 +28,6 @@ LIB_INITIALIZE_THREAD_POOL()
 */
 int main(int* argc, char** agrv) {
 
-    lib::ThreadPool thread_pool(11);
-
     try {
         platform::WindowLoop loop;
         platform::Window window("Project", 1280, 720, false);
