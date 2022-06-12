@@ -21,6 +21,8 @@ UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, s
         _ui_element_pools.emplace_back(*_device, 512, BufferPoolUsage::Dynamic);
         _geometry_pools.emplace_back(*_device, 512, GeometryPoolUsage::Dynamic);
     }
+
+    _cache_entries.resize(backend::BACKEND_BACK_BUFFER_COUNT);
 }
 
 UiRenderer::~UiRenderer() {
@@ -52,32 +54,36 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
         std::nullopt,
         std::nullopt,
-        [&, frame_index](RenderPassContext& context) {
+        [&, frame_index](RenderPassContext& context) -> PassTaskCreateInfo {
 
-            auto command_lists = context.single_for(
-                [&](backend::Handle<backend::CommandList> const& command_list, backend::Handle<backend::RenderPass> const& render_pass) {
+            ResourcePtr<CommandList> command_list = context.command_pool->allocate();
 
-                    lib::ObjectPtr<Shader> shader = shader_cache.get("ui_pc");
-                    auto pipeline = pipeline_cache.get(*shader, context.render_pass->render_pass);
+            ResourcePtr<Shader> shader = shader_cache.get(nullptr, "ui_pc");
+            ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(shader, context.render_pass);
 
-                    _device->bind_pipeline(command_list, pipeline);
+            gpu_pipeline->get().bind(*_device, command_list->get());
 
-                    ShaderBinder binder(*shader, null);
+            ShaderBinder binder(shader, null);
 
-                    ui.render_interface()._ui_element_pool = &_ui_element_pools.at(frame_index);
-                    ui.render_interface()._geometry_pool = &_geometry_pools.at(frame_index);
-                    ui.render_interface()._rt_texture_cache = &_rt_texture_caches->at(frame_index);
-                    ui.render_interface()._command_list = command_list;
-                    ui.render_interface()._width = _width;
-                    ui.render_interface()._height = _height;
-                    ui.render_interface()._binder = &binder;
-                    ui.render_interface()._shader = &*shader;
+            ui.render_interface()._ui_element_pool = &_ui_element_pools.at(frame_index);
+            ui.render_interface()._geometry_pool = &_geometry_pools.at(frame_index);
+            ui.render_interface()._rt_texture_cache = &_rt_texture_caches->at(frame_index);
+            ui.render_interface()._command_list = command_list;
+            ui.render_interface()._width = _width;
+            ui.render_interface()._height = _height;
+            ui.render_interface()._binder = &binder;
+            ui.render_interface()._shader = shader;
 
-                    ui.context().Render();
-                }
-            );
+            ui.context().Render();
 
-            return TaskCreateInfo { TaskExecution::Single, std::move(command_lists) }; 
-        }
+            ui.render_interface()._command_list = nullptr;
+            ui.render_interface()._shader = nullptr;
+            ui.render_interface()._binder = nullptr;
+
+            command_list->get().close(*_device);
+
+            return PassTaskCreateInfo::singlethread(std::move(command_list)); 
+        },
+        _cache_entries.at(frame_index).ui
     );
 }

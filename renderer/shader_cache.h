@@ -25,7 +25,7 @@ public:
 
     void cache_shader(std::filesystem::path const shader_path);
 
-    ResourcePtr<Shader> get(asset::AssetPtr<asset::Material> material, std::string_view const pass_name);
+    ResourcePtr<Shader> get(asset::AssetPtr<asset::Material> material, std::string_view const pass_shader_name);
 
     void update(float const delta_time);
 
@@ -33,10 +33,7 @@ private:
 
     backend::Device* _device;
 
-    std::shared_mutex _mutex;
-
-    std::unordered_map<std::string, size_t> _pass_hashes;
-    lib::SparseVector<CacheEntry<ResourcePtr<Shader>>> _data;
+    std::unordered_map<std::string, CacheEntry<ResourcePtr<Shader>>> _data;
 };
 
 }

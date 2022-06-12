@@ -37,7 +37,7 @@ void UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
     bool bc = false;
     uint32_t bpe = 0;
 
-    switch(resource->as_const_ok().format) {
+    switch(resource->get().format) {
         case backend::Format::BC1:
         case backend::Format::BC4: {
             bc = true;
@@ -50,8 +50,8 @@ void UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
         } break;
     }
 
-    uint32_t mip_width = resource->as_const_ok().width;
-    uint32_t mip_height = resource->as_const_ok().height;
+    uint32_t mip_width = resource->get().width;
+    uint32_t mip_height = resource->get().height;
     uint64_t offset = 0;
 
     std::vector<backend::TextureCopyRegion> regions;
@@ -59,7 +59,7 @@ void UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
     auto& upload_buffer = _upload_buffers.at(_buffer_index);
 
     uint8_t* bytes = _device->map_buffer_data(upload_buffer.buffer, 0);
-    for(uint32_t i = 0; i < resource->as_const_ok().mip_count; ++i) {
+    for(uint32_t i = 0; i < resource->get().mip_count; ++i) {
 
         size_t row_bytes = 0;
         uint32_t row_count = 0;
@@ -96,16 +96,16 @@ void UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
     _device->unmap_buffer_data(upload_buffer.buffer);
 
     auto barrier = backend::MemoryBarrierDesc {
-        .target = resource->as_const_ok().texture,
+        .target = resource->get().texture,
         .before = backend::MemoryState::Common,
         .after = backend::MemoryState::CopyDest
     };
     _device->barrier(upload_buffer.command_list, std::span<backend::MemoryBarrierDesc const>(&barrier, 1));
 
-    _device->copy_texture_region(upload_buffer.command_list, resource->as_const_ok().texture, upload_buffer.buffer, regions);
+    _device->copy_texture_region(upload_buffer.command_list, resource->get().texture, upload_buffer.buffer, regions);
 
     barrier = backend::MemoryBarrierDesc {
-        .target = resource->as_const_ok().texture,
+        .target = resource->get().texture,
         .before = backend::MemoryState::CopyDest,
         .after = backend::MemoryState::Common
     };
@@ -118,11 +118,11 @@ void UploadManager::upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t
 
     std::lock_guard lock(_mutex);
 
-    if(resource->as_const_ok().is_host_visible()) {
+    if(resource->get().is_host_visible()) {
 
-        uint8_t* bytes = _device->map_buffer_data(resource->as_const_ok().buffer, offset);
+        uint8_t* bytes = _device->map_buffer_data(resource->get().buffer, offset);
         std::memcpy(bytes, data.data(), data.size_bytes());
-        _device->unmap_buffer_data(resource->as_const_ok().buffer);
+        _device->unmap_buffer_data(resource->get().buffer);
 
     } else {
 
@@ -139,17 +139,17 @@ void UploadManager::upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t
         _device->unmap_buffer_data(upload_buffer.buffer);
 
         auto barrier = backend::MemoryBarrierDesc {
-            .target = resource->as_const_ok().buffer,
+            .target = resource->get().buffer,
             .before = backend::MemoryState::Common,
             .after = backend::MemoryState::CopyDest
         };
         _device->barrier(upload_buffer.command_list, std::span<backend::MemoryBarrierDesc const>(&barrier, 1));
 
-        _device->copy_buffer_region(upload_buffer.command_list, resource->as_const_ok().buffer, offset, upload_buffer.buffer, upload_buffer.offset, data.size_bytes());
+        _device->copy_buffer_region(upload_buffer.command_list, resource->get().buffer, offset, upload_buffer.buffer, upload_buffer.offset, data.size_bytes());
         upload_buffer.offset += data.size_bytes();
 
         barrier = backend::MemoryBarrierDesc {
-            .target = resource->as_const_ok().buffer,
+            .target = resource->get().buffer,
             .before = backend::MemoryState::CopyDest,
             .after = backend::MemoryState::Common
         };
@@ -163,15 +163,15 @@ void UploadManager::upload_geometry_data(ResourcePtr<GeometryBuffer> resource, s
 
     std::lock_guard lock(_mutex);
 
-    if(resource->as_const_ok().is_host_visible()) {
+    if(resource->get().is_host_visible()) {
 
-        uint8_t* bytes = _device->map_buffer_data(resource->as_const_ok().vertex_buffer, 0);
+        uint8_t* bytes = _device->map_buffer_data(resource->get().vertex_buffer, 0);
         std::memcpy(bytes, vertex_data.data(), vertex_data.size_bytes());
-        _device->unmap_buffer_data(resource->as_const_ok().vertex_buffer);
+        _device->unmap_buffer_data(resource->get().vertex_buffer);
 
-        bytes = _device->map_buffer_data(resource->as_const_ok().index_buffer, 0);
+        bytes = _device->map_buffer_data(resource->get().index_buffer, 0);
         std::memcpy(bytes, index_data.data(), index_data.size_bytes());
-        _device->unmap_buffer_data(resource->as_const_ok().index_buffer);
+        _device->unmap_buffer_data(resource->get().index_buffer);
 
     } else {
 
@@ -195,27 +195,27 @@ void UploadManager::upload_geometry_data(ResourcePtr<GeometryBuffer> resource, s
         std::array<backend::MemoryBarrierDesc, 2> barriers;
 
         barriers.at(0) = backend::MemoryBarrierDesc {
-            .target = resource->as_const_ok().vertex_buffer,
+            .target = resource->get().vertex_buffer,
             .before = backend::MemoryState::Common,
             .after = backend::MemoryState::CopyDest
         };
         barriers.at(1) = backend::MemoryBarrierDesc {
-            .target = resource->as_const_ok().index_buffer,
+            .target = resource->get().index_buffer,
             .before = backend::MemoryState::Common,
             .after = backend::MemoryState::CopyDest
         };
         _device->barrier(upload_buffer.command_list, barriers);
 
-        _device->copy_buffer_region(upload_buffer.command_list, resource->as_const_ok().vertex_buffer, 0, upload_buffer.buffer, vertex_offset, vertex_data.size_bytes());
-        _device->copy_buffer_region(upload_buffer.command_list, resource->as_const_ok().index_buffer, 0, upload_buffer.buffer, index_offset, index_data.size_bytes());
+        _device->copy_buffer_region(upload_buffer.command_list, resource->get().vertex_buffer, 0, upload_buffer.buffer, vertex_offset, vertex_data.size_bytes());
+        _device->copy_buffer_region(upload_buffer.command_list, resource->get().index_buffer, 0, upload_buffer.buffer, index_offset, index_data.size_bytes());
 
         barriers.at(0) = backend::MemoryBarrierDesc {
-            .target = resource->as_const_ok().vertex_buffer,
+            .target = resource->get().vertex_buffer,
             .before = backend::MemoryState::CopyDest,
             .after = backend::MemoryState::Common
         };
         barriers.at(1) = backend::MemoryBarrierDesc {
-            .target = resource->as_const_ok().index_buffer,
+            .target = resource->get().index_buffer,
             .before = backend::MemoryState::CopyDest,
             .after = backend::MemoryState::Common
         };

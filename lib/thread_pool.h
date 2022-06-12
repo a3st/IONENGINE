@@ -14,6 +14,8 @@ DECLARE_ENUM_CLASS_BIT_FLAG(TaskPriorityFlags)
 class ThreadPool {
 public:
 
+    ThreadPool();
+
     ThreadPool(uint16_t const thread_count);
 
     ThreadPool(ThreadPool const&) = delete;
@@ -70,8 +72,8 @@ private:
 
 extern ThreadPool _thread_pool;
 
-#ifndef INITIALIZE_THREAD_POOL
-#define INITIALIZE_THREAD_POOL() lib::ThreadPool lib::_thread_pool;
+#ifndef LIB_INITIALIZE_THREAD_POOL
+#define LIB_INITIALIZE_THREAD_POOL() lib::ThreadPool lib::_thread_pool;
 #endif
 
 inline ThreadPool& thread_pool() {

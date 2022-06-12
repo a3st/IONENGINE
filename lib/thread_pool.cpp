@@ -63,6 +63,14 @@ ThreadPool::ThreadPool(uint16_t const thread_count) {
     }
 }
 
+ThreadPool::ThreadPool() {
+    uint16_t const thread_count = std::thread::hardware_concurrency() - 1;
+
+    for(uint16_t i = 0; i < thread_count; ++i) {
+        _workers.emplace_back(std::make_unique<ThreadPool::Worker>());
+    }
+}
+
 size_t ThreadPool::size() const { 
     return _workers.size();
 }

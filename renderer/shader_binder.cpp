@@ -3,14 +3,14 @@
 #include <precompiled.h>
 #include <renderer/shader_binder.h>
 #include <renderer/shader.h>
+#include <renderer/command_list.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-ShaderBinder::ShaderBinder(Shader& shader, NullData& null) :
-    _descriptor_layout(shader.descriptor_layout) {
+ShaderBinder::ShaderBinder(ResourcePtr<Shader> shader, NullData& null) : _shader(shader) {
 
-    for(auto const [uniform_name, uniform_data] : shader.uniforms) {
+    for(auto const [uniform_name, uniform_data] : shader->get().uniforms) {
         
         auto uniform_visitor = make_visitor(
             [&](ShaderUniformData<ShaderUniformType::Sampler2D> const& data) {
@@ -45,6 +45,6 @@ void ShaderBinder::update_resource(uint32_t const location, backend::ResourceHan
     _update_resources.at(_exist_updates.at(location)) = backend::DescriptorWriteDesc { .index = location, .data = resource };
 }
 
-void ShaderBinder::bind(backend::Device& device, backend::Handle<backend::CommandList> const& command_list) {
-    device.bind_resources(command_list, _descriptor_layout, _update_resources);
+void ShaderBinder::bind(backend::Device& device, CommandList& command_list) {
+    device.bind_resources(command_list.command_list, _shader->get().descriptor_layout, _update_resources);
 }

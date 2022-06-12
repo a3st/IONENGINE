@@ -32,7 +32,7 @@ struct AssetState {
         AssetStateData<Type, AssetStateType::Pending>
     > data;
 
-    std::shared_mutex mutex;
+    std::shared_mutex mutable mutex;
 
     std::filesystem::path asset_path;
 
@@ -71,6 +71,12 @@ struct AssetState {
     void commit_error() {
         std::lock_guard lock(mutex);
         data = AssetStateData<Type, AssetStateType::Error> { };
+    }
+
+    void wait() {
+        while(is_pending()) {
+            std::this_thread::yield();
+        }
     }
 };
 

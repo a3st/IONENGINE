@@ -27,7 +27,7 @@ struct ResourceState {
         ResourceStateData<Type, ResourceStateType::Pending>
     > data;
 
-    std::shared_mutex mutex;
+    std::shared_mutex mutable mutex;
 
     std::atomic<bool> is_wait_for_upload;
 

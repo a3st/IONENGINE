@@ -9,6 +9,7 @@
 namespace ionengine::renderer {
 
 struct Shader;
+struct CommandList;
 
 struct NullData {
     ResourcePtr<GPUBuffer> cbuffer;
@@ -19,7 +20,7 @@ struct NullData {
 class ShaderBinder {
 public:
 
-    ShaderBinder(Shader& shader, NullData& null);
+    ShaderBinder(ResourcePtr<Shader> shader, NullData& null);
 
     ShaderBinder(ShaderBinder&) = delete;
 
@@ -31,11 +32,12 @@ public:
 
     void update_resource(uint32_t const location, backend::ResourceHandle resource);
 
-    void bind(backend::Device& device, backend::Handle<backend::CommandList> const& command_list);
+    void bind(backend::Device& device, CommandList& command_list);
 
 private:
 
-    backend::Handle<backend::DescriptorLayout> _descriptor_layout;
+    ResourcePtr<Shader> _shader;
+
     std::unordered_map<uint32_t, size_t> _exist_updates;
     std::vector<backend::DescriptorWriteDesc> _update_resources;
 };

@@ -35,9 +35,9 @@ void UserInterface::render_target_sel(asset::AssetPtr<asset::Texture> texture) {
     Rml::Element* element = _document_editor->GetElementById("editor_viewport_rt");
     
     Rml::ElementAttributes attributes;
-    attributes.insert( std::pair<Rml::String, Rml::Variant> { "src", Rml::Variant(std::format("RT[{}x{}]{{{}}}", texture->as_const_ok().width, texture->as_const_ok().height, texture->as_const_ok().hash)) });
-    attributes.insert( std::pair<Rml::String, Rml::Variant> { "width", Rml::Variant(std::format("{}px", texture->as_const_ok().width)) });
-    attributes.insert( std::pair<Rml::String, Rml::Variant> { "height", Rml::Variant(std::format("{}px", texture->as_const_ok().height)) });
+    attributes.insert( std::pair<Rml::String, Rml::Variant> { "src", Rml::Variant(std::format("RT[{}x{}]{{{}}}", texture->get().width, texture->get().height, texture->get().hash)) });
+    attributes.insert( std::pair<Rml::String, Rml::Variant> { "width", Rml::Variant(std::format("{}px", texture->get().width)) });
+    attributes.insert( std::pair<Rml::String, Rml::Variant> { "height", Rml::Variant(std::format("{}px", texture->get().height)) });
     element->SetAttributes(attributes);
 }
 

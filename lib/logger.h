@@ -57,8 +57,8 @@ private:
 
 extern Logger _logger;
 
-#ifndef INITIALIZE_LOGGER
-#define INITIALIZE_LOGGER() lib::Logger lib::_logger;
+#ifndef LIB_INITIALIZE_LOGGER
+#define LIB_INITIALIZE_LOGGER() lib::Logger lib::_logger;
 #endif
 
 inline Logger& logger() {

@@ -149,7 +149,7 @@ struct ShaderUniformData<ShaderUniformType::RWBuffer> {
 
 #ifndef DECLARE_SHADER_UNIFORM_CAST
 #define DECLARE_SHADER_UNIFORM_CAST(Name, Type) \
-ShaderUniformData<Type> const& Name() { \
+ShaderUniformData<Type> const& Name() const { \
     return std::get<ShaderUniformData<Type>>(data); \
 }
 #endif

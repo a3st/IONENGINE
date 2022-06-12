@@ -20,7 +20,8 @@
 
 using namespace ionengine;
 
-INITIALIZE_LOGGER()
+LIB_INITIALIZE_LOGGER()
+LIB_INITIALIZE_THREAD_POOL()
 
 /*
     Implementation of the main function for the Windows platform

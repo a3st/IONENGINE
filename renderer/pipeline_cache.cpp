@@ -37,7 +37,7 @@ ResourcePtr<GPUPipeline> PipelineCache::get(ResourcePtr<Shader> shader, Resource
 
     std::lock_guard lock(_mutex);
 
-    auto result = GPUPipeline::create();
+    auto result = GPUPipeline::create_from_shader(*_device, shader->get(), render_pass->get());
 
     if(result.is_ok()) {
 

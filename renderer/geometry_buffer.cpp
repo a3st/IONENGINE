@@ -56,7 +56,7 @@ lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> GeometryBuffer::
     return lib::make_expected<GeometryBuffer, lib::Result<GeometryBufferError>>(std::move(geometry_buffer));
 }
 
-void GeometryBuffer::bind(backend::Device& device, backend::Handle<backend::CommandList> const& command_list) {
-    device.bind_vertex_buffer(command_list, 0, vertex_buffer, 0);
-    device.bind_index_buffer(command_list, index_buffer, 0);
+void GeometryBuffer::bind(backend::Device& device, CommandList& command_list) {
+    device.bind_vertex_buffer(command_list.command_list, 0, vertex_buffer, 0);
+    device.bind_index_buffer(command_list.command_list, index_buffer, 0);
 }

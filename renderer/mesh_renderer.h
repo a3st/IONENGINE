@@ -7,6 +7,7 @@
 #include <renderer/geometry_cache.h>
 #include <renderer/texture_cache.h>
 #include <renderer/rt_texture_cache.h>
+#include <renderer/shader_cache.h>
 #include <renderer/pipeline_cache.h>
 #include <renderer/render_queue.h>
 #include <renderer/buffer_pool.h>
@@ -109,7 +110,16 @@ private:
     uint32_t _width;
     uint32_t _height;
 
-    void apply_material(ShaderBinder& binder, Shader& shader, asset::Material& material, backend::Handle<backend::CommandList> const& command_list, uint32_t const frame_index);
+    struct PassCacheEntry {
+        uint64_t gbuffer;
+        uint64_t deffered;
+        uint64_t forward;
+        uint64_t fxaa;
+    };
+
+    std::vector<PassCacheEntry> _cache_entries;
+
+    void apply_material(ShaderBinder& binder, Shader const& shader, asset::Material& material, uint32_t const frame_index);
 };
 
 }

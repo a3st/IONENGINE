@@ -7,6 +7,7 @@
 #include <renderer/geometry_pool.h>
 #include <renderer/buffer_pool.h>
 #include <renderer/rt_texture_cache.h>
+#include <renderer/shader_cache.h>
 #include <renderer/frame_graph.h>
 #include <renderer/pipeline_cache.h>
 #include <asset/asset_manager.h>
@@ -62,6 +63,12 @@ private:
     asset::AssetManager* _asset_manager;
 	UploadManager* _upload_manager;
     std::vector<RTTextureCache>* _rt_texture_caches;
+
+    struct PassCacheEntry {
+        uint64_t ui;
+    };
+
+    std::vector<PassCacheEntry> _cache_entries;
 
 	TextureCache _texture_cache;
 

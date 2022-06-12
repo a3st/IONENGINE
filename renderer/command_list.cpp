@@ -15,3 +15,7 @@ lib::Expected<CommandList, lib::Result<CommandListError>> CommandList::create(ba
 
     return lib::make_expected<CommandList, lib::Result<CommandListError>>(std::move(command_list));
 }
+
+void CommandList::close(backend::Device& device) {
+    device.close_command_list(command_list);
+}

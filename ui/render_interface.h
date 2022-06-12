@@ -14,6 +14,7 @@ class TextureCache;
 class RTTextureCache;
 struct Shader;
 class ShaderBinder;
+struct CommandList;
 
 }
 
@@ -49,10 +50,12 @@ private:
     renderer::BufferPool<renderer::BufferPoolType::CBuffer, 256>* _ui_element_pool;
     renderer::GeometryPool<8192, 2136>* _geometry_pool;
     renderer::RTTextureCache* _rt_texture_cache;
-	renderer::backend::Handle<renderer::backend::CommandList> _command_list;
+
+    renderer::ResourcePtr<renderer::CommandList> _command_list;
 
     renderer::ShaderBinder* _binder;
-    renderer::Shader* _shader;
+
+    renderer::ResourcePtr<renderer::Shader> _shader;
 
     uint32_t _width;
     uint32_t _height;

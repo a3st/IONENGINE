@@ -3,6 +3,7 @@
 #pragma once
 
 #include <renderer/gpu_resource.h>
+#include <renderer/command_list.h>
 #include <asset/mesh.h>
 #include <lib/expected.h>
 
@@ -32,7 +33,7 @@ struct GeometryBuffer {
         return flags & backend::BufferFlags::IndexBuffer;
     }
 
-    void bind(backend::Device& device, backend::Handle<backend::CommandList> const& command_list);
+    void bind(backend::Device& device, CommandList& command_list);
 
     static lib::Expected<GeometryBuffer, lib::Result<GeometryBufferError>> create(backend::Device& device, size_t const vertex_size, size_t const index_size, backend::BufferFlags const flags = backend::BufferFlags::VertexBuffer | backend::BufferFlags::IndexBuffer);
 

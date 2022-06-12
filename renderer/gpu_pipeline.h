@@ -4,6 +4,8 @@
 
 #include <renderer/gpu_resource.h>
 #include <lib/expected.h>
+#include <renderer/shader.h>
+#include <renderer/frame_graph.h>
 
 namespace ionengine::renderer {
 
@@ -17,7 +19,9 @@ struct GPUPipeline {
     backend::Handle<backend::Pipeline> pipeline;
     uint64_t hash;
 
-    static lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> create();
+    void bind(backend::Device& device, CommandList& command_list);
+
+    static lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> create_from_shader(backend::Device& device, Shader const& shader, RenderPass const& render_pass);
 };
 
 template<>
