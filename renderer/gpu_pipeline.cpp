@@ -6,21 +6,21 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> GPUPipeline::create(backend::Device& device, asset::Shader const& shader, GPUProgram const& program, RenderPass const& render_pass) {
+lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> GPUPipeline::create(backend::Device& device, GPUProgram const& program, asset::ShaderDrawParameters const& draw_parameters, RenderPass const& render_pass) {
     auto gpu_pipeline = GPUPipeline {};
 
     auto rasterizer_desc = backend::RasterizerDesc {
-        .fill_mode = get_shader_fill_mode(shader.draw_parameters.fill_mode),
-        .cull_mode = get_shader_cull_mode(shader.draw_parameters.cull_mode)
+        .fill_mode = get_shader_fill_mode(draw_parameters.fill_mode),
+        .cull_mode = get_shader_cull_mode(draw_parameters.cull_mode)
     };
 
     auto depth_stencil_desc = backend::DepthStencilDesc {
         .depth_func = backend::CompareOp::Less,
-        .write_enable = shader.draw_parameters.depth_stencil
+        .write_enable = draw_parameters.depth_stencil
     };
 
     auto blend_desc = backend::BlendDesc { 
-        shader.draw_parameters.blend,
+        draw_parameters.blend,
         backend::Blend::SrcAlpha, backend::Blend::InvSrcAlpha, backend::BlendOp::Add, 
         backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add 
     };

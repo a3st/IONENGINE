@@ -21,7 +21,7 @@ struct GPUPipeline {
 
     void bind(backend::Device& device, CommandList& command_list);
 
-    static lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> create(backend::Device& device, asset::Shader const& shader, GPUProgram const& program, RenderPass const& render_pass);
+    static lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> create(backend::Device& device, GPUProgram const& program, asset::ShaderDrawParameters const& draw_parameters, RenderPass const& render_pass);
 };
 
 template<>

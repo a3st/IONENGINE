@@ -8,16 +8,14 @@ using namespace ionengine::renderer;
 
 lib::Expected<RenderPass, lib::Result<RenderPassError>> RenderPass::create(
     backend::Device& device,
-    std::string_view const name,
-    uint32_t const width,
-    uint32_t const height,
-    std::optional<std::span<CreateColorInfo const>> const colors,
-    std::optional<std::span<CreateInputInfo const>> const inputs,
-    std::optional<CreateDepthStencilInfo> const depth_stencil,
-    RenderPassFunc const& func,
-    SwapchainTexture const& swapchain
+    std::optional<std::span<ResourcePtr<GPUTexture> const>> const colors,
+    std::optional<std::span<RenderPassColorDesc const>> const color_descs,
+    ResourcePtr<GPUTexture> const depth_stencil,
+    std::optional<RenderPassDepthStencilDesc> const depth_stencil_desc
 ) {
-    std::vector<ResourcePtr<GPUTexture>> color_attachments;
+    
+    
+    /*std::vector<ResourcePtr<GPUTexture>> color_attachments;
     std::vector<backend::RenderPassLoadOp> color_ops;
     std::vector<lib::math::Color> color_clears;
     std::vector<ResourcePtr<GPUTexture>> input_attachments;
@@ -62,10 +60,11 @@ lib::Expected<RenderPass, lib::Result<RenderPassError>> RenderPass::create(
         .func = func,
         .render_pass = create_render_pass(device, color_attachments, color_ops, depth_stencil_info.attachment, depth_stencil_info.load_op, swapchain),
         .hash = hash
-    };
+    };*/
     return lib::make_expected<RenderPass, lib::Result<RenderPassError>>(std::move(render_pass));
 }
 
+/*
 backend::Handle<backend::RenderPass> ionengine::renderer::create_render_pass(
     backend::Device& device,
     std::span<ResourcePtr<GPUTexture>> color_attachments,
@@ -110,3 +109,4 @@ backend::Handle<backend::RenderPass> ionengine::renderer::create_render_pass(
         return device.create_render_pass(colors, color_descs);
     }
 }
+*/

@@ -21,14 +21,36 @@ PipelineCache& PipelineCache::operator=(PipelineCache&& other) noexcept {
     return *this;
 }
 
-ResourcePtr<GPUPipeline> PipelineCache::get(ResourcePtr<Shader> shader, ResourcePtr<RenderPass> render_pass) {
+uint64_t ionengine::renderer::gpu_pipeline_calculate_hash(GPUProgram const& program, asset::ShaderDrawParameters const& draw_parameters, RenderPass const& render_pass) {
+
+    uint32_t stage_hash = program.stages.at(0).index() ^ program.stages.at(1).generation();
+
+    for(auto const& stage : program.stages) {
+        stage_hash ^= stage.index() ^ stage.generation();
+    }
+
+    uint32_t const draw_parameters_hash = 
+        static_cast<uint32_t>(draw_parameters.fill_mode) ^
+        static_cast<uint32_t>(draw_parameters.cull_mode) ^
+        static_cast<uint32_t>(draw_parameters.depth_stencil) ^
+        static_cast<uint32_t>(draw_parameters.blend)
+    ;
+
+    uint32_t const render_pass_hash = render_pass.render_pass.index() ^ render_pass.render_pass.generation();
+
+    uint32_t const high = stage_hash ^ draw_parameters_hash;
+    uint32_t const low = render_pass_hash;
+
+    return ((static_cast<uint64_t>(high) << 32) | static_cast<uint64_t>(low));
+}
+
+ResourcePtr<GPUPipeline> PipelineCache::get(GPUProgram const& program, asset::ShaderDrawParameters const& draw_parameters, RenderPass const& render_pass) {
     uint64_t hash;
-    std::unordered_map<uint64_t, CacheEntry<ResourcePtr<GPUPipeline>>>::iterator it;
     {
         std::shared_lock lock(_mutex);
-        hash = shader->get().hash ^ render_pass->get().hash;
+        hash = gpu_pipeline_calculate_hash(program, draw_parameters, render_pass);
 
-        it = _data.find(hash);
+        auto it = _data.find(hash);
 
         if(it != _data.end()) {
             return it->second.value;
@@ -37,7 +59,7 @@ ResourcePtr<GPUPipeline> PipelineCache::get(ResourcePtr<Shader> shader, Resource
 
     std::lock_guard lock(_mutex);
 
-    auto result = GPUPipeline::create_from_shader(*_device, shader->get(), render_pass->get());
+    auto result = GPUPipeline::create(*_device, program, draw_parameters, render_pass);
 
     if(result.is_ok()) {
 

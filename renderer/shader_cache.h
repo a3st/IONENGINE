@@ -4,7 +4,7 @@
 
 #include <renderer/cache.h>
 #include <renderer/resource_ptr.h>
-#include <renderer/shader.h>
+#include <renderer/gpu_program.h>
 #include <asset/material.h>
 #include <lib/sparse_vector.h>
 
@@ -23,13 +23,13 @@ public:
 
     ShaderCache& operator=(ShaderCache&& other) noexcept;
 
-    ResourcePtr<Shader> get(asset::AssetPtr<asset::Material> material, std::string_view const pass_shader_name);
+    ResourcePtr<GPUProgram> get(asset::Shader& shader);
 
 private:
 
     backend::Device* _device;
-
-    std::unordered_map<std::string, CacheEntry<ResourcePtr<Shader>>> _data;
+    std::shared_mutex _mutex;
+    lib::SparseVector<CacheEntry<ResourcePtr<GPUProgram>>> _data;
 };
 
 }

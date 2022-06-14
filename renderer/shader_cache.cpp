@@ -9,7 +9,6 @@ using namespace ionengine::renderer;
 
 ShaderCache::ShaderCache(backend::Device& device) :
     _device(&device) {
-
 }
 
 ShaderCache::ShaderCache(ShaderCache&& other) noexcept {
@@ -23,52 +22,34 @@ ShaderCache& ShaderCache::operator=(ShaderCache&& other) noexcept {
     return *this;
 }
 
-void ShaderCache::cache_shader(std::filesystem::path const shader_path) {
-    auto result = Shader::load_from_file(shader_path, *_device);
-        
-    if(result.is_ok()) {
+ResourcePtr<GPUProgram> ShaderCache::get(asset::Shader& shader) {
+    
+    {
+        std::shared_lock lock(_mutex);
+        uint64_t const hash = shader.hash;
 
-        Shader shader = std::move(result.as_ok());
-
-        auto it = _data.find(shader.name);
-
-        if(it != _data.end()) {
-            lib::logger().warning(lib::LoggerCategoryType::Renderer, std::format("shader with '{}' name is already loaded", shader.name));
-            return;
-        } else {
-
-            std::string const shader_name = shader.name;
-            uint64_t const hash = shader.hash;
-
-            auto cache_entry = CacheEntry<ResourcePtr<Shader>> {
-                .value = make_resource_ptr(std::move(shader)),
-                .hash = hash
-            };
-
-            _data.insert({ std::move(shader_name), cache_entry });
+        if(_data.is_valid(shader.cache_entry)) {
+            auto& cache_entry = _data.get(shader.cache_entry);
+            return cache_entry.value;
         }
+    }
 
+    std::unique_lock lock(_mutex);
+
+    auto result = GPUProgram::load_from_shader(*_device, shader);
+
+    if(result.is_ok()) {
+        GPUProgram program = std::move(result.as_ok());
+
+        auto cache_entry = CacheEntry<ResourcePtr<GPUProgram>> {
+            .value = make_resource_ptr(result.as_ok()),
+            .hash = shader.hash
+        };
+
+        shader.cache_entry = _data.push(std::move(cache_entry));
+
+        return _data.get(shader.cache_entry).value;
     } else {
         throw lib::Exception(result.as_error().message);
-    }
-}
-
-ResourcePtr<Shader> ShaderCache::get(asset::AssetPtr<asset::Material> material, std::string_view const pass_shader_name) {
-    std::string const pass_name_string = std::string(pass_shader_name);
-    std::string shader_name = pass_name_string;
-    if(material) {
-        auto it = material->get().passes.find(pass_name_string);
-
-        if(it != material->get().passes.end()) {
-            shader_name = it->second;
-        }
-    }
-
-    auto it = _data.find(shader_name);
-
-    if(it != _data.end()) {
-        return it->second.value;
-    } else {
-        throw lib::Exception("");
     }
 }

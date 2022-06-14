@@ -72,6 +72,7 @@ JSON5_CLASS(JSON_MaterialDefinition, name, domain, blend_mode, parameters, passe
 namespace ionengine::asset {
 
 class AssetManager;
+struct Shader;
 
 enum class MaterialError {
     IO,
@@ -168,7 +169,7 @@ struct Material {
     MaterialDomain domain;
     MaterialBlendMode blend_mode;
     std::unordered_map<std::string, MaterialParameter> parameters;
-    std::unordered_map<std::string, std::string> passes;
+    std::unordered_map<std::string, AssetPtr<Shader>> passes;
 
     uint64_t hash;
 

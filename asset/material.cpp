@@ -2,6 +2,7 @@
 
 #include <precompiled.h>
 #include <asset/material.h>
+#include <asset/shader.h>
 #include <lib/exception.h>
 #include <asset/asset_manager.h>
 
@@ -109,7 +110,7 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
         }
 
         for(auto const& pass : document.passes) {
-            material.passes.insert({ pass.name, pass.shader });
+            material.passes.insert({ pass.name, asset_manager.get_shader(pass.shader) });
         }
 
         material.hash = XXHash64::hash(reinterpret_cast<void*>(material.name.data()), material.name.size(), 0);

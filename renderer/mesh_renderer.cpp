@@ -234,8 +234,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
                         for(auto const& batch : chunks.at(i)) {
 
-                            ResourcePtr<Shader> shader = shader_cache.get(batch.material, "gbuffer");
-                            ResourcePtr<GPUPipeline> after_gpu_pipeline = pipeline_cache.get(shader, context.render_pass);
+                            asset::AssetPtr<asset::Shader> shader = batch.material->get().passes.at("gbuffer");
+
+                            ResourcePtr<GPUProgram> program = shader_cache.get(shader->get());
+                            ResourcePtr<GPUPipeline> after_gpu_pipeline = pipeline_cache.get(program->get(), shader->get().draw_parameters, context.render_pass->get());
                             
                             // No need to switch state if the last batch was similar.
                             if(before_gpu_pipeline != after_gpu_pipeline) {
@@ -243,12 +245,12 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                                 before_gpu_pipeline = after_gpu_pipeline;
                             }
 
-                            DescriptorBinder binder(shader, null);
+                            DescriptorBinder binder(program, null);
 
                             // Applying material properties.
                             // Textures and buffers that have the wrong barrier will only be applied in the next frame.
                             // This limitation allows you to achieve a minimum of thread locks.
-                            apply_material(binder, shader->get(), batch.material->get(), frame_index);
+                            apply_material(binder, program->get(), batch.material->get(), frame_index);
 
                             // Temporary object buffers.
                             std::vector<ObjectData> object_buffers;
@@ -262,8 +264,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
                             // Finding uniform indices to copy descriptors to an area visible to shaders.
                             // Search by string is slower than by number, but this allows you to create the most readable code.
-                            uint32_t const world_location = shader->get().index_uniform_by_name("world");
-                            uint32_t const object_location = shader->get().index_uniform_by_name("object");
+                            uint32_t const world_location = program->get().index_descriptor_by_name("world");
+                            uint32_t const object_location = program->get().index_descriptor_by_name("object");
 
                             binder.update(world_location, world_cbuffer->get());
                             binder.update(object_location, object_sbuffer->get());

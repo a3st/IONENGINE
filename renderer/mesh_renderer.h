@@ -25,7 +25,7 @@ class CameraNode;
 
 namespace ionengine::renderer {
 
-class ShaderBinder;
+class DescriptorBinder;
 struct NullData;
 
 struct PointLightData {
