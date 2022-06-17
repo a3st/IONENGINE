@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <renderer/render_pass.h>
-#include <lib/sparse_vector.h>
+#include <renderer/command_pool.h>
+#include <renderer/render_pass_cache.h>
 
 namespace ionengine::renderer {
 
@@ -15,36 +15,6 @@ enum class PassTaskType {
 enum class PassTaskResultType {
     Single,
     Multithreading
-};
-
-template<PassTaskType Type>
-struct PassTaskData { };
-
-template<>
-struct PassTaskData<PassTaskType::RenderPass> {  
-    uint32_t width;
-    uint32_t height;
-    std::vector<ResourcePtr<GPUTexture>> colors;
-    std::vector<lib::math::Color> color_clears;
-    std::vector<ResourcePtr<GPUTexture>> inputs;
-    ResourcePtr<GPUTexture> depth_stencil;
-    std::pair<float, uint8_t> depth_stencil_clear;
-    //std::vector<backend::RenderPassLoadOp> color_ops;
-    //backend::RenderPassLoadOp ds_op;
-    RenderPassFunc func;
-    ResourcePtr<RenderPass> render_pass;
-};
-
-template<>
-struct PassTaskData<PassTaskType::ComputePass> { };
-
-struct PassTask {
-    std::string name;
-
-    std::variant<
-        PassTaskData<PassTaskType::RenderPass>,
-        PassTaskData<PassTaskType::ComputePass>
-    > data;
 };
 
 template<PassTaskResultType Type>
@@ -82,6 +52,52 @@ struct RenderPassContext {
 
 using RenderPassFunc = std::function<PassTaskResult(RenderPassContext&)>;
 
+template<PassTaskType Type>
+struct PassTaskData { };
+
+template<>
+struct PassTaskData<PassTaskType::RenderPass> {  
+    uint32_t width;
+    uint32_t height;
+    std::vector<lib::math::Color> color_clears;
+    std::vector<ResourcePtr<GPUTexture>> colors;
+    std::vector<ResourcePtr<GPUTexture>> inputs;
+    ResourcePtr<GPUTexture> depth_stencil;
+    float depth_clear;
+    uint8_t stencil_clear;
+    RenderPassFunc func;
+    ResourcePtr<RenderPass> render_pass;
+};
+
+template<>
+struct PassTaskData<PassTaskType::ComputePass> { };
+
+struct PassTask {
+    std::string name;
+
+    std::variant<
+        PassTaskData<PassTaskType::RenderPass>,
+        PassTaskData<PassTaskType::ComputePass>
+    > data;
+};
+
+struct CreateColorInfo {
+    ResourcePtr<GPUTexture> attachment;
+    backend::RenderPassLoadOp load_op;
+    lib::math::Color clear_color;
+};
+
+struct CreateInputInfo {
+    ResourcePtr<GPUTexture> attachment;
+};
+
+struct CreateDepthStencilInfo {
+    ResourcePtr<GPUTexture> attachment;
+    backend::RenderPassLoadOp load_op;
+    float clear_depth;
+    uint8_t clear_stencil;
+};
+
 class FrameGraph {
 public:
 
@@ -91,11 +107,10 @@ public:
         std::string_view const name, 
         uint32_t const width,
         uint32_t const height,
-        std::optional<std::span<CreateColorInfo const>> const colors,
-        std::optional<std::span<CreateInputInfo const>> const inputs,
+        std::span<CreateColorInfo const> const colors,
+        std::span<CreateInputInfo const> const inputs,
         std::optional<CreateDepthStencilInfo> const depth_stencil,
-        RenderPassFunc const& func,
-        RenderPassHash& cache
+        RenderPassFunc const& func
     );
     
     void reset();
@@ -112,15 +127,13 @@ private:
     std::vector<CommandPool<CommandPoolType::Compute>> _compute_command_pools;
     std::vector<CommandPool<CommandPoolType::Bundle>> _graphics_bundle_command_pools;
 
-    std::unordered_map<RenderPassHash, ResourcePtr<RenderPass>> _render_pass_cache;
+    RenderPassCache _render_pass_cache;
 
     std::vector<PassTask> _tasks;
 
     uint32_t _frame_index{0};
 
     std::vector<uint64_t> _fence_values;
-
-    SwapchainTexture _swapchain;
 };
 
 }

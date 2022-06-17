@@ -38,7 +38,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
                 std::vector<ShaderBufferData> buffer_data;
 
                 for(auto const& property : uniform.properties.value()) {
-                    buffer_data.emplace_back(property.name, property.type);
+                    buffer_data.emplace_back(property.name, get_shader_data_type(property.type));
                 }
 
                 shader_uniform = ShaderUniform {
@@ -51,7 +51,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
                 std::vector<ShaderBufferData> buffer_data;
 
                 for(auto const& property : uniform.properties.value()) {
-                    buffer_data.emplace_back(property.name, property.type);
+                    buffer_data.emplace_back(property.name, get_shader_data_type(property.type));
                 }
 
                 shader_uniform = ShaderUniform {
@@ -64,7 +64,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
                 std::vector<ShaderBufferData> buffer_data;
 
                 for(auto const& property : uniform.properties.value()) {
-                    buffer_data.emplace_back(property.name, property.type);
+                    buffer_data.emplace_back(property.name, get_shader_data_type(property.type));
                 }
 
                 shader_uniform = ShaderUniform {
@@ -83,7 +83,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
             case JSON_ShaderUniformType::sampler2D: {
                 shader_uniform = ShaderUniform { 
                     .name = uniform.name,
-                    .data = ShaderUniformData<ShaderUniformType::RWTexture2D>{},
+                    .data = ShaderUniformData<ShaderUniformType::Sampler2D>{},
                     .visibility = get_shader_type(uniform.visibility)
                 };
             } break;
@@ -187,7 +187,7 @@ ShaderDataType constexpr ionengine::asset::get_shader_data_type(JSON_ShaderDataT
         case JSON_ShaderDataType::float4: return ShaderDataType::Float4;
         case JSON_ShaderDataType::float3: return ShaderDataType::Float3;
         case JSON_ShaderDataType::float2: return ShaderDataType::Float2;
-        case JSON_ShaderDataType::_float: return ShaderDataType::Float2;
+        case JSON_ShaderDataType::_float: return ShaderDataType::Float;
         case JSON_ShaderDataType::_uint: return ShaderDataType::Uint;
         case JSON_ShaderDataType::_bool: return ShaderDataType::Bool;
         default: {

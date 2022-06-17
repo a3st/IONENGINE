@@ -23,10 +23,10 @@ PipelineCache& PipelineCache::operator=(PipelineCache&& other) noexcept {
 
 uint64_t ionengine::renderer::gpu_pipeline_calculate_hash(GPUProgram const& program, asset::ShaderDrawParameters const& draw_parameters, RenderPass const& render_pass) {
 
-    uint32_t stage_hash = program.stages.at(0).index() ^ program.stages.at(1).generation();
+    uint32_t stage_hash = program.stages.at(0).index() ^ program.stages.at(0).generation();
 
-    for(auto const& stage : program.stages) {
-        stage_hash ^= stage.index() ^ stage.generation();
+    for(size_t i = 1; i < program.stages.size(); ++i) {
+        stage_hash ^= program.stages.at(i).index() ^ program.stages.at(i).generation();
     }
 
     uint32_t const draw_parameters_hash = 

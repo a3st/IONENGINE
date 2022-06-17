@@ -3,12 +3,14 @@
 #pragma once
 
 #include <renderer/gpu_resource.h>
-#include <lib/expected.h>
 #include <renderer/gpu_program.h>
-#include <renderer/frame_graph.h>
 #include <asset/shader.h>
+#include <lib/expected.h>
 
 namespace ionengine::renderer {
+
+struct CommandList;
+struct RenderPass;
 
 enum class GPUPipelineError { 
     /*

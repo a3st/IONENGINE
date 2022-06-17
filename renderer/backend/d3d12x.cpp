@@ -153,19 +153,20 @@ HRESULT DescriptorRange::allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range
     } while(!_arena_block_index.compare_exchange_strong(cur_arena_block_index, next_arena_block_index, std::memory_order_acq_rel, std::memory_order_acquire));
 
     auto& arena_block = _arena_block_ranges[cur_arena_block_index];
-    auto& cur_allocation = _allocations[cur_arena_block_index * arena_block.size + arena_block.offset];
     
     uint32_t next_arena_block_offset;
     uint32_t cur_arena_block_offset = arena_block.offset.load(std::memory_order_acquire);
 
     if(cur_arena_block_offset + descriptor_range.NumDescriptors <= arena_block.size) {
         do {
+            auto& cur_allocation = _allocations[cur_arena_block_index * arena_block.size + arena_block.offset];
             cur_allocation._heap = _heap;
             cur_allocation._descriptor_size = _descriptor_size;
             cur_allocation._offset = arena_block.begin + arena_block.offset;
+            
             *allocation = &cur_allocation;
 
-            next_arena_block_offset += descriptor_range.NumDescriptors;
+            next_arena_block_offset = cur_arena_block_offset + descriptor_range.NumDescriptors;
         } while(!arena_block.offset.compare_exchange_strong(cur_arena_block_offset, next_arena_block_offset, std::memory_order_acq_rel, std::memory_order_acquire));
         result = S_OK;
     }
@@ -205,6 +206,7 @@ HRESULT DescriptorRange::initialize(
     uint32_t const arena_range_count = std::thread::hardware_concurrency();
 
     _arena_block_ranges = new ArenaBlockRange[arena_range_count];
+    _arena_block_ranges_count = arena_range_count;
     _allocations = new DescriptorRangeAllocation[(size / arena_range_count) * arena_range_count];
 
     for(uint32_t i = 0; i < arena_range_count; ++i) {

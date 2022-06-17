@@ -29,8 +29,7 @@ ResourcePtr<GPUProgram> ShaderCache::get(asset::Shader& shader) {
         uint64_t const hash = shader.hash;
 
         if(_data.is_valid(shader.cache_entry)) {
-            auto& cache_entry = _data.get(shader.cache_entry);
-            return cache_entry.value;
+            return _data.get(shader.cache_entry).value;
         }
     }
 
@@ -42,7 +41,7 @@ ResourcePtr<GPUProgram> ShaderCache::get(asset::Shader& shader) {
         GPUProgram program = std::move(result.as_ok());
 
         auto cache_entry = CacheEntry<ResourcePtr<GPUProgram>> {
-            .value = make_resource_ptr(result.as_ok()),
+            .value = make_resource_ptr(std::move(program)),
             .hash = shader.hash
         };
 

@@ -10,6 +10,7 @@
 namespace ionengine::renderer {
 
 struct GPUTexture;
+struct CommandList;
 
 enum class RenderPassError { 
     /*
@@ -17,37 +18,24 @@ enum class RenderPassError {
     */
 };
 
-/*
-struct CreateColorInfo {
-    ResourcePtr<GPUTexture> attachment;
-    backend::RenderPassLoadOp load_op;
-    lib::math::Color clear_color;
-};
-
-struct CreateInputInfo {
-    ResourcePtr<GPUTexture> attachment;
-};
-
-struct CreateDepthStencilInfo {
-    ResourcePtr<GPUTexture> attachment;
-    backend::RenderPassLoadOp load_op;
-    float clear_depth;
-    uint8_t clear_stencil;
-};
-
-struct SwapchainTexture {
-    backend::Handle<backend::Texture> texture;
-    backend::MemoryState memory_state;
-};*/
-
 struct RenderPass {
     backend::Handle<backend::RenderPass> render_pass;
 
+    void begin(
+        backend::Device& device,
+        CommandList& command_list,
+        std::span<lib::math::Color const> const color_clears,
+        float clear_depth,
+        uint8_t clear_stencil
+    );
+
+    void end(backend::Device& device, CommandList& command_list);
+
     static lib::Expected<RenderPass, lib::Result<RenderPassError>> create(
         backend::Device& device,
-        std::optional<std::span<ResourcePtr<GPUTexture> const>> const colors,
-        std::optional<std::span<backend::RenderPassColorDesc const>> const color_descs,
-        ResourcePtr<GPUTexture> const depth_stencil,
+        std::span<GPUTexture const*> const colors,
+        std::span<backend::RenderPassColorDesc const> const color_descs,
+        GPUTexture const* depth_stencil,
         std::optional<backend::RenderPassDepthStencilDesc> const depth_stencil_desc
     );
 };

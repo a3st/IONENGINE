@@ -107,6 +107,12 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     auto quad_surface_data = asset::SurfaceData::make_quad();
     _quad = make_resource_ptr(GeometryBuffer::load_from_surface(*_device, quad_surface_data).as_ok());
     _upload_manager->upload_geometry_data(_quad, quad_surface_data.vertices.to_span(), quad_surface_data.indices.to_span());
+
+    _deffered_shader = asset_manager.get_shader("engine/shaders/deffered.shader");
+    _deffered_shader->wait();
+
+    _fxaa_shader = asset_manager.get_shader("engine/shaders/fxaa.shader");
+    _fxaa_shader->wait();
 }
 
 MeshRenderer::~MeshRenderer() {
@@ -139,7 +145,7 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
     }
 }
 
-void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index) {
+void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index) {
 
     _object_pools.at(frame_index).reset();
     _world_pools.at(frame_index).reset();
@@ -208,7 +214,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         _width,
         _height,
         gbuffer_color_infos,
-        std::nullopt,
+        std::span<CreateInputInfo const>(),
         depth_stencil_info,
         [&, frame_index, world_cbuffer](RenderPassContext& context) -> PassTaskResult {
             
@@ -314,30 +320,26 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
             ResourcePtr<CommandList> command_list = context.command_pool->allocate();
 
-            ResourcePtr<Shader> shader = shader_cache.get(nullptr, "deffered_pc");
-            ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(shader, context.render_pass);
+            ResourcePtr<GPUProgram> program = shader_cache.get(_deffered_shader->get());
+            ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), _deffered_shader->get().draw_parameters, context.render_pass->get());
 
             gpu_pipeline->get().bind(*_device, command_list->get());
 
-            DescriptorBinder binder(shader, null);
+            DescriptorBinder binder(program, null);
 
-            uint32_t const world_location = shader->get().index_uniform_by_name("world");
-            uint32_t const point_light_location = shader->get().index_uniform_by_name("point_light");
-            uint32_t const positions_location = shader->get().index_uniform_by_name("positions");
-            uint32_t const normals_location = shader->get().index_uniform_by_name("normals");
-            uint32_t const albedo_location = shader->get().index_uniform_by_name("albedo");
-            uint32_t const roughness_metalness_ao_location = shader->get().index_uniform_by_name("roughness_metalness_ao");
+            uint32_t const world_location = program->get().index_descriptor_by_name("world");
+            uint32_t const point_light_location = program->get().index_descriptor_by_name("point_light");
+            uint32_t const positions_location = program->get().index_descriptor_by_name("positions");
+            uint32_t const normals_location = program->get().index_descriptor_by_name("normals");
+            uint32_t const albedo_location = program->get().index_descriptor_by_name("albedo");
+            uint32_t const roughness_metalness_ao_location = program->get().index_descriptor_by_name("roughness_metalness_ao");
 
             binder.update(world_location, world_cbuffer->get());
             binder.update(point_light_location, point_light_sbuffer->get());
             binder.update(positions_location, _gbuffers.at(frame_index).positions->get());
-            binder.update(positions_location + 1, _gbuffers.at(frame_index).positions->get());
             binder.update(albedo_location, _gbuffers.at(frame_index).albedo->get());
-            binder.update(albedo_location + 1, _gbuffers.at(frame_index).albedo->get());
             binder.update(normals_location, _gbuffers.at(frame_index).normals->get());
-            binder.update(normals_location + 1, _gbuffers.at(frame_index).normals->get());
             binder.update(roughness_metalness_ao_location, _gbuffers.at(frame_index).roughness_metalness_ao->get());
-            binder.update(roughness_metalness_ao_location + 1, _gbuffers.at(frame_index).roughness_metalness_ao->get());
             binder.bind(*_device, command_list->get());
 
             if(_quad->is_ok()) {
@@ -365,7 +367,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         _width,
         _height,
         std::span<CreateColorInfo const>(&final_color_info, 1),
-        std::nullopt,
+        std::span<CreateInputInfo const>(),
         depth_stencil_info,
         [&, frame_index, world_cbuffer, point_light_sbuffer](RenderPassContext& context) -> PassTaskResult {
 
@@ -391,8 +393,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
                         for(auto const& batch : chunks.at(i)) {
 
-                            ResourcePtr<Shader> shader = shader_cache.get(batch.material, "forward");
-                            ResourcePtr<GPUPipeline> after_gpu_pipeline = pipeline_cache.get(shader, context.render_pass);
+                            asset::AssetPtr<asset::Shader> shader = batch.material->get().passes.at("forward");
+
+                            ResourcePtr<GPUProgram> program = shader_cache.get(shader->get());
+                            ResourcePtr<GPUPipeline> after_gpu_pipeline = pipeline_cache.get(program->get(), shader->get().draw_parameters, context.render_pass->get());
                             
                             // No need to switch state if the last batch was similar.
                             if(before_gpu_pipeline != after_gpu_pipeline) {
@@ -400,12 +404,12 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                                 before_gpu_pipeline = after_gpu_pipeline;
                             }
 
-                            DescriptorBinder binder(shader, null);
+                            DescriptorBinder binder(program, null);
 
                             // Applying material properties.
                             // Textures and buffers that have the wrong barrier will only be applied in the next frame.
                             // This limitation allows you to achieve a minimum of thread locks.
-                            apply_material(binder, shader->get(), batch.material->get(), frame_index);
+                            apply_material(binder, program->get(), batch.material->get(), frame_index);
 
                             std::vector<ObjectData> object_buffers;
 
@@ -416,9 +420,9 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                             ResourcePtr<GPUBuffer> object_sbuffer = _object_pools.at(frame_index).allocate();
                             _upload_manager->upload_buffer_data(object_sbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(object_buffers.data()), object_buffers.size() * sizeof(ObjectData)));
 
-                            uint32_t const world_location = shader->get().index_uniform_by_name("world");
-                            uint32_t const object_location = shader->get().index_uniform_by_name("object");
-                            uint32_t const point_light_location = shader->get().index_uniform_by_name("point_light");
+                            uint32_t const world_location = program->get().index_descriptor_by_name("world");
+                            uint32_t const object_location = program->get().index_descriptor_by_name("object");
+                            uint32_t const point_light_location = program->get().index_descriptor_by_name("point_light");
 
                             binder.update(world_location, world_cbuffer->get());
                             binder.update(object_location, object_sbuffer->get());
@@ -442,7 +446,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     );
 
     auto swapchain_color_info = CreateColorInfo {
-        .attachment = nullptr,
+        .attachment = swap_texture,
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
     };
@@ -452,23 +456,22 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         _width,
         _height,
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
-        std::nullopt,
+        std::span<CreateInputInfo const>(),
         depth_stencil_info,
         [&, frame_index](RenderPassContext& context) -> PassTaskResult {
 
             ResourcePtr<CommandList> command_list = context.command_pool->allocate();
 
-            ResourcePtr<Shader> shader = shader_cache.get(nullptr, "fxaa_pc");
-            ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(shader, context.render_pass);
+            ResourcePtr<GPUProgram> program = shader_cache.get(_fxaa_shader->get());
+            ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), _fxaa_shader->get().draw_parameters, context.render_pass->get());
 
             gpu_pipeline->get().bind(*_device, command_list->get());
 
-            DescriptorBinder binder(shader, null);
+            DescriptorBinder binder(program, null);
 
-            uint32_t const color = shader->get().index_uniform_by_name("color");
+            uint32_t const color = program->get().index_descriptor_by_name("color");
 
-            binder.update_resource(color, _final_images.at(frame_index)->get());
-            binder.update_resource(color + 1, _final_images.at(frame_index)->get());
+            binder.update(color, _final_images.at(frame_index)->get());
 
             binder.bind(*_device, command_list->get());
 
@@ -493,9 +496,9 @@ void MeshRenderer::apply_material(DescriptorBinder& binder, GPUProgram const& pr
 
         if(parameter.is_sampler2D()) {
 
-            auto const it = program.uniforms.find(parameter_name);
+            auto const it = program.descriptors.find(parameter_name);
 
-            if(it == program.uniforms.end()) {
+            if(it == program.descriptors.end()) {
                 break;
             }
 
@@ -504,20 +507,19 @@ void MeshRenderer::apply_material(DescriptorBinder& binder, GPUProgram const& pr
 
                 if(gpu_texture->is_ok()) {
                     uint32_t const texture_location = it->second.as_sampler2D().index;
-                    binder.update_resource(texture_location, gpu_texture->get());
-                    binder.update_resource(texture_location + 1, gpu_texture->get());
+                    binder.update(texture_location, gpu_texture->get());
                 }
             }
 
         } else {
                         
-            auto const it = program.uniforms.find("material");
+            auto const it = program.descriptors.find("material");
 
-            if(it == program.uniforms.end()) {
+            if(it == program.descriptors.end()) {
                 break;
             }
 
-            ShaderUniformData<ShaderUniformType::CBuffer> const& cbuffer_data = it->second.as_cbuffer();
+            ProgramDescriptorData<ProgramDescriptorType::CBuffer> const& cbuffer_data = it->second.as_cbuffer();
 
             auto parameter_visitor = make_visitor(
                 [&](asset::MaterialParameterData<asset::MaterialParameterType::F32> const& data) {
@@ -540,13 +542,13 @@ void MeshRenderer::apply_material(DescriptorBinder& binder, GPUProgram const& pr
         }
     }
 
-    auto const it = program.uniforms.find("material");
+    auto const it = program.descriptors.find("material");
 
-    if(it != program.uniforms.end()) {
+    if(it != program.descriptors.end()) {
         ResourcePtr<GPUBuffer> material_cbuffer = _material_pools.at(frame_index).allocate();
         _upload_manager->upload_buffer_data(material_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(material_buffer.data()), material_buffer.size()));
 
-        uint32_t const material_location = program.index_uniform_by_name("material");
+        uint32_t const material_location = program.index_descriptor_by_name("material");
         binder.update(material_location, material_cbuffer->get());
     }
 }

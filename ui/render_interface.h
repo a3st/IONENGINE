@@ -12,8 +12,8 @@ class UploadManager;
 class UiRenderer;
 class TextureCache;
 class RTTextureCache;
-struct Shader;
-class ShaderBinder;
+class DescriptorBinder;
+struct GPUProgram;
 struct CommandList;
 
 }
@@ -51,11 +51,10 @@ private:
     renderer::GeometryPool<8192, 2136>* _geometry_pool;
     renderer::RTTextureCache* _rt_texture_cache;
 
+    renderer::DescriptorBinder* _binder;
+
     renderer::ResourcePtr<renderer::CommandList> _command_list;
-
-    renderer::ShaderBinder* _binder;
-
-    renderer::ResourcePtr<renderer::Shader> _shader;
+    renderer::ResourcePtr<renderer::GPUProgram> _program;
 
     uint32_t _width;
     uint32_t _height;

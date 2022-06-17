@@ -2,6 +2,8 @@
 
 #include <precompiled.h>
 #include <renderer/gpu_pipeline.h>
+#include <renderer/command_list.h>
+#include <renderer/render_pass.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -50,7 +52,7 @@ backend::FillMode constexpr ionengine::renderer::get_shader_fill_mode(asset::Sha
         default: {
             assert(false && "invalid data type");
             return backend::FillMode::Solid;
-        } 
+        }
     }
 }
 

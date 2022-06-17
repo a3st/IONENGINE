@@ -3,7 +3,7 @@
 #include <precompiled.h>
 #include <ui/render_interface.h>
 #include <renderer/ui_renderer.h>
-#include <renderer/shader_binder.h>
+#include <renderer/descriptor_binder.h>
 #include <lib/algorithm.h>
 
 using namespace ionengine;
@@ -29,13 +29,8 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
             renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _rt_texture_cache->get(*texture_data);
 
             if(gpu_texture->is_ok()) {
-                uint32_t const albedo_location = _shader->get().location_uniform_by_name("albedo");
-                _binder->update_resource(albedo_location, gpu_texture->get().texture);
-                _binder->update_resource(albedo_location + 1, gpu_texture->get().sampler);
-
-                //if(gpu_texture->as_ok().resource.memory_state.load() != renderer::backend::MemoryState::ShaderRead) {
-                //    _memory_barriers.push_back(gpu_texture->as_ok().resource.barrier(renderer::backend::MemoryState::ShaderRead));
-                //}
+                uint32_t const albedo_location = _program->get().index_descriptor_by_name("albedo");
+                _binder->update(albedo_location, gpu_texture->get());
             }
 
         } else {
@@ -43,13 +38,8 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
             renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _texture_cache->get(*_upload_manager, *texture_data);
 
             if(gpu_texture->is_ok()) {
-                uint32_t const albedo_location = _shader->get().location_uniform_by_name("albedo");
-                _binder->update_resource(albedo_location, gpu_texture->get().texture);
-                _binder->update_resource(albedo_location + 1, gpu_texture->get().sampler);
-
-                //if(gpu_texture->as_ok().resource.memory_state.load() != renderer::backend::MemoryState::ShaderRead) {
-                //    _memory_barriers.push_back(gpu_texture->as_ok().resource.barrier(renderer::backend::MemoryState::ShaderRead));
-                //}
+                uint32_t const albedo_location = _program->get().index_descriptor_by_name("albedo");
+                _binder->update(albedo_location, gpu_texture->get());
             }
         }
 
@@ -71,8 +61,8 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
     renderer::ResourcePtr<renderer::GPUBuffer> ui_element_cbuffer = _ui_element_pool->allocate();
     _upload_manager->upload_buffer_data(ui_element_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&ui_element_buffer), sizeof(renderer::UIElementData)));
 
-    uint32_t const ui_element_location = _shader->get().location_uniform_by_name("ui_element");
-    _binder->update_resource(ui_element_location, ui_element_cbuffer->get().buffer);
+    uint32_t const ui_element_location = _program->get().index_descriptor_by_name("ui_element");
+    _binder->update(ui_element_location, ui_element_cbuffer->get());
     _binder->bind(*_device, _command_list->get());
 
     uint64_t offset = 0;

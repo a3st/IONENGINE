@@ -21,6 +21,9 @@ UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, s
         _ui_element_pools.emplace_back(*_device, 512, BufferPoolUsage::Dynamic);
         _geometry_pools.emplace_back(*_device, 512, GeometryPoolUsage::Dynamic);
     }
+
+    _ui_shader = asset_manager.get_shader("engine/shaders/ui.shader");
+    _ui_shader->wait();
 }
 
 UiRenderer::~UiRenderer() {
@@ -35,12 +38,12 @@ void UiRenderer::resize(uint32_t const width, uint32_t const height) {
     
 }
 
-void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, uint32_t const frame_index) {
+void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index) {
     _ui_element_pools.at(frame_index).reset();
     _geometry_pools.at(frame_index).reset();
     
     auto swapchain_color_info = CreateColorInfo {
-        .attachment = nullptr,
+        .attachment = swap_texture,
         .load_op = backend::RenderPassLoadOp::Load,
         .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
     };
@@ -50,18 +53,18 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
         _width,
         _height,
         std::span<CreateColorInfo const>(&swapchain_color_info, 1),
-        std::nullopt,
+        std::span<CreateInputInfo const>(),
         std::nullopt,
         [&, frame_index](RenderPassContext& context) -> PassTaskResult {
 
             ResourcePtr<CommandList> command_list = context.command_pool->allocate();
 
-            ResourcePtr<Shader> shader = shader_cache.get(nullptr, "ui_pc");
-            ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(shader, context.render_pass);
+            ResourcePtr<GPUProgram> program = shader_cache.get(_ui_shader->get());
+            ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), _ui_shader->get().draw_parameters, context.render_pass->get());
 
             gpu_pipeline->get().bind(*_device, command_list->get());
 
-            DescriptorBinder binder(shader, null);
+            DescriptorBinder binder(program, null);
 
             ui.render_interface()._ui_element_pool = &_ui_element_pools.at(frame_index);
             ui.render_interface()._geometry_pool = &_geometry_pools.at(frame_index);
@@ -70,12 +73,12 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
             ui.render_interface()._width = _width;
             ui.render_interface()._height = _height;
             ui.render_interface()._binder = &binder;
-            ui.render_interface()._shader = shader;
+            ui.render_interface()._program = program;
 
             ui.context().Render();
 
             ui.render_interface()._command_list = nullptr;
-            ui.render_interface()._shader = nullptr;
+            ui.render_interface()._program = nullptr;
             ui.render_interface()._binder = nullptr;
 
             command_list->get().close(*_device);

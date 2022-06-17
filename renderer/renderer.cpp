@@ -33,13 +33,17 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
 
     for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         _rt_texture_caches.emplace_back(_device);
+
+        auto gpu_texture = GPUTexture {
+            .texture = _device.swapchain_texture(i),
+            .memory_state = backend::MemoryState::Common,
+            .is_swapchain = true
+        };
+        _swap_textures.emplace_back(make_resource_ptr(std::move(gpu_texture)));
     }
 
-    load_shader("engine/shaders/gbuffer.shader");
-    load_shader("engine/shaders/deffered.shader");
-    load_shader("engine/shaders/forward.shader");
-    load_shader("engine/shaders/ui.shader");
-    load_shader("engine/shaders/fxaa.shader");
+    asset_manager.get_shader("engine/shaders/gbuffer.shader")->wait();
+    asset_manager.get_shader("engine/shaders/forward.shader")->wait();
 }
 
 Renderer::~Renderer() {
@@ -57,8 +61,8 @@ void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
 
     uint32_t const frame_index = _frame_graph.wait();
 
-    _mesh_renderer.render(_pipeline_cache, _shader_cache, _null, _frame_graph, scene, frame_index);
-    _ui_renderer.render(_pipeline_cache, _shader_cache, _null, _frame_graph, ui, frame_index);
+    _mesh_renderer.render(_pipeline_cache, _shader_cache, _null, _frame_graph, scene, _swap_textures.at(frame_index), frame_index);
+    _ui_renderer.render(_pipeline_cache, _shader_cache, _null, _frame_graph, ui, _swap_textures.at(frame_index), frame_index);
     
     _frame_graph.execute();
 }
@@ -71,10 +75,6 @@ void Renderer::resize(uint32_t const width, uint32_t const height) {
         _width = width;
         _height = height;
     }
-}
-
-void Renderer::load_shader(std::filesystem::path const shader_path) {
-    _shader_cache.cache_shader(shader_path);
 }
 
 UiRenderer& Renderer::ui_renderer() {

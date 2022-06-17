@@ -238,7 +238,7 @@ struct Shader {
     ShaderDrawParameters draw_parameters;
     uint64_t hash;
 
-    size_t cache_entry;
+    size_t cache_entry{std::numeric_limits<size_t>::max()};
 
     static lib::Expected<Shader, lib::Result<ShaderError>> load_from_file(std::filesystem::path const& file_path); 
 };

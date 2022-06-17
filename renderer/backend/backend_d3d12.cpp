@@ -212,7 +212,9 @@ struct Device::Impl {
     
     void present();
 
-    Handle<Texture> acquire_next_texture();
+    uint32_t acquire_next_swapchain_texture();
+
+    Handle<Texture> swapchain_texture(uint32_t const index);
 
     void recreate_swapchain(uint32_t const width, uint32_t const height, std::optional<SwapchainDesc> swapchain_desc = std::nullopt);
 
@@ -1504,11 +1506,15 @@ void Device::Impl::unmap_buffer_data(Handle<Buffer> const& buffer) {
     buffer_data.resource->Unmap(0, &range);
 }
 
-Handle<Texture> Device::Impl::acquire_next_texture() {
+uint32_t Device::Impl::acquire_next_swapchain_texture() {
     swapchain_index = swapchain->GetCurrentBackBufferIndex();
     cbv_srv_uav_ranges[swapchain_index]->reset();
     sampler_ranges[swapchain_index]->reset();
-    return Handle<Texture>(swapchain_textures[swapchain_index]);
+    return swapchain_index;
+}
+
+Handle<Texture> Device::Impl::swapchain_texture(uint32_t const index) {
+    return Handle<Texture>(swapchain_textures[index]);
 }
 
 void Device::Impl::present() {
@@ -2291,13 +2297,15 @@ void Device::unmap_buffer_data(Handle<Buffer> const& buffer) {
 }
 
 void Device::present() {
-
     _impl->present();
 }
 
-Handle<Texture> Device::acquire_next_texture() {
+uint32_t Device::acquire_next_swapchain_texture() {
+    return _impl->acquire_next_swapchain_texture();
+}
 
-    return _impl->acquire_next_texture();
+Handle<Texture> Device::swapchain_texture(uint32_t const index) {
+    return _impl->swapchain_texture(index);
 }
 
 void Device::recreate_swapchain(uint32_t const width, uint32_t const height, std::optional<SwapchainDesc> swapchain_desc) {

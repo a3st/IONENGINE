@@ -69,7 +69,7 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index);
 
 private:
 
@@ -109,6 +109,9 @@ private:
 
     uint32_t _width;
     uint32_t _height;
+
+    asset::AssetPtr<asset::Shader> _deffered_shader;
+    asset::AssetPtr<asset::Shader> _fxaa_shader;
 
     void apply_material(DescriptorBinder& binder, GPUProgram const& program, asset::Material& material, uint32_t const frame_index);
 };

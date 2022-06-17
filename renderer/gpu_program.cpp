@@ -39,10 +39,10 @@ lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_sh
                 bindings.emplace_back(binding_index, backend::DescriptorType::ConstantBuffer, get_shader_flags(uniform.visibility));
                 ++binding_index;
 
-                auto& register_index = registers_count.at(backend::DescriptorType::ConstantBuffer);
-
+                uint32_t const register_index = registers_count.at(backend::DescriptorType::ConstantBuffer);
                 locations.insert({ uniform.name, register_index });
-                ++register_index;
+
+                ++registers_count.at(backend::DescriptorType::ConstantBuffer);
             },
             [&](asset::ShaderUniformData<asset::ShaderUniformType::RWBuffer> const& data) {
 
@@ -56,10 +56,10 @@ lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_sh
                 bindings.emplace_back(binding_index, backend::DescriptorType::UnorderedAccess, get_shader_flags(uniform.visibility));
                 ++binding_index;
 
-                auto& register_index = registers_count.at(backend::DescriptorType::UnorderedAccess);
+                uint32_t const register_index = registers_count.at(backend::DescriptorType::UnorderedAccess);
 
                 locations.insert({ uniform.name, register_index });
-                ++register_index;
+                ++registers_count.at(backend::DescriptorType::UnorderedAccess);
             },
             [&](asset::ShaderUniformData<asset::ShaderUniformType::SBuffer> const& data) {
 
@@ -73,10 +73,10 @@ lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_sh
                 bindings.emplace_back(binding_index, backend::DescriptorType::ShaderResource, get_shader_flags(uniform.visibility));
                 ++binding_index;
 
-                auto& register_index = registers_count.at(backend::DescriptorType::ShaderResource);
-
+                uint32_t const register_index = registers_count.at(backend::DescriptorType::ShaderResource);
                 locations.insert({ uniform.name, register_index });
-                ++register_index;
+
+                ++registers_count.at(backend::DescriptorType::ShaderResource);
             },
             [&](asset::ShaderUniformData<asset::ShaderUniformType::RWTexture2D> const& data) {
 
@@ -89,10 +89,10 @@ lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_sh
                 bindings.emplace_back(binding_index, backend::DescriptorType::UnorderedAccess, get_shader_flags(uniform.visibility));
                 ++binding_index;
 
-                auto& register_index = registers_count.at(backend::DescriptorType::UnorderedAccess);
-
+                uint32_t const register_index = registers_count.at(backend::DescriptorType::UnorderedAccess);
                 locations.insert({ uniform.name, register_index });
-                ++register_index;
+
+                ++registers_count.at(backend::DescriptorType::UnorderedAccess);
             },
             [&](asset::ShaderUniformData<asset::ShaderUniformType::Sampler2D> const& data) {
 
@@ -108,19 +108,30 @@ lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_sh
                 bindings.emplace_back(binding_index, backend::DescriptorType::Sampler, get_shader_flags(uniform.visibility));
                 ++binding_index;
 
-                auto& register_index = registers_count.at(backend::DescriptorType::ShaderResource);
-
+                uint32_t const register_index = registers_count.at(backend::DescriptorType::ShaderResource);
                 locations.insert({ uniform.name, register_index });
-                ++register_index;
 
-                register_index = registers_count.at(backend::DescriptorType::Sampler);
-                ++register_index;
+                ++registers_count.at(backend::DescriptorType::ShaderResource);
+                ++registers_count.at(backend::DescriptorType::Sampler);
             }
         );
 
         std::visit(uniform_visitor, uniform.data);
 
         gpu_program.descriptors.insert({ uniform.name, std::move(program_descriptor) });
+    }
+
+    uint32_t stride = 0;
+
+    for(size_t i = 0; i < shader.attributes.size(); ++i) {
+        gpu_program.attributes.emplace_back(
+            shader.attributes.at(i).semantic, 
+            static_cast<uint32_t>(i), 
+            get_shader_data_format(shader.attributes.at(i).type),
+            0,
+            stride
+        );
+        stride += static_cast<uint32_t>(get_shader_data_type_size(shader.attributes.at(i).type));
     }
 
     for(auto const& [stage_type, stage_source] : shader.stages) {

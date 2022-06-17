@@ -55,7 +55,7 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index);
 
 private:
 
@@ -71,6 +71,8 @@ private:
 
     uint32_t _width;
     uint32_t _height;
+
+    asset::AssetPtr<asset::Shader> _ui_shader;
 };
 
 }

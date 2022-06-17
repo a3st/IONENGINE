@@ -27,11 +27,11 @@
     passes: [
         {
             name: "gbuffer",
-            shader: "gbuffer_pc"
+            shader: "engine/shaders/gbuffer.shader"
         },
         {
             name: "forward",
-            shader: "forward_pc"
+            shader: "engine/shaders/forward.shader"
         }
     ]
 }

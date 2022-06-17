@@ -108,29 +108,21 @@ struct MaterialParameterData<MaterialParameterType::Sampler2D> {
 template<>
 struct MaterialParameterData<MaterialParameterType::F32> {
     float value;
-    std::string uniform;
-    uint64_t offset;
 };
 
 template<>
 struct MaterialParameterData<MaterialParameterType::F32x2> {
     lib::math::Vector2f value;
-    std::string uniform;
-    uint64_t offset;
 };
 
 template<>
 struct MaterialParameterData<MaterialParameterType::F32x3> {
     lib::math::Vector3f value;
-    std::string uniform;
-    uint64_t offset;
 };
 
 template<>
 struct MaterialParameterData<MaterialParameterType::F32x4> {
     lib::math::Vector4f value;
-    std::string uniform;
-    uint64_t offset;
 };
 
 #ifndef DECLARE_MATERIAL_PARAMETER_CAST

@@ -10,7 +10,7 @@
 #include <renderer/frame_graph.h>
 #include <renderer/mesh_renderer.h>
 #include <renderer/ui_renderer.h>
-#include <renderer/shader_binder.h>
+#include <renderer/descriptor_binder.h>
 #include <asset/asset_manager.h>
 #include <lib/thread_pool.h>
 
@@ -49,8 +49,6 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    inline void load_shader(std::filesystem::path const shader_path);
-
     backend::AdapterDesc adapter_desc() const {
         return _device.adapter_desc();
     }
@@ -69,6 +67,8 @@ private:
     ShaderCache _shader_cache;
     PipelineCache _pipeline_cache;
     std::vector<RTTextureCache> _rt_texture_caches;
+
+    std::vector<ResourcePtr<GPUTexture>> _swap_textures;
 
     UiRenderer _ui_renderer;
     MeshRenderer _mesh_renderer;

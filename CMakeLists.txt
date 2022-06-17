@@ -80,6 +80,7 @@ add_executable(Runtime-Win32
     renderer/command_list.cpp
     renderer/gpu_pipeline.cpp
     renderer/render_pass.cpp
+    renderer/render_pass_cache.cpp
 # ---------------------------
     thirdparty/tinyobjloader/src/tiny_obj_loader.cc
 )

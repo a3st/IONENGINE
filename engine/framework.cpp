@@ -25,6 +25,9 @@ Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& in
     _camera_node = camera_object_node;
 
     _original_rotation = _camera_node->rotation();
+
+    // asset::AssetPtr<asset::Material> material = asset_manager.get_material("content/materials/my_material.mat");
+    // material->get().parameters.at("my_paramter_0").as_f32x4().value = lib::math::Vector4f(1.0f, 0.2f, 0.3f, 1.0f);
 }
 
 void Framework::update(float const delta_time) {

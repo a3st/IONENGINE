@@ -355,7 +355,9 @@ public:
 
     void present();
 
-    Handle<Texture> acquire_next_texture();
+    uint32_t acquire_next_swapchain_texture();
+
+    Handle<Texture> swapchain_texture(uint32_t const index);
 
     void recreate_swapchain(uint32_t const width, uint32_t const height, std::optional<SwapchainDesc> swapchain_desc = std::nullopt);
 
