@@ -23,41 +23,41 @@ TextureCache& TextureCache::operator=(TextureCache&& other) noexcept {
 
 ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::Texture& texture) {
 
-    std::lock_guard lock(_mutex);
+    {
+        std::lock_guard lock(_mutex);
+        uint64_t const hash = texture.hash;
 
-    uint64_t const hash = texture.hash;
+        if(_data.is_valid(texture.cache_entry)) {
+            auto& cache_entry = _data.get(texture.cache_entry);
 
-    if(_data.is_valid(texture.cache_entry)) {
+            if(cache_entry.value->is_wait_for_upload.load()) {
+                upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
+            }
 
-        auto& cache_entry = _data.get(texture.cache_entry);
-
-        if(cache_entry.value->is_wait_for_upload.load()) {
-            upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
+            return cache_entry.value;
         }
+    }
 
-        return cache_entry.value;
+    std::unique_lock lock(_mutex);
 
+
+    auto result = GPUTexture::load_from_texture(*_device, texture);
+
+    if(result.is_ok()) {
+        GPUTexture gpu_texture = std::move(result.as_ok());
+
+        auto cache_entry = CacheEntry<ResourcePtr<GPUTexture>> {
+            .value = make_resource_ptr(std::move(gpu_texture)),
+            .hash = texture.hash
+        };
+
+        cache_entry.value->is_wait_for_upload.store(true);
+
+        upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
+        texture.cache_entry = _data.push(std::move(cache_entry));
+
+        return _data.get(texture.cache_entry).value;
     } else {
-
-        auto result = GPUTexture::load_from_texture(*_device, texture);
-
-        if(result.is_ok()) {
-
-            auto cache_entry = CacheEntry<ResourcePtr<GPUTexture>> {
-                .value = make_resource_ptr(result.as_ok()),
-                .hash = hash
-            };
-
-            cache_entry.value->is_wait_for_upload.store(true);
-
-            upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
-            texture.cache_entry = _data.push(std::move(cache_entry));
-
-        } else {
-            throw lib::Exception(result.as_error().message);
-        }
-        
-        auto& cache_entry = _data.get(texture.cache_entry);
-        return cache_entry.value;
+        throw lib::Exception(result.as_error().message);
     }
 }

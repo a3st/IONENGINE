@@ -27,9 +27,7 @@ public:
 private:
 
     backend::Device* _device;
-
     std::shared_mutex _mutex;
-
     lib::SparseVector<CacheEntry<ResourcePtr<GPUTexture>>> _data;
 };
 

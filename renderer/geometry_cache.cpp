@@ -23,49 +23,43 @@ GeometryCache& GeometryCache::operator=(GeometryCache&& other) noexcept {
 }
 
 ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, asset::SurfaceData& surface) {
+    uint64_t hash;
+    {
+        std::lock_guard lock(_mutex);
+        hash = surface.vertices.hash() ^ surface.indices.hash();
 
-    std::lock_guard lock(_mutex);
+        if(_data.is_valid(surface.cache_entry)) {
 
-    uint64_t const hash = surface.vertices.hash() ^ surface.indices.hash();
+            auto& cache_entry = _data.get(surface.cache_entry);
 
-    if(_data.is_valid(surface.cache_entry)) {
+            if(cache_entry.value->is_wait_for_upload.load()) {
+                upload_manager.upload_geometry_data(cache_entry.value, surface.vertices.to_span(),surface.indices.to_span());
+            }
 
-        auto& cache_entry = _data.get(surface.cache_entry);
-
-        if(cache_entry.value->is_wait_for_upload.load()) {
-            upload_manager.upload_geometry_data(
-                cache_entry.value, 
-                surface.vertices.to_span(),
-                surface.indices.to_span()
-            );
+            return cache_entry.value;
         }
+    }
 
-        return cache_entry.value;
+    std::unique_lock lock(_mutex);
 
+    auto result = GeometryBuffer::load_from_surface(*_device, surface);
+    
+    if(result.is_ok()) {
+
+        GeometryBuffer geometry_buffer = std::move(result.as_ok());
+
+        auto cache_entry = CacheEntry<ResourcePtr<GeometryBuffer>> {
+            .value = make_resource_ptr(std::move(geometry_buffer)),
+            .hash = hash
+        };
+
+        cache_entry.value->is_wait_for_upload.store(true);
+
+        upload_manager.upload_geometry_data(cache_entry.value, surface.vertices.to_span(),surface.indices.to_span());
+        surface.cache_entry = _data.push(std::move(cache_entry));
+
+        return _data.get(surface.cache_entry).value;
     } else {
-
-        auto result = GeometryBuffer::load_from_surface(*_device, surface);
-        if(result.is_ok()) {
-
-            auto cache_entry = CacheEntry<ResourcePtr<GeometryBuffer>> {
-                .value = make_resource_ptr(result.as_ok()),
-                .hash = hash
-            };
-
-            cache_entry.value->is_wait_for_upload = true;
-
-            upload_manager.upload_geometry_data(
-                cache_entry.value, 
-                surface.vertices.to_span(),
-                surface.indices.to_span()
-            );
-
-            surface.cache_entry = _data.push(std::move(cache_entry));
-        } else {
-            throw lib::Exception(result.as_error().message);
-        }
-
-        auto& cache_entry = _data.get(surface.cache_entry);
-        return cache_entry.value;
+        throw lib::Exception(result.as_error().message);
     }
 }
