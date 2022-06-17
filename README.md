@@ -13,26 +13,45 @@ Lightweight renderer project for exploring and learning Graphics API
 - Async upload manager for GPU resources
 - Minimum thirdparty dependinices
 
-## Tasks
+## Priority tasks
 
 Renderer
-  - [x] Async upload manager
-  - [x] Frame graph
-  - [x] RmlUi integration
-  - [x] Deffered shading PBR
-  - [x] Forward shading PBR
+  Backend
+    - [x] D3D12
+    - [ ] Pipeline disk cache
+  Frontend
+  - [ ] Upload manager /w Transition barrier engine
+  - [x] Frame graph (only render pass support)
+  - [x] RmlUI renderer integration
+  - [x] Physically-based rendering
+  - [x] Deffered shading
+  - [x] Forward shading
+  - [x] FXAA
+  - [ ] TAA
+  - [x] Material system
+  - [ ] Spot light
+  - [ ] Directional light
+  - [x] Point light
+  - [ ] Shadows
 
 Library / platform
   - [x] Math library
-  - [x] Cross-platform windowing
+  - [x] Cross-platform windowing / input (only Windows support)
   - [x] Thread pool
   - [x] Logger
   - [x] Channel / event dispatcher
+  - [x] Expected / error handling
+
+Input
+  - [x] Base input system
+  - [ ] Gamepad support
 
 Asset
-  - [x] Technique
+  - [x] Asset manager
+  - [x] Asset loader
+  - [x] Shader
   - [x] Texture
   - [x] Mesh
   - [x] Material
-  - [x] Subscene
-  - [ ] Widget
+  - [ ] Subscene
+  - [ ] Widget (User interface)

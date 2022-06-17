@@ -39,7 +39,7 @@ class UiRenderer {
 
 public:
 
-	UiRenderer(backend::Device& device, UploadManager& upload_manager, std::vector<RTTextureCache>& rt_texture_caches, platform::Window& window, asset::AssetManager& asset_manager);
+	UiRenderer(backend::Device& device, UploadManager& upload_manager, platform::Window& window, asset::AssetManager& asset_manager);
 
 	~UiRenderer();
 
@@ -55,14 +55,13 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, RTTextureCache& rt_texture_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index);
 
 private:
 
 	backend::Device* _device;
     asset::AssetManager* _asset_manager;
 	UploadManager* _upload_manager;
-    std::vector<RTTextureCache>* _rt_texture_caches;
 
 	TextureCache _texture_cache;
 

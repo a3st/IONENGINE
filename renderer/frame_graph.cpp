@@ -117,6 +117,20 @@ void FrameGraph::add_pass(
     );
 }
 
+void FrameGraph::add_present_pass(ResourcePtr<GPUTexture> swap_color) {
+
+    auto present_pass_task = PassTaskData<PassTaskType::PresentPass> {
+        .swap_color = swap_color
+    };
+
+    _tasks.push_back(
+        PassTask {
+            .name = "present",
+            .data = std::move(present_pass_task)
+        }
+    );
+}
+
 void FrameGraph::reset() {
     _device->wait_for_idle(backend::QueueFlags::Graphics | backend::QueueFlags::Compute);
 }
@@ -141,20 +155,10 @@ void FrameGraph::execute() {
                 _device->set_scissor(command_list->get().command_list, 0, 0, data.width, data.height);
 
                 std::vector<backend::MemoryBarrierDesc> memory_barriers;
-                bool is_swapchain_used = false;
-                ResourcePtr<GPUTexture> swapchain = nullptr;
         
                 for(auto& color : data.colors) {
-                    if(color->get().is_swapchain) {
-                        if(color->get().memory_state != backend::MemoryState::RenderTarget) {
-                            memory_barriers.push_back(color->get().barrier(backend::MemoryState::RenderTarget));
-                            is_swapchain_used = true;
-                            swapchain = color;
-                        }
-                    } else {
-                        if(color->get().memory_state != backend::MemoryState::RenderTarget) {
-                            memory_barriers.emplace_back(color->get().barrier(backend::MemoryState::RenderTarget));
-                        }
+                    if(color->get().memory_state != backend::MemoryState::RenderTarget) {
+                        memory_barriers.emplace_back(color->get().barrier(backend::MemoryState::RenderTarget));
                     }
                 }
 
@@ -175,7 +179,6 @@ void FrameGraph::execute() {
                 if(!memory_barriers.empty()) {
                     _device->barrier(command_list->get().command_list, memory_barriers);
                 }
-                memory_barriers.clear();
 
                 data.render_pass->get().begin(
                     *_device,
@@ -200,10 +203,17 @@ void FrameGraph::execute() {
                 
                 data.render_pass->get().end(*_device, command_list->get());
 
-                if(is_swapchain_used) {
-                    if(swapchain->get().memory_state != backend::MemoryState::Common) {
-                        memory_barriers.push_back(swapchain->get().barrier(backend::MemoryState::Common));
-                    }
+                _fence_values.at(_frame_index) = _device->submit(std::span<backend::Handle<backend::CommandList> const>(&command_list->get().command_list, 1), backend::QueueFlags::Graphics);
+            },
+            [&](PassTaskData<PassTaskType::ComputePass>& data) { },
+            [&](PassTaskData<PassTaskType::PresentPass>& data) { 
+
+                ResourcePtr<CommandList> command_list = _graphics_command_pools.at(_frame_index).allocate();
+
+                std::vector<backend::MemoryBarrierDesc> memory_barriers;
+
+                if(data.swap_color->get().memory_state != backend::MemoryState::Common) {
+                    memory_barriers.push_back(data.swap_color->get().barrier(backend::MemoryState::Common));
                 }
 
                 if(!memory_barriers.empty()) {
@@ -211,14 +221,12 @@ void FrameGraph::execute() {
                 }
 
                 _fence_values.at(_frame_index) = _device->submit(std::span<backend::Handle<backend::CommandList> const>(&command_list->get().command_list, 1), backend::QueueFlags::Graphics);
-            },
-            [&](PassTaskData<PassTaskType::ComputePass>& data) { }
+            }
         );
         std::visit(task_visitor, task.data);
     }
 
     _device->present();
-    // _frame_index = (_frame_index + 1) % backend::BACKEND_BACK_BUFFER_COUNT;
     _tasks.clear();
 }
 

@@ -20,8 +20,8 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
     _frame_graph(_device),
     _shader_cache(_device),
     _pipeline_cache(_device),
-    _ui_renderer(_device, _upload_manager, _rt_texture_caches, window, asset_manager),
-    _mesh_renderer(_device, _upload_manager, _rt_texture_caches, window, asset_manager),
+    _ui_renderer(_device, _upload_manager, window, asset_manager),
+    _mesh_renderer(_device, _upload_manager, window, asset_manager),
     _width(window.client_width()),
     _height(window.client_height()) {
 
@@ -61,9 +61,11 @@ void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
 
     uint32_t const frame_index = _frame_graph.wait();
 
-    _mesh_renderer.render(_pipeline_cache, _shader_cache, _null, _frame_graph, scene, _swap_textures.at(frame_index), frame_index);
-    _ui_renderer.render(_pipeline_cache, _shader_cache, _null, _frame_graph, ui, _swap_textures.at(frame_index), frame_index);
+    _mesh_renderer.render(_pipeline_cache, _shader_cache, _rt_texture_caches.at(frame_index), _null, _frame_graph, scene, _swap_textures.at(frame_index), frame_index);
+    _ui_renderer.render(_pipeline_cache, _shader_cache, _rt_texture_caches.at(frame_index), _null, _frame_graph, ui, _swap_textures.at(frame_index), frame_index);
     
+    _frame_graph.add_present_pass(_swap_textures.at(frame_index));
+
     _frame_graph.execute();
 }
 

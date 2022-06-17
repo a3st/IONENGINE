@@ -8,11 +8,10 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, std::vector<RTTextureCache>& rt_texture_caches, platform::Window& window, asset::AssetManager& asset_manager) :
+UiRenderer::UiRenderer(backend::Device& device, UploadManager& upload_manager, platform::Window& window, asset::AssetManager& asset_manager) :
     _device(&device),
     _asset_manager(&asset_manager),
     _upload_manager(&upload_manager),
-    _rt_texture_caches(&rt_texture_caches),
     _texture_cache(device),
     _width(window.client_width()),
     _height(window.client_height()) {
@@ -38,7 +37,7 @@ void UiRenderer::resize(uint32_t const width, uint32_t const height) {
     
 }
 
-void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index) {
+void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, RTTextureCache& rt_texture_cache, NullData& null, FrameGraph& frame_graph, ui::UserInterface& ui, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index) {
     _ui_element_pools.at(frame_index).reset();
     _geometry_pools.at(frame_index).reset();
     
@@ -68,7 +67,7 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
 
             ui.render_interface()._ui_element_pool = &_ui_element_pools.at(frame_index);
             ui.render_interface()._geometry_pool = &_geometry_pools.at(frame_index);
-            ui.render_interface()._rt_texture_cache = &_rt_texture_caches->at(frame_index);
+            ui.render_interface()._rt_texture_cache = &rt_texture_cache;
             ui.render_interface()._command_list = command_list;
             ui.render_interface()._width = _width;
             ui.render_interface()._height = _height;

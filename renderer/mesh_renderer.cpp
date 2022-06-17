@@ -77,11 +77,10 @@ private:
 
 }
 
-MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manager, std::vector<RTTextureCache>& rt_texture_caches, platform::Window& window, asset::AssetManager& asset_manager) :
+MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manager, platform::Window& window, asset::AssetManager& asset_manager) :
     _device(&device),
     _asset_manager(&asset_manager),
     _upload_manager(&upload_manager),
-    _rt_texture_caches(&rt_texture_caches),
     _texture_cache(device),
     _geometry_cache(device),
     _width(window.client_width()),
@@ -145,7 +144,7 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
     }
 }
 
-void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index) {
+void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, RTTextureCache& rt_texture_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index) {
 
     _object_pools.at(frame_index).reset();
     _world_pools.at(frame_index).reset();

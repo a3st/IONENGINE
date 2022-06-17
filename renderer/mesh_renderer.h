@@ -53,7 +53,7 @@ struct ObjectData {
 class MeshRenderer {
 public:
 
-    MeshRenderer(backend::Device& device, UploadManager& upload_manager, std::vector<RTTextureCache>& rt_texture_caches, platform::Window& window, asset::AssetManager& asset_manager);
+    MeshRenderer(backend::Device& device, UploadManager& upload_manager, platform::Window& window, asset::AssetManager& asset_manager);
 
     ~MeshRenderer();
 
@@ -69,7 +69,7 @@ public:
 
     void resize(uint32_t const width, uint32_t const height);
 
-    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index);
+    void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, RTTextureCache& rt_texture_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index);
 
 private:
 
@@ -83,7 +83,6 @@ private:
     backend::Device* _device;
     asset::AssetManager* _asset_manager;
     UploadManager* _upload_manager;
-    std::vector<RTTextureCache>* _rt_texture_caches;
 
     TextureCache _texture_cache;
     GeometryCache _geometry_cache;

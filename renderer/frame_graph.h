@@ -9,7 +9,8 @@ namespace ionengine::renderer {
 
 enum class PassTaskType {
     RenderPass,
-    ComputePass
+    ComputePass,
+    PresentPass
 };
 
 enum class PassTaskResultType {
@@ -72,12 +73,18 @@ struct PassTaskData<PassTaskType::RenderPass> {
 template<>
 struct PassTaskData<PassTaskType::ComputePass> { };
 
+template<>
+struct PassTaskData<PassTaskType::PresentPass> { 
+    ResourcePtr<GPUTexture> swap_color;
+};
+
 struct PassTask {
     std::string name;
 
     std::variant<
         PassTaskData<PassTaskType::RenderPass>,
-        PassTaskData<PassTaskType::ComputePass>
+        PassTaskData<PassTaskType::ComputePass>,
+        PassTaskData<PassTaskType::PresentPass>
     > data;
 };
 
@@ -112,6 +119,8 @@ public:
         std::optional<CreateDepthStencilInfo> const depth_stencil,
         RenderPassFunc const& func
     );
+
+    void add_present_pass(ResourcePtr<GPUTexture> swap_color);
     
     void reset();
     
