@@ -16,10 +16,8 @@ Lightweight renderer project for exploring and learning Graphics API
 ## Priority tasks
 
 Renderer
-  Backend
-    - [x] D3D12
-    - [ ] Pipeline disk cache
-  Frontend
+  - [x] D3D12 backend
+  - [ ] Pipeline disk cache
   - [ ] Upload manager /w Transition barrier engine
   - [x] Frame graph (only render pass support)
   - [x] RmlUI renderer integration
