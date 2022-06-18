@@ -8,7 +8,6 @@
 #include <scene/mesh_node.h>
 #include <scene/point_light_node.h>
 #include <scene/scene_visitor.h>
-#include <range/v3/view/chunk.hpp>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -89,6 +88,7 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         _object_pools.emplace_back(*_device, 32, 256, BufferPoolUsage::Dynamic);
         _world_pools.emplace_back(*_device, 4, BufferPoolUsage::Dynamic);
+        _light_pools.emplace_back(*_device, 64, BufferPoolUsage::Dynamic);
         _point_light_pools.emplace_back(*_device, 512, 2, BufferPoolUsage::Dynamic);
 
         auto gbuffer = GBufferData {
@@ -148,6 +148,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
     _object_pools.at(frame_index).reset();
     _world_pools.at(frame_index).reset();
+    _light_pools.at(frame_index).reset();
     _point_light_pools.at(frame_index).reset();
 
     _opaque_queue.clear();
@@ -166,43 +167,47 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     auto world_buffer = WorldData {
         .view = _render_camera->transform_view(),
         .projection = _render_camera->transform_projection(),
-        .camera_position = _render_camera->position(),
-        .point_light_count = static_cast<uint32_t>(_point_lights.size()),
-        .direction_light_count = 0,
-        .spot_light_count = 0
+        .camera_position = _render_camera->position()
     };
 
     ResourcePtr<GPUBuffer> world_cbuffer = _world_pools.at(frame_index).allocate();
     _upload_manager->upload_buffer_data(world_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&world_buffer), sizeof(WorldData)));
 
+    auto light_buffer = LightData {
+        .point_light_count = static_cast<uint32_t>(_point_lights.size())
+    };
+
+    ResourcePtr<GPUBuffer> light_cbuffer = _light_pools.at(frame_index).allocate();
+    _upload_manager->upload_buffer_data(light_cbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&light_buffer), sizeof(LightData)));
+
     ResourcePtr<GPUBuffer> point_light_sbuffer = _point_light_pools.at(frame_index).allocate();
     _upload_manager->upload_buffer_data(point_light_sbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(_point_lights.data()), _point_lights.size() * sizeof(PointLightData)));
 
-    auto depth_stencil_info = CreateDepthStencilInfo {
-        .attachment = _depth_stencils.at(frame_index),
+    auto depth_stencil_info = RenderPassDepthStencilInfo {
+        .texture = _depth_stencils.at(frame_index),
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_depth = 1.0f,
         .clear_stencil = 0x0
     };
 
-    auto gbuffer_color_infos = std::array<CreateColorInfo, 4> {
-        CreateColorInfo {
-            .attachment = _gbuffers.at(frame_index).positions,
+    auto gbuffer_color_infos = std::array<RenderPassColorInfo, 4> {
+        RenderPassColorInfo {
+            .texture = _gbuffers.at(frame_index).positions,
             .load_op = backend::RenderPassLoadOp::Clear,
             .clear_color = lib::math::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
-        CreateColorInfo {
-            .attachment = _gbuffers.at(frame_index).albedo,
+        RenderPassColorInfo {
+            .texture = _gbuffers.at(frame_index).albedo,
             .load_op = backend::RenderPassLoadOp::Clear,
             .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
         },
-        CreateColorInfo {
-            .attachment = _gbuffers.at(frame_index).normals,
+        RenderPassColorInfo {
+            .texture = _gbuffers.at(frame_index).normals,
             .load_op = backend::RenderPassLoadOp::Clear,
             .clear_color = lib::math::Color(0.0f, 0.0f, 0.0f, 1.0f)
         },
-        CreateColorInfo {
-            .attachment = _gbuffers.at(frame_index).roughness_metalness_ao,
+        RenderPassColorInfo {
+            .texture = _gbuffers.at(frame_index).roughness_metalness_ao,
             .load_op = backend::RenderPassLoadOp::Clear,
             .clear_color = lib::math::Color(0.0f, 0.0f, 0.0f, 1.0f)
         }
@@ -213,7 +218,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         _width,
         _height,
         gbuffer_color_infos,
-        std::span<CreateInputInfo const>(),
+        std::span<ResourcePtr<GPUTexture> const>(),
         depth_stencil_info,
         [&, frame_index, world_cbuffer](RenderPassContext& context) -> PassTaskResult {
             
@@ -291,31 +296,31 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         }
     );
 
-    auto final_color_info = CreateColorInfo {};
+    auto final_color_info = RenderPassColorInfo {};
     if(_render_camera->render_target()) {
         // auto gpu_texture = _rt_texture_caches->at(frame_index).get(*_render_camera->render_target());
         // final_color_info.attachment = gpu_texture;
     } else {
-        final_color_info.attachment = _final_images.at(frame_index);
+        final_color_info.texture = _final_images.at(frame_index);
         final_color_info.load_op = backend::RenderPassLoadOp::Clear;
         final_color_info.clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f);
     };
 
-    auto gbuffer_input_infos = std::array<CreateInputInfo, 4> {
-        CreateInputInfo { .attachment = _gbuffers.at(frame_index).positions },
-        CreateInputInfo { .attachment = _gbuffers.at(frame_index).albedo },
-        CreateInputInfo { .attachment = _gbuffers.at(frame_index).normals },
-        CreateInputInfo { .attachment = _gbuffers.at(frame_index).roughness_metalness_ao }
+    auto gbuffer_input_infos = std::array<ResourcePtr<GPUTexture>, 4> {
+        _gbuffers.at(frame_index).positions,
+        _gbuffers.at(frame_index).albedo,
+        _gbuffers.at(frame_index).normals,
+        _gbuffers.at(frame_index).roughness_metalness_ao
     };
 
     frame_graph.add_pass(
         "deffered",
         _width,
         _height,
-        std::span<CreateColorInfo const>(&final_color_info, 1),
+        std::span<RenderPassColorInfo const>(&final_color_info, 1),
         gbuffer_input_infos,
         std::nullopt,
-        [&, frame_index, world_cbuffer, point_light_sbuffer](RenderPassContext& context) -> PassTaskResult {
+        [&, frame_index, world_cbuffer, light_cbuffer, point_light_sbuffer](RenderPassContext& context) -> PassTaskResult {
 
             ResourcePtr<CommandList> command_list = context.command_pool->allocate();
 
@@ -327,6 +332,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
             DescriptorBinder binder(program, null);
 
             uint32_t const world_location = program->get().index_descriptor_by_name("world");
+            uint32_t const light_location = program->get().index_descriptor_by_name("light");
             uint32_t const point_light_location = program->get().index_descriptor_by_name("point_light");
             uint32_t const positions_location = program->get().index_descriptor_by_name("positions");
             uint32_t const normals_location = program->get().index_descriptor_by_name("normals");
@@ -334,11 +340,13 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
             uint32_t const roughness_metalness_ao_location = program->get().index_descriptor_by_name("roughness_metalness_ao");
 
             binder.update(world_location, world_cbuffer->get());
+            binder.update(light_location, light_cbuffer->get());
             binder.update(point_light_location, point_light_sbuffer->get());
             binder.update(positions_location, _gbuffers.at(frame_index).positions->get());
             binder.update(albedo_location, _gbuffers.at(frame_index).albedo->get());
             binder.update(normals_location, _gbuffers.at(frame_index).normals->get());
             binder.update(roughness_metalness_ao_location, _gbuffers.at(frame_index).roughness_metalness_ao->get());
+
             binder.bind(*_device, command_list->get());
 
             if(_quad->is_ok()) {
@@ -354,8 +362,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
     final_color_info.load_op = backend::RenderPassLoadOp::Load;
 
-    depth_stencil_info = CreateDepthStencilInfo {
-        .attachment = _depth_stencils.at(frame_index),
+    depth_stencil_info = RenderPassDepthStencilInfo {
+        .texture = _depth_stencils.at(frame_index),
         .load_op = backend::RenderPassLoadOp::Load,
         .clear_depth = 1.0f,
         .clear_stencil = 0x0
@@ -365,10 +373,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         "forward",
         _width,
         _height,
-        std::span<CreateColorInfo const>(&final_color_info, 1),
-        std::span<CreateInputInfo const>(),
+        std::span<RenderPassColorInfo const>(&final_color_info, 1),
+        std::span<ResourcePtr<GPUTexture> const>(),
         depth_stencil_info,
-        [&, frame_index, world_cbuffer, point_light_sbuffer](RenderPassContext& context) -> PassTaskResult {
+        [&, frame_index, world_cbuffer, light_cbuffer, point_light_sbuffer](RenderPassContext& context) -> PassTaskResult {
 
             // Divide render queue to chunks if draw data larger than 16.
             // This stage allows you to upload tasks to the thread pool.
@@ -420,17 +428,18 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                             _upload_manager->upload_buffer_data(object_sbuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(object_buffers.data()), object_buffers.size() * sizeof(ObjectData)));
 
                             uint32_t const world_location = program->get().index_descriptor_by_name("world");
+                            uint32_t const light_location = program->get().index_descriptor_by_name("light");
                             uint32_t const object_location = program->get().index_descriptor_by_name("object");
                             uint32_t const point_light_location = program->get().index_descriptor_by_name("point_light");
 
                             binder.update(world_location, world_cbuffer->get());
+                            binder.update(light_location, light_cbuffer->get());
                             binder.update(object_location, object_sbuffer->get());
                             binder.update(point_light_location, point_light_sbuffer->get());
-
                             binder.bind(*_device, command_list->get());
 
                             ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->get().surfaces()[batch.surface_index]);
-                            
+
                             if(geometry_buffer->is_ok()) {
                                 geometry_buffer->get().bind(*_device, command_list->get());
                                 _device->draw_indexed(command_list->get().command_list, static_cast<uint32_t>(geometry_buffer->get().index_size / sizeof(uint32_t)), static_cast<uint32_t>(batch.instances.size()), 0);
@@ -444,8 +453,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         }
     );
 
-    auto swapchain_color_info = CreateColorInfo {
-        .attachment = swap_texture,
+    auto swapchain_color_info = RenderPassColorInfo {
+        .texture = swap_texture,
         .load_op = backend::RenderPassLoadOp::Clear,
         .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
     };
@@ -454,8 +463,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         "fxaa",
         _width,
         _height,
-        std::span<CreateColorInfo const>(&swapchain_color_info, 1),
-        std::span<CreateInputInfo const>(),
+        std::span<RenderPassColorInfo const>(&swapchain_color_info, 1),
+        std::span<ResourcePtr<GPUTexture> const>(),
         depth_stencil_info,
         [&, frame_index](RenderPassContext& context) -> PassTaskResult {
 

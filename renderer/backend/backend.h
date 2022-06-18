@@ -31,6 +31,8 @@ enum class BackendLimits : uint32_t {
     CommandLists = 512
 };
 
+inline uint32_t constexpr RENDER_PASS_COLOR_ATTACHMENT_COUNT = 8;
+
 // Maximum number of back buffers for swap chain.
 inline uint32_t constexpr BACKEND_BACK_BUFFER_COUNT = 2;
 

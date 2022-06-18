@@ -38,9 +38,10 @@ __declspec(align(backend::TEXTURE_ROW_PITCH_ALIGNMENT)) struct WorldData {
     lib::math::Matrixf view;
     lib::math::Matrixf projection;
     lib::math::Vector3f camera_position;
+};
+
+__declspec(align(backend::TEXTURE_ROW_PITCH_ALIGNMENT)) struct LightData {
     uint32_t point_light_count;
-    uint32_t direction_light_count;
-    uint32_t spot_light_count;
 };
 
 uint32_t constexpr MATERIAL_DATA_SIZE = 1024;
@@ -98,6 +99,7 @@ private:
 
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(ObjectData)>> _object_pools;
     std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(WorldData)>> _world_pools;
+    std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(LightData)>> _light_pools;
     std::vector<BufferPool<BufferPoolType::CBuffer, MATERIAL_DATA_SIZE>> _material_pools;
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(PointLightData)>> _point_light_pools;
 

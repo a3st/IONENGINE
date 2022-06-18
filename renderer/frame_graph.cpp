@@ -4,7 +4,6 @@
 #include <renderer/frame_graph.h>
 #include <renderer/gpu_texture.h>
 #include <lib/thread_pool.h>
-#include <range/v3/view.hpp>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -32,91 +31,103 @@ void FrameGraph::add_pass(
     std::string_view const name, 
     uint32_t const width,
     uint32_t const height,
-    std::span<CreateColorInfo const> const colors,
-    std::span<CreateInputInfo const> const inputs,
-    std::optional<CreateDepthStencilInfo> const depth_stencil,
+    std::span<RenderPassColorInfo const> const color_infos,
+    std::span<ResourcePtr<GPUTexture> const> const input_textures,
+    std::optional<RenderPassDepthStencilInfo> const depth_stencil_info,
     RenderPassFunc const& func
 ) {
-
-    std::vector<backend::RenderPassColorDesc> color_descs;
-
-    for(auto const& color : colors) {
-        color_descs.push_back(
-            backend::RenderPassColorDesc {
-                .load_op = color.load_op,
-                .store_op = backend::RenderPassStoreOp::Store
-            }
-        );
-    }
-
-    auto color_textures = 
-        colors | 
-        std::views::transform([&](CreateColorInfo const& info) { return info.attachment; }) | 
-        ranges::to<std::vector<ResourcePtr<GPUTexture>>>();
-
-    auto color_texture_ptrs = 
-        colors | 
-        std::views::transform([&](CreateColorInfo const& info) { return &info.attachment->get(); }) | 
-        ranges::to<std::vector<GPUTexture const*>>();
-
-    auto color_clears =
-        colors |
-        std::views::transform([&](CreateColorInfo const& info) { return info.clear_color; }) | 
-        ranges::to<std::vector<lib::math::Color>>();
-
-    auto input_textures =
-        inputs |
-        std::views::transform([&](CreateInputInfo const& info) { return info.attachment; }) | 
-        ranges::to<std::vector<ResourcePtr<GPUTexture>>>();
-
     ResourcePtr<RenderPass> render_pass;
 
-    if(depth_stencil.has_value()) {
+    if(depth_stencil_info.has_value()) {
+        auto color_textures = 
+            color_infos | 
+            std::views::transform([&](RenderPassColorInfo const& info) { return &info.texture->get(); }) |
+            ranges::to<std::vector<GPUTexture const*>>();
+
+        auto color_descs =
+            color_infos |
+            std::views::transform([&](RenderPassColorInfo const& info) { 
+                return backend::RenderPassColorDesc {
+                    .load_op = info.load_op,
+                    .store_op = backend::RenderPassStoreOp::Store
+                };
+            }) | 
+            ranges::to<std::vector<backend::RenderPassColorDesc>>();
+
+        auto& depth_stencil_info_value = depth_stencil_info.value();
+
         render_pass = _render_pass_cache.get(
-            color_texture_ptrs, 
+            color_textures, 
             color_descs, 
-            &depth_stencil.value().attachment->get(),
+            &depth_stencil_info_value.texture->get(),
             backend::RenderPassDepthStencilDesc {
-                .depth_load_op = depth_stencil.value().load_op,
+                .depth_load_op = depth_stencil_info_value.load_op,
                 .depth_store_op = backend::RenderPassStoreOp::Store,
-                .stencil_load_op = depth_stencil.value().load_op,
+                .stencil_load_op = depth_stencil_info_value.load_op,
                 .stencil_store_op = backend::RenderPassStoreOp::Store
             }
         );
     } else {
+        auto color_textures = 
+            color_infos | 
+            std::views::transform([&](RenderPassColorInfo const& info) { return &info.texture->get(); }) | 
+            ranges::to<std::vector<GPUTexture const*>>();
+
+        auto color_descs =
+            color_infos |
+            std::views::transform([&](RenderPassColorInfo const& info) { 
+                return backend::RenderPassColorDesc {
+                    .load_op = info.load_op,
+                    .store_op = backend::RenderPassStoreOp::Store
+                };
+            }) | 
+            ranges::to<std::vector<backend::RenderPassColorDesc>>();
+
         render_pass = _render_pass_cache.get(
-            color_texture_ptrs, 
+            color_textures, 
             color_descs, 
             nullptr,
             std::nullopt
         );
     }
 
-    PassTaskData<PassTaskType::RenderPass> render_pass_task;
+    auto color_textures = 
+        color_infos | 
+        std::views::transform([&](RenderPassColorInfo const& info) { return info.texture; }) | 
+        ranges::to<std::vector>();
 
-    if(depth_stencil.has_value()) {
-        render_pass_task = PassTaskData<PassTaskType::RenderPass> {
+    auto clear_colors =
+        color_infos |
+        std::views::transform([&](RenderPassColorInfo const& info) { return info.clear_color; }) | 
+        ranges::to<std::vector>();
+
+    PassTaskData<PassTaskType::RenderPass> render_pass_task_data;
+
+    if(depth_stencil_info.has_value()) {
+        auto& depth_stencil_value = depth_stencil_info.value();
+
+        render_pass_task_data = PassTaskData<PassTaskType::RenderPass> {
             .width = width,
             .height = height,
-            .color_clears = std::move(color_clears),
-            .colors = std::move(color_textures),
-            .inputs = std::move(input_textures),
-            .depth_stencil = depth_stencil.value().attachment,
-            .depth_clear = depth_stencil.value().clear_depth,
-            .stencil_clear = depth_stencil.value().clear_stencil,
+            .clear_colors = std::move(clear_colors),
+            .color_textures = std::move(color_textures),
+            .input_textures = {},
+            .depth_stencil_texture = depth_stencil_value.texture,
+            .clear_depth = depth_stencil_value.clear_depth,
+            .clear_stencil = depth_stencil_value.clear_stencil,
             .func = func,
             .render_pass = std::move(render_pass)
         };
     } else {
-        render_pass_task = PassTaskData<PassTaskType::RenderPass> {
+        render_pass_task_data = PassTaskData<PassTaskType::RenderPass> {
             .width = width,
             .height = height,
-            .color_clears = std::move(color_clears),
-            .colors = std::move(color_textures),
-            .inputs = std::move(input_textures),
-            .depth_stencil = nullptr,
-            .depth_clear = 0.0f,
-            .stencil_clear = 0x0,
+            .clear_colors = std::move(clear_colors),
+            .color_textures = std::move(color_textures),
+            .input_textures = {},
+            .depth_stencil_texture = nullptr,
+            .clear_depth = 0.0f,
+            .clear_stencil = 0x0,
             .func = func,
             .render_pass = std::move(render_pass)
         };
@@ -125,21 +136,20 @@ void FrameGraph::add_pass(
     _tasks.push_back(
         PassTask {
             .name = std::string(name),
-            .data = std::move(render_pass_task)
+            .data = std::move(render_pass_task_data)
         }
     );
 }
 
-void FrameGraph::add_present_pass(ResourcePtr<GPUTexture> swap_color) {
-
-    auto present_pass_task = PassTaskData<PassTaskType::PresentPass> {
-        .swap_color = swap_color
+void FrameGraph::add_present_pass(ResourcePtr<GPUTexture> swap_texture) {
+    auto present_pass_task_data = PassTaskData<PassTaskType::PresentPass> {
+        .swap_texture = swap_texture
     };
 
     _tasks.push_back(
         PassTask {
             .name = "present",
-            .data = std::move(present_pass_task)
+            .data = std::move(present_pass_task_data)
         }
     );
 }
@@ -153,7 +163,12 @@ void FrameGraph::execute() {
     _compute_command_pools.at(_frame_index).reset();
     _graphics_bundle_command_pools.at(_frame_index).reset();
 
+    std::vector<backend::MemoryBarrierDesc> memory_barriers;
+
     for(auto& task : _tasks) {
+
+        memory_barriers.clear();
+
         auto task_visitor = make_visitor(
             [&](PassTaskData<PassTaskType::RenderPass>& data) {
                 ResourcePtr<CommandList> command_list = _graphics_command_pools.at(_frame_index).allocate();
@@ -166,39 +181,37 @@ void FrameGraph::execute() {
 
                 _device->set_viewport(command_list->get().command_list, 0, 0, data.width, data.height);
                 _device->set_scissor(command_list->get().command_list, 0, 0, data.width, data.height);
-
-                std::vector<backend::MemoryBarrierDesc> memory_barriers;
         
-                for(auto& color : data.colors) {
-                    if(color->get().memory_state != backend::MemoryState::RenderTarget) {
-                        memory_barriers.emplace_back(color->get().barrier(backend::MemoryState::RenderTarget));
+                for(auto& texture : data.color_textures) {
+                    if(texture->get().memory_state != backend::MemoryState::RenderTarget) {
+                        memory_barriers.emplace_back(texture->get().barrier(backend::MemoryState::RenderTarget));
                     }
                 }
 
-                if(auto& depth_stencil = data.depth_stencil) {
-                    if(depth_stencil->get().memory_state != backend::MemoryState::DepthWrite) {
-                        memory_barriers.emplace_back(depth_stencil->get().barrier(backend::MemoryState::DepthWrite));
+                if(auto& texture = data.depth_stencil_texture) {
+                    if(texture->get().memory_state != backend::MemoryState::DepthWrite) {
+                        memory_barriers.emplace_back(texture->get().barrier(backend::MemoryState::DepthWrite));
                     }
                 }
 
-                for(auto& input : data.inputs) {
-                    if(input->get().memory_state != backend::MemoryState::ShaderRead && input->get().is_render_target()) {
-                        memory_barriers.emplace_back(input->get().barrier(backend::MemoryState::ShaderRead));
-                    } else if(input->get().memory_state != backend::MemoryState::DepthRead && input->get().is_depth_stencil()) {
-                        memory_barriers.emplace_back(input->get().barrier(backend::MemoryState::DepthRead));
+                for(auto& texture : data.input_textures) {
+                    if(texture->get().memory_state != backend::MemoryState::ShaderRead && texture->get().is_render_target()) {
+                        memory_barriers.emplace_back(texture->get().barrier(backend::MemoryState::ShaderRead));
+                    } else if(texture->get().memory_state != backend::MemoryState::DepthRead && texture->get().is_depth_stencil()) {
+                        memory_barriers.emplace_back(texture->get().barrier(backend::MemoryState::DepthRead));
                     }
                 }
 
                 if(!memory_barriers.empty()) {
-                    _device->barrier(command_list->get().command_list, memory_barriers);
+                    command_list->get().barrier(*_device, memory_barriers);
                 }
 
                 data.render_pass->get().begin(
                     *_device,
                     command_list->get(),
-                    data.color_clears,
-                    data.depth_clear,
-                    data.stencil_clear
+                    std::span<lib::math::Color const>(data.clear_colors.data(), data.clear_colors.size()),
+                    data.clear_depth,
+                    data.clear_stencil
                 );
 
                 auto task_result_visitor = make_visitor(
@@ -220,13 +233,10 @@ void FrameGraph::execute() {
             },
             [&](PassTaskData<PassTaskType::ComputePass>& data) { },
             [&](PassTaskData<PassTaskType::PresentPass>& data) { 
-
                 ResourcePtr<CommandList> command_list = _graphics_command_pools.at(_frame_index).allocate();
 
-                std::vector<backend::MemoryBarrierDesc> memory_barriers;
-
-                if(data.swap_color->get().memory_state != backend::MemoryState::Common) {
-                    memory_barriers.push_back(data.swap_color->get().barrier(backend::MemoryState::Common));
+                if(data.swap_texture->get().memory_state != backend::MemoryState::Common) {
+                    memory_barriers.push_back(data.swap_texture->get().barrier(backend::MemoryState::Common));
                 }
 
                 if(!memory_barriers.empty()) {

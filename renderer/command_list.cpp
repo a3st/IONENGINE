@@ -19,3 +19,7 @@ lib::Expected<CommandList, lib::Result<CommandListError>> CommandList::create(ba
 void CommandList::close(backend::Device& device) {
     device.close_command_list(command_list);
 }
+
+void CommandList::barrier(backend::Device& device, std::span<backend::MemoryBarrierDesc const> const barrier_descs) {
+    device.barrier(command_list, barrier_descs);
+}

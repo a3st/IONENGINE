@@ -7,10 +7,15 @@
             properties: [
                 { name: "view", type: "float4x4" },
                 { name: "projection", type: "float4x4" },
-                { name: "camera_position", type: "float3" },
-                { name: "point_light_count", type: "_uint" },
-                { name: "direction_light_count", type: "_uint" },
-                { name: "spot_light_count", type: "_uint" }
+                { name: "camera_position", type: "float3" }
+            ],
+            visibility: "all"
+        },
+        {
+            name: "light",
+            type: "cbuffer",
+            properties: [
+                { name: "point_light_count", type: "_uint" }
             ],
             visibility: "all"
         },
@@ -121,6 +126,10 @@
             ],
             source: "
 
+                #define DIRECTIONAL_LIGHT_TYPE 0
+                #define POINT_LIGHT_TYPE 1
+                #define SPOT_LIGHT_TYPE 2
+
                 static const float PI = 3.14159265359;
 
                 float DistributionGGX(float3 N, float3 H, float roughness) {
@@ -164,18 +173,18 @@
                     return att * att;
                 }
 
-                float3 calculate_point_light(point_light_data light, float3 position, float3 normal, float3 V, float3 albedo, float metalness, float roughness) {
+                float3 calculate_point_light(point_light_data point_light, float3 position, float3 normal, float3 V, float3 albedo, float metalness, float roughness) {
 
                     float3 F0 = float3(0.04f, 0.04f, 0.04f);
                     F0 = lerp(F0, albedo, metalness);
 
-                    float3 L = normalize(position - light.position);
+                    float3 L = normalize(position - point_light.position);
                     float3 H = normalize(V + L);
 
                     // calculate per-light radiance
-                    float distance = length(light.position - position);
-                    float attenuation = calculate_attenuation(distance, light.range);
-                    float3 radiance = light.color * attenuation;
+                    float distance = length(point_light.position - position);
+                    float attenuation = calculate_attenuation(distance, point_light.range);
+                    float3 radiance = point_light.color * attenuation;
 
                     // cook-torrance brdf
                     float NDF = DistributionGGX(normal, H, roughness);        
@@ -218,13 +227,14 @@
                     float metalness = metalness_texture.Sample(metalness_sampler, input.uv).r;
 
                     float3 Lo = float3(0.0f, 0.0f, 0.0f);
-                    for(int i = 0; i < world.point_light_count; i++) {
+
+                    for(uint i = 0; i < light.point_light_count; ++i) {
                         Lo += calculate_point_light(point_lights[i], input.world_position, normal, V, albedo, metalness, roughness);
                     }
 
-                    float3 ambient = float3(0.005f, 0.005f, 0.005f) * albedo;
-                    float3 color = Lo + ambient;
-                    color = pow(color, float3(1.0f / 2.2f, 1.0f / 2.2f, 1.0f / 2.2f));
+                    //float3 ambient = float3(0.005f, 0.005f, 0.005f) * albedo;
+                    //float3 color = Lo + ambient;
+                    float3 color = pow(Lo, float3(1.4f / 2.2f, 1.4f / 2.2f, 1.4f / 2.2f));
 
                     output.color = float4(color, albedo_map.a);
                     return output;

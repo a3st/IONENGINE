@@ -1022,6 +1022,7 @@ Handle<Shader> Device::Impl::create_shader(std::string_view const source, Shader
     ComPtr<IDxcBlobUtf8> error_blob;
     result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), reinterpret_cast<void**>(error_blob.GetAddressOf()), nullptr);
     if (error_blob && error_blob->GetStringLength() > 0) {
+        std::cout << std::format("shader compilation error (\n{})", std::string_view(error_blob->GetStringPointer(), error_blob->GetStringLength())) << std::endl;
         throw lib::Exception(std::format("shader compilation error (\n{})", std::string_view(error_blob->GetStringPointer(), error_blob->GetStringLength())));
     }
 

@@ -60,12 +60,12 @@ template<>
 struct PassTaskData<PassTaskType::RenderPass> {  
     uint32_t width;
     uint32_t height;
-    std::vector<lib::math::Color> color_clears;
-    std::vector<ResourcePtr<GPUTexture>> colors;
-    std::vector<ResourcePtr<GPUTexture>> inputs;
-    ResourcePtr<GPUTexture> depth_stencil;
-    float depth_clear;
-    uint8_t stencil_clear;
+    std::vector<lib::math::Color> clear_colors;
+    std::vector<ResourcePtr<GPUTexture>> color_textures;
+    std::vector<ResourcePtr<GPUTexture>> input_textures;
+    ResourcePtr<GPUTexture> depth_stencil_texture;
+    float clear_depth;
+    uint8_t clear_stencil;
     RenderPassFunc func;
     ResourcePtr<RenderPass> render_pass;
 };
@@ -75,7 +75,7 @@ struct PassTaskData<PassTaskType::ComputePass> { };
 
 template<>
 struct PassTaskData<PassTaskType::PresentPass> { 
-    ResourcePtr<GPUTexture> swap_color;
+    ResourcePtr<GPUTexture> swap_texture;
 };
 
 struct PassTask {
@@ -88,18 +88,14 @@ struct PassTask {
     > data;
 };
 
-struct CreateColorInfo {
-    ResourcePtr<GPUTexture> attachment;
+struct RenderPassColorInfo {
+    ResourcePtr<GPUTexture> texture;
     backend::RenderPassLoadOp load_op;
     lib::math::Color clear_color;
 };
 
-struct CreateInputInfo {
-    ResourcePtr<GPUTexture> attachment;
-};
-
-struct CreateDepthStencilInfo {
-    ResourcePtr<GPUTexture> attachment;
+struct RenderPassDepthStencilInfo {
+    ResourcePtr<GPUTexture> texture;
     backend::RenderPassLoadOp load_op;
     float clear_depth;
     uint8_t clear_stencil;
@@ -114,13 +110,13 @@ public:
         std::string_view const name, 
         uint32_t const width,
         uint32_t const height,
-        std::span<CreateColorInfo const> const colors,
-        std::span<CreateInputInfo const> const inputs,
-        std::optional<CreateDepthStencilInfo> const depth_stencil,
+        std::span<RenderPassColorInfo const> const color_infos,
+        std::span<ResourcePtr<GPUTexture> const> const input_textures,
+        std::optional<RenderPassDepthStencilInfo> const depth_stencil_info,
         RenderPassFunc const& func
     );
 
-    void add_present_pass(ResourcePtr<GPUTexture> swap_color);
+    void add_present_pass(ResourcePtr<GPUTexture> swap_texture);
     
     void reset();
     

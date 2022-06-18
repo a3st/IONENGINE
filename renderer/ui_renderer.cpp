@@ -41,8 +41,8 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
     _ui_element_pools.at(frame_index).reset();
     _geometry_pools.at(frame_index).reset();
     
-    auto swapchain_color_info = CreateColorInfo {
-        .attachment = swap_texture,
+    auto swapchain_color_info = RenderPassColorInfo {
+        .texture = swap_texture,
         .load_op = backend::RenderPassLoadOp::Load,
         .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
     };
@@ -51,8 +51,8 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
         "ui",
         _width,
         _height,
-        std::span<CreateColorInfo const>(&swapchain_color_info, 1),
-        std::span<CreateInputInfo const>(),
+        std::span<RenderPassColorInfo const>(&swapchain_color_info, 1),
+        std::span<ResourcePtr<GPUTexture> const>(),
         std::nullopt,
         [&, frame_index](RenderPassContext& context) -> PassTaskResult {
 

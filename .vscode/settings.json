@@ -105,6 +105,7 @@
         "valarray": "cpp",
         "future": "cpp",
         "cinttypes": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "source_location": "cpp"
     }
 }

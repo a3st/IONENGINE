@@ -20,6 +20,8 @@ struct CommandList {
 
     void close(backend::Device& device);
 
+    void barrier(backend::Device& device, std::span<backend::MemoryBarrierDesc const> const barrier_descs);
+
     static lib::Expected<CommandList, lib::Result<CommandListError>> create(backend::Device& device, backend::QueueFlags const flags, bool const bundle = false);
 };
 

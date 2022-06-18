@@ -7,10 +7,7 @@
             properties: [
                 { name: "view", type: "float4x4" },
                 { name: "projection", type: "float4x4" },
-                { name: "camera_position", type: "float3" },
-                { name: "point_light_count", type: "_uint" },
-                { name: "direction_light_count", type: "_uint" },
-                { name: "spot_light_count", type: "_uint" }
+                { name: "camera_position", type: "float3" }
             ],
             visibility: "all"
         },
