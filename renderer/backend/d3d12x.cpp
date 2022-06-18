@@ -153,7 +153,7 @@ HRESULT DescriptorRange::allocate(D3D12_DESCRIPTOR_RANGE const& descriptor_range
     } while(!_arena_block_index.compare_exchange_strong(cur_arena_block_index, next_arena_block_index, std::memory_order_acq_rel, std::memory_order_acquire));
 
     auto& arena_block = _arena_block_ranges[cur_arena_block_index];
-    
+
     uint32_t next_arena_block_offset;
     uint32_t cur_arena_block_offset = arena_block.offset.load(std::memory_order_acquire);
 

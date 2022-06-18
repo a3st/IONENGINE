@@ -4,6 +4,7 @@
 #include <renderer/frame_graph.h>
 #include <renderer/gpu_texture.h>
 #include <lib/thread_pool.h>
+#include <range/v3/view.hpp>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -36,25 +37,37 @@ void FrameGraph::add_pass(
     std::optional<CreateDepthStencilInfo> const depth_stencil,
     RenderPassFunc const& func
 ) {
-    
-    std::vector<ResourcePtr<GPUTexture>> color_textures;
-    std::vector<lib::math::Color> color_clears;
-    std::vector<ResourcePtr<GPUTexture>> input_textures;
 
     std::vector<backend::RenderPassColorDesc> color_descs;
-    std::vector<GPUTexture const*> color_texture_ptrs;
 
     for(auto const& color : colors) {
-        color_textures.emplace_back(color.attachment);
         color_descs.push_back(
             backend::RenderPassColorDesc {
                 .load_op = color.load_op,
                 .store_op = backend::RenderPassStoreOp::Store
             }
         );
-        color_clears.emplace_back(color.clear_color);
-        color_texture_ptrs.emplace_back(&color.attachment->get());
     }
+
+    auto color_textures = 
+        colors | 
+        std::views::transform([&](CreateColorInfo const& info) { return info.attachment; }) | 
+        ranges::to<std::vector<ResourcePtr<GPUTexture>>>();
+
+    auto color_texture_ptrs = 
+        colors | 
+        std::views::transform([&](CreateColorInfo const& info) { return &info.attachment->get(); }) | 
+        ranges::to<std::vector<GPUTexture const*>>();
+
+    auto color_clears =
+        colors |
+        std::views::transform([&](CreateColorInfo const& info) { return info.clear_color; }) | 
+        ranges::to<std::vector<lib::math::Color>>();
+
+    auto input_textures =
+        inputs |
+        std::views::transform([&](CreateInputInfo const& info) { return info.attachment; }) | 
+        ranges::to<std::vector<ResourcePtr<GPUTexture>>>();
 
     ResourcePtr<RenderPass> render_pass;
 

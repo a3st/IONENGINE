@@ -216,7 +216,7 @@ private:
     struct ArenaBlockRange {
         uint32_t begin;
         uint32_t size;
-        std::atomic<uint32_t> offset;
+        std::atomic<uint32_t> offset; 
     };
 
     ID3D12DescriptorHeap* _heap{nullptr};
