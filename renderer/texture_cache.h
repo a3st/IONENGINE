@@ -22,7 +22,7 @@ public:
 
     TextureCache& operator=(TextureCache&& other) noexcept;
 
-    ResourcePtr<GPUTexture> get(UploadManager& upload_manager, asset::Texture& texture);
+    ResourcePtr<GPUTexture> get(asset::Texture& texture);
 
 private:
 

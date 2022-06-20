@@ -21,20 +21,14 @@ TextureCache& TextureCache::operator=(TextureCache&& other) noexcept {
     return *this;
 }
 
-ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::Texture& texture) {
+ResourcePtr<GPUTexture> TextureCache::get(asset::Texture& texture) {
 
     {
         std::lock_guard lock(_mutex);
         uint64_t const hash = texture.hash;
 
         if(_data.is_valid(texture.cache_entry)) {
-            auto& cache_entry = _data.get(texture.cache_entry);
-
-            if(cache_entry.value->is_wait_for_upload.load()) {
-                upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
-            }
-
-            return cache_entry.value;
+            return _data.get(texture.cache_entry).value;
         }
     }
 
@@ -53,7 +47,6 @@ ResourcePtr<GPUTexture> TextureCache::get(UploadManager& upload_manager, asset::
 
         cache_entry.value->is_wait_for_upload.store(true);
 
-        upload_manager.upload_texture_data(cache_entry.value, std::span<uint8_t const>(texture.data.data(), texture.data.size()));
         texture.cache_entry = _data.push(std::move(cache_entry));
 
         return _data.get(texture.cache_entry).value;

@@ -35,7 +35,7 @@ void RenderInterface::RenderGeometry(Rml::Vertex* vertices, int num_vertices, in
 
         } else {
 
-            renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _texture_cache->get(*_upload_manager, *texture_data);
+            renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _texture_cache->get(*texture_data);
 
             if(gpu_texture->is_ok()) {
                 uint32_t const albedo_location = _program->get().index_descriptor_by_name("albedo");
@@ -158,7 +158,7 @@ bool RenderInterface::LoadTexture(Rml::TextureHandle& texture_handle, Rml::Vecto
         if(result.is_ok()) {
 
             auto texture = std::move(result.as_ok());
-            _texture_cache->get(*_upload_manager, texture);
+            _texture_cache->get(texture);
             texture_dimensions = Rml::Vector2i(texture.width, texture.height);
             texture_handle = (Rml::TextureHandle)&_texture_handles.emplace_back(std::move(texture));
             return true;
@@ -181,7 +181,9 @@ bool RenderInterface::GenerateTexture(Rml::TextureHandle& texture_handle, const 
     };
     texture.hash = texture.data.hash();
 
-    _texture_cache->get(*_upload_manager, texture);
+    renderer::ResourcePtr<renderer::GPUTexture> gpu_texture = _texture_cache->get(texture);
+
+    _upload_manager->upload_texture_data(gpu_texture, texture.data.to_span());
 
     texture_handle = (Rml::TextureHandle)&_texture_handles.emplace_back(std::move(texture));
     return true;

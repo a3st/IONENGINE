@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <renderer/resource_ptr.h>
+#include <renderer/command_pool.h>
 #include <renderer/gpu_texture.h>
 #include <renderer/gpu_buffer.h>
 #include <renderer/geometry_buffer.h>
@@ -10,49 +10,85 @@
 
 namespace ionengine::renderer {
 
-inline uint32_t constexpr UPLOAD_MANAGER_BUFFER_COUNT = 2;
+inline size_t constexpr UPLOAD_MANAGER_BUFFER_SIZE = 32 * 1024 * 1024;
+inline uint32_t constexpr UPLOAD_MANAGER_DISPATCH_TASK_COUNT = 64;
+
+template<class Type>
+struct UploadBatchData { };
+
+template<>
+struct UploadBatchData<GeometryBuffer> {
+    ResourcePtr<GeometryBuffer> geometry_buffer;
+    asset::AssetPtr<asset::Mesh> asset;
+    uint32_t surface_index;
+};
+
+template<>
+struct UploadBatchData<GPUTexture> {
+    ResourcePtr<GPUTexture> texture;
+    asset::AssetPtr<asset::Texture> asset;
+};
+
+struct UploadBatch {
+    std::variant<
+        UploadBatchData<GeometryBuffer>,
+        UploadBatchData<GPUTexture>
+    > data;
+};
+
+template<class Type>
+struct UploadTaskData { 
+    ResourcePtr<Type> ptr;
+    Type resource;
+};
+
+struct UploadTask {
+    std::variant<
+        UploadTaskData<GPUBuffer>,
+        UploadTaskData<GPUTexture>,
+        UploadTaskData<GeometryBuffer>
+    > data;
+
+    ResourcePtr<CommandList> command_list;
+};
+
+struct UploadBuffer {
+    backend::Handle<backend::Buffer> buffer;
+    size_t size;
+    uint64_t offset;
+};
 
 class UploadManager {
 public:
 
     UploadManager(backend::Device& device);
 
-    void upload_texture_data(ResourcePtr<GPUTexture> resource, std::span<uint8_t const> const data, bool const async = true);
+    bool upload_texture_data(ResourcePtr<GPUTexture> resource, std::span<uint8_t const> const data, bool const async = true);
 
-    void upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t const offset, std::span<uint8_t const> const data, bool const async = true);
+    bool upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t const offset, std::span<uint8_t const> const data, bool const async = true);
 
-    void upload_geometry_data(ResourcePtr<GeometryBuffer> resource, std::span<uint8_t const> const vertex_data, std::span<uint8_t const> const index_data, bool const async = true);
+    bool upload_geometry_data(ResourcePtr<GeometryBuffer> resource, std::span<uint8_t const> const vertex_data, std::span<uint8_t const> const index_data, bool const async = true);
 
-    void update();
+    void dispatch();
 
 private:
 
-    template<class Type>
-    struct UploadData {
-        ResourcePtr<Type> ptr;
-        Type resource;
-    };
-
-    struct UploadBuffer {
-        backend::Handle<backend::CommandList> command_list;
-        backend::Handle<backend::Buffer> buffer;
-        uint32_t size;
-        uint64_t offset;
-        bool is_close;
-    };
-
     backend::Device* _device;
 
-    std::array<UploadBuffer, UPLOAD_MANAGER_BUFFER_COUNT> _upload_buffers;
-    uint32_t _buffer_index{0};
+    std::unique_ptr<UploadBuffer> _upload_buffer;
 
-    std::array<uint64_t, UPLOAD_MANAGER_BUFFER_COUNT> _fence_values;
+    CommandPool<CommandPoolType::Copy> _copy_command_pool;
 
-    std::mutex _mutex;
+    uint64_t _fence_value;
 
-    std::array<std::queue<UploadData<GPUTexture>>, UPLOAD_MANAGER_BUFFER_COUNT> _textures;
-    std::array<std::queue<UploadData<GPUBuffer>>, UPLOAD_MANAGER_BUFFER_COUNT> _buffers;
-    std::array<std::queue<UploadData<GeometryBuffer>>, UPLOAD_MANAGER_BUFFER_COUNT> _geometry_buffers;
+    std::vector<UploadTask> _tasks;
+
+    std::atomic<uint32_t> _pending_upload_task_count;
+    uint32_t _dispatch_upload_task_count;
+
+    void get_texture_data(backend::Format const format, uint32_t const width, uint32_t const height, size_t& row_bytes, uint32_t& row_count);
+
+    bool get_required_memory_offset(size_t const size, uint64_t& required_offset);
 };
 
 }

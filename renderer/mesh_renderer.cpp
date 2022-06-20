@@ -85,6 +85,14 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     _width(window.client_width()),
     _height(window.client_height()) {
 
+    auto [texture_sender, texture_receiver] = lib::make_channel<asset::AssetEvent<asset::Texture>>();
+    _asset_manager->texture_pool().event_dispatcher().add(texture_sender);
+    _texture_receiver = texture_receiver;
+
+    auto [mesh_sender, mesh_receiver] = lib::make_channel<asset::AssetEvent<asset::Mesh>>();
+    _asset_manager->mesh_pool().event_dispatcher().add(mesh_sender);
+    _mesh_receiver = mesh_receiver;
+
     for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         _object_pools.emplace_back(*_device, 32, 256, BufferPoolUsage::Dynamic);
         _world_pools.emplace_back(*_device, 4, BufferPoolUsage::Dynamic);
@@ -118,8 +126,63 @@ MeshRenderer::~MeshRenderer() {
 
 }
 
-void MeshRenderer::update(float const delta_time) {
+void MeshRenderer::update(float const delta_time, std::queue<UploadBatch>& upload_batches) {
     
+    {
+        asset::AssetEvent<asset::Texture> texture_event;
+
+        while(_texture_receiver->try_receive(texture_event)) {
+            
+            auto event_visitor = make_visitor(
+                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Loaded>& data) {
+                    ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(data.asset->get());
+                    
+                    upload_batches.emplace(
+                        UploadBatch {
+                            .data = UploadBatchData<GPUTexture> { .texture = gpu_texture, .asset = data.asset }
+                        }
+                    );
+                },
+                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Unloaded>& data) {
+
+                },
+                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Added>& data) { },
+                [&](asset::AssetEventData<asset::Texture, asset::AssetEventType::Removed>& data) { }
+            );
+
+            std::visit(event_visitor, texture_event.data);
+        }
+    }
+
+    {
+        asset::AssetEvent<asset::Mesh> mesh_event;
+
+        while(_mesh_receiver->try_receive(mesh_event)) {
+            
+            auto event_visitor = make_visitor(
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Loaded>& data) {
+
+                    for(size_t i = 0; i < data.asset->get().surfaces().size(); ++i) {
+
+                        ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(data.asset->get().surfaces()[i]);
+                        
+                        upload_batches.emplace(
+                            UploadBatch {
+                                .data = UploadBatchData<GeometryBuffer> { .geometry_buffer = geometry_buffer, .asset = data.asset, .surface_index = static_cast<uint32_t>(i) }
+                            }
+                        );
+                    }
+                },
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Unloaded>& data) {
+
+                },
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Added>& data) { },
+                [&](asset::AssetEventData<asset::Mesh, asset::AssetEventType::Removed>& data) { }
+            );
+
+            std::visit(event_visitor, mesh_event.data);
+        }
+    }
 }
 
 void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
@@ -281,7 +344,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                             binder.update(object_location, object_sbuffer->get());
                             binder.bind(*_device, command_list->get());
 
-                            ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->get().surfaces()[batch.surface_index]);
+                            ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(batch.mesh->get().surfaces()[batch.surface_index]);
                                 
                             if(geometry_buffer->is_ok()) {
                                 geometry_buffer->get().bind(*_device, command_list->get());
@@ -438,7 +501,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                             binder.update(point_light_location, point_light_sbuffer->get());
                             binder.bind(*_device, command_list->get());
 
-                            ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(*_upload_manager, batch.mesh->get().surfaces()[batch.surface_index]);
+                            ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(batch.mesh->get().surfaces()[batch.surface_index]);
 
                             if(geometry_buffer->is_ok()) {
                                 geometry_buffer->get().bind(*_device, command_list->get());
@@ -511,7 +574,7 @@ void MeshRenderer::apply_material(DescriptorBinder& binder, GPUProgram const& pr
             }
 
             if(parameter.as_sampler2D().asset->is_ok()) {
-                ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(*_upload_manager, parameter.as_sampler2D().asset->get());
+                ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(parameter.as_sampler2D().asset->get());
 
                 if(gpu_texture->is_ok()) {
                     uint32_t const texture_location = it->second.as_sampler2D().index;

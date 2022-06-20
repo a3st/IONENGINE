@@ -13,6 +13,7 @@
 #include <renderer/buffer_pool.h>
 #include <asset/asset_manager.h>
 #include <lib/math/matrix.h>
+#include <lib/channel.h>
 
 namespace ionengine {
 
@@ -66,7 +67,7 @@ public:
 
     MeshRenderer& operator=(MeshRenderer&&) = delete;
 
-    void update(float const delta_time);
+    void update(float const delta_time, std::queue<UploadBatch>& upload_batches);
 
     void resize(uint32_t const width, uint32_t const height);
 
@@ -84,6 +85,9 @@ private:
     backend::Device* _device;
     asset::AssetManager* _asset_manager;
     UploadManager* _upload_manager;
+
+    std::optional<lib::Receiver<asset::AssetEvent<asset::Texture>>> _texture_receiver;
+    std::optional<lib::Receiver<asset::AssetEvent<asset::Mesh>>> _mesh_receiver;
 
     TextureCache _texture_cache;
     GeometryCache _geometry_cache;

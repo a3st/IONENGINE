@@ -101,7 +101,7 @@ struct Device::Impl {
     ComPtr<IDXGISwapChain3> swapchain;
     std::vector<ComPtr<ID3D12CommandQueue>> queues;
     std::vector<ComPtr<ID3D12Fence>> fences;
-    std::vector<uint64_t> fence_values;
+    std::array<std::atomic<uint64_t>, 3> fence_values;
     std::vector<ID3D12CommandList*> batches;
 
     HANDLE fence_event{NULL};
@@ -211,6 +211,8 @@ struct Device::Impl {
     void unmap_buffer_data(Handle<Buffer> const& buffer);
     
     void present();
+
+    size_t get_memory_required_size(ResourceHandle const& resource);
 
     uint32_t acquire_next_swapchain_texture();
 
@@ -428,7 +430,6 @@ void Device::Impl::initialize(uint32_t const adapter_index, SwapchainDesc const&
 
     queues.resize(3);
     fences.resize(3);
-    fence_values.resize(3);
     std::fill(fence_values.begin(), fence_values.end(), 1);
 
     // Create Device Queue (Direct) for execution command lists
@@ -1507,6 +1508,49 @@ void Device::Impl::unmap_buffer_data(Handle<Buffer> const& buffer) {
     buffer_data.resource->Unmap(0, &range);
 }
 
+size_t Device::Impl::get_memory_required_size(ResourceHandle const& resource) {
+
+    size_t total_bytes = 0;
+
+    auto resource_visitor = make_visitor(
+        [&](Handle<Texture> const& texture) {
+            auto& texture_data = textures[texture];
+            auto resource_desc = texture_data.resource->GetDesc();
+
+            device->GetCopyableFootprints(
+                &resource_desc,
+                0,
+                resource_desc.MipLevels,
+                0,
+                nullptr,
+                nullptr,
+                nullptr,
+                &total_bytes
+            );
+        },
+        [&](Handle<Buffer> const& buffer) {
+            auto& texture_data = buffers[buffer];
+            auto resource_desc = texture_data.resource->GetDesc();
+
+            device->GetCopyableFootprints(
+                &resource_desc,
+                0,
+                resource_desc.MipLevels,
+                0,
+                nullptr,
+                nullptr,
+                nullptr,
+                &total_bytes
+            );
+        },
+        [&](Handle<Sampler> const& sampler) { }
+    );
+
+    std::visit(resource_visitor, resource);
+
+    return total_bytes;
+}
+
 uint32_t Device::Impl::acquire_next_swapchain_texture() {
     swapchain_index = swapchain->GetCurrentBackBufferIndex();
     cbv_srv_uav_ranges[swapchain_index]->reset();
@@ -1572,8 +1616,6 @@ uint64_t Device::Impl::submit(std::span<Handle<CommandList> const> const command
 
     batches.clear();
 
-    uint64_t& cur_fence_value = fence_values[get_queue_index(flags)]; 
-
     for(auto& command_list : command_lists) {
         auto& command_list_data = this->command_lists[command_list];
         command_list_data.command_list->Close();
@@ -1583,10 +1625,12 @@ uint64_t Device::Impl::submit(std::span<Handle<CommandList> const> const command
 
     queues[get_queue_index(flags)]->ExecuteCommandLists(static_cast<uint32_t>(batches.size()), batches.data());
 
-    THROW_IF_FAILED(queues[get_queue_index(flags)]->Signal(fences[get_queue_index(flags)].Get(), cur_fence_value));
+    uint64_t fence_value_result = fence_values[get_queue_index(flags)].load();
+    ++fence_values[get_queue_index(flags)];
 
-    ++cur_fence_value;
-    return cur_fence_value - 1;
+    THROW_IF_FAILED(queues[get_queue_index(flags)]->Signal(fences[get_queue_index(flags)].Get(), fence_value_result));
+
+    return fence_value_result;
 }
 
 uint64_t Device::Impl::submit_after(std::span<Handle<CommandList> const> const command_lists, uint64_t fence_value, QueueFlags const flags) {
@@ -1612,12 +1656,12 @@ uint64_t Device::Impl::submit_after(std::span<Handle<CommandList> const> const c
     THROW_IF_FAILED(queues[get_queue_index(flags)]->Wait(fences[get_queue_index(flags)].Get(), fence_value));
     queues[get_queue_index(flags)]->ExecuteCommandLists(static_cast<uint32_t>(batches.size()), batches.data());
 
-    uint64_t& cur_fence_value = fence_values[get_queue_index(flags)];
+    uint64_t fence_value_result = fence_values[get_queue_index(flags)].load();
+    ++fence_values[get_queue_index(flags)];
 
-    THROW_IF_FAILED(queues[get_queue_index(flags)]->Signal(fences[get_queue_index(flags)].Get(), cur_fence_value));
+    THROW_IF_FAILED(queues[get_queue_index(flags)]->Signal(fences[get_queue_index(flags)].Get(), fence_value_result));
 
-    ++cur_fence_value;
-    return cur_fence_value - 1;
+    return fence_value_result;
 }
 
 void Device::Impl::wait(uint64_t const fence_value, QueueFlags const flags) {
@@ -1655,38 +1699,35 @@ void Device::Impl::wait_for_idle(QueueFlags const flags) {
 
     if(flags & QueueFlags::Graphics) {
 
-        uint64_t& fence_value = fence_values[0];
+        uint64_t fence_value = fence_values[0].load();
+        ++fence_values[0];
 
         THROW_IF_FAILED(queues[0]->Signal(fences[0].Get(), fence_value));
         THROW_IF_FAILED(fences[0]->SetEventOnCompletion(fence_value, fence_event));
 
         WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
-        
-        ++fence_value;
     }
 
     if(flags & QueueFlags::Copy) {
 
-        uint64_t& fence_value = fence_values[1];
+        uint64_t fence_value = fence_values[1].load();
+        ++fence_values[1];
 
         THROW_IF_FAILED(queues[1]->Signal(fences[1].Get(), fence_value));
         THROW_IF_FAILED(fences[1]->SetEventOnCompletion(fence_value, fence_event));
 
         WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
-        
-        ++fence_value;
     }
 
     if(flags & QueueFlags::Compute) {
 
-        uint64_t& fence_value = fence_values[2];
+        uint64_t fence_value = fence_values[2].load();
+        ++fence_values[2];
 
         THROW_IF_FAILED(queues[2]->Signal(fences[2].Get(), fence_value));
         THROW_IF_FAILED(fences[2]->SetEventOnCompletion(fence_value, fence_event));
 
         WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
-        
-        ++fence_value;
     }
 }
 
@@ -2299,6 +2340,10 @@ void Device::unmap_buffer_data(Handle<Buffer> const& buffer) {
 
 void Device::present() {
     _impl->present();
+}
+
+size_t Device::get_memory_required_size(ResourceHandle const& resource) {
+    return _impl->get_memory_required_size(resource);
 }
 
 uint32_t Device::acquire_next_swapchain_texture() {

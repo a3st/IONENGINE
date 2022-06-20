@@ -22,7 +22,7 @@ public:
 
     GeometryCache& operator=(GeometryCache&& other) noexcept;
 
-    ResourcePtr<GeometryBuffer> get(UploadManager& upload_manager, asset::SurfaceData& surface);
+    ResourcePtr<GeometryBuffer> get(asset::SurfaceData& surface);
 
 private:
 

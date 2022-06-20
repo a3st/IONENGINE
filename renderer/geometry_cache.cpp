@@ -22,21 +22,14 @@ GeometryCache& GeometryCache::operator=(GeometryCache&& other) noexcept {
     return *this;
 }
 
-ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, asset::SurfaceData& surface) {
+ResourcePtr<GeometryBuffer> GeometryCache::get(asset::SurfaceData& surface) {
     uint64_t hash;
     {
         std::lock_guard lock(_mutex);
         hash = surface.vertices.hash() ^ surface.indices.hash();
 
         if(_data.is_valid(surface.cache_entry)) {
-
-            auto& cache_entry = _data.get(surface.cache_entry);
-
-            if(cache_entry.value->is_wait_for_upload.load()) {
-                upload_manager.upload_geometry_data(cache_entry.value, surface.vertices.to_span(),surface.indices.to_span());
-            }
-
-            return cache_entry.value;
+            return _data.get(surface.cache_entry).value;
         }
     }
 
@@ -55,7 +48,6 @@ ResourcePtr<GeometryBuffer> GeometryCache::get(UploadManager& upload_manager, as
 
         cache_entry.value->is_wait_for_upload.store(true);
 
-        upload_manager.upload_geometry_data(cache_entry.value, surface.vertices.to_span(),surface.indices.to_span());
         surface.cache_entry = _data.push(std::move(cache_entry));
 
         return _data.get(surface.cache_entry).value;

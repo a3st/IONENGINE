@@ -70,6 +70,8 @@ private:
 
     std::vector<ResourcePtr<GPUTexture>> _swap_textures;
 
+    std::queue<UploadBatch> _upload_batches;
+
     UiRenderer _ui_renderer;
     MeshRenderer _mesh_renderer;
 

@@ -52,12 +52,46 @@ Renderer::~Renderer() {
 
 void Renderer::update(float const delta_time) {
     SCOPE_PROFILE()
-    
-    _upload_manager.update();
+
+    _mesh_renderer.update(delta_time, _upload_batches);
 }
 
 void Renderer::render(scene::Scene& scene, ui::UserInterface& ui) {
     SCOPE_PROFILE()
+
+    bool is_skip_upload = false;
+
+    if(!_upload_batches.empty() && !is_skip_upload) {
+        auto& batch = _upload_batches.front();
+
+        bool result = false;
+
+        auto batch_data_visitor = make_visitor(
+            [&](UploadBatchData<GeometryBuffer>& data) {
+                result = _upload_manager.upload_geometry_data(
+                    data.geometry_buffer, 
+                    data.asset->get().surfaces()[data.surface_index].vertices.to_span(),
+                    data.asset->get().surfaces()[data.surface_index].indices.to_span()
+                );
+            },
+            [&](UploadBatchData<GPUTexture>& data) {
+                result = _upload_manager.upload_texture_data(
+                    data.texture, 
+                    data.asset->get().data.to_span()
+                );
+            }
+        );
+
+        std::visit(batch_data_visitor, batch.data);
+
+        if(result) {
+            _upload_batches.pop();
+        } else {
+            is_skip_upload = true;
+        }
+    }
+
+    _upload_manager.dispatch();
 
     uint32_t const frame_index = _frame_graph.wait();
 

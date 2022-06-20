@@ -137,4 +137,40 @@ private:
     uint32_t _offset{0};
 };
 
+template<>
+class CommandPool<CommandPoolType::Copy> {
+public:
+
+    CommandPool(backend::Device& device, uint32_t const pool_size) {
+        for(uint32_t i = 0; i < pool_size; ++i) {
+            _data.emplace_back(make_resource_ptr(CommandList::create(device, backend::QueueFlags::Copy).as_ok()));
+        }
+    }
+
+    CommandPool(CommandPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
+    CommandPool& operator=(CommandPool&& other) noexcept {
+        _data = std::move(other._data);
+        _offset = std::move(other._offset);
+    }
+
+    void reset() {
+        _offset = 0;
+    }
+
+    ResourcePtr<CommandList> allocate() {
+        auto command_list = _data.at(_offset);
+        ++_offset;
+        return command_list;
+    }
+
+private:
+
+    std::vector<ResourcePtr<CommandList>> _data;
+    uint32_t _offset{0};
+};
+
 }

@@ -357,6 +357,8 @@ public:
 
     void present();
 
+    size_t get_memory_required_size(ResourceHandle const& resource);
+
     uint32_t acquire_next_swapchain_texture();
 
     Handle<Texture> swapchain_texture(uint32_t const index);
