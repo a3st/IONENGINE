@@ -177,16 +177,6 @@ bool UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
 
 bool UploadManager::upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t const offset, std::span<uint8_t const> const data, bool const async) {
 
-    if(_pending_upload_task_count.load() == 0) {
-        _copy_command_pool.reset();
-        _upload_buffer->offset = 0;
-        _dispatch_upload_task_count = 0;
-    }
-
-    if(_dispatch_upload_task_count == UPLOAD_MANAGER_DISPATCH_TASK_COUNT) {
-        return false;
-    }
-
     if(resource->get().is_host_visible()) {
 
         uint8_t* buffer_data = _device->map_buffer_data(resource->get().buffer, offset);
@@ -194,6 +184,16 @@ bool UploadManager::upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t
         _device->unmap_buffer_data(resource->get().buffer);
 
     } else {
+
+        if(_pending_upload_task_count.load() == 0) {
+            _copy_command_pool.reset();
+            _upload_buffer->offset = 0;
+            _dispatch_upload_task_count = 0;
+        }
+
+        if(_dispatch_upload_task_count == UPLOAD_MANAGER_DISPATCH_TASK_COUNT) {
+            return false;
+        }
 
         size_t const required_size = data.size_bytes();
         uint64_t required_offset;
@@ -258,16 +258,6 @@ bool UploadManager::upload_buffer_data(ResourcePtr<GPUBuffer> resource, uint64_t
 
 bool UploadManager::upload_geometry_data(ResourcePtr<GeometryBuffer> resource, std::span<uint8_t const> const vertex_data, std::span<uint8_t const> const index_data, bool const async) {
 
-    if(_pending_upload_task_count.load() == 0) {
-        _copy_command_pool.reset();
-        _upload_buffer->offset = 0;
-        _dispatch_upload_task_count = 0;
-    }
-
-    if(_dispatch_upload_task_count == UPLOAD_MANAGER_DISPATCH_TASK_COUNT) {
-        return false;
-    }
-
     if(resource->get().is_host_visible()) {
 
         uint8_t* buffer_data = _device->map_buffer_data(resource->get().vertex_buffer, 0);
@@ -279,6 +269,16 @@ bool UploadManager::upload_geometry_data(ResourcePtr<GeometryBuffer> resource, s
         _device->unmap_buffer_data(resource->get().index_buffer);
 
     } else {
+
+        if(_pending_upload_task_count.load() == 0) {
+            _copy_command_pool.reset();
+            _upload_buffer->offset = 0;
+            _dispatch_upload_task_count = 0;
+        }
+
+        if(_dispatch_upload_task_count == UPLOAD_MANAGER_DISPATCH_TASK_COUNT) {
+            return false;
+        }
 
         uint32_t const resource_alignment_mask = backend::TEXTURE_RESOURCE_ALIGNMENT - 1;
 

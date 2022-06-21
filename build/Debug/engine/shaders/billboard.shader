@@ -5,12 +5,10 @@
             name: "world",
             type: "cbuffer",
             properties: [
-                { name: "view", type: "f32x4x4" },
-                { name: "projection", type: "f32x4x4" },
-                { name: "camera_position", type: "f32x3" },
-                { name: "point_light_count", type: "uint32" },
-                { name: "direction_light_count", type: "uint32" },
-                { name: "spot_light_count", type: "uint32" }
+                { name: "view", type: "float4x4" },
+                { name: "proj", type: "float4x4" },
+                { name: "camera_position", type: "float3" },
+                { name: "inverse_view_proj", type: "float4x4" }
             ],
             visibility: "vertex"
         },
@@ -33,7 +31,7 @@
         fill_mode: "solid",
         cull_mode: "none",
         depth_stencil: false,
-        blend: false
+        blend_mode: "opaque"
     },
     stages: [
         {

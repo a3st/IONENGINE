@@ -21,11 +21,41 @@ lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> GPUPipeline::create(ba
         .write_enable = draw_parameters.depth_stencil
     };
 
-    auto blend_desc = backend::BlendDesc { 
-        draw_parameters.blend,
-        backend::Blend::SrcAlpha, backend::Blend::InvSrcAlpha, backend::BlendOp::Add, 
-        backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add 
-    };
+    backend::BlendDesc blend_desc;
+
+    switch(draw_parameters.blend_mode) {
+        case asset::ShaderBlendMode::Opaque: {
+            blend_desc = backend::BlendDesc { 
+                false,
+                backend::Blend::Zero, backend::Blend::Zero, backend::BlendOp::Add, 
+                backend::Blend::Zero, backend::Blend::Zero, backend::BlendOp::Add 
+            };
+        } break;
+
+        case asset::ShaderBlendMode::Add: {
+            blend_desc = backend::BlendDesc { 
+                true,
+                backend::Blend::One, backend::Blend::One, backend::BlendOp::Add, 
+                backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add 
+            };
+        } break;
+
+        case asset::ShaderBlendMode::Mixed: {
+            blend_desc = backend::BlendDesc { 
+                true,
+                backend::Blend::One, backend::Blend::InvSrcAlpha, backend::BlendOp::Add, 
+                backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add 
+            };
+        } break;
+
+        case asset::ShaderBlendMode::AlphaBlend: {
+            blend_desc = backend::BlendDesc { 
+                true,
+                backend::Blend::SrcAlpha, backend::Blend::InvSrcAlpha, backend::BlendOp::Add, 
+                backend::Blend::One, backend::Blend::Zero, backend::BlendOp::Add 
+            };
+        } break;
+    }
 
     gpu_pipeline.pipeline = device.create_pipeline(
         program.descriptor_layout, 

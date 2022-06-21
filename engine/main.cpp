@@ -100,7 +100,8 @@ int main(int* argc, char** agrv) {
                         }
 
                         if(input_manager.key_down(input::KeyCode::F3)) {
-                            user_interface.hot_reload();
+                            renderer.mesh_renderer()._is_ssr_enable = !renderer.mesh_renderer()._is_ssr_enable;
+                            std::cout << renderer.mesh_renderer()._is_ssr_enable << std::endl;
                         }
 
                         if(input_manager.key_down(input::KeyCode::F4)) {

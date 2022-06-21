@@ -33,7 +33,7 @@ uint64_t ionengine::renderer::gpu_pipeline_calculate_hash(GPUProgram const& prog
         static_cast<uint32_t>(draw_parameters.fill_mode) ^
         static_cast<uint32_t>(draw_parameters.cull_mode) ^
         static_cast<uint32_t>(draw_parameters.depth_stencil) ^
-        static_cast<uint32_t>(draw_parameters.blend)
+        static_cast<uint32_t>(draw_parameters.blend_mode)
     ;
 
     uint32_t const render_pass_hash = render_pass.render_pass.index() ^ render_pass.render_pass.generation();

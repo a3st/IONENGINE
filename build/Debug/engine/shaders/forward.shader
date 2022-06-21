@@ -6,8 +6,9 @@
             type: "cbuffer",
             properties: [
                 { name: "view", type: "float4x4" },
-                { name: "projection", type: "float4x4" },
-                { name: "camera_position", type: "float3" }
+                { name: "proj", type: "float4x4" },
+                { name: "camera_position", type: "float3" },
+                { name: "inverse_view_proj", type: "float4x4" }
             ],
             visibility: "all"
         },
@@ -63,7 +64,7 @@
         fill_mode: "solid",
         cull_mode: "back",
         depth_stencil: true,
-        blend: true
+        blend_mode: "alpha_blend"
     },
     stages: [
         {
@@ -87,7 +88,7 @@
 
                 #define IONENGINE_MATRIX_M objects[instance].model
                 #define IONENGINE_MATRIX_V world.view
-                #define IONENGINE_MATRIX_P world.projection
+                #define IONENGINE_MATRIX_P world.proj
                 #define IONENGINE_MATRIX_INV_M objects[instance].inverse_model
 
                 vs_output main(vs_input input, uint instance : SV_InstanceID) {

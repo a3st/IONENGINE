@@ -107,8 +107,9 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));
-        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::DepthStencil).as_ok()));
+        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::DepthStencil | backend::TextureFlags::ShaderResource).as_ok()));
         _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
+        _ssr_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
     }
 
     auto quad_surface_data = asset::SurfaceData::make_quad();
@@ -120,6 +121,9 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
 
     _fxaa_shader = asset_manager.get_shader("engine/shaders/fxaa.shader");
     _fxaa_shader->wait();
+
+    _ssr_shader = asset_manager.get_shader("engine/shaders/ssr.shader");
+    _ssr_shader->wait();
 }
 
 MeshRenderer::~MeshRenderer() {
@@ -202,8 +206,9 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));
-        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil).as_ok()));
+        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil | backend::TextureFlags::ShaderResource).as_ok()));
         _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
+        _ssr_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
     }
 }
 
@@ -229,8 +234,9 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
     auto world_buffer = WorldData {
         .view = _render_camera->transform_view(),
-        .projection = _render_camera->transform_projection(),
-        .camera_position = _render_camera->position()
+        .proj = _render_camera->transform_projection(),
+        .camera_position = _render_camera->position(),
+        .inverse_view_proj = (_render_camera->transform_view() * _render_camera->transform_projection()).inverse()
     };
 
     ResourcePtr<GPUBuffer> world_cbuffer = _world_pools.at(frame_index).allocate();
@@ -516,6 +522,59 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         }
     );
 
+    auto ssr_color_info = RenderPassColorInfo {
+        .texture = _ssr_images.at(frame_index),
+        .load_op = backend::RenderPassLoadOp::Clear,
+        .clear_color = lib::math::Color(0.5f, 0.5f, 0.5f, 1.0f)
+    };
+
+    if(_is_ssr_enable) {
+
+    frame_graph.add_pass(
+        "ssr",
+        _width,
+        _height,
+        std::span<RenderPassColorInfo const>(&ssr_color_info, 1),
+        std::span<ResourcePtr<GPUTexture> const>(&_depth_stencils.at(frame_index), 1),
+        std::nullopt,
+        [&, frame_index, world_cbuffer](RenderPassContext& context) -> PassTaskResult {
+
+            ResourcePtr<CommandList> command_list = context.command_pool->allocate();
+
+            ResourcePtr<GPUProgram> program = shader_cache.get(_ssr_shader->get());
+            ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), _ssr_shader->get().draw_parameters, context.render_pass->get());
+
+            gpu_pipeline->get().bind(*_device, command_list->get());
+
+            DescriptorBinder binder(program, null);
+
+            uint32_t const world_location = program->get().index_descriptor_by_name("world");
+            uint32_t const positions = program->get().index_descriptor_by_name("positions");
+            uint32_t const normals = program->get().index_descriptor_by_name("normals");
+            uint32_t const color = program->get().index_descriptor_by_name("color");
+            uint32_t const roughness_metalness_ao = program->get().index_descriptor_by_name("roughness_metalness_ao");
+
+            binder.update(world_location, world_cbuffer->get());
+            binder.update(positions, _gbuffers.at(frame_index).positions->get());
+            binder.update(normals, _gbuffers.at(frame_index).normals->get());
+            binder.update(color, _final_images.at(frame_index)->get());
+            binder.update(roughness_metalness_ao, _gbuffers.at(frame_index).roughness_metalness_ao->get());
+
+            binder.bind(*_device, command_list->get());
+
+            if(_quad->is_ok()) {
+                _quad->get().bind(*_device, command_list->get());
+                _device->draw_indexed(command_list->get().command_list, static_cast<uint32_t>(_quad->get().index_size / sizeof(uint32_t)), 1, 0);
+            }
+
+            command_list->get().close(*_device);
+
+            return PassTaskResult::singlethread(std::move(command_list)); 
+        }
+    );
+
+    }
+
     auto swapchain_color_info = RenderPassColorInfo {
         .texture = swap_texture,
         .load_op = backend::RenderPassLoadOp::Clear,
@@ -528,7 +587,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         _height,
         std::span<RenderPassColorInfo const>(&swapchain_color_info, 1),
         std::span<ResourcePtr<GPUTexture> const>(),
-        depth_stencil_info,
+        std::nullopt,
         [&, frame_index](RenderPassContext& context) -> PassTaskResult {
 
             ResourcePtr<CommandList> command_list = context.command_pool->allocate();
@@ -542,8 +601,11 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
             uint32_t const color = program->get().index_descriptor_by_name("color");
 
+            if(_is_ssr_enable) {
+            binder.update(color, _ssr_images.at(frame_index)->get());
+            } else {
             binder.update(color, _final_images.at(frame_index)->get());
-
+            }
             binder.bind(*_device, command_list->get());
 
             if(_quad->is_ok()) {

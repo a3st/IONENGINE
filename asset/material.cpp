@@ -37,16 +37,57 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
         for(auto const& parameter : document.parameters) {
 
             if(parameter.type == JSON_MaterialParameterType::sampler2D) {
-                material.parameters.insert(
-                    { 
-                        parameter.name, 
-                        MaterialParameter { 
-                            .data = MaterialParameterData<asset::MaterialParameterType::Sampler2D> { 
-                                .asset = asset_manager.get_texture(parameter.value.path.value())
+
+                if(parameter.value.path.has_value()) {
+
+                    material.parameters.insert(
+                        { 
+                            parameter.name, 
+                            MaterialParameter { 
+                                .data = MaterialParameterData<asset::MaterialParameterType::Sampler2D> { 
+                                    .asset = asset_manager.get_texture(parameter.value.path.value())
+                                } 
                             } 
-                        } 
+                        }
+                    );
+                } else if(parameter.value.vec4.has_value()) {
+
+                    auto result = Texture::create(
+                        32, 
+                        32, 
+                        false, 
+                        lib::math::Color(
+                            parameter.value.vec4->at(0), 
+                            parameter.value.vec4->at(1), 
+                            parameter.value.vec4->at(2), 
+                            parameter.value.vec4->at(3)
+                        )
+                    );
+
+                    if(result.is_ok()) {
+
+                        Texture texture = std::move(result.as_ok());
+
+                        auto asset = make_asset_ptr(std::move(texture));
+
+                        asset_manager.texture_pool().push(asset);
+                        asset_manager.texture_pool().event_dispatcher().broadcast(asset::AssetEvent<Texture>::loaded(asset));
+
+                        material.parameters.insert(
+                            { 
+                                parameter.name, 
+                                MaterialParameter { 
+                                    .data = MaterialParameterData<asset::MaterialParameterType::Sampler2D> { 
+                                        .asset = std::move(asset)
+                                    } 
+                                } 
+                            }
+                        );
+
+                    } else {
+                        throw lib::Exception(result.as_error().message);
                     }
-                );
+                }
             } else {
                 switch(parameter.type) {
                     case JSON_MaterialParameterType::f32: {

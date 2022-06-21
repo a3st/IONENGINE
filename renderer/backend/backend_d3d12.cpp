@@ -587,11 +587,12 @@ Handle<Texture> Device::Impl::create_texture(
             case Format::RGBA8_UNORM: return DXGI_FORMAT_R8G8B8A8_UNORM;
             case Format::BGRA8_UNORM: return DXGI_FORMAT_B8G8R8A8_UNORM;
             case Format::BGR8_UNORM: return DXGI_FORMAT_B8G8R8X8_UNORM;
+            case Format::R8_UNORM: return DXGI_FORMAT_R8_UNORM;
             case Format::BC1: return DXGI_FORMAT_BC1_UNORM;
             case Format::BC3: return DXGI_FORMAT_BC3_UNORM;
             case Format::BC4: return DXGI_FORMAT_BC4_UNORM;
             case Format::BC5: return DXGI_FORMAT_BC5_UNORM;
-            case Format::D32_FLOAT: return DXGI_FORMAT_D32_FLOAT;
+            case Format::D32_FLOAT: return DXGI_FORMAT_R32_TYPELESS;
             case Format::RGBA16_FLOAT: return DXGI_FORMAT_R16G16B16A16_FLOAT;
             default: assert(false && "invalid format specified"); break;
         }
@@ -645,7 +646,7 @@ Handle<Texture> Device::Impl::create_texture(
     if(flags & TextureFlags::DepthStencil) {
 
         auto depth_stencil_view_desc = D3D12_DEPTH_STENCIL_VIEW_DESC {};
-        depth_stencil_view_desc.Format = resource_desc.Format;
+        depth_stencil_view_desc.Format = DXGI_FORMAT_D32_FLOAT;
 
         switch(dimension) {
             case Dimension::_1D: {
@@ -721,7 +722,11 @@ Handle<Texture> Device::Impl::create_texture(
     if(flags & TextureFlags::ShaderResource) {
 
         auto shader_resource_view_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {};
-        shader_resource_view_desc.Format = resource_desc.Format;
+        if(flags & TextureFlags::DepthStencil) {
+            shader_resource_view_desc.Format = DXGI_FORMAT_R32_FLOAT;
+        } else {
+            shader_resource_view_desc.Format = resource_desc.Format;
+        }
         shader_resource_view_desc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
         switch(dimension) {
@@ -886,11 +891,15 @@ Handle<RenderPass> Device::Impl::create_render_pass(
 
         auto depth_begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
         depth_begin.Type = get_render_pass_begin_type(depth_stencil_desc.value().depth_load_op);
-        depth_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+
+        // HOTFIX
+        // depth_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+        depth_begin.Clear.ClearValue.Format = DXGI_FORMAT_D32_FLOAT;
 
         auto stencil_begin = D3D12_RENDER_PASS_BEGINNING_ACCESS {};
         stencil_begin.Type = get_render_pass_begin_type(depth_stencil_desc.value().stencil_load_op);
-        stencil_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+        //stencil_begin.Clear.ClearValue.Format = texture_data.resource->GetDesc().Format;
+        stencil_begin.Clear.ClearValue.Format = DXGI_FORMAT_D32_FLOAT;
 
         auto depth_end = D3D12_RENDER_PASS_ENDING_ACCESS {};
         depth_end.Type = get_render_pass_end_type(depth_stencil_desc.value().depth_store_op);
@@ -1023,7 +1032,6 @@ Handle<Shader> Device::Impl::create_shader(std::string_view const source, Shader
     ComPtr<IDxcBlobUtf8> error_blob;
     result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), reinterpret_cast<void**>(error_blob.GetAddressOf()), nullptr);
     if (error_blob && error_blob->GetStringLength() > 0) {
-        std::cout << std::format("shader compilation error (\n{})", std::string_view(error_blob->GetStringPointer(), error_blob->GetStringLength())) << std::endl;
         throw lib::Exception(std::format("shader compilation error (\n{})", std::string_view(error_blob->GetStringPointer(), error_blob->GetStringLength())));
     }
 
@@ -1325,7 +1333,9 @@ Handle<Pipeline> Device::Impl::create_pipeline(
         pipeline_desc.RTVFormats[i] = render_pass_data.render_target_descs[i].BeginningAccess.Clear.ClearValue.Format;
     }
 
+    // HOTFIX
     pipeline_desc.DSVFormat = render_pass_data.has_depth_stencil ? render_pass_data.depth_stencil_desc.DepthBeginningAccess.Clear.ClearValue.Format : DXGI_FORMAT_UNKNOWN;
+    
     pipeline_desc.NumRenderTargets = render_pass_data.render_target_count;
     pipeline_desc.BlendState = _blend_desc;
     pipeline_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -1900,6 +1910,7 @@ void Device::Impl::close_command_list(Handle<CommandList> const& command_list) {
     auto& command_list_data = command_lists[command_list];
     THROW_IF_FAILED(command_list_data.command_list->Close());
     command_list_data.is_reset = false;
+    command_list_data.binded_pipeline = nullptr;
 }
 
 void Device::Impl::execute_bundle(Handle<CommandList> const& command_list, Handle<CommandList> const& bundle_command_list) {

@@ -11,7 +11,7 @@
         fill_mode: "solid",
         cull_mode: "back",
         depth_stencil: false,
-        blend: false
+        blend_mode: "opaque"
     },
     stages: [
         {

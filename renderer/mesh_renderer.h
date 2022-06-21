@@ -37,8 +37,9 @@ struct PointLightData {
 
 __declspec(align(backend::TEXTURE_ROW_PITCH_ALIGNMENT)) struct WorldData {
     lib::math::Matrixf view;
-    lib::math::Matrixf projection;
+    lib::math::Matrixf proj;
     lib::math::Vector3f camera_position;
+    lib::math::Matrixf inverse_view_proj;
 };
 
 __declspec(align(backend::TEXTURE_ROW_PITCH_ALIGNMENT)) struct LightData {
@@ -73,6 +74,8 @@ public:
 
     void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, RTTextureCache& rt_texture_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index);
 
+    bool _is_ssr_enable{true};
+
 private:
 
     struct GBufferData {
@@ -95,6 +98,7 @@ private:
     std::vector<GBufferData> _gbuffers;
     std::vector<ResourcePtr<GPUTexture>> _depth_stencils;
     std::vector<ResourcePtr<GPUTexture>> _final_images;
+    std::vector<ResourcePtr<GPUTexture>> _ssr_images;
 
     std::vector<PointLightData> _point_lights;
     RenderQueue _opaque_queue;
@@ -117,6 +121,7 @@ private:
 
     asset::AssetPtr<asset::Shader> _deffered_shader;
     asset::AssetPtr<asset::Shader> _fxaa_shader;
+    asset::AssetPtr<asset::Shader> _ssr_shader;
 
     void apply_material(DescriptorBinder& binder, GPUProgram const& program, asset::Material& material, uint32_t const frame_index);
 };

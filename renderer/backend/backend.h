@@ -52,6 +52,7 @@ enum class Format {
     BGRA8_UNORM,
     BGR8_UNORM,
     RGBA8_UNORM,
+    R8_UNORM,
     RGBA32,
     RGB32,
     RG32,

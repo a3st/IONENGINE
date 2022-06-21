@@ -8,7 +8,7 @@
 using namespace ionengine;
 using namespace ionengine::asset;
 
-lib::Expected<Texture, lib::Result<TextureError>> Texture::create(uint32_t const width, uint32_t const height, bool const is_render_target) {
+lib::Expected<Texture, lib::Result<TextureError>> Texture::create(uint32_t const width, uint32_t const height, bool const is_render_target, lib::math::Color const& initial_color) {
 
     auto texture = Texture {};
     texture.width = width;
@@ -20,9 +20,26 @@ lib::Expected<Texture, lib::Result<TextureError>> Texture::create(uint32_t const
     texture.t_address_mode = TextureAddress::Clamp;
     texture.is_render_target = is_render_target;
 
-    std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::string const render_target_hash = std::format("RT{{{}}}", time);
-    texture.hash = XXHash64::hash(render_target_hash.data(), render_target_hash.size(), 0);
+    if(is_render_target) {
+        std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        std::string const render_target_hash = std::format("RT{{{}}}", time);
+        texture.hash = XXHash64::hash(render_target_hash.data(), render_target_hash.size(), 0);
+    } else {
+
+        std::vector<uint8_t> pixel_data(width * height * 4);
+        for(size_t i = 0; i < width; ++i) {
+            for(size_t j = 0; j < height; ++j) {
+                pixel_data.at((j * width + i) * 4 + 0) = static_cast<uint8_t>(initial_color.r * 255.0f);
+                pixel_data.at((j * width + i) * 4 + 1) = static_cast<uint8_t>(initial_color.g * 255.0f);
+                pixel_data.at((j * width + i) * 4 + 2) = static_cast<uint8_t>(initial_color.b * 255.0f);
+                pixel_data.at((j * width + i) * 4 + 3) = static_cast<uint8_t>(initial_color.a * 255.0f);
+            }
+        }
+
+        texture.data = std::span<uint8_t const>(pixel_data.data(), pixel_data.size());
+
+        texture.hash = texture.data.hash();
+    }
 
     return lib::make_expected<Texture, lib::Result<TextureError>>(std::move(texture));
 }

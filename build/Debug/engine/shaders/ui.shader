@@ -22,7 +22,7 @@
         fill_mode: "solid",
         cull_mode: "none",
         depth_stencil: false,
-        blend: true
+        blend_mode: "alpha_blend"
     },
     stages: [
         {

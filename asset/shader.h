@@ -56,6 +56,15 @@ enum class JSON_ShaderCullMode {
 
 JSON5_ENUM(JSON_ShaderCullMode, front, back, none)
 
+enum class JSON_ShaderBlendMode {
+    opaque,
+    add,
+    mixed,
+    alpha_blend
+};
+
+JSON5_ENUM(JSON_ShaderBlendMode, opaque, add, mixed, alpha_blend)
+
 struct JSON_ShaderBufferDataDefinition {
     std::string name;
     JSON_ShaderDataType type;
@@ -93,10 +102,10 @@ struct JSON_ShaderDrawParametersDefinition {
     JSON_ShaderFillMode fill_mode;
     JSON_ShaderCullMode cull_mode;
     bool depth_stencil;
-    bool blend;
+    JSON_ShaderBlendMode blend_mode;
 };
 
-JSON5_CLASS(JSON_ShaderDrawParametersDefinition, fill_mode, cull_mode, depth_stencil, blend)
+JSON5_CLASS(JSON_ShaderDrawParametersDefinition, fill_mode, cull_mode, depth_stencil, blend_mode)
 
 struct JSON_ShaderDefinition {
     std::string name;
@@ -151,6 +160,13 @@ enum class ShaderCullMode {
     Front,
     Back,
     None
+};
+
+enum class ShaderBlendMode {
+    Opaque,
+    Add,
+    Mixed,
+    AlphaBlend
 };
 
 struct ShaderBufferData {
@@ -227,7 +243,7 @@ struct ShaderDrawParameters {
     ShaderFillMode fill_mode;
     ShaderCullMode cull_mode;
     bool depth_stencil;
-    bool blend;
+    ShaderBlendMode blend_mode;
 };
 
 struct Shader {
@@ -252,6 +268,8 @@ ShaderType constexpr get_shader_type(JSON_ShaderType const shader_type);
 ShaderFillMode constexpr get_shader_fill_mode(JSON_ShaderFillMode const fill_mode);
 
 ShaderCullMode constexpr get_shader_cull_mode(JSON_ShaderCullMode const cull_mode);
+
+ShaderBlendMode constexpr get_shader_blend_mode(JSON_ShaderBlendMode const blend_mode);
 
 std::string generate_shader_iassembler_code(std::string_view const name, std::span<JSON_ShaderIAssemblerDefinition const> const properties);
 

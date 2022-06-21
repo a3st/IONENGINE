@@ -159,7 +159,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
         .fill_mode = get_shader_fill_mode(document.draw_parameters.fill_mode),
         .cull_mode = get_shader_cull_mode(document.draw_parameters.cull_mode),
         .depth_stencil = document.draw_parameters.depth_stencil,
-        .blend = document.draw_parameters.blend
+        .blend_mode = get_shader_blend_mode(document.draw_parameters.blend_mode)
     };
 
     return lib::make_expected<Shader, lib::Result<ShaderError>>(std::move(shader));
@@ -232,6 +232,19 @@ ShaderCullMode constexpr ionengine::asset::get_shader_cull_mode(JSON_ShaderCullM
         default: {
             assert(false && "invalid data type");
             return ShaderCullMode::None;
+        }
+    }
+}
+
+ShaderBlendMode constexpr ionengine::asset::get_shader_blend_mode(JSON_ShaderBlendMode const blend_mode) {
+    switch(blend_mode) {
+        case JSON_ShaderBlendMode::opaque: return ShaderBlendMode::Opaque;
+        case JSON_ShaderBlendMode::add: return ShaderBlendMode::Add;
+        case JSON_ShaderBlendMode::mixed: return ShaderBlendMode::Mixed;
+        case JSON_ShaderBlendMode::alpha_blend: return ShaderBlendMode::AlphaBlend;
+        default: {
+            assert(false && "invalid data type");
+            return ShaderBlendMode::Opaque;
         }
     }
 }

@@ -28,10 +28,10 @@ uint64_t ionengine::renderer::render_pass_calculate_hash(
     GPUTexture const* depth_stencil,
     std::optional<backend::RenderPassDepthStencilDesc> const depth_stencil_desc
 ) {
-    uint32_t color_hash = colors[0]->texture.index() ^ colors[0]->texture.generation();
+    uint32_t color_hash = colors[0]->texture.index() + colors[0]->texture.generation();
 
     for(size_t i = 1; i < colors.size(); ++i) {
-        color_hash ^= colors[i]->texture.index() ^ colors[i]->texture.generation();
+        color_hash ^= colors[i]->texture.index() + colors[i]->texture.generation();
     }
 
     uint32_t color_desc_hash = static_cast<uint32_t>(color_descs[0].load_op) ^ static_cast<uint32_t>(color_descs[0].store_op);
@@ -40,7 +40,7 @@ uint64_t ionengine::renderer::render_pass_calculate_hash(
         color_desc_hash ^= static_cast<uint32_t>(color_descs[i].load_op) ^ static_cast<uint32_t>(color_descs[i].store_op);
     }
 
-    uint32_t low = 0;
+    uint32_t low = std::numeric_limits<uint32_t>::max();
 
     if(depth_stencil) {
         uint32_t const depth_stencil_hash = depth_stencil->texture.index() ^ depth_stencil->texture.generation();

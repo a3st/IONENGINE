@@ -88,4 +88,9 @@ inline AssetPtr<Type> make_asset_ptr(std::filesystem::path const& asset_path) {
     return AssetPtr<Type>(new AssetState<Type> { .data = AssetStateData<Type, AssetStateType::Pending> { }, .asset_path = asset_path });
 }
 
+template<class Type>
+inline AssetPtr<Type> make_asset_ptr(Type&& asset) {
+    return AssetPtr<Type>(new AssetState<Type> { .data = AssetStateData<Type, AssetStateType::Ok> { .asset = std::move(asset) }, .asset_path = "" });
+}
+
 }
