@@ -37,6 +37,7 @@
 /build/Debug/*
 !/build/Debug/engine
 !/build/Debug/content
+!/build/Debug/new_material_system
 /.gradle/*
 /thirdparty/d3d12_ma/build/*
 /thirdparty/rmlui/build/*
