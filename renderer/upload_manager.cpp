@@ -97,8 +97,6 @@ bool UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
     uint32_t const row_pitch_alignment_mask = backend::TEXTURE_ROW_PITCH_ALIGNMENT - 1;
     uint32_t const resource_alignment_mask = backend::TEXTURE_RESOURCE_ALIGNMENT - 1;
 
-    uint32_t mip_width = gpu_texture.width;
-    uint32_t mip_height = gpu_texture.height;
     uint64_t mip_offset = 0;
 
     std::vector<backend::TextureCopyRegion> regions;
@@ -106,19 +104,22 @@ bool UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
     uint8_t* buffer_data = _device->map_buffer_data(_upload_buffer->buffer, 0);
     //uint64_t buffer_offset = required_offset;
 
-    for(uint32_t i = 0; i < gpu_texture.mip_count; ++i) {
+    for(uint32_t k = 0; k < gpu_texture.depth; ++k) {
+
+        uint32_t mip_width = gpu_texture.width;
+        uint32_t mip_height = gpu_texture.height;
 
         size_t row_bytes;
         uint32_t row_count;
         uint32_t const stride = 4;
 
-        for(uint32_t k = 0; k < gpu_texture.depth; ++k) { 
+        for(uint32_t i = 0; i < gpu_texture.mip_count; ++i) {
 
             get_texture_data(gpu_texture.format, mip_width, mip_height, row_bytes, row_count);
 
             uint32_t const row_pitch = (mip_width * stride + row_pitch_alignment_mask) & ~row_pitch_alignment_mask;
 
-            regions.emplace_back(i, row_pitch, _upload_buffer->offset);
+            regions.emplace_back(gpu_texture.mip_count * k + i, row_pitch, _upload_buffer->offset);
 
             uint8_t* dest = buffer_data + _upload_buffer->offset;
             uint8_t const* source = data.data() + mip_offset;

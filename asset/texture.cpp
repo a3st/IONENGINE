@@ -124,7 +124,7 @@ lib::Expected<Texture, lib::Result<TextureError>> Texture::load_from_file(std::f
                 }
             }
 
-            if(dds_header.ddspf.flags & DDS_CUBEMAP) {
+            if(dds_header.caps2 & DDS_CUBEMAP) {
                 texture.depth = 6;
                 texture.is_cube_map = true;
             } else {
