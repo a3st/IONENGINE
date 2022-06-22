@@ -5,7 +5,7 @@
 #include <scene/mesh_node.h>
 #include <scene/camera_node.h>
 #include <scene/point_light_node.h>
-#include <lib/scope_profiler.h>
+#include <scene/world_environment_node.h>
 
 using namespace ionengine;
 using namespace ionengine::framework;
@@ -22,6 +22,12 @@ Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& in
     camera_object_node->position(lib::math::Vector3f(0.0f, 1.0f, 3.0f));
 
     scene.graph().root()->add_child(camera_object_node);
+
+    auto world_environment_node = scene.graph().add_node<scene::WorldEnvironmentNode>();
+    world_environment_node->name("world_environment");
+    world_environment_node->skybox_material(asset_manager.get_material("content/materials/skyboxes/sky_01.mat"));
+
+    scene.graph().root()->add_child(world_environment_node);
 
     _camera_node = camera_object_node;
 

@@ -31,6 +31,7 @@
         fill_mode: "solid",
         cull_mode: "none",
         depth_stencil: false,
+        depth_test: "less",
         blend_mode: "opaque"
     },
     stages: [

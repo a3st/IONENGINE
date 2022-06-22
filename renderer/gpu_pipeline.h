@@ -37,4 +37,6 @@ backend::FillMode constexpr get_shader_fill_mode(asset::ShaderFillMode const fil
 
 backend::CullMode constexpr get_shader_cull_mode(asset::ShaderCullMode const cull_mode);
 
+backend::CompareOp constexpr get_shader_depth_test(asset::ShaderDepthTest const depth_test);
+
 }

@@ -21,6 +21,12 @@ DescriptorBinder::DescriptorBinder(ResourcePtr<GPUProgram> program, NullData& nu
                 _exist_updates.insert({ data.index + 1, _update_resources.size() });
                 _update_resources.emplace_back(data.index + 1, null_data.texture->get().sampler);
             },
+            [&](ProgramDescriptorData<ProgramDescriptorType::SamplerCube> const& data) {
+                _exist_updates.insert({ data.index, _update_resources.size() });
+                _update_resources.emplace_back(data.index, null_data.texture->get().texture);
+                _exist_updates.insert({ data.index + 1, _update_resources.size() });
+                _update_resources.emplace_back(data.index + 1, null_data.texture->get().sampler);
+            },
             [&](ProgramDescriptorData<ProgramDescriptorType::CBuffer> const& data) {
                 _exist_updates.insert({ data.index, _update_resources.size() });
                 _update_resources.emplace_back(data.index, null_data.cbuffer->get().buffer);

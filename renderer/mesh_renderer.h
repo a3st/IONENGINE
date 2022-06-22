@@ -53,6 +53,10 @@ struct ObjectData {
     lib::math::Matrixf inverse_model;
 };
 
+struct WorldEnvironmentData {
+    asset::AssetPtr<asset::Material> skybox_material;
+};
+
 class MeshRenderer {
 public:
 
@@ -105,6 +109,8 @@ private:
     RenderQueue _transculent_queue;
     scene::CameraNode* _render_camera;
 
+    WorldEnvironmentData _world_environment;
+
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(ObjectData)>> _object_pools;
     std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(WorldData)>> _world_pools;
     std::vector<BufferPool<BufferPoolType::CBuffer, sizeof(LightData)>> _light_pools;
@@ -112,6 +118,7 @@ private:
     std::vector<BufferPool<BufferPoolType::SBuffer, sizeof(PointLightData)>> _point_light_pools;
 
     ResourcePtr<GeometryBuffer> _quad;
+    asset::AssetPtr<asset::Mesh> _cube;
 
     uint16_t _anisotropic;
     backend::Filter _filter;
@@ -122,6 +129,7 @@ private:
     asset::AssetPtr<asset::Shader> _deffered_shader;
     asset::AssetPtr<asset::Shader> _fxaa_shader;
     asset::AssetPtr<asset::Shader> _ssr_shader;
+    asset::AssetPtr<asset::Shader> _skybox_shader;
 
     void apply_material(DescriptorBinder& binder, GPUProgram const& program, asset::Material& material, uint32_t const frame_index);
 };

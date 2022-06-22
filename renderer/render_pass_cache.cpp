@@ -43,7 +43,7 @@ uint64_t ionengine::renderer::render_pass_calculate_hash(
     uint32_t low = std::numeric_limits<uint32_t>::max();
 
     if(depth_stencil) {
-        uint32_t const depth_stencil_hash = depth_stencil->texture.index() ^ depth_stencil->texture.generation();
+        uint32_t const depth_stencil_hash = depth_stencil->texture.index() + depth_stencil->texture.generation();
 
         uint32_t const depth_stencil_desc_hash = 
             static_cast<uint32_t>(depth_stencil_desc.value().depth_load_op) ^

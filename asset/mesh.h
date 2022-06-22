@@ -34,6 +34,8 @@ struct SurfaceData {
     size_t cache_entry{std::numeric_limits<size_t>::max()};
 
     static SurfaceData make_quad();
+
+    static SurfaceData make_cube();
 };
 
 class Mesh {

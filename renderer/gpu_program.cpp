@@ -113,6 +113,26 @@ lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_sh
 
                 ++registers_count.at(backend::DescriptorType::ShaderResource);
                 ++registers_count.at(backend::DescriptorType::Sampler);
+            },
+            [&](asset::ShaderUniformData<asset::ShaderUniformType::SamplerCube> const& data) {
+
+                auto descriptor_data = ProgramDescriptorData<ProgramDescriptorType::SamplerCube> { .index = binding_index };
+                
+                program_descriptor = ProgramDescriptor {
+                    .data = std::move(descriptor_data)
+                };
+
+                bindings.emplace_back(binding_index, backend::DescriptorType::ShaderResource, get_shader_flags(uniform.visibility));
+                ++binding_index;
+
+                bindings.emplace_back(binding_index, backend::DescriptorType::Sampler, get_shader_flags(uniform.visibility));
+                ++binding_index;
+
+                uint32_t const register_index = registers_count.at(backend::DescriptorType::ShaderResource);
+                locations.insert({ uniform.name, register_index });
+
+                ++registers_count.at(backend::DescriptorType::ShaderResource);
+                ++registers_count.at(backend::DescriptorType::Sampler);
             }
         );
 
@@ -165,6 +185,9 @@ uint32_t GPUProgram::index_descriptor_by_name(std::string_view const name) const
 
     auto uniform_visitor = make_visitor(
         [&](ProgramDescriptorData<ProgramDescriptorType::Sampler2D> const& data) {
+            index = data.index;
+        },
+        [&](ProgramDescriptorData<ProgramDescriptorType::SamplerCube> const& data) {
             index = data.index;
         },
         [&](ProgramDescriptorData<ProgramDescriptorType::CBuffer> const& data) {
@@ -229,6 +252,10 @@ std::string ionengine::renderer::generate_descriptor_code(asset::ShaderUniform c
         [&](asset::ShaderUniformData<asset::ShaderUniformType::Sampler2D> const& data) {
             generated_code += std::format("SamplerState {}_sampler : register(s{}); ", shader_uniform.name, location);
             generated_code += std::format("Texture2D {}_texture : register(t{});\n", shader_uniform.name, location);
+        },
+        [&](asset::ShaderUniformData<asset::ShaderUniformType::SamplerCube> const& data) {
+            generated_code += std::format("SamplerState {}_sampler : register(s{}); ", shader_uniform.name, location);
+            generated_code += std::format("TextureCube {}_texture : register(t{});\n", shader_uniform.name, location);
         }
     );
 

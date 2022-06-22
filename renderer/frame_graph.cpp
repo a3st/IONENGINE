@@ -101,6 +101,11 @@ void FrameGraph::add_pass(
         std::views::transform([&](RenderPassColorInfo const& info) { return info.clear_color; }) | 
         ranges::to<std::vector>();
 
+    auto input_textures_ = 
+        input_textures | 
+        std::views::transform([&](ResourcePtr<GPUTexture> const& resource) { return resource; }) | 
+        ranges::to<std::vector>();
+
     PassTaskData<PassTaskType::RenderPass> render_pass_task_data;
 
     if(depth_stencil_info.has_value()) {
@@ -111,7 +116,7 @@ void FrameGraph::add_pass(
             .height = height,
             .clear_colors = std::move(clear_colors),
             .color_textures = std::move(color_textures),
-            .input_textures = {},
+            .input_textures = input_textures_,
             .depth_stencil_texture = depth_stencil_value.texture,
             .clear_depth = depth_stencil_value.clear_depth,
             .clear_stencil = depth_stencil_value.clear_stencil,
@@ -124,7 +129,7 @@ void FrameGraph::add_pass(
             .height = height,
             .clear_colors = std::move(clear_colors),
             .color_textures = std::move(color_textures),
-            .input_textures = {},
+            .input_textures = input_textures_,
             .depth_stencil_texture = nullptr,
             .clear_depth = 0.0f,
             .clear_stencil = 0x0,

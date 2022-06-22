@@ -11,11 +11,12 @@ enum class JSON_ShaderUniformType {
     cbuffer,
     sbuffer,
     sampler2D,
+    samplerCube,
     rwbuffer,
     rwtexture2D
 };
 
-JSON5_ENUM(JSON_ShaderUniformType, cbuffer, sbuffer, rwbuffer, sampler2D, rwtexture2D)
+JSON5_ENUM(JSON_ShaderUniformType, cbuffer, sbuffer, rwbuffer, sampler2D, samplerCube, rwtexture2D)
 
 enum class JSON_ShaderDataType {
     float4x4,
@@ -65,6 +66,15 @@ enum class JSON_ShaderBlendMode {
 
 JSON5_ENUM(JSON_ShaderBlendMode, opaque, add, mixed, alpha_blend)
 
+enum class JSON_ShaderDepthTest {
+    equal,
+    less,
+    less_equal,
+    always
+};
+
+JSON5_ENUM(JSON_ShaderDepthTest, equal, less, less_equal, always)
+
 struct JSON_ShaderBufferDataDefinition {
     std::string name;
     JSON_ShaderDataType type;
@@ -102,10 +112,12 @@ struct JSON_ShaderDrawParametersDefinition {
     JSON_ShaderFillMode fill_mode;
     JSON_ShaderCullMode cull_mode;
     bool depth_stencil;
+    JSON_ShaderDepthTest depth_test;
     JSON_ShaderBlendMode blend_mode;
+    
 };
 
-JSON5_CLASS(JSON_ShaderDrawParametersDefinition, fill_mode, cull_mode, depth_stencil, blend_mode)
+JSON5_CLASS(JSON_ShaderDrawParametersDefinition, fill_mode, cull_mode, depth_stencil, depth_test, blend_mode)
 
 struct JSON_ShaderDefinition {
     std::string name;
@@ -126,6 +138,7 @@ enum class ShaderError {
 enum class ShaderUniformType {
     CBuffer,
     Sampler2D,
+    SamplerCube,
     SBuffer,
     RWBuffer,
     RWTexture2D
@@ -169,6 +182,13 @@ enum class ShaderBlendMode {
     AlphaBlend
 };
 
+enum class ShaderDepthTest {
+    Equal,
+    Less,
+    LessEqual,
+    Always
+};
+
 struct ShaderBufferData {
     std::string name;
     ShaderDataType type;
@@ -179,6 +199,9 @@ struct ShaderUniformData { };
 
 template<>
 struct ShaderUniformData<ShaderUniformType::Sampler2D> { };
+
+template<>
+struct ShaderUniformData<ShaderUniformType::SamplerCube> { };
 
 template<>
 struct ShaderUniformData<ShaderUniformType::RWTexture2D> { };
@@ -210,6 +233,7 @@ struct ShaderUniform {
 
     std::variant<
         ShaderUniformData<ShaderUniformType::Sampler2D>,
+        ShaderUniformData<ShaderUniformType::SamplerCube>,
         ShaderUniformData<ShaderUniformType::RWTexture2D>,
         ShaderUniformData<ShaderUniformType::CBuffer>,
         ShaderUniformData<ShaderUniformType::SBuffer>,
@@ -219,6 +243,7 @@ struct ShaderUniform {
     ShaderType visibility;
 
     DECLARE_SHADER_UNIFORM_CONST_CAST(as_sampler2D, ShaderUniformType::Sampler2D)
+    DECLARE_SHADER_UNIFORM_CONST_CAST(as_samplerCube, ShaderUniformType::SamplerCube)
     DECLARE_SHADER_UNIFORM_CONST_CAST(as_cbuffer, ShaderUniformType::CBuffer)
     DECLARE_SHADER_UNIFORM_CONST_CAST(as_sbuffer, ShaderUniformType::SBuffer)
     DECLARE_SHADER_UNIFORM_CONST_CAST(as_rwbuffer, ShaderUniformType::RWBuffer)
@@ -243,6 +268,7 @@ struct ShaderDrawParameters {
     ShaderFillMode fill_mode;
     ShaderCullMode cull_mode;
     bool depth_stencil;
+    ShaderDepthTest depth_test;
     ShaderBlendMode blend_mode;
 };
 
@@ -270,6 +296,8 @@ ShaderFillMode constexpr get_shader_fill_mode(JSON_ShaderFillMode const fill_mod
 ShaderCullMode constexpr get_shader_cull_mode(JSON_ShaderCullMode const cull_mode);
 
 ShaderBlendMode constexpr get_shader_blend_mode(JSON_ShaderBlendMode const blend_mode);
+
+ShaderDepthTest constexpr get_shader_depth_test(JSON_ShaderDepthTest const depth_test);
 
 std::string generate_shader_iassembler_code(std::string_view const name, std::span<JSON_ShaderIAssemblerDefinition const> const properties);
 

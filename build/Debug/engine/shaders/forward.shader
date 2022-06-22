@@ -64,6 +64,7 @@
         fill_mode: "solid",
         cull_mode: "back",
         depth_stencil: true,
+        depth_test: "less",
         blend_mode: "alpha_blend"
     },
     stages: [

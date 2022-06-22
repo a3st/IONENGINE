@@ -17,7 +17,7 @@ lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> GPUPipeline::create(ba
     };
 
     auto depth_stencil_desc = backend::DepthStencilDesc {
-        .depth_func = backend::CompareOp::Less,
+        .depth_func = get_shader_depth_test(draw_parameters.depth_test),
         .write_enable = draw_parameters.depth_stencil
     };
 
@@ -94,6 +94,19 @@ backend::CullMode constexpr ionengine::renderer::get_shader_cull_mode(asset::Sha
         default: {
             assert(false && "invalid data type");
             return backend::CullMode::None;
+        }
+    }
+}
+
+backend::CompareOp constexpr ionengine::renderer::get_shader_depth_test(asset::ShaderDepthTest const depth_test) {
+    switch(depth_test) {
+        case asset::ShaderDepthTest::Always: return backend::CompareOp::Always;
+        case asset::ShaderDepthTest::Equal: return backend::CompareOp::Equal;
+        case asset::ShaderDepthTest::LessEqual: return backend::CompareOp::LessEqual;
+        case asset::ShaderDepthTest::Less: return backend::CompareOp::Less;
+        default: {
+            assert(false && "invalid data type");
+            return backend::CompareOp::Always;
         }
     }
 }

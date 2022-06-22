@@ -55,6 +55,7 @@ add_executable(Runtime-Win32
     scene/scene.cpp
     scene/point_light_node.cpp
     scene/subscene.cpp
+    scene/world_environment_node.cpp
 # ---------------------------    
     # Renderer Backend
     renderer/backend/d3d12x.cpp

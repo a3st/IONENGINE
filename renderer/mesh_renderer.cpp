@@ -7,6 +7,7 @@
 #include <scene/camera_node.h>
 #include <scene/mesh_node.h>
 #include <scene/point_light_node.h>
+#include <scene/world_environment_node.h>
 #include <scene/scene_visitor.h>
 
 using namespace ionengine;
@@ -17,10 +18,11 @@ namespace ionengine::renderer {
 class MeshVisitor : public scene::SceneVisitor {
 public:
 
-    MeshVisitor(RenderQueue& opaque_queue, RenderQueue& transculent_queue, std::vector<PointLightData>& point_lights) : 
+    MeshVisitor(RenderQueue& opaque_queue, RenderQueue& transculent_queue, std::vector<PointLightData>& point_lights, WorldEnvironmentData& world_environment) : 
         _opaque_queue(&opaque_queue), 
         _transculent_queue(&transculent_queue), 
-        _point_lights(&point_lights) { 
+        _point_lights(&point_lights),
+        _world_environment(&world_environment) { 
         
     }
 
@@ -67,11 +69,16 @@ public:
     void operator()(scene::TransformNode& other) { }
     void operator()(scene::CameraNode& other) { }
 
+    void operator()(scene::WorldEnvironmentNode& other) {
+        // _world_environment->skybox_material = other.skybox_material();
+    }
+
 private:
 
     RenderQueue* _opaque_queue;
     RenderQueue* _transculent_queue;
     std::vector<PointLightData>* _point_lights;
+    WorldEnvironmentData* _world_environment;
 };
 
 }
@@ -98,6 +105,7 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
         _world_pools.emplace_back(*_device, 4, BufferPoolUsage::Dynamic);
         _light_pools.emplace_back(*_device, 64, BufferPoolUsage::Dynamic);
         _point_light_pools.emplace_back(*_device, 512, 2, BufferPoolUsage::Dynamic);
+        _material_pools.emplace_back(*_device, 64, BufferPoolUsage::Dynamic);
 
         auto gbuffer = GBufferData {
             .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
@@ -116,6 +124,10 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     _quad = make_resource_ptr(GeometryBuffer::load_from_surface(*_device, quad_surface_data).as_ok());
     _upload_manager->upload_geometry_data(_quad, quad_surface_data.vertices.to_span(), quad_surface_data.indices.to_span());
 
+    
+    _cube = asset_manager.get_mesh("engine/skybox.obj");
+    _cube->wait();
+
     _deffered_shader = asset_manager.get_shader("engine/shaders/deffered.shader");
     _deffered_shader->wait();
 
@@ -124,6 +136,9 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
 
     _ssr_shader = asset_manager.get_shader("engine/shaders/ssr.shader");
     _ssr_shader->wait();
+
+    _skybox_shader = asset_manager.get_shader("engine/shaders/skybox.shader");
+    _skybox_shader->wait();
 }
 
 MeshRenderer::~MeshRenderer() {
@@ -218,15 +233,19 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     _world_pools.at(frame_index).reset();
     _light_pools.at(frame_index).reset();
     _point_light_pools.at(frame_index).reset();
+    _material_pools.at(frame_index).reset();
 
     _opaque_queue.clear();
     _transculent_queue.clear();
     _point_lights.clear();
 
-    MeshVisitor mesh_visitor(_opaque_queue, _transculent_queue, _point_lights);
+    MeshVisitor mesh_visitor(_opaque_queue, _transculent_queue, _point_lights, _world_environment);
     scene.visit_culling_nodes(mesh_visitor);
 
     _render_camera = scene.graph().find_by_name<scene::CameraNode>("main_camera");
+
+    auto world_environment = scene.graph().find_by_name<scene::WorldEnvironmentNode>("world_environment");
+    _world_environment.skybox_material = world_environment->skybox_material();
 
     _render_camera->calculate_matrices();
     _opaque_queue.sort();
@@ -522,6 +541,58 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         }
     );
 
+    frame_graph.add_pass(
+        "skybox",
+        _width,
+        _height,
+        std::span<RenderPassColorInfo const>(&final_color_info, 1),
+        std::span<ResourcePtr<GPUTexture> const>(),
+        depth_stencil_info,
+        [&, frame_index, world_cbuffer](RenderPassContext& context) -> PassTaskResult {
+
+            ResourcePtr<CommandList> command_list = context.command_pool->allocate();
+
+            asset::AssetPtr<asset::Shader> skybox_shader = _world_environment.skybox_material->get().passes.at("skybox");
+
+            ResourcePtr<GPUProgram> program = shader_cache.get(skybox_shader->get());
+            ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), skybox_shader->get().draw_parameters, context.render_pass->get());
+
+            gpu_pipeline->get().bind(*_device, command_list->get());
+
+            DescriptorBinder binder(program, null);
+
+            apply_material(binder, program->get(), _world_environment.skybox_material->get(), frame_index);
+
+            uint32_t const world_location = program->get().index_descriptor_by_name("world");
+            uint32_t const object_location = program->get().index_descriptor_by_name("object");
+
+            binder.update(world_location, world_cbuffer->get());
+
+            ResourcePtr<GPUBuffer> gpu_buffer = _material_pools.at(frame_index).allocate();
+            
+            auto object_data = ObjectData {
+                .model = lib::math::Matrixf::scale(lib::math::Vector3f(16.0f, 16.0f, 16.0f)),
+                .inverse_model = lib::math::Matrixf::scale(lib::math::Vector3f(16.0f, 16.0f, 16.0f)).inverse()
+            };
+            _upload_manager->upload_buffer_data(gpu_buffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&object_data), sizeof(ObjectData)));
+
+            binder.update(object_location, gpu_buffer->get());
+
+            binder.bind(*_device, command_list->get());
+
+            ResourcePtr<GeometryBuffer> geometry_buffer = _geometry_cache.get(_cube->get().surfaces()[0]);
+
+            if(geometry_buffer->is_ok()) {
+                geometry_buffer->get().bind(*_device, command_list->get());
+                _device->draw_indexed(command_list->get().command_list, static_cast<uint32_t>(geometry_buffer->get().index_size / sizeof(uint32_t)), 1, 0);
+            }
+
+            command_list->get().close(*_device);
+
+            return PassTaskResult::singlethread(std::move(command_list)); 
+        }
+    );
+
     auto ssr_color_info = RenderPassColorInfo {
         .texture = _ssr_images.at(frame_index),
         .load_op = backend::RenderPassLoadOp::Clear,
@@ -535,7 +606,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
         _width,
         _height,
         std::span<RenderPassColorInfo const>(&ssr_color_info, 1),
-        std::span<ResourcePtr<GPUTexture> const>(&_depth_stencils.at(frame_index), 1),
+        std::span<ResourcePtr<GPUTexture> const>(),
         std::nullopt,
         [&, frame_index, world_cbuffer](RenderPassContext& context) -> PassTaskResult {
 
@@ -644,6 +715,23 @@ void MeshRenderer::apply_material(DescriptorBinder& binder, GPUProgram const& pr
                 }
             }
 
+        } else if(parameter.is_samplerCube()) {
+
+            auto const it = program.descriptors.find(parameter_name);
+
+            if(it == program.descriptors.end()) {
+                break;
+            }
+
+            if(parameter.as_samplerCube().asset->is_ok()) {
+                ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(parameter.as_samplerCube().asset->get());
+
+                if(gpu_texture->is_ok()) {
+                    uint32_t const texture_location = it->second.as_samplerCube().index;
+                    binder.update(texture_location, gpu_texture->get());
+                }
+            }
+
         } else {
                         
             auto const it = program.descriptors.find("material");
@@ -668,7 +756,8 @@ void MeshRenderer::apply_material(DescriptorBinder& binder, GPUProgram const& pr
                     std::memcpy(material_buffer.data() + cbuffer_data.offsets.at(parameter_name), data.value.data(), sizeof(lib::math::Vector4f));
                 },
                 // Default
-                [&](asset::MaterialParameterData<asset::MaterialParameterType::Sampler2D> const& parameter_data) { }
+                [&](asset::MaterialParameterData<asset::MaterialParameterType::Sampler2D> const& parameter_data) { },
+                [&](asset::MaterialParameterData<asset::MaterialParameterType::SamplerCube> const& parameter_data) { }
             );
 
             std::visit(parameter_visitor, parameter.data);

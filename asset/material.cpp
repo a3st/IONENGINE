@@ -88,6 +88,22 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
                         throw lib::Exception(result.as_error().message);
                     }
                 }
+            } else if(parameter.type == JSON_MaterialParameterType::samplerCube) {
+
+                if(parameter.value.path.has_value()) {
+
+                    material.parameters.insert(
+                        { 
+                            parameter.name, 
+                            MaterialParameter { 
+                                .data = MaterialParameterData<asset::MaterialParameterType::SamplerCube> { 
+                                    .asset = asset_manager.get_texture(parameter.value.path.value())
+                                } 
+                            } 
+                        }
+                    );
+                }
+
             } else {
                 switch(parameter.type) {
                     case JSON_MaterialParameterType::f32: {

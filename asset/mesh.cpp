@@ -126,6 +126,62 @@ SurfaceData SurfaceData::make_quad() {
     };
 }
 
+SurfaceData SurfaceData::make_cube() {
+    auto vertex_data = std::vector<float> {
+        // front
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        // back
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
+        // left
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        // right
+        0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
+        // top
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f
+        // bottom
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f
+    };
+
+    auto index_data = std::vector<uint32_t> { 
+        0, 1, 2, 
+        0, 2, 3,
+        4, 5, 6,
+        4, 6, 7,  
+        10, 9, 8,
+        11, 10, 8,
+        12, 13, 14,
+        12, 14, 15,
+        18, 17, 16,
+        19, 18, 16,
+        20, 21, 22,
+        20, 22, 23
+    };
+
+    return SurfaceData {
+        .vertices = std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(vertex_data.data()), vertex_data.size() * sizeof(float)),
+        .indices = std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(index_data.data()), index_data.size() * sizeof(uint32_t)),
+        .material_index = 0
+    };
+}
+
 Mesh::Mesh(tinyobj::attrib_t const& attributes, std::span<tinyobj::shape_t const> const shapes, std::span<tinyobj::material_t const> const materials) {
 
     uint32_t material_index = 0;

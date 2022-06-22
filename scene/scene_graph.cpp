@@ -26,6 +26,10 @@ void SceneGraph::update_hierarchical_data() {
 
     std::function<void(SceneNode* const)> update_recursively = [&](SceneNode* const node) {
 
+        if(!dynamic_cast<TransformNode*>(node)) {
+            return;
+        }
+
         auto transform_node = static_cast<TransformNode*>(node);
 
         transform_node->_model_local = 

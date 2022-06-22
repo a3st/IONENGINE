@@ -17,6 +17,7 @@ enum class GPUProgramError {
 enum class ProgramDescriptorType {
     CBuffer,
     Sampler2D,
+    SamplerCube,
     SBuffer,
     RWBuffer,
     RWTexture2D
@@ -29,6 +30,12 @@ template<>
 struct ProgramDescriptorData<ProgramDescriptorType::Sampler2D> { 
     uint32_t index;
 };
+
+template<>
+struct ProgramDescriptorData<ProgramDescriptorType::SamplerCube> { 
+    uint32_t index;
+};
+
 
 template<>
 struct ProgramDescriptorData<ProgramDescriptorType::RWTexture2D> { 
@@ -63,6 +70,7 @@ ProgramDescriptorData<Type> const& Name() const { \
 struct ProgramDescriptor {
     std::variant<
         ProgramDescriptorData<ProgramDescriptorType::Sampler2D>,
+        ProgramDescriptorData<ProgramDescriptorType::SamplerCube>,
         ProgramDescriptorData<ProgramDescriptorType::CBuffer>,
         ProgramDescriptorData<ProgramDescriptorType::SBuffer>,
         ProgramDescriptorData<ProgramDescriptorType::RWBuffer>,
@@ -70,6 +78,7 @@ struct ProgramDescriptor {
     > data;
 
     DECLARE_PROGRAM_DESCRIPTOR_CONST_CAST(as_sampler2D, ProgramDescriptorType::Sampler2D)
+    DECLARE_PROGRAM_DESCRIPTOR_CONST_CAST(as_samplerCube, ProgramDescriptorType::SamplerCube)
     DECLARE_PROGRAM_DESCRIPTOR_CONST_CAST(as_cbuffer, ProgramDescriptorType::CBuffer)
     DECLARE_PROGRAM_DESCRIPTOR_CONST_CAST(as_sbuffer, ProgramDescriptorType::SBuffer)
     DECLARE_PROGRAM_DESCRIPTOR_CONST_CAST(as_rwbuffer, ProgramDescriptorType::RWBuffer)

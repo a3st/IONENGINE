@@ -34,6 +34,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
         ShaderUniform shader_uniform;
 
         switch(uniform.type) {
+            
             case JSON_ShaderUniformType::cbuffer: {
                 std::vector<ShaderBufferData> buffer_data;
 
@@ -47,6 +48,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
                     .visibility = get_shader_type(uniform.visibility)
                 };
             } break;
+
             case JSON_ShaderUniformType::rwbuffer: {
                 std::vector<ShaderBufferData> buffer_data;
 
@@ -60,6 +62,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
                     .visibility = get_shader_type(uniform.visibility)
                 };
             } break;
+
             case JSON_ShaderUniformType::sbuffer: {
                 std::vector<ShaderBufferData> buffer_data;
 
@@ -73,6 +76,7 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
                     .visibility = get_shader_type(uniform.visibility)
                 };
             } break;
+
             case JSON_ShaderUniformType::rwtexture2D: {
                 shader_uniform = ShaderUniform { 
                     .name = uniform.name,
@@ -80,10 +84,19 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
                     .visibility = get_shader_type(uniform.visibility)
                 };
             } break;
+
             case JSON_ShaderUniformType::sampler2D: {
                 shader_uniform = ShaderUniform { 
                     .name = uniform.name,
                     .data = ShaderUniformData<ShaderUniformType::Sampler2D>{},
+                    .visibility = get_shader_type(uniform.visibility)
+                };
+            } break;
+
+            case JSON_ShaderUniformType::samplerCube: {
+                shader_uniform = ShaderUniform { 
+                    .name = uniform.name,
+                    .data = ShaderUniformData<ShaderUniformType::SamplerCube>{},
                     .visibility = get_shader_type(uniform.visibility)
                 };
             } break;
@@ -159,7 +172,8 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
         .fill_mode = get_shader_fill_mode(document.draw_parameters.fill_mode),
         .cull_mode = get_shader_cull_mode(document.draw_parameters.cull_mode),
         .depth_stencil = document.draw_parameters.depth_stencil,
-        .blend_mode = get_shader_blend_mode(document.draw_parameters.blend_mode)
+        .depth_test = get_shader_depth_test(document.draw_parameters.depth_test),
+        .blend_mode = get_shader_blend_mode(document.draw_parameters.blend_mode),
     };
 
     return lib::make_expected<Shader, lib::Result<ShaderError>>(std::move(shader));
@@ -245,6 +259,19 @@ ShaderBlendMode constexpr ionengine::asset::get_shader_blend_mode(JSON_ShaderBle
         default: {
             assert(false && "invalid data type");
             return ShaderBlendMode::Opaque;
+        }
+    }
+}
+
+ShaderDepthTest constexpr ionengine::asset::get_shader_depth_test(JSON_ShaderDepthTest const depth_test) {
+    switch(depth_test) {
+        case JSON_ShaderDepthTest::always: return ShaderDepthTest::Always;
+        case JSON_ShaderDepthTest::less: return ShaderDepthTest::Less;
+        case JSON_ShaderDepthTest::less_equal: return ShaderDepthTest::LessEqual;
+        case JSON_ShaderDepthTest::equal: return ShaderDepthTest::Equal;
+        default: {
+            assert(false && "invalid data type");
+            return ShaderDepthTest::Always;
         }
     }
 }

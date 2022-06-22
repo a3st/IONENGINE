@@ -12,6 +12,7 @@
 
 enum class JSON_MaterialParameterType {
     sampler2D,
+    samplerCube,
     f32x4x4,
     f32x4,
     f32x3,
@@ -19,7 +20,7 @@ enum class JSON_MaterialParameterType {
     f32
 };
 
-JSON5_ENUM(JSON_MaterialParameterType, sampler2D, f32x4x4, f32x4, f32x3, f32x2, f32)
+JSON5_ENUM(JSON_MaterialParameterType, sampler2D, samplerCube, f32x4x4, f32x4, f32x3, f32x2, f32)
 
 enum class JSON_MaterialDomain {
     surface
@@ -81,6 +82,7 @@ enum class MaterialError {
 
 enum class MaterialParameterType {
     Sampler2D,
+    SamplerCube,
     F32x4x4,
     F32x4,
     F32x3,
@@ -102,6 +104,11 @@ struct MaterialParameterData {};
 
 template<>
 struct MaterialParameterData<MaterialParameterType::Sampler2D> { 
+    asset::AssetPtr<Texture> asset;
+};
+
+template<>
+struct MaterialParameterData<MaterialParameterType::SamplerCube> { 
     asset::AssetPtr<Texture> asset;
 };
 
@@ -135,6 +142,7 @@ MaterialParameterData<Type>& Name() { \
 struct MaterialParameter {
     std::variant<
         MaterialParameterData<MaterialParameterType::Sampler2D>,
+        MaterialParameterData<MaterialParameterType::SamplerCube>,
         MaterialParameterData<MaterialParameterType::F32>,
         MaterialParameterData<MaterialParameterType::F32x2>,
         MaterialParameterData<MaterialParameterType::F32x3>,
@@ -145,11 +153,16 @@ struct MaterialParameter {
         return data.index() == 0; 
     }
 
+    bool is_samplerCube() const { 
+        return data.index() == 1; 
+    }
+
     bool is_cbuffer() const {
-        return data.index() != 0;
+        return !is_sampler2D() || !is_samplerCube();
     }
 
     DECLARE_MATERIAL_PARAMETER_CAST(as_sampler2D, MaterialParameterType::Sampler2D)
+    DECLARE_MATERIAL_PARAMETER_CAST(as_samplerCube, MaterialParameterType::SamplerCube)
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32, MaterialParameterType::F32)
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32x2, MaterialParameterType::F32x2)
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32x3, MaterialParameterType::F32x3)
