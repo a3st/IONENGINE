@@ -49,7 +49,7 @@ inline constexpr CONDITION_HAS_SKIN = 1 << 1;
 ```
 In order to access the shader variant you need call ```shader->get().variants.at(CONDITION)```
 
-Each material generates its own conditionality depending on the current parameters. By default is HAS_STATIC if material has not dynamic parameters.
+Each material generates its own conditionality depending on the current parameters. By default is ```HAS_STATIC``` if material has not dynamic parameters.
 
 To get the current condition you need call ```material->get().condition```
 
