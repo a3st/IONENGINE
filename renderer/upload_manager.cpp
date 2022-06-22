@@ -112,24 +112,27 @@ bool UploadManager::upload_texture_data(ResourcePtr<GPUTexture> resource, std::s
         uint32_t row_count;
         uint32_t const stride = 4;
 
-        get_texture_data(gpu_texture.format, mip_width, mip_height, row_bytes, row_count);
+        for(uint32_t k = 0; k < gpu_texture.depth; ++k) { 
 
-        uint32_t const row_pitch = (mip_width * stride + row_pitch_alignment_mask) & ~row_pitch_alignment_mask;
+            get_texture_data(gpu_texture.format, mip_width, mip_height, row_bytes, row_count);
 
-        regions.emplace_back(i, row_pitch, _upload_buffer->offset);
+            uint32_t const row_pitch = (mip_width * stride + row_pitch_alignment_mask) & ~row_pitch_alignment_mask;
 
-        uint8_t* dest = buffer_data + _upload_buffer->offset;
-        uint8_t const* source = data.data() + mip_offset;
+            regions.emplace_back(i, row_pitch, _upload_buffer->offset);
 
-        for(uint32_t j = 0; j < row_count; ++j) {
-            std::memcpy(dest + row_pitch * j, source + row_bytes * j, row_bytes);
+            uint8_t* dest = buffer_data + _upload_buffer->offset;
+            uint8_t const* source = data.data() + mip_offset;
+
+            for(uint32_t j = 0; j < row_count; ++j) {
+                std::memcpy(dest + row_pitch * j, source + row_bytes * j, row_bytes);
+            }
+                    
+            mip_width = std::max<uint32_t>(1, mip_width / 2);
+            mip_height = std::max<uint32_t>(1, mip_height / 2);
+
+            mip_offset += row_bytes * row_count;
+            _upload_buffer->offset = (_upload_buffer->offset + row_count * row_pitch + resource_alignment_mask) & ~resource_alignment_mask;
         }
-                
-        mip_width = std::max<uint32_t>(1, mip_width / 2);
-        mip_height = std::max<uint32_t>(1, mip_height / 2);
-
-        mip_offset += row_bytes * row_count;
-        _upload_buffer->offset = (_upload_buffer->offset + row_count * row_pitch + resource_alignment_mask) & ~resource_alignment_mask;
     }
 
     _device->unmap_buffer_data(_upload_buffer->buffer);

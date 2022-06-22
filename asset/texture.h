@@ -37,12 +37,15 @@ struct Texture {
     lib::hash::Buffer<uint8_t> data;
     uint32_t width;
     uint32_t height;
+    uint32_t depth;
     TextureFormat format;
     TextureFilter filter;
     TextureAddress s_address_mode;
     TextureAddress t_address_mode;
     uint32_t mip_count;
     uint64_t hash;
+
+    bool is_cube_map{false};
 
     bool is_render_target{false};
     size_t cache_entry{std::numeric_limits<size_t>::max()};

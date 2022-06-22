@@ -13,6 +13,7 @@ lib::Expected<Texture, lib::Result<TextureError>> Texture::create(uint32_t const
     auto texture = Texture {};
     texture.width = width;
     texture.height = height;
+    texture.depth = 1;
     texture.mip_count = 1;
     texture.format = TextureFormat::RGBA8_UNORM;
     texture.filter = TextureFilter::MinMagMipLinear;
@@ -121,6 +122,13 @@ lib::Expected<Texture, lib::Result<TextureError>> Texture::load_from_file(std::f
                         }
                     } break;
                 }
+            }
+
+            if(dds_header.ddspf.flags & DDS_CUBEMAP) {
+                texture.depth = 6;
+                texture.is_cube_map = true;
+            } else {
+                texture.depth = 1;
             }
 
             texture.filter = TextureFilter::MinMagMipLinear;

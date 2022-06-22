@@ -175,6 +175,7 @@ bool RenderInterface::GenerateTexture(Rml::TextureHandle& texture_handle, const 
         .data = std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(source), source_dimensions.x * source_dimensions.y * 4),
         .width = static_cast<uint32_t>(source_dimensions.x),
         .height = static_cast<uint32_t>(source_dimensions.y),
+        .depth = 1,
         .format = asset::TextureFormat::RGBA8_UNORM,
         .filter = asset::TextureFilter::MinMagMipLinear,
         .mip_count = 1

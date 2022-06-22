@@ -575,6 +575,7 @@ Handle<Texture> Device::Impl::create_texture(
     auto get_dimension_type = [&](Dimension const dimension) -> D3D12_RESOURCE_DIMENSION {
         switch(dimension) {
             case Dimension::_1D: return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+            case Dimension::Cube:
             case Dimension::_2D: return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
             case Dimension::_3D: return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
         }
@@ -740,6 +741,10 @@ Handle<Texture> Device::Impl::create_texture(
             } break;
             case Dimension::_3D: {
                 shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+                shader_resource_view_desc.Texture3D.MipLevels = mip_levels;
+            } break;
+            case Dimension::Cube: {
+                shader_resource_view_desc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
                 shader_resource_view_desc.Texture3D.MipLevels = mip_levels;
             } break;
         }

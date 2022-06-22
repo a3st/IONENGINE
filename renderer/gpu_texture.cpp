@@ -78,12 +78,20 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
 
         } else {
 
+            backend::Dimension dimension;
+
+            if(texture.is_cube_map) {
+                dimension = backend::Dimension::Cube;
+            } else {
+                dimension = backend::Dimension::_2D;
+            }
+
             gpu_texture.texture = device.create_texture(
-                backend::Dimension::_2D, 
+                dimension, 
                 texture.width, 
                 texture.height, 
                 texture.mip_count,
-                1, 
+                texture.depth, 
                 get_texture_format(texture.format),
                 backend::TextureFlags::ShaderResource
             );
@@ -104,6 +112,7 @@ lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::load_from_te
         gpu_texture.format = get_texture_format(texture.format);
         gpu_texture.width = texture.width;
         gpu_texture.height = texture.height;
+        gpu_texture.depth = texture.depth;
         gpu_texture.mip_count = texture.mip_count;
     }
     return lib::make_expected<GPUTexture, lib::Result<GPUTextureError>>(std::move(gpu_texture));
