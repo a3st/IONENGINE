@@ -161,6 +161,19 @@ struct MaterialParameter {
         return !is_sampler2D() || !is_samplerCube();
     }
 
+    /*
+        // dynamic cast usage
+        material->get().parameters.at("roughness").as_dynamic<MaterialParameterType::Float>() = 1.0f;
+        material->get().parameters.at("roughness").as_dynamic<MaterialParameterType::Sampler2D>() = asset_manager.get_texture("content/base.dds");
+        material->get().parameters.at("roughness").as_dynamic<MaterialParameterType::Float2>() = // invalid cast, throw exception
+
+        // static cast usage
+        material->get().parameters.at("water_scale").as_static<MaterialParameterType::Float>() = 2.0f;
+
+        // static cast usage as dynamic
+        material->get().parameters.at("water_scale").as_dynamic<MaterialParameterType::Float>() = // invalid cast, throw exception
+    */
+
     DECLARE_MATERIAL_PARAMETER_CAST(as_sampler2D, MaterialParameterType::Sampler2D)
     DECLARE_MATERIAL_PARAMETER_CAST(as_samplerCube, MaterialParameterType::SamplerCube)
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32, MaterialParameterType::F32)
@@ -175,6 +188,7 @@ struct Material {
     MaterialBlendMode blend_mode;
     std::unordered_map<std::string, MaterialParameter> parameters;
     std::unordered_map<std::string, AssetPtr<Shader>> passes;
+    uint16_t condition;
 
     uint64_t hash;
 

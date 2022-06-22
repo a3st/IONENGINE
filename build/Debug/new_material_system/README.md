@@ -61,3 +61,20 @@ As a result, you can find out the final conditionality using the following code:
   ShaderVariant& variant = shader->get().variants.at(HAS_SKIN | material->get().condition); // For skin
 ```
 Thanks to the generated flags and the std::unordered_map, you can make a quick selection.
+
+## Material run-time change parameters
+The big problem is changing parameters at run-time. If you will change dynamic parameters, material should change condition variable.
+
+Example: roughness is dynamic parameter, shader set contains uniforms only for float and sampler2D 
+```c++
+  // dynamic cast usage
+  material->get().parameters.at("roughness").as_dynamic<MaterialParameterType::Float>() = 1.0f;
+  material->get().parameters.at("roughness").as_dynamic<MaterialParameterType::Sampler2D>() = asset_manager.get_texture("content/base.dds");
+  material->get().parameters.at("roughness").as_dynamic<MaterialParameterType::Float2>() = // invalid cast, throw exception
+
+  // static cast usage
+  material->get().parameters.at("water_scale").as_static<MaterialParameterType::Float>() = 2.0f;
+
+  // static cast usage as dynamic
+  material->get().parameters.at("water_scale").as_dynamic<MaterialParameterType::Float>() = // invalid cast, throw exception
+```
