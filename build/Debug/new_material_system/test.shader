@@ -1,7 +1,6 @@
 {
     name: "test",
     conditions: [
-        "HAS_SKIN",
         "HAS_ALBEDO_TEXTURE",
         "HAS_NORMAL_TEXTURE",
         "HAS_OPACITY_TEXTURE",

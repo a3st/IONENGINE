@@ -1,4 +1,4 @@
-# <p align="center"> Paper for new Material / Shader System </p>
+# <p align="center"> White-paper for new Material / Shader System </p>
 
 # What a pros
 + Conditional compilation shaders
@@ -35,3 +35,19 @@ passes: [
     }
 ]
 ```
+
+## Shader Variant it's new Shader class
+Shader variants is one of ocondition. Every shader by default contains the following conditions:
+  1. HAS_STATIC = 1 << 0
+  2. HAS_SKIN = 1 << 1
+  3. HAS_RESERVED = 1 << 2
+
+With each condition, the shader becomes difficult to compile. Condition limit by 10 per one shader.
+```c++
+  inline constexpr CONDITION_HAS_STATIC = 1 << 0;
+  inline constexpr CONDITION_HAS_SKIN = 1 << 1;
+```
+In order to access the shader variant you need call ```c++ shader->get().variants.at(CONDITION) ```
+Each material generates its own conditionality depending on the current parameters.
+To get the current condition you need call ```c++ material->get().condition ```
+As a result, you can find out the final conditionality using the following code:
