@@ -49,7 +49,7 @@ inline constexpr CONDITION_HAS_SKIN = 1 << 1;
 ```
 In order to access the shader variant you need call ```shader->get().variants.at(CONDITION)```
 
-Each material generates its own conditionality depending on the current parameters.
+Each material generates its own conditionality depending on the current parameters. By default is HAS_STATIC if material has not dynamic parameters.
 
 To get the current condition you need call ```material->get().condition```
 
@@ -57,8 +57,8 @@ As a result, you can find out the final conditionality using the following code:
 ```c++
 AssetPtr<Material> material = asset_manager.get_material("content/base.mat");
 AssetPtr<Shader> shader = material->get().passes.at("gbuffer");
-ShaderVariant& variant = shader->get().variants.at(HAS_STATIC | material->get().condition); // For static
-ShaderVariant& variant = shader->get().variants.at(HAS_SKIN | material->get().condition); // For skin
+ShaderVariant& variant = shader->get().variants.at(material->get().condition);
+ShaderVariant& variant = shader->get().variants.at(HAS_SKIN | material->get().condition);
 ```
 Thanks to the generated flags and the std::unordered_map, you can make a quick selection.
 
