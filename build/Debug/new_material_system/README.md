@@ -31,7 +31,7 @@ In the new system, the array with passes is hidden by default. By default, the e
 passes: [
     {
         name: "gbuffer",
-        value: { path: "" }
+        path: "content/shaders/gbuffer_custom.shader"
     }
 ]
 ```
