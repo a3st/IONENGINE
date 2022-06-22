@@ -2110,14 +2110,6 @@ void Device::Impl::copy_texture_region(
         footprints[region.mip_index].Offset = region.offset;
         footprints[region.mip_index].Footprint.RowPitch = region.row_pitch;
 
-        /*std::cout << std::format("{} width, {} height, {} offset, {} row pitch", 
-            footprints[region.mip_index].Footprint.Width, 
-            footprints[region.mip_index].Footprint.Height, 
-            footprints[region.mip_index].Offset, 
-            footprints[region.mip_index].Footprint.RowPitch
-        ) << std::endl;
-        */
-
         auto source_location = D3D12_TEXTURE_COPY_LOCATION {};
         source_location.pResource = source_buffer_data.resource.Get();
         source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
