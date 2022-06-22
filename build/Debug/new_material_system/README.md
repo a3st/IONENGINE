@@ -42,7 +42,7 @@ Shader variants is one of ocondition. Every shader by default contains the follo
   2. ```HAS_SKIN = 1 << 1```
   3. ```HAS_RESERVED = 1 << 2```
 
-With each condition, the shader becomes difficult to compile. Condition limit by 10 per one shader.
+With each condition, the shader becomes difficult to compile. Condition limit by ```10``` per one shader.
 ```c++
 inline constexpr CONDITION_HAS_STATIC = 1 << 0;
 inline constexpr CONDITION_HAS_SKIN = 1 << 1;
