@@ -8,7 +8,7 @@
 
 # What a cons
 - Requires a powerful shader caching system, otherwise you can get stuttering in the future
-- This system is still more complex than the graph shader, but allows traditional coding rather than pasta design
+- This system is still more complex than the shader graph, but allows traditional coding rather than pasta design
 
 ## Data types
   Shader System - HLSL
