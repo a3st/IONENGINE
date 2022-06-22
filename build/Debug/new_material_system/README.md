@@ -11,7 +11,7 @@
 - This system is still more complex than the graph shader, but allows traditional coding rather than pasta design
 
 ## Data types
-    Shader System - HLSL
+  Shader System - HLSL
   1. float_t - float
   2. float2_t - float2
   3. float3_t - float3
@@ -27,7 +27,7 @@
 Each material allows you to override any pass of rendering. 
 In the new system, the array with passes is hidden by default. By default, the engine uses standard shaders.
 
-```json
+```mat
 passes: [
     {
         name: "gbuffer",
