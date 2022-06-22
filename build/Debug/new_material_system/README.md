@@ -38,9 +38,9 @@ passes: [
 
 ## Shader Variant it's new Shader class
 Shader variants is one of ocondition. Every shader by default contains the following conditions:
-  1. HAS_STATIC = 1 << 0
-  2. HAS_SKIN = 1 << 1
-  3. HAS_RESERVED = 1 << 2
+  1. ```HAS_STATIC = 1 << 0```
+  2. ```HAS_SKIN = 1 << 1```
+  3. ```HAS_RESERVED = 1 << 2```
 
 With each condition, the shader becomes difficult to compile. Condition limit by 10 per one shader.
 ```c++
@@ -54,3 +54,10 @@ Each material generates its own conditionality depending on the current paramete
 To get the current condition you need call ```material->get().condition```
 
 As a result, you can find out the final conditionality using the following code:
+```c++
+  AssetPtr<Material> material = asset_manager.get_material("content/base.mat");
+  AssetPtr<Shader> shader = material->get().passes.at("gbuffer");
+  ShaderVariant& variant = shader->get().variants.at(HAS_STATIC | material->get().condition); // For static
+  ShaderVariant& variant = shader->get().variants.at(HAS_SKIN | material->get().condition); // For skin
+```
+Thanks to the generated flags and the std::unordered_map, you can make a quick selection.
