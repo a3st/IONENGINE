@@ -1,7 +1,7 @@
 {
     name: "light_bulb_01_glass",
     domain: "surface",
-    blend_mode: "transculent",
+    blend_mode: "translucent",
     parameters: [
         {
             name: "albedo",
@@ -21,17 +21,7 @@
         {
             name: "metalness",
             type: "sampler2D",
-            value: { path: "content/textures/metalness_0_percent.dds" }
-        }
-    ],
-    passes: [
-        {
-            name: "gbuffer",
-            shader: "engine/shaders/gbuffer.shader"
-        },
-        {
-            name: "forward",
-            shader: "engine/shaders/forward.shader"
+            value: { path: "content/textures/roughness_30_percent.dds" }
         }
     ]
 }

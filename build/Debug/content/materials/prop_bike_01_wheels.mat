@@ -1,7 +1,7 @@
 {
     name: "prop_bike_01_wheels",
     domain: "surface",
-    blend_mode: "transculent",
+    blend_mode: "translucent",
     parameters: [
         {
             name: "albedo",
@@ -22,16 +22,6 @@
             name: "metalness",
             type: "sampler2D",
             value: { path: "content/textures/prop_bike_01_m.dds" }
-        }
-    ],
-    passes: [
-        {
-            name: "gbuffer",
-            shader: "engine/shaders/gbuffer.shader"
-        },
-        {
-            name: "forward",
-            shader: "engine/shaders/forward.shader"
         }
     ]
 }

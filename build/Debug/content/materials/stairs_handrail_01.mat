@@ -23,15 +23,5 @@
             type: "sampler2D",
             value: { path: "content/textures/stairs_handrail_01_m.dds" }
         }
-    ],
-    passes: [
-        {
-            name: "gbuffer",
-            shader: "engine/shaders/gbuffer.shader"
-        },
-        {
-            name: "forward",
-            shader: "engine/shaders/forward.shader"
-        }
     ]
 }

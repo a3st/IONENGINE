@@ -3,6 +3,7 @@
 #include <precompiled.h>
 #include <asset/material.h>
 #include <asset/shader.h>
+#include <asset/texture.h>
 #include <lib/exception.h>
 #include <asset/asset_manager.h>
 
@@ -28,150 +29,168 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
         );
     }
 
-    auto material = Material {};
-    {
-        material.name = document.name;
-        material.domain = get_material_domain(document.domain);
-        material.blend_mode = get_material_blend_mode(document.blend_mode);
+    std::unordered_map<std::string, AssetPtr<Shader>> passes;
 
-        for(auto const& parameter : document.parameters) {
+    switch(document.blend_mode) {
+        case JSON_MaterialBlendMode::opaque: {
+            passes.insert({ "deffered", asset_manager.get_shader("engine/shaders/deffered_pc.shader") });
+            passes.insert({ "skybox", asset_manager.get_shader("engine/shaders/skybox.shader") });
+        } break;
+        case JSON_MaterialBlendMode::translucent: {
+            passes.insert({ "forward", asset_manager.get_shader("engine/shaders/forward_pc.shader") });
+        } break;
+    }
 
-            if(parameter.type == JSON_MaterialParameterType::sampler2D) {
+    if(document.passes.has_value()) {
+        for(auto const& pass : document.passes.value()) {
+            passes.at(pass.name) = asset_manager.get_shader(pass.shader);
+        }
+    }
 
-                if(parameter.value.path.has_value()) {
+    std::unordered_map<std::string, MaterialParameter> valid_shader_parameters;
 
-                    material.parameters.insert(
-                        { 
-                            parameter.name, 
-                            MaterialParameter { 
-                                .data = MaterialParameterData<asset::MaterialParameterType::Sampler2D> { 
-                                    .asset = asset_manager.get_texture(parameter.value.path.value())
-                                } 
-                            } 
-                        }
-                    );
-                } else if(parameter.value.vec4.has_value()) {
+    for(auto const& [pass_name, pass_shader] : passes) {
+        
+        if(pass_shader->is_pending()) {
+            pass_shader->wait();
+        }
 
-                    auto result = Texture::create(
-                        32, 
-                        32, 
-                        false, 
-                        lib::math::Color(
-                            parameter.value.vec4->at(0), 
-                            parameter.value.vec4->at(1), 
-                            parameter.value.vec4->at(2), 
-                            parameter.value.vec4->at(3)
-                        )
-                    );
+        if(pass_shader->is_ok()) {
 
-                    if(result.is_ok()) {
+            for(auto const& uniform : pass_shader->get().variants.at(1 << 0).uniforms) {
 
-                        Texture texture = std::move(result.as_ok());
+                if(!uniform.name.contains("material") && uniform.is_buffer()) {
+                    continue;
+                }
+                        
+                auto uniform_visitor = make_visitor(
+                    [&](ShaderUniformData<ShaderUniformType::Sampler2D> const&) {
+                        valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::Sampler2D> {} });
+                    },
+                    [&](ShaderUniformData<ShaderUniformType::SamplerCube> const&) {
+                        valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::SamplerCube> {} });
+                    },
+                    [&](ShaderUniformData<ShaderUniformType::CBuffer> const& data) {
 
-                        auto asset = make_asset_ptr(std::move(texture));
+                        for(auto const& variable : data.data) {
 
-                        asset_manager.texture_pool().push(asset);
-                        asset_manager.texture_pool().event_dispatcher().broadcast(asset::AssetEvent<Texture>::loaded(asset));
+                            switch(variable.type) {
+                                case ShaderDataType::F32: {
+                                    valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::F32> {} });
+                                } break;
 
-                        material.parameters.insert(
-                            { 
-                                parameter.name, 
-                                MaterialParameter { 
-                                    .data = MaterialParameterData<asset::MaterialParameterType::Sampler2D> { 
-                                        .asset = std::move(asset)
-                                    } 
-                                } 
+                                case ShaderDataType::F32x2: {
+                                    valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::F32x2> {} });
+                                } break;
+
+                                case ShaderDataType::F32x3: {
+                                    valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::F32x3> {} });
+                                } break;
+
+                                case ShaderDataType::F32x4: {
+                                    valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::F32x4> {} });
+                                } break;
+
+                                case ShaderDataType::F32x4x4: {
+                                    valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::F32x4x4> {} });
+                                } break;
                             }
-                        );
-
-                    } else {
-                        throw lib::Exception(result.as_error().message);
-                    }
-                }
-            } else if(parameter.type == JSON_MaterialParameterType::samplerCube) {
-
-                if(parameter.value.path.has_value()) {
-
-                    material.parameters.insert(
-                        { 
-                            parameter.name, 
-                            MaterialParameter { 
-                                .data = MaterialParameterData<asset::MaterialParameterType::SamplerCube> { 
-                                    .asset = asset_manager.get_texture(parameter.value.path.value())
-                                } 
-                            } 
                         }
-                    );
-                }
+                    },
+                    [&](ShaderUniformData<ShaderUniformType::RWTexture2D> const&) {},
+                    [&](ShaderUniformData<ShaderUniformType::SBuffer> const&) {},
+                    [&](ShaderUniformData<ShaderUniformType::RWBuffer> const&) {}
+                );
 
+                std::visit(uniform_visitor, uniform.data);
+            }
+
+        } else {
+            return lib::make_expected<Material, lib::Result<MaterialError>>(
+                lib::Result<MaterialError> { .errc = MaterialError::InvalidShader, .message = "Invalid shader error" }
+            );
+        }
+    }
+
+    std::unordered_map<std::string, MaterialParameter> parameters;
+
+    for(auto const& parameter : document.parameters) {
+
+        auto it = valid_shader_parameters.find(parameter.name);
+
+        if(it == valid_shader_parameters.end()) {
+            return lib::make_expected<Material, lib::Result<MaterialError>>(
+                lib::Result<MaterialError> { .errc = MaterialError::InvalidParameter, .message = "Invalid parameter error" }
+            );
+        }
+
+        if(parameter.type == JSON_MaterialParameterType::sampler2D) {
+
+            if(parameter.value.path.has_value()) {
+                it->second.as_sampler2D().value = asset_manager.get_texture(parameter.value.path.value());
+                parameters.insert({ parameter.name, std::move(it->second) });
             } else {
-                switch(parameter.type) {
-                    case JSON_MaterialParameterType::f32: {
-                        auto value = parameter.value.value.value();
-                        material.parameters.insert(
-                            {
-                                parameter.name,
-                                MaterialParameter {
-                                    .data = MaterialParameterData<asset::MaterialParameterType::F32> {
-                                        .value = value
-                                    }
-                                }
-                            }
-                        );
-                    } break;
-                    case JSON_MaterialParameterType::f32x2: {
-                        auto value = parameter.value.vec2.value();
-                        material.parameters.insert(
-                            {
-                                parameter.name,
-                                MaterialParameter {
-                                    .data = MaterialParameterData<asset::MaterialParameterType::F32x2> {
-                                        .value = lib::math::Vector2f(value.at(0), value.at(1))
-                                    }
-                                }
-                            }
-                        );
-                    } break;
-                    case JSON_MaterialParameterType::f32x3: {
-                        auto value = parameter.value.vec3.value();
-                        material.parameters.insert(
-                            {
-                                parameter.name,
-                                MaterialParameter {
-                                    .data = MaterialParameterData<asset::MaterialParameterType::F32x3> {
-                                        .value = lib::math::Vector3f(value.at(0), value.at(1), value.at(2))
-                                    }
-                                }
-                            }
-                        );
-                    } break;
-                    case JSON_MaterialParameterType::f32x4: {
-                        auto value = parameter.value.vec4.value();
-                        material.parameters.insert(
-                            {
-                                parameter.name,
-                                MaterialParameter {
-                                    .data = MaterialParameterData<asset::MaterialParameterType::F32x4> {
-                                        .value = lib::math::Vector4f(value.at(0), value.at(1), value.at(2), value.at(3))
-                                    }
-                                }
-                            }
-                        );
-                    } break;
+                return lib::make_expected<Material, lib::Result<MaterialError>>(
+                    lib::Result<MaterialError> { .errc = MaterialError::InvalidParameter, .message = "Invalid value error" }
+                );
+            }
 
-                    default: {
-                        assert(false && "invalid data type");
-                    } break;
-                }
+        } else if(parameter.type == JSON_MaterialParameterType::samplerCube) {
+
+            if(parameter.value.path.has_value()) {
+                it->second.as_samplerCube().value = asset_manager.get_texture(parameter.value.path.value());
+                parameters.insert({ parameter.name, std::move(it->second) });
+            } else {
+                return lib::make_expected<Material, lib::Result<MaterialError>>(
+                    lib::Result<MaterialError> { .errc = MaterialError::InvalidParameter, .message = "Invalid value error" }
+                );
+            }
+        } else {
+            switch(parameter.type) {
+                case JSON_MaterialParameterType::f32: {
+                    auto& value = parameter.value.f32.value();
+                    it->second.as_f32().value = value;
+                    parameters.insert({ parameter.name, std::move(it->second) });
+                } break;
+
+                case JSON_MaterialParameterType::f32x2: {
+                    auto& value = parameter.value.f32x2.value();
+                    it->second.as_f32x2().value = lib::math::Vector2f(value.at(0), value.at(1));
+                    parameters.insert({ parameter.name, std::move(it->second) });
+                } break;
+
+                case JSON_MaterialParameterType::f32x3: {
+                    auto& value = parameter.value.f32x3.value();
+                    it->second.as_f32x3().value = lib::math::Vector3f(value.at(0), value.at(1), value.at(2));
+                    parameters.insert({ parameter.name, std::move(it->second) });
+                } break;
+
+                case JSON_MaterialParameterType::f32x4: {
+                    auto& value = parameter.value.f32x4.value();
+                    it->second.as_f32x4().value = lib::math::Vector4f(value.at(0), value.at(1), value.at(2), value.at(3));
+                    parameters.insert({ parameter.name, std::move(it->second) });
+                } break;
+
+                case JSON_MaterialParameterType::f32x4x4: {
+                    
+                } break;
+
+                default: {
+                    assert(false && "invalid data type");
+                } break;
             }
         }
-
-        for(auto const& pass : document.passes) {
-            material.passes.insert({ pass.name, asset_manager.get_shader(pass.shader) });
-        }
-
-        material.hash = XXHash64::hash(reinterpret_cast<void*>(material.name.data()), material.name.size(), 0);
     }
+
+    auto material = Material {
+        .name = document.name,
+        .domain = get_material_domain(document.domain),
+        .blend_mode = get_material_blend_mode(document.blend_mode),
+        .parameters = std::move(parameters),
+        .passes = std::move(passes),
+        .hash = XXHash64::hash(reinterpret_cast<void*>(document.name.data()), document.name.size(), 0)
+    };
+
     return lib::make_expected<Material, lib::Result<MaterialError>>(std::move(material));
 }
 
@@ -188,7 +207,7 @@ MaterialDomain constexpr ionengine::asset::get_material_domain(JSON_MaterialDoma
 MaterialBlendMode constexpr ionengine::asset::get_material_blend_mode(JSON_MaterialBlendMode const blend_mode) {
     switch(blend_mode) {
         case JSON_MaterialBlendMode::opaque: return MaterialBlendMode::Opaque;
-        case JSON_MaterialBlendMode::transculent: return MaterialBlendMode::Transculent;
+        case JSON_MaterialBlendMode::translucent: return MaterialBlendMode::Translucent;
         default: {
             assert(false && "invalid data type");
             return MaterialBlendMode::Opaque;

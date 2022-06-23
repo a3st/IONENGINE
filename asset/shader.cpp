@@ -7,29 +7,17 @@
 using namespace ionengine;
 using namespace ionengine::asset;
 
-lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::filesystem::path const& file_path) {
+std::vector<ShaderUniform> ionengine::asset::fill_shader_variant_uniforms(std::string_view const condition, std::span<JSON_ShaderUniformDefinition const> const data) {
 
-    std::string const file_path_string = file_path.string();
+    std::vector<ShaderUniform> uniforms;
 
-    auto document = JSON_ShaderDefinition {};
-    json5::error const result = json5::from_file(file_path_string, document);
+    for(auto const& uniform : data) {
 
-    if(result == json5::error::could_not_open) {
-        return lib::make_expected<Shader, lib::Result<ShaderError>>(
-            lib::Result<ShaderError> { .errc = ShaderError::IO, .message = "Could not open a file" }
-        );
-    }
-
-    if(result != json5::error::none) {
-        return lib::make_expected<Shader, lib::Result<ShaderError>>(
-            lib::Result<ShaderError> { .errc = ShaderError::ParseError, .message = std::format("Parse file error '{}'", file_path_string) }
-        );
-    }
-
-    auto shader = Shader {};
-    shader.name = document.name;
-
-    for(auto const& uniform : document.uniforms) {
+        if(uniform.condition.has_value()) {
+            if(!uniform.condition->contains(condition)) {
+                continue;
+            }
+        }
 
         ShaderUniform shader_uniform;
 
@@ -38,8 +26,8 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
             case JSON_ShaderUniformType::cbuffer: {
                 std::vector<ShaderBufferData> buffer_data;
 
-                for(auto const& property : uniform.properties.value()) {
-                    buffer_data.emplace_back(property.name, get_shader_data_type(property.type));
+                for(auto const& variable : uniform.data.value()) {
+                    buffer_data.emplace_back(variable.name, get_shader_data_type(variable.type));
                 }
 
                 shader_uniform = ShaderUniform {
@@ -52,8 +40,8 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
             case JSON_ShaderUniformType::rwbuffer: {
                 std::vector<ShaderBufferData> buffer_data;
 
-                for(auto const& property : uniform.properties.value()) {
-                    buffer_data.emplace_back(property.name, get_shader_data_type(property.type));
+                for(auto const& variable : uniform.data.value()) {
+                    buffer_data.emplace_back(variable.name, get_shader_data_type(variable.type));
                 }
 
                 shader_uniform = ShaderUniform {
@@ -66,8 +54,8 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
             case JSON_ShaderUniformType::sbuffer: {
                 std::vector<ShaderBufferData> buffer_data;
 
-                for(auto const& property : uniform.properties.value()) {
-                    buffer_data.emplace_back(property.name, get_shader_data_type(property.type));
+                for(auto const& variable : uniform.data.value()) {
+                    buffer_data.emplace_back(variable.name, get_shader_data_type(variable.type));
                 }
 
                 shader_uniform = ShaderUniform {
@@ -102,56 +90,22 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
             } break;
         }
 
-        shader.uniforms.emplace_back(std::move(shader_uniform));
+        uniforms.emplace_back(std::move(shader_uniform));
     }
 
-    std::vector<uint64_t> stage_hashes;
+    return std::move(uniforms);
+}
 
-    for(auto const& stage : document.stages) {
+std::unordered_map<ShaderType, StageSource> ionengine::asset::fill_shader_variant_stages(std::string_view const condition, std::span<JSON_ShaderStageDefinition const> const data) {
 
+    std::unordered_map<ShaderType, StageSource> stages;
+
+    for(auto const& stage : data) {
         std::string generated_code = "";
 
-        switch(stage.type) {
-
-            case JSON_ShaderType::vertex: {
-                generated_code += generate_shader_iassembler_code("vs_input", stage.inputs);
-                generated_code += generate_shader_iassembler_code("vs_output", stage.outputs);
-
-                for(auto const& attribute : stage.inputs) {
-                    std::string const indices = "0123456789";
-                    std::string semantic_only = attribute.semantic;
-
-                    for(auto const& index : indices) {
-                        if(attribute.semantic.back() == index) {
-                            semantic_only.pop_back();
-                            break;
-                        }
-                    }
-                    shader.attributes.emplace_back(semantic_only, get_shader_data_type(attribute.type));
-                }
-            } break;
-
-            case JSON_ShaderType::domain: {
-                generated_code += generate_shader_iassembler_code("dom_input", stage.inputs);
-                generated_code += generate_shader_iassembler_code("dom_output", stage.outputs);
-            } break;
-
-            case JSON_ShaderType::hull: {
-                generated_code += generate_shader_iassembler_code("hull_input", stage.inputs);
-                generated_code += generate_shader_iassembler_code("hull_output", stage.outputs);
-            } break;
-
-            case JSON_ShaderType::geometry: {
-                generated_code += generate_shader_iassembler_code("geom_input", stage.inputs);
-                generated_code += generate_shader_iassembler_code("geom_output", stage.outputs);
-            } break;
-
-            case JSON_ShaderType::pixel: {
-                generated_code += generate_shader_iassembler_code("ps_input", stage.inputs);
-                generated_code += generate_shader_iassembler_code("ps_output", stage.outputs);
-            } break;
-        }
-
+        generated_code += generate_shader_generic_code();
+        generated_code += generate_shader_input_code(condition, stage.type, stage.inputs);
+        generated_code += generate_shader_output_code(condition, stage.type, stage.outputs);
         generated_code += stage.source;
 
         uint64_t const hash = XXHash64::hash(generated_code.data(), generated_code.size(), 0);
@@ -161,19 +115,104 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
             .hash = hash
         };
 
-        stage_hashes.emplace_back(std::move(hash));
-
-        shader.stages.insert({ get_shader_type(stage.type), std::move(stage_source) });
+        stages.insert({ get_shader_type(stage.type), std::move(stage_source) });
     }
 
-    shader.hash = std::accumulate(stage_hashes.begin(), stage_hashes.end(), stage_hashes.at(0), std::bit_xor<uint64_t>());
+    return std::move(stages);
+}
 
-    shader.draw_parameters = ShaderDrawParameters {
+std::vector<VertexAttributeData> ionengine::asset::fill_shader_variant_attributes(std::string_view const condition, std::span<JSON_ShaderStageDefinition const> const data) {
+
+    std::vector<VertexAttributeData> attributes;
+
+    for(auto const& stage : data) {
+
+        if(stage.type != JSON_ShaderType::vertex) {
+            continue;
+        }
+
+        for(auto const& attribute : stage.inputs) {
+            std::string const indices = "0123456789";
+            std::string semantic_only = attribute.semantic;
+
+            for(auto const& index : indices) {
+                if(attribute.semantic.back() == index) {
+                    semantic_only.pop_back();
+                    break;
+                }
+            }
+            attributes.emplace_back(semantic_only, get_shader_data_type(attribute.type));
+        }
+        break;
+    }
+
+    return std::move(attributes);
+}
+
+lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::filesystem::path const& file_path) {
+
+    std::string const file_path_string = file_path.string();
+
+    JSON_ShaderDefinition document;
+    json5::error const result = json5::from_file(file_path_string, document);
+
+    if(result == json5::error::could_not_open) {
+        return lib::make_expected<Shader, lib::Result<ShaderError>>(
+            lib::Result<ShaderError> { .errc = ShaderError::IO, .message = std::format("Could not open a file '{}'", file_path_string) }
+        );
+    }
+
+    if(result != json5::error::none) {
+        return lib::make_expected<Shader, lib::Result<ShaderError>>(
+            lib::Result<ShaderError> { .errc = ShaderError::ParseError, .message = std::format("Parse file error '{}'", file_path_string) }
+        );
+    }
+
+    std::unordered_map<uint16_t, ShaderVariant> variants;
+
+    // Default ShaderVariant
+    {
+        std::vector<ShaderUniform> uniforms = fill_shader_variant_uniforms("", document.uniforms);
+        std::unordered_map<ShaderType, StageSource> stages = fill_shader_variant_stages("", document.stages);
+        std::vector<VertexAttributeData> attributes = fill_shader_variant_attributes("", document.stages);
+
+        auto hashes = 
+            stages |
+            std::views::transform([&](std::pair<ShaderType, StageSource> const& other) { return other.second.hash; }) | 
+            ranges::to<std::vector>();
+
+        auto shader_variant = ShaderVariant {
+            .uniforms = std::move(uniforms),
+            .attributes = std::move(attributes),
+            .stages = std::move(stages),
+            .hash = std::accumulate(hashes.begin(), hashes.end(), hashes.at(0), std::bit_xor<uint64_t>()),
+            .cache_entry = std::numeric_limits<size_t>::max()
+        };
+
+        variants.insert({ 1 << 0, std::move(shader_variant) });
+    }
+
+    std::unordered_map<std::string, uint16_t> conditions;
+
+    uint16_t condition_mask = 1;
+
+    for(auto const& condition : document.conditions) {
+        conditions.insert({ condition, 1 << condition_mask });
+        ++condition_mask;
+    }
+
+    auto draw_parameters = ShaderDrawParameters {
         .fill_mode = get_shader_fill_mode(document.draw_parameters.fill_mode),
         .cull_mode = get_shader_cull_mode(document.draw_parameters.cull_mode),
-        .depth_stencil = document.draw_parameters.depth_stencil,
         .depth_test = get_shader_depth_test(document.draw_parameters.depth_test),
         .blend_mode = get_shader_blend_mode(document.draw_parameters.blend_mode),
+    };
+
+    auto shader = Shader {
+        .name = document.name,
+        .draw_parameters = std::move(draw_parameters),
+        .variants = std::move(variants),
+        .conditions = std::move(conditions)
     };
 
     return lib::make_expected<Shader, lib::Result<ShaderError>>(std::move(shader));
@@ -181,13 +220,13 @@ lib::Expected<Shader, lib::Result<ShaderError>> Shader::load_from_file(std::file
 
 std::string constexpr ionengine::asset::get_shader_data_type_string(JSON_ShaderDataType const data_type) {
     switch(data_type) {
-        case JSON_ShaderDataType::float4x4: return "float4x4";
-        case JSON_ShaderDataType::float4: return "float4";
-        case JSON_ShaderDataType::float3: return "float3";
-        case JSON_ShaderDataType::float2: return "float2";
-        case JSON_ShaderDataType::_float: return "float";
-        case JSON_ShaderDataType::_uint: return "uint";
-        case JSON_ShaderDataType::_bool: return "bool";
+        case JSON_ShaderDataType::f32x4x4: return "float4x4";
+        case JSON_ShaderDataType::f32x4: return "float4";
+        case JSON_ShaderDataType::f32x3: return "float3";
+        case JSON_ShaderDataType::f32x2: return "float2";
+        case JSON_ShaderDataType::f32: return "float";
+        case JSON_ShaderDataType::uint32: return "uint";
+        case JSON_ShaderDataType::boolean: return "bool";
         default: {
             assert(false && "invalid data type");
             return "float";
@@ -197,16 +236,16 @@ std::string constexpr ionengine::asset::get_shader_data_type_string(JSON_ShaderD
 
 ShaderDataType constexpr ionengine::asset::get_shader_data_type(JSON_ShaderDataType const data_type) {
     switch(data_type) {
-        case JSON_ShaderDataType::float4x4: return ShaderDataType::Float4x4;
-        case JSON_ShaderDataType::float4: return ShaderDataType::Float4;
-        case JSON_ShaderDataType::float3: return ShaderDataType::Float3;
-        case JSON_ShaderDataType::float2: return ShaderDataType::Float2;
-        case JSON_ShaderDataType::_float: return ShaderDataType::Float;
-        case JSON_ShaderDataType::_uint: return ShaderDataType::Uint;
-        case JSON_ShaderDataType::_bool: return ShaderDataType::Bool;
+        case JSON_ShaderDataType::f32x4x4: return ShaderDataType::F32x4x4;
+        case JSON_ShaderDataType::f32x4: return ShaderDataType::F32x4;
+        case JSON_ShaderDataType::f32x3: return ShaderDataType::F32x3;
+        case JSON_ShaderDataType::f32x2: return ShaderDataType::F32x2;
+        case JSON_ShaderDataType::f32: return ShaderDataType::F32;
+        case JSON_ShaderDataType::uint32: return ShaderDataType::UInt32;
+        case JSON_ShaderDataType::boolean: return ShaderDataType::Boolean;
         default: {
             assert(false && "invalid data type");
-            return ShaderDataType::Float;
+            return ShaderDataType::F32;
         }
     }
 }
@@ -269,6 +308,7 @@ ShaderDepthTest constexpr ionengine::asset::get_shader_depth_test(JSON_ShaderDep
         case JSON_ShaderDepthTest::less: return ShaderDepthTest::Less;
         case JSON_ShaderDepthTest::less_equal: return ShaderDepthTest::LessEqual;
         case JSON_ShaderDepthTest::equal: return ShaderDepthTest::Equal;
+        case JSON_ShaderDepthTest::none: return ShaderDepthTest::None;
         default: {
             assert(false && "invalid data type");
             return ShaderDepthTest::Always;
@@ -276,14 +316,85 @@ ShaderDepthTest constexpr ionengine::asset::get_shader_depth_test(JSON_ShaderDep
     }
 }
 
-std::string ionengine::asset::generate_shader_iassembler_code(std::string_view const name, std::span<JSON_ShaderIAssemblerDefinition const> const properties) {
+std::string ionengine::asset::generate_shader_input_code(std::string_view const condition, JSON_ShaderType const shader_type, std::span<JSON_ShaderInputOutputDefinition const> const data) {
+    auto get_input_name = [](JSON_ShaderType const shader_type) -> std::string {
+        switch(shader_type) {
+            case JSON_ShaderType::vertex: return "vs_input";
+            case JSON_ShaderType::domain: return "ds_input";
+            case JSON_ShaderType::hull: return "hs_input";
+            case JSON_ShaderType::geometry: return "gs_input";
+            case JSON_ShaderType::pixel: return "ps_input";
+            default: {
+                assert(false && "invalid data type");
+                return "";
+            }
+        }
+    };
+    
     std::string generated_code = "struct";
-    generated_code += std::format(" {} {{ ", name);
 
-    for(auto& property : properties) {
-        generated_code += std::format("{} {} : {}; ", get_shader_data_type_string(property.type), property.name, property.semantic);
+    generated_code += std::format(" {} {{ ", get_input_name(shader_type));
+
+    for(auto& attribute : data) {
+        if(attribute.condition.has_value()) {
+            if(!attribute.condition->contains(condition)) {
+                continue;
+            }
+        }
+        generated_code += std::format("{} {} : {}; ", get_shader_data_type_string(attribute.type), attribute.name, attribute.semantic);
     }
 
     generated_code += "};\n";
+    return generated_code;
+}
+
+std::string ionengine::asset::generate_shader_output_code(std::string_view const condition, JSON_ShaderType const shader_type, std::span<JSON_ShaderInputOutputDefinition const> const data) {
+    auto get_input_name = [](JSON_ShaderType const shader_type) -> std::string {
+        switch(shader_type) {
+            case JSON_ShaderType::vertex: return "vs_output";
+            case JSON_ShaderType::domain: return "ds_output";
+            case JSON_ShaderType::hull: return "hs_output";
+            case JSON_ShaderType::geometry: return "gs_output";
+            case JSON_ShaderType::pixel: return "ps_output";
+            default: {
+                assert(false && "invalid data type");
+                return "";
+            }
+        }
+    };
+    
+    std::string generated_code = "struct";
+
+    generated_code += std::format(" {} {{ ", get_input_name(shader_type));
+
+    for(auto& attribute : data) {
+        if(attribute.condition.has_value()) {
+            if(!attribute.condition->contains(condition)) {
+                continue;
+            }
+        }
+        generated_code += std::format("{} {} : {}; ", get_shader_data_type_string(attribute.type), attribute.name, attribute.semantic);
+    }
+
+    generated_code += "};\n";
+    return generated_code;
+}
+
+std::string ionengine::asset::generate_shader_generic_code() {
+    std::string generated_code = "";
+
+    // Types
+    generated_code += "#define f32 float \n";
+    generated_code += "#define f32x2 float2 \n";
+    generated_code += "#define f32x3 float3 \n";
+    generated_code += "#define f32x4 float4 \n";
+    generated_code += "#define f32x4x4 float4x4 \n";
+    generated_code += "#define f32x3x3 float3x3 \n";
+    generated_code += "#define uint32 uint \n";
+    generated_code += "#define boolean bool \n";
+
+    // Functions
+    generated_code += "#define TEXTURE_SAMPLE(Texture, UV) Texture##_texture.Sample(Texture##_sampler, UV) \n";
+
     return generated_code;
 }

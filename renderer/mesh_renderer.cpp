@@ -128,7 +128,7 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
     _cube = asset_manager.get_mesh("engine/skybox.obj");
     _cube->wait();
 
-    _deffered_shader = asset_manager.get_shader("engine/shaders/deffered.shader");
+    _deffered_shader = asset_manager.get_shader("engine/shaders/lighting.shader");
     _deffered_shader->wait();
 
     _fxaa_shader = asset_manager.get_shader("engine/shaders/fxaa.shader");
@@ -332,9 +332,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
                         for(auto const& batch : chunks.at(i)) {
 
-                            asset::AssetPtr<asset::Shader> shader = batch.material->get().passes.at("gbuffer");
+                            asset::AssetPtr<asset::Shader> shader = batch.material->get().passes.at("deffered");
+                            asset::ShaderVariant& variant = shader->get().variants.at(1 << 0);
 
-                            ResourcePtr<GPUProgram> program = shader_cache.get(shader->get());
+                            ResourcePtr<GPUProgram> program = shader_cache.get(variant);
                             ResourcePtr<GPUPipeline> after_gpu_pipeline = pipeline_cache.get(program->get(), shader->get().draw_parameters, context.render_pass->get());
                             
                             // No need to switch state if the last batch was similar.
@@ -412,7 +413,10 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
             ResourcePtr<CommandList> command_list = context.command_pool->allocate();
 
-            ResourcePtr<GPUProgram> program = shader_cache.get(_deffered_shader->get());
+            asset::ShaderVariant& variant = _deffered_shader->get().variants.at(1 << 0);
+
+            ResourcePtr<GPUProgram> program = shader_cache.get(variant);
+            
             ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), _deffered_shader->get().draw_parameters, context.render_pass->get());
 
             gpu_pipeline->get().bind(*_device, command_list->get());
@@ -422,8 +426,8 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
             uint32_t const world_location = program->get().index_descriptor_by_name("world");
             uint32_t const light_location = program->get().index_descriptor_by_name("light");
             uint32_t const point_light_location = program->get().index_descriptor_by_name("point_light");
-            uint32_t const positions_location = program->get().index_descriptor_by_name("positions");
-            uint32_t const normals_location = program->get().index_descriptor_by_name("normals");
+            uint32_t const positions_location = program->get().index_descriptor_by_name("world_position");
+            uint32_t const normals_location = program->get().index_descriptor_by_name("world_normal");
             uint32_t const albedo_location = program->get().index_descriptor_by_name("albedo");
             uint32_t const roughness_metalness_ao_location = program->get().index_descriptor_by_name("roughness_metalness_ao");
 
@@ -490,7 +494,9 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
                             asset::AssetPtr<asset::Shader> shader = batch.material->get().passes.at("forward");
 
-                            ResourcePtr<GPUProgram> program = shader_cache.get(shader->get());
+                            asset::ShaderVariant& variant = shader->get().variants.at(1 << 0);
+
+                            ResourcePtr<GPUProgram> program = shader_cache.get(variant);
                             ResourcePtr<GPUPipeline> after_gpu_pipeline = pipeline_cache.get(program->get(), shader->get().draw_parameters, context.render_pass->get());
                             
                             // No need to switch state if the last batch was similar.
@@ -554,7 +560,9 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
             asset::AssetPtr<asset::Shader> skybox_shader = _world_environment.skybox_material->get().passes.at("skybox");
 
-            ResourcePtr<GPUProgram> program = shader_cache.get(skybox_shader->get());
+            asset::ShaderVariant& variant = skybox_shader->get().variants.at(1 << 0);
+
+            ResourcePtr<GPUProgram> program = shader_cache.get(variant);
             ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), skybox_shader->get().draw_parameters, context.render_pass->get());
 
             gpu_pipeline->get().bind(*_device, command_list->get());
@@ -612,7 +620,9 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
             ResourcePtr<CommandList> command_list = context.command_pool->allocate();
 
-            ResourcePtr<GPUProgram> program = shader_cache.get(_ssr_shader->get());
+            asset::ShaderVariant& variant = _ssr_shader->get().variants.at(1 << 0);
+
+            ResourcePtr<GPUProgram> program = shader_cache.get(variant);
             ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), _ssr_shader->get().draw_parameters, context.render_pass->get());
 
             gpu_pipeline->get().bind(*_device, command_list->get());
@@ -663,7 +673,9 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
 
             ResourcePtr<CommandList> command_list = context.command_pool->allocate();
 
-            ResourcePtr<GPUProgram> program = shader_cache.get(_fxaa_shader->get());
+            asset::ShaderVariant& variant = _fxaa_shader->get().variants.at(1 << 0);
+
+            ResourcePtr<GPUProgram> program = shader_cache.get(variant);
             ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), _fxaa_shader->get().draw_parameters, context.render_pass->get());
 
             gpu_pipeline->get().bind(*_device, command_list->get());
@@ -706,8 +718,8 @@ void MeshRenderer::apply_material(DescriptorBinder& binder, GPUProgram const& pr
                 break;
             }
 
-            if(parameter.as_sampler2D().asset->is_ok()) {
-                ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(parameter.as_sampler2D().asset->get());
+            if(parameter.as_sampler2D().value->is_ok()) {
+                ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(parameter.as_sampler2D().value->get());
 
                 if(gpu_texture->is_ok()) {
                     uint32_t const texture_location = it->second.as_sampler2D().index;
@@ -723,8 +735,8 @@ void MeshRenderer::apply_material(DescriptorBinder& binder, GPUProgram const& pr
                 break;
             }
 
-            if(parameter.as_samplerCube().asset->is_ok()) {
-                ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(parameter.as_samplerCube().asset->get());
+            if(parameter.as_samplerCube().value->is_ok()) {
+                ResourcePtr<GPUTexture> gpu_texture = _texture_cache.get(parameter.as_samplerCube().value->get());
 
                 if(gpu_texture->is_ok()) {
                     uint32_t const texture_location = it->second.as_samplerCube().index;
@@ -754,6 +766,9 @@ void MeshRenderer::apply_material(DescriptorBinder& binder, GPUProgram const& pr
                 },
                 [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x4> const& data) {
                     std::memcpy(material_buffer.data() + cbuffer_data.offsets.at(parameter_name), data.value.data(), sizeof(lib::math::Vector4f));
+                },
+                [&](asset::MaterialParameterData<asset::MaterialParameterType::F32x4x4> const& data) {
+                    std::memcpy(material_buffer.data() + cbuffer_data.offsets.at(parameter_name), data.value.data(), sizeof(lib::math::Matrixf));
                 },
                 // Default
                 [&](asset::MaterialParameterData<asset::MaterialParameterType::Sampler2D> const& parameter_data) { },

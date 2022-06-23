@@ -78,7 +78,7 @@ public:
 
     void render(PipelineCache& pipeline_cache, ShaderCache& shader_cache, RTTextureCache& rt_texture_cache, NullData& null, FrameGraph& frame_graph, scene::Scene& scene, ResourcePtr<GPUTexture> swap_texture, uint32_t const frame_index);
 
-    bool _is_ssr_enable{true};
+    bool _is_ssr_enable{false};
 
 private:
 

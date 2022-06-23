@@ -22,32 +22,32 @@ ShaderCache& ShaderCache::operator=(ShaderCache&& other) noexcept {
     return *this;
 }
 
-ResourcePtr<GPUProgram> ShaderCache::get(asset::Shader& shader) {
+ResourcePtr<GPUProgram> ShaderCache::get(asset::ShaderVariant& shader_variant) {
     
     {
         std::shared_lock lock(_mutex);
-        uint64_t const hash = shader.hash;
+        uint64_t const hash = shader_variant.hash;
 
-        if(_data.is_valid(shader.cache_entry)) {
-            return _data.get(shader.cache_entry).value;
+        if(_data.is_valid(shader_variant.cache_entry)) {
+            return _data.get(shader_variant.cache_entry).value;
         }
     }
 
     std::unique_lock lock(_mutex);
 
-    auto result = GPUProgram::load_from_shader(*_device, shader);
+    auto result = GPUProgram::load_from_shader(*_device, shader_variant);
 
     if(result.is_ok()) {
         GPUProgram program = std::move(result.as_ok());
 
         auto cache_entry = CacheEntry<ResourcePtr<GPUProgram>> {
             .value = make_resource_ptr(std::move(program)),
-            .hash = shader.hash
+            .hash = shader_variant.hash
         };
 
-        shader.cache_entry = _data.push(std::move(cache_entry));
+        shader_variant.cache_entry = _data.push(std::move(cache_entry));
 
-        return _data.get(shader.cache_entry).value;
+        return _data.get(shader_variant.cache_entry).value;
     } else {
         throw lib::Exception(result.as_error().message);
     }

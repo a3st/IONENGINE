@@ -3,8 +3,8 @@
 #pragma once
 
 #include <asset/asset_ptr.h>
-#include <asset/texture.h>
 #include <lib/math/vector.h>
+#include <lib/math/matrix.h>
 #include <lib/expected.h>
 #include <json5/json5.hpp>
 #include <json5/json5_input.hpp>
@@ -17,7 +17,7 @@ enum class JSON_MaterialParameterType {
     f32x4,
     f32x3,
     f32x2,
-    f32
+    f32,
 };
 
 JSON5_ENUM(JSON_MaterialParameterType, sampler2D, samplerCube, f32x4x4, f32x4, f32x3, f32x2, f32)
@@ -30,20 +30,20 @@ JSON5_ENUM(JSON_MaterialDomain, surface)
 
 enum class JSON_MaterialBlendMode {
     opaque,
-    transculent
+    translucent
 };
 
-JSON5_ENUM(JSON_MaterialBlendMode, opaque, transculent)
+JSON5_ENUM(JSON_MaterialBlendMode, opaque, translucent)
 
 struct JSON_MaterialParameterValueDefinition {
     std::optional<std::string> path;
-    std::optional<std::array<float, 4>> vec4;
-    std::optional<std::array<float, 3>> vec3;
-    std::optional<std::array<float, 2>> vec2;
-    std::optional<float> value;
+    std::optional<std::array<float, 4>> f32x4;
+    std::optional<std::array<float, 3>> f32x3;
+    std::optional<std::array<float, 2>> f32x2;
+    std::optional<float> f32;
 };
 
-JSON5_CLASS(JSON_MaterialParameterValueDefinition, path, vec4, vec3, vec2, value)
+JSON5_CLASS(JSON_MaterialParameterValueDefinition, path, f32x4, f32x3, f32x2, f32)
 
 struct JSON_MaterialParameterDefinition {
     std::string name;
@@ -65,7 +65,7 @@ struct JSON_MaterialDefinition {
     JSON_MaterialDomain domain;
     JSON_MaterialBlendMode blend_mode;
     std::vector<JSON_MaterialParameterDefinition> parameters;
-    std::vector<JSON_MaterialPassDefinition> passes;
+    std::optional<std::vector<JSON_MaterialPassDefinition>> passes;
 };
 
 JSON5_CLASS(JSON_MaterialDefinition, name, domain, blend_mode, parameters, passes)
@@ -74,10 +74,14 @@ namespace ionengine::asset {
 
 class AssetManager;
 struct Shader;
+struct Texture;
 
 enum class MaterialError {
     IO,
-    ParseError
+    ParseError,
+    InvalidParameter,
+    InvalidShader,
+    InvalidValue
 };
 
 enum class MaterialParameterType {
@@ -96,7 +100,7 @@ enum class MaterialDomain {
 
 enum class MaterialBlendMode {
     Opaque,
-    Transculent
+    Translucent
 };
 
 template<MaterialParameterType Type>
@@ -104,12 +108,12 @@ struct MaterialParameterData {};
 
 template<>
 struct MaterialParameterData<MaterialParameterType::Sampler2D> { 
-    asset::AssetPtr<Texture> asset;
+    asset::AssetPtr<Texture> value;
 };
 
 template<>
 struct MaterialParameterData<MaterialParameterType::SamplerCube> { 
-    asset::AssetPtr<Texture> asset;
+    asset::AssetPtr<Texture> value;
 };
 
 template<>
@@ -132,6 +136,11 @@ struct MaterialParameterData<MaterialParameterType::F32x4> {
     lib::math::Vector4f value;
 };
 
+template<>
+struct MaterialParameterData<MaterialParameterType::F32x4x4> {
+    lib::math::Matrixf value;
+};
+
 #ifndef DECLARE_MATERIAL_PARAMETER_CAST
 #define DECLARE_MATERIAL_PARAMETER_CAST(Name, Type) \
 MaterialParameterData<Type>& Name() { \
@@ -146,7 +155,8 @@ struct MaterialParameter {
         MaterialParameterData<MaterialParameterType::F32>,
         MaterialParameterData<MaterialParameterType::F32x2>,
         MaterialParameterData<MaterialParameterType::F32x3>,
-        MaterialParameterData<MaterialParameterType::F32x4>
+        MaterialParameterData<MaterialParameterType::F32x4>,
+        MaterialParameterData<MaterialParameterType::F32x4x4>
     > data;
 
     bool is_sampler2D() const { 
@@ -161,25 +171,13 @@ struct MaterialParameter {
         return !is_sampler2D() || !is_samplerCube();
     }
 
-    /*
-        // dynamic cast usage
-        material->get().parameters.at("roughness").as_dynamic<MaterialParameterType::Float>() = 1.0f;
-        material->get().parameters.at("roughness").as_dynamic<MaterialParameterType::Sampler2D>() = asset_manager.get_texture("content/base.dds");
-        material->get().parameters.at("roughness").as_dynamic<MaterialParameterType::Float2>() = // invalid cast, throw exception
-
-        // static cast usage
-        material->get().parameters.at("water_scale").as_static<MaterialParameterType::Float>() = 2.0f;
-
-        // static cast usage as dynamic
-        material->get().parameters.at("water_scale").as_dynamic<MaterialParameterType::Float>() = // invalid cast, throw exception
-    */
-
     DECLARE_MATERIAL_PARAMETER_CAST(as_sampler2D, MaterialParameterType::Sampler2D)
     DECLARE_MATERIAL_PARAMETER_CAST(as_samplerCube, MaterialParameterType::SamplerCube)
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32, MaterialParameterType::F32)
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32x2, MaterialParameterType::F32x2)
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32x3, MaterialParameterType::F32x3)
     DECLARE_MATERIAL_PARAMETER_CAST(as_f32x4, MaterialParameterType::F32x4)
+    DECLARE_MATERIAL_PARAMETER_CAST(as_f32x4x4, MaterialParameterType::F32x4x4)
 };
 
 struct Material {
@@ -188,7 +186,6 @@ struct Material {
     MaterialBlendMode blend_mode;
     std::unordered_map<std::string, MaterialParameter> parameters;
     std::unordered_map<std::string, AssetPtr<Shader>> passes;
-    uint16_t condition;
 
     uint64_t hash;
 

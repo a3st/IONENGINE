@@ -19,16 +19,16 @@ enum class JSON_ShaderUniformType {
 JSON5_ENUM(JSON_ShaderUniformType, cbuffer, sbuffer, rwbuffer, sampler2D, samplerCube, rwtexture2D)
 
 enum class JSON_ShaderDataType {
-    float4x4,
-    float4,
-    float3,
-    float2,
-    _float,
-    _uint,
-    _bool
+    f32x4x4,
+    f32x4,
+    f32x3,
+    f32x2,
+    f32,
+    uint32,
+    boolean
 };
 
-JSON5_ENUM(JSON_ShaderDataType, float4x4, float4, float3, float2, _float, _uint, _bool)
+JSON5_ENUM(JSON_ShaderDataType, f32x4x4, f32x4, f32x3, f32x2, f32, uint32, boolean)
 
 enum class JSON_ShaderType {
     vertex,
@@ -70,10 +70,11 @@ enum class JSON_ShaderDepthTest {
     equal,
     less,
     less_equal,
-    always
+    always,
+    none
 };
 
-JSON5_ENUM(JSON_ShaderDepthTest, equal, less, less_equal, always)
+JSON5_ENUM(JSON_ShaderDepthTest, equal, less, less_equal, always, none)
 
 struct JSON_ShaderBufferDataDefinition {
     std::string name;
@@ -82,27 +83,29 @@ struct JSON_ShaderBufferDataDefinition {
 
 JSON5_CLASS(JSON_ShaderBufferDataDefinition, name, type)
 
-struct JSON_ShaderIAssemblerDefinition {
+struct JSON_ShaderInputOutputDefinition {
     std::string name;
     JSON_ShaderDataType type;
     std::string semantic;
+    std::optional<std::string> condition;
 };
 
-JSON5_CLASS(JSON_ShaderIAssemblerDefinition, name, type, semantic)
+JSON5_CLASS(JSON_ShaderInputOutputDefinition, name, type, semantic, condition)
 
 struct JSON_ShaderUniformDefinition {
     std::string name;
     JSON_ShaderUniformType type;
-    std::optional<std::vector<JSON_ShaderBufferDataDefinition>> properties;
+    std::optional<std::vector<JSON_ShaderBufferDataDefinition>> data;
     JSON_ShaderType visibility;
+    std::optional<std::string> condition;
 };
 
-JSON5_CLASS(JSON_ShaderUniformDefinition, name, type, properties, visibility)
+JSON5_CLASS(JSON_ShaderUniformDefinition, name, type, data, visibility)
 
 struct JSON_ShaderStageDefinition {
     JSON_ShaderType type;
-    std::vector<JSON_ShaderIAssemblerDefinition> inputs;
-    std::vector<JSON_ShaderIAssemblerDefinition> outputs;
+    std::vector<JSON_ShaderInputOutputDefinition> inputs;
+    std::vector<JSON_ShaderInputOutputDefinition> outputs;
     std::string source;
 };
 
@@ -111,16 +114,15 @@ JSON5_CLASS(JSON_ShaderStageDefinition, type, inputs, outputs, source)
 struct JSON_ShaderDrawParametersDefinition {
     JSON_ShaderFillMode fill_mode;
     JSON_ShaderCullMode cull_mode;
-    bool depth_stencil;
     JSON_ShaderDepthTest depth_test;
     JSON_ShaderBlendMode blend_mode;
-    
 };
 
-JSON5_CLASS(JSON_ShaderDrawParametersDefinition, fill_mode, cull_mode, depth_stencil, depth_test, blend_mode)
+JSON5_CLASS(JSON_ShaderDrawParametersDefinition, fill_mode, cull_mode, depth_test, blend_mode)
 
 struct JSON_ShaderDefinition {
     std::string name;
+    std::vector<std::string> conditions;
     std::vector<JSON_ShaderUniformDefinition> uniforms;
     JSON_ShaderDrawParametersDefinition draw_parameters;
     std::vector<JSON_ShaderStageDefinition> stages;
@@ -145,13 +147,13 @@ enum class ShaderUniformType {
 };
 
 enum class ShaderDataType {
-    Float4x4,
-    Float4,
-    Float3,
-    Float2,
-    Float,
-    Uint,
-    Bool
+    F32x4x4,
+    F32x4,
+    F32x3,
+    F32x2,
+    F32,
+    UInt32,
+    Boolean
 };
 
 enum class ShaderType {
@@ -186,7 +188,8 @@ enum class ShaderDepthTest {
     Equal,
     Less,
     LessEqual,
-    Always
+    Always,
+    None
 };
 
 struct ShaderBufferData {
@@ -267,23 +270,32 @@ struct VertexAttributeData {
 struct ShaderDrawParameters {
     ShaderFillMode fill_mode;
     ShaderCullMode cull_mode;
-    bool depth_stencil;
     ShaderDepthTest depth_test;
     ShaderBlendMode blend_mode;
 };
 
+struct ShaderVariant {
+    std::vector<ShaderUniform> uniforms;
+    std::vector<VertexAttributeData> attributes;
+    std::unordered_map<ShaderType, StageSource> stages;
+    uint64_t hash;
+    size_t cache_entry;
+};
+
 struct Shader {
     std::string name;
-    std::vector<ShaderUniform> uniforms;
-    std::unordered_map<ShaderType, StageSource> stages;
-    std::vector<VertexAttributeData> attributes;
     ShaderDrawParameters draw_parameters;
-    uint64_t hash;
-
-    size_t cache_entry{std::numeric_limits<size_t>::max()};
+    std::unordered_map<uint16_t, ShaderVariant> variants;
+    std::unordered_map<std::string, uint16_t> conditions;
 
     static lib::Expected<Shader, lib::Result<ShaderError>> load_from_file(std::filesystem::path const& file_path); 
 };
+
+std::vector<ShaderUniform> fill_shader_variant_uniforms(std::string_view const condition, std::span<JSON_ShaderUniformDefinition const> const data);
+
+std::unordered_map<ShaderType, StageSource> fill_shader_variant_stages(std::string_view const condition, std::span<JSON_ShaderStageDefinition const> const data);
+
+std::vector<VertexAttributeData> fill_shader_variant_attributes(std::string_view const condition, std::span<JSON_ShaderStageDefinition const> const data);
 
 std::string constexpr get_shader_data_type_string(JSON_ShaderDataType const data_type);
 
@@ -299,6 +311,10 @@ ShaderBlendMode constexpr get_shader_blend_mode(JSON_ShaderBlendMode const blend
 
 ShaderDepthTest constexpr get_shader_depth_test(JSON_ShaderDepthTest const depth_test);
 
-std::string generate_shader_iassembler_code(std::string_view const name, std::span<JSON_ShaderIAssemblerDefinition const> const properties);
+std::string generate_shader_input_code(std::string_view const condition, JSON_ShaderType const shader_type, std::span<JSON_ShaderInputOutputDefinition const> const data);
+
+std::string generate_shader_output_code(std::string_view const condition, JSON_ShaderType const shader_type, std::span<JSON_ShaderInputOutputDefinition const> const data);
+
+std::string generate_shader_generic_code();
 
 }

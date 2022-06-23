@@ -16,10 +16,19 @@ lib::Expected<GPUPipeline, lib::Result<GPUPipelineError>> GPUPipeline::create(ba
         .cull_mode = get_shader_cull_mode(draw_parameters.cull_mode)
     };
 
-    auto depth_stencil_desc = backend::DepthStencilDesc {
-        .depth_func = get_shader_depth_test(draw_parameters.depth_test),
-        .write_enable = draw_parameters.depth_stencil
-    };
+    backend::DepthStencilDesc depth_stencil_desc;
+
+    if(draw_parameters.depth_test != asset::ShaderDepthTest::None) {
+        depth_stencil_desc = backend::DepthStencilDesc {
+            .depth_func = get_shader_depth_test(draw_parameters.depth_test),
+            .write_enable = true
+        };
+    } else {
+        depth_stencil_desc = backend::DepthStencilDesc {
+            .depth_func = backend::CompareOp::Never,
+            .write_enable = false
+        }; 
+    }
 
     backend::BlendDesc blend_desc;
 

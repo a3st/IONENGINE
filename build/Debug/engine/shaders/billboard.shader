@@ -4,7 +4,7 @@
         {
             name: "world",
             type: "cbuffer",
-            properties: [
+            data: [
                 { name: "view", type: "float4x4" },
                 { name: "proj", type: "float4x4" },
                 { name: "camera_position", type: "float3" },
@@ -20,7 +20,7 @@
         { 
             name: "object", 
             type: "sbuffer", 
-            properties: [
+            data: [
                 { name: "model", type: "f32x4x4" },
                 { name: "inverse_model", type: "f32x4x4" }
             ],

@@ -15,7 +15,7 @@ Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& in
 
     scene.load("content/levels/city17.subscene");
     scene.load("content/levels/city17_2.subscene");
-    scene.load("content/levels/high_poly.subscene");
+    //scene.load("content/levels/high_poly.subscene");
 
     auto camera_object_node = scene.graph().add_node<scene::CameraNode>();
     camera_object_node->name("main_camera");

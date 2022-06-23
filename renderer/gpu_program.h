@@ -93,7 +93,7 @@ struct GPUProgram {
 
     uint32_t index_descriptor_by_name(std::string_view const name) const;
 
-    static lib::Expected<GPUProgram, lib::Result<GPUProgramError>> load_from_shader(backend::Device& device, asset::Shader const& shader);
+    static lib::Expected<GPUProgram, lib::Result<GPUProgramError>> load_from_shader(backend::Device& device, asset::ShaderVariant const& shader_variant);
 };
 
 template<>

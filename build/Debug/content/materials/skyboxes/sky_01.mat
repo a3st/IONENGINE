@@ -8,11 +8,5 @@
             type: "samplerCube",
             value: { path: "content/textures/cubemaps/skybox_01.dds" }
         }
-    ],
-    passes: [
-        {
-            name: "skybox",
-            shader: "engine/shaders/skybox.shader"
-        }
     ]
 }

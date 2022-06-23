@@ -58,7 +58,9 @@ void UiRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cache
 
             ResourcePtr<CommandList> command_list = context.command_pool->allocate();
 
-            ResourcePtr<GPUProgram> program = shader_cache.get(_ui_shader->get());
+            asset::ShaderVariant& variant = _ui_shader->get().variants.at(1 << 0);
+
+            ResourcePtr<GPUProgram> program = shader_cache.get(variant);
             ResourcePtr<GPUPipeline> gpu_pipeline = pipeline_cache.get(program->get(), _ui_shader->get().draw_parameters, context.render_pass->get());
 
             gpu_pipeline->get().bind(*_device, command_list->get());

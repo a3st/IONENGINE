@@ -41,9 +41,6 @@ Renderer::Renderer(platform::Window& window, asset::AssetManager& asset_manager)
         };
         _swap_textures.emplace_back(make_resource_ptr(std::move(gpu_texture)));
     }
-
-    asset_manager.get_shader("engine/shaders/gbuffer.shader")->wait();
-    asset_manager.get_shader("engine/shaders/forward.shader")->wait();
 }
 
 Renderer::~Renderer() {

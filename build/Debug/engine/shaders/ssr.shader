@@ -1,14 +1,15 @@
 {
     name: "ssr_pc",
+    conditions: [],
     uniforms: [
         {
             name: "world",
             type: "cbuffer",
-            properties: [
-                { name: "view", type: "float4x4" },
-                { name: "proj", type: "float4x4" },
-                { name: "camera_position", type: "float3" },
-                { name: "inverse_view_proj", type: "float4x4" }
+            data: [
+                { name: "view", type: "f32x4x4" },
+                { name: "proj", type: "f32x4x4" },
+                { name: "camera_position", type: "f32x3" },
+                { name: "inverse_view_proj", type: "f32x4x4" }
             ],
             visibility: "pixel"
         },
@@ -36,20 +37,19 @@
     draw_parameters: {
         fill_mode: "solid",
         cull_mode: "back",
-        depth_stencil: false,
-        depth_test: "less",
+        depth_test: "none",
         blend_mode: "opaque"
     },
     stages: [
         {
             type: "vertex",
             inputs: [
-                { name: "position", type: "float3", semantic: "POSITION" },
-                { name: "uv", type: "float2", semantic: "TEXCOORD0" }
+                { name: "position", type: "f32x3", semantic: "POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             outputs: [
-                { name: "position", type: "float4", semantic: "SV_POSITION" },
-                { name: "uv", type: "float2", semantic: "TEXCOORD0" }
+                { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             source: "
                 vs_output main(vs_input input) {
@@ -63,11 +63,11 @@
         {
             type: "pixel",
             inputs: [
-                { name: "position", type: "float4", semantic: "SV_POSITION" },
-                { name: "uv", type: "float2", semantic: "TEXCOORD0" }
+                { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             outputs: [
-                { name: "color", type: "float4", semantic: "SV_TARGET0" }
+                { name: "color", type: "f32x4", semantic: "SV_TARGET0" }
             ],
             source: "
 

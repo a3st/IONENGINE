@@ -23,7 +23,7 @@ public:
 
     ShaderCache& operator=(ShaderCache&& other) noexcept;
 
-    ResourcePtr<GPUProgram> get(asset::Shader& shader);
+    ResourcePtr<GPUProgram> get(asset::ShaderVariant& shader_variant);
 
 private:
 

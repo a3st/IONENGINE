@@ -8,7 +8,7 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_shader(backend::Device& device, asset::Shader const& shader) {
+lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_shader(backend::Device& device, asset::ShaderVariant const& shader_variant) {
 
     auto gpu_program = GPUProgram {};
 
@@ -22,7 +22,7 @@ lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_sh
     std::vector<backend::DescriptorLayoutBinding> bindings;
     uint32_t binding_index = 0;
 
-    for(auto const& uniform : shader.uniforms) {
+    for(auto const& uniform : shader_variant.uniforms) {
 
         ProgramDescriptor program_descriptor;
 
@@ -143,22 +143,22 @@ lib::Expected<GPUProgram, lib::Result<GPUProgramError>> GPUProgram::load_from_sh
 
     uint32_t stride = 0;
 
-    for(size_t i = 0; i < shader.attributes.size(); ++i) {
+    for(size_t i = 0; i < shader_variant.attributes.size(); ++i) {
         gpu_program.attributes.emplace_back(
-            shader.attributes.at(i).semantic, 
+            shader_variant.attributes.at(i).semantic, 
             static_cast<uint32_t>(i), 
-            get_shader_data_format(shader.attributes.at(i).type),
+            get_shader_data_format(shader_variant.attributes.at(i).type),
             0,
             stride
         );
-        stride += static_cast<uint32_t>(get_shader_data_type_size(shader.attributes.at(i).type));
+        stride += static_cast<uint32_t>(get_shader_data_type_size(shader_variant.attributes.at(i).type));
     }
 
-    for(auto const& [stage_type, stage_source] : shader.stages) {
+    for(auto const& [stage_type, stage_source] : shader_variant.stages) {
 
         std::string generated_code = "";
 
-        for(auto& uniform : shader.uniforms) {
+        for(auto& uniform : shader_variant.uniforms) {
 
             if(uniform.visibility != stage_type && uniform.visibility != asset::ShaderType::All) {
                 continue;
@@ -281,10 +281,10 @@ backend::ShaderFlags constexpr ionengine::renderer::get_shader_flags(asset::Shad
 
 backend::Format constexpr ionengine::renderer::get_shader_data_format(asset::ShaderDataType const data_type) {
     switch(data_type) {
-        case asset::ShaderDataType::Float: return backend::Format::R32;
-        case asset::ShaderDataType::Float2: return backend::Format::RG32;
-        case asset::ShaderDataType::Float3: return backend::Format::RGB32;
-        case asset::ShaderDataType::Float4: return backend::Format::RGBA32;
+        case asset::ShaderDataType::F32: return backend::Format::R32;
+        case asset::ShaderDataType::F32x2: return backend::Format::RG32;
+        case asset::ShaderDataType::F32x3: return backend::Format::RGB32;
+        case asset::ShaderDataType::F32x4: return backend::Format::RGBA32;
         default: {
             assert(false && "invalid data type");
             return backend::Format::Unknown;
@@ -294,13 +294,13 @@ backend::Format constexpr ionengine::renderer::get_shader_data_format(asset::Sha
 
 std::string constexpr ionengine::renderer::get_shader_data_type_string(asset::ShaderDataType const data_type) {
     switch(data_type) {
-        case asset::ShaderDataType::Float4x4: return "float4x4";
-        case asset::ShaderDataType::Float4: return "float4";
-        case asset::ShaderDataType::Float3: return "float3";
-        case asset::ShaderDataType::Float2: return "float2";
-        case asset::ShaderDataType::Float: return "float";
-        case asset::ShaderDataType::Uint: return "uint";
-        case asset::ShaderDataType::Bool: return "bool";
+        case asset::ShaderDataType::F32x4x4: return "float4x4";
+        case asset::ShaderDataType::F32x4: return "float4";
+        case asset::ShaderDataType::F32x3: return "float3";
+        case asset::ShaderDataType::F32x2: return "float2";
+        case asset::ShaderDataType::F32: return "float";
+        case asset::ShaderDataType::UInt32: return "uint";
+        case asset::ShaderDataType::Boolean: return "bool";
         default: {
             assert(false && "invalid data type");
             return "float";
@@ -310,13 +310,13 @@ std::string constexpr ionengine::renderer::get_shader_data_type_string(asset::Sh
 
 uint64_t constexpr ionengine::renderer::get_shader_data_type_size(asset::ShaderDataType const data_type) {
     switch(data_type) {
-        case asset::ShaderDataType::Float: return sizeof(float);
-        case asset::ShaderDataType::Float2: return sizeof(float) * 2;
-        case asset::ShaderDataType::Float3: return sizeof(float) * 3;
-        case asset::ShaderDataType::Float4: return sizeof(lib::math::Vector4f);
-        case asset::ShaderDataType::Float4x4: return sizeof(lib::math::Matrixf);
-        case asset::ShaderDataType::Uint: return sizeof(uint32_t);
-        case asset::ShaderDataType::Bool: return sizeof(bool);
+        case asset::ShaderDataType::F32: return sizeof(float);
+        case asset::ShaderDataType::F32x2: return sizeof(float) * 2;
+        case asset::ShaderDataType::F32x3: return sizeof(float) * 3;
+        case asset::ShaderDataType::F32x4: return sizeof(lib::math::Vector4f);
+        case asset::ShaderDataType::F32x4x4: return sizeof(lib::math::Matrixf);
+        case asset::ShaderDataType::UInt32: return sizeof(uint32_t);
+        case asset::ShaderDataType::Boolean: return sizeof(bool);
         default: {
             assert(false && "invalid data type");
             return 0;

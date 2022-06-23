@@ -1,5 +1,6 @@
 {
     name: "fxaa_pc",
+    conditions: [],
     uniforms: [
         {
             name: "color",
@@ -10,20 +11,19 @@
     draw_parameters: {
         fill_mode: "solid",
         cull_mode: "back",
-        depth_stencil: false,
-        depth_test: "less",
+        depth_test: "none",
         blend_mode: "opaque"
     },
     stages: [
         {
             type: "vertex",
             inputs: [
-                { name: "position", type: "float3", semantic: "POSITION" },
-                { name: "uv", type: "float2", semantic: "TEXCOORD0" }
+                { name: "position", type: "f32x3", semantic: "POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             outputs: [
-                { name: "position", type: "float4", semantic: "SV_POSITION" },
-                { name: "uv", type: "float2", semantic: "TEXCOORD0" }
+                { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             source: "
                 vs_output main(vs_input input) {
@@ -37,11 +37,11 @@
         {
             type: "pixel",
             inputs: [
-                { name: "position", type: "float4", semantic: "SV_POSITION" },
-                { name: "uv", type: "float2", semantic: "TEXCOORD0" }
+                { name: "position", type: "f32x4", semantic: "SV_POSITION" },
+                { name: "uv", type: "f32x2", semantic: "TEXCOORD0" }
             ],
             outputs: [
-                { name: "color", type: "float4", semantic: "SV_TARGET0" }
+                { name: "color", type: "f32x4", semantic: "SV_TARGET0" }
             ],
             source: "
 
