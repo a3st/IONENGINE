@@ -687,6 +687,11 @@ Handle<Texture> Device::Impl::create_texture(
                 render_target_view_desc.Texture3D.MipSlice = mip_levels;
                 render_target_view_desc.Texture3D.WSize = array_layers;
             } break;
+            case Dimension::Cube: {
+                render_target_view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+                render_target_view_desc.Texture2DArray.MipSlice = mip_levels - 1;
+                render_target_view_desc.Texture2DArray.ArraySize = 6;
+            } break;
         }
 
         auto& cur_allocation = texture_data.descriptor_allocations[D3D12_DESCRIPTOR_HEAP_TYPE_RTV];

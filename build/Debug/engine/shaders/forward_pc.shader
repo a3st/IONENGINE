@@ -41,6 +41,16 @@
             visibility: "pixel",
         },
         {
+            name: "emissive",
+            type: "sampler2D",
+            visibility: "pixel"
+        },
+        {
+            name: "environment",
+            type: "samplerCube",
+            visibility: "pixel"
+        },
+        {
             name: "point_light",
             type: "sbuffer",
             data: [
@@ -179,7 +189,7 @@
                     f32x3 F0 = float3(0.04f, 0.04f, 0.04f);
                     F0 = lerp(F0, albedo, metalness);
 
-                    f32x3 L = normalize(position - point_light.position);
+                    f32x3 L = normalize(point_light.position - position);
                     f32x3 H = normalize(V + L);
 
                     // Calculate per-light radiance
@@ -209,10 +219,16 @@
                     return Lo;
                 }
 
+                f32x3 unpack_normal_map(f32x2 uv) {
+                    f32x2 normal_map_rg = TEXTURE_SAMPLE(normal, uv).rg;
+                    normal_map_rg = normal_map_rg * 2.0f - f32x2(1.0f, 1.0f);
+                    f32 normal_map_b = sqrt(saturate(1.0f - dot(normal_map_rg, normal_map_rg)));
+                    return f32x3(normal_map_rg, normal_map_b);
+                }
+
                 f32x3 calculate_normals(f32x3 normal, f32x3 tangent, f32x3 bitangent, f32x2 uv) {
                     f32x3x3 tbn = f32x3x3(normalize(tangent), normalize(bitangent), normalize(normal));
-                    f32x3 normal_map = TEXTURE_SAMPLE(normal, uv).xyz * 2.0 - float3(1.0f, 1.0f, 1.0f);
-                    return normalize(mul(normal_map, tbn));
+                    return normalize(mul(unpack_normal_map(uv), tbn));
                 }
 
                 ps_output main(ps_input input) {
@@ -221,8 +237,9 @@
                     f32 roughness = TEXTURE_SAMPLE(roughness, input.uv).r;
                     f32 metalness = TEXTURE_SAMPLE(metalness, input.uv).r;
                     f32 opacity = TEXTURE_SAMPLE(albedo, input.uv).a;
+                    f32x3 emissive = TEXTURE_SAMPLE(emissive, input.uv).rgb;
 
-                    f32x3 V = normalize(input.world_position - world.camera_position);
+                    f32x3 V = normalize(world.camera_position - input.world_position);
 
                     f32x3 Lo = float3(0.0f, 0.0f, 0.0f);
 
@@ -230,10 +247,23 @@
                         Lo += calculate_point_light(point_lights[i], input.world_position, normal, V, albedo, metalness, roughness);
                     }
 
-                    f32x3 color = pow(Lo, f32x3(1.4f / 2.2f, 1.4f / 2.2f, 1.4f / 2.2f));
+                    // Ambient Lighting
+                    /*f32x3 F0 = float3(0.04f, 0.04f, 0.04f);
+                    F0 = lerp(F0, albedo, metalness);
+                    f32x3 kS = fresnel_schlick(clamp(dot(normal, V), 0.0f, 1.0f), F0);
+                    f32x3 kD = f32x3(1.0f, 1.0f, 1.0f) - kS;
+                    kD *= 1.0 - metalness;
+
+                    f32x3 irradiance = TEXTURE_SAMPLE(environment, normal).rgb;
+                    f32x3 diffuse = irradiance * albedo.rgb;
+                    f32x3 ambient = (kD * diffuse) * 0.1f;*/
+
+                    f32x3 color = Lo + emissive;
+
+                    f32x3 gamma_correction = pow(color, f32x3(1.4f / 2.2f, 1.4f / 2.2f, 1.4f / 2.2f));
 
                     ps_output output;
-                    output.color = f32x4(color, opacity);
+                    output.color = f32x4(gamma_correction, opacity);
                     return output;
                 }
             "

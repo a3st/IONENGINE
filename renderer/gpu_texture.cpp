@@ -8,6 +8,7 @@ using namespace ionengine::renderer;
 
 lib::Expected<GPUTexture, lib::Result<GPUTextureError>> GPUTexture::create(
     backend::Device& device,
+    backend::Dimension const dimension,
     backend::Format const format, 
     uint32_t const width, 
     uint32_t const height, 

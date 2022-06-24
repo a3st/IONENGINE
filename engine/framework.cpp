@@ -19,7 +19,7 @@ Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& in
 
     auto camera_object_node = scene.graph().add_node<scene::CameraNode>();
     camera_object_node->name("main_camera");
-    camera_object_node->position(lib::math::Vector3f(0.0f, 1.0f, 3.0f));
+    camera_object_node->position(lib::math::Vector3f(0.0f, 0.0f, 0.0f));
 
     scene.graph().root()->add_child(camera_object_node);
 

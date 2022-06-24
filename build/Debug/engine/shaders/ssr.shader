@@ -145,7 +145,7 @@
                     float3 position = positions_texture.Sample(positions_sampler, input.uv).xyz;
                     float3 normal = normals_texture.Sample(normals_sampler, input.uv).xyz;
 
-                    float3 V = normalize(position - world.camera_position);
+                    float3 V = normalize(world.camera_position - position);
 
                     float3 reflect_dir = normalize(reflect(V, normal));
                     float3 hit_position = position;

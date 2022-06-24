@@ -49,6 +49,7 @@ struct GPUTexture {
 
     static lib::Expected<GPUTexture, lib::Result<GPUTextureError>> create(
         backend::Device& device,
+        backend::Dimension const dimension,
         backend::Format const format, 
         uint32_t const width, 
         uint32_t const height, 

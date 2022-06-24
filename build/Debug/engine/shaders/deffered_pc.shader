@@ -112,13 +112,20 @@
             ],
             source: "
 
-                ps_output pack_gbuffer_data(f32x3 positions, f32x3 albedo, f32x3 normals, f32 roughness, f32 metalness, f32 ao) {
+                ps_output pack_gbuffer_data(f32x3 world_position, f32x3 albedo, f32x3 world_normal, f32 roughness, f32 metalness, f32 ao) {
                     ps_output output;
-                    output.world_position = f32x4(positions, 1.0f);
+                    output.world_position = f32x4(world_position, 1.0f);
                     output.albedo = f32x4(albedo, 1.0f);
-                    output.world_normal = f32x4(normals, 1.0f);
+                    output.world_normal = f32x4(world_normal, 1.0f);
                     output.roughness_metalness_ao = f32x4(roughness, metalness, ao, 1.0f);
                     return output;
+                }
+
+                f32x3 unpack_normal_map(f32x2 uv) {
+                    f32x2 normal_map_rg = TEXTURE_SAMPLE(normal, uv).rg;
+                    normal_map_rg = normal_map_rg * 2.0f - f32x2(1.0f, 1.0f);
+                    f32 normal_map_b = sqrt(saturate(1.0f - dot(normal_map_rg, normal_map_rg)));
+                    return f32x3(normal_map_rg, normal_map_b);
                 }
 
                 ps_output main(ps_input input) {
@@ -128,8 +135,7 @@
                     f32x3 bitangent = normalize(input.bitangent);
                     f32x3x3 tbn = f32x3x3(tangent, bitangent, normal);
 
-                    f32x3 normal_map = TEXTURE_SAMPLE(normal, input.uv).xyz * 2.0 - f32x3(1.0f, 1.0f, 1.0f);
-                    normal = normalize(mul(normal_map, tbn));
+                    normal = normalize(mul(unpack_normal_map(input.uv), tbn));
 
                     f32x3 albedo = TEXTURE_SAMPLE(albedo, input.uv).rgb;
                     f32 roughness = TEXTURE_SAMPLE(roughness, input.uv).r; 

@@ -160,7 +160,7 @@
                     materials: [
                         "content/materials/exterior_wall_01.mat",
                         "content/materials/exterior_trim_01.mat",
-                        "content/materials/plaster_01_a.mat"
+                        "content/materials/plaster_01_c.mat"
                     ]
                 },
                 position: [6.8, 0, -0.4],
@@ -382,12 +382,26 @@
                 rotation: [0.0, 0.0, 0.0],
                 scale: [1.0, 1.0, 1.0]
             }
+        }, 
+        {
+            name: "point_light_011_object",
+            type: "point_light",
+            values: {
+                point_light: {
+                    color: [0.53, 0.83, 1.0],
+                    range: 5.0
+                },
+                position: [4.2, 5, 4.05],
+                rotation: [0.0, 0.0, 0.0],
+                scale: [1.0, 1.0, 1.0]
+            }
         }
     ],
     links: [
         {
             name: "root",
             childrens: [
+                "point_light_011_object",
                 "exterior_window_06_object",
                 "exterior_window_05_object",
                 "exterior_window_04_object",

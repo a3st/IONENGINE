@@ -16,12 +16,12 @@
         {
             name: "roughness",
             type: "sampler2D",
-            value: { path: "content/textures/roughness_30_percent.dds" }
+            value: { path: "content/textures/window_exterior_01_a_r.dds" }
         },
         {
             name: "metalness",
             type: "sampler2D",
-            value: { path: "content/textures/roughness_30_percent.dds" }
+            value: { path: "content/textures/window_exterior_01_a_m.dds" }
         }
     ]
 }

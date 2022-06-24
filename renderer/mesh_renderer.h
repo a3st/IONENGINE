@@ -103,6 +103,11 @@ private:
     std::vector<ResourcePtr<GPUTexture>> _depth_stencils;
     std::vector<ResourcePtr<GPUTexture>> _final_images;
     std::vector<ResourcePtr<GPUTexture>> _ssr_images;
+    
+    ResourcePtr<GPUTexture> _irradiance_map;
+    ResourcePtr<GPUTexture> _brdf_lut_map;
+
+    bool is_reflection_resources_calc{false};
 
     std::vector<PointLightData> _point_lights;
     RenderQueue _opaque_queue;

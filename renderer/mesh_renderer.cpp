@@ -108,22 +108,23 @@ MeshRenderer::MeshRenderer(backend::Device& device, UploadManager& upload_manage
         _material_pools.emplace_back(*_device, 64, BufferPoolUsage::Dynamic);
 
         auto gbuffer = GBufferData {
-            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
-            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
-            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
-            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok())
+            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA16_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok())
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));
-        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::DepthStencil | backend::TextureFlags::ShaderResource).as_ok()));
-        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
-        _ssr_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
+        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::D32_FLOAT, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::DepthStencil | backend::TextureFlags::ShaderResource).as_ok()));
+        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
+        _ssr_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA8_UNORM, window.client_width(), window.client_height(), 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
     }
+
+    _irradiance_map = make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::Cube, backend::Format::RGBA8_UNORM, 1024, 1024, 6, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok());
 
     auto quad_surface_data = asset::SurfaceData::make_quad();
     _quad = make_resource_ptr(GeometryBuffer::load_from_surface(*_device, quad_surface_data).as_ok());
     _upload_manager->upload_geometry_data(_quad, quad_surface_data.vertices.to_span(), quad_surface_data.indices.to_span());
-
     
     _cube = asset_manager.get_mesh("engine/skybox.obj");
     _cube->wait();
@@ -214,16 +215,16 @@ void MeshRenderer::resize(uint32_t const width, uint32_t const height) {
 
     for(uint32_t i = 0; i < backend::BACKEND_BACK_BUFFER_COUNT; ++i) {
         auto gbuffer = GBufferData {
-            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
-            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
-            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
-            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok())
+            .positions = make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .albedo = make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .normals = make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA16_FLOAT, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()),
+            .roughness_metalness_ao = make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok())
         };
 
         _gbuffers.emplace_back(std::move(gbuffer));
-        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil | backend::TextureFlags::ShaderResource).as_ok()));
-        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
-        _ssr_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
+        _depth_stencils.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::D32_FLOAT, width, height, 1, 1, backend::TextureFlags::DepthStencil | backend::TextureFlags::ShaderResource).as_ok()));
+        _final_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
+        _ssr_images.emplace_back(make_resource_ptr(GPUTexture::create(*_device, backend::Dimension::_2D, backend::Format::RGBA8_UNORM, width, height, 1, 1, backend::TextureFlags::RenderTarget | backend::TextureFlags::ShaderResource).as_ok()));
     }
 }
 
@@ -302,7 +303,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     };
 
     frame_graph.add_pass(
-        "gbuffer",
+        "deffered",
         _width,
         _height,
         gbuffer_color_infos,
@@ -403,7 +404,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     };
 
     frame_graph.add_pass(
-        "deffered",
+        "lighting",
         _width,
         _height,
         std::span<RenderPassColorInfo const>(&final_color_info, 1),
@@ -430,6 +431,12 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
             uint32_t const normals_location = program->get().index_descriptor_by_name("world_normal");
             uint32_t const albedo_location = program->get().index_descriptor_by_name("albedo");
             uint32_t const roughness_metalness_ao_location = program->get().index_descriptor_by_name("roughness_metalness_ao");
+            uint32_t const environment_location = program->get().index_descriptor_by_name("environment");
+
+            ResourcePtr<GPUTexture> environment_map = _texture_cache.get(_world_environment.skybox_material->get().parameters.at("skybox").as_samplerCube().value->get());
+            if(environment_map->is_ok()) {
+                binder.update(environment_location, environment_map->get());
+            }
 
             binder.update(world_location, world_cbuffer->get());
             binder.update(light_location, light_cbuffer->get());
@@ -525,7 +532,12 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                             uint32_t const light_location = program->get().index_descriptor_by_name("light");
                             uint32_t const object_location = program->get().index_descriptor_by_name("object");
                             uint32_t const point_light_location = program->get().index_descriptor_by_name("point_light");
+                            uint32_t const environment_location = program->get().index_descriptor_by_name("environment");
 
+                            ResourcePtr<GPUTexture> environment_map = _texture_cache.get(_world_environment.skybox_material->get().parameters.at("skybox").as_samplerCube().value->get());
+                            if(environment_map->is_ok()) {
+                                binder.update(environment_location, environment_map->get());
+                            }
                             binder.update(world_location, world_cbuffer->get());
                             binder.update(light_location, light_cbuffer->get());
                             binder.update(object_location, object_sbuffer->get());
