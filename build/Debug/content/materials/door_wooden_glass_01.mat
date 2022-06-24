@@ -6,22 +6,22 @@
         {
             name: "albedo",
             type: "sampler2D",
-            value: { path: "content/textures/light_bulb_01_glass_d.dds" }
+            value: { path: "content/textures/gray_glass_d.dds" }
         },
         {
             name: "normal",
             type: "sampler2D",
-            value: { path: "content/textures/glass_striped_01_normal.dds" }
+            value: { path: "content/textures/glass_striped_01_n.dds" }
         },
         {
             name: "roughness",
             type: "sampler2D",
-            value: { path: "content/textures/roughness_30_percent.dds" }
+            value: { path: "content/textures/glass_striped_01_r.dds" }
         },
         {
             name: "metalness",
             type: "sampler2D",
-            value: { path: "content/textures/metalness_0_percent.dds" }
+            value: { path: "content/textures/glass_striped_01_m.dds" }
         }
     ]
 }

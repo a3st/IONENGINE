@@ -30,7 +30,7 @@ int main(int* argc, char** agrv) {
 
     try {
         platform::WindowLoop loop;
-        platform::Window window("Project", 1280, 720, false);
+        platform::Window window("Project", 1600, 900, false);
         
         asset::AssetManager asset_manager;
         renderer::Renderer renderer(window, asset_manager);
@@ -122,7 +122,7 @@ int main(int* argc, char** agrv) {
                     [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {
                         renderer.resize(data.width, data.height);
 
-                        scene::CameraNode* camera = scene.graph().find_by_name<scene::CameraNode>("main_camera");
+                        scene::CameraNode* camera = scene.find_by_name<scene::CameraNode>("main_camera");
                         camera->aspect_ratio(data.width / static_cast<float>(data.height));
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::KeyboardInput> const& data) {

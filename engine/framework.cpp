@@ -17,13 +17,25 @@ Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& in
     scene.load("content/levels/city17_2.subscene");
     //scene.load("content/levels/high_poly.subscene");
 
-    auto camera_object_node = scene.graph().add_node<scene::CameraNode>();
+    scene.find_by_name<scene::TransformNode>("city17_root")->name("city17_root (1)");
+
+    scene.load("content/levels/city17.subscene");
+    auto sub_root = scene.find_by_name<scene::TransformNode>("city17_root"); 
+    sub_root->name("city17_root (2)");
+    sub_root->position(lib::math::Vector3f(15.0f, 0.0f, 0.0f));
+
+    scene.load("content/levels/city17.subscene");
+    sub_root = scene.find_by_name<scene::TransformNode>("city17_root"); 
+    sub_root->name("city17_root (3)");
+    sub_root->position(lib::math::Vector3f(-15.0f, 0.0f, 15.0f));
+
+    auto camera_object_node = scene.add_node<scene::CameraNode>();
     camera_object_node->name("main_camera");
     camera_object_node->position(lib::math::Vector3f(0.0f, 0.0f, 0.0f));
 
     scene.graph().root()->add_child(camera_object_node);
 
-    auto world_environment_node = scene.graph().add_node<scene::WorldEnvironmentNode>();
+    auto world_environment_node = scene.add_node<scene::WorldEnvironmentNode>();
     world_environment_node->name("world_environment");
     world_environment_node->skybox_material(asset_manager.get_material("content/materials/skyboxes/sky_01.mat"));
 

@@ -243,9 +243,9 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
     MeshVisitor mesh_visitor(_opaque_queue, _transculent_queue, _point_lights, _world_environment);
     scene.visit_culling_nodes(mesh_visitor);
 
-    _render_camera = scene.graph().find_by_name<scene::CameraNode>("main_camera");
+    _render_camera = scene.find_by_name<scene::CameraNode>("main_camera");
 
-    auto world_environment = scene.graph().find_by_name<scene::WorldEnvironmentNode>("world_environment");
+    auto world_environment = scene.find_by_name<scene::WorldEnvironmentNode>("world_environment");
     _world_environment.skybox_material = world_environment->skybox_material();
 
     _render_camera->calculate_matrices();

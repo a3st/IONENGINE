@@ -29,7 +29,7 @@
             }
         },
         { 
-            name: "walls_stairwell_bottom_01_object",
+            name: "walls_stairwell_bottom_02_object",
             type: "mesh",
             values: {
                 mesh: {
@@ -504,8 +504,8 @@
             name: "root",
             childrens: [
                 "walls_stairwell_bottom_01_object",
+                "walls_stairwell_bottom_02_object",
                 "ceiling_stairwell_bottom_01_object",
-                "walls_stairwell_bottom_01_object",
                 "floor_stairwell_bottom_tiles_01_object",
                 "walls_stairwell_mid_01_object",
                 "wall_socket_lightswitch_01_object",

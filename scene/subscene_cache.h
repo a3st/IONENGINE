@@ -18,7 +18,7 @@ class SubsceneCache {
 public:
 
     SubsceneCache() {
-        _data.reserve(4);
+        _data.reserve(10);
     }
 
     Subscene& get(asset::AssetManager& asset_manager, std::filesystem::path const& subscene_path) {

@@ -22,6 +22,7 @@ void Scene::load(std::filesystem::path const& subscene_path) {
     Subscene& subscene = _subscene_cache.get(*_asset_manager, subscene_path);
     
     _scene_graph.root()->add_child(subscene.root_node);
+    _nodes.emplace_back(subscene.root_node);
 
     loaded_subscenes.emplace_back(&subscene);
 }
