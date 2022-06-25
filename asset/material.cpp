@@ -65,10 +65,10 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
                         
                 auto uniform_visitor = make_visitor(
                     [&](ShaderUniformData<ShaderUniformType::Sampler2D> const&) {
-                        valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::Sampler2D> {} });
+                        valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::Sampler2D> { .value = nullptr } });
                     },
                     [&](ShaderUniformData<ShaderUniformType::SamplerCube> const&) {
-                        valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::SamplerCube> {} });
+                        valid_shader_parameters.insert_or_assign(uniform.name, MaterialParameter { .data = MaterialParameterData<MaterialParameterType::SamplerCube> { .value = nullptr } });
                     },
                     [&](ShaderUniformData<ShaderUniformType::CBuffer> const& data) {
 
@@ -97,9 +97,9 @@ lib::Expected<Material, lib::Result<MaterialError>> Material::load_from_file(std
                             }
                         }
                     },
-                    [&](ShaderUniformData<ShaderUniformType::RWTexture2D> const&) {},
-                    [&](ShaderUniformData<ShaderUniformType::SBuffer> const&) {},
-                    [&](ShaderUniformData<ShaderUniformType::RWBuffer> const&) {}
+                    [&](ShaderUniformData<ShaderUniformType::RWTexture2D> const&) { },
+                    [&](ShaderUniformData<ShaderUniformType::SBuffer> const&) { },
+                    [&](ShaderUniformData<ShaderUniformType::RWBuffer> const&) { }
                 );
 
                 std::visit(uniform_visitor, uniform.data);

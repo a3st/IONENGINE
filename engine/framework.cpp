@@ -17,7 +17,7 @@ Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& in
     scene.load("content/levels/city17_2.subscene");
     //scene.load("content/levels/high_poly.subscene");
 
-    scene.find_by_name<scene::TransformNode>("city17_root")->name("city17_root (1)");
+    /*scene.find_by_name<scene::TransformNode>("city17_root")->name("city17_root (1)");
 
     scene.load("content/levels/city17.subscene");
     auto sub_root = scene.find_by_name<scene::TransformNode>("city17_root"); 
@@ -27,7 +27,7 @@ Framework::Framework(asset::AssetManager& asset_manager, input::InputManager& in
     scene.load("content/levels/city17.subscene");
     sub_root = scene.find_by_name<scene::TransformNode>("city17_root"); 
     sub_root->name("city17_root (3)");
-    sub_root->position(lib::math::Vector3f(-15.0f, 0.0f, 15.0f));
+    sub_root->position(lib::math::Vector3f(-15.0f, 0.0f, 15.0f));*/
 
     auto camera_object_node = scene.add_node<scene::CameraNode>();
     camera_object_node->name("main_camera");

@@ -431,12 +431,6 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
             uint32_t const normals_location = program->get().index_descriptor_by_name("world_normal");
             uint32_t const albedo_location = program->get().index_descriptor_by_name("albedo");
             uint32_t const roughness_metalness_ao_location = program->get().index_descriptor_by_name("roughness_metalness_ao");
-            uint32_t const environment_location = program->get().index_descriptor_by_name("environment");
-
-            ResourcePtr<GPUTexture> environment_map = _texture_cache.get(_world_environment.skybox_material->get().parameters.at("skybox").as_samplerCube().value->get());
-            if(environment_map->is_ok()) {
-                binder.update(environment_location, environment_map->get());
-            }
 
             binder.update(world_location, world_cbuffer->get());
             binder.update(light_location, light_cbuffer->get());
@@ -532,12 +526,7 @@ void MeshRenderer::render(PipelineCache& pipeline_cache, ShaderCache& shader_cac
                             uint32_t const light_location = program->get().index_descriptor_by_name("light");
                             uint32_t const object_location = program->get().index_descriptor_by_name("object");
                             uint32_t const point_light_location = program->get().index_descriptor_by_name("point_light");
-                            uint32_t const environment_location = program->get().index_descriptor_by_name("environment");
 
-                            ResourcePtr<GPUTexture> environment_map = _texture_cache.get(_world_environment.skybox_material->get().parameters.at("skybox").as_samplerCube().value->get());
-                            if(environment_map->is_ok()) {
-                                binder.update(environment_location, environment_map->get());
-                            }
                             binder.update(world_location, world_cbuffer->get());
                             binder.update(light_location, light_cbuffer->get());
                             binder.update(object_location, object_sbuffer->get());
