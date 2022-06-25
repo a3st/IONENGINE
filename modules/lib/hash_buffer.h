@@ -4,37 +4,37 @@
 
 #include <xxhash/xxhash64.h>
 
-namespace ionengine::lib::hash {
+namespace ionengine::lib {
 
 template<class Type>
-class Buffer {
+class HashBuffer {
 public:
 
-    Buffer() = default;
+    HashBuffer() = default;
 
-    Buffer(std::span<Type const> const data) {
+    HashBuffer(std::span<Type const> const data) {
         _data.resize(data.size());
         std::memcpy(_data.data(), data.data(), data.size_bytes());
         _data_hash = XXHash64::hash(reinterpret_cast<void*>(_data.data()), _data.size() * sizeof(Type), 0);
     }
 
-    Buffer(Buffer const& other) {
+    HashBuffer(HashBuffer const& other) {
         _data = other._data;
         _data_hash = other._data_hash;
     }
 
-    Buffer(Buffer&& other) noexcept {
+    HashBuffer(HashBuffer&& other) noexcept {
         _data = std::move(other._data);
         _data_hash = other._data_hash;
     }
 
-    Buffer& operator=(Buffer const& other) {
+    HashBuffer& operator=(HashBuffer const& other) {
         _data = other._data;
         _data_hash = other._data_hash;
         return *this;
     }
 
-    Buffer& operator=(Buffer&& other) noexcept {
+    HashBuffer& operator=(HashBuffer&& other) noexcept {
         _data = std::move(other._data);
         _data_hash = other._data_hash;
         return *this;
