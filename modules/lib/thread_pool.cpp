@@ -1,6 +1,6 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
-#include <precompiled.h>
+#include <../precompiled.h>
 #include <lib/thread_pool.h>
 
 using namespace ionengine;
