@@ -4,19 +4,21 @@
 
 namespace ionengine::lib {
 
-template<class Type>
+template <class Type>
 class Sender;
 
-template<class Type>
+template <class Type>
 class Receiver;
 
-template<class Type>
+///
+/// Channel that allows you to transfer message between the receiver and the
+/// sender (even in threads)
+///
+template <class Type>
 class Channel {
-
     friend std::tuple<Sender<Type>, Receiver<Type>> make_channel<Type>();
 
-public:
-
+ public:
     Channel(Channel const&) = delete;
 
     Channel(Channel&&) noexcept = delete;
@@ -25,33 +27,45 @@ public:
 
     Channel& operator=(Channel&&) noexcept = delete;
 
+    ///
+    /// Transfer of message
+    /// @param element element to be transfer
+    ///
     void send(Type&& element) {
-
         std::unique_lock lock(_mutex);
         _queue.push(std::move(element));
     }
 
+    ///
+    /// Transfer of message
+    /// @param element element to be transfer
+    ///
     void send(Type const& element) {
-
         std::unique_lock lock(_mutex);
         _queue.push(element);
     }
 
+    ///
+    /// Get the latest of message
+    /// @return Last message in queue
+    ///
     Type receive() {
-
         std::unique_lock lock(_mutex);
-        // Wait for elements block TODO!
+        assert(!_queue.empty() && "message queue is empty");
         Type element = std::move(_queue.front());
         _queue.pop();
         return element;
     }
 
+    ///
+    /// Try to get the latest of message
+    /// @param element last message in queue
+    /// @return The result of getting the message
+    ///
     bool try_receive(Type& element) {
-
-        if(_mutex.try_lock()) {
-
+        if (_mutex.try_lock()) {
             std::unique_lock lock(_mutex, std::adopt_lock);
-            if(_queue.empty()) {
+            if (_queue.empty()) {
                 return false;
             }
             element = std::move(_queue.front());
@@ -61,21 +75,21 @@ public:
         return false;
     }
 
-private:
-
+ private:
     Channel() = default;
 
     std::queue<Type> _queue;
     std::mutex _mutex;
 };
 
-template<class Type>
+///
+/// Receiver belongs to the Channel object and allows you to receive messages
+///
+template <class Type>
 class Receiver {
-
     friend std::tuple<Sender<Type>, Receiver<Type>> make_channel<Type>();
 
-public:
-
+ public:
     Receiver(Receiver const&) = default;
 
     Receiver(Receiver&&) noexcept = default;
@@ -84,30 +98,33 @@ public:
 
     Receiver& operator=(Receiver&&) noexcept = default;
 
-    Type receive() {
+    ///
+    /// Get the latest of message
+    /// @return Last message in queue
+    ///
+    inline Type receive() { return _channel->receive(); }
 
-        return _channel->receive();
-    }
+    ///
+    /// Get the latest of message
+    /// @return Last message in queue
+    ///
+    inline bool try_receive(Type& element) { return _channel->try_receive(element); }
 
-    bool try_receive(Type& element) {
-
-        return _channel->try_receive(element);
-    }
-
-private:
-
-    Receiver(std::shared_ptr<Channel<Type>> const& channel) : _channel(channel) { }
+ private:
+    Receiver(std::shared_ptr<Channel<Type>> const& channel)
+        : _channel(channel) {}
 
     std::shared_ptr<Channel<Type>> _channel;
 };
 
-template<class Type>
+///
+/// Sender belongs to the channel object and allows you to send messages
+///
+template <class Type>
 class Sender {
-
     friend std::tuple<Sender<Type>, Receiver<Type>> make_channel<Type>();
 
-public:
-
+ public:
     Sender(Sender const&) = default;
 
     Sender(Sender&&) noexcept = default;
@@ -116,28 +133,35 @@ public:
 
     Sender& operator=(Sender&&) noexcept = default;
 
-    void send(Type&& element) {
+    ///
+    /// Transfer of message
+    /// @param element element to be transfer
+    ///
+    inline void send(Type&& element) { _channel->send(element); }
 
-        _channel->send(element);
-    }
+    ///
+    /// Transfer of message
+    /// @param element element to be transfer
+    ///
+    inline void send(Type const& element) { _channel->send(element); }
 
-    void send(Type const& element) {
-
-        _channel->send(element);
-    }
-
-private:
-
-    Sender(std::shared_ptr<Channel<Type>> const& channel) : _channel(channel) { }
+ private:
+    Sender(std::shared_ptr<Channel<Type>> const& channel) : _channel(channel) {}
 
     std::shared_ptr<Channel<Type>> _channel;
 };
 
-template<class Type>
+///
+/// Create a new channel
+/// @return A tuple consisting of a receiver and a sender
+///
+template <class Type>
 inline std::tuple<Sender<Type>, Receiver<Type>> make_channel() {
-    static_assert(std::is_copy_constructible_v<Type> || std::is_move_constructible_v<Type>, "Type should be copy-constructible or move-constructible");
+    static_assert(std::is_copy_constructible_v<Type> ||
+                      std::is_move_constructible_v<Type>,
+                  "Type should be copy-constructible or move-constructible");
     std::shared_ptr<Channel<Type>> channel(new Channel<Type>());
     return std::make_tuple(Sender<Type>(channel), Receiver<Type>(channel));
 }
 
-}
+}  // namespace ionengine::lib

@@ -4,21 +4,25 @@
 
 namespace ionengine::lib {
 
-template<class ErrorCode>
+///
+/// A common structure for all errors that accepts an enumeration of errors
+///
+template <class ErrorCode>
 struct Result {
     ErrorCode errc;
     std::string message;
 };
 
-template<class Type, class Error>
+///
+/// An error handler that throws the first type on success and the second type on error
+///
+template <class Type, class Error>
 class Expected {
-
     friend Expected make_expected<Type, Error>(Type&& element);
-    
+
     friend Expected make_expected<Type, Error>(Error&& element);
 
-public:
-
+ public:
     Expected(Expected const&) = default;
 
     Expected(Expected&&) noexcept = default;
@@ -27,37 +31,52 @@ public:
 
     Expected& operator=(Expected&&) noexcept = default;
 
-    bool is_ok() const {
-        return _data.index() == 0;
-    }
+    ///
+    /// Check for success
+    /// @return Result of expected
+    ///
+    inline bool is_ok() const { return _data.index() == 0; }
 
-    bool is_error() const {
-        return _data.index() == 1;
-    }
+    ///
+    /// Check for error
+    /// @return Result of expected
+    ///
+    inline bool is_error() const { return _data.index() == 1; }
 
-    Type as_ok() {
-        return std::move(std::get<0>(_data));
-    }
+    ///
+    /// Getting the first type
+    /// @return First type
+    ///
+    inline Type ok() { return std::move(std::get<Type>(_data)); }
 
-    Error as_error() {
-        return std::move(std::get<1>(_data));
-    }
+    ///
+    /// Getting the second type
+    /// @return Second type
+    ///
+    inline Error error() { return std::move(std::get<Error>(_data)); }
 
-private:
-
-    Expected(std::variant<Type, Error>&& element) : _data(std::move(element)) { }
+ private:
+    Expected(std::variant<Type, Error>&& element) : _data(std::move(element)) {}
 
     std::variant<Type, Error> _data;
 };
 
-template<class Type, class Error>
+///
+/// Creating an Error Handler with specified types
+/// @param element Element to be getting on success
+///
+template <class Type, class Error>
 inline Expected<Type, Error> make_expected(Type&& element) {
     return Expected<Type, Error>(std::move(element));
 }
 
-template<class Type, class Error>
+///
+/// Creating an Error Handler with specified types
+/// @param element Element to be getting on error
+///
+template <class Type, class Error>
 inline Expected<Type, Error> make_expected(Error&& element) {
     return Expected<Type, Error>(std::move(element));
 }
 
-}
+}  // namespace ionengine::lib

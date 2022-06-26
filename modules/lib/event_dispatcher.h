@@ -6,25 +6,32 @@
 
 namespace ionengine::lib {
 
-template<class Type>
+///
+/// Event dispatcher allows you to send events to all senders
+///
+template <class Type>
 class EventDispatcher {
-public:
-
+ public:
     EventDispatcher() = default;
 
-    void add(Sender<Type> const& sender) {
-        _senders.emplace_back(sender);
-    }
+    ///
+    /// Add a new sender for event mailings
+    /// @param sender to whom events will be sent
+    ///
+    inline void add(Sender<Type> const& sender) { _senders.emplace_back(sender); }
 
+    ///
+    /// Broadcast message to all senders
+    /// @param event object to be broadcasted
+    ///
     void broadcast(Type const& event) {
-        for(auto& sender : _senders) {
+        for (auto& sender : _senders) {
             sender.send(event);
         }
     }
 
-private:
-
+ private:
     std::vector<Sender<Type>> _senders;
 };
 
-}
+}  // namespace ionengine::lib
