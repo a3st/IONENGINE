@@ -7,6 +7,9 @@
 #include <json5/json5_input.hpp>
 #include <json5/json5_reflect.hpp>
 
+///
+/// @private
+///
 enum class JSON_ShaderUniformType {
     cbuffer,
     sbuffer,
@@ -18,6 +21,9 @@ enum class JSON_ShaderUniformType {
 
 JSON5_ENUM(JSON_ShaderUniformType, cbuffer, sbuffer, rwbuffer, sampler2D, samplerCube, rwtexture2D)
 
+///
+/// @private
+///
 enum class JSON_ShaderDataType {
     f32x4x4,
     f32x4,
@@ -30,6 +36,9 @@ enum class JSON_ShaderDataType {
 
 JSON5_ENUM(JSON_ShaderDataType, f32x4x4, f32x4, f32x3, f32x2, f32, uint32, boolean)
 
+///
+/// @private
+///
 enum class JSON_ShaderType {
     vertex,
     geometry,
@@ -42,6 +51,9 @@ enum class JSON_ShaderType {
 
 JSON5_ENUM(JSON_ShaderType, vertex, geometry, hull, domain, pixel, compute, all)
 
+///
+/// @private
+///
 enum class JSON_ShaderFillMode {
     wireframe,
     solid
@@ -49,6 +61,9 @@ enum class JSON_ShaderFillMode {
 
 JSON5_ENUM(JSON_ShaderFillMode, wireframe, solid)
 
+///
+/// @private
+///
 enum class JSON_ShaderCullMode {
     front,
     back,
@@ -57,6 +72,9 @@ enum class JSON_ShaderCullMode {
 
 JSON5_ENUM(JSON_ShaderCullMode, front, back, none)
 
+///
+/// @private
+///
 enum class JSON_ShaderBlendMode {
     opaque,
     add,
@@ -66,6 +84,9 @@ enum class JSON_ShaderBlendMode {
 
 JSON5_ENUM(JSON_ShaderBlendMode, opaque, add, mixed, alpha_blend)
 
+///
+/// @private
+///
 enum class JSON_ShaderDepthTest {
     equal,
     less,
@@ -76,6 +97,9 @@ enum class JSON_ShaderDepthTest {
 
 JSON5_ENUM(JSON_ShaderDepthTest, equal, less, less_equal, always, none)
 
+///
+/// @private
+///
 struct JSON_ShaderBufferDataDefinition {
     std::string name;
     JSON_ShaderDataType type;
@@ -83,6 +107,9 @@ struct JSON_ShaderBufferDataDefinition {
 
 JSON5_CLASS(JSON_ShaderBufferDataDefinition, name, type)
 
+///
+/// @private
+///
 struct JSON_ShaderInputOutputDefinition {
     std::string name;
     JSON_ShaderDataType type;
@@ -92,6 +119,9 @@ struct JSON_ShaderInputOutputDefinition {
 
 JSON5_CLASS(JSON_ShaderInputOutputDefinition, name, type, semantic, condition)
 
+///
+/// @private
+///
 struct JSON_ShaderUniformDefinition {
     std::string name;
     JSON_ShaderUniformType type;
@@ -102,6 +132,9 @@ struct JSON_ShaderUniformDefinition {
 
 JSON5_CLASS(JSON_ShaderUniformDefinition, name, type, data, visibility)
 
+///
+/// @private
+///
 struct JSON_ShaderStageDefinition {
     JSON_ShaderType type;
     std::vector<JSON_ShaderInputOutputDefinition> inputs;
@@ -111,6 +144,9 @@ struct JSON_ShaderStageDefinition {
 
 JSON5_CLASS(JSON_ShaderStageDefinition, type, inputs, outputs, source)
 
+///
+/// @private
+///
 struct JSON_ShaderDrawParametersDefinition {
     JSON_ShaderFillMode fill_mode;
     JSON_ShaderCullMode cull_mode;
@@ -120,6 +156,9 @@ struct JSON_ShaderDrawParametersDefinition {
 
 JSON5_CLASS(JSON_ShaderDrawParametersDefinition, fill_mode, cull_mode, depth_test, blend_mode)
 
+///
+/// @private
+///
 struct JSON_ShaderDefinition {
     std::string name;
     std::vector<std::string> conditions;

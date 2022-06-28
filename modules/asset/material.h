@@ -10,6 +10,9 @@
 #include <json5/json5_input.hpp>
 #include <json5/json5_reflect.hpp>
 
+///
+/// @private
+///
 enum class JSON_MaterialParameterType {
     sampler2D,
     samplerCube,
@@ -22,12 +25,18 @@ enum class JSON_MaterialParameterType {
 
 JSON5_ENUM(JSON_MaterialParameterType, sampler2D, samplerCube, f32x4x4, f32x4, f32x3, f32x2, f32)
 
+///
+/// @private
+///
 enum class JSON_MaterialDomain {
     surface
 };
 
 JSON5_ENUM(JSON_MaterialDomain, surface)
 
+///
+/// @private
+///
 enum class JSON_MaterialBlendMode {
     opaque,
     translucent
@@ -35,6 +44,9 @@ enum class JSON_MaterialBlendMode {
 
 JSON5_ENUM(JSON_MaterialBlendMode, opaque, translucent)
 
+///
+/// @private
+///
 struct JSON_MaterialParameterValueDefinition {
     std::optional<std::string> path;
     std::optional<std::array<float, 4>> f32x4;
@@ -45,6 +57,9 @@ struct JSON_MaterialParameterValueDefinition {
 
 JSON5_CLASS(JSON_MaterialParameterValueDefinition, path, f32x4, f32x3, f32x2, f32)
 
+///
+/// @private
+///
 struct JSON_MaterialParameterDefinition {
     std::string name;
     JSON_MaterialParameterType type;
@@ -53,6 +68,9 @@ struct JSON_MaterialParameterDefinition {
 
 JSON5_CLASS(JSON_MaterialParameterDefinition, name, type, value)
 
+///
+/// @private
+///
 struct JSON_MaterialPassDefinition {
     std::string name;
     std::string shader;
@@ -60,6 +78,9 @@ struct JSON_MaterialPassDefinition {
 
 JSON5_CLASS(JSON_MaterialPassDefinition, name, shader)
 
+///
+/// @private
+///
 struct JSON_MaterialDefinition {
     std::string name;
     JSON_MaterialDomain domain;

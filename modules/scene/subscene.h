@@ -13,6 +13,9 @@
 #include <json5/json5_input.hpp>
 #include <json5/json5_reflect.hpp>
 
+///
+/// @private
+///
 enum class JSON_SubSceneNodeType {
     empty,
     mesh,
@@ -24,6 +27,9 @@ enum class JSON_SubSceneNodeType {
 
 JSON5_ENUM(JSON_SubSceneNodeType, empty, mesh, point_light, spot_light, directional_light, camera)
 
+///
+/// @private
+///
 struct JSON_SubSceneNodeMeshDefinition {
     std::string mesh;
     std::vector<std::string> materials;
@@ -31,6 +37,9 @@ struct JSON_SubSceneNodeMeshDefinition {
 
 JSON5_CLASS(JSON_SubSceneNodeMeshDefinition, mesh, materials)
 
+///
+/// @private
+///
 struct JSON_SubSceneNodePointLightDefinition {
     std::array<float, 3> color;
     float range;
@@ -38,6 +47,9 @@ struct JSON_SubSceneNodePointLightDefinition {
 
 JSON5_CLASS(JSON_SubSceneNodePointLightDefinition, color, range)
 
+///
+/// @private
+///
 struct JSON_SubSceneNodeValuesDefinition {
     std::optional<JSON_SubSceneNodeMeshDefinition> mesh;
     std::optional<JSON_SubSceneNodePointLightDefinition> point_light;
@@ -48,6 +60,9 @@ struct JSON_SubSceneNodeValuesDefinition {
 
 JSON5_CLASS(JSON_SubSceneNodeValuesDefinition, mesh, point_light, position, rotation, scale)
 
+///
+/// @private
+///
 struct JSON_SubSceneNodeDefinition {
     std::string name;
     JSON_SubSceneNodeType type;
@@ -56,6 +71,9 @@ struct JSON_SubSceneNodeDefinition {
 
 JSON5_CLASS(JSON_SubSceneNodeDefinition, name, type, values)
 
+///
+/// @private
+///
 struct JSON_SubSceneLinkDefinition {
     std::string name;
     std::vector<std::string> childrens;
@@ -63,6 +81,9 @@ struct JSON_SubSceneLinkDefinition {
 
 JSON5_CLASS(JSON_SubSceneLinkDefinition, name, childrens)
 
+///
+/// @private
+///
 struct JSON_SubSceneDefinition {
     std::string name;
     std::vector<JSON_SubSceneNodeDefinition> nodes;

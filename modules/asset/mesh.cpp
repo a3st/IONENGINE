@@ -80,6 +80,9 @@ void ionengine::asset::obj_shape_calculate_tangents(tinyobj::attrib_t const& att
     }
 }
 
+///
+/// @private
+///
 struct Vertex {
     lib::math::Vector3f position;
     lib::math::Vector2f uv;
@@ -94,6 +97,9 @@ struct Vertex {
 
 namespace std {
 
+///
+/// @private
+///
 template<>
 struct hash<Vertex> {
     size_t operator()(Vertex const& other) const {

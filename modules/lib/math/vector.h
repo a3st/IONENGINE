@@ -316,6 +316,9 @@ using Vector4d = Vector4<double>;
 
 namespace std {
 
+///
+/// @private
+///
 template<typename Type> struct hash<ionengine::lib::math::Vector2<Type>> {
     size_t operator()(ionengine::lib::math::Vector2<Type> const& other) const {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y);
@@ -323,12 +326,18 @@ template<typename Type> struct hash<ionengine::lib::math::Vector2<Type>> {
     
 };
 
+///
+/// @private
+///
 template<typename Type> struct hash<ionengine::lib::math::Vector3<Type>> {
     size_t operator()(ionengine::lib::math::Vector3<Type> const& other) const {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z);
     }
 };
 
+///
+/// @private
+///
 template<typename Type> struct hash<ionengine::lib::math::Vector4<Type>> {
     size_t operator()(ionengine::lib::math::Vector4<Type> const& other) const {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^ std::hash<Type>()(other.w);
