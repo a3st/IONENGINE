@@ -6,6 +6,7 @@ add_executable(App
 
 target_include_directories(App PRIVATE
     ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/modules
     ${PROJECT_SOURCE_DIR}/thirdparty/range-v3/include
 )
 

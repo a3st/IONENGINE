@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <renderer/backend/handle.h>
-#include <platform/window.h>
 #include <lib/math/color.h>
+#include <platform/window.h>
+#include <renderer/backend/handle.h>
 
 namespace ionengine::renderer::backend {
 
@@ -19,7 +19,8 @@ struct CachePipeline;
 struct CommandList;
 
 // BackendLimits describes limit of using resources.
-// It is ideal to choose the values ​​for each platform, but here the optimal ones are selected.
+// It is ideal to choose the values ​​for each platform, but here the
+// optimal ones are selected.
 enum class BackendLimits : uint32_t {
     Textures = 8192,
     Buffers = 8192,
@@ -40,12 +41,7 @@ inline uint32_t constexpr BACKEND_BACK_BUFFER_COUNT = 2;
 inline uint32_t constexpr TEXTURE_ROW_PITCH_ALIGNMENT = 256;
 inline uint32_t constexpr TEXTURE_RESOURCE_ALIGNMENT = 512;
 
-enum class Dimension {
-    _1D,
-    _2D,
-    _3D,
-    Cube
-};
+enum class Dimension { _1D, _2D, _3D, Cube };
 
 enum class Format {
     Unknown,
@@ -107,16 +103,9 @@ enum class QueueFlags : uint8_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(QueueFlags)
 
-enum class RenderPassLoadOp {
-    Load,
-    Clear,
-    DontCare
-};
+enum class RenderPassLoadOp { Load, Clear, DontCare };
 
-enum class RenderPassStoreOp {
-    Store,
-    DontCare
-};
+enum class RenderPassStoreOp { Store, DontCare };
 
 enum class MemoryState : uint32_t {
     Common = 1 << 0,
@@ -143,16 +132,9 @@ enum class DescriptorType {
     Sampler
 };
 
-enum class FillMode {
-    Wireframe,
-    Solid
-};
+enum class FillMode { Wireframe, Solid };
 
-enum class CullMode {
-    None,
-    Front,
-    Back
-};
+enum class CullMode { None, Front, Back };
 
 enum class CompareOp {
     Never,
@@ -165,35 +147,16 @@ enum class CompareOp {
     Always
 };
 
-enum class Blend {
-    Zero,
-    One,
-    SrcAlpha,
-    InvSrcAlpha,
-    BlendFactor
-};
+enum class Blend { Zero, One, SrcAlpha, InvSrcAlpha, BlendFactor };
 
-enum class BlendOp {
-    Add,
-    Subtract,
-    RevSubtract,
-    Min,
-    Max
-};
+enum class BlendOp { Add, Subtract, RevSubtract, Min, Max };
 
-enum class Filter {
-    Anisotropic,
-    MinMagMipLinear,
-    ComparisonMinMagMipLinear
-};
+enum class Filter { Anisotropic, MinMagMipLinear, ComparisonMinMagMipLinear };
 
-enum class AddressMode {
-    Wrap,
-    Clamp,
-    Mirror
-};
+enum class AddressMode { Wrap, Clamp, Mirror };
 
-using ResourceHandle = std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>;
+using ResourceHandle =
+    std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>;
 
 struct RenderPassColorDesc {
     RenderPassLoadOp load_op;
@@ -266,13 +229,12 @@ struct TextureCopyRegion {
 
 struct MemoryBarrierDesc {
     ResourceHandle target;
-    MemoryState before; 
+    MemoryState before;
     MemoryState after;
 };
 
 class Device {
-public:
-
+ public:
     Device(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc);
 
     ~Device();
@@ -285,19 +247,17 @@ public:
 
     Device& operator=(Device&&) noexcept = default;
 
-    Handle<Texture> create_texture(
-        Dimension const dimension,
-        uint32_t const width,
-        uint32_t const height,
-        uint16_t const mip_levels,
-        uint16_t const array_layers,
-        Format const format,
-        TextureFlags const flags
-    );
+    Handle<Texture> create_texture(Dimension const dimension,
+                                   uint32_t const width, uint32_t const height,
+                                   uint16_t const mip_levels,
+                                   uint16_t const array_layers,
+                                   Format const format,
+                                   TextureFlags const flags);
 
     void delete_texture(Handle<Texture> const& texture);
 
-    Handle<Buffer> create_buffer(size_t const size, BufferFlags const flags, uint32_t const element_stride = 0);
+    Handle<Buffer> create_buffer(size_t const size, BufferFlags const flags,
+                                 uint32_t const element_stride = 0);
 
     void delete_buffer(Handle<Buffer> const& buffer);
 
@@ -305,54 +265,55 @@ public:
         std::span<Handle<Texture> const> const& colors,
         std::span<RenderPassColorDesc const> const& color_descs,
         Handle<Texture> const& depth_stencil = InvalidHandle<Texture>(),
-        std::optional<RenderPassDepthStencilDesc> const depth_stencil_desc = std::nullopt
-    );
+        std::optional<RenderPassDepthStencilDesc> const depth_stencil_desc =
+            std::nullopt);
 
     void delete_render_pass(Handle<RenderPass> const& render_pass);
 
-    Handle<Sampler> create_sampler(
-        Filter const filter,
-        AddressMode const address_u,
-        AddressMode const address_v,
-        AddressMode const address_w,
-        uint16_t const anisotropic,
-        CompareOp const compare_op
-    );
+    Handle<Sampler> create_sampler(Filter const filter,
+                                   AddressMode const address_u,
+                                   AddressMode const address_v,
+                                   AddressMode const address_w,
+                                   uint16_t const anisotropic,
+                                   CompareOp const compare_op);
 
     void delete_sampler(Handle<Sampler> const& sampler);
 
-    Handle<Shader> create_shader(std::string_view const source, ShaderFlags const flags);
+    Handle<Shader> create_shader(std::string_view const source,
+                                 ShaderFlags const flags);
 
     void delete_shader(Handle<Shader> const& shader);
 
-    Handle<DescriptorLayout> create_descriptor_layout(std::span<DescriptorLayoutBinding const> const bindings, bool const is_compute);
+    Handle<DescriptorLayout> create_descriptor_layout(
+        std::span<DescriptorLayoutBinding const> const bindings,
+        bool const is_compute);
 
-    void delete_descriptor_layout(Handle<DescriptorLayout> const& descriptor_layout);
+    void delete_descriptor_layout(
+        Handle<DescriptorLayout> const& descriptor_layout);
 
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& descriptor_layout,
         std::span<VertexInputDesc const> const vertex_descs,
         std::span<Handle<Shader> const> const shaders,
         RasterizerDesc const& rasterizer_desc,
-        DepthStencilDesc const& depth_stencil_desc,
-        BlendDesc const& blend_desc,
+        DepthStencilDesc const& depth_stencil_desc, BlendDesc const& blend_desc,
         Handle<RenderPass> const& render_pass,
-        Handle<CachePipeline> const& cache_pipeline
-    );
+        Handle<CachePipeline> const& cache_pipeline);
 
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& descriptor_layout,
         Handle<Shader> const& shader,
-        Handle<CachePipeline> const& cache_pipeline
-    );
+        Handle<CachePipeline> const& cache_pipeline);
 
     void delete_pipeline(Handle<Pipeline> const& pipeline);
 
-    Handle<CommandList> create_command_list(QueueFlags const flags, bool const bundle = false);
+    Handle<CommandList> create_command_list(QueueFlags const flags,
+                                            bool const bundle = false);
 
     void delete_command_list(Handle<CommandList> const& command_list);
 
-    uint8_t* map_buffer_data(Handle<Buffer> const& buffer, uint64_t const offset = 0);
+    uint8_t* map_buffer_data(Handle<Buffer> const& buffer,
+                             uint64_t const offset = 0);
 
     void unmap_buffer_data(Handle<Buffer> const& buffer);
 
@@ -364,11 +325,16 @@ public:
 
     Handle<Texture> swapchain_texture(uint32_t const index);
 
-    void recreate_swapchain(uint32_t const width, uint32_t const height, std::optional<SwapchainDesc> swapchain_desc = std::nullopt);
+    void recreate_swapchain(
+        uint32_t const width, uint32_t const height,
+        std::optional<SwapchainDesc> swapchain_desc = std::nullopt);
 
-    uint64_t submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags);
+    uint64_t submit(std::span<Handle<CommandList> const> const command_lists,
+                    QueueFlags const flags);
 
-    uint64_t submit_after(std::span<Handle<CommandList> const> const command_lists, uint64_t const fence_value, QueueFlags const flags);
+    uint64_t submit_after(
+        std::span<Handle<CommandList> const> const command_lists,
+        uint64_t const fence_value, QueueFlags const flags);
 
     void wait(uint64_t const fence_value, QueueFlags const flags);
 
@@ -376,43 +342,47 @@ public:
 
     void wait_for_idle(QueueFlags const flags);
 
-    void copy_buffer_region(
-        Handle<CommandList> const& command_list,
-        Handle<Buffer> const& dest, 
-        uint64_t const dest_offset, 
-        Handle<Buffer> const& source, 
-        uint64_t const source_offset,
-        size_t const size
-    );
+    void copy_buffer_region(Handle<CommandList> const& command_list,
+                            Handle<Buffer> const& dest,
+                            uint64_t const dest_offset,
+                            Handle<Buffer> const& source,
+                            uint64_t const source_offset, size_t const size);
 
-    void copy_texture_region(
-        Handle<CommandList> const& command_list,
-        Handle<Texture> const& dest,
-        Handle<Buffer> const& source,
-        std::span<TextureCopyRegion const> const regions
-    );
+    void copy_texture_region(Handle<CommandList> const& command_list,
+                             Handle<Texture> const& dest,
+                             Handle<Buffer> const& source,
+                             std::span<TextureCopyRegion const> const regions);
 
-    void bind_vertex_buffer(Handle<CommandList> const& command_list, uint32_t const index, Handle<Buffer> const& buffer, uint64_t const offset);
+    void bind_vertex_buffer(Handle<CommandList> const& command_list,
+                            uint32_t const index, Handle<Buffer> const& buffer,
+                            uint64_t const offset);
 
-    void bind_index_buffer(Handle<CommandList> const& command_list, Handle<Buffer> const& buffer, uint64_t const offset);
+    void bind_index_buffer(Handle<CommandList> const& command_list,
+                           Handle<Buffer> const& buffer, uint64_t const offset);
 
-    void barrier(Handle<CommandList> const& command_list, std::span<MemoryBarrierDesc const> const barriers);
+    void barrier(Handle<CommandList> const& command_list,
+                 std::span<MemoryBarrierDesc const> const barriers);
 
-    void bind_pipeline(Handle<CommandList> const& command_list, Handle<Pipeline> const& pipeline);
+    void bind_pipeline(Handle<CommandList> const& command_list,
+                       Handle<Pipeline> const& pipeline);
 
-    void bind_resources(Handle<CommandList> const& command_list, Handle<DescriptorLayout> const& descriptor_layout, std::span<DescriptorWriteDesc const> const write_descs);
+    void bind_resources(Handle<CommandList> const& command_list,
+                        Handle<DescriptorLayout> const& descriptor_layout,
+                        std::span<DescriptorWriteDesc const> const write_descs);
 
-    void set_viewport(Handle<CommandList> const& command_list, int32_t const x, int32_t const y, uint32_t const width, uint32_t const height);
+    void set_viewport(Handle<CommandList> const& command_list, int32_t const x,
+                      int32_t const y, uint32_t const width,
+                      uint32_t const height);
 
-    void set_scissor(Handle<CommandList> const& command_list, int32_t const left, int32_t const top, int32_t const right, int32_t const bottom);
+    void set_scissor(Handle<CommandList> const& command_list,
+                     int32_t const left, int32_t const top, int32_t const right,
+                     int32_t const bottom);
 
-    void begin_render_pass(
-        Handle<CommandList> const& command_list,
-        Handle<RenderPass> const& render_pass, 
-        std::span<lib::math::Color const> const clear_colors, 
-        float const clear_depth = 0.0f,
-        uint8_t const clear_stencil = 0x0
-    );
+    void begin_render_pass(Handle<CommandList> const& command_list,
+                           Handle<RenderPass> const& render_pass,
+                           std::span<lib::math::Color const> const clear_colors,
+                           float const clear_depth = 0.0f,
+                           uint8_t const clear_stencil = 0x0);
 
     void end_render_pass(Handle<CommandList> const& command_list);
 
@@ -420,21 +390,29 @@ public:
 
     void close_command_list(Handle<CommandList> const& command_list);
 
-    void execute_bundle(Handle<CommandList> const& command_list, Handle<CommandList> const& bundle_command_list);
+    void execute_bundle(Handle<CommandList> const& command_list,
+                        Handle<CommandList> const& bundle_command_list);
 
-    void dispatch(Handle<CommandList> const& command_list, uint32_t const thread_group_x, uint32_t const thread_group_y, uint32_t const thread_group_z);
+    void dispatch(Handle<CommandList> const& command_list,
+                  uint32_t const thread_group_x, uint32_t const thread_group_y,
+                  uint32_t const thread_group_z);
 
-    void draw(Handle<CommandList> const& command_list, uint32_t const vertex_count, uint32_t const instance_count, uint32_t const vertex_offset);
+    void draw(Handle<CommandList> const& command_list,
+              uint32_t const vertex_count, uint32_t const instance_count,
+              uint32_t const vertex_offset);
 
-    void draw_indexed(Handle<CommandList> const& command_list, uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset);
+    void draw_indexed(Handle<CommandList> const& command_list,
+                      uint32_t const index_count, uint32_t const instance_count,
+                      uint32_t const instance_offset);
 
     AdapterDesc adapter_desc() const;
 
-private:
-
+ private:
     struct Impl;
-    struct impl_deleter { void operator()(Impl* ptr) const; };
+    struct impl_deleter {
+        void operator()(Impl* ptr) const;
+    };
     std::unique_ptr<Impl, impl_deleter> _impl;
 };
 
-}
+}  // namespace ionengine::renderer::backend

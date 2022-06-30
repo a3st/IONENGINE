@@ -6,18 +6,9 @@
 
 namespace ionengine::lib {
 
-enum class LoggerCategoryType {
-    Renderer,
-    Engine,
-    Ui,
-    Exception
-};
+enum class LoggerCategoryType { Renderer, Engine, UI, Exception };
 
-enum class LoggerMessageType {
-    Log,
-    Warning,
-    Error
-};
+enum class LoggerMessageType { Log, Warning, Error };
 
 struct LoggerEvent {
     LoggerMessageType message_type;
@@ -27,33 +18,30 @@ struct LoggerEvent {
 };
 
 class Logger {
-public:
-
+ public:
     Logger();
 
     void log(LoggerCategoryType const category, std::string_view const message);
 
-    void warning(LoggerCategoryType const category, std::string_view const message);
+    void warning(LoggerCategoryType const category,
+                 std::string_view const message);
 
-    void error(LoggerCategoryType const category, std::string_view const message);
+    void error(LoggerCategoryType const category,
+               std::string_view const message);
 
     void throw_messages();
 
-    void color_mode(bool const enable);
-
-private:
-
+ private:
     lib::EventDispatcher<LoggerEvent> _event_dispatcher;
     std::optional<lib::Receiver<LoggerEvent>> _event_receiver;
-
-    std::string constexpr logger_category_type_to_string(LoggerCategoryType const category) const;
-
-    bool _is_color_mode{true};
 
     std::string const _log_color_code{"\033[0m"};
     std::string const _warning_color_code{"\x1B[33m"};
     std::string const _error_color_code{"\x1B[31m"};
 };
+
+std::string constexpr logger_category_type_to_string(
+    LoggerCategoryType const category);
 
 extern Logger _logger;
 
@@ -61,8 +49,6 @@ extern Logger _logger;
 #define LIB_INITIALIZE_LOGGER() lib::Logger lib::_logger;
 #endif
 
-inline Logger& logger() {
-    return _logger;
-}
+inline Logger& logger() { return _logger; }
 
-}
+}  // namespace ionengine::lib

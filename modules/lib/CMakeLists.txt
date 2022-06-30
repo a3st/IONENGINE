@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.0.0)
 add_library(Lib
     algorithm.cpp
     logger.cpp
-    scope_profiler.cpp
     thread_pool.cpp
+    math/color.cpp
 )
 
 target_include_directories(Lib PRIVATE

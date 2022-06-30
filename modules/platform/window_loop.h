@@ -2,34 +2,30 @@
 
 #pragma once
 
-#include <platform/window.h>
-
 namespace ionengine::platform {
 
-enum class WindowEventFlow {
-    Unknown,
-    Poll,
-    Exit
-};
+class Window;
+
+enum class WindowEventFlow { Unknown, Poll, Exit };
 
 class WindowLoop {
-public:
-
+ public:
     WindowLoop() = default;
 
     WindowLoop(WindowLoop const&) = delete;
 
-    WindowLoop(WindowLoop&&) noexcept { }
+    WindowLoop(WindowLoop&&) noexcept {}
 
     WindowLoop& operator=(WindowLoop const&) = delete;
 
-    WindowLoop& operator=(WindowLoop&&) noexcept { }
+    WindowLoop& operator=(WindowLoop&&) noexcept {}
 
-    void run(Window& window, std::function<void(WindowEvent const&, WindowEventFlow&)> const& run_func);
+    void run(Window& window,
+             std::function<void(WindowEvent const&, WindowEventFlow&)> const&
+                 run_func);
 
-private:
-
+ private:
     WindowEventFlow _flow{WindowEventFlow::Unknown};
 };
 
-}
+}  // namespace ionengine::platform

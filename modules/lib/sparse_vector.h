@@ -4,10 +4,12 @@
 
 namespace ionengine::lib {
 
-template<class Type>
+///
+/// Sparse vector
+///
+template <class Type>
 class SparseVector {
-public:
-
+ public:
     SparseVector() = default;
 
     SparseVector(SparseVector const& other) {
@@ -33,7 +35,7 @@ public:
     }
 
     size_t push(Type const& element) {
-        if(!_dense.empty()) {
+        if (!_dense.empty()) {
             size_t const index = _dense.back();
             _dense.pop_back();
             _sparse[index] = element;
@@ -46,7 +48,7 @@ public:
     }
 
     size_t push(Type&& element) {
-        if(!_dense.empty()) {
+        if (!_dense.empty()) {
             size_t const index = _dense.back();
             _dense.pop_back();
             _sparse[index] = std::move(element);
@@ -72,29 +74,31 @@ public:
         return _sparse.at(index).value();
     }
 
-    Type& get(size_t const index) {
-        return _sparse[index].value();
+    Type& get(size_t const index) { return _sparse[index].value(); }
+
+    auto has_values() {
+        return _sparse | std::views::filter([&](auto& element) {
+                   return element.has_value();
+               });
     }
 
-    auto has_values() { 
-        return _sparse | std::views::filter([&](auto& element) { return element.has_value(); });
-    }
-
-    auto has_values() const { 
-        return _sparse | std::views::filter([&](auto& element) { return element.has_value(); });
+    auto has_values() const {
+        return _sparse | std::views::filter([&](auto& element) {
+                   return element.has_value();
+               });
     }
 
     bool is_valid(size_t const index) const {
-        if(index == std::numeric_limits<size_t>::max() || _sparse.empty() || index >= _sparse.size()) {
+        if (index == std::numeric_limits<size_t>::max() || _sparse.empty() ||
+            index >= _sparse.size()) {
             return false;
         }
         return _sparse[index].has_value();
     }
 
-private:
-
+ private:
     std::vector<size_t> _dense;
     std::vector<std::optional<Type>> _sparse;
 };
 
-}
+}  // namespace ionengine::lib

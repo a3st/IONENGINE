@@ -4,56 +4,59 @@
 
 namespace ionengine::lib::math {
 
+///
+/// Color
+///
 struct Color {
-	
-	float r;
-	float g;
-	float b;
-	float a;
+    float r;
+    float g;
+    float b;
+    float a;
 
-	Color() = default;
+    Color() = default;
 
-	Color(float const _r, float const _g, float const _b, float const _a) : r(_r), g(_g), b(_b), a(_a) { }
+    Color(float const _r, float const _g, float const _b, float const _a)
+        : r(_r), g(_g), b(_b), a(_a) {}
 
-	Color(Color const& other) : r(other.r), g(other.g), b(other.b), a(other.a) { }
+    Color(Color const& other)
+        : r(other.r), g(other.g), b(other.b), a(other.a) {}
 
-	Color(Color&& other) noexcept : r(other.r), g(other.g), b(other.b), a(other.a) { }
+    Color(Color&& other) noexcept
+        : r(other.r), g(other.g), b(other.b), a(other.a) {}
 
-	Color& operator=(Color const& other) {
+    Color& operator=(Color const& other) {
+        r = other.r;
+        g = other.g;
+        b = other.b;
+        a = other.a;
+        return *this;
+    }
 
-		r = other.r;
-		g = other.g;
-		b = other.b;
-		a = other.a;
-		return *this;
-	}
+    Color& operator=(Color&& other) noexcept {
+        r = other.r;
+        g = other.g;
+        b = other.b;
+        a = other.a;
+        return *this;
+    }
 
-	Color& operator=(Color&& other) noexcept {
+    const float* data() const { return &r; }
 
-		r = other.r;
-		g = other.g;
-		b = other.b;
-		a = other.a;
-		return *this;
-	}
+    inline size_t size() const { return 4; }
 
-	const float* data() const { return &r; }
+    Color& rgb();
 
-	size_t size() const { return 4; }
+    Color& srgb();
 
-	Color& rgb();
-	
-	Color& srgb();
-    
-	bool operator==(Color const& other) const {
+    bool operator==(Color const& other) const {
+        return std::tie(r, g, b, a) ==
+               std::tie(other.r, other.g, other.b, other.a);
+    }
 
-		return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
-	}
-
-	bool operator!=(Color const& other) const {
-
-		return std::tie(r, g, b, a) != std::tie(other.r, other.g, other.b, other.a);
-	}
+    bool operator!=(Color const& other) const {
+        return std::tie(r, g, b, a) !=
+               std::tie(other.r, other.g, other.b, other.a);
+    }
 };
 
-}
+}  // namespace ionengine::lib::math

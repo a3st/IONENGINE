@@ -1,6 +1,6 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
-#include <precompiled.h>
+#include <../precompiled.h>
 #include <renderer/backend/d3d12x.h>
 
 using namespace ionengine;

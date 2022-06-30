@@ -6,12 +6,13 @@
 using namespace ionengine;
 using namespace ionengine::lib;
 
-std::span<uint8_t const> ionengine::lib::read_bytes(std::span<uint8_t const> const source, uint64_t& offset, size_t const size) {
-    
+std::span<uint8_t const> ionengine::lib::read_bytes(
+    std::span<uint8_t const> const source, uint64_t& offset,
+    size_t const size) {
     size_t read_bytes = 0;
     std::span<uint8_t const> dest;
 
-    if(offset + size <= source.size()) {
+    if (offset + size <= source.size()) {
         read_bytes = size;
         dest = std::span<uint8_t const>(source.data() + offset, size);
     }
@@ -20,14 +21,15 @@ std::span<uint8_t const> ionengine::lib::read_bytes(std::span<uint8_t const> con
     return dest;
 };
 
-std::string_view ionengine::lib::get_line(std::string_view const buffer, size_t& offset, char const delimeter) {
-    
+std::string_view ionengine::lib::get_line(std::string_view const buffer,
+                                          size_t& offset,
+                                          char const delimeter) {
     size_t read_bytes = 0;
     std::string_view line;
-    
-    for(size_t i = offset; i < buffer.size(); ++i) {
+
+    for (size_t i = offset; i < buffer.size(); ++i) {
         ++read_bytes;
-        if(buffer[i] == delimeter) {
+        if (buffer[i] == delimeter) {
             line = std::string_view(buffer.data() + offset, buffer.data() + i);
             break;
         }
@@ -37,17 +39,14 @@ std::string_view ionengine::lib::get_line(std::string_view const buffer, size_t&
     return line;
 }
 
-Expected<std::vector<uint8_t>, Result<IOError>> ionengine::lib::load_file(std::filesystem::path const& file_path) {
-
+Expected<std::vector<uint8_t>, Result<IOError>> ionengine::lib::load_file(
+    std::filesystem::path const& file_path) {
     std::ifstream ifs(file_path, std::ios::beg | std::ios::binary);
 
-    if(!ifs.is_open()) {
+    if (!ifs.is_open()) {
         return lib::make_expected<std::vector<uint8_t>, Result<IOError>>(
-            Result<IOError> { 
-                .errc = IOError::OpenError,
-                .message = "File is not open"
-            }
-        );
+            Result<IOError>{.errc = IOError::OpenError,
+                            .message = "File is not open"});
     }
 
     ifs.seekg(0, std::ios::end);
@@ -57,5 +56,6 @@ Expected<std::vector<uint8_t>, Result<IOError>> ionengine::lib::load_file(std::f
     std::vector<uint8_t> buffer(total_bytes);
     ifs.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
 
-    return lib::make_expected<std::vector<uint8_t>, Result<IOError>>(std::move(buffer));
+    return lib::make_expected<std::vector<uint8_t>, Result<IOError>>(
+        std::move(buffer));
 };
