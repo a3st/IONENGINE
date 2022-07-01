@@ -14,63 +14,84 @@ using namespace ionengine::renderer::backend;
 
 namespace ionengine::renderer::backend {
 
+///
+/// @private
+///
 struct Texture {
     ComPtr<ID3D12Resource> resource;
-    ComPtr<D3D12MA::Allocation> memory_allocation;
-    std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE,
-                       ComPtr<d3d12::DescriptorAllocation>>
-        descriptor_allocations;
+    ComPtr<D3D12MA::Allocation> memory;
+    ComPtr<d3d12::DescriptorAllocation> rtv_descriptor;
+    ComPtr<d3d12::DescriptorAllocation> uav_descriptor;
+    ComPtr<d3d12::DescriptorAllocation> srv_descriptor;
 };
 
+///
+/// @private
+///
 struct Buffer {
     ComPtr<ID3D12Resource> resource;
-    ComPtr<D3D12MA::Allocation> memory_allocation;
-    ComPtr<d3d12::DescriptorAllocation> descriptor_allocation;
+    ComPtr<D3D12MA::Allocation> memory;
+    ComPtr<d3d12::DescriptorAllocation> descriptor;
 };
 
+///
+/// @private
+///
 struct Sampler {
-    ComPtr<d3d12::DescriptorAllocation> descriptor_allocation;
+    ComPtr<d3d12::DescriptorAllocation> descriptor;
 };
 
+///
+/// @private
+///
 struct BindingLocation {
     uint32_t range_index;
     uint32_t offset;
 };
 
+///
+/// @private
+///
 struct DescriptorLayout {
     ComPtr<ID3D12RootSignature> root_signature;
     std::unordered_map<uint32_t, BindingLocation> bindings;
     std::vector<D3D12_DESCRIPTOR_RANGE> ranges;
-    bool is_compute;
+    bool is_compute_compatible;
 };
 
+///
+/// @private
+///
 struct Pipeline {
-    ComPtr<ID3D12RootSignature> root_signature;
     ComPtr<ID3D12PipelineState> pipeline_state;
-    std::array<uint32_t, 16> vertex_strides;
+    std::array<uint32_t, 8> vertex_strides;
     bool is_compute;
 };
 
+///
+/// @private
+///
 struct Shader {
     std::vector<char8_t> data;
-    ShaderFlags flags;
+    D3D12_SHADER_VISIBILITY flags;
 };
 
+///
+/// @private
+///
 struct RenderPass {
-    std::array<D3D12_RENDER_PASS_RENDER_TARGET_DESC,
-               D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT>
-        render_target_descs;
-    uint32_t render_target_count;
-    D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depth_stencil_desc;
-    bool has_depth_stencil;
+    std::vector<D3D12_RENDER_PASS_RENDER_TARGET_DESC> render_targets;
+    std::optional<D3D12_RENDER_PASS_DEPTH_STENCIL_DESC> depth_stencil;
 };
 
+///
+/// @private
+///
 struct CommandList {
     ComPtr<ID3D12CommandAllocator> command_allocator;
     ComPtr<ID3D12GraphicsCommandList4> command_list;
     Pipeline* binded_pipeline;
-    QueueFlags flags;
-    bool is_reset{false};
+    D3D12_COMMAND_LIST_TYPE flags;
 };
 
 }  // namespace ionengine::renderer::backend
@@ -107,7 +128,7 @@ struct Device::Impl {
     std::array<std::atomic<uint64_t>, 3> fence_values;
     std::vector<ID3D12CommandList*> batches;
 
-    HANDLE fence_event{NULL};
+    HANDLE fence_event;
 
     HandlePool<Texture> textures;
     HandlePool<Buffer> buffers;
@@ -118,7 +139,7 @@ struct Device::Impl {
     HandlePool<RenderPass> render_passes;
     HandlePool<CommandList> command_lists;
 
-    uint32_t swapchain_index{0};
+    uint32_t swapchain_index;
     std::vector<Handle<Texture>> swapchain_textures;
 
     Impl(uint32_t const texture_size, uint32_t const buffer_size,

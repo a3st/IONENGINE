@@ -18,9 +18,11 @@ struct DescriptorLayout;
 struct CachePipeline;
 struct CommandList;
 
-// BackendLimits describes limit of using resources.
-// It is ideal to choose the values ​​for each platform, but here the
-// optimal ones are selected.
+///
+/// Backend limits describes limit of using resources.
+/// It is ideal to choose the values ​​for each platform, but here the
+/// optimal ones are selected.
+///
 enum class BackendLimits : uint32_t {
     Textures = 8192,
     Buffers = 8192,
@@ -32,57 +34,82 @@ enum class BackendLimits : uint32_t {
     CommandLists = 512
 };
 
+///
+/// Render pass color attachment count limit per one pass
+///
 inline uint32_t constexpr RENDER_PASS_COLOR_ATTACHMENT_COUNT = 8;
 
-// Maximum number of back buffers for swap chain.
-inline uint32_t constexpr BACKEND_BACK_BUFFER_COUNT = 2;
+///
+/// Maximum number of back buffers for swap chain
+///
+inline uint32_t constexpr BACK_BUFFER_COUNT = 2;
 
-// Alignment values that are optimal for Direct3D12 and Vulkan.
+/// 
+/// Texture row alignment value that are optimal for Direct3D12 and Vulkan
+///
 inline uint32_t constexpr TEXTURE_ROW_PITCH_ALIGNMENT = 256;
+
+/// 
+/// Resource alignment value that are optimal for Direct3D12 and Vulkan
+///
 inline uint32_t constexpr TEXTURE_RESOURCE_ALIGNMENT = 512;
 
+///
+/// Available texture dimensions
+///
 enum class Dimension { _1D, _2D, _3D, Cube };
 
+///
+/// Available formats for resources
+///
 enum class Format {
     Unknown,
     BGRA8_UNORM,
     BGR8_UNORM,
     RGBA8_UNORM,
     R8_UNORM,
-    RGBA32,
-    RGB32,
-    RG32,
-    R32,
-    BC1,
-    BC3,
-    BC4,
-    BC5,
+    RGBA32_FLOAT,
+    RGB32_FLOAT,
+    RG32_FLOAT,
+    R32_FLOAT,
+    BC1_UNORM,
+    BC3_UNORM,
+    BC4_UNORM,
+    BC5_UNORM,
     D32_FLOAT,
     RGBA16_FLOAT
 };
 
-enum class TextureFlags : uint8_t {
+///
+/// Available texture flags
+///
+enum class TextureFlags : uint16_t {
     ShaderResource = 1 << 0,
     RenderTarget = 1 << 1,
     DepthStencil = 1 << 2,
     UnorderedAccess = 1 << 3,
-    HostWrite = 1 << 4
+    HostWrite = 1 << 4,
+    HostRead = 1 << 5
 };
 
 DECLARE_ENUM_CLASS_BIT_FLAG(TextureFlags)
 
+///
+/// Available buffer flags
+///
 enum class BufferFlags : uint16_t {
     ConstantBuffer = 1 << 0,
-    VertexBuffer = 1 << 1,
-    IndexBuffer = 1 << 2,
-    UnorderedAccess = 1 << 3,
-    HostWrite = 1 << 4,
-    HostRead = 1 << 5,
-    ShaderResource = 1 << 6
+    UnorderedAccess = 1 << 1,
+    ShaderResource = 1 << 2,
+    HostWrite = 1 << 3,
+    HostRead = 1 << 4
 };
 
 DECLARE_ENUM_CLASS_BIT_FLAG(BufferFlags)
 
+///
+/// Available shader flags
+///
 enum class ShaderFlags : uint16_t {
     Vertex = 1 << 0,
     Geometry = 1 << 1,
@@ -95,7 +122,10 @@ enum class ShaderFlags : uint16_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(ShaderFlags)
 
-enum class QueueFlags : uint8_t {
+///
+/// Available queue flags
+///
+enum class QueueFlags : uint16_t {
     Graphics = 1 << 0,
     Copy = 1 << 1,
     Compute = 1 << 2
@@ -103,28 +133,41 @@ enum class QueueFlags : uint8_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(QueueFlags)
 
+///
+/// Render pass load operations
+///
 enum class RenderPassLoadOp { Load, Clear, DontCare };
 
+///
+/// Render pass store operations
+///
 enum class RenderPassStoreOp { Store, DontCare };
 
+///
+/// Available memory states
+///
 enum class MemoryState : uint32_t {
     Common = 1 << 0,
     Present = 1 << 1,
     RenderTarget = 1 << 2,
-    CopySource = 1 << 3,
-    CopyDest = 1 << 4,
-    ShaderRead = 1 << 5,
-    VertexConstantBufferRead = 1 << 6,
-    IndexBufferRead = 1 << 7,
-    DepthRead = 1 << 8,
-    DepthWrite = 1 << 9,
-    GenericRead = 1 << 10,
-    NonPixelShaderRead = 1 << 11,
-    UnorderedAccess = 1 << 12
+    UnorderedAccess = 1 << 3,
+    DepthWrite = 1 << 4,
+    CopySource = 1 << 5,
+    CopyDest = 1 << 6,
+    ResolveSource = 1 << 7,
+    ResolveDest = 1 << 8,
+    ShaderRead = 1 << 9,
+    DepthRead = 1 << 10,
+    VertexConstantBufferRead = 1 << 11,
+    IndexBufferRead = 1 << 12,
+    GenericRead = IndexBufferRead | VertexConstantBufferRead | DepthRead | ShaderRead
 };
 
 DECLARE_ENUM_CLASS_BIT_FLAG(MemoryState)
 
+///
+/// Available descriptor types
+///
 enum class DescriptorType {
     ShaderResource,
     ConstantBuffer,
@@ -132,10 +175,19 @@ enum class DescriptorType {
     Sampler
 };
 
+///
+/// Available rasterizer fill modes
+///
 enum class FillMode { Wireframe, Solid };
 
+///
+/// Available rasterizer cull modes
+///
 enum class CullMode { None, Front, Back };
 
+///
+/// Available compare operations
+///
 enum class CompareOp {
     Never,
     Less,
@@ -147,22 +199,37 @@ enum class CompareOp {
     Always
 };
 
+///
+/// Available blends
+///
 enum class Blend { Zero, One, SrcAlpha, InvSrcAlpha, BlendFactor };
 
+///
+/// Available blend operations
+///
 enum class BlendOp { Add, Subtract, RevSubtract, Min, Max };
 
+///
+/// Available filters
+///
 enum class Filter { Anisotropic, MinMagMipLinear, ComparisonMinMagMipLinear };
 
+///
+/// Available address modes
+///
 enum class AddressMode { Wrap, Clamp, Mirror };
 
-using ResourceHandle =
-    std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>>;
-
+///
+/// Render pass color description
+///
 struct RenderPassColorDesc {
     RenderPassLoadOp load_op;
     RenderPassStoreOp store_op;
 };
 
+///
+/// Render pass depth stencil description
+///
 struct RenderPassDepthStencilDesc {
     RenderPassLoadOp depth_load_op;
     RenderPassStoreOp depth_store_op;
@@ -170,17 +237,26 @@ struct RenderPassDepthStencilDesc {
     RenderPassStoreOp stencil_store_op;
 };
 
-struct DescriptorLayoutBinding {
+///
+/// Descriptor layout binding description
+///
+struct DescriptorLayoutBindingDesc {
     uint32_t index;
     DescriptorType type;
     ShaderFlags flags;
 };
 
+///
+/// Descriptor write description
+///
 struct DescriptorWriteDesc {
     uint32_t index;
-    ResourceHandle data;
+    std::variant<Handle<Texture>, Handle<Buffer>, Handle<Sampler>> data;
 };
 
+///
+/// Pipeline vertex input description
+///
 struct VertexInputDesc {
     std::string semantic;
     uint32_t index;
@@ -189,16 +265,26 @@ struct VertexInputDesc {
     uint32_t stride;
 };
 
+///
+/// Pipeline rasterizer description
+///
 struct RasterizerDesc {
     FillMode fill_mode;
     CullMode cull_mode;
 };
 
+///
+/// Pipeline depth stencil description
+///
 struct DepthStencilDesc {
     CompareOp depth_func;
-    bool write_enable;
+    bool depth_write;
+    bool stencil_write;
 };
 
+///
+/// Pipeline blend description
+///
 struct BlendDesc {
     bool blend_enable;
     Blend blend_src;
@@ -209,33 +295,38 @@ struct BlendDesc {
     BlendOp blend_op_alpha;
 };
 
-struct AdapterDesc {
-    std::string name;
-    size_t local_memory_size;
-    size_t local_memory_usage;
-};
-
-struct SwapchainDesc {
-    platform::Window* window;
-    uint16_t sample_count;
-    uint32_t buffer_count;
-};
-
-struct TextureCopyRegion {
+///
+/// Texture copy region description
+///
+struct TextureCopyRegionDesc {
     uint32_t mip_index;
     uint32_t row_pitch;
     uint64_t offset;
 };
 
+///
+/// Memory barrier description
+///
 struct MemoryBarrierDesc {
-    ResourceHandle target;
+    std::variant<Handle<Texture>, Handle<Buffer>> resource;
     MemoryState before;
     MemoryState after;
 };
 
+///
+/// GPU adapter description
+///
+struct GPUAdapterDesc {
+    std::string name;
+    size_t local_memory_size;
+    size_t local_memory_usage;
+    bool is_uma;
+    // TODO
+};
+
 class Device {
  public:
-    Device(uint32_t const adapter_index, SwapchainDesc const& swapchain_desc);
+    Device(uint32_t const adapter_index, platform::Window& window, uint16_t const sample_count);
 
     ~Device();
 
