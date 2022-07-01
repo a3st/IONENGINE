@@ -96,6 +96,9 @@ struct CommandList {
 
 }  // namespace ionengine::renderer::backend
 
+///
+/// @private
+///
 struct Device::Impl {
     ComPtr<IDxcCompiler3> dxc_compiler;
     ComPtr<IDxcUtils> dxc_utils;
