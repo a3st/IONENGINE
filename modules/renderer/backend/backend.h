@@ -326,18 +326,33 @@ struct GPUAdapterDesc {
 
 class Device {
  public:
+    ///
+    /// Create new graphics device
+    /// @param adapter_index Adapter index
+    /// @param window Swap chain target window
+    /// @param sample_count Swap chain sample count
+    ///
     Device(uint32_t const adapter_index, platform::Window& window, uint16_t const sample_count);
 
     ~Device();
 
     Device(Device const&) = delete;
 
-    Device(Device&&) noexcept = default;
+    Device(Device&&) noexcept = delete;
 
     Device& operator=(Device const&) = delete;
 
-    Device& operator=(Device&&) noexcept = default;
+    Device& operator=(Device&&) noexcept = delete;
 
+    ///
+    /// Create new texture on graphics device
+    /// @param dimension 
+    /// @param width
+    /// @param height
+    /// @param mip_levels
+    /// @param array_layers 
+    /// @param format 
+    ///
     Handle<Texture> create_texture(Dimension const dimension,
                                    uint32_t const width, uint32_t const height,
                                    uint16_t const mip_levels,
