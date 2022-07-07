@@ -108,6 +108,19 @@ enum class BufferFlags : uint16_t {
 DECLARE_ENUM_CLASS_BIT_FLAG(BufferFlags)
 
 ///
+/// Available command list flags
+///
+enum class CommandListFlags : uint16_t {
+    Graphics = 1 << 0,
+    Copy = 1 << 1,
+    Compute = 1 << 2,
+    Primary = 1 << 3,
+    Secondary = 1 << 4
+};
+
+DECLARE_ENUM_CLASS_BIT_FLAG(CommandListFlags)
+
+///
 /// Available shader flags
 ///
 enum class ShaderFlags : uint16_t {
@@ -346,12 +359,14 @@ class Device {
 
     ///
     /// Create new texture on graphics device
-    /// @param dimension 
-    /// @param width
-    /// @param height
-    /// @param mip_levels
-    /// @param array_layers 
-    /// @param format 
+    /// @param dimension Dimension of texture
+    /// @param width Width of texture
+    /// @param height Height of texture
+    /// @param mip_levels Mip levels of texture
+    /// @param array_layers Array levels of texture (3D/Cube dimension), or default it should be 1
+    /// @param format Format of texture
+    /// @param flags Flags of texture
+    /// @return Texture handle
     ///
     Handle<Texture> create_texture(Dimension const dimension,
                                    uint32_t const width, uint32_t const height,
@@ -360,62 +375,145 @@ class Device {
                                    Format const format,
                                    TextureFlags const flags);
 
+    ///
+    /// Delete texture on graphics device
+    /// @param texture Texture handle
+    ///
     void delete_texture(Handle<Texture> const& texture);
 
-    Handle<Buffer> create_buffer(size_t const size, BufferFlags const flags,
-                                 uint32_t const element_stride = 0);
+    ///
+    /// Create buffer on graphics device
+    /// @param size Size in bytes
+    /// @param stride Stride element in bytes for structure buffers
+    /// @param flags Flags of buffer
+    /// @return Buffer handle
+    ///
+    Handle<Buffer> create_buffer(size_t const size, uint32_t const stride, BufferFlags const flags);
 
+    ///
+    /// Delete buffer on graphics device
+    /// @param buffer Buffer handle
+    ///
     void delete_buffer(Handle<Buffer> const& buffer);
 
+    ///
+    /// Create render pass on graphics device
+    /// @param colors Array of color texture handles
+    /// @param color_descs Array of color descriptions
+    /// @param depth_stencil Depth stencil texture handle
+    /// @param depth_stencil_desc Depth stencil description
+    /// @return Render pass handle
+    ///
     Handle<RenderPass> create_render_pass(
         std::span<Handle<Texture> const> const& colors,
         std::span<RenderPassColorDesc const> const& color_descs,
-        Handle<Texture> const& depth_stencil = InvalidHandle<Texture>(),
-        std::optional<RenderPassDepthStencilDesc> const depth_stencil_desc =
-            std::nullopt);
+        Handle<Texture> const& depth_stencil,
+        std::optional<RenderPassDepthStencilDesc> const& depth_stencil_desc);
 
+    ///
+    /// Delete render pass on graphics device
+    /// @param render_pass Render pass handle
+    ///
     void delete_render_pass(Handle<RenderPass> const& render_pass);
 
+    ///
+    /// Create sampler on graphics device
+    /// @param filter Sampler filter
+    /// @param addresses Array of addresses [u, v, w]
+    /// @param anisotropic Anisotropic count
+    /// @param compare_op Compare operation
+    /// @return Sampler handle
+    ///
     Handle<Sampler> create_sampler(Filter const filter,
-                                   AddressMode const address_u,
-                                   AddressMode const address_v,
-                                   AddressMode const address_w,
+                                   std::array<AddressMode, 3> const& addresses,
                                    uint16_t const anisotropic,
                                    CompareOp const compare_op);
 
+    ///
+    /// Delete sampler on graphics device
+    /// @param sampler Sampler handle
+    ///
     void delete_sampler(Handle<Sampler> const& sampler);
 
-    Handle<Shader> create_shader(std::string_view const source,
-                                 ShaderFlags const flags);
+    ///
+    /// Create shader on graphics device
+    /// @param data Array of bytes SPIRV or DXIL (Backend supports only compiled shader code)
+    /// @param flags Flags of shader
+    /// @return Shader handle
+    ///
+    Handle<Shader> create_shader(std::span<uint8_t const> const data, ShaderFlags const flags);
 
+    ///
+    /// Delete shader on graphics device
+    /// @param shader Shader handle
+    ///
     void delete_shader(Handle<Shader> const& shader);
 
+    /// 
+    /// Create descriptor layout on graphics device
+    /// @param binding_descs Array of binding descriptions
+    /// @return Descriptor Layout handle
+    ///
     Handle<DescriptorLayout> create_descriptor_layout(
-        std::span<DescriptorLayoutBinding const> const bindings,
-        bool const is_compute);
+        std::span<DescriptorLayoutBindingDesc const> const binding_descs);
 
+    ///
+    /// Delete descriptor layout on graphics device
+    /// @param descriptor_layout Descriptor Layout handle
+    ///
     void delete_descriptor_layout(
         Handle<DescriptorLayout> const& descriptor_layout);
 
+    ///
+    /// Create graphics pipeline on graphics device
+    /// @param descriptor_layout Desciptor Layout handle
+    /// @param vertex_input_descs Array of vertex input descriptions
+    /// @param shaders Array of shader handles
+    /// @param rasterizer_desc Rasterizer description
+    /// @param depth_stencil_desc Depth stencil description
+    /// @param blend_desc Blend description
+    /// @param render_pass Render pass handle
+    /// @param old_pipeline Old pipeline handle (For caching)
+    /// @return Pipeline handle
+    ///
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& descriptor_layout,
-        std::span<VertexInputDesc const> const vertex_descs,
+        std::span<VertexInputDesc const> const vertex_input_descs,
         std::span<Handle<Shader> const> const shaders,
         RasterizerDesc const& rasterizer_desc,
         DepthStencilDesc const& depth_stencil_desc, BlendDesc const& blend_desc,
         Handle<RenderPass> const& render_pass,
-        Handle<CachePipeline> const& cache_pipeline);
+        Handle<Pipeline> const& old_pipeline);
 
+    ///
+    /// Create compute pipeline on graphics device
+    /// @param descriptor_layout Desciptor Layout handle
+    /// @param shader Shader handle
+    /// @param old_pipeline Old pipeline handle (For caching)
+    /// @return Pipeline handle
+    ///
     Handle<Pipeline> create_pipeline(
         Handle<DescriptorLayout> const& descriptor_layout,
         Handle<Shader> const& shader,
-        Handle<CachePipeline> const& cache_pipeline);
+        Handle<Pipeline> const& old_pipeline);
 
+    ///
+    /// Delete pipeline on graphics device
+    /// @param pipeline Pipeline handle
+    ///
     void delete_pipeline(Handle<Pipeline> const& pipeline);
 
-    Handle<CommandList> create_command_list(QueueFlags const flags,
-                                            bool const bundle = false);
+    ///
+    /// Create command list on graphics device
+    /// @param flags Flags of command list
+    /// @return Command list handle
+    ///
+    Handle<CommandList> create_command_list(CommandListFlags const flags);
 
+    ///
+    /// Delete command list on graphics device
+    /// @param command_list Command list handle
+    ///
     void delete_command_list(Handle<CommandList> const& command_list);
 
     uint8_t* map_buffer_data(Handle<Buffer> const& buffer,
@@ -425,28 +523,20 @@ class Device {
 
     void present();
 
-    size_t get_memory_required_size(ResourceHandle const& resource);
-
     uint32_t acquire_next_swapchain_texture();
 
     Handle<Texture> swapchain_texture(uint32_t const index);
 
     void recreate_swapchain(
-        uint32_t const width, uint32_t const height,
-        std::optional<SwapchainDesc> swapchain_desc = std::nullopt);
+        uint32_t const width, uint32_t const height);
 
-    uint64_t submit(std::span<Handle<CommandList> const> const command_lists,
-                    QueueFlags const flags);
+    uint64_t queue_submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags);
 
-    uint64_t submit_after(
-        std::span<Handle<CommandList> const> const command_lists,
-        uint64_t const fence_value, QueueFlags const flags);
+    void queue_wait(QueueFlags const flags, uint64_t const fence_value);
 
-    void wait(uint64_t const fence_value, QueueFlags const flags);
+    bool is_queue_completed(uint64_t const fence_value, QueueFlags const flags) const;
 
-    bool is_completed(uint64_t const fence_value, QueueFlags const flags) const;
-
-    void wait_for_idle(QueueFlags const flags);
+    void wait_for_queue_idle(QueueFlags const flags);
 
     void copy_buffer_region(Handle<CommandList> const& command_list,
                             Handle<Buffer> const& dest,
@@ -457,7 +547,7 @@ class Device {
     void copy_texture_region(Handle<CommandList> const& command_list,
                              Handle<Texture> const& dest,
                              Handle<Buffer> const& source,
-                             std::span<TextureCopyRegion const> const regions);
+                             std::span<TextureCopyRegionDesc const> const regions);
 
     void bind_vertex_buffer(Handle<CommandList> const& command_list,
                             uint32_t const index, Handle<Buffer> const& buffer,
@@ -511,7 +601,7 @@ class Device {
                       uint32_t const index_count, uint32_t const instance_count,
                       uint32_t const instance_offset);
 
-    AdapterDesc adapter_desc() const;
+    GPUAdapterDesc gpu_adapter_desc() const;
 
  private:
     struct Impl;
