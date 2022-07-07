@@ -516,27 +516,49 @@ class Device {
     ///
     void delete_command_list(Handle<CommandList> const& command_list);
 
-    uint8_t* map_buffer_data(Handle<Buffer> const& buffer,
-                             uint64_t const offset = 0);
+    ///
+    /// Map buffer data on graphics device
+    /// @param buffer Buffer handle
+    /// @return Pointer to buffer data
+    ///
+    uint8_t* map_buffer_data(Handle<Buffer> const& buffer);
 
+    ///
+    /// Unmap buffer data on graphics device
+    /// @param buffer Buffer handle
+    ///
     void unmap_buffer_data(Handle<Buffer> const& buffer);
 
-    void present();
+    ///
+    /// Swap chain present on graphics device
+    ///
+    void swapchain_present();
 
-    uint32_t acquire_next_swapchain_texture();
+    ///
+    /// Get swap chain current texture on graphics device
+    /// @return Texture handle
+    ///
+    Handle<Texture> swapchain_texture();
 
-    Handle<Texture> swapchain_texture(uint32_t const index);
-
-    void recreate_swapchain(
+    ///
+    /// Resize swap chain on graphics device
+    /// @param width Width of swap chain
+    /// @param height Height of swap chain
+    ///
+    void swapchain_resize(
         uint32_t const width, uint32_t const height);
 
-    uint64_t queue_submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags);
+    ///
+    /// Submit command lists to queue on graphics device
+    /// @param command_lists Array of command lists
+    /// @param flags Flags of queue
+    ///
+    void queue_submit(std::span<Handle<CommandList> const> const command_lists, QueueFlags const flags);
 
-    void queue_wait(QueueFlags const flags, uint64_t const fence_value);
-
-    bool is_queue_completed(uint64_t const fence_value, QueueFlags const flags) const;
-
-    void wait_for_queue_idle(QueueFlags const flags);
+    ///
+    /// Wait command lists 
+    ///
+    void queue_wait(QueueFlags const flags, bool is);
 
     void copy_buffer_region(Handle<CommandList> const& command_list,
                             Handle<Buffer> const& dest,
