@@ -2,19 +2,10 @@
 
 #pragma once
 
-namespace ionengine::lib {
+namespace ionengine::core {
 
 ///
-/// A common structure for all errors that accepts an enumeration of errors
-///
-template <class ErrorCode>
-struct Result {
-    ErrorCode errc;
-    std::string message;
-};
-
-///
-/// An error handler that throws the first type on success and the second type on error
+/// Expected class
 ///
 template <class Type, class Error>
 class Expected {
@@ -32,25 +23,19 @@ class Expected {
     Expected& operator=(Expected&&) noexcept = default;
 
     ///
-    /// Check for success
-    /// @return Result of expected
-    ///
-    inline bool is_ok() const { return _data.index() == 0; }
-
-    ///
     /// Check for error
     /// @return Result of expected
     ///
-    inline bool is_error() const { return _data.index() == 1; }
+    inline bool has_error() const { return _data.index() == 1; }
 
     ///
-    /// Getting the first type
+    /// Get the first type
     /// @return First type
     ///
     inline Type ok() { return std::move(std::get<Type>(_data)); }
 
     ///
-    /// Getting the second type
+    /// Get the second type
     /// @return Second type
     ///
     inline Error error() { return std::move(std::get<Error>(_data)); }
@@ -62,8 +47,8 @@ class Expected {
 };
 
 ///
-/// Creating an Error Handler with specified types
-/// @param element Element to be getting on success
+/// Create an Error Handler with specified types
+/// @param element Success element
 ///
 template <class Type, class Error>
 inline Expected<Type, Error> make_expected(Type&& element) {
@@ -71,8 +56,8 @@ inline Expected<Type, Error> make_expected(Type&& element) {
 }
 
 ///
-/// Creating an Error Handler with specified types
-/// @param element Element to be getting on error
+/// Create an Error Handler with specified types
+/// @param element Error element
 ///
 template <class Type, class Error>
 inline Expected<Type, Error> make_expected(Error&& element) {

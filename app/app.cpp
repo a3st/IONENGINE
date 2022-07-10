@@ -1,20 +1,22 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-#include <engine/framework.h>
+#include <platform/include/platform/window.hpp>
 
-/*
-    Implementation of the main function for the Windows platform
-*/
+using namespace ionengine;
+
 int main(int* argc, char** agrv) {
 
-    ionengine::Framework framework;
+    auto result = platform::Window::create(800, 600, "Test");
+    
+    if(result.has_error()) {
+        std::cerr << result.error() << std::endl;
+        return 0;
+    }
 
-    framework.run(
-        [&]() {
+    auto window = std::move(result.ok());
 
-        }
-    );
+    platform::poll_events(*window, []() { });
 
     return 0;
 }
