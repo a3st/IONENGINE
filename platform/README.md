@@ -41,8 +41,3 @@ platform::poll_events(*window, [](platform::WindowEvent const& event) {
 
 // Window destroys via std::unique_ptr destructor when it is going out from scope
 ```
-
-<p><h1 align="left">Dependencies</h1></p>
-
-* C++20 compatible compiler
-* [GLFW](https://github.com/glfw/glfw)
