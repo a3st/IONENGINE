@@ -9,7 +9,7 @@ using namespace ionengine;
 int main(int* argc, char** agrv) {
     auto result = platform::Window::create(800, 600, "Test");
 
-    if (result.has_error()) {
+    if (!result.has_value()) {
         std::cerr << result.error() << std::endl;
         return 0;
     }

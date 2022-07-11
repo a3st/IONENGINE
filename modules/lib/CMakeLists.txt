@@ -4,7 +4,6 @@ add_library(Lib
     algorithm.cpp
     logger.cpp
     thread_pool.cpp
-    math/color.cpp
 )
 
 target_include_directories(Lib PRIVATE

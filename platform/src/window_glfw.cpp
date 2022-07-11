@@ -1,9 +1,9 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
-#include <precompiled.h>
-#include <platform/window.hpp>
-
 #include <glfw/glfw3.h>
+#include <precompiled.h>
+
+#include <platform/window.hpp>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <glfw/glfw3native.h>
 
@@ -44,7 +44,9 @@ class Window_GLFW final : public Window {
     /// Set window label
     /// @param label Label string
     ///
-    virtual void label(std::string_view const label) override {}
+    inline virtual void label(std::string_view const label) override {
+        glfwSetWindowTitle(_window, label.data());
+    }
 
     ///
     /// Show window cursor

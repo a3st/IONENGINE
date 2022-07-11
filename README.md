@@ -1,19 +1,21 @@
-# <p align="center"> IONENGINE </p>
-## <p align="center"> Realtime Renderer Project </p>
-Lightweight renderer project for exploring and learning Graphics API
+<p><h1 align="center">IONENGINE</h1></p>
 
-## Features
+**IONENGINE** (Image Open Engine) is an Graphic 3D Engine written in C++. It can be used to learn and exploring renderer techniques or write cross-platform C++ applications like games. A basic version of engine only includes **Renderer** module.
 
-- Module architecture
-- C++latest
-- Graphics API backend
-- Deffered/forward shading PBR
-- Flexible material system
-- Asset system with thread pool
-- Async upload manager for GPU resources
-- Minimum thirdparty dependinices
+<p align="center">
+  <img style="float: right;" src="https://raw.githubusercontent.com/a3st/IONENGINE/experimental/data/images/1.png" alt="Screen 1"/>
+</p>
 
-## Priority tasks
+<p><h1 align="left">Features</h1></p>
+
+* Cross-platform: Windows, Linux (Android in plan)
+* Deffered/Forward physically-based rendering
+* Async Asset System
+* Modern Graphics API like Vulkan, DirectX12
+* Job System-based architecture
+* Node-based scene management
+* HTML UI Library (RmlUI)
+
 
 Renderer
   - [x] D3D12 backend

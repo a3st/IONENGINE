@@ -26,7 +26,7 @@ class Expected {
     /// Check for error
     /// @return Result of expected
     ///
-    inline bool has_error() const { return _data.index() == 1; }
+    inline bool has_value() const { return _data.index() == 0; }
 
     ///
     /// Get the first type
