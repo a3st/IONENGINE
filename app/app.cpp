@@ -24,6 +24,16 @@ int main(int* argc, char** agrv) {
             case platform::WindowEventType::Sized: {
                 std::cout << std::format("Window resized to {}, {}", event.data.window.width, event.data.window.height) << std::endl;
             } break;
+
+            case platform::WindowEventType::GamepadButton: {
+
+                std::cout << std::format("Gamepad key {0}, state {1}", event.data.input.key, (int32_t)event.data.input.state) << std::endl;
+            } break;
+
+            case platform::WindowEventType::GamepadLeftAxis: {
+
+                std::cout << std::format("Gamepad left axis {0}, {1}", event.data.input.x, event.data.input.y) << std::endl;
+            } break;
         }
     });
 

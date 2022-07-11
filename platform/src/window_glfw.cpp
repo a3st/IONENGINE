@@ -72,6 +72,9 @@ Window_GLFW::~Window_GLFW() {
 
 int32_t last_cursor_x;
 int32_t last_cursor_y;
+bool gamepad_connected;
+int32_t gamepad_id;
+GLFWgamepadstate gamepad_state;
 
 core::Expected<std::unique_ptr<Window>, std::string> Window::create(
     uint32_t const width, uint32_t const height,
@@ -97,7 +100,40 @@ core::Expected<std::unique_ptr<Window>, std::string> Window::create(
                      reinterpret_cast<double_t*>(&last_cursor_x),
                      reinterpret_cast<double_t*>(&last_cursor_y));
 
-    glfwSetInputMode(window->_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    gamepad_connected = false;
+    gamepad_id = -1;
+
+    for (int32_t jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid) {
+        if (glfwJoystickPresent(jid)) {
+            if (glfwJoystickIsGamepad(jid)) {
+                gamepad_connected = true;
+                gamepad_id = jid;
+                std::cout << std::format("Gamepad connected: {0}",
+                                         glfwGetGamepadName(jid))
+                          << std::endl;
+                glfwGetGamepadState(jid, &gamepad_state);
+                break;
+            }
+        }
+    }
+
+    glfwSetJoystickCallback([](int32_t jid, int32_t event) {
+        if (event == GLFW_CONNECTED) {
+            if (glfwJoystickIsGamepad(jid)) {
+                gamepad_connected = true;
+                gamepad_id = jid;
+                std::cout << std::format("Gamepad connected: {0}",
+                                         glfwGetGamepadName(jid))
+                          << std::endl;
+                glfwGetGamepadState(jid, &gamepad_state);
+            }
+        } else if (event == GLFW_DISCONNECTED) {
+            if (jid == gamepad_id) {
+                gamepad_connected = false;
+                gamepad_id = -1;
+            }
+        }
+    });
 
     return core::make_expected<std::unique_ptr<Window>, std::string>(
         std::move(window));
@@ -175,7 +211,7 @@ void ionengine::platform::poll_events(
                         static_cast<float_t>(static_cast<int32_t>(xpos) -
                                              last_cursor_x),
                         -1.0f, 1.0f),
-                    .y = -std::clamp<float_t>(
+                    .y = std::clamp<float_t>(
                         static_cast<float_t>(static_cast<int32_t>(ypos) -
                                              last_cursor_y),
                         -1.0f, 1.0f)};
@@ -186,11 +222,90 @@ void ionengine::platform::poll_events(
                 last_cursor_y = static_cast<int32_t>(ypos);
             });
 
-        glfwSetJoystickCallback([](int32_t jid, int32_t event) {
-            if (event == GLFW_CONNECTED) {
-            } else if (event == GLFW_DISCONNECTED) {
+        glfwSetScrollCallback(
+            static_cast<Window_GLFW&>(window)._window,
+            [](GLFWwindow* window, double_t xoffset, double_t yoffset) {
+                WindowEvent event = {.event_type =
+                                         WindowEventType::MouseScroll};
+                event.data.input = {.key = -1,
+                                    .state = InputKeyState::Unknown,
+                                    .modifier_flags = InputModiferFlags::None,
+                                    .x = static_cast<float_t>(xoffset),
+                                    .y = static_cast<float_t>(yoffset)};
+
+                (*cur_loop)(event);
+            });
+
+        if (gamepad_connected) {
+            GLFWgamepadstate state;
+
+            if (glfwGetGamepadState(gamepad_id, &state)) {
+                for (size_t i = 0; i < 15; ++i) {
+                    if (state.buttons[i] && !gamepad_state.buttons[i]) {
+                        WindowEvent event = {
+                            .event_type = WindowEventType::GamepadButton};
+                        event.data.input = {
+                            .key = static_cast<int32_t>(i),
+                            .state = InputKeyState::Pressed,
+                            .modifier_flags = InputModiferFlags::None};
+
+                        (*cur_loop)(event);
+                    } else if (!state.buttons[i] && gamepad_state.buttons[i]) {
+                        WindowEvent event = {
+                            .event_type = WindowEventType::GamepadButton};
+                        event.data.input = {
+                            .key = static_cast<int32_t>(i),
+                            .state = InputKeyState::Released,
+                            .modifier_flags = InputModiferFlags::None};
+
+                        (*cur_loop)(event);
+                    }
+                }
+
+                WindowEvent event = {.event_type =
+                                         WindowEventType::GamepadLeftAxis};
+
+                event.data.input = {.key = -1,
+                                    .state = InputKeyState::Unknown,
+                                    .modifier_flags = InputModiferFlags::None,
+                                    .x = state.axes[GLFW_GAMEPAD_AXIS_LEFT_X],
+                                    .y = state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]};
+
+                (*cur_loop)(event);
+
+                event = {.event_type = WindowEventType::GamepadRightAxis};
+
+                event.data.input = {.key = -1,
+                                    .state = InputKeyState::Unknown,
+                                    .modifier_flags = InputModiferFlags::None,
+                                    .x = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X],
+                                    .y = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]};
+
+                (*cur_loop)(event);
+
+                event = {.event_type = WindowEventType::GamepadLeftTrigger};
+
+                event.data.input = {
+                    .key = -1,
+                    .state = InputKeyState::Unknown,
+                    .modifier_flags = InputModiferFlags::None,
+                    .y = state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER]};
+
+                (*cur_loop)(event);
+
+                event = {.event_type = WindowEventType::GamepadRightTrigger};
+
+                event.data.input = {
+                    .key = -1,
+                    .state = InputKeyState::Unknown,
+                    .modifier_flags = InputModiferFlags::None,
+                    .y = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER]};
+
+                (*cur_loop)(event);
+
+                gamepad_state = state;
             }
-        });
+        }
 
         glfwPollEvents();
     }

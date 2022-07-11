@@ -16,7 +16,10 @@ enum class WindowEventType {
     MouseMoved,
     KeyboardButton,
     GamepadButton,
-    GamepadAxis,
+    GamepadLeftAxis,
+    GamepadRightAxis,
+    GamepadLeftTrigger,
+    GamepadRightTrigger,
     MouseButton,
     MouseAxis,
     MouseScroll
