@@ -7,6 +7,68 @@
 namespace ionengine::platform {
 
 ///
+/// Window event types
+///
+enum class WindowEventType {
+    Closed,
+    Sized,
+    Updated,
+    MouseMoved,
+    KeyboardButton,
+    GamepadButton,
+    GamepadAxis,
+    MouseButton,
+    MouseAxis,
+    MouseScroll
+};
+
+///
+/// Input key states
+///
+enum class InputKeyState {
+    Unknown,
+    Pressed,
+    Released
+};
+
+///
+/// Input key modifier flags
+///
+enum class InputModiferFlags : int32_t {
+    None,
+    Shift = 1 << 0,
+    Control = 1 << 1,
+    CapsLock = 1 << 2,
+    Alt = 1 << 3
+};
+
+DECLARE_ENUM_CLASS_BIT_FLAG(InputModiferFlags)
+
+///
+/// Window event struct
+///
+struct WindowEvent {
+    WindowEventType event_type;
+    union {
+        struct {
+            uint32_t width;
+            uint32_t height;
+        } window;
+        struct {
+            int32_t x;
+            int32_t y;
+        } cursor;
+        struct {
+            int32_t key;
+            InputKeyState state;
+            InputModiferFlags modifier_flags;
+            float_t x;
+            float_t y;
+        } input;
+    } data;
+};
+
+///
 /// Window class
 ///
 class Window {
@@ -41,8 +103,6 @@ class Window {
     ///
     virtual void cursor(bool const show) = 0;
 
-    virtual bool has_close() = 0;
-
     ///
     /// Create window
     /// @param width Width window
@@ -55,6 +115,10 @@ class Window {
         std::string_view const label) noexcept;
 };
 
-void poll_events(Window& window, std::function<void()> const& loop);
+///
+/// Poll events from window
+/// @param loop Loop function
+///
+void poll_events(Window& window, std::function<void(WindowEvent const&)> const& loop);
 
 }  // namespace ionengine::platform

@@ -243,6 +243,7 @@ LRESULT Window::Impl::wnd_proc(HWND hWnd, UINT msg, WPARAM wParam,
                 USHORT key = raw_input->data.keyboard.VKey;
                 USHORT flags = raw_input->data.keyboard.Flags;
                 UINT msg = raw_input->data.keyboard.Message;
+                raw_input->data.keyboard.
 
                 switch (msg) {
                     case WM_KEYDOWN:

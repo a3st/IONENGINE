@@ -12,6 +12,9 @@ using namespace ionengine::platform;
 
 namespace ionengine::platform {
 
+///
+/// @private
+///
 class Window_GLFW final : public Window {
  public:
     Window_GLFW() noexcept = default;
@@ -49,8 +52,6 @@ class Window_GLFW final : public Window {
     ///
     inline virtual void cursor(bool const show) override { _cursor = show; }
 
-    inline virtual bool has_close() { return glfwWindowShouldClose(_window); }
-
  private:
     GLFWwindow* _window;
     uint32_t _width;
@@ -58,7 +59,8 @@ class Window_GLFW final : public Window {
     bool _cursor;
 
     friend class Window;
-    friend void poll_events(Window&, std::function<void()> const&);
+    friend void poll_events(Window&,
+                            std::function<void(WindowEvent const&)> const&);
 };
 
 }  // namespace ionengine::platform
@@ -67,6 +69,9 @@ Window_GLFW::~Window_GLFW() {
     glfwDestroyWindow(_window);
     glfwTerminate();
 }
+
+int32_t last_cursor_x;
+int32_t last_cursor_y;
 
 core::Expected<std::unique_ptr<Window>, std::string> Window::create(
     uint32_t const width, uint32_t const height,
@@ -82,23 +87,110 @@ core::Expected<std::unique_ptr<Window>, std::string> Window::create(
 
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 
-
-
     window->_window =
         glfwCreateWindow(width, height, label.data(), nullptr, nullptr);
     window->_width = width;
     window->_height = height;
     window->_cursor = true;
 
+    glfwGetCursorPos(window->_window,
+                     reinterpret_cast<double_t*>(&last_cursor_x),
+                     reinterpret_cast<double_t*>(&last_cursor_y));
+
+    glfwSetInputMode(window->_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+
     return core::make_expected<std::unique_ptr<Window>, std::string>(
         std::move(window));
 }
 
+std::function<void(WindowEvent const&)> const* cur_loop;
 
+void ionengine::platform::poll_events(
+    Window& window, std::function<void(WindowEvent const&)> const& loop) {
+    cur_loop = &loop;
 
-void ionengine::platform::poll_events(Window& window, std::function<void()> const& loop) {
+    while (!glfwWindowShouldClose(static_cast<Window_GLFW&>(window)._window)) {
+        glfwSetWindowCloseCallback(
+            static_cast<Window_GLFW&>(window)._window, [](GLFWwindow* window) {
+                WindowEvent event = {.event_type = WindowEventType::Closed};
+                (*cur_loop)(event);
+            });
 
-    while(!glfwWindowShouldClose(static_cast<Window_GLFW&>(window)._window)) {
+        glfwSetWindowSizeCallback(
+            static_cast<Window_GLFW&>(window)._window,
+            [](GLFWwindow* window, int32_t width, int32_t height) {
+                WindowEvent event = {.event_type = WindowEventType::Sized};
+                event.data.window = {static_cast<uint32_t>(width),
+                                     static_cast<uint32_t>(height)};
+                (*cur_loop)(event);
+            });
+
+        glfwSetKeyCallback(
+            static_cast<Window_GLFW&>(window)._window,
+            [](GLFWwindow* window, int32_t key, int32_t scancode,
+               int32_t action, int32_t mods) {
+                WindowEvent event = {.event_type =
+                                         WindowEventType::KeyboardButton};
+                event.data.input = {
+                    .key = key,
+                    .state = (action == GLFW_PRESS ? InputKeyState::Pressed
+                                                   : InputKeyState::Released),
+                    .modifier_flags =
+                        ([](int32_t const mods) -> InputModiferFlags {
+                            InputModiferFlags flags = InputModiferFlags::None;
+
+                            if (mods & GLFW_MOD_CONTROL) {
+                                flags = flags | InputModiferFlags::Control;
+                            }
+                            if (mods & GLFW_MOD_SHIFT) {
+                                flags = flags | InputModiferFlags::Shift;
+                            }
+                            if (mods & GLFW_MOD_ALT) {
+                                flags = flags | InputModiferFlags::Alt;
+                            }
+                            if (mods & GLFW_MOD_CAPS_LOCK) {
+                                flags = flags | InputModiferFlags::CapsLock;
+                            }
+                            return flags;
+                        })(mods)};
+
+                (*cur_loop)(event);
+            });
+
+        glfwSetCursorPosCallback(
+            static_cast<Window_GLFW&>(window)._window,
+            [](GLFWwindow* window, double_t xpos, double_t ypos) {
+                WindowEvent event = {.event_type = WindowEventType::MouseMoved};
+                event.data.cursor = {.x = static_cast<int32_t>(xpos),
+                                     .y = static_cast<int32_t>(ypos)};
+
+                (*cur_loop)(event);
+
+                event = {.event_type = WindowEventType::MouseAxis};
+                event.data.input = {
+                    .key = -1,
+                    .state = InputKeyState::Unknown,
+                    .modifier_flags = InputModiferFlags::None,
+                    .x = std::clamp<float_t>(
+                        static_cast<float_t>(static_cast<int32_t>(xpos) -
+                                             last_cursor_x),
+                        -1.0f, 1.0f),
+                    .y = -std::clamp<float_t>(
+                        static_cast<float_t>(static_cast<int32_t>(ypos) -
+                                             last_cursor_y),
+                        -1.0f, 1.0f)};
+
+                (*cur_loop)(event);
+
+                last_cursor_x = static_cast<int32_t>(xpos);
+                last_cursor_y = static_cast<int32_t>(ypos);
+            });
+
+        glfwSetJoystickCallback([](int32_t jid, int32_t event) {
+            if (event == GLFW_CONNECTED) {
+            } else if (event == GLFW_DISCONNECTED) {
+            }
+        });
 
         glfwPollEvents();
     }
