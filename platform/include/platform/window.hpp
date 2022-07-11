@@ -28,11 +28,7 @@ enum class WindowEventType {
 ///
 /// Input key states
 ///
-enum class InputKeyState {
-    Unknown,
-    Pressed,
-    Released
-};
+enum class InputKeyState { Unknown, Pressed, Released };
 
 ///
 /// Input key modifier flags
@@ -53,14 +49,19 @@ DECLARE_ENUM_CLASS_BIT_FLAG(InputModiferFlags)
 struct WindowEvent {
     WindowEventType event_type;
     union {
+        // Window substruct (Sized events)
         struct {
             uint32_t width;
             uint32_t height;
         } window;
+        // Cursor substruct (MouseMoved events)
         struct {
             int32_t x;
             int32_t y;
         } cursor;
+        // Input substruct (KeyboardButton, GamepadButton, GamepadLeftAxis,
+        // GamepadRightAxis, GamepadLeftTrigger, GamepadRightTrigger,
+        // MouseButton, MouseAxis, MouseScroll events)
         struct {
             int32_t key;
             InputKeyState state;
@@ -122,6 +123,7 @@ class Window {
 /// Poll events from window
 /// @param loop Loop function
 ///
-void poll_events(Window& window, std::function<void(WindowEvent const&)> const& loop);
+void poll_events(Window& window,
+                 std::function<void(WindowEvent const&)> const& loop);
 
 }  // namespace ionengine::platform

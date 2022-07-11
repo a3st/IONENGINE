@@ -1,11 +1,11 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <glfw/glfw3.h>
-#include <glfw/glfw3native.h>
 #include <precompiled.h>
+#include <platform/window.hpp>
 
-#include <platform/include/platform/window.hpp>
+#include <glfw/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <glfw/glfw3native.h>
 
 using namespace ionengine;
 using namespace ionengine::platform;
@@ -85,13 +85,20 @@ core::Expected<std::unique_ptr<Window>, std::string> Window::create(
 
     if (result != GLFW_TRUE) {
         return core::make_expected<std::unique_ptr<Window>, std::string>(
-            "Error during initialize GLFW");
+            "Error during initializing GLFW");
     }
 
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 
     window->_window =
         glfwCreateWindow(width, height, label.data(), nullptr, nullptr);
+
+    if (!window->_window) {
+        return core::make_expected<std::unique_ptr<Window>, std::string>(
+            "Error during initializing window");
+    }
+
+    // Initialize class members
     window->_width = width;
     window->_height = height;
     window->_cursor = true;
@@ -103,6 +110,7 @@ core::Expected<std::unique_ptr<Window>, std::string> Window::create(
     gamepad_connected = false;
     gamepad_id = -1;
 
+    // Iterates to all joystick slots and try to find XInput-like gamepad
     for (int32_t jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; ++jid) {
         if (glfwJoystickPresent(jid)) {
             if (glfwJoystickIsGamepad(jid)) {
@@ -117,6 +125,7 @@ core::Expected<std::unique_ptr<Window>, std::string> Window::create(
         }
     }
 
+    // Joystick callback that de/marks active gamepad
     glfwSetJoystickCallback([](int32_t jid, int32_t event) {
         if (event == GLFW_CONNECTED) {
             if (glfwJoystickIsGamepad(jid)) {
@@ -143,15 +152,19 @@ std::function<void(WindowEvent const&)> const* cur_loop;
 
 void ionengine::platform::poll_events(
     Window& window, std::function<void(WindowEvent const&)> const& loop) {
+    // Pointer to current loop function. Unvailable make it through another way.
+    // F*** C callbacks
     cur_loop = &loop;
 
     while (!glfwWindowShouldClose(static_cast<Window_GLFW&>(window)._window)) {
+        // Close window callback that translates into loop function
         glfwSetWindowCloseCallback(
             static_cast<Window_GLFW&>(window)._window, [](GLFWwindow* window) {
                 WindowEvent event = {.event_type = WindowEventType::Closed};
                 (*cur_loop)(event);
             });
 
+        // Size window callback that translates into loop function
         glfwSetWindowSizeCallback(
             static_cast<Window_GLFW&>(window)._window,
             [](GLFWwindow* window, int32_t width, int32_t height) {
@@ -161,6 +174,7 @@ void ionengine::platform::poll_events(
                 (*cur_loop)(event);
             });
 
+        // Key window callback that translates into loop function
         glfwSetKeyCallback(
             static_cast<Window_GLFW&>(window)._window,
             [](GLFWwindow* window, int32_t key, int32_t scancode,
@@ -193,6 +207,7 @@ void ionengine::platform::poll_events(
                 (*cur_loop)(event);
             });
 
+        // Cursor position callback that translates into loop function
         glfwSetCursorPosCallback(
             static_cast<Window_GLFW&>(window)._window,
             [](GLFWwindow* window, double_t xpos, double_t ypos) {
@@ -222,6 +237,7 @@ void ionengine::platform::poll_events(
                 last_cursor_y = static_cast<int32_t>(ypos);
             });
 
+        // Cursor scroll callback that translates into loop function
         glfwSetScrollCallback(
             static_cast<Window_GLFW&>(window)._window,
             [](GLFWwindow* window, double_t xoffset, double_t yoffset) {
@@ -236,6 +252,7 @@ void ionengine::platform::poll_events(
                 (*cur_loop)(event);
             });
 
+        // Gamepad functionals that translates into loop functions
         if (gamepad_connected) {
             GLFWgamepadstate state;
 

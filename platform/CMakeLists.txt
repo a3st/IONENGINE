@@ -6,7 +6,8 @@ add_library(Platform
 
 target_precompile_headers(Platform PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
-target_include_directories(Platform PRIVATE
+target_include_directories(Platform PUBLIC
+    ${PROJECT_SOURCE_DIR}/platform/include
     ${PROJECT_SOURCE_DIR}/thirdparty/glfw/include
 )
 
