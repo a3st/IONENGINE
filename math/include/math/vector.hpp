@@ -1,11 +1,11 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
-namespace ionengine::lib::math {
+namespace ionengine::math {
 
 ///
-/// Vector2
+/// Vector2 class
 ///
 template <typename Type>
 struct Vector2 {
@@ -32,9 +32,9 @@ struct Vector2 {
         return *this;
     }
 
-    Type const* data() const { return &x; }
+    inline Type const* data() const { return &x; }
 
-    size_t size() const { return 2; }
+    inline size_t size() const { return 2; }
 
     Vector2& normalize() {
         Type inverse = static_cast<Type>(1) / length();
@@ -43,39 +43,41 @@ struct Vector2 {
         return *this;
     }
 
-    Type length() const { return static_cast<Type>(std::sqrt(x * x + y * y)); }
+    inline Type length() const {
+        return static_cast<Type>(std::sqrt(x * x + y * y));
+    }
 
-    Vector2 operator*(Type const other) const {
+    inline Vector2 operator*(Type const other) const {
         return Vector2{x * other, y * other};
     }
 
-    Vector2 operator-(Vector2 const& other) const {
+    inline Vector2 operator-(Vector2 const& other) const {
         return Vector2{x - other.x, y - other.y};
     }
 
-    Vector2 operator-(Type const other) const {
+    inline Vector2 operator-(Type const other) const {
         return Vector2{x - other, y - other};
     }
 
-    Vector2 operator-() const { return Vector2{-x, -y}; }
+    inline Vector2 operator-() const { return Vector2{-x, -y}; }
 
-    Vector2 operator+(Vector2 const& other) const {
+    inline Vector2 operator+(Vector2 const& other) const {
         return Vector2{x + other.x, y + other.y};
     }
 
-    Vector2 operator+(Type const other) const {
+    inline Vector2 operator+(Type const other) const {
         return Vector2{x + other, y + other};
     }
 
-    Vector2 operator/(Type const other) const {
+    inline Vector2 operator/(Type const other) const {
         return Vector2{x / other, y / other};
     }
 
-    bool operator==(Vector2 const& other) const {
+    inline bool operator==(Vector2 const& other) const {
         return std::tie(x, y) == std::tie(other.x, other.y);
     }
 
-    bool operator!=(Vector2 const& other) const {
+    inline bool operator!=(Vector2 const& other) const {
         return std::tie(x, y) != std::tie(other.x, other.y);
     }
 };
@@ -83,6 +85,9 @@ struct Vector2 {
 using Vector2f = Vector2<float>;
 using Vector2d = Vector2<double>;
 
+///
+/// Vector3 class
+///
 template <typename Type>
 struct Vector3 {
     Type x;
@@ -112,9 +117,9 @@ struct Vector3 {
         return *this;
     }
 
-    Type const* data() const { return &x; }
+    inline Type const* data() const { return &x; }
 
-    size_t size() const { return 3; }
+    inline size_t size() const { return 3; }
 
     Vector3& normalize() {
         Type inverse = static_cast<Type>(1) / length();
@@ -124,45 +129,45 @@ struct Vector3 {
         return *this;
     }
 
-    Type length() const {
+    inline Type length() const {
         return static_cast<Type>(std::sqrt(x * x + y * y + z * z));
     }
 
-    Vector3 operator*(Type const other) const {
+    inline Vector3 operator*(Type const other) const {
         return Vector3{x * other, y * other, z * other};
     }
 
-    Vector3 operator-(Vector3 const& other) const {
+    inline Vector3 operator-(Vector3 const& other) const {
         return Vector3{x - other.x, y - other.y, z - other.z};
     }
 
-    Vector3 operator-(Type const other) const {
+    inline Vector3 operator-(Type const other) const {
         return Vector3{x - other, y - other, z - other};
     }
 
-    Vector3 operator-() const { return Vector3{-x, -y, -z}; }
+    inline Vector3 operator-() const { return Vector3{-x, -y, -z}; }
 
-    Vector3 operator+(Vector3 const& other) const {
+    inline Vector3 operator+(Vector3 const& other) const {
         return Vector3{x + other.x, y + other.y, z + other.z};
     }
 
-    Vector3 operator+(Type const other) const {
+    inline Vector3 operator+(Type const other) const {
         return Vector3{x + other, y + other, z + other};
     }
 
-    Vector3 operator/(Type const other) const {
+    inline Vector3 operator/(Type const other) const {
         return Vector3{x / other, y / other, z / other};
     }
 
-    bool operator==(Vector3 const& other) const {
+    inline bool operator==(Vector3 const& other) const {
         return std::tie(x, y, z) == std::tie(other.x, other.y, other.z);
     }
 
-    bool operator!=(Vector3 const& other) const {
+    inline bool operator!=(Vector3 const& other) const {
         return std::tie(x, y, z) != std::tie(other.x, other.y, other.z);
     }
 
-    Type dot(Vector3 const& other) const {
+    inline Type dot(Vector3 const& other) const {
         return x * other.x + y * other.y + z * other.z;
     }
 
@@ -178,6 +183,9 @@ struct Vector3 {
 using Vector3f = Vector3<float>;
 using Vector3d = Vector3<double>;
 
+///
+/// Vector4 class
+///
 template <typename Type>
 struct Vector4 {
     Type x;
@@ -212,9 +220,9 @@ struct Vector4 {
         return *this;
     }
 
-    Type const* data() const { return &x; }
+    inline Type const* data() const { return &x; }
 
-    size_t size() const { return 4; }
+    inline size_t size() const { return 4; }
 
     Vector4& normalize() {
         Type inverse = static_cast<Type>(1) / length();
@@ -225,42 +233,42 @@ struct Vector4 {
         return *this;
     }
 
-    Type length() const {
+    inline Type length() const {
         return static_cast<Type>(std::sqrt(x * x + y * y + z * z + w * w));
     }
 
-    Vector4 operator*(Type const other) const {
+    inline Vector4 operator*(Type const other) const {
         return Vector4{x * other, y * other, z * other, w * other};
     }
 
-    Vector4 operator-(Vector4 const& other) const {
+    inline Vector4 operator-(Vector4 const& other) const {
         return Vector4{x - other.x, y - other.y, z - other.z, w - other.w};
     }
 
-    Vector4 operator-(Type const other) const {
+    inline Vector4 operator-(Type const other) const {
         return Vector4{x - other, y - other, z - other, w - other};
     }
 
-    Vector4 operator-() const { return Vector4{-x, -y, -z, -w}; }
+    inline Vector4 operator-() const { return Vector4{-x, -y, -z, -w}; }
 
-    Vector4 operator+(Vector4 const& other) const {
+    inline Vector4 operator+(Vector4 const& other) const {
         return Vector4{x + other.x, y + other.y, z + other.z, w + other.w};
     }
 
-    Vector4 operator+(Type const other) const {
+    inline Vector4 operator+(Type const other) const {
         return Vector4{x + other, y + other, z + other, w + other};
     }
 
-    Vector4 operator/(Type const other) const {
+    inline Vector4 operator/(Type const other) const {
         return Vector4{x / other, y / other, z / other, w / other};
     }
 
-    bool operator==(Vector4 const& other) const {
+    inline bool operator==(Vector4 const& other) const {
         return std::tie(x, y, z) ==
                std::tie(other.x, other.y, other.z, other.w);
     }
 
-    bool operator!=(Vector4 const& other) const {
+    inline bool operator!=(Vector4 const& other) const {
         return std::tie(x, y, z) !=
                std::tie(other.x, other.y, other.z, other.w);
     }
@@ -269,7 +277,7 @@ struct Vector4 {
 using Vector4f = Vector4<float>;
 using Vector4d = Vector4<double>;
 
-}  // namespace ionengine::lib::math
+}  // namespace ionengine::math
 
 namespace std {
 
@@ -277,8 +285,8 @@ namespace std {
 /// @private
 ///
 template <typename Type>
-struct hash<ionengine::lib::math::Vector2<Type>> {
-    size_t operator()(ionengine::lib::math::Vector2<Type> const& other) const {
+struct hash<ionengine::math::Vector2<Type>> {
+    size_t operator()(ionengine::math::Vector2<Type> const& other) const {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y);
     }
 };
@@ -287,8 +295,8 @@ struct hash<ionengine::lib::math::Vector2<Type>> {
 /// @private
 ///
 template <typename Type>
-struct hash<ionengine::lib::math::Vector3<Type>> {
-    size_t operator()(ionengine::lib::math::Vector3<Type> const& other) const {
+struct hash<ionengine::math::Vector3<Type>> {
+    size_t operator()(ionengine::math::Vector3<Type> const& other) const {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^
                std::hash<Type>()(other.z);
     }
@@ -298,8 +306,8 @@ struct hash<ionengine::lib::math::Vector3<Type>> {
 /// @private
 ///
 template <typename Type>
-struct hash<ionengine::lib::math::Vector4<Type>> {
-    size_t operator()(ionengine::lib::math::Vector4<Type> const& other) const {
+struct hash<ionengine::math::Vector4<Type>> {
+    size_t operator()(ionengine::math::Vector4<Type> const& other) const {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^
                std::hash<Type>()(other.z) ^ std::hash<Type>()(other.w);
     }

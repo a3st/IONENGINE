@@ -1,11 +1,11 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
-namespace ionengine::lib::math {
+namespace ionengine::math {
 
 ///
-/// Color
+/// Color class
 ///
 struct Color {
     float r;
@@ -40,7 +40,7 @@ struct Color {
         return *this;
     }
 
-    const float* data() const { return &r; }
+    inline float const* data() const { return &r; }
 
     inline size_t size() const { return 4; }
 
@@ -48,15 +48,15 @@ struct Color {
 
     Color& srgb();
 
-    bool operator==(Color const& other) const {
+    inline bool operator==(Color const& other) const {
         return std::tie(r, g, b, a) ==
                std::tie(other.r, other.g, other.b, other.a);
     }
 
-    bool operator!=(Color const& other) const {
+    inline bool operator!=(Color const& other) const {
         return std::tie(r, g, b, a) !=
                std::tie(other.r, other.g, other.b, other.a);
     }
 };
 
-}  // namespace ionengine::lib::math
+}  // namespace ionengine::math

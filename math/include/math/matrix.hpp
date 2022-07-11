@@ -1,13 +1,13 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
-#include <lib/math/vector.h>
+#include <math/vector.hpp>
 
-namespace ionengine::lib::math {
+namespace ionengine::math {
 
 ///
-/// Matrix
+/// Matrix class
 ///
 template <typename Type>
 struct Matrix {
@@ -115,9 +115,9 @@ struct Matrix {
         return *this;
     }
 
-    Type const* data() const { return &m00; }
+    inline Type const* data() const { return &m00; }
 
-    size_t size() const { return 16; }
+    inline size_t size() const { return 16; }
 
     Matrix& transpose() {
         Matrix mat = *this;
@@ -399,7 +399,7 @@ struct Matrix {
         return mat;
     }
 
-    bool operator==(Matrix const& other) const {
+    inline bool operator==(Matrix const& other) const {
         return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22,
                         m23, m30, m31, m32, m33) ==
                std::tie(other.m00, other.m01, other.m02, other.m03, other.m10,
@@ -408,7 +408,7 @@ struct Matrix {
                         other.m33);
     }
 
-    bool operator!=(Matrix const& other) const {
+    inline bool operator!=(Matrix const& other) const {
         return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22,
                         m23, m30, m31, m32, m33) !=
                std::tie(other.m00, other.m01, other.m02, other.m03, other.m10,

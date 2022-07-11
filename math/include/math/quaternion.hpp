@@ -1,13 +1,13 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
-#include <lib/math/matrix.h>
+#include <math/matrix.hpp>
 
-namespace ionengine::lib::math {
+namespace ionengine::math {
 
 ///
-/// Quaternion
+/// Quaternion class
 ///
 template <typename Type>
 struct Quaternion {
@@ -43,9 +43,9 @@ struct Quaternion {
         return *this;
     }
 
-    Type const* data() const { return &x; }
+    inline Type const* data() const { return &x; }
 
-    size_t size() const { return 4; }
+    inline size_t size() const { return 4; }
 
     Quaternion& normalize() {
         Type inverse = 1.0 / length();
@@ -56,7 +56,9 @@ struct Quaternion {
         return *this;
     }
 
-    Type length() const { return std::sqrt(x * x + y * y + z * z + w * w); }
+    inline Type length() const {
+        return static_cast<Type>(std::sqrt(x * x + y * y + z * z + w * w));
+    }
 
     Matrix<Type> to_matrix() const {
         Type xy = x * y;
@@ -138,24 +140,24 @@ struct Quaternion {
         return other + ((uv * w) + uuv) * static_cast<Type>(2);
     }
 
-    Quaternion operator*(Type const other) const {
+    inline Quaternion operator*(Type const other) const {
         return Quaternion{x * other, y * other, z * other, w * other};
     }
 
-    Quaternion operator+(Quaternion const& other) const {
+    inline Quaternion operator+(Quaternion const& other) const {
         return Quaternion{x + other.x, y + other.y, z + other.z, w + other.w};
     }
 
-    Quaternion operator-(Quaternion const& other) const {
+    inline Quaternion operator-(Quaternion const& other) const {
         return Quaternion{x - other.x, y - other.y, z - other.z, w - other.w};
     }
 
-    bool operator==(Quaternion const& other) const {
+    inline bool operator==(Quaternion const& other) const {
         return std::tie(x, y, z, w) ==
                std::tie(other.x, other.y, other.z, other.w);
     }
 
-    bool operator!=(Quaternion const& other) const {
+    inline bool operator!=(Quaternion const& other) const {
         return std::tie(x, y, z, w) !=
                std::tie(other.x, other.y, other.z, other.w);
     }
