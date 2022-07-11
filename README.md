@@ -3,8 +3,7 @@
 **IONENGINE** (Image Open Engine) is an Graphic 3D Engine written in C++. It can be used to learn and exploring renderer techniques or write cross-platform C++ applications like games. A basic version of engine only includes **Renderer** module.
 
 <p align="center">
-  <img style="float: left;" src="data/images/1.png" alt="Screen 1"/>
-  <img style="float: left;" src="data/images/2.png" alt="Screen 2"/>
+  <img style="float: left;" src="data/images/1.png" alt="Screen 1"/><img style="float: left;" src="data/images/2.png" alt="Screen 2"/>
 </p>
 
 <p><h1 align="left">Features</h1></p>
