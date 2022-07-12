@@ -146,15 +146,7 @@ enum class QueueFlags : uint16_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(QueueFlags)
 
-///
-/// Render pass load operations
-///
-enum class RenderPassLoadOp { Load, Clear, DontCare };
 
-///
-/// Render pass store operations
-///
-enum class RenderPassStoreOp { Store, DontCare };
 
 ///
 /// Available memory states
@@ -232,23 +224,7 @@ enum class Filter { Anisotropic, MinMagMipLinear, ComparisonMinMagMipLinear };
 ///
 enum class AddressMode { Wrap, Clamp, Mirror };
 
-///
-/// Render pass color description
-///
-struct RenderPassColorDesc {
-    RenderPassLoadOp load_op;
-    RenderPassStoreOp store_op;
-};
 
-///
-/// Render pass depth stencil description
-///
-struct RenderPassDepthStencilDesc {
-    RenderPassLoadOp depth_load_op;
-    RenderPassStoreOp depth_store_op;
-    RenderPassLoadOp stencil_load_op;
-    RenderPassStoreOp stencil_store_op;
-};
 
 ///
 /// Descriptor layout binding description
@@ -308,14 +284,7 @@ struct BlendDesc {
     BlendOp blend_op_alpha;
 };
 
-///
-/// Texture copy region description
-///
-struct TextureCopyRegionDesc {
-    uint32_t mip_index;
-    uint32_t row_pitch;
-    uint64_t offset;
-};
+
 
 ///
 /// Memory barrier description

@@ -1,7 +1,6 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-
 #include <renderer/impl/device_d3d12.hpp>
 #include <renderer/impl/texture_d3d12.hpp>
 
@@ -93,7 +92,7 @@ core::Expected<std::unique_ptr<Texture>, std::string> Texture_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Texture>, std::string>(
-            "Error during initialize resource");
+            to_string(result));
     }
 
     

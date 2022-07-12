@@ -1,7 +1,6 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
-
 #include <renderer/impl/device_d3d12.hpp>
 
 using namespace ionengine;
@@ -21,7 +20,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize debug layer");
+            to_string(result));
     }
 
     device->_debug->EnableDebugLayer();
@@ -34,7 +33,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize factory");
+            to_string(result));
     }
 
     // Select high performance adapter for device
@@ -44,7 +43,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize adapter");
+            to_string(result));
     }
 
     // Get adapter information
@@ -53,7 +52,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during get adapter information");
+            to_string(result));
     }
 
     // Adapter information TODO
@@ -65,7 +64,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize device");
+            to_string(result));
     }
 
     // Initialize device queues and fences
@@ -82,7 +81,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize device queue");
+            to_string(result));
     }
 
     result = device->_device->CreateFence(
@@ -91,7 +90,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize device fence");
+            to_string(result));
     }
 
     // Initialize copy queue
@@ -104,7 +103,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize device queue");
+            to_string(result));
     }
 
     result = device->_device->CreateFence(
@@ -113,7 +112,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize device fence");
+            to_string(result));
     }
 
     // Initialize compute queue
@@ -126,7 +125,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize device queue");
+            to_string(result));
     }
 
     result = device->_device->CreateFence(
@@ -135,7 +134,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize device fence");
+            to_string(result));
     }
 
     D3D12MA::ALLOCATOR_DESC allocator_desc = {
@@ -146,7 +145,7 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
-            "Error during initialize allocator");
+            to_string(result));
     }
 
     return core::make_expected<std::unique_ptr<Device>, std::string>(

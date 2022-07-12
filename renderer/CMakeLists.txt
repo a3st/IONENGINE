@@ -15,7 +15,7 @@ set(RENDERER_BUILD_API "VK")
 endif()
 
 # Override RENDERER_BUILD_API variable there:
-set(RENDERER_BUILD_API "VK")
+set(RENDERER_BUILD_API "D3D12")
 
 #
 # DONT REWRITE THIS PART IF YOU DONT MODIFY ENGINE
@@ -26,7 +26,7 @@ set(RENDERER_INCLUDE_DIRS
 )
 set(RENDERER_LINK_DIRS "")
 set(RENDERER_LINK_LIBS 
-    Platform
+    Platform Math
 )
 
 if (RENDERER_BUILD_API STREQUAL "D3D12")
@@ -63,11 +63,13 @@ elseif (RENDERER_BUILD_API STREQUAL "VK")
     )
 
     list(APPEND RENDERER_LINK_DIRS
+        ${PROJECT_SOURCE_DIR}/thirdparty/vma/build/${CMAKE_BUILD_TYPE}
         $ENV{VULKAN_SDK}/Lib
     )
 
     list(APPEND RENDERER_LINK_LIBS
         vulkan-1.lib
+        VMA.lib
     )
 
 endif()

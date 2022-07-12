@@ -3,17 +3,13 @@
 #pragma once
 
 #include <renderer/device.hpp>
-
-#define NOMINMAX
-#include <d3d12.h>
-#include <d3d12ma/D3D12MemAlloc.h>
-#include <dxgi1_6.h>
-#include <wrl/client.h>
-
-using namespace Microsoft;
+#include <renderer/impl/d3d12.hpp>
 
 namespace ionengine::renderer {
 
+///
+/// @private
+///
 class Device_D3D12 final : public Device {
  public:
     static core::Expected<std::unique_ptr<Device>, std::string> create(

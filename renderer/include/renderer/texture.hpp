@@ -32,11 +32,6 @@ enum class TextureUsageFlags : uint32_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(TextureUsageFlags)
 
-enum class MemoryUsage {
-    Static,
-    Dynamic
-};
-
 class Texture {
  public:
     ///

@@ -3,17 +3,13 @@
 #pragma once
 
 #include <renderer/texture.hpp>
-
-#define NOMINMAX
-#include <d3d12.h>
-#include <d3d12ma/D3D12MemAlloc.h>
-#include <dxgi1_6.h>
-#include <wrl/client.h>
-
-using namespace Microsoft;
+#include <renderer/impl/d3d12.hpp>
 
 namespace ionengine::renderer {
 
+///
+/// @private
+///
 class Texture_D3D12 final : public Texture {
  public:
     static core::Expected<std::unique_ptr<Texture>, std::string> create(
@@ -27,7 +23,14 @@ class Texture_D3D12 final : public Texture {
     WRL::ComPtr<D3D12MA::Allocation> _memory_alloc;
 };
 
+///
+/// @private
+///
 D3D12_RESOURCE_DIMENSION constexpr to_texture_dimension(TextureDimension const dimension);
+
+///
+/// @private
+///
 DXGI_FORMAT constexpr to_texture_format(TextureFormat const format);
 
 }  // namespace ionengine::renderer

@@ -3,19 +3,13 @@
 #pragma once
 
 #include <renderer/texture.hpp>
-
-#if defined(_WIN64)
-    #define VK_USE_PLATFORM_WIN32_KHR
-#elif defined(__linux__)
-    #define VK_USE_PLATFORM_XLIB_KHR
-#endif
-#include <vulkan/vulkan.hpp>
-
-#define VMA_IMPLEMENTATION
-#include <vma/vk_mem_alloc.hpp>
+#include <renderer/impl/vk.hpp>
 
 namespace ionengine::renderer {
 
+///
+/// @private
+///
 class Texture_VK final : public Texture {
  public:
     static core::Expected<std::unique_ptr<Texture>, std::string> create(

@@ -3,19 +3,13 @@
 #pragma once
 
 #include <renderer/device.hpp>
-
-#if defined(_WIN64)
-    #define VK_USE_PLATFORM_WIN32_KHR
-#elif defined(__linux__)
-    #define VK_USE_PLATFORM_XLIB_KHR
-#endif
-#include <vulkan/vulkan.hpp>
-
-#define VMA_IMPLEMENTATION
-#include <vma/vk_mem_alloc.hpp>
+#include <renderer/impl/vk.hpp>
 
 namespace ionengine::renderer {
 
+///
+/// @private
+///
 class Device_VK final : public Device {
  public:
     static core::Expected<std::unique_ptr<Device>, std::string> create(
@@ -33,7 +27,7 @@ class Device_VK final : public Device {
     std::array<vk::UniqueSemaphore, 3> semaphores;
     std::array<uint64_t, 3> fence_values;
 
-    friend class Texture_D3D12;
+    friend class Texture_VK;
 };
 
 }  // namespace ionengine::renderer

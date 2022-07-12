@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\GitHub\IONENGINE\thirdparty\vma\build\CMakeFiles\2cc7006d136d5a18a8589de66fccf0d8\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{98B8E4DB-97CD-39F2-9E91-723A32237D5D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
