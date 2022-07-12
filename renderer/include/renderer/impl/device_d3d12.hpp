@@ -1,0 +1,40 @@
+// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
+
+#pragma once
+
+#include <renderer/device.hpp>
+
+#define NOMINMAX
+#include <d3d12.h>
+#include <d3d12ma/D3D12MemAlloc.h>
+#include <dxgi1_6.h>
+#include <wrl/client.h>
+
+using namespace Microsoft;
+
+namespace ionengine::renderer {
+
+class Device_D3D12 final : public Device {
+ public:
+    static core::Expected<std::unique_ptr<Device>, std::string> create(
+        platform::Window& window, uint16_t const sample_count) noexcept;
+
+ private:
+#ifdef _DEBUG
+    WRL::ComPtr<ID3D12Debug> _debug;
+#endif
+    WRL::ComPtr<IDXGIFactory6> _factory;
+    WRL::ComPtr<IDXGIAdapter1> _adapter;
+    WRL::ComPtr<ID3D12Device4> _device;
+    WRL::ComPtr<IDXGISwapChain3> _swapchain;
+
+    WRL::ComPtr<D3D12MA::Allocator> _memory_allocator;
+
+    std::array<WRL::ComPtr<ID3D12CommandQueue>, 3> _queues;
+    std::array<WRL::ComPtr<ID3D12Fence>, 3> _fences;
+    std::array<uint64_t, 3> _fence_values;
+
+    friend class Texture_D3D12;
+};
+
+}  // namespace ionengine::renderer

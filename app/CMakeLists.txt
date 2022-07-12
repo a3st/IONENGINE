@@ -4,12 +4,12 @@ add_executable(App
     app.cpp
 )
 
-target_include_directories(App PRIVATE
-    ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/modules
-    ${PROJECT_SOURCE_DIR}/thirdparty/range-v3/include
-)
-
-target_link_libraries(App Platform)
-
 target_precompile_headers(App PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
+
+#target_include_directories(App PRIVATE)
+
+target_link_libraries(App PRIVATE 
+    Platform 
+    Renderer 
+    Math
+)

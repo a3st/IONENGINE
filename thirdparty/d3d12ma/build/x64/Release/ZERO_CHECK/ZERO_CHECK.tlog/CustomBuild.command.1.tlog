@@ -1,0 +1,10 @@
+^E:\GITHUB\IONENGINE\THIRDPARTY\D3D12_MA\BUILD\CMAKEFILES\9C79931049FBA700D55F1A8E4E5403D9\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SE:/GitHub/IONENGINE/thirdparty/d3d12_ma -BE:/GitHub/IONENGINE/thirdparty/d3d12_ma/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file E:/GitHub/IONENGINE/thirdparty/d3d12_ma/build/D3D12MemAlloc.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

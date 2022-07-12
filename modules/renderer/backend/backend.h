@@ -416,14 +416,14 @@ class Device {
     ///
     void delete_render_pass(Handle<RenderPass> const& render_pass);
 
-    ///
+    /// 
     /// Create sampler on graphics device
     /// @param filter Sampler filter
     /// @param addresses Array of addresses [u, v, w]
     /// @param anisotropic Anisotropic count
     /// @param compare_op Compare operation
     /// @return Sampler handle
-    ///
+    /// 
     Handle<Sampler> create_sampler(Filter const filter,
                                    std::array<AddressMode, 3> const& addresses,
                                    uint16_t const anisotropic,

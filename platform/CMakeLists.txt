@@ -15,6 +15,6 @@ target_link_directories(Platform PUBLIC
     ${PROJECT_SOURCE_DIR}/thirdparty/glfw/build/${CMAKE_BUILD_TYPE}
 )
 
-target_link_libraries(Platform
+target_link_libraries(Platform PUBLIC
     glfw3.lib
 )

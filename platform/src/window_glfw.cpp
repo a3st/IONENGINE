@@ -1,9 +1,9 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
-#include <glfw/glfw3.h>
 #include <precompiled.h>
-
 #include <platform/window.hpp>
+
+#include <glfw/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <glfw/glfw3native.h>
 
