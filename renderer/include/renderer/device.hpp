@@ -7,7 +7,7 @@
 
 namespace ionengine::renderer {
 
-
+uint32_t constexpr BACK_BUFFER_COUNT = 2;
 
 class Device {
  public:

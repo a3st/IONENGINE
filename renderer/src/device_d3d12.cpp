@@ -1,6 +1,7 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
+
 #include <renderer/impl/device_d3d12.hpp>
 
 using namespace ionengine;
@@ -142,6 +143,63 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
 
     result = D3D12MA::CreateAllocator(&allocator_desc,
                                       device->_memory_allocator.GetAddressOf());
+
+    if (result != S_OK) {
+        return core::make_expected<std::unique_ptr<Device>, std::string>(
+            to_string(result));
+    }
+
+    // Create swap chain
+    DXGI_SWAP_CHAIN_DESC1 swapchain_desc = {
+        .Width = window.width(),
+        .Height = window.height(),
+        .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+        .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
+        .BufferCount = BACK_BUFFER_COUNT,
+        .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+        .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED};
+    swapchain_desc.SampleDesc.Count = sample_count;
+
+    device->_factory->CreateSwapChainForHwnd(
+        device->_queues[0].Get(),
+        reinterpret_cast<HWND>(window.native_handle()), &swapchain_desc,
+        nullptr, nullptr,
+        reinterpret_cast<IDXGISwapChain1**>(device->_swapchain.GetAddressOf()));
+
+    // Create pool for SRV_CBV_UAV descriptors
+    result = create_descriptor_pool(
+        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 32768,
+        false, device->_srv_cbv_uav_pool.GetAddressOf());
+
+    if (result != S_OK) {
+        return core::make_expected<std::unique_ptr<Device>, std::string>(
+            to_string(result));
+    }
+
+    // Create pool for SAMPLER descriptors
+    result = create_descriptor_pool(
+        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 512, false,
+        device->_sampler_pool.GetAddressOf());
+
+    if (result != S_OK) {
+        return core::make_expected<std::unique_ptr<Device>, std::string>(
+            to_string(result));
+    }
+
+    // Create shader visible pool for SRV_CBV_UAV descriptors
+    result = create_descriptor_pool(
+        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 16384, true,
+        device->_sampler_pool.GetAddressOf());
+
+    if (result != S_OK) {
+        return core::make_expected<std::unique_ptr<Device>, std::string>(
+            to_string(result));
+    }
+
+    // Create shader visible pool for SAMPLER descriptors
+    result = create_descriptor_pool(
+        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, true,
+        device->_sampler_pool.GetAddressOf());
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(

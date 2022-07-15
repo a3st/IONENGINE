@@ -25,12 +25,19 @@ class Device_D3D12 final : public Device {
     WRL::ComPtr<IDXGISwapChain3> _swapchain;
 
     WRL::ComPtr<D3D12MA::Allocator> _memory_allocator;
+    WRL::ComPtr<DescriptorPool> _srv_cbv_uav_pool;
+    WRL::ComPtr<DescriptorPool> _sampler_pool;
+
+    WRL::ComPtr<DescriptorPool> _shader_srv_cbv_uav_pool;
+    WRL::ComPtr<DescriptorPool> _shader_sampler_pool;
 
     std::array<WRL::ComPtr<ID3D12CommandQueue>, 3> _queues;
     std::array<WRL::ComPtr<ID3D12Fence>, 3> _fences;
     std::array<uint64_t, 3> _fence_values;
 
     friend class Texture_D3D12;
+
+    void create_back_buffers();
 };
 
 }  // namespace ionengine::renderer

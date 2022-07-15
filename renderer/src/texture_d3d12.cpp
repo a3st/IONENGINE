@@ -1,6 +1,7 @@
 // Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
 
 #include <precompiled.h>
+
 #include <renderer/impl/device_d3d12.hpp>
 #include <renderer/impl/texture_d3d12.hpp>
 
@@ -95,10 +96,24 @@ core::Expected<std::unique_ptr<Texture>, std::string> Texture_D3D12::create(
             to_string(result));
     }
 
-    
-
     return core::make_expected<std::unique_ptr<Texture>, std::string>(
         std::move(texture));
+}
+
+std::unique_ptr<Texture> Texture_D3D12::from_swapchain(
+    Device_D3D12& device, uint32_t const buffer_index) noexcept {
+    auto texture = std::make_unique<Texture_D3D12>();
+
+    // Initialize class
+    texture->swapchain_used = true;
+
+    device._swapchain->GetBuffer(
+        buffer_index, __uuidof(ID3D12Resource),
+        reinterpret_cast<void**>(texture->_resource.GetAddressOf()));
+
+    
+
+    return texture;
 }
 
 core::Expected<std::unique_ptr<Texture>, std::string> Texture::create(

@@ -5,6 +5,7 @@
 #define NOMINMAX
 #include <d3d12.h>
 #include <d3d12ma/D3D12MemAlloc.h>
+#include <renderer/impl/pool_d3d12.hpp>
 #include <dxgi1_6.h>
 #include <wrl/client.h>
 
