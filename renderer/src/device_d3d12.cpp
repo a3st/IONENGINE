@@ -167,9 +167,10 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
         reinterpret_cast<IDXGISwapChain1**>(device->_swapchain.GetAddressOf()));
 
     // Create pool for SRV_CBV_UAV descriptors
-    result = create_descriptor_pool(
-        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 32768,
-        false, device->_srv_cbv_uav_pool.GetAddressOf());
+    result = CreateDescriptorPool(device->_device.Get(),
+                                  D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 32768,
+                                  false, DescriptorPoolFlags::Free,
+                                  device->_srv_cbv_uav_pool.GetAddressOf());
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
@@ -177,9 +178,9 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
     }
 
     // Create pool for SAMPLER descriptors
-    result = create_descriptor_pool(
-        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 512, false,
-        device->_sampler_pool.GetAddressOf());
+    result = CreateDescriptorPool(
+        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024, false,
+        DescriptorPoolFlags::Free, device->_sampler_pool.GetAddressOf());
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
@@ -187,9 +188,9 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
     }
 
     // Create shader visible pool for SRV_CBV_UAV descriptors
-    result = create_descriptor_pool(
-        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 16384, true,
-        device->_sampler_pool.GetAddressOf());
+    result = CreateDescriptorPool(
+        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 16384,
+        true, DescriptorPoolFlags::None, device->_shader_srv_cbv_uav_pool.GetAddressOf());
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(
@@ -197,9 +198,9 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
     }
 
     // Create shader visible pool for SAMPLER descriptors
-    result = create_descriptor_pool(
+    result = CreateDescriptorPool(
         device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 128, true,
-        device->_sampler_pool.GetAddressOf());
+        DescriptorPoolFlags::None, device->_shader_sampler_pool.GetAddressOf());
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(

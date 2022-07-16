@@ -24,6 +24,7 @@ class Texture_D3D12 final : public Texture {
  private:
     WRL::ComPtr<ID3D12Resource> _resource;
     WRL::ComPtr<D3D12MA::Allocation> _memory_alloc;
+    std::array<WRL::ComPtr<DescriptorAllocation>, 3> _descriptor_allocs;
     bool swapchain_used;
 };
 

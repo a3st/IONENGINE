@@ -34,7 +34,7 @@ if (RENDERER_BUILD_API STREQUAL "D3D12")
     list(APPEND RENDERER_SOURCE_FILES 
         src/device_d3d12.cpp
         src/texture_d3d12.cpp
-        src/pool_d3d12.cpp
+        src/descriptor_d3d12.cpp
     )
 
     list(APPEND RENDERER_INCLUDE_DIRS
