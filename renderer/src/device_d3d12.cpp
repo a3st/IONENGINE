@@ -3,6 +3,7 @@
 #include <precompiled.h>
 
 #include <renderer/impl/device_d3d12.hpp>
+#include <renderer/impl/texture_d3d12.hpp>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -181,6 +182,26 @@ core::Expected<std::unique_ptr<Device>, std::string> Device_D3D12::create(
     result = CreateDescriptorPool(
         device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, 1024, false,
         DescriptorPoolFlags::Free, device->_sampler_pool.GetAddressOf());
+
+    if (result != S_OK) {
+        return core::make_expected<std::unique_ptr<Device>, std::string>(
+            to_string(result));
+    }
+
+    // Create pool for RTV descriptors
+    result = CreateDescriptorPool(
+        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 512, false,
+        DescriptorPoolFlags::Free, device->_rtv_pool.GetAddressOf());
+
+    if (result != S_OK) {
+        return core::make_expected<std::unique_ptr<Device>, std::string>(
+            to_string(result));
+    }
+
+    // Create pool for DSV descriptors
+    result = CreateDescriptorPool(
+        device->_device.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 512, false,
+        DescriptorPoolFlags::Free, device->_dsv_pool.GetAddressOf());
 
     if (result != S_OK) {
         return core::make_expected<std::unique_ptr<Device>, std::string>(

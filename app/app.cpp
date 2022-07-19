@@ -5,6 +5,8 @@
 #include <platform/include/platform/window.hpp>
 #include <renderer/device.hpp>
 #include <renderer/texture.hpp>
+#include <renderer/command_list.hpp>
+#include <renderer/render_pass.hpp>
 
 using namespace ionengine;
 
@@ -46,6 +48,40 @@ int main(int* argc, char** agrv) {
         }
 
         texture = std::move(result.ok());
+    }
+
+    std::array<std::unique_ptr<renderer::Texture>, renderer::BACK_BUFFER_COUNT> back_buffers;
+    {
+        for(size_t i = 0; i < back_buffers.size(); ++i) {
+            auto result = renderer::Texture::from_swapchain(*device, i);
+
+            if(!result.has_value()) {
+                std::cerr << result.error() << std::endl;
+                return 0;
+            }
+
+            back_buffers[i] = std::move(result.ok());
+        }
+    }
+
+    std::unique_ptr<renderer::CommandList> command_list;
+    {
+        auto result = renderer::CommandList::create(*device, renderer::CommandListType::Direct, false);
+
+        if(!result.has_value()) {
+            std::cerr << result.error() << std::endl;
+            return 0;
+        }
+
+        command_list = std::move(result.ok());
+    }
+
+    std::unique_ptr<renderer::RenderPass> render_pass;
+    {
+        std::vector<renderer::RenderPassColorDesc> color_descs(2);
+        std::vector<renderer::Texture*> colors = { back_buffers[0].get(), back_buffers[1].get() };
+
+        auto result = renderer::RenderPass::create(*device, colors, color_descs, nullptr, std::nullopt);
     }
 
     platform::poll_events(*window, [](platform::WindowEvent const& event) {

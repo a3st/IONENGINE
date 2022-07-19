@@ -18,7 +18,7 @@ class Texture_D3D12 final : public Texture {
         uint16_t const array_layers, TextureFormat const format,
         TextureUsageFlags const flags) noexcept;
 
-    static std::unique_ptr<Texture> from_swapchain(
+    static core::Expected<std::unique_ptr<Texture>, std::string> from_swapchain(
         Device_D3D12& device, uint32_t const buffer_index) noexcept;
 
  private:
@@ -26,6 +26,8 @@ class Texture_D3D12 final : public Texture {
     WRL::ComPtr<D3D12MA::Allocation> _memory_alloc;
     std::array<WRL::ComPtr<DescriptorAllocation>, 3> _descriptor_allocs;
     bool swapchain_used;
+
+    friend class RenderPass_D3D12;
 };
 
 ///

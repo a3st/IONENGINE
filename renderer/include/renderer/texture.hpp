@@ -51,6 +51,9 @@ class Texture {
         uint32_t const height, uint16_t const mip_levels,
         uint16_t const array_layers, TextureFormat const format,
         TextureUsageFlags const flags) noexcept;
+
+    static core::Expected<std::unique_ptr<Texture>, std::string> from_swapchain(
+        Device& device, uint32_t const buffer_index) noexcept;
 };
 
 }  // namespace ionengine::renderer

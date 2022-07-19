@@ -126,6 +126,7 @@ class DescriptorBlockPool : public DescriptorPool {
     std::mutex _mutex;
     std::vector<uint32_t> _free;
     std::vector<DescriptorAllocation*> _allocations;
+    uint32_t _descriptorSize;
 
     friend HRESULT CreateDescriptorPool(
         ID3D12Device4* const pDevice, D3D12_DESCRIPTOR_HEAP_TYPE const heapType,

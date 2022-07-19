@@ -27,6 +27,8 @@ class Device_D3D12 final : public Device {
     WRL::ComPtr<D3D12MA::Allocator> _memory_allocator;
     WRL::ComPtr<DescriptorPool> _srv_cbv_uav_pool;
     WRL::ComPtr<DescriptorPool> _sampler_pool;
+    WRL::ComPtr<DescriptorPool> _rtv_pool;
+    WRL::ComPtr<DescriptorPool> _dsv_pool;
 
     WRL::ComPtr<DescriptorPool> _shader_srv_cbv_uav_pool;
     WRL::ComPtr<DescriptorPool> _shader_sampler_pool;
@@ -36,8 +38,7 @@ class Device_D3D12 final : public Device {
     std::array<uint64_t, 3> _fence_values;
 
     friend class Texture_D3D12;
-
-    void create_back_buffers();
+    friend class CommandList_D3D12;
 };
 
 }  // namespace ionengine::renderer

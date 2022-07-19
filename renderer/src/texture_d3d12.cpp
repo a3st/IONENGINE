@@ -100,20 +100,33 @@ core::Expected<std::unique_ptr<Texture>, std::string> Texture_D3D12::create(
         std::move(texture));
 }
 
-std::unique_ptr<Texture> Texture_D3D12::from_swapchain(
+core::Expected<std::unique_ptr<Texture>, std::string> Texture_D3D12::from_swapchain(
     Device_D3D12& device, uint32_t const buffer_index) noexcept {
     auto texture = std::make_unique<Texture_D3D12>();
+
+    HRESULT result;
 
     // Initialize class
     texture->swapchain_used = true;
 
-    device._swapchain->GetBuffer(
+    result = device._swapchain->GetBuffer(
         buffer_index, __uuidof(ID3D12Resource),
         reinterpret_cast<void**>(texture->_resource.GetAddressOf()));
 
-    
+    if (result != S_OK) {
+        return core::make_expected<std::unique_ptr<Texture>, std::string>(
+            to_string(result));
+    }
 
-    return texture;
+    result = device._rtv_pool->Allocate(1, texture->_descriptor_allocs[0].GetAddressOf());
+
+    if (result != S_OK) {
+        return core::make_expected<std::unique_ptr<Texture>, std::string>(
+            to_string(result));
+    }
+
+    return core::make_expected<std::unique_ptr<Texture>, std::string>(
+        std::move(texture));
 }
 
 core::Expected<std::unique_ptr<Texture>, std::string> Texture::create(
@@ -124,4 +137,9 @@ core::Expected<std::unique_ptr<Texture>, std::string> Texture::create(
     return Texture_D3D12::create(static_cast<Device_D3D12&>(device), dimension,
                                  width, height, mip_levels, array_layers,
                                  format, flags);
+}
+
+core::Expected<std::unique_ptr<Texture>, std::string> Texture::from_swapchain(
+    Device& device, uint32_t const buffer_index) noexcept {
+    return Texture_D3D12::from_swapchain(static_cast<Device_D3D12&>(device), buffer_index);
 }

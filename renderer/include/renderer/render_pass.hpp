@@ -7,6 +7,8 @@
 namespace ionengine::renderer {
 
 class CommandList;
+class Buffer;
+class Texture;
 
 ///
 /// Render pass load operations
@@ -53,7 +55,12 @@ class RenderPass {
     virtual void bind_index_buffer(CommandList& command_list,
                                    Buffer& buffer) = 0;
 
-    
+    static core::Expected<std::unique_ptr<RenderPass>, std::string> create(
+        Device& device, std::span<Texture* const> const colors,
+        std::span<RenderPassColorDesc const> const color_descs,
+        Texture* const depth_stencil,
+        std::optional<RenderPassDepthStencilDesc> const
+            depth_stencil_desc) noexcept;
 };
 
 }  // namespace ionengine::renderer

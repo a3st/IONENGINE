@@ -83,9 +83,9 @@ HRESULT DescriptorBlockPool::Allocate(uint32_t const size,
                                       DescriptorAllocation** ppAllocation) {
     assert(size == 1 && "DescriptorBlockPool can allocate only 1 descriptor");
                                     
-    HRESULT result;
-    uint32_t index;
-    DescriptorAllocation* allocation;
+    HRESULT result = E_FAIL;
+    uint32_t index = 0;
+    DescriptorAllocation* allocation = nullptr;
     {
         std::lock_guard lock(_mutex);
 
@@ -99,9 +99,9 @@ HRESULT DescriptorBlockPool::Allocate(uint32_t const size,
             _allocations.pop_back();
         }
     }
-    allocation->Initialize(this, index, 0, size);
+    allocation->Initialize(this, index, _descriptorSize, size);
 
-    (*ppAllocation) = _allocations.back();
+    (*ppAllocation) = allocation;
     result = S_OK;
 
     return result;
@@ -131,10 +131,21 @@ HRESULT ionengine::renderer::CreateDescriptorPool(
         .Flags = (shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
                                 : D3D12_DESCRIPTOR_HEAP_FLAG_NONE)};
 
+    uint32_t const descriptorSize = pDevice->GetDescriptorHandleIncrementSize(heapType); 
+
     if (poolFlags & DescriptorPoolFlags::Free) {
         descriptor_heap_desc.NumDescriptors = heapSize;
 
         auto pool = new DescriptorBlockPool();
+
+        // Initialize class members
+        pool->_free.resize(heapSize);
+        std::iota(pool->_free.begin(), pool->_free.end(), 0);
+        pool->_allocations.resize(heapSize);
+        for(auto& allocation : pool->_allocations) {
+            allocation = new DescriptorAllocation();
+        }
+        pool->_descriptorSize = descriptorSize;
 
         result = pDevice->CreateDescriptorHeap(
             &descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap),

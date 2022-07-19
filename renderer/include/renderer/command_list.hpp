@@ -8,6 +8,7 @@
 
 namespace ionengine::renderer {
 
+class Device;
 class Pipeline;
 class RenderPass;
 class Buffer;
@@ -22,6 +23,13 @@ struct TextureCopyRegionDesc {
     uint64_t offset;
 };
 
+///
+/// Command list types
+///
+enum class CommandListType { Direct, Copy, Compute };
+
+DECLARE_ENUM_CLASS_BIT_FLAG(CommandListType)
+
 class CommandList {
  public:
     virtual void dispatch(uint32_t const thread_group_x,
@@ -34,7 +42,7 @@ class CommandList {
 
     virtual void begin_render_pass(
         RenderPass& render_pass,
-        std::span<lib::math::Color const> const clear_colors,
+        std::span<math::Color const> const clear_colors,
         float const clear_depth, uint8_t const clear_stencil) = 0;
 
     virtual void end_render_pass() = 0;
@@ -55,6 +63,10 @@ class CommandList {
     virtual void copy_texture_region(
         Texture& dest, Buffer& source,
         std::span<TextureCopyRegionDesc const> const regions) = 0;
+
+    static core::Expected<std::unique_ptr<CommandList>, std::string> create(
+        Device& device, CommandListType const list_type,
+        bool const bundled) noexcept;
 };
 
 }  // namespace ionengine::renderer
