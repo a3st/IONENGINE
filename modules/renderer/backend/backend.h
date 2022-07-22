@@ -120,20 +120,9 @@ enum class CommandListFlags : uint16_t {
 
 DECLARE_ENUM_CLASS_BIT_FLAG(CommandListFlags)
 
-///
-/// Available shader flags
-///
-enum class ShaderFlags : uint16_t {
-    Vertex = 1 << 0,
-    Geometry = 1 << 1,
-    Domain = 1 << 2,
-    Hull = 1 << 3,
-    Pixel = 1 << 4,
-    Compute = 1 << 5,
-    All = Vertex | Geometry | Domain | Hull | Pixel | Compute
-};
 
-DECLARE_ENUM_CLASS_BIT_FLAG(ShaderFlags)
+
+
 
 ///
 /// Available queue flags
@@ -180,49 +169,13 @@ enum class DescriptorType {
     Sampler
 };
 
-///
-/// Available rasterizer fill modes
-///
-enum class FillMode { Wireframe, Solid };
 
-///
-/// Available rasterizer cull modes
-///
-enum class CullMode { None, Front, Back };
 
-///
-/// Available compare operations
-///
-enum class CompareOp {
-    Never,
-    Less,
-    Equal,
-    LessEqual,
-    Greater,
-    NotEqual,
-    GreaterEqual,
-    Always
-};
 
-///
-/// Available blends
-///
-enum class Blend { Zero, One, SrcAlpha, InvSrcAlpha, BlendFactor };
 
-///
-/// Available blend operations
-///
-enum class BlendOp { Add, Subtract, RevSubtract, Min, Max };
 
-///
-/// Available filters
-///
-enum class Filter { Anisotropic, MinMagMipLinear, ComparisonMinMagMipLinear };
 
-///
-/// Available address modes
-///
-enum class AddressMode { Wrap, Clamp, Mirror };
+
 
 
 
@@ -254,35 +207,7 @@ struct VertexInputDesc {
     uint32_t stride;
 };
 
-///
-/// Pipeline rasterizer description
-///
-struct RasterizerDesc {
-    FillMode fill_mode;
-    CullMode cull_mode;
-};
 
-///
-/// Pipeline depth stencil description
-///
-struct DepthStencilDesc {
-    CompareOp depth_func;
-    bool depth_write;
-    bool stencil_write;
-};
-
-///
-/// Pipeline blend description
-///
-struct BlendDesc {
-    bool blend_enable;
-    Blend blend_src;
-    Blend blend_dst;
-    BlendOp blend_op;
-    Blend blend_src_alpha;
-    Blend blend_dst_alpha;
-    BlendOp blend_op_alpha;
-};
 
 
 
