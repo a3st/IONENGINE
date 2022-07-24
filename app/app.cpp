@@ -9,6 +9,7 @@
 #include <renderer/render_pass.hpp>
 
 #include <core/include/core/array.hpp>
+#include <core/include/core/vector.hpp>
 
 using namespace ionengine;
 
@@ -19,6 +20,20 @@ int main(int* argc, char** agrv) {
     array[0] = 1.0f;
 
     std::cout << array[0] << std::endl;
+
+    auto vector = core::make_vector<float>();
+
+    vector.push(1.0f);
+    vector.push(2.0f);
+    vector.push(3.0f);
+    vector.push(4.0f);
+
+    
+
+    for(size_t i = 0; i < vector.size(); ++i) {
+        std::cout << vector[i] << std::endl;
+    }
+
 
     std::unique_ptr<platform::Window> window;
     {
