@@ -8,9 +8,18 @@
 #include <renderer/command_list.hpp>
 #include <renderer/render_pass.hpp>
 
+#include <core/include/core/array.hpp>
+
 using namespace ionengine;
 
 int main(int* argc, char** agrv) {
+
+    auto array = core::make_array<float, 4>();
+    
+    array[0] = 1.0f;
+
+    std::cout << array[0] << std::endl;
+
     std::unique_ptr<platform::Window> window;
     {
         auto result = platform::Window::create(800, 600, "Test");
@@ -64,7 +73,7 @@ int main(int* argc, char** agrv) {
         }
     }
 
-    std::unique_ptr<renderer::CommandList> command_list;
+    /*std::unique_ptr<renderer::CommandList> command_list;
     {
         auto result = renderer::CommandList::create(*device, renderer::CommandListType::Direct, false);
 
@@ -82,7 +91,7 @@ int main(int* argc, char** agrv) {
         std::vector<renderer::Texture*> colors = { back_buffers[0].get(), back_buffers[1].get() };
 
         auto result = renderer::RenderPass::create(*device, colors, color_descs, nullptr, std::nullopt);
-    }
+    }*/
 
     platform::poll_events(*window, [](platform::WindowEvent const& event) {
         switch (event.event_type) {

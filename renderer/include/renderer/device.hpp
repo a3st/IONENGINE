@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <core/include/core/expected.h>
+#include <core/include/core/expected.hpp>
 #include <platform/window.hpp>
 
 namespace ionengine::renderer {
