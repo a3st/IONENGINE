@@ -1,6 +1,7 @@
 {
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "files.associations": {
+        "*.js": "javascript",
         ".clang-format": "yaml",
         "*.shader": "json5",
         "*.subscene": "json5",
@@ -106,6 +107,7 @@
         "future": "cpp",
         "cinttypes": "cpp",
         "regex": "cpp",
-        "source_location": "cpp"
+        "source_location": "cpp",
+        "coroutine": "cpp"
     }
 }
