@@ -51,20 +51,22 @@ public:
     ref_ptr(std::nullptr_t) : ptr(nullptr) { }
 
     ~ref_ptr() {
-        uint32_t count = ptr->release();
-        if(count == 0) {
-            delete ptr;
+        if(ptr) {
+            uint32_t const count = ptr->release();
+            if(count == 0) {
+                delete ptr;
+            }
         }
     }
 
     ref_ptr(Type* ptr_) : ptr(ptr_) {
-        if(ptr != nullptr) {
+        if(ptr) {
             ptr->add_ref();
         }
     }
 
     ref_ptr(ref_ptr const& other) : ptr(other.ptr) {
-        if(ptr != nullptr) {
+        if(ptr) {
             ptr->add_ref();
         }
     }
@@ -73,7 +75,7 @@ public:
 
     auto operator=(ref_ptr const& other) -> ref_ptr& {
         ptr = other.ptr;
-        if(ptr != nullptr) {
+        if(ptr) {
             ptr->add_ref();
         }
         return *this;
@@ -102,11 +104,6 @@ private:
 
     Type* ptr;
 };
-
-template <typename Type>
-auto operator!=(std::nullptr_t, ref_ptr<Type> const& rhs) -> bool {
-    return !(nullptr == rhs);
-}
 
 template<typename Type, typename ...Args>
 inline auto make_ref(Args&& ...args) -> ref_ptr<Type> {

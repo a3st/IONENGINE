@@ -19,9 +19,7 @@ auto main(int32_t argc, char** argv) -> int32_t {
             std::cout << std::format("{} {} {} {}", adapter.index, adapter.name, adapter.memory_size, adapter.is_uma) << std::endl;
         }
 
-        auto device = core::make_ref<gapi::Device>(&instance, adapters[0].index);
-
-        auto device_2 = core::make_ref<gapi::Device>(&instance, adapters[1].index, window);
+        auto device = core::make_ref<gapi::Device>(&instance, adapters[0].index, window);
         
 
         window->run();

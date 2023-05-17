@@ -114,12 +114,14 @@ Device::Device(
         );
     }
 
-    if(!window) {
+    if(window) {
         auto dxgi_swap_chain = DXGI_SWAP_CHAIN_DESC {};
         dxgi_swap_chain.BufferCount = 2;
         dxgi_swap_chain.OutputWindow = window->get_handle();
         dxgi_swap_chain.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
         dxgi_swap_chain.SampleDesc.Count = 1;
+        dxgi_swap_chain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        dxgi_swap_chain.Windowed = TRUE;
 
         THROW_HRESULT_IF_FAILED(instance.factory->CreateSwapChain(
             direct_queue.get(), 

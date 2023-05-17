@@ -49,6 +49,16 @@ private:
     winrt::com_ptr<ID3D12CommandQueue> compute_queue;
 };
 
+class Texture : public core::ref_counted_object {
+public:
+
+    Texture();
+
+private:
+
+    
+}
+
 }
 
 }
