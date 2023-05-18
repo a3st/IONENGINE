@@ -20,8 +20,8 @@ Instance::Instance(bool const debug_) : debug(debug_) {
     );
 }
 
-auto Instance::get_adapters() -> std::vector<Adapter> {
-    std::vector<Adapter> out;
+auto Instance::get_adapters() -> std::vector<AdapterDesc> {
+    std::vector<AdapterDesc> out;
 
     winrt::com_ptr<IDXGIAdapter> dxgi_adapter;
     for(uint32_t i = 0; factory->EnumAdapters(i, dxgi_adapter.put()) != DXGI_ERROR_NOT_FOUND; ++i) {
@@ -49,14 +49,14 @@ auto Instance::get_adapters() -> std::vector<Adapter> {
         auto d3d12_feature_data = D3D12_FEATURE_DATA_ARCHITECTURE1 {};
         THROW_HRESULT_IF_FAILED(d3d12_device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &d3d12_feature_data, sizeof(d3d12_feature_data)));
 
-        auto adapter = Adapter {
+        auto adapter_desc = AdapterDesc {
             .index = static_cast<uint16_t>(i),
             .name = core::string_convert(std::wstring_view(dxgi_adapter_desc.Description)),
             .memory_size = dxgi_adapter_desc.DedicatedVideoMemory,
             .is_uma = d3d12_feature_data.UMA == 1 ? true : false
         };
 
-        out.push_back(std::move(adapter));
+        out.push_back(std::move(adapter_desc));
         dxgi_adapter = nullptr;
     }
     return out;

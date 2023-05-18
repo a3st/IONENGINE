@@ -18,7 +18,7 @@ public:
 
     Instance(bool const debug_);
 
-    auto get_adapters() -> std::vector<Adapter>;
+    auto get_adapters() -> std::vector<AdapterDesc>;
 
 private:
     bool debug;
@@ -52,12 +52,29 @@ private:
 class Texture : public core::ref_counted_object {
 public:
 
-    Texture();
+    Texture(
+        Device& device, 
+        TextureDimension const dimension,
+        TextureFormat const format,
+        uint32_t const width,
+        uint32_t const height,
+        uint32_t const depth,
+        uint16_t const mip_levels,
+        std::optional<SamplerDesc> const sampler_desc
+    );
 
+    auto get_width() const -> uint32_t;
+
+    auto get_height() const -> uint32_t;
+
+    auto get_depth() const -> uint32_t;
+
+    auto get_mip_levels() const -> uint16_t;
+    
 private:
 
     
-}
+};
 
 }
 
