@@ -108,6 +108,7 @@
         "cinttypes": "cpp",
         "regex": "cpp",
         "source_location": "cpp",
-        "coroutine": "cpp"
+        "coroutine": "cpp",
+        "spanstream": "cpp"
     }
 }
