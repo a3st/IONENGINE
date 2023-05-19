@@ -8,6 +8,7 @@
 #include <array>
 #include <span>
 #include <format>
+#include <ranges>
 #include <atomic>
 #include <thread>
 #include <cassert>
