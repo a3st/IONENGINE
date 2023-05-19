@@ -36,8 +36,6 @@ auto MicroShader::parse_shader(std::string_view const buffer) -> void {
     auto shader_name_lower = shader_name | 
         std::views::transform([](auto const& ch) { return std::tolower(ch); }) | std::ranges::to<std::string>();
 
-    std::cout << shader_name_lower << std::endl;
-
     offset = buffer.find("struct " + shader_name_lower + "_in_t ");
     if(offset == std::string_view::npos) {
         throw std::runtime_error("MicroShader parse error (Unknown input data)");
@@ -46,12 +44,24 @@ auto MicroShader::parse_shader(std::string_view const buffer) -> void {
     offset = buffer.find_first_of('{', offset) + 1;
     auto struct_data = std::string_view(buffer.begin() + offset, buffer.begin() + buffer.find_first_of('}', offset));
 
-    std::cout << struct_data << std::endl;
-
+    offset = 0;
     while((offset = struct_data.find("// serialize-field", offset)) != std::string_view::npos) {
-        std::cout << offset << std::endl;
-        offset += std::string_view("// serialize-field").size();
+        offset = struct_data.find('\n', offset) + 1;
+        offset = struct_data.find("// name: ", offset);
+        offset = struct_data.find_first_of('"', offset) + 1;
+        std::cout << "Parameter Name: " << std::string_view(struct_data.begin() + offset, struct_data.begin() + struct_data.find_first_of('"', offset)) << std::endl;
+
+        offset = struct_data.find('\n', offset) + 1;
+        offset = struct_data.find("// description: ", offset);
+        offset = struct_data.find_first_of('"', offset) + 1;
+        std::cout << "Parameter Description: " << std::string_view(struct_data.begin() + offset, struct_data.begin() + struct_data.find_first_of('"', offset)) << std::endl;
+
+        offset = struct_data.find('\n', offset) + 1;
+        std::cout << "Parameter Data: " << std::string_view(struct_data.begin() + offset, struct_data.begin() + struct_data.find('\n', offset)) << std::endl;
+
+        std::cout << std::endl;
     }
+
 
     
 }
