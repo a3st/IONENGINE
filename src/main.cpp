@@ -25,6 +25,8 @@ auto main(int32_t argc, char** argv) -> int32_t {
         
         compositor::MicroShader pbr("shaders/pbr.hlsl");
 
+        std::cout << std::format("{} {}", pbr.get_shader_name(), pbr.get_entry_func()) << std::endl;
+
         window->run();
 
     } catch(std::exception e) {

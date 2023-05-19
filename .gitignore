@@ -33,6 +33,7 @@
 
 # Folders
 /build/*
+!/build/shaders/
 !/build/Debug/
 /build/Debug/*
 !/build/Debug/engine
