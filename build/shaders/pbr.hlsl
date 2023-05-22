@@ -1,4 +1,4 @@
-// microshader: PBR
+// shader-function: PBR
 #pragma once
 
 struct pbr_in_t {

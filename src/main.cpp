@@ -4,7 +4,8 @@
 #include "platform/window.hpp"
 #include "gapi/gapi.hpp"
 
-#include "compositor/microshader.hpp"
+#include "compositor/shader_function.hpp"
+#include "compositor/shader_resource.hpp"
 
 using namespace ie;
 
@@ -12,7 +13,7 @@ auto main(int32_t argc, char** argv) -> int32_t {
     ::SetConsoleOutputCP(CP_UTF8);
 
     try {
-        auto window = core::make_ref<platform::Window>("App", 800, 600);
+        auto window = core::make_ref<platform::Window>("Engine Test", 800, 600);
         auto instance = core::make_ref<gapi::Instance>(true);
 
         auto adapters = instance->get_adapters();
@@ -23,9 +24,19 @@ auto main(int32_t argc, char** argv) -> int32_t {
 
         auto device = core::make_ref<gapi::Device>(&instance, adapters[0].index, window);
         
-        compositor::MicroShader pbr("shaders/pbr.hlsl");
+        compositor::ShaderFunction pbr("shaders/pbr.hlsl");
 
-        std::cout << std::format("{} {}", pbr.get_shader_name(), pbr.get_entry_func()) << std::endl;
+        std::cout << std::format("{} {} out {} in {}", pbr.get_shader_name(), pbr.get_entry_func(), pbr.get_out_params().size(), pbr.get_in_params().size()) << std::endl;
+
+        compositor::ShaderFunction split_rgba("shaders/split_rgba.hlsl");
+
+        std::cout << std::format("{} {} out {} in {}", 
+            split_rgba.get_shader_name(), 
+            split_rgba.get_entry_func(), 
+            split_rgba.get_out_params().size(), 
+            split_rgba.get_in_params().size()) << std::endl;
+
+        compositor::ShaderResource sampler2D(compositor::ShaderResourceType::Sampler2D, compositor::ShaderParameterType::Float3);
 
         window->run();
 

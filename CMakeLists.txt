@@ -14,7 +14,8 @@ add_executable(Win32-Runtime
     "src/gapi/d3d12/gapi.cpp"
     "src/gapi/d3d12/allocator.cpp"
 
-    "src/compositor/microshader.cpp"
+    "src/compositor/shader_function.cpp"
+    "src/compositor/shader_resource.cpp"
 
     "include/gapi/gapi.hpp"
     "include/platform/window.hpp"

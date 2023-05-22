@@ -69,7 +69,7 @@ auto Window::window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) -> L
             
         } break;
         default: {
-            return ::DefWindowProcA(hwnd, msg, wparam, lparam);
+            return ::DefWindowProc(hwnd, msg, wparam, lparam);
         } break;
     }
     return 0;

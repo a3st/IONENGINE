@@ -1,14 +1,14 @@
 
 #include "precompiled.h"
-#include "compositor/microshader.hpp"
+#include "compositor/shader_function.hpp"
 
 using namespace ie::compositor;
 
-MicroShader::MicroShader(std::filesystem::path const& file_path) {
+ShaderFunction::ShaderFunction(std::filesystem::path const& file_path) {
     std::fstream shader_stream(file_path, std::ios::in);
 
     if(!shader_stream.is_open()) {
-        throw std::runtime_error(std::format("Can't find a shader file '{}'", file_path.generic_string()));
+        throw std::runtime_error(std::format("Can't find a shader function file '{}'", file_path.generic_string()));
     }
 
     std::stringstream buffer_stream;
@@ -17,18 +17,18 @@ MicroShader::MicroShader(std::filesystem::path const& file_path) {
     parse_shader(buffer_stream.view());
 }
 
-auto MicroShader::parse_shader(std::string_view const buffer) -> void {
-    size_t offset = buffer.find("// microshader: ");
+auto ShaderFunction::parse_shader(std::string_view const buffer) -> void {
+    size_t offset = buffer.find("// shader-function: ");
     if(offset != 0) {
-        throw std::runtime_error("MicroShader parse error (Unknown format)");
+        throw std::runtime_error("Shader function parse error (Unknown format)");
     }
 
-    offset = std::string_view("// microshader: ").size();
+    offset = std::string_view("// shader-function: ").size();
 
     shader_name = std::string_view(buffer.begin() + offset, buffer.begin() + buffer.find_first_of('\n', offset));
 
     if(shader_name.empty()) {
-        throw std::runtime_error("MicroShader parse error (Unknown shader name)");
+        throw std::runtime_error("Shader function parse error (Unknown shader name)");
     }
 
     auto shader_name_lower = shader_name | 
@@ -38,28 +38,42 @@ auto MicroShader::parse_shader(std::string_view const buffer) -> void {
 
     offset = buffer.find("struct " + shader_name_lower + "_in_t ");
     if(offset == std::string_view::npos) {
-        throw std::runtime_error("MicroShader parse error (Unknown input data)");
+        throw std::runtime_error("Shader function parse error (Unknown input data)");
     }
 
     offset = buffer.find_first_of('{', offset) + 1;
     auto struct_data = std::string_view(buffer.begin() + offset, buffer.begin() + buffer.find_first_of('}', offset));
 
-    offset = 0;
-    while((offset = struct_data.find("// serialize-field", offset)) != std::string_view::npos) {
+    parse_parameters(struct_data, in_params);
+
+    offset = buffer.find("struct " + shader_name_lower + "_out_t ");
+    if(offset == std::string_view::npos) {
+        throw std::runtime_error("Shader function parse error (Unknown output data)");
+    }
+
+    offset = buffer.find_first_of('{', offset) + 1;
+    struct_data = std::string_view(buffer.begin() + offset, buffer.begin() + buffer.find_first_of('}', offset));
+
+    parse_parameters(struct_data, out_params);
+}
+
+auto ShaderFunction::parse_parameters(std::string_view const buffer, std::vector<ShaderParameter>& params) -> void {
+    size_t offset = 0;
+    while((offset = buffer.find("// serialize-field", offset)) != std::string_view::npos) {
         auto param = ShaderParameter {};
 
-        offset = struct_data.find('\n', offset) + 1;
-        offset = struct_data.find("// name: ", offset);
-        offset = struct_data.find_first_of('"', offset) + 1;
-        param.name = std::string(struct_data.begin() + offset, struct_data.begin() + struct_data.find_first_of('"', offset));
+        offset = buffer.find('\n', offset) + 1;
+        offset = buffer.find("// name: ", offset);
+        offset = buffer.find_first_of('"', offset) + 1;
+        param.name = std::string(buffer.begin() + offset, buffer.begin() + buffer.find_first_of('"', offset));
 
-        offset = struct_data.find('\n', offset) + 1;
-        offset = struct_data.find("// description: ", offset);
-        offset = struct_data.find_first_of('"', offset) + 1;
-        param.description = std::string(struct_data.begin() + offset, struct_data.begin() + struct_data.find_first_of('"', offset));
+        offset = buffer.find('\n', offset) + 1;
+        offset = buffer.find("// description: ", offset);
+        offset = buffer.find_first_of('"', offset) + 1;
+        param.description = std::string(buffer.begin() + offset, buffer.begin() + buffer.find_first_of('"', offset));
 
-        offset = struct_data.find('\n', offset) + 1;
-        auto parameter_data = std::string_view(struct_data.begin() + offset, struct_data.begin() + struct_data.find('\n', offset));
+        offset = buffer.find('\n', offset) + 1;
+        auto parameter_data = std::string_view(buffer.begin() + offset, buffer.begin() + buffer.find('\n', offset));
 
         size_t parameter_offset = 0;
         if((parameter_offset = parameter_data.find("float")) != std::string_view::npos) {
@@ -85,24 +99,22 @@ auto MicroShader::parse_shader(std::string_view const buffer) -> void {
         parameter_offset = parameter_data.find_first_of(' ', parameter_offset) + 1;
         param.variable = std::string_view(parameter_data.begin() + parameter_offset, parameter_data.begin() + parameter_data.find_first_of(';', parameter_offset));
 
-        in_params.push_back(std::move(param));
+        params.push_back(std::move(param));
     }
-
-    // TO DO
 }
 
-auto MicroShader::get_shader_name() const -> std::string_view {
+auto ShaderFunction::get_shader_name() const -> std::string_view {
     return std::string_view(shader_name.data(), shader_name.size());
 }
 
-auto MicroShader::get_entry_func() const -> std::string_view {
+auto ShaderFunction::get_entry_func() const -> std::string_view {
     return std::string_view(entry_func.data(), entry_func.size());
 }
 
-auto MicroShader::get_in_params() const -> std::span<ShaderParameter const> {
+auto ShaderFunction::get_in_params() const -> std::span<ShaderParameter const> {
     return std::span<ShaderParameter const>(in_params.data(), in_params.size());
 }
 
-auto MicroShader::get_out_params() const -> std::span<ShaderParameter const> {
+auto ShaderFunction::get_out_params() const -> std::span<ShaderParameter const> {
     return std::span<ShaderParameter const>(out_params.data(), out_params.size());
 }
