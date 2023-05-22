@@ -4,10 +4,7 @@
 
 using namespace ie::compositor;
 
-ShaderResource::ShaderResource(
-    ShaderResourceType const resource_type, 
-    ShaderParameterType const param_type
-) {
+ShaderResource::ShaderResource(ShaderResourceType const resource_type, ShaderParameterType const param_type) {
     if(resource_type == ShaderResourceType::Sampler2D) {
         out_param = ShaderParameter {};
         out_param.name = "Color";
