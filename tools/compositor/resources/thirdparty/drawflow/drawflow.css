@@ -39,9 +39,19 @@
     cursor: move;
 }
 
-.drawflow .drawflow-node .inputs,
+.drawflow .drawflow-node .inputs {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-left: 10px;
+}
+
 .drawflow .drawflow-node .outputs {
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    margin-right: 10px;
 }
 
 .drawflow .drawflow-node .drawflow_content_node {
@@ -56,6 +66,8 @@
     flex-direction: row;
     width: 100%;
     height: 50px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .drawflow .drawflow-node .input,

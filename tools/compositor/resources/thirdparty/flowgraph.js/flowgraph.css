@@ -1,0 +1,93 @@
+
+
+.flowgraph-container {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.flowgraph-bg-container {
+    position: absolute;
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    --grid-size: 30px;
+    --grid-strength: 1px;
+    --grid-dash: 10px;
+    --grid-gap: 5px;
+    --grid-color: #8b8b8b;
+    --paper-color: #353535;
+
+    background-color: var(--paper-color);
+    background-size: var(--grid-dash) var(--grid-dash), var(--grid-size) var(--grid-size);
+    background-image:
+        linear-gradient(to bottom, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)), 
+        linear-gradient(to right, var(--grid-color) var(--grid-strength), transparent var(--grid-strength)),
+        linear-gradient(to right, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
+        linear-gradient(to bottom, var(--grid-color) var(--grid-strength), transparent var(--grid-strength));
+}
+
+.flowgraph-node-container {
+    position: absolute;
+    display: block;
+    user-select: none;
+}
+
+.flowgraph-node-root {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(69, 78, 98);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.395);
+    /*box-shadow: 0px 0px 5px black;*/
+}
+
+.flowgraph-node-main {
+    display: flex;
+    height: 100%;
+    flex-direction: row;
+    padding: 15px;
+}
+
+.flowgraph-node-header {
+    background-color: #448fd6;
+    display: flex;
+    height: 40px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    padding: 20px;
+}
+
+.flowgraph-io-list {
+    width: 50%; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px;
+}
+
+.flowgraph-io-row {
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.flowgraph-io-row.left {
+    justify-content: start;
+}
+
+.flowgraph-io-row.right {
+    justify-content: end;
+}
+
+.flowgraph-io.circle {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background-color: #ffffff;
+}

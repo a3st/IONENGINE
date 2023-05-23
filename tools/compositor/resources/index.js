@@ -1,19 +1,16 @@
 import 'https://code.jquery.com/jquery-3.6.0.min.js';
 const $ = window.$;
-import Drawflow from '/thirdparty/drawflow/drawflow.js'
-//const Drawflow = window.Drawflow;
+import FlowGraph from '/thirdparty/flowgraph.js/flowgraph.js'
 
-let editor = new Drawflow($('#drawflow')[0]);
-editor.reroute = true;
-
-editor.start();
+const graph = new FlowGraph($('#root').get(0));
 
 
 $(document).ready(function() {
-    var html = `
-    <div style="width: 100%; height: 100%;">Functions</div>
-    `;
-    var data = { "name": '123' };
+    graph.start();
 
-    editor.addNode('github', 2, 3, 0, 0, 'github', data, html);
+    let html = `<span style="color: white;">PBR Shader</span>`;
+    graph.add_node(10, 10, {}, {}, html)
+
+    html = `<span style="color: white;">Split</span>`;
+    graph.add_node(10, 10, {}, {}, html)
 });
