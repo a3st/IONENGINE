@@ -4,13 +4,19 @@
     display: block;
     width: 100%;
     height: 100%;
+    overflow: hidden;
+}
+
+.flowgraph-canvas {
+    width: 4096px;
+    height: 4096px;
 }
 
 .flowgraph-bg-container {
     position: absolute;
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 800px;
+    height: 800px;
 
     --grid-size: 30px;
     --grid-strength: 1px;
@@ -32,6 +38,7 @@
     position: absolute;
     display: block;
     user-select: none;
+    transform-origin: 0 0;
 }
 
 .flowgraph-node-root {
