@@ -9,7 +9,7 @@ $(document).ready(function() {
     graph.start();
 
     let html = `<span style="color: white;">PBR Shader</span>`;
-    const pbr_node = graph.add_node(10, 10, [
+    const pbr_node = graph.addNode(10, 10, [
         { "name": "Albedo", "type": "float4" },
         { "name": "Normal", "type": "float3" },
         { "name": "Roughness", "type": "float3" },
@@ -19,14 +19,22 @@ $(document).ready(function() {
     ], html)
 
     html = `<span style="color: white;">Split</span>`;
-    const split_node = graph.add_node(500, 10, [
-        { "name": "Source", "type": "float4" },
+    const split_node = graph.addNode(500, 60, [
+        { "name": "Source", "type": "float4" }
     ], [
         { "name": "RGB", "type": "float3" },
-        { "name": "Alpha", "type": "float" },
+        { "name": "Alpha", "type": "float" }
     ], html);
 
-    console.log(pbr_node);
+    graph.addConnection(pbr_node, 0, split_node, 0);
 
-    graph.add_connection(pbr_node, 0, split_node, 0);
+    html = `<span style="color: white;">Multiply</span>`;
+    const mul_node = graph.addNode(1000, 10, [
+        { "name": "A", "type": "float3" },
+        { "name": "B", "type": "float3" }
+    ], [
+        { "name": "Result", "type": "float3" }
+    ], html);
+
+    graph.addConnection(split_node, 0, mul_node, 0);
 });

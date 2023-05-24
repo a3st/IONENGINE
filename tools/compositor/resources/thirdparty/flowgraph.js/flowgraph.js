@@ -27,36 +27,34 @@ export default class FlowGraph {
             <div class="flowgraph-bg-container" 
                 style="width: ${this.rootNode.style.width}; height: ${this.rootNode.style.height};"></div>
             <div class="flowgraph-canvas"
-                style="width: ${this.canvasOptions.width}px; height: ${this.canvasOptions.height}px;"></div>
+                style="width: ${this.canvasOptions.width}px; height: ${this.canvasOptions.height}px;">
+
+                <svg class="flowgraph-vectorlayer" 
+                    style="width: ${this.canvasOptions.width}px; height: ${this.canvasOptions.height}px;" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
         `);
 
-        this.rootNode.addEventListener('mousewheel', this.zoom_event_handler.bind(this));
-        this.rootNode.addEventListener('mousedown', this.drag_node_begin_handler.bind(this));
-        this.rootNode.addEventListener('mouseup', this.drag_node_end_handler.bind(this));
-        this.rootNode.addEventListener('mousemove', this.move_node_handler.bind(this));
+        this.rootNode.addEventListener('mousewheel', this.zoomEventHandler.bind(this));
+        this.rootNode.addEventListener('mousedown', this.dragNodeBeginHandler.bind(this));
+        this.rootNode.addEventListener('mouseup', this.dragNodeEndHandler.bind(this));
+        this.rootNode.addEventListener('mousemove', this.moveNodeHandler.bind(this));
 
         $(this.rootNode).children('.flowgraph-canvas').css('transform', 'translate(0px, 0px)');
     }
 
-    drag_node_begin_handler(e) {
+    dragNodeBeginHandler(e) {
         if($(e.target).closest('.flowgraph-io').length > 0) {
             this.dragMode = "io";
         } else if($(e.target).closest('.flowgraph-node-container').length > 0) {
             this.dragMode = "node";
+        } else if($(e.target).closest('.flowgraph-connection').length > 0) {
+            this.dragMode = "connection";
         } else if($(e.target).closest('.flowgraph-canvas').length > 0) {
             this.dragMode = "canvas";
         }
 
         switch(this.dragMode) {
             case "io": {
-                /*const target = $(e.target).closest('.flowgraph-io').get(0);
-
-                $(this.rootNode).append(`
-                        <svg height="800" width="800">
-                            <path d="M " stroke="black" fill="transparent"/>
-                        </svg>
-                    `);
-                */
                 console.log("Start drag io");
             } break;
 
@@ -75,12 +73,16 @@ export default class FlowGraph {
             case "canvas": {
                 console.log("Start drag canvas");
             } break;
+
+            case "connection": {
+                console.log("Select connection");
+            } break;
         }
 
-        console.log(e.clientX, e.clientY)
+        // console.log(e.clientX, e.clientY)
     }
 
-    drag_node_end_handler(e) {
+    dragNodeEndHandler(e) {
         console.log("Stop drag " + this.dragMode);
         this.dragMode = "none";
         if(this.selectedNode) {
@@ -89,7 +91,7 @@ export default class FlowGraph {
         }
     }
 
-    move_node_handler(e) {
+    moveNodeHandler(e) {
         const relativeClientX = e.clientX - this.lastClientX;
         const relativeClientY = e.clientY - this.lastClientY;
         this.lastClientX = e.clientX;
@@ -119,12 +121,50 @@ export default class FlowGraph {
                     const posY = Number(posMatrix[5]) + relativeClientY;
 
                     $(this.selectedNode).css('transform', `translate(${posX}px, ${posY}px)`);
+
+                    const nodeId = Number(this.selectedNode.id.match(/-?[\d]/g)[0]);
+                    
+                    const connections = Object.fromEntries(
+                        Object.entries(this.connections).filter((key, value) => 
+                            (this.connections[value].source == nodeId || this.connections[value].dest == nodeId))
+                    );
+                    
+                    for(const [_, value] of Object.entries(connections)) {
+                        const id = value.id;
+
+                        const sourceElement = $(`#node_${this.connections[id].source}_out_${this.connections[id].out}`).get(0);
+                        const sourceMatrix = $(`#node_${this.connections[id].source}`)
+                            .css('transform')
+                            .match(/-?[\d\.]+/g);
+
+                        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
+                        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
+
+                        const destElement = $(`#node_${this.connections[id].dest}_in_${this.connections[id].in}`).get(0);
+                        const destMatrix = $(`#node_${this.connections[id].dest}`)
+                            .css('transform')
+                            .match(/-?[\d\.]+/g);
+
+                        const destX = Number(destMatrix[4]) + destElement.offsetLeft + destElement.offsetWidth / 2;
+                        const destY = Number(destMatrix[5]) + destElement.offsetTop + destElement.offsetHeight / 2;
+
+                        const controlX = (sourceX + destX) / 2;
+                        const controlY = (sourceY + destY) / 2 - (sourceY - destY);
+
+                        const vectorLayer = $(this.rootNode)
+                            .children('.flowgraph-canvas')
+                            .children('.flowgraph-vectorlayer')
+                            .get(0);
+
+                        let svgElement = vectorLayer.getElementById(`connection_${id}`);
+                        svgElement.setAttribute('d', `M ${sourceX} ${sourceY} Q ${controlX} ${controlY} ${destX} ${destY}`);
+                    }
                 }
             } break;
         }
     }
 
-    zoom_event_handler(e) {
+    zoomEventHandler(e) {
         e.preventDefault();
 
         if(e.deltaY > 0) {
@@ -152,25 +192,57 @@ export default class FlowGraph {
             .css('transform', `translate(${posX}px, ${posY}px) scale(${this.zoomScale})`);
     }
 
-    add_connection(sourceNode, outIndex, destNode, inIndex) {
+    addConnection(sourceNode, outIndex, destNode, inIndex) {
+        const sourceElement = $(`#node_${sourceNode.id}_out_${outIndex}`)
+            .addClass('connected')
+            .get(0);
+        const sourceMatrix = $(`#node_${sourceNode.id}`)
+            .css('transform')
+            .match(/-?[\d\.]+/g);
 
-        const element = $(`#node_${sourceNode.id}_out_${outIndex}`);
+        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
+        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
 
-        const startX = element.offset().top;
-        const startY = element.offset().left;
+        const destElement = $(`#node_${destNode.id}_in_${inIndex}`)
+            .addClass('connected')
+            .get(0);
+        const destMatrix = $(`#node_${destNode.id}`)
+            .css('transform')
+            .match(/-?[\d\.]+/g);
 
-        console.log(startX, startY)
-        const rect = element.get(0).getBoundingClientRect()
-        console.log(rect)
+        const destX = Number(destMatrix[4]) + destElement.offsetLeft + destElement.offsetWidth / 2;
+        const destY = Number(destMatrix[5]) + destElement.offsetTop + destElement.offsetHeight / 2;
 
-        $(this.rootNode).children('.flowgraph-canvas').append(`
-            <svg width="800" height="800" xmlns="http://www.w3.org/2000/svg">
-                <path style="z-index: -1;" d="M ${rect.right} ${rect.bottom} L 40 40" stroke="green" stroke-width="8" fill="transparent"/>
-            </svg>
-        `);
+        const controlX = (sourceX + destX) / 2;
+        const controlY = (sourceY + destY) / 2 - (sourceY - destY);
+
+        let svgElement = document.createElementNS("http://www.w3.org/2000/svg", 'path');
+        svgElement.classList.add('flowgraph-connection');
+        svgElement.setAttribute('id', `connection_${this.connectionIndex}`);
+        svgElement.setAttribute('d', `M ${sourceX} ${sourceY} Q ${controlX} ${controlY} ${destX} ${destY}`);
+        svgElement.setAttribute('stroke', 'rgb(42, 143, 42)');
+        svgElement.setAttribute('stroke-width', '8');
+        svgElement.setAttribute('fill', 'transparent');
+
+        $(this.rootNode)
+            .children('.flowgraph-canvas')
+            .children('.flowgraph-vectorlayer')
+            .append(svgElement);
+
+        this.connections[this.connectionIndex] = {
+            "id" : this.connectionIndex,
+            "source" : sourceNode.id,
+            "out" : outIndex,
+            "dest" : destNode.id,
+            "in" : inIndex
+        };
+
+        this.connectionIndex += 1;
+
+        return this.connections[this.connectionIndex - 1];
     }
 
-    add_node(x, y, inputs, outputs, headerHTML) {
+    addNode(x, y, inputs, outputs, headerHTML) {
         let inputsHTML = "";
         let inputIndex = 0;
         let inputsData = {};
@@ -196,9 +268,9 @@ export default class FlowGraph {
 
         for(const output of outputs) {
             outputsHTML += `
-                <div id="node_${this.nodeIndex}_out_${outputIndex}" class="flowgraph-io-row right">
+                <div class="flowgraph-io-row right">
                     <span style="color: white;">${output.name} (${output.type})</span>
-                    <div class="flowgraph-io circle"></div>
+                    <div id="node_${this.nodeIndex}_out_${outputIndex}" class="flowgraph-io circle"></div>
                 </div>
             `;
 

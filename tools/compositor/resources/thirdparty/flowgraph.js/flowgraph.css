@@ -7,6 +7,17 @@
     overflow: hidden;
 }
 
+.flowgraph-canvas {
+    position: relative;
+    overflow: hidden;
+}
+
+.flowgraph-vectorlayer {
+    display: block;
+    position: absolute;
+    overflow: hidden;
+}
+
 .flowgraph-bg-container {
     position: absolute;
     display: block;
@@ -92,4 +103,9 @@
     height: 16px;
     border-radius: 8px;
     background-color: #ffffff;
+}
+
+.flowgraph-io.connected {
+    background-color: rgb(42, 143, 42);
+    outline: #ffffff solid 2.5px;
 }
