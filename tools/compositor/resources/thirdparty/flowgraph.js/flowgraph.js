@@ -60,6 +60,20 @@ export default class FlowGraph {
                     .get(0);
 
                 console.log("Start drag io");
+
+                const elementMatrix = $(this.selectedElement)
+                    .closest('.flowgraph-node-container')
+                    .css('transform')
+                    .match(/-?[\d\.]+/g);
+
+                const posX = Number(elementMatrix[4]) + this.selectedElement.offsetLeft;
+                const posY = Number(elementMatrix[5]) + this.selectedElement.offsetTop;
+
+                $(this.rootNode)
+                    .children('.flowgraph-canvas')
+                    .append(`
+                        <div id="drag-io-dummy" class="flowgraph-io circle" style="position: absolute; opacity: 0; transform: translate(${posX}px, ${posY}px)"></div>
+                    `)
             } break;
 
             case "node": {
@@ -87,6 +101,15 @@ export default class FlowGraph {
     }
 
     dragNodeEndHandler(e) {
+        switch(this.dragMode) {
+            case "io": {
+                $(this.rootNode)
+                    .children('.flowgraph-canvas')
+                    .children('#drag-io-dummy')
+                    .remove();
+            } break;
+        }
+
         console.log("Stop drag " + this.dragMode);
         this.dragMode = "none";
         if(this.selectedElement) {
@@ -167,10 +190,60 @@ export default class FlowGraph {
             } break;
             case "io": {
                 if(this.selectedElement) {
+                    const posMatrix = $(this.rootNode)
+                        .children('.flowgraph-canvas')
+                        .children('#drag-io-dummy')
+                        .css('transform')
+                        .match(/-?[\d\.]+/g);
+
+                    const posX = Number(posMatrix[4]) + relativeClientX;
+                    const posY = Number(posMatrix[5]) + relativeClientY;
+
+                    $(this.rootNode)
+                        .children('.flowgraph-canvas')
+                        .children('#drag-io-dummy')
+                        .css('transform', `translate(${posX}px, ${posY}px) scale(${this.zoomScale})`);
+
+                    console.log(posX, posY)
+
+                    console.log(e.offsetX, e.offsetY)
+
                     const [nodeId, ioIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
 
-                    this.connections.find
+                    const [_, value] = Object.entries(this.connections).find((key, value) => 
+                        ( this.connections[value].dest == nodeId && this.connections[value].in == ioIndex ))
 
+                    const connectionId = value.id;
+
+                    const sourceElement = $(`#node_${this.connections[connectionId].source}_out_${this.connections[connectionId].out}`).get(0);
+                    const sourceMatrix = $(`#node_${this.connections[connectionId].source}`)
+                        .css('transform')
+                        .match(/-?[\d\.]+/g);
+
+                    const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
+                    const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
+
+                    const destElement = $(`#node_${this.connections[connectionId].dest}_in_${this.connections[connectionId].in}`).get(0);
+                    const destMatrix = $(`#node_${this.connections[connectionId].dest}`)
+                        .css('transform')
+                        .match(/-?[\d\.]+/g);
+
+                    //const destX = Number(destMatrix[4]) + destElement.offsetLeft + destElement.offsetWidth / 2;
+                    //const destY = Number(destMatrix[5]) + destElement.offsetTop + destElement.offsetHeight / 2;
+
+                    const destX = posX;
+                    const destY = posY;
+
+                    const controlX = (sourceX + destX) / 2;
+                    const controlY = (sourceY + destY) / 2 - (sourceY - destY);
+
+                    const vectorLayer = $(this.rootNode)
+                        .children('.flowgraph-canvas')
+                        .children('.flowgraph-vectorlayer')
+                        .get(0);
+
+                    let svgElement = vectorLayer.getElementById(`connection_${connectionId}`);
+                    svgElement.setAttribute('d', `M ${sourceX} ${sourceY} Q ${controlX} ${controlY} ${destX} ${destY}`);
                 }
             } break;
         }
