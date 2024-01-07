@@ -18,7 +18,6 @@
 
 <p><h1 align="left">Dependencies</h1></p>
 
-* [GLFW](https://github.com/glfw/glfw)
 * [RmlUI](https://github.com/mikke89/RmlUi)
 * [D3D12MA](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator)
 * [VMA](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
