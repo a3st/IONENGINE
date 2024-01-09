@@ -65,7 +65,8 @@ struct RGAttachment {
 };
 
 struct RGResource {
-
+    uint32_t ref_count;
+    bool is_persistent;
 };
 
 class RGResourceCache {
@@ -104,10 +105,57 @@ private:
     std::unordered_map<Entry, std::queue<RGResource>, EntryHasher> entries;
 };
 
+struct RGRenderPassContext {
+
+};
+
+using graphics_pass_func_t = std::function<void(RGRenderPassContext&, uint32_t const)>;
+
+struct RGRenderPass {
+    std::string pass_name;
+    std::unordered_map<uint32_t, uint64_t> inputs;
+    std::unordered_map<uint32_t, uint64_t> outputs;
+
+    struct GraphicsPass {
+        uint32_t width;
+        uint32_t height;
+        std::vector<wgpu::RenderPassColorAttachment> colors;
+        std::optional<wgpu::RenderPassDepthStencilAttachment> depth_stencil;
+    };
+
+    struct ComputePass {
+
+    };
+
+    std::variant<GraphicsPass, ComputePass> pass;
+
+    static auto graphics(
+        std::string_view const pass_name, 
+        uint32_t const width, 
+        uint32_t const height, 
+        std::vector<wgpu::RenderPassColorAttachment> const& colors,
+        std::optional<wgpu::RenderPassDepthStencilAttachment> const depth_stencil = std::nullopt
+    ) {
+        return RGRenderPass {
+            .pass_name = std::string(pass_name),
+            .pass = GraphicsPass {
+                .width = width,
+                .height = height,
+                .colors = colors,
+                .depth_stencil = depth_stencil
+            }
+        };
+    }
+};
+
 class RenderGraph : public core::ref_counted_object {
 public:
 
-    RenderGraph(Backend& backend);
+    RenderGraph(
+        Backend& backend, 
+        std::vector<RGRenderPass> const& steps, 
+        std::unordered_map<uint64_t, RGResource> const& resources
+    );
 
     auto execute() -> void;
 
@@ -115,7 +163,11 @@ private:
 
     Backend* backend;
     RGResourceCache resource_cache;
+    std::vector<RGRenderPass> steps;
+    std::unordered_map<uint64_t, RGResource> resources;
     uint32_t frame_index{0};
+
+    const uint64_t SWAPCHAIN_NAME = 17433375051057668844;
 };
 
 class RenderGraphBuilder {
@@ -128,7 +180,8 @@ public:
         uint32_t const width,
         uint32_t const height,
         std::span<RGAttachment const> const inputs,
-        std::span<RGAttachment const> const outputs
+        std::span<RGAttachment const> const outputs,
+        graphics_pass_func_t const& callback
     ) -> RenderGraphBuilder&;
 
     auto add_compute_pass() -> RenderGraphBuilder&;
@@ -138,6 +191,8 @@ public:
 private:
 
     Backend* backend;
+    std::vector<RGRenderPass> steps;
+    std::unordered_map<uint64_t, RGResource> resources;
 };
 
 }

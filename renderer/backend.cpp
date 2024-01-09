@@ -70,23 +70,32 @@ Backend::Backend(platform::Window& window) {
 
     queue = device.getQueue();
 
-    {
-        auto descriptor = wgpu::SwapChainDescriptor {};
-        descriptor.usage = wgpu::TextureUsage::RenderAttachment;
-        descriptor.format = wgpu::TextureFormat::BGRA8Unorm;
-        descriptor.width = window.get_width();
-        descriptor.height = window.get_height();
-        descriptor.presentMode = wgpu::PresentMode::Fifo;
-        
-        swapchain = device.createSwapChain(surface, descriptor);
-    }
+    recreate_swapchain(window.get_width(), window.get_height());
 
     error_callback = device.setUncapturedErrorCallback([](wgpu::ErrorType type, char const * message) -> void {
         std::cout << type << " " << message << std::endl;
+    });
+
+    work_done_callback = queue.onSubmittedWorkDone(0, [](wgpu::QueueWorkDoneStatus status) -> void {
+        std::cout << status << std::endl;
     });
 }
 
 auto Backend::update() -> void {
 
     device.tick();
+}
+
+auto Backend::recreate_swapchain(uint32_t const width, uint32_t const height) -> void {
+
+    {
+        auto descriptor = wgpu::SwapChainDescriptor {};
+        descriptor.usage = wgpu::TextureUsage::RenderAttachment;
+        descriptor.format = wgpu::TextureFormat::BGRA8Unorm;
+        descriptor.width = width;
+        descriptor.height = height;
+        descriptor.presentMode = wgpu::PresentMode::Fifo;
+        
+        swapchain = device.createSwapChain(surface, descriptor);
+    }
 }

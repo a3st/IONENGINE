@@ -36,6 +36,8 @@ public:
 
     auto update() -> void;
 
+    auto recreate_swapchain(uint32_t const width, uint32_t const height) -> void;
+
 private:
 
     wgpu::Instance instance{nullptr};
@@ -46,6 +48,7 @@ private:
     wgpu::SwapChain swapchain{nullptr};
 
     std::unique_ptr<wgpu::ErrorCallback> error_callback;
+    std::unique_ptr<wgpu::QueueWorkDoneCallback> work_done_callback;
 
     auto get_win32_surface(wgpu::Instance instance, platform::Window& window) -> wgpu::Surface;
 

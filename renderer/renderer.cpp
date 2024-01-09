@@ -25,7 +25,7 @@ using namespace ionengine::renderer;
 Renderer::Renderer(platform::Window& window) : backend(window) {
     
     RenderGraphBuilder builder(backend);
-    {
+    /*{
         std::vector<RGAttachment> outputs = {
             RGAttachment::render_target("albedo", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
         };
@@ -35,9 +35,12 @@ Renderer::Renderer(platform::Window& window) : backend(window) {
             window.get_width(),
             window.get_height(),
             {},
-            outputs
+            outputs,
+            [&](RGRenderPassContext& ctx, uint32_t const frame_index) {
+
+            }
         );
-    }
+    }*/
 
     {
         std::vector<RGAttachment> inputs = {
@@ -45,7 +48,7 @@ Renderer::Renderer(platform::Window& window) : backend(window) {
         };
 
         std::vector<RGAttachment> outputs = {
-            RGAttachment::swapchain(wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
+            RGAttachment::swapchain(wgpu::LoadOp::Clear, wgpu::StoreOp::Store, wgpu::Color(0.5, 0.6, 0.2, 1.0))
         };
 
         builder.add_graphics_pass(
@@ -53,7 +56,10 @@ Renderer::Renderer(platform::Window& window) : backend(window) {
             window.get_width(),
             window.get_height(),
             inputs,
-            outputs
+            outputs,
+            [&](RGRenderPassContext& ctx, uint32_t const frame_index) {
+                
+            }
         );
     }
 
@@ -68,7 +74,8 @@ auto Renderer::render() -> void {
 }
 
 auto Renderer::resize(uint32_t const width, uint32_t const height) -> void {
-
+    
+    backend.recreate_swapchain(width, height);
 }
 
 /*
