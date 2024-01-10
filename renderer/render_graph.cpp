@@ -12,31 +12,97 @@ RGResourceCache::RGResourceCache(Backend& backend) : backend(&backend) {
 
 }
 
-auto RGResourceCache::get(wgpu::TextureFormat const format, uint32_t const sample_count, uint32_t const width, uint32_t const height) -> RGResource {
+auto RGResourceCache::get_from_entries(
+    wgpu::TextureFormat const format, 
+    uint32_t const sample_count, 
+    uint32_t const width, 
+    uint32_t const height
+) -> RGResource {
 
     auto entry = entries.find({ format, sample_count, width, height });
 
-    if(entry != entries.end()) {
-        RGResource resource = entry->second.front();
-        entry->second.pop();
+    RGResource resource;
 
-        return resource;
+    if(entry != entries.end()) {
+        resource = std::move(entry->second.front());
+        entry->second.pop();
     } else {
-        
+        core::ref_ptr<Texture> texture = core::make_ref<Texture2D>(
+            *backend,
+            width,
+            height,
+            1,
+            format,
+            sample_count
+        );
+        resource = RGResource {
+            .texture = texture
+        };
     }
-        
-    return {};
+    
+    return resource;
+}
+
+auto RGResourceCache::get(
+    uint64_t const id,
+    wgpu::TextureFormat const format, 
+    uint32_t const sample_count, 
+    uint32_t const width, 
+    uint32_t const height
+) -> RGResource {
+
+    auto result = resources.find(id);
+
+    if(result != resources.end()) {
+        if(result->second.has_value()) {
+            return std::get<0>(result->second.value());
+        } else {
+            RGResource resource = get_from_entries(format, sample_count, width, height);
+            resources.insert({ id, std::make_tuple(resource, 1) });
+            return resource;
+        }
+    } else {
+        RGResource resource = get_from_entries(format, sample_count, width, height);
+        resources.insert({ id, std::make_tuple(resource, 1) });
+        return resource;
+    }
+}
+
+auto RGResourceCache::update() -> void {
+
+    for(auto& [key, value] : resources) {
+        if(!value.has_value()) {
+            continue;
+        }
+
+        auto entry = value.value();
+
+        if(std::get<1>(entry) == 0) {
+            RGResource resource = std::move(std::get<0>(entry));
+
+            wgpu::TextureFormat const format = resource.texture->get_texture().getFormat();
+            uint32_t const sample_count = resource.texture->get_texture().getSampleCount();
+            uint32_t const width = resource.texture->get_texture().getWidth();
+            uint32_t const height = resource.texture->get_texture().getHeight();
+
+            entries.at({ format, sample_count, width, height }).push(std::move(resource));
+
+            value = std::nullopt;
+        } else {
+            std::get<1>(entry) --;
+        }
+    }
 }
 
 RenderGraph::RenderGraph(
     Backend& backend, 
-    std::vector<RGRenderPass> const& steps, 
-    std::unordered_map<uint64_t, RGResource> const& resources
+    std::vector<RGRenderPass> const& steps,
+    std::unordered_map<uint64_t, RGAttachment> const& attachments
 ) : 
     backend(&backend), 
-    resource_cache(backend), 
     steps(steps),
-    resources(resources)
+    resource_cache(backend),
+    attachments(attachments)
 {
 
 }
@@ -66,8 +132,12 @@ auto RenderGraph::execute() -> void {
 
                     if(result->second == SWAPCHAIN_NAME) {
                         data.colors[i].view = cur_swapchain_view;
+                        break;
                     } else {
-                        // Get from Cache
+                        RGAttachment const attachment = attachments.at(result->second);
+                        RGResource resource = resource_cache.get(result->second, attachment.format, attachment.sample_count, data.width, data.height);
+                        
+                        data.colors[i].view = resource.texture->get_view();
                     }
                 }
 
@@ -77,6 +147,11 @@ auto RenderGraph::execute() -> void {
 
                 auto render_pass = encoder.beginRenderPass(descriptor);
                 render_pass.setViewport(0, 0, data.width, data.height, 0.0, 1.0);
+
+                RGRenderPassContext ctx;
+
+                data.callback(ctx, frame_index);
+
                 render_pass.end();
             },
             [&](RGRenderPass::ComputePass& data) {
@@ -85,6 +160,8 @@ auto RenderGraph::execute() -> void {
         );
 
         std::visit(visitor, step.pass);
+
+        resource_cache.update();
     }
 
     wgpu::CommandBuffer command_buffer{nullptr};
@@ -142,21 +219,25 @@ auto RenderGraphBuilder::add_graphics_pass(
         std::visit(visitor, output.attachment);
     }
 
-    auto render_pass = RGRenderPass::graphics(pass_name, width, height, colors, depth_stencil);
+    auto render_pass = RGRenderPass::graphics(callback, pass_name, width, height, colors, depth_stencil);
 
     for(uint32_t i = 0; i < inputs.size(); ++i) {
-        render_pass.inputs.insert({ i, XXHash64::hash(inputs[i].name.c_str(), inputs[i].name.size(), 0) });
+        uint64_t const attachment_name = XXHash64::hash(inputs[i].name.c_str(), inputs[i].name.size(), 0);
+        render_pass.inputs.insert({ i, attachment_name });
+        attachments.insert({ attachment_name, inputs[i] });
     }
 
     for(uint32_t i = 0; i < outputs.size(); ++i) {
-        render_pass.outputs.insert({ i, XXHash64::hash(outputs[i].name.c_str(), outputs[i].name.size(), 0) });
+        uint64_t const attachment_name = XXHash64::hash(outputs[i].name.c_str(), outputs[i].name.size(), 0);
+        render_pass.outputs.insert({ i, attachment_name });
+        attachments.insert({ attachment_name, outputs[i] });
     }
 
     steps.push_back(render_pass);
     return *this;
 }
 
-auto RenderGraphBuilder::build(uint32_t const frame_count) -> core::ref_ptr<RenderGraph> {
+auto RenderGraphBuilder::build() -> core::ref_ptr<RenderGraph> {
 
-    return core::make_ref<RenderGraph>(*backend, steps, resources);
+    return core::make_ref<RenderGraph>(*backend, steps, attachments);
 }

@@ -176,6 +176,7 @@ int main(int* argc, char** agrv) {
         );*/
 
     } catch(core::Exception e) {
+        std::cout << e.what() << std::endl;
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;

@@ -9,10 +9,13 @@ add_subdirectory(thirdparty/webgpu)
 add_executable(Runtime-Win32
     "platform/window_loop.cpp"
     "platform/window_win32.cpp"
+
     "renderer/backend.cpp"
     "renderer/texture.cpp"
+    "renderer/mesh.cpp"
     "renderer/render_graph.cpp"
     "renderer/renderer.cpp"
+    
     "engine/main.cpp"
 )
 

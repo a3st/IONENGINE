@@ -114,6 +114,7 @@
         "csignal": "cpp",
         "scoped_allocator": "cpp",
         "typeindex": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "*.inc": "cpp"
     }
 }

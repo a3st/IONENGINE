@@ -27,7 +27,8 @@ Renderer::Renderer(platform::Window& window) : backend(window) {
     RenderGraphBuilder builder(backend);
     /*{
         std::vector<RGAttachment> outputs = {
-            RGAttachment::render_target("albedo", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
+            RGAttachment::render_target("albedo", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store),
+            RGAttachment::render_target("normal", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
         };
 
         builder.add_graphics_pass(
@@ -44,7 +45,8 @@ Renderer::Renderer(platform::Window& window) : backend(window) {
 
     {
         std::vector<RGAttachment> inputs = {
-            RGAttachment::render_target("albedo", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
+            RGAttachment::render_target("albedo", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store),
+            RGAttachment::render_target("normal", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
         };
 
         std::vector<RGAttachment> outputs = {
@@ -52,7 +54,7 @@ Renderer::Renderer(platform::Window& window) : backend(window) {
         };
 
         builder.add_graphics_pass(
-            "basic_second_pass",
+            "pass",
             window.get_width(),
             window.get_height(),
             inputs,
@@ -63,7 +65,9 @@ Renderer::Renderer(platform::Window& window) : backend(window) {
         );
     }
 
-    render_graph = builder.build(2);
+    render_graph = builder.build();
+
+    std::cout << render_graph.get() << std::endl;
 }
 
 auto Renderer::render() -> void {

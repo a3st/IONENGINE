@@ -17,7 +17,6 @@ Texture::Texture(
     TextureDimension const dimension,
     uint32_t sample_count
 ) {
-
     {
         auto descriptor = wgpu::TextureDescriptor {};
         descriptor.size = wgpu::Extent3D(width, height, depth);
@@ -35,7 +34,7 @@ Texture::Texture(
             } break;
         }
         descriptor.sampleCount = sample_count;
-        descriptor.usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopySrc;
+        descriptor.usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::RenderAttachment;
 
         texture = backend.get_device().createTexture(descriptor);
     }

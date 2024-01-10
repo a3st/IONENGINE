@@ -13,7 +13,7 @@ public:
         std::cout << "Construct object" << std::endl;
     }
 
-    ~ref_counted_object() {
+    virtual ~ref_counted_object() {
         std::cout << "Cleanup object" << std::endl;
     }
 
@@ -31,16 +31,12 @@ public:
         return *this;
     }
 
-    auto add_ref() -> void {
-        ++ref_count;
+    auto add_ref() -> uint32_t {
+        return ++ref_count;
     }
 
-    auto release() -> void {
-        --ref_count;
-
-        if(ref_count == 0) {
-            delete this;
-        }
+    auto release() -> uint32_t {
+        return --ref_count;
     }
 
 private:
@@ -49,6 +45,13 @@ private:
 };
 
 template<typename Type>
+struct BaseDeleter {
+    auto operator()(Type* ptr) -> void {
+        delete ptr;
+    }
+};
+
+template<typename Type, typename Deleter = BaseDeleter<Type>>
 class ref_ptr {
 public:
 
@@ -56,11 +59,21 @@ public:
 
     ~ref_ptr() {
         if(ptr) {
-            ptr->release();
+            uint32_t const count = ptr->release();
+            if(count == 0) {
+                Deleter()(ptr);
+            }
         }
     }
 
     ref_ptr(Type* ptr_) : ptr(ptr_) {
+        if(ptr) {
+            ptr->add_ref();
+        }
+    }
+
+    template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
+    ref_ptr(ref_ptr<Derived, DerivedDeleter>&& other) : ptr(other.get()) { 
         if(ptr) {
             ptr->add_ref();
         }
@@ -80,6 +93,15 @@ public:
         return *this;
     }
 
+    template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
+    auto operator=(ref_ptr<Derived, DerivedDeleter>&& other) -> ref_ptr& {
+        ptr = std::move(other.ptr);
+        if(ptr) {
+            ptr->add_ref();
+        }
+        return *this;
+    }
+
     auto operator->() -> Type* {
         assert(ptr != nullptr && "ref_ptr is null");
         return ptr;
@@ -88,6 +110,16 @@ public:
     auto operator&() -> Type& {
         assert(ptr != nullptr && "ref_ptr is null");
         return *ptr;
+    }
+
+    auto get() -> Type* {
+        assert(ptr != nullptr && "ref_ptr is null");
+        return ptr;
+    }
+
+    auto release() -> Type* {
+        ptr->release();
+        return ptr;
     }
 
     operator bool() const {
@@ -99,10 +131,10 @@ private:
     Type* ptr;
 };
 
-template<typename Type, typename ...Args>
-inline auto make_ref(Args&& ...args) -> ref_ptr<Type> {
+template<typename Type, typename Deleter = BaseDeleter<Type>, typename ...Args>
+inline auto make_ref(Args&& ...args) -> ref_ptr<Type, Deleter> {
     Type* ptr = new Type(std::forward<Args>(args)...);
-    return ref_ptr<Type>(ptr);
+    return ref_ptr<Type, Deleter>(ptr);
 }
 
 }

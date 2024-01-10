@@ -3,8 +3,9 @@
 #pragma once
 
 #include <webgpu/webgpu.hpp>
-#include <core/ref_ptr.hpp>
 #include <xxhash/xxhash64.h>
+#include "core/ref_ptr.hpp"
+#include "renderer/texture.hpp"
 
 namespace ionengine {
 
@@ -65,8 +66,7 @@ struct RGAttachment {
 };
 
 struct RGResource {
-    uint32_t ref_count;
-    bool is_persistent;
+    core::ref_ptr<Texture> texture{nullptr};
 };
 
 class RGResourceCache {
@@ -97,12 +97,28 @@ public:
 
     RGResourceCache(Backend& backend);
 
-    auto get(wgpu::TextureFormat const format, uint32_t const sample_count, uint32_t const width, uint32_t const height) -> RGResource;
+    auto get(
+        uint64_t const id,
+        wgpu::TextureFormat const format, 
+        uint32_t const sample_count, 
+        uint32_t const width, 
+        uint32_t const height
+    ) -> RGResource;
+
+    auto update() -> void;
 
 private:
 
+    auto get_from_entries(
+        wgpu::TextureFormat const format, 
+        uint32_t const sample_count, 
+        uint32_t const width, 
+        uint32_t const height
+    ) -> RGResource;
+
     Backend* backend;
     std::unordered_map<Entry, std::queue<RGResource>, EntryHasher> entries;
+    std::unordered_map<uint64_t, std::optional<std::tuple<RGResource, uint32_t>>> resources;
 };
 
 struct RGRenderPassContext {
@@ -121,6 +137,7 @@ struct RGRenderPass {
         uint32_t height;
         std::vector<wgpu::RenderPassColorAttachment> colors;
         std::optional<wgpu::RenderPassDepthStencilAttachment> depth_stencil;
+        graphics_pass_func_t callback;
     };
 
     struct ComputePass {
@@ -130,6 +147,7 @@ struct RGRenderPass {
     std::variant<GraphicsPass, ComputePass> pass;
 
     static auto graphics(
+        graphics_pass_func_t callback,
         std::string_view const pass_name, 
         uint32_t const width, 
         uint32_t const height, 
@@ -142,7 +160,8 @@ struct RGRenderPass {
                 .width = width,
                 .height = height,
                 .colors = colors,
-                .depth_stencil = depth_stencil
+                .depth_stencil = depth_stencil,
+                .callback = callback
             }
         };
     }
@@ -153,8 +172,8 @@ public:
 
     RenderGraph(
         Backend& backend, 
-        std::vector<RGRenderPass> const& steps, 
-        std::unordered_map<uint64_t, RGResource> const& resources
+        std::vector<RGRenderPass> const& steps,
+        std::unordered_map<uint64_t, RGAttachment> const& attachments
     );
 
     auto execute() -> void;
@@ -162,9 +181,9 @@ public:
 private:
 
     Backend* backend;
-    RGResourceCache resource_cache;
     std::vector<RGRenderPass> steps;
-    std::unordered_map<uint64_t, RGResource> resources;
+    std::unordered_map<uint64_t, RGAttachment> attachments;
+    RGResourceCache resource_cache;
     uint32_t frame_index{0};
 
     const uint64_t SWAPCHAIN_NAME = 17433375051057668844;
@@ -186,13 +205,13 @@ public:
 
     auto add_compute_pass() -> RenderGraphBuilder&;
 
-    auto build(uint32_t const frame_count) -> core::ref_ptr<RenderGraph>;
+    auto build() -> core::ref_ptr<RenderGraph>;
 
 private:
 
     Backend* backend;
     std::vector<RGRenderPass> steps;
-    std::unordered_map<uint64_t, RGResource> resources;
+    std::unordered_map<uint64_t, RGAttachment> attachments;
 };
 
 }
