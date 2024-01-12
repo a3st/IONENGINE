@@ -10,9 +10,13 @@ add_executable(Runtime-Win32
     "platform/window_loop.cpp"
     "platform/window_win32.cpp"
 
+    "math/color.cpp"
+
     "renderer/backend.cpp"
     "renderer/texture.cpp"
     "renderer/mesh.cpp"
+    "renderer/shader.cpp"
+    "renderer/camera.cpp"
     "renderer/render_graph.cpp"
     "renderer/renderer.cpp"
     

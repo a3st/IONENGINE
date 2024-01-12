@@ -1,9 +1,10 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#include <precompiled.h>
-#include <lib/math/color.h>
+#include "precompiled.h"
+#include "math/color.hpp"
 
-using namespace ionengine::lib::math;
+using namespace ionengine;
+using namespace ionengine::math;
 
 Color& Color::srgb() {
 

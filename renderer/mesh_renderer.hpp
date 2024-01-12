@@ -2,18 +2,11 @@
 
 #pragma once
 
-#include <webgpu/webgpu.hpp>
-#include "core/ref_ptr.hpp"
-
 namespace ionengine {
 
 namespace renderer {
 
-class Mesh : public core::ref_counted_object {
-public:
-
-
-
+class MeshRenderer {
 
 };
 

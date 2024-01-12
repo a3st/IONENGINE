@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <lib/math/vector.h>
+#include "math/vector.hpp"
 
-namespace ionengine::lib::math {
+namespace ionengine::math {
 
 template<typename Type>
 struct Matrix {

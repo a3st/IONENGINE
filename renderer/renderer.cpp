@@ -1,4 +1,4 @@
-// Copyright © 2020-2022 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "precompiled.h"
 #include "renderer/renderer.hpp"
@@ -14,43 +14,34 @@
 #include <scene/camera_node.h>
 #include <scene/point_light_node.h>
 #include <lib/scope_profiler.h>
-
 */
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-
-
 Renderer::Renderer(platform::Window& window) : backend(window) {
+
+    std::string shader_code;
+    {
+        std::ifstream ifs("shaders/quad.wgsl");
+        ifs.seekg(0, std::ios::end);
+        auto size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        shader_code.resize(size);
+        ifs.read(reinterpret_cast<char* const>(shader_code.data()), size);
+    }
+    
+    Shader shader(backend, shader_code);
     
     RenderGraphBuilder builder(backend);
-    /*{
-        std::vector<RGAttachment> outputs = {
-            RGAttachment::render_target("albedo", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store),
-            RGAttachment::render_target("normal", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
-        };
-
-        builder.add_graphics_pass(
-            "basic_pass",
-            window.get_width(),
-            window.get_height(),
-            {},
-            outputs,
-            [&](RGRenderPassContext& ctx, uint32_t const frame_index) {
-
-            }
-        );
-    }*/
-
     {
         std::vector<RGAttachment> inputs = {
-            RGAttachment::render_target("albedo", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store),
-            RGAttachment::render_target("normal", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
+            // RGAttachment::render_target("albedo", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store),
+            // RGAttachment::render_target("normal", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
         };
 
         std::vector<RGAttachment> outputs = {
-            RGAttachment::swapchain(wgpu::LoadOp::Clear, wgpu::StoreOp::Store, wgpu::Color(0.5, 0.6, 0.2, 1.0))
+            RGAttachment::swapchain(wgpu::LoadOp::Clear, wgpu::StoreOp::Store, wgpu::Color(0.2, 0.3, 0.1, 1.0))
         };
 
         builder.add_graphics_pass(
@@ -61,13 +52,12 @@ Renderer::Renderer(platform::Window& window) : backend(window) {
             outputs,
             [&](RGRenderPassContext& ctx, uint32_t const frame_index) {
                 
+
             }
         );
     }
 
     render_graph = builder.build();
-
-    std::cout << render_graph.get() << std::endl;
 }
 
 auto Renderer::render() -> void {

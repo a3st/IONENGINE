@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include <lib/math/matrix.h>
+#include "math/matrix.hpp"
 
-namespace ionengine::lib::math {
+namespace ionengine::math {
 
 template<typename Type>
 struct Quaternion {

@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::lib::math {
+namespace ionengine::math {
 
 struct Color {
 	

@@ -134,7 +134,7 @@ auto RenderGraph::execute() -> void {
                         data.colors[i].view = cur_swapchain_view;
                         break;
                     } else {
-                        RGAttachment const attachment = attachments.at(result->second);
+                        RGAttachment const& attachment = attachments.at(result->second);
                         RGResource resource = resource_cache.get(result->second, attachment.format, attachment.sample_count, data.width, data.height);
                         
                         data.colors[i].view = resource.texture->get_view();

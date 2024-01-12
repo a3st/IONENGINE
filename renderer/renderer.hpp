@@ -4,6 +4,8 @@
 
 #include "backend.hpp"
 #include "render_graph.hpp"
+#include "mesh.hpp"
+#include "shader.hpp"
 
 namespace ionengine {
 
@@ -14,6 +16,12 @@ class Window;
 }
 
 namespace renderer {
+
+struct MeshRenderOptions {
+    core::ref_ptr<Mesh> _m0;
+    std::string shader_name;
+
+};
 
 class Renderer {
 public:
@@ -31,6 +39,8 @@ public:
     auto render() -> void;
 
     auto resize(uint32_t const width, uint32_t const height) -> void;
+
+    auto add_to_render(MeshRenderOptions const& options) -> void;
 
 private:
 
