@@ -4,6 +4,8 @@
 #include "render_graph.hpp"
 #include "backend.hpp"
 #include "core/exception.hpp"
+#include "mesh_renderer.hpp"
+#include "sprite_renderer.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -107,7 +109,7 @@ RenderGraph::RenderGraph(
 
 }
 
-auto RenderGraph::execute() -> void {
+auto RenderGraph::execute(MeshRenderer& mesh_renderer, SpriteRenderer& sprite_renderer) -> void {
 
     auto cur_swapchain_view = backend->get_swapchain().getCurrentTextureView();
 
@@ -148,9 +150,11 @@ auto RenderGraph::execute() -> void {
                 auto render_pass = encoder.beginRenderPass(descriptor);
                 render_pass.setViewport(0, 0, data.width, data.height, 0.0, 1.0);
 
-                RGRenderPassContext ctx;
-
-                data.callback(ctx, frame_index);
+                auto ctx = RGRenderPassContext {
+                    .mesh_renderer = &mesh_renderer,
+                    .sprite_renderer = &sprite_renderer
+                };
+                data.callback(ctx);
 
                 render_pass.end();
             },

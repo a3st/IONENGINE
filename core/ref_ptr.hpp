@@ -73,7 +73,7 @@ public:
     }
 
     template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
-    ref_ptr(ref_ptr<Derived, DerivedDeleter>&& other) : ptr(other.get()) { 
+    ref_ptr(ref_ptr<Derived, DerivedDeleter> other) : ptr(other.get()) { 
         if(ptr) {
             ptr->add_ref();
         }
@@ -94,8 +94,8 @@ public:
     }
 
     template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
-    auto operator=(ref_ptr<Derived, DerivedDeleter>&& other) -> ref_ptr& {
-        ptr = std::move(other.ptr);
+    auto operator=(ref_ptr<Derived, DerivedDeleter> other) -> ref_ptr& {
+        ptr = other.ptr;
         if(ptr) {
             ptr->add_ref();
         }

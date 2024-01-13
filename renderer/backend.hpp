@@ -17,7 +17,7 @@ namespace renderer {
 class Backend {
 public:
 
-    Backend(platform::Window& window);
+    Backend(platform::Window const& window);
 
     auto get_device() const -> wgpu::Device {
 
@@ -50,7 +50,7 @@ private:
     std::unique_ptr<wgpu::ErrorCallback> error_callback;
     std::unique_ptr<wgpu::QueueWorkDoneCallback> work_done_callback;
 
-    auto get_win32_surface(wgpu::Instance instance, platform::Window& window) -> wgpu::Surface;
+    auto get_win32_surface(wgpu::Instance instance, platform::Window const& window) -> wgpu::Surface;
 
     std::binary_semaphore semaphore{0};
 };

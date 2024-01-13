@@ -5,6 +5,7 @@
 #include "platform/window.hpp"
 #include "platform/window_loop.hpp"
 #include "renderer/renderer.hpp"
+#include "renderer/pipelines/my_render_pipeline.hpp"
 
 using namespace ionengine;
 
@@ -12,9 +13,10 @@ int main(int* argc, char** agrv) {
 
     try {
         platform::WindowLoop loop;
-        platform::Window window("Project", 800, 600, false);
+        platform::Window window("IONENGINE", 800, 600, false);
 
-        renderer::Renderer renderer(window);
+        auto render_pipeline = core::make_ref<renderer::MyRenderPipeline>();
+        renderer::Renderer renderer(render_pipeline, window);
 
         loop.run(
             window,

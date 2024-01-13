@@ -5,13 +5,16 @@
 #include <webgpu/webgpu.hpp>
 #include <xxhash/xxhash64.h>
 #include "core/ref_ptr.hpp"
-#include "renderer/texture.hpp"
+#include "texture.hpp"
 
 namespace ionengine {
 
 namespace renderer {
 
 class Backend;
+class MeshRenderer;
+class UIRenderer;
+class SpriteRenderer;
 
 struct RGAttachment {
     std::string name;
@@ -122,10 +125,11 @@ private:
 };
 
 struct RGRenderPassContext {
-
+    MeshRenderer* mesh_renderer;
+    SpriteRenderer* sprite_renderer;
 };
 
-using graphics_pass_func_t = std::function<void(RGRenderPassContext&, uint32_t const)>;
+using graphics_pass_func_t = std::function<void(RGRenderPassContext&)>;
 
 struct RGRenderPass {
     std::string pass_name;
@@ -176,7 +180,7 @@ public:
         std::unordered_map<uint64_t, RGAttachment> const& attachments
     );
 
-    auto execute() -> void;
+    auto execute(MeshRenderer& mesh_renderer, SpriteRenderer& sprite_renderer) -> void;
 
 private:
 

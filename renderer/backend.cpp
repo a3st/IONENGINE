@@ -10,9 +10,9 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-auto Backend::get_win32_surface(wgpu::Instance instance, platform::Window& window) -> wgpu::Surface {
+auto Backend::get_win32_surface(wgpu::Instance instance, platform::Window const& window) -> wgpu::Surface {
 
-    auto get_hwnd_descriptor = [](platform::Window& window) -> std::shared_ptr<wgpu::ChainedStruct> {
+    auto get_hwnd_descriptor = [](platform::Window const& window) -> std::shared_ptr<wgpu::ChainedStruct> {
         
         auto hwnd_descriptor = std::make_shared<wgpu::SurfaceDescriptorFromWindowsHWND>();
         hwnd_descriptor->hwnd = window.get_native_handle();
@@ -28,7 +28,7 @@ auto Backend::get_win32_surface(wgpu::Instance instance, platform::Window& windo
     return instance.createSurface(descriptor);
 }
 
-Backend::Backend(platform::Window& window) {
+Backend::Backend(platform::Window const& window) {
 
     {
         auto descriptor = wgpu::InstanceDescriptor {};
@@ -77,7 +77,7 @@ Backend::Backend(platform::Window& window) {
     });
 
     work_done_callback = queue.onSubmittedWorkDone(0, [](wgpu::QueueWorkDoneStatus status) -> void {
-        std::cout << status << std::endl;
+        // std::cout << status << std::endl;
     });
 }
 

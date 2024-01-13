@@ -28,15 +28,44 @@ enum class VariableAccessType {
 
 enum class VariableType {
     Struct,
-    Template,
     Array,
     Vector,
-    Matrix
+    Matrix,
+    Sampler,
+    SamplerComparison,
+    Texture1D,
+    Texture2D,
+    Texture2DArray,
+    Texture3D,
+    TextureCube,
+    TextureCubeArray,
+    TextureMultisampled2D,
+    TextureDepthMultisampled2D,
+    TextureDepth2D,
+    TextureDepth2DArray,
+    TextureDepthCube,
+    TextureDepthCubeArray,
+    TextureStorage1D,
+    TextureStorage2D,
+    TextureStorage2DArray,
+    TextureStorage3D
+};
+
+enum class VariableFormat {
+    Undefined,
+    Float32,
+    Uint32,
+    Sint32
+};
+
+struct VariableInfo {
+    VariableType variable_type;
+    VariableFormat format;
 };
 
 struct VariableReflectInfo {
     std::string name;
-    VariableType variable_type;
+    VariableInfo variable_info;
     uint32_t group;
     uint32_t binding;
     VariableResourceType resource_type;
@@ -53,12 +82,26 @@ public:
         return bindings;
     }
 
+    auto get_stages() -> wgpu::ShaderStage const& {
+
+        return stages;
+    }
+
 private:
 
     const uint32_t MAX_GROUP_TYPE_SPACE = 6;
     const uint32_t MAX_GROUP_HANDLE_SPACE = 4;
 
+    wgpu::ShaderStage stages{wgpu::ShaderStage::None};
     std::unordered_map<uint32_t, std::unordered_map<uint32_t, VariableReflectInfo>> bindings;
+
+    auto get_format_by_string(std::string_view const format) -> VariableFormat;
+
+    auto get_access_by_string(std::string_view const access) -> VariableAccessType;
+
+    auto parse_variable_type(std::string const& source, VariableReflectInfo& reflect_info) -> void;
+
+    auto parse_resource_type(std::tuple<std::string, std::string> const sources, VariableReflectInfo& reflect_info) -> void;
 };
 
 class Shader : public core::ref_counted_object {

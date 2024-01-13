@@ -18,7 +18,11 @@ add_executable(Runtime-Win32
     "renderer/shader.cpp"
     "renderer/camera.cpp"
     "renderer/render_graph.cpp"
+    "renderer/mesh_renderer.cpp"
+    "renderer/sprite_renderer.cpp"
     "renderer/renderer.cpp"
+
+    "renderer/pipelines/my_render_pipeline.cpp"
     
     "engine/main.cpp"
 )

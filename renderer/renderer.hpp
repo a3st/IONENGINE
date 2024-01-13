@@ -4,8 +4,9 @@
 
 #include "backend.hpp"
 #include "render_graph.hpp"
-#include "mesh.hpp"
-#include "shader.hpp"
+#include "render_pipeline.hpp"
+#include "mesh_renderer.hpp"
+#include "sprite_renderer.hpp"
 
 namespace ionengine {
 
@@ -17,16 +18,10 @@ class Window;
 
 namespace renderer {
 
-struct MeshRenderOptions {
-    core::ref_ptr<Mesh> _m0;
-    std::string shader_name;
-
-};
-
 class Renderer {
 public:
 
-    Renderer(platform::Window& window);
+    Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Window const& window);
 
     Renderer(Renderer const&) = delete;
 
@@ -40,33 +35,18 @@ public:
 
     auto resize(uint32_t const width, uint32_t const height) -> void;
 
-    auto add_to_render(MeshRenderOptions const& options) -> void;
+    auto get_mesh_renderer() -> MeshRenderer& {
+
+        return mesh_renderer;
+    }
 
 private:
 
     Backend backend;
+    core::ref_ptr<RenderPipeline> render_pipeline;
     core::ref_ptr<RenderGraph> render_graph{nullptr};
-
-    /*backend::Device _device;
-
-    UploadManager _upload_manager;
-    FrameGraph _frame_graph;
-
-    ShaderCache _shader_cache;
-    PipelineCache _pipeline_cache;
-    std::vector<RTTextureCache> _rt_texture_caches;
-
-    std::vector<ResourcePtr<GPUTexture>> _swap_textures;
-
-    std::queue<UploadBatch> _upload_batches;
-
-    UiRenderer _ui_renderer;
-    MeshRenderer _mesh_renderer;
-
-    uint32_t _width;
-    uint32_t _height;
-
-    NullData _null;*/
+    MeshRenderer mesh_renderer;
+    SpriteRenderer sprite_renderer;
 };
 
 }
