@@ -5,6 +5,8 @@
 #include "platform/window.hpp"
 #include "platform/window_loop.hpp"
 #include "renderer/renderer.hpp"
+#include "asset/asset_manager.hpp"
+#include "asset/ktx2_image.hpp"
 #include "renderer/pipelines/my_render_pipeline.hpp"
 
 using namespace ionengine;
@@ -17,6 +19,21 @@ int main(int* argc, char** agrv) {
 
         auto render_pipeline = core::make_ref<renderer::MyRenderPipeline>();
         renderer::Renderer renderer(render_pipeline, window);
+
+        AssetManager asset_manager;
+
+        std::vector<uint8_t> image_bytes;
+        {
+            std::ifstream ifs("textures/bird.ktx2", std::ios::binary);
+            ifs.seekg(0, std::ios::end);
+            auto size = ifs.tellg();
+            ifs.seekg(0, std::ios::beg);
+            image_bytes.resize(size);
+            ifs.read(reinterpret_cast<char* const>(image_bytes.data()), size);
+        }
+        Ktx2Image image(image_bytes);
+        
+
 
         loop.run(
             window,

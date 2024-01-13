@@ -115,6 +115,7 @@
         "scoped_allocator": "cpp",
         "typeindex": "cpp",
         "semaphore": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "spanstream": "cpp"
     }
 }

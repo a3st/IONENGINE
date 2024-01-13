@@ -40,6 +40,11 @@ public:
         return mesh_renderer;
     }
 
+    auto get_sprite_renderer() -> SpriteRenderer& {
+
+        return sprite_renderer;
+    }
+
 private:
 
     Backend backend;

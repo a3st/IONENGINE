@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(IONENGINE VERSION 0.0.5)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(thirdparty/webgpu)
@@ -11,6 +11,8 @@ add_executable(Runtime-Win32
     "platform/window_win32.cpp"
 
     "math/color.cpp"
+
+    "asset/asset_manager.cpp"
 
     "renderer/backend.cpp"
     "renderer/texture.cpp"
