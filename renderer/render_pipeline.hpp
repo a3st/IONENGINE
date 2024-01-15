@@ -3,7 +3,8 @@
 #pragma once
 
 #include "core/ref_ptr.hpp"
-#include "renderer/render_graph.hpp"
+#include "render_graph.hpp"
+#include "camera.hpp"
 
 namespace ionengine {
 
@@ -22,7 +23,12 @@ public:
 
     RenderPipeline() = default;
 
-    virtual auto render(Backend& backend, platform::Window const& window) -> core::ref_ptr<RenderGraph> = 0;
+    virtual auto setup(
+        RenderGraphBuilder& builder, 
+        core::ref_ptr<Camera> camera, 
+        uint32_t const width, 
+        uint32_t const height
+    ) -> std::vector<RGAttachment> = 0;
 };
 
 }

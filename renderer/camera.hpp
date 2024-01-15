@@ -4,6 +4,7 @@
 
 #include "core/ref_ptr.hpp"
 #include "math/matrix.hpp"
+#include "texture.hpp"
 
 namespace ionengine {
 
@@ -21,14 +22,19 @@ public:
 
     auto calculate() -> void;
 
-    auto get_projection() -> math::Matrixf const& {
+    auto get_projection() const -> math::Matrixf const& {
 
         return projection;
     }
 
-    auto get_view() -> math::Matrixf const& {
+    auto get_view() const -> math::Matrixf const& {
 
         return view;
+    }
+
+    auto get_render_target() const -> core::ref_ptr<Texture> {
+
+        return render_target;
     }
 
 private:
@@ -37,6 +43,7 @@ private:
     math::Matrixf projection;
     CameraProjectionType projection_type;
     float field_of_view;
+    core::ref_ptr<Texture> render_target{nullptr};
 
     auto create_projection_matrix() -> void;
 

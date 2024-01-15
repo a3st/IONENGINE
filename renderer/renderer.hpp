@@ -5,8 +5,11 @@
 #include "backend.hpp"
 #include "render_graph.hpp"
 #include "render_pipeline.hpp"
-#include "mesh_renderer.hpp"
-#include "sprite_renderer.hpp"
+#include "upload_manager.hpp"
+#include "shader.hpp"
+#include "buffer.hpp"
+#include "mesh.hpp"
+#include "camera.hpp"
 
 namespace ionengine {
 
@@ -31,27 +34,23 @@ public:
 
     auto operator=(Renderer&&) -> Renderer& = delete;
 
-    auto render() -> void;
+    auto render(std::span<core::ref_ptr<Camera>> const targets) -> void;
 
-    auto resize(uint32_t const width, uint32_t const height) -> void;
+    auto resize(platform::Window const& window, uint32_t const width, uint32_t const height) -> void;
 
-    auto get_mesh_renderer() -> MeshRenderer& {
-
-        return mesh_renderer;
-    }
-
-    auto get_sprite_renderer() -> SpriteRenderer& {
-
-        return sprite_renderer;
-    }
+    auto load_shaders(std::span<ShaderData const> const shaders) -> bool;
 
 private:
 
     Backend backend;
     core::ref_ptr<RenderPipeline> render_pipeline;
     core::ref_ptr<RenderGraph> render_graph{nullptr};
-    MeshRenderer mesh_renderer;
-    SpriteRenderer sprite_renderer;
+    ShaderCache shader_cache;
+    UploadManager upload_manager;
+    BufferAllocator<LinearAllocator> mesh_allocator;
+    bool is_graph_initialized{false};
+    uint32_t width;
+    uint32_t height;
 };
 
 }

@@ -2,10 +2,8 @@
 
 #include "precompiled.h"
 #include "render_graph.hpp"
-#include "backend.hpp"
 #include "core/exception.hpp"
-#include "mesh_renderer.hpp"
-#include "sprite_renderer.hpp"
+#include "backend.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -35,7 +33,8 @@ auto RGResourceCache::get_from_entries(
             height,
             1,
             format,
-            sample_count
+            sample_count,
+            wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::RenderAttachment
         );
         resource = RGResource {
             .texture = texture
@@ -109,7 +108,7 @@ RenderGraph::RenderGraph(
 
 }
 
-auto RenderGraph::execute(MeshRenderer& mesh_renderer, SpriteRenderer& sprite_renderer) -> void {
+auto RenderGraph::execute() -> void {
 
     auto cur_swapchain_view = backend->get_swapchain().getCurrentTextureView();
 
@@ -136,10 +135,14 @@ auto RenderGraph::execute(MeshRenderer& mesh_renderer, SpriteRenderer& sprite_re
                         data.colors[i].view = cur_swapchain_view;
                         break;
                     } else {
-                        RGAttachment const& attachment = attachments.at(result->second);
-                        RGResource resource = resource_cache.get(result->second, attachment.format, attachment.sample_count, data.width, data.height);
-                        
-                        data.colors[i].view = resource.texture->get_view();
+                        RGAttachment& attachment = attachments.at(result->second);
+
+                        if(!attachment.texture) {
+                            RGResource resource = resource_cache.get(result->second, attachment.format, attachment.sample_count, data.width, data.height);
+                            data.colors[i].view = resource.texture->get_view();
+                        } else {
+                            data.colors[i].view = attachment.texture->get_view();
+                        }
                     }
                 }
 
@@ -151,8 +154,7 @@ auto RenderGraph::execute(MeshRenderer& mesh_renderer, SpriteRenderer& sprite_re
                 render_pass.setViewport(0, 0, data.width, data.height, 0.0, 1.0);
 
                 auto ctx = RGRenderPassContext {
-                    .mesh_renderer = &mesh_renderer,
-                    .sprite_renderer = &sprite_renderer
+                    
                 };
                 data.callback(ctx);
 

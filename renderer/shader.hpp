@@ -82,7 +82,7 @@ public:
         return bindings;
     }
 
-    auto get_stages() -> wgpu::ShaderStage const& {
+    auto get_stages() -> wgpu::ShaderStageFlags const& {
 
         return stages;
     }
@@ -92,7 +92,7 @@ private:
     const uint32_t MAX_GROUP_TYPE_SPACE = 6;
     const uint32_t MAX_GROUP_HANDLE_SPACE = 4;
 
-    wgpu::ShaderStage stages{wgpu::ShaderStage::None};
+    wgpu::ShaderStageFlags stages{wgpu::ShaderStage::None};
     std::unordered_map<uint32_t, std::unordered_map<uint32_t, VariableReflectInfo>> bindings;
 
     auto get_format_by_string(std::string_view const format) -> VariableFormat;
@@ -125,6 +125,24 @@ private:
     wgpu::BindGroupLayout bind_group_layout{nullptr};
 
     std::unique_ptr<wgpu::CompilationInfoCallback> compilation_callback;
+};
+
+struct ShaderData {
+    std::string_view shader_name;
+    std::string_view shader_code;
+};
+
+class ShaderCache {
+public:
+
+    ShaderCache(Backend& backend);
+
+    auto get(ShaderData const& data) -> core::ref_ptr<Shader>;
+
+private:
+
+    Backend* backend;
+    std::unordered_map<uint64_t, core::ref_ptr<Shader>> entries;
 };
 
 }

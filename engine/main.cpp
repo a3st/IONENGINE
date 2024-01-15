@@ -7,6 +7,7 @@
 #include "renderer/renderer.hpp"
 #include "asset/asset_manager.hpp"
 #include "asset/ktx2_image.hpp"
+#include "asset/glb_model.hpp"
 #include "renderer/pipelines/my_render_pipeline.hpp"
 
 using namespace ionengine;
@@ -20,7 +21,21 @@ int main(int* argc, char** agrv) {
         auto render_pipeline = core::make_ref<renderer::MyRenderPipeline>();
         renderer::Renderer renderer(render_pipeline, window);
 
-        AssetManager asset_manager;
+        std::string quad_shader;
+        {
+            std::ifstream ifs("shaders/quad.wgsl");
+            ifs.seekg(0, std::ios::end);
+            auto size = ifs.tellg();
+            ifs.seekg(0, std::ios::beg);
+            quad_shader.resize(size);
+            ifs.read(reinterpret_cast<char* const>(quad_shader.data()), size);
+        }
+        std::vector<renderer::ShaderData> shaders;
+        shaders.emplace_back("quad", quad_shader);
+
+        if(!renderer.load_shaders(shaders)) {
+            throw core::Exception("Error loading shaders");
+        }
 
         std::vector<uint8_t> image_bytes;
         {
@@ -33,7 +48,20 @@ int main(int* argc, char** agrv) {
         }
         Ktx2Image image(image_bytes);
         
+        std::vector<uint8_t> cube_bytes;
+        {
+            std::ifstream ifs("models/cube.glb", std::ios::binary);
+            ifs.seekg(0, std::ios::end);
+            auto size = ifs.tellg();
+            ifs.seekg(0, std::ios::beg);
+            cube_bytes.resize(size);
+            ifs.read(reinterpret_cast<char* const>(cube_bytes.data()), size);
+        }
+        GLBModel model(cube_bytes);
 
+        auto main_camera = core::make_ref<renderer::Camera>();
+        std::vector<core::ref_ptr<renderer::Camera>> targets;
+        targets.emplace_back(main_camera);
 
         loop.run(
             window,
@@ -46,11 +74,11 @@ int main(int* argc, char** agrv) {
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::Updated> const& data) {
 
-                        renderer.render();
+                        renderer.render(targets);
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {
                         
-                        renderer.resize(data.width, data.height);
+                        renderer.resize(window, data.width, data.height);
                     },
                     [&](platform::WindowEventData<platform::WindowEventType::KeyboardInput> const& data) {
 

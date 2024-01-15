@@ -4,6 +4,7 @@
 #include "shader.hpp"
 #include "backend.hpp"
 #include "core/exception.hpp"
+#include <xxhash/xxhash64.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -84,16 +85,13 @@ ShaderReflect::ShaderReflect(std::string_view const shader_code) {
 
             auto shader_stage = match[1].str();
 
-            WGPUShaderStage flags = WGPUShaderStage_None;
             if(shader_stage.find("vertex") != std::string::npos) {
-                flags = (WGPUShaderStage)((int32_t)flags | (int32_t)WGPUShaderStage_Vertex);
+                stages |= wgpu::ShaderStage::Vertex;
             } else if(shader_stage.find("fragment") != std::string::npos) {
-                flags = (WGPUShaderStage)((int32_t)flags | (int32_t)WGPUShaderStage_Fragment);
+                stages |= wgpu::ShaderStage::Fragment;
             } else if(shader_stage.find("compute") != std::string::npos) {
-                flags = (WGPUShaderStage)((int32_t)flags | (int32_t)WGPUShaderStage_Compute);
+                stages |= wgpu::ShaderStage::Compute;
             }
-
-            stages = flags;
         }
     }
 }
@@ -448,6 +446,28 @@ Shader::Shader(Backend& backend, std::string_view const shader_code) {
             descriptor.entries = entries.data();
 
             bind_group_layout = backend.get_device().createBindGroupLayout(descriptor);
+        }
+    }
+}
+
+ShaderCache::ShaderCache(Backend& backend) : backend(&backend) {
+
+}
+
+auto ShaderCache::get(ShaderData const& data) -> core::ref_ptr<Shader> {
+
+    uint64_t const hash = XXHash64::hash(data.shader_name.data(), data.shader_name.size(), 0);
+    auto entry = entries.find(hash);
+
+    if(entry != entries.end()) {
+        return entry->second;
+    } else {
+        if(data.shader_code.empty()) {
+            return nullptr;
+        } else {
+            core::ref_ptr<Shader> shader = core::make_ref<Shader>(*backend, data.shader_code);
+            entries.emplace(hash, shader);
+            return shader;
         }
     }
 }

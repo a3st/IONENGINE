@@ -155,7 +155,7 @@ std::queue<WindowEvent>& Window::Impl::get_queue_message() {
 	
 	auto msg = MSG {};
 
-	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+	while(PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }

@@ -13,7 +13,12 @@ public:
 
     MyRenderPipeline() = default;
 
-    auto render(Backend& backend, platform::Window const& window) -> core::ref_ptr<RenderGraph> override;
+    auto setup(
+        RenderGraphBuilder& builder, 
+        core::ref_ptr<Camera> camera, 
+        uint32_t const width, 
+        uint32_t const height
+    ) -> std::vector<RGAttachment> override;
 };
 
 }

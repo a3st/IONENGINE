@@ -15,8 +15,11 @@ Texture::Texture(
     uint32_t const mip_levels,
     wgpu::TextureFormat const format,
     TextureDimension const dimension,
-    uint32_t sample_count
-) {
+    uint32_t const sample_count,
+    wgpu::TextureUsageFlags const usage
+) : 
+    backend(&backend) 
+{
     {
         auto descriptor = wgpu::TextureDescriptor {};
         descriptor.size = wgpu::Extent3D(width, height, depth);
@@ -34,9 +37,14 @@ Texture::Texture(
             } break;
         }
         descriptor.sampleCount = sample_count;
-        descriptor.usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::RenderAttachment;
+        descriptor.usage = usage;
 
         texture = backend.get_device().createTexture(descriptor);
+    }
+
+    if(usage & wgpu::TextureUsage::TextureBinding)
+    {
+        auto descriptor = wgpu::SamplerDescriptor {};
     }
 
     {
@@ -62,3 +70,4 @@ Texture::Texture(
         view = texture.createView(descriptor);
     }
 }
+

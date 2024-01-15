@@ -12,14 +12,12 @@ namespace ionengine {
 namespace renderer {
 
 class Backend;
-class MeshRenderer;
-class UIRenderer;
-class SpriteRenderer;
 
 struct RGAttachment {
     std::string name;
     wgpu::TextureFormat format;
     uint32_t sample_count;
+    core::ref_ptr<Texture> texture{nullptr};
     
     struct ColorAttachment {
         wgpu::LoadOp load_op;
@@ -63,6 +61,21 @@ struct RGAttachment {
             .name = std::string(name),
             .format = format,
             .sample_count = sample_count,
+            .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
+        };
+    }
+
+    static auto external(
+        core::ref_ptr<Texture> texture,
+        wgpu::LoadOp const load_op, 
+        wgpu::StoreOp const store_op, 
+        wgpu::Color const& color = wgpu::Color(0.0, 0.0, 0.0, 0.0)
+    ) -> RGAttachment {
+        return RGAttachment {
+            .name = std::format("__external_{}__", (uint64_t)texture->get_texture()),
+            .format = wgpu::TextureFormat::Undefined,
+            .sample_count = 0,
+            .texture = texture,
             .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
         };
     }
@@ -125,8 +138,7 @@ private:
 };
 
 struct RGRenderPassContext {
-    MeshRenderer* mesh_renderer;
-    SpriteRenderer* sprite_renderer;
+
 };
 
 using graphics_pass_func_t = std::function<void(RGRenderPassContext&)>;
@@ -180,7 +192,7 @@ public:
         std::unordered_map<uint64_t, RGAttachment> const& attachments
     );
 
-    auto execute(MeshRenderer& mesh_renderer, SpriteRenderer& sprite_renderer) -> void;
+    auto execute() -> void;
 
 private:
 

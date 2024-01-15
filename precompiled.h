@@ -33,6 +33,7 @@
 #include <unordered_set>
 #include <semaphore>
 #include <regex>
+#include <spanstream>
 
 #ifndef DECLARE_ENUM_CLASS_BIT_FLAG
 #define DECLARE_ENUM_CLASS_BIT_FLAG(EnumClass) \

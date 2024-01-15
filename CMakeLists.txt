@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(thirdparty/webgpu)
+add_subdirectory(thirdparty/simdjson)
 
 add_executable(Runtime-Win32
     "platform/window_loop.cpp"
@@ -12,16 +13,21 @@ add_executable(Runtime-Win32
 
     "math/color.cpp"
 
+    "asset/ktx2_image.cpp"
+    "asset/glb_model.cpp"
+
     "asset/asset_manager.cpp"
 
     "renderer/backend.cpp"
     "renderer/texture.cpp"
-    "renderer/mesh.cpp"
+    "renderer/buffer.cpp"
     "renderer/shader.cpp"
+    "renderer/drawable.cpp"
+    "renderer/mesh.cpp"
     "renderer/camera.cpp"
+    "renderer/upload_manager.cpp"
+    "renderer/texture_cache.cpp"
     "renderer/render_graph.cpp"
-    "renderer/mesh_renderer.cpp"
-    "renderer/sprite_renderer.cpp"
     "renderer/renderer.cpp"
 
     "renderer/pipelines/my_render_pipeline.cpp"
@@ -46,6 +52,7 @@ target_link_directories(Runtime-Win32 PRIVATE
 
 target_link_libraries(Runtime-Win32
     webgpu
+    simdjson
 )
 
 target_compile_definitions(Runtime-Win32 PRIVATE 
