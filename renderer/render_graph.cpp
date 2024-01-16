@@ -4,6 +4,7 @@
 #include "render_graph.hpp"
 #include "core/exception.hpp"
 #include "backend.hpp"
+#include "shader.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -95,6 +96,26 @@ auto RGResourceCache::update() -> void {
     }
 }
 
+auto RGRenderPassContext::get_resource_by_index(uint32_t const index) -> RGResource {
+    
+    auto result = inputs->find(index);
+    assert(result != inputs->end());
+
+    RGAttachment& attachment = attachments->at(result->second);
+
+    RGResource resource;
+    if(!attachment.texture) {
+        resource = resource_cache->get(result->second, attachment.format, attachment.sample_count, width, height);
+    } else {
+        resource = RGResource { .texture = attachment.texture };
+    }
+    return resource;
+}
+
+auto RGRenderPassContext::blit(RGResource const& source) -> void {
+
+}
+
 RenderGraph::RenderGraph(
     Backend& backend, 
     std::vector<RGRenderPass> const& steps,
@@ -108,7 +129,7 @@ RenderGraph::RenderGraph(
 
 }
 
-auto RenderGraph::execute() -> void {
+auto RenderGraph::execute(ShaderCache& shader_cache) -> void {
 
     auto cur_swapchain_view = backend->get_swapchain().getCurrentTextureView();
 
@@ -154,7 +175,11 @@ auto RenderGraph::execute() -> void {
                 render_pass.setViewport(0, 0, data.width, data.height, 0.0, 1.0);
 
                 auto ctx = RGRenderPassContext {
-                    
+                    .inputs = &step.inputs,
+                    .attachments = &attachments,
+                    .resource_cache = &resource_cache,
+                    .width = data.width,
+                    .height = data.height
                 };
                 data.callback(ctx);
 

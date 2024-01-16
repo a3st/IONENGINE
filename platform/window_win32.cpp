@@ -57,7 +57,7 @@ void Window::Impl::initialize(std::string_view const label, uint32_t const width
     WNDCLASS wnd_class{};
 	wnd_class.lpszClassName = TEXT("IONENGINE_WINDOW");
 	wnd_class.hInstance = GetModuleHandle(nullptr);
-	wnd_class.lpfnWndProc = Impl::wnd_proc;
+	wnd_class.lpfnWndProc = reinterpret_cast<WNDPROC>(Impl::wnd_proc);
 	wnd_class.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
 
     if (!RegisterClass(&wnd_class)) {

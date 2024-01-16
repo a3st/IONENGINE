@@ -55,7 +55,6 @@ private:
     wgpu::Texture texture{nullptr};
     wgpu::TextureView view{nullptr};
     std::array<uint32_t, 16> uploads;
-
 };
 
 class Texture2D : public Texture {

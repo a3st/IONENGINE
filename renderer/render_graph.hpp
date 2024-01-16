@@ -12,6 +12,7 @@ namespace ionengine {
 namespace renderer {
 
 class Backend;
+class ShaderCache;
 
 struct RGAttachment {
     std::string name;
@@ -139,6 +140,15 @@ private:
 
 struct RGRenderPassContext {
 
+    std::unordered_map<uint32_t, uint64_t>* inputs;
+    std::unordered_map<uint64_t, RGAttachment>* attachments;
+    RGResourceCache* resource_cache;
+    uint32_t width;
+    uint32_t height;
+
+    auto get_resource_by_index(uint32_t const index) -> RGResource;
+
+    auto blit(RGResource const& source) -> void;
 };
 
 using graphics_pass_func_t = std::function<void(RGRenderPassContext&)>;
@@ -192,7 +202,7 @@ public:
         std::unordered_map<uint64_t, RGAttachment> const& attachments
     );
 
-    auto execute() -> void;
+    auto execute(ShaderCache& shader_cache) -> void;
 
 private:
 

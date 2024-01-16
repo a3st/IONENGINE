@@ -95,7 +95,7 @@ public:
 
     template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
     auto operator=(ref_ptr<Derived, DerivedDeleter> other) -> ref_ptr& {
-        ptr = other.ptr;
+        ptr = other.get();
         if(ptr) {
             ptr->add_ref();
         }

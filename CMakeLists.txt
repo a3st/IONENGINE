@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.26.0)
 project(IONENGINE VERSION 0.0.5)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(thirdparty/webgpu)
 add_subdirectory(thirdparty/simdjson)
 
-add_executable(Runtime-Win32
+add_library(ionengine SHARED
     "platform/window_loop.cpp"
     "platform/window_win32.cpp"
 
@@ -31,30 +31,28 @@ add_executable(Runtime-Win32
     "renderer/renderer.cpp"
 
     "renderer/pipelines/my_render_pipeline.cpp"
-    
-    "engine/main.cpp"
+
+    "bindings/python/test.cpp"
 )
 
-target_precompile_headers(Runtime-Win32 PRIVATE precompiled.h)
+target_precompile_headers(ionengine PRIVATE precompiled.h)
 
-set_target_properties(Runtime-Win32 PROPERTIES 
-    OUTPUT_NAME "project"
-    COMPILE_FLAGS "${COMPILE_FLAGS}"
-)
-
-target_include_directories(Runtime-Win32 PRIVATE
+target_include_directories(ionengine PRIVATE
     "${PROJECT_SOURCE_DIR}"
     "thirdparty/xxhash/include"
+    "C:/Program Files/Python311/include"
 )
 
-target_link_directories(Runtime-Win32 PRIVATE
+target_link_directories(ionengine PRIVATE
+    "C:/Program Files/Python311/libs"
 )
 
-target_link_libraries(Runtime-Win32
+target_link_libraries(ionengine
     webgpu
     simdjson
+    python311.lib
 )
 
-target_compile_definitions(Runtime-Win32 PRIVATE 
+target_compile_definitions(ionengine PRIVATE 
 
 )

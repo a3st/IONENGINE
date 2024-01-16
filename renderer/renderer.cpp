@@ -29,10 +29,12 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
         {
             std::vector<RGAttachment> inputs;
             for(auto& target : targets) {
-                if(!target->get_render_target()) {
-                    inputs = render_pipeline->setup(builder, target, width, height);
-                } else {
+                target->resize(backend, width, height);
+
+                if(target->is_custom_render_target()) {
                     render_pipeline->setup(builder, target, width, height);
+                } else {
+                    inputs = render_pipeline->setup(builder, target, width, height);
                 }
             }
             
@@ -46,8 +48,9 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
                 height,
                 inputs,
                 outputs,
-                [&](RGRenderPassContext& ctx) {
-
+                [](RGRenderPassContext& ctx) {
+                    RGResource resource = ctx.get_resource_by_index(0);
+                    ctx.blit(resource);
                 }
             );
         }
@@ -56,11 +59,13 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
     }
 
     backend.update();
-    render_graph->execute();
+    render_graph->execute(shader_cache);
 }
 
 auto Renderer::resize(platform::Window const& window, uint32_t const width, uint32_t const height) -> void {
-    
+
+    this->width = width;
+    this->height = height;
     // backend.recreate_swapchain(width, height);
 }
 

@@ -20,6 +20,8 @@ public:
 
     Camera();
 
+    auto resize(Backend& backend, uint32_t const width, uint32_t const height) -> void;
+
     auto calculate() -> void;
 
     auto get_projection() const -> math::Matrixf const& {
@@ -33,6 +35,15 @@ public:
     }
 
     auto get_render_target() const -> core::ref_ptr<Texture> {
+        
+        if(!render_target) {
+            return default_render_target;
+        } else {
+            return render_target;
+        }
+    }
+
+    auto is_custom_render_target() const -> bool {
 
         return render_target;
     }
@@ -44,6 +55,7 @@ private:
     CameraProjectionType projection_type;
     float field_of_view;
     core::ref_ptr<Texture> render_target{nullptr};
+    core::ref_ptr<Texture> default_render_target{nullptr};
 
     auto create_projection_matrix() -> void;
 
