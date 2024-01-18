@@ -32,12 +32,13 @@ auto Camera::resize(uint32_t const width, uint32_t const height) -> void {
         wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding
     );
 
-    aspect_ratio = width / height;
+    aspect_ratio = static_cast<float>(width / height);
 }
 
-auto Camera::calculate() -> void {
+auto Camera::calculate(math::Vector3f const& position, math::Quaternionf const& rotation) -> void {
 
-    
+    view = math::Matrixf::look_at_rh(position, position + rotation * math::Vector3f(0.0f, 0.0f, -1.0f), math::Vector3f(0.0f, 1.0f, 0.0f));
+    create_projection_matrix();
 }
 
 auto Camera::create_projection_matrix() -> void {

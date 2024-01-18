@@ -46,6 +46,8 @@ auto Engine::run() -> void {
                     flow = platform::WindowEventFlow::Exit;
                 },
                 [&](platform::WindowEventData<platform::WindowEventType::Updated> const& data) {
+
+                    renderer->update(0.1f);
                     
                     for(auto const& primitive : model.get_mesh(0).primitives) {
                         auto primitive_data = renderer::PrimitiveData {

@@ -94,7 +94,7 @@ struct Quaternion {
             quat.normalize();
         }
 
-        *angle = static_cast<Type>(2 * std::acos(quat.w) * 180.0f / M_PI);
+        *angle = static_cast<Type>(2 * std::acos(quat.w) * 180.0f / std::numbers::pi);
         Type s = std::sqrt(1 - quat.w * quat.w);
 
         if (s < 0.001) {
@@ -112,7 +112,7 @@ struct Quaternion {
 
         auto quat = Quaternion<Type> {};
 
-        Type rot_angle = static_cast<Type>(angle * M_PI / 180.0f);
+        Type rot_angle = static_cast<Type>(angle * std::numbers::pi / 180.0f);
 	    Type rot_sin = std::sin(rot_angle / 2);
         Vector3<Type> norm_axis = Vector3<Type>(axis).normalize();
 
@@ -172,9 +172,9 @@ struct Quaternion {
         auto quat = Quaternion {};
 
         Type rotx, roty, rotz;
-        rotx = static_cast<Type>(x * M_PI / 180.0f);
-        roty = static_cast<Type>(y * M_PI / 180.0f);
-        rotz = static_cast<Type>(z * M_PI / 180.0f);
+        rotx = static_cast<Type>(x * std::numbers::pi / 180.0f);
+        roty = static_cast<Type>(y * std::numbers::pi / 180.0f);
+        rotz = static_cast<Type>(z * std::numbers::pi / 180.0f);
 
         Type sinx, siny, sinz, cosx, cosy, cosz;
         sinx = std::sin(rotx / 2);

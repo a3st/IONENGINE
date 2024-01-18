@@ -11,6 +11,7 @@
 #include "primitive_cache.hpp"
 #include "texture_cache.hpp"
 #include "camera.hpp"
+#include "render_task.hpp"
 
 namespace ionengine {
 
@@ -21,11 +22,6 @@ class Window;
 }
 
 namespace renderer {
-
-struct RenderTask {
-    core::ref_ptr<Primitive> primitive;
-    core::ref_ptr<Shader> shader;
-};
 
 class Renderer : public core::ref_counted_object {
 public:

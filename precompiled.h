@@ -34,6 +34,7 @@
 #include <semaphore>
 #include <regex>
 #include <spanstream>
+#include <numbers>
 
 #ifndef DECLARE_ENUM_CLASS_BIT_FLAG
 #define DECLARE_ENUM_CLASS_BIT_FLAG(EnumClass) \

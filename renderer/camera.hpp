@@ -66,7 +66,6 @@ private:
     core::ref_ptr<Texture> default_render_target{nullptr};
 
     auto create_projection_matrix() -> void;
-
 };
 
 }

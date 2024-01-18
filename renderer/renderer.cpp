@@ -44,9 +44,9 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
                 target->resize(width, height);
 
                 if(target->is_custom_render_target()) {
-                    render_pipeline->setup(builder, target, width, height);
+                    render_pipeline->setup(builder, target, width, height, render_tasks);
                 } else {
-                    inputs = render_pipeline->setup(builder, target, width, height);
+                    inputs = render_pipeline->setup(builder, target, width, height, render_tasks);
                 }
             }
             
@@ -96,4 +96,9 @@ auto Renderer::create_camera(CameraProjectionType const projection_type) -> core
 
 auto Renderer::add_render_task(PrimitiveData const& data) -> void {
 
+    auto render_task = RenderTask {
+        .primitive = primitive_cache.get(data),
+        .shader = nullptr
+    };
+    render_tasks.emplace_back(render_task);
 }

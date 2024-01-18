@@ -12,7 +12,8 @@ auto MyRenderPipeline::setup(
     RenderGraphBuilder& builder, 
     core::ref_ptr<Camera> camera, 
     uint32_t const width, 
-    uint32_t const height
+    uint32_t const height,
+    std::span<RenderTask> const render_tasks
 ) -> std::vector<RGAttachment> {
 
     std::vector<RGAttachment> inputs = {
