@@ -36,6 +36,7 @@ private:
 struct BufferAllocation {
     core::ref_ptr<Buffer> buffer{nullptr};
     uint64_t offset;
+    size_t size;
 };
 
 template<typename Type>

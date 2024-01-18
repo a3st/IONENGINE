@@ -19,7 +19,7 @@ Engine::Engine(
 
 auto Engine::run() -> void {
 
-    auto main_camera = renderer->create_camera();
+    auto main_camera = renderer->create_camera(renderer::CameraProjectionType::Perspective);
 
     std::vector<core::ref_ptr<renderer::Camera>> targets;
     targets.emplace_back(main_camera);
@@ -59,7 +59,7 @@ auto Engine::run() -> void {
                     renderer->render(targets);
                 },
                 [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {      
-                    renderer->resize(&window, data.width, data.height);
+                    renderer->resize(data.width, data.height);
                 },
                 [&](platform::WindowEventData<platform::WindowEventType::KeyboardInput> const& data) {
 

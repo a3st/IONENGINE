@@ -9,7 +9,7 @@ namespace ionengine {
 
 namespace renderer {
 
-class Backend;
+class Context;
 
 enum class TextureDimension {
     _2D,
@@ -17,11 +17,22 @@ enum class TextureDimension {
     _3D
 };
 
+struct TextureData {
+    wgpu::TextureFormat format;
+    TextureDimension dimension;
+    uint32_t width;
+    uint32_t height;
+    uint32_t depth;
+    uint32_t mip_levels;
+    std::array<std::span<uint8_t const>, 16> data;
+    uint64_t hash;
+};
+
 class Texture : public core::ref_counted_object {
 public:
 
     Texture(
-        Backend& backend,
+        Context& context,
         uint32_t const width,
         uint32_t const height,
         uint32_t const depth,
@@ -31,6 +42,8 @@ public:
         uint32_t const sample_count,
         wgpu::TextureUsageFlags const usage
     );
+
+    Texture(Context& context, TextureData const& data);
 
     auto get_view() const -> wgpu::TextureView {
 
@@ -51,7 +64,7 @@ public:
 
 private:
 
-    Backend* backend;
+    Context* context;
     wgpu::Texture texture{nullptr};
     wgpu::TextureView view{nullptr};
     std::array<uint32_t, 16> uploads;
@@ -61,38 +74,28 @@ class Texture2D : public Texture {
 public:
 
     Texture2D(
-        Backend& backend,
+        Context& context,
         uint32_t const width,
         uint32_t const height,
         uint32_t const mip_levels,
         wgpu::TextureFormat const format,
         uint32_t const sample_count,
         wgpu::TextureUsageFlags const usage
-    ) : Texture(backend, width, height, 1, mip_levels, format, TextureDimension::_2D, sample_count, usage) { }
+    ) : Texture(context, width, height, 1, mip_levels, format, TextureDimension::_2D, sample_count, usage) { }
 };
 
 class TextureCube : public Texture {
 public:
 
     TextureCube(
-        Backend& backend,
+        Context& context,
         uint32_t const width,
         uint32_t const height,
         uint32_t const mip_levels,
         wgpu::TextureFormat const format,
         uint32_t const sample_count,
         wgpu::TextureUsageFlags const usage
-    ) : Texture(backend, width, height, 6, mip_levels, format, TextureDimension::Cube, sample_count, usage) { }
-};
-
-struct TextureData {
-    wgpu::TextureFormat format;
-    TextureDimension dimension;
-    uint32_t width;
-    uint32_t height;
-    uint32_t depth;
-    uint32_t mip_levels;
-    std::array<std::span<uint8_t const>, 16> data;
+    ) : Texture(context, width, height, 6, mip_levels, format, TextureDimension::Cube, sample_count, usage) { }
 };
 
 }

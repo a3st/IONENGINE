@@ -3,25 +3,27 @@
 #pragma once
 
 #include "primitive.hpp"
-#include "upload_manager.hpp"
 
 namespace ionengine {
 
 namespace renderer {
 
-class MeshCache {
+class Context;
+
+class PrimitiveCache {
 public:
 
-    MeshCache(Backend& backend, UploadManager& upload_manager);
+    PrimitiveCache(Context& context, BufferAllocator<LinearAllocator>& allocator);
 
-    auto get(MeshData const& data) -> core::ref_ptr<Texture>;
+    auto get(PrimitiveData const& data) -> core::ref_ptr<Primitive>;
 
     auto update(float const dt) -> void;
 
 private:
 
-    Backend* backend;
-    UploadManager* upload_manager;
+    Context* context;
+    BufferAllocator<LinearAllocator>* allocator;
+    std::unordered_map<uint64_t, std::tuple<core::ref_ptr<Primitive>, uint32_t>> entries;
 };
 
 }

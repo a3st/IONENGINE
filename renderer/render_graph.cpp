@@ -3,13 +3,13 @@
 #include "precompiled.h"
 #include "render_graph.hpp"
 #include "core/exception.hpp"
-#include "backend.hpp"
+#include "context.hpp"
 #include "shader.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-RGResourceCache::RGResourceCache(Backend& backend) : backend(&backend) { 
+RGResourceCache::RGResourceCache(Context& context) : context(&context) { 
 
 }
 
@@ -29,7 +29,7 @@ auto RGResourceCache::get_from_entries(
         entry->second.pop();
     } else {
         core::ref_ptr<Texture> texture = core::make_ref<Texture2D>(
-            *backend,
+            *context,
             width,
             height,
             1,
@@ -117,13 +117,13 @@ auto RGRenderPassContext::blit(RGResource const& source) -> void {
 }
 
 RenderGraph::RenderGraph(
-    Backend& backend, 
+    Context& context, 
     std::vector<RGRenderPass> const& steps,
     std::unordered_map<uint64_t, RGAttachment> const& attachments
 ) : 
-    backend(&backend), 
+    context(&context), 
     steps(steps),
-    resource_cache(backend),
+    resource_cache(context),
     attachments(attachments)
 {
 
@@ -131,12 +131,12 @@ RenderGraph::RenderGraph(
 
 auto RenderGraph::execute(ShaderCache& shader_cache) -> void {
 
-    auto cur_swapchain_view = backend->get_swapchain().getCurrentTextureView();
+    auto cur_swapchain_view = context->get_swapchain().getCurrentTextureView();
 
     wgpu::CommandEncoder encoder{nullptr};
     {
         auto descriptor = wgpu::CommandEncoderDescriptor {};
-        encoder = backend->get_device().createCommandEncoder(descriptor);
+        encoder = context->get_device().createCommandEncoder(descriptor);
     }
 
     for(auto& step : steps) {
@@ -201,14 +201,14 @@ auto RenderGraph::execute(ShaderCache& shader_cache) -> void {
         command_buffer = encoder.finish(descriptor);
     }
 
-    backend->get_queue().submit(1, &command_buffer);
+    context->get_queue().submit(1, &command_buffer);
     
-    backend->get_swapchain().present();
+    context->get_swapchain().present();
 
     frame_index = (frame_index + 1) % 2;
 }
 
-RenderGraphBuilder::RenderGraphBuilder(Backend& backend) : backend(&backend) {
+RenderGraphBuilder::RenderGraphBuilder(Context& context) : context(&context) {
 
 }
 
@@ -270,5 +270,5 @@ auto RenderGraphBuilder::add_graphics_pass(
 
 auto RenderGraphBuilder::build() -> core::ref_ptr<RenderGraph> {
 
-    return core::make_ref<RenderGraph>(*backend, steps, attachments);
+    return core::make_ref<RenderGraph>(*context, steps, attachments);
 }

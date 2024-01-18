@@ -2,13 +2,13 @@
 
 #include "precompiled.h"
 #include "texture.hpp"
-#include "backend.hpp"
+#include "context.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
 Texture::Texture(
-    Backend& backend,
+    Context& context,
     uint32_t const width,
     uint32_t const height,
     uint32_t const depth,
@@ -18,7 +18,7 @@ Texture::Texture(
     uint32_t const sample_count,
     wgpu::TextureUsageFlags const usage
 ) : 
-    backend(&backend) 
+    context(&context) 
 {
     {
         auto descriptor = wgpu::TextureDescriptor {};
@@ -39,7 +39,7 @@ Texture::Texture(
         descriptor.sampleCount = sample_count;
         descriptor.usage = usage;
 
-        texture = backend.get_device().createTexture(descriptor);
+        texture = context.get_device().createTexture(descriptor);
     }
 
     if(usage & wgpu::TextureUsage::TextureBinding)
@@ -71,3 +71,7 @@ Texture::Texture(
     }
 }
 
+Texture::Texture(Context& context, TextureData const& data) : context(&context) {
+
+    
+}

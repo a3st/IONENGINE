@@ -4,11 +4,14 @@
 
 #include "core/ref_ptr.hpp"
 #include "math/matrix.hpp"
+#include "math/quaternion.hpp"
 #include "texture.hpp"
 
 namespace ionengine {
 
 namespace renderer {
+
+class Context;
 
 enum class CameraProjectionType {
     Perspective,
@@ -18,11 +21,11 @@ enum class CameraProjectionType {
 class Camera : public core::ref_counted_object {
 public:
 
-    Camera(Backend& backend);
+    Camera(Context& context, CameraProjectionType const projection_type);
 
     auto resize(uint32_t const width, uint32_t const height) -> void;
 
-    auto calculate() -> void;
+    auto calculate(math::Vector3f const& position, math::Quaternionf const& rotation) -> void;
 
     auto get_projection() const -> math::Matrixf const& {
 
@@ -50,11 +53,15 @@ public:
 
 private:
 
-    Backend* backend;
+    Context* context;
     math::Matrixf view;
     math::Matrixf projection;
     CameraProjectionType projection_type;
     float field_of_view;
+    float aspect_ratio;
+    float near_dst;
+    float far_dst;
+
     core::ref_ptr<Texture> render_target{nullptr};
     core::ref_ptr<Texture> default_render_target{nullptr};
 

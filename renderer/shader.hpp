@@ -9,7 +9,7 @@ namespace ionengine {
 
 namespace renderer {
 
-class Backend;
+class Context;
 
 enum class VariableResourceType {
     Uniform,
@@ -107,7 +107,7 @@ private:
 class Shader : public core::ref_counted_object {
 public:
 
-    Shader(Backend& backend, std::string_view const shader_code);
+    Shader(Context& context, std::string_view const shader_code);
 
     auto get_shader_module() const -> wgpu::ShaderModule {
 
@@ -123,8 +123,6 @@ private:
 
     wgpu::ShaderModule shader_module{nullptr};
     wgpu::BindGroupLayout bind_group_layout{nullptr};
-
-    std::unique_ptr<wgpu::CompilationInfoCallback> compilation_callback;
 };
 
 struct ShaderData {
@@ -135,13 +133,13 @@ struct ShaderData {
 class ShaderCache {
 public:
 
-    ShaderCache(Backend& backend);
+    ShaderCache(Context& context);
 
     auto get(ShaderData const& data) -> core::ref_ptr<Shader>;
 
 private:
 
-    Backend* backend;
+    Context* context;
     std::unordered_map<uint64_t, core::ref_ptr<Shader>> entries;
 };
 

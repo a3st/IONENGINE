@@ -8,11 +8,12 @@ namespace ionengine {
 
 namespace renderer {
 
-class Backend;
+class Context;
 
 struct PrimitiveData {
     std::span<uint8_t const> vertices;
     std::span<uint8_t const> indices;
+    uint64_t hash;
 };
 
 class Primitive : public core::ref_counted_object {
@@ -36,11 +37,15 @@ public:
         },
     };
 
-    Primitive(Backend& backend, BufferAllocator<LinearAllocator>& allocator);
+    Primitive(
+        Context& context, 
+        BufferAllocator<LinearAllocator>& allocator,
+        PrimitiveData const& data
+    );
 
 private:
 
-    Backend* backend;
+    Context* context;
     BufferAllocator<LinearAllocator>* allocator;
     BufferAllocation vertex_buffer;
     BufferAllocation index_buffer;

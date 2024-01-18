@@ -11,7 +11,7 @@ namespace ionengine {
 
 namespace renderer {
 
-class Backend;
+class Context;
 class ShaderCache;
 
 struct RGAttachment {
@@ -112,7 +112,7 @@ public:
         }
     };
 
-    RGResourceCache(Backend& backend);
+    RGResourceCache(Context& context);
 
     auto get(
         uint64_t const id,
@@ -133,7 +133,7 @@ private:
         uint32_t const height
     ) -> RGResource;
 
-    Backend* backend;
+    Context* context;
     std::unordered_map<Entry, std::queue<RGResource>, EntryHasher> entries;
     std::unordered_map<uint64_t, std::optional<std::tuple<RGResource, uint32_t>>> resources;
 };
@@ -197,7 +197,7 @@ class RenderGraph : public core::ref_counted_object {
 public:
 
     RenderGraph(
-        Backend& backend, 
+        Context& context, 
         std::vector<RGRenderPass> const& steps,
         std::unordered_map<uint64_t, RGAttachment> const& attachments
     );
@@ -206,7 +206,7 @@ public:
 
 private:
 
-    Backend* backend;
+    Context* context;
     std::vector<RGRenderPass> steps;
     std::unordered_map<uint64_t, RGAttachment> attachments;
     RGResourceCache resource_cache;
@@ -218,7 +218,7 @@ private:
 class RenderGraphBuilder {
 public:
 
-    RenderGraphBuilder(Backend& backend);
+    RenderGraphBuilder(Context& context);
 
     auto add_graphics_pass(
         std::string_view const pass_name,
@@ -235,7 +235,7 @@ public:
 
 private:
 
-    Backend* backend;
+    Context* context;
     std::vector<RGRenderPass> steps;
     std::unordered_map<uint64_t, RGAttachment> attachments;
 };

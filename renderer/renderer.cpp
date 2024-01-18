@@ -11,20 +11,33 @@ using namespace ionengine;
 using namespace ionengine::renderer;
 
 Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Window const& window) : 
-    backend(window), 
+    context(window), 
     render_pipeline(render_pipeline),
-    shader_cache(backend),
-    mesh_allocator(backend, 32 * 1024 * 1024, wgpu::BufferUsage::CopyDst),
+    shader_cache(context),
+    primitive_allocator(
+        context, 
+        32 * 1024 * 1024, 
+        wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex
+    ),
+    texture_cache(context),
+    primitive_cache(context, primitive_allocator),
     width(window.get_width()),
     height(window.get_height())
 {
     
 }
 
+auto Renderer::update(float const dt) -> void {
+
+    context.update();
+    primitive_cache.update(dt);
+    texture_cache.update(dt);
+}
+
 auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
 
     if(!is_graph_initialized) {
-        RenderGraphBuilder builder(backend);
+        RenderGraphBuilder builder(context);
         {
             std::vector<RGAttachment> inputs;
             for(auto& target : targets) {
@@ -57,15 +70,15 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
         is_graph_initialized = true;
     }
 
-    backend.update();
     render_graph->execute(shader_cache);
 }
 
-auto Renderer::resize(platform::Window const& window, uint32_t const width, uint32_t const height) -> void {
+auto Renderer::resize(uint32_t const width, uint32_t const height) -> void {
 
     this->width = width;
     this->height = height;
-    // backend.recreate_swapchain(width, height);
+    is_graph_initialized = false;
+    context.recreate_swapchain(width, height);
 }
 
 auto Renderer::load_shaders(std::span<ShaderData const> const shaders) -> bool {
@@ -76,9 +89,9 @@ auto Renderer::load_shaders(std::span<ShaderData const> const shaders) -> bool {
     return true;
 }
 
-auto Renderer::create_camera() -> core::ref_ptr<Camera> {
+auto Renderer::create_camera(CameraProjectionType const projection_type) -> core::ref_ptr<Camera> {
 
-    return core::make_ref<Camera>(backend);
+    return core::make_ref<Camera>(context, projection_type);
 }
 
 auto Renderer::add_render_task(PrimitiveData const& data) -> void {

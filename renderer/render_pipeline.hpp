@@ -16,7 +16,7 @@ class Window;
 
 namespace renderer {
 
-class Backend;
+class Context;
 
 class RenderPipeline : public core::ref_counted_object {
 public:

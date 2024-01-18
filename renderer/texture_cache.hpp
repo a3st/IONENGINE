@@ -11,7 +11,7 @@ namespace renderer {
 class TextureCache {
 public:
 
-    TextureCache(Backend& backend);
+    TextureCache(Context& context);
 
     auto get(TextureData const& data) -> core::ref_ptr<Texture>;
 
@@ -19,7 +19,8 @@ public:
 
 private:
 
-    Backend* backend;
+    Context* context;
+    std::unordered_map<uint64_t, std::tuple<core::ref_ptr<Texture>, uint32_t>> entries;
 };
 
 }

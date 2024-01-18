@@ -14,11 +14,6 @@ class Window;
 
 namespace renderer {
 
-struct UploadBuffer {
-    wgpu::Buffer buffer;
-    uint64_t offset;
-};
-
 class Context {
 public:
 
@@ -39,11 +34,6 @@ public:
         return swapchain;
     }
 
-    auto get_upload_buffer() -> UploadBuffer& {
-
-        return upload_buffer;
-    }
-
     auto update() -> void;
 
     auto recreate_swapchain(uint32_t const width, uint32_t const height) -> void;
@@ -60,7 +50,6 @@ private:
     std::unique_ptr<wgpu::ErrorCallback> error_callback;
     std::unique_ptr<wgpu::QueueWorkDoneCallback> work_done_callback;
 
-    UploadBuffer upload_buffer{nullptr};
     std::binary_semaphore semaphore{0};
 
     auto get_win32_surface(wgpu::Instance instance, platform::Window const& window) -> wgpu::Surface;

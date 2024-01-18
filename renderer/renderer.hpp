@@ -2,12 +2,14 @@
 
 #pragma once
 
-#include "backend.hpp"
+#include "context.hpp"
 #include "render_graph.hpp"
 #include "render_pipeline.hpp"
 #include "shader.hpp"
 #include "buffer.hpp"
 #include "primitive.hpp"
+#include "primitive_cache.hpp"
+#include "texture_cache.hpp"
 #include "camera.hpp"
 
 namespace ionengine {
@@ -38,23 +40,27 @@ public:
 
     auto operator=(Renderer&&) -> Renderer& = delete;
 
+    auto update(float const dt) -> void;
+
     auto render(std::span<core::ref_ptr<Camera>> const targets) -> void;
 
-    auto resize(platform::Window const& window, uint32_t const width, uint32_t const height) -> void;
+    auto resize(uint32_t const width, uint32_t const height) -> void;
 
     auto load_shaders(std::span<ShaderData const> const shaders) -> bool;
 
-    auto create_camera() -> core::ref_ptr<Camera>;
+    auto create_camera(CameraProjectionType const projection_type) -> core::ref_ptr<Camera>;
 
     auto add_render_task(PrimitiveData const& data) -> void;
 
 private:
 
-    Backend backend;
+    Context context;
     core::ref_ptr<RenderPipeline> render_pipeline;
     core::ref_ptr<RenderGraph> render_graph{nullptr};
     ShaderCache shader_cache;
-    BufferAllocator<LinearAllocator> mesh_allocator;
+    BufferAllocator<LinearAllocator> primitive_allocator;
+    TextureCache texture_cache;
+    PrimitiveCache primitive_cache;
     bool is_graph_initialized{false};
     uint32_t width;
     uint32_t height;

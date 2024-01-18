@@ -2,7 +2,7 @@
 
 #include "precompiled.h"
 #include "shader.hpp"
-#include "backend.hpp"
+#include "context.hpp"
 #include "core/exception.hpp"
 #include <xxhash/xxhash64.h>
 
@@ -288,7 +288,7 @@ auto ShaderReflect::parse_resource_type(std::tuple<std::string, std::string> con
     }
 }
 
-Shader::Shader(Backend& backend, std::string_view const shader_code) {
+Shader::Shader(Context& context, std::string_view const shader_code) {
 
     ShaderReflect reflect(shader_code);
 
@@ -301,7 +301,7 @@ Shader::Shader(Backend& backend, std::string_view const shader_code) {
 
         descriptor.nextInChain = &wgsl.chain;
 
-        shader_module = backend.get_device().createShaderModule(descriptor);
+        shader_module = context.get_device().createShaderModule(descriptor);
     }
 
     {
@@ -445,12 +445,12 @@ Shader::Shader(Backend& backend, std::string_view const shader_code) {
             descriptor.entryCount = entries.size();
             descriptor.entries = entries.data();
 
-            bind_group_layout = backend.get_device().createBindGroupLayout(descriptor);
+            bind_group_layout = context.get_device().createBindGroupLayout(descriptor);
         }
     }
 }
 
-ShaderCache::ShaderCache(Backend& backend) : backend(&backend) {
+ShaderCache::ShaderCache(Context& context) : context(&context) {
 
 }
 
@@ -465,7 +465,7 @@ auto ShaderCache::get(ShaderData const& data) -> core::ref_ptr<Shader> {
         if(data.shader_code.empty()) {
             return nullptr;
         } else {
-            core::ref_ptr<Shader> shader = core::make_ref<Shader>(*backend, data.shader_code);
+            auto shader = core::make_ref<Shader>(*context, data.shader_code);
             entries.emplace(hash, shader);
             return shader;
         }

@@ -68,17 +68,6 @@ Context::Context(platform::Window const& window) {
         semaphore.acquire();
     }
 
-    {
-        auto descriptor = wgpu::BufferDescriptor {};
-        descriptor.size = 16 * 1024 * 1024;
-        descriptor.usage = wgpu::BufferUsage::MapWrite | wgpu::BufferUsage::CopySrc;
-
-        upload_buffer = UploadBuffer {
-            .buffer = device.createBuffer(descriptor),
-            .offset = 0
-        };
-    }
-
     queue = device.getQueue();
 
     recreate_swapchain(window.get_width(), window.get_height());

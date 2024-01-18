@@ -55,7 +55,8 @@ auto LinearAllocator::allocate(size_t const size) -> BufferAllocation {
     
     auto allocation = BufferAllocation {
         .buffer = nullptr,
-        .offset = 0
+        .offset = 0,
+        .size = 0
     };
 
     for(auto& chunk : chunks) {
@@ -65,6 +66,7 @@ auto LinearAllocator::allocate(size_t const size) -> BufferAllocation {
 
         allocation.buffer = chunk.buffer;
         allocation.offset = chunk.offset;
+        allocation.size = size;
         chunk.offset += size;
     }
     return allocation;

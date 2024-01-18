@@ -26,6 +26,7 @@ add_library(engine SHARED
     "renderer/primitive.cpp"
     "renderer/camera.cpp"
     "renderer/texture_cache.cpp"
+    "renderer/primitive_cache.cpp"
     "renderer/render_graph.cpp"
     "renderer/renderer.cpp"
 
