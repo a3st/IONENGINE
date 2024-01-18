@@ -6,14 +6,14 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-Camera::Camera() {
+Camera::Camera(Backend& backend) : backend(&backend) {
 
 }
 
-auto Camera::resize(Backend& backend, uint32_t const width, uint32_t const height) -> void {
+auto Camera::resize(uint32_t const width, uint32_t const height) -> void {
 
     default_render_target = core::make_ref<Texture2D>(
-        backend,
+        *backend,
         width,
         height,
         1,

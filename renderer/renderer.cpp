@@ -14,7 +14,6 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
     backend(window), 
     render_pipeline(render_pipeline),
     shader_cache(backend),
-    upload_manager(backend),
     mesh_allocator(backend, 32 * 1024 * 1024, wgpu::BufferUsage::CopyDst),
     width(window.get_width()),
     height(window.get_height())
@@ -29,7 +28,7 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
         {
             std::vector<RGAttachment> inputs;
             for(auto& target : targets) {
-                target->resize(backend, width, height);
+                target->resize(width, height);
 
                 if(target->is_custom_render_target()) {
                     render_pipeline->setup(builder, target, width, height);
@@ -75,4 +74,13 @@ auto Renderer::load_shaders(std::span<ShaderData const> const shaders) -> bool {
         shader_cache.get(shader);
     }
     return true;
+}
+
+auto Renderer::create_camera() -> core::ref_ptr<Camera> {
+
+    return core::make_ref<Camera>(backend);
+}
+
+auto Renderer::add_render_task(PrimitiveData const& data) -> void {
+
 }

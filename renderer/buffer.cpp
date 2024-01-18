@@ -2,35 +2,40 @@
 
 #include "precompiled.h"
 #include "buffer.hpp"
-#include "backend.hpp"
+#include "context.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
 Buffer::Buffer(
-    Backend& backend,
+    Context& context,
     size_t const size,
     wgpu::BufferUsageFlags const usage
 ) :
-    backend(&backend)
+    context(&context)
 {
     {
         auto descriptor = wgpu::BufferDescriptor{};
         descriptor.size = size;
         descriptor.usage = usage;
 
-        buffer = backend.get_device().createBuffer(descriptor);
+        buffer = context.get_device().createBuffer(descriptor);
     }
 }
 
-LinearAllocator::LinearAllocator(Backend& backend, size_t const size, wgpu::BufferUsageFlags const usage) {
+auto Buffer::upload(std::span<uint8_t const> const data_bytes, uint64_t const offset) -> void {
+
+    context->get_queue().writeBuffer(buffer, offset, data_bytes.data(), data_bytes.size());
+}
+
+LinearAllocator::LinearAllocator(Context& context, size_t const size, wgpu::BufferUsageFlags const usage) {
 
     size_t remaining_size = size;
     do {
         size_t const alloc_size = remaining_size > MAX_CHUNK_SIZE ? MAX_CHUNK_SIZE : remaining_size;
 
         auto chunk = Chunk {
-            .buffer = core::make_ref<Buffer>(backend, alloc_size, usage),
+            .buffer = core::make_ref<Buffer>(context, alloc_size, usage),
             .offset = 0,
             .size = alloc_size
         };
@@ -77,7 +82,7 @@ auto LinearAllocator::reset() -> void {
     }
 }
 
-BlockAllocator::BlockAllocator(Backend& backend, size_t const size, wgpu::BufferUsageFlags const usage) {
+BlockAllocator::BlockAllocator(Context& context, size_t const size, wgpu::BufferUsageFlags const usage) {
 
 }
 

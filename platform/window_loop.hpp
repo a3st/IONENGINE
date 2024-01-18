@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "core/ref_ptr.hpp"
 #include "platform/window.hpp"
 
 namespace ionengine::platform {
@@ -12,7 +13,7 @@ enum class WindowEventFlow {
     Exit
 };
 
-class WindowLoop {
+class WindowLoop : public core::ref_counted_object {
 public:
 
     WindowLoop() = default;

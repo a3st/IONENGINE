@@ -3,14 +3,14 @@
 #include "precompiled.h"
 #define WEBGPU_CPP_IMPLEMENTATION
 #include <webgpu/webgpu.hpp>
-#include "backend.hpp"
+#include "context.hpp"
 #include "platform/window.hpp"
 #include "core/exception.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-auto Backend::get_win32_surface(wgpu::Instance instance, platform::Window const& window) -> wgpu::Surface {
+auto Context::get_win32_surface(wgpu::Instance instance, platform::Window const& window) -> wgpu::Surface {
 
     auto get_hwnd_descriptor = [](platform::Window const& window) -> std::shared_ptr<wgpu::ChainedStruct> {
         
@@ -28,7 +28,7 @@ auto Backend::get_win32_surface(wgpu::Instance instance, platform::Window const&
     return instance.createSurface(descriptor);
 }
 
-Backend::Backend(platform::Window const& window) {
+Context::Context(platform::Window const& window) {
 
     {
         auto descriptor = wgpu::InstanceDescriptor {};
@@ -68,6 +68,17 @@ Backend::Backend(platform::Window const& window) {
         semaphore.acquire();
     }
 
+    {
+        auto descriptor = wgpu::BufferDescriptor {};
+        descriptor.size = 16 * 1024 * 1024;
+        descriptor.usage = wgpu::BufferUsage::MapWrite | wgpu::BufferUsage::CopySrc;
+
+        upload_buffer = UploadBuffer {
+            .buffer = device.createBuffer(descriptor),
+            .offset = 0
+        };
+    }
+
     queue = device.getQueue();
 
     recreate_swapchain(window.get_width(), window.get_height());
@@ -81,12 +92,12 @@ Backend::Backend(platform::Window const& window) {
     });
 }
 
-auto Backend::update() -> void {
+auto Context::update() -> void {
 
     device.tick();
 }
 
-auto Backend::recreate_swapchain(uint32_t const width, uint32_t const height) -> void {
+auto Context::recreate_swapchain(uint32_t const width, uint32_t const height) -> void {
 
     {
         auto descriptor = wgpu::SwapChainDescriptor {};
@@ -99,3 +110,4 @@ auto Backend::recreate_swapchain(uint32_t const width, uint32_t const height) ->
         swapchain = device.createSwapChain(surface, descriptor);
     }
 }
+

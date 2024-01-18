@@ -14,10 +14,15 @@ class Window;
 
 namespace renderer {
 
-class Backend {
+struct UploadBuffer {
+    wgpu::Buffer buffer;
+    uint64_t offset;
+};
+
+class Context {
 public:
 
-    Backend(platform::Window const& window);
+    Context(platform::Window const& window);
 
     auto get_device() const -> wgpu::Device {
 
@@ -32,6 +37,11 @@ public:
     auto get_swapchain() const -> wgpu::SwapChain {
 
         return swapchain;
+    }
+
+    auto get_upload_buffer() -> UploadBuffer& {
+
+        return upload_buffer;
     }
 
     auto update() -> void;
@@ -50,9 +60,10 @@ private:
     std::unique_ptr<wgpu::ErrorCallback> error_callback;
     std::unique_ptr<wgpu::QueueWorkDoneCallback> work_done_callback;
 
-    auto get_win32_surface(wgpu::Instance instance, platform::Window const& window) -> wgpu::Surface;
-
+    UploadBuffer upload_buffer{nullptr};
     std::binary_semaphore semaphore{0};
+
+    auto get_win32_surface(wgpu::Instance instance, platform::Window const& window) -> wgpu::Surface;
 };
 
 }

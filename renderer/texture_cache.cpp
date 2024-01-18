@@ -6,9 +6,8 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-TextureCache::TextureCache(Backend& backend, UploadManager& upload_manager) :
-    backend(&backend),
-    upload_manager(&upload_manager) 
+TextureCache::TextureCache(Backend& backend) :
+    backend(&backend)
 {
 
 }

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "core/ref_ptr.hpp"
+
 namespace ionengine::platform {
 
 enum class WindowEventType {
@@ -90,7 +92,7 @@ struct WindowEvent {
     }
 };
 
-class Window {
+class Window : public core::ref_counted_object {
 public:
     //! Create a new window
     /*! 

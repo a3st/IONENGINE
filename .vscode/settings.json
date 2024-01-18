@@ -116,6 +116,7 @@
         "typeindex": "cpp",
         "semaphore": "cpp",
         "*.inc": "cpp",
-        "spanstream": "cpp"
+        "spanstream": "cpp",
+        "complex": "cpp"
     }
 }

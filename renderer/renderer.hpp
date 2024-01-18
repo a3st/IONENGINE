@@ -5,10 +5,9 @@
 #include "backend.hpp"
 #include "render_graph.hpp"
 #include "render_pipeline.hpp"
-#include "upload_manager.hpp"
 #include "shader.hpp"
 #include "buffer.hpp"
-#include "mesh.hpp"
+#include "primitive.hpp"
 #include "camera.hpp"
 
 namespace ionengine {
@@ -21,7 +20,12 @@ class Window;
 
 namespace renderer {
 
-class Renderer {
+struct RenderTask {
+    core::ref_ptr<Primitive> primitive;
+    core::ref_ptr<Shader> shader;
+};
+
+class Renderer : public core::ref_counted_object {
 public:
 
     Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Window const& window);
@@ -40,17 +44,21 @@ public:
 
     auto load_shaders(std::span<ShaderData const> const shaders) -> bool;
 
+    auto create_camera() -> core::ref_ptr<Camera>;
+
+    auto add_render_task(PrimitiveData const& data) -> void;
+
 private:
 
     Backend backend;
     core::ref_ptr<RenderPipeline> render_pipeline;
     core::ref_ptr<RenderGraph> render_graph{nullptr};
     ShaderCache shader_cache;
-    UploadManager upload_manager;
     BufferAllocator<LinearAllocator> mesh_allocator;
     bool is_graph_initialized{false};
     uint32_t width;
     uint32_t height;
+    std::vector<RenderTask> render_tasks;
 };
 
 }

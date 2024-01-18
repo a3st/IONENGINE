@@ -9,16 +9,18 @@ namespace ionengine {
 
 namespace renderer {
 
-class Backend;
+class Context;
 
 class Buffer : public core::ref_counted_object {
 public:
 
     Buffer(
-        Backend& backend,
+        Context& context,
         size_t const size,
         wgpu::BufferUsageFlags const usage
     );
+
+    auto upload(std::span<uint8_t const> const data_bytes, uint64_t const offset = 0) -> void;
 
     auto get_buffer() const -> wgpu::Buffer {
 
@@ -27,12 +29,12 @@ public:
 
 private:
 
-    Backend* backend;
+    Context* context;
     wgpu::Buffer buffer{nullptr};
 };
 
 struct BufferAllocation {
-    core::ref_ptr<Buffer> buffer;
+    core::ref_ptr<Buffer> buffer{nullptr};
     uint64_t offset;
 };
 
@@ -40,7 +42,7 @@ template<typename Type>
 class BufferAllocator {
 public:
 
-    BufferAllocator(Backend& backend, size_t const size, wgpu::BufferUsageFlags const usage) : allocator(backend, size, usage) {
+    BufferAllocator(Context& context, size_t const size, wgpu::BufferUsageFlags const usage) : allocator(context, size, usage) {
 
     }
 
@@ -76,7 +78,7 @@ struct LinearAllocator {
 
     inline static size_t const MAX_CHUNK_SIZE = 64 * 1024  * 1024;
 
-    LinearAllocator(Backend& backend, size_t const size, wgpu::BufferUsageFlags const usage);
+    LinearAllocator(Context& context, size_t const size, wgpu::BufferUsageFlags const usage);
 
     auto allocate(size_t const size) -> BufferAllocation;
 
@@ -87,7 +89,7 @@ struct LinearAllocator {
 
 struct BlockAllocator {
 
-    BlockAllocator(Backend& backend, size_t const size, wgpu::BufferUsageFlags const usage);
+    BlockAllocator(Context& context, size_t const size, wgpu::BufferUsageFlags const usage);
     
     auto allocate(size_t const size) -> BufferAllocation;
 

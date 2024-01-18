@@ -3,7 +3,6 @@
 #pragma once
 
 #include "texture.hpp"
-#include "upload_manager.hpp"
 
 namespace ionengine {
 
@@ -12,7 +11,7 @@ namespace renderer {
 class TextureCache {
 public:
 
-    TextureCache(Backend& backend, UploadManager& upload_manager);
+    TextureCache(Backend& backend);
 
     auto get(TextureData const& data) -> core::ref_ptr<Texture>;
 
@@ -21,7 +20,6 @@ public:
 private:
 
     Backend* backend;
-    UploadManager* upload_manager;
 };
 
 }

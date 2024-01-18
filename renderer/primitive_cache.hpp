@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "mesh.hpp"
+#include "primitive.hpp"
 #include "upload_manager.hpp"
 
 namespace ionengine {

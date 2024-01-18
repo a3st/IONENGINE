@@ -4,7 +4,6 @@ import json
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
-
 class CMakeExtension(Extension):
     def __init__(self, name):
         super().__init__(name, sources=[])
@@ -48,20 +47,20 @@ class CMakeBuildExt(build_ext):
             cmd_path = os.path.join(data[0]['installationPath'], "VC", "Auxiliary", "Build", "vcvars64.bat")
 
         except FileNotFoundError:
-            raise FileNotFoundError("Error: vswhere.exe not found")
+            raise RuntimeError("Error: vswhere.exe not found")
         
         subprocess.run([cmd_path, "&", "cmake"] + cmake_args, cwd=self.build_temp)
         subprocess.run([cmd_path, "&", "cmake"] + build_args, cwd=self.build_temp)
 
 
 setup(
-    name='libionengine',
-    packages=['libionengine'],
+    name='ionengine',
+    packages=['ionengine'],
     version='1.0.0',
     author='Dmitriy Lukovenko',
     author_email='mludima23@gmail.com',
     description="IONENGINE 3d graphics engine",
-    ext_modules=[CMakeExtension('ionengine')],
+    ext_modules=[CMakeExtension('engine')],
     cmdclass={ 'build_ext': CMakeBuildExt },
     include_package_data=True
 )

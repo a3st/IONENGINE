@@ -2,13 +2,20 @@
 
 #pragma once
 
-#include "drawable.hpp"
+#include "buffer.hpp"
 
 namespace ionengine {
 
 namespace renderer {
 
-class StaticMesh : public Drawable {
+class Backend;
+
+struct PrimitiveData {
+    std::span<uint8_t const> vertices;
+    std::span<uint8_t const> indices;
+};
+
+class Primitive : public core::ref_counted_object {
 public:
 
     inline static std::vector<wgpu::VertexAttribute> attributes = {
@@ -29,15 +36,14 @@ public:
         },
     };
 
-    StaticMesh(Backend& backend, BufferAllocator<LinearAllocator>& mesh_allocator) : Drawable(backend, mesh_allocator) { 
-
-    }
+    Primitive(Backend& backend, BufferAllocator<LinearAllocator>& allocator);
 
 private:
-};
 
-struct MeshData {
-
+    Backend* backend;
+    BufferAllocator<LinearAllocator>* allocator;
+    BufferAllocation vertex_buffer;
+    BufferAllocation index_buffer;
 };
 
 }

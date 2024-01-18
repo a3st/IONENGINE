@@ -18,9 +18,9 @@ enum class CameraProjectionType {
 class Camera : public core::ref_counted_object {
 public:
 
-    Camera();
+    Camera(Backend& backend);
 
-    auto resize(Backend& backend, uint32_t const width, uint32_t const height) -> void;
+    auto resize(uint32_t const width, uint32_t const height) -> void;
 
     auto calculate() -> void;
 
@@ -50,6 +50,7 @@ public:
 
 private:
 
+    Backend* backend;
     math::Matrixf view;
     math::Matrixf projection;
     CameraProjectionType projection_type;
