@@ -60,14 +60,16 @@ auto LinearAllocator::allocate(size_t const size) -> BufferAllocation {
     };
 
     for(auto& chunk : chunks) {
-        if(size < chunk.size - chunk.offset) {
+        if(size > chunk.size - chunk.offset) {
             continue;
         }
 
         allocation.buffer = chunk.buffer;
         allocation.offset = chunk.offset;
         allocation.size = size;
+        
         chunk.offset += size;
+        break;
     }
     return allocation;
 }

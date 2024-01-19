@@ -31,8 +31,11 @@ auto MyRenderPipeline::setup(
         height,
         inputs,
         outputs,
-        [&](RGRenderPassContext& ctx) {
+        [render_tasks](RGRenderPassContext& ctx) {
 
+            for(auto const& render_task : render_tasks) {
+                ctx.draw(render_task);
+            }
         }
     );
 

@@ -118,7 +118,8 @@
         "*.inc": "cpp",
         "spanstream": "cpp",
         "complex": "cpp",
-        "numbers": "cpp"
+        "numbers": "cpp",
+        "*.hpp11": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "disabled"
 }

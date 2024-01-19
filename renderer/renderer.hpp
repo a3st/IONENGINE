@@ -46,7 +46,11 @@ public:
 
     auto create_camera(CameraProjectionType const projection_type) -> core::ref_ptr<Camera>;
 
-    auto add_render_task(PrimitiveData const& data) -> void;
+    auto add_render_task(
+        PrimitiveData const& data, 
+        uint32_t const index_count,
+        std::string_view const shader_name
+    ) -> void;
 
 private:
 

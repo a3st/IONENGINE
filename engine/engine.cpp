@@ -15,6 +15,25 @@ Engine::Engine(
 
     auto render_pipeline = core::make_ref<renderer::MyRenderPipeline>();
     renderer = core::make_ref<renderer::Renderer>(render_pipeline, &window);
+
+    std::string shader_bytes;
+    {
+        std::ifstream ifs("shaders/3d.wgsl");
+        ifs.seekg(0, std::ios::end);
+        auto size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        shader_bytes.resize(size);
+        ifs.read(reinterpret_cast<char* const>(shader_bytes.data()), size);
+    }
+    
+    std::vector<renderer::ShaderData> shaders;
+    shaders.emplace_back(
+        renderer::ShaderData {
+            .shader_name = "3d",
+            .shader_code = shader_bytes
+        }
+    );
+    renderer->load_shaders(shaders);
 }
 
 auto Engine::run() -> void {
@@ -24,17 +43,17 @@ auto Engine::run() -> void {
     std::vector<core::ref_ptr<renderer::Camera>> targets;
     targets.emplace_back(main_camera);
 
-    std::vector<uint8_t> cube_bytes;
+    std::vector<uint8_t> object_bytes;
     {
-        std::ifstream ifs("models/vehicle.glb", std::ios::binary);
+        std::ifstream ifs("models/vehicle-1mat.glb", std::ios::binary);
         ifs.seekg(0, std::ios::end);
         auto size = ifs.tellg();
         ifs.seekg(0, std::ios::beg);
-        cube_bytes.resize(size);
-        ifs.read(reinterpret_cast<char* const>(cube_bytes.data()), size);
+        object_bytes.resize(size);
+        ifs.read(reinterpret_cast<char* const>(object_bytes.data()), size);
     }
     
-    Model model(cube_bytes, ModelFormat::GLB);
+    Model model(object_bytes, ModelFormat::GLB);
 
     window_loop->run(
         &window, 
@@ -49,13 +68,16 @@ auto Engine::run() -> void {
 
                     renderer->update(0.1f);
                     
-                    for(auto const& primitive : model.get_mesh(0).primitives) {
-                        auto primitive_data = renderer::PrimitiveData {
-                            .vertices = primitive.vertices,
-                            .indices = primitive.indices
-                        };
+                    for(uint32_t j = 5; j < 6; ++j) {
+                        for(uint32_t i = 0; i < model.get_mesh(j).primitives.size(); ++i) {
+                            auto primitive_data = renderer::PrimitiveData {
+                                .vertices = model.get_mesh(j).primitives[i].vertices,
+                                .indices = model.get_mesh(j).primitives[i].indices,
+                                .hash = model.get_mesh(j).primitives[i].hash
+                            };
 
-                        renderer->add_render_task(primitive_data);
+                            renderer->add_render_task(primitive_data, model.get_mesh(j).index_counts[i], "3d");
+                        }
                     }
 
                     renderer->render(targets);

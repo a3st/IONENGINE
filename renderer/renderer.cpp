@@ -16,8 +16,8 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
     shader_cache(context),
     primitive_allocator(
         context, 
-        32 * 1024 * 1024, 
-        wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex
+        16 * 1024 * 1024, 
+        wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex | wgpu::BufferUsage::Index
     ),
     texture_cache(context),
     primitive_cache(context, primitive_allocator),
@@ -30,7 +30,7 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
 auto Renderer::update(float const dt) -> void {
 
     context.update();
-    primitive_cache.update(dt);
+    // primitive_cache.update(dt);
     texture_cache.update(dt);
 }
 
@@ -71,6 +71,7 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
     }
 
     render_graph->execute(shader_cache);
+    render_tasks.clear();
 }
 
 auto Renderer::resize(uint32_t const width, uint32_t const height) -> void {
@@ -94,11 +95,16 @@ auto Renderer::create_camera(CameraProjectionType const projection_type) -> core
     return core::make_ref<Camera>(context, projection_type);
 }
 
-auto Renderer::add_render_task(PrimitiveData const& data) -> void {
-
+auto Renderer::add_render_task(
+    PrimitiveData const& data, 
+    uint32_t const index_count, 
+    std::string_view const shader_name
+) -> void 
+{
     auto render_task = RenderTask {
         .primitive = primitive_cache.get(data),
-        .shader = nullptr
+        .index_count = index_count,
+        .shader = shader_cache.get(ShaderData { .shader_name = shader_name })
     };
     render_tasks.emplace_back(render_task);
 }

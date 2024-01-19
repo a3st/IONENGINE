@@ -19,10 +19,20 @@ struct ChunkHeader {
 	uint32_t chunk_type;
 };
 
-enum class AccessorType { Vec3, Vec2, Scalar };
+enum class AccessorType { Scalar, Vec2, Vec3, Vec4, Mat2, Mat3, Mat4 };
+
+enum class ComponentType {
+	SByte = 5120,
+	UByte = 5121,
+	SShort = 5122,
+	UShort = 5123,
+	UInt = 5125,
+	Float = 5126
+};
 
 struct AccessorData {
 	uint32_t buffer_view;
+	ComponentType component_type;
 	uint32_t count;
 	AccessorType type;
 };

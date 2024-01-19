@@ -13,6 +13,7 @@ namespace renderer {
 
 class Context;
 class ShaderCache;
+struct RenderTask;
 
 struct RGAttachment {
     std::string name;
@@ -74,8 +75,8 @@ struct RGAttachment {
     ) -> RGAttachment {
         return RGAttachment {
             .name = std::format("__external_{}__", (uint64_t)texture->get_texture()),
-            .format = wgpu::TextureFormat::Undefined,
-            .sample_count = 0,
+            .format = texture->get_texture().getFormat(),
+            .sample_count = texture->get_texture().getSampleCount(),
             .texture = texture,
             .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
         };
@@ -141,14 +142,20 @@ private:
 struct RGRenderPassContext {
 
     std::unordered_map<uint32_t, uint64_t>* inputs;
+    std::unordered_map<uint32_t, uint64_t>* outputs;
     std::unordered_map<uint64_t, RGAttachment>* attachments;
     RGResourceCache* resource_cache;
     uint32_t width;
     uint32_t height;
+    wgpu::RenderPassEncoder* encoder;
+    ShaderCache* shader_cache;
+    Context* context;
 
     auto get_resource_by_index(uint32_t const index) -> RGResource;
 
     auto blit(RGResource const& source) -> void;
+
+    auto draw(RenderTask const& render_task) -> void;
 };
 
 using graphics_pass_func_t = std::function<void(RGRenderPassContext&)>;

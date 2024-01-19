@@ -43,6 +43,16 @@ public:
         PrimitiveData const& data
     );
 
+    auto get_vertex_buffer() const -> BufferAllocation const& {
+
+        return vertex_buffer;
+    }
+
+    auto get_index_buffer() const -> BufferAllocation const& {
+
+        return index_buffer;
+    }
+
 private:
 
     Context* context;

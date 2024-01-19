@@ -33,6 +33,7 @@ GLBModel::GLBModel(std::span<uint8_t> const data_bytes) {
     for(auto accessor : document["accessors"]) {
         auto data = AccessorData {
             .buffer_view = static_cast<uint32_t>(accessor["bufferView"].get_uint64().value()),
+            .component_type = static_cast<ComponentType>(accessor["componentType"].get_uint64().value()),
             .count = static_cast<uint32_t>(accessor["count"].get_uint64().value()),
             .type = get_accesor_type_by_string(accessor["type"].get_string().value())
         };
@@ -65,7 +66,8 @@ GLBModel::GLBModel(std::span<uint8_t> const data_bytes) {
             auto primitive_data = PrimitiveData {
                 .attributes = std::move(attributes),
                 .indices = static_cast<uint32_t>(primitive["indices"].get_uint64().value()),
-                .material = static_cast<uint32_t>(primitive["material"].get_uint64().value())
+                .material = primitive.find_field("material").error() == simdjson::error_code::SUCCESS ?
+                    static_cast<uint32_t>(primitive["material"].get_uint64().value()) : 0
             };
 
             primitives.emplace_back(primitive_data);
@@ -96,7 +98,13 @@ GLBModel::GLBModel(std::span<uint8_t> const data_bytes) {
 auto GLBModel::get_accesor_type_by_string(std::string_view const type) -> AccessorType {
 
     AccessorType ret;
-    if(type.find("VEC3") != std::string_view::npos) {
+    if(type.find("MAT4") != std::string_view::npos) {
+        ret = AccessorType::Mat4;
+    } else if(type.find("MAT3") != std::string_view::npos) {
+        ret = AccessorType::Mat3;
+    } else if(type.find("MAT2") != std::string_view::npos) {
+        ret = AccessorType::Mat2;
+    } else if(type.find("VEC3") != std::string_view::npos) {
         ret = AccessorType::Vec3;
     } else if(type.find("VEC2") != std::string_view::npos) {
         ret = AccessorType::Vec2;

@@ -11,6 +11,7 @@ namespace renderer {
 
 struct RenderTask {
     core::ref_ptr<Primitive> primitive;
+    uint32_t index_count;
     core::ref_ptr<Shader> shader;
 };
 

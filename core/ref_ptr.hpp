@@ -10,11 +10,11 @@ class ref_counted_object {
 public:
 
     ref_counted_object() : ref_count(0) {
-        std::cout << "Construct object" << std::endl;
+        // std::cout << "Construct object" << std::endl;
     }
 
     virtual ~ref_counted_object() {
-        std::cout << "Cleanup object" << std::endl;
+        // std::cout << "Cleanup object" << std::endl;
     }
 
     ref_counted_object(ref_counted_object const& other) : ref_count(other.ref_count.load()) { }
@@ -107,12 +107,27 @@ public:
         return ptr;
     }
 
+    auto operator->() const -> Type* const {
+        assert(ptr != nullptr && "ref_ptr is null");
+        return ptr;
+    }
+
     auto operator&() -> Type& {
         assert(ptr != nullptr && "ref_ptr is null");
         return *ptr;
     }
 
+    auto operator&() const -> Type const& {
+        assert(ptr != nullptr && "ref_ptr is null");
+        return *ptr;
+    }
+
     auto get() -> Type* {
+        assert(ptr != nullptr && "ref_ptr is null");
+        return ptr;
+    }
+
+    auto get() const -> Type* const {
         assert(ptr != nullptr && "ref_ptr is null");
         return ptr;
     }

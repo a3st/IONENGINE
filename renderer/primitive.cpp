@@ -3,6 +3,7 @@
 #include "precompiled.h"
 #include "primitive.hpp"
 #include "context.hpp"
+#include "core/exception.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -13,10 +14,17 @@ Primitive::Primitive(
     PrimitiveData const& data
 ) : 
     context(&context), 
-    allocator(&allocator) 
+    allocator(&allocator)
 {
     vertex_buffer = allocator.allocate(data.vertices.size());
+    if(!vertex_buffer.buffer) {
+        throw core::Exception("Not enough memory to allocate a new buffer");
+    }
+
     index_buffer = allocator.allocate(data.indices.size());
+    if(!index_buffer.buffer) {
+        throw core::Exception("Not enough memory to allocate a new buffer");
+    }
 
     context.get_queue().writeBuffer(
         vertex_buffer.buffer->get_buffer(),

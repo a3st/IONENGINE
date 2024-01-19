@@ -5,6 +5,8 @@
 #include "core/exception.hpp"
 #include "context.hpp"
 #include "shader.hpp"
+#include "primitive.hpp"
+#include "render_task.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -116,6 +118,89 @@ auto RGRenderPassContext::blit(RGResource const& source) -> void {
 
 }
 
+auto RGRenderPassContext::draw(RenderTask const& render_task) -> void {
+
+    wgpu::RenderPipeline render_pipeline{nullptr};
+    {
+        auto buffer_layout = wgpu::VertexBufferLayout {};
+        buffer_layout.attributes = render_task.primitive->attributes.data();
+        buffer_layout.attributeCount = render_task.primitive->attributes.size();
+        buffer_layout.arrayStride = 32;
+        buffer_layout.stepMode = wgpu::VertexStepMode::Vertex;
+
+        auto vertex_state = wgpu::VertexState {};
+        vertex_state.module = render_task.shader->get_shader_module();
+        vertex_state.entryPoint = "vs_main";
+        vertex_state.bufferCount = 1;
+        vertex_state.buffers = &buffer_layout;
+
+        auto color_blend_component = wgpu::BlendComponent {};
+        color_blend_component.operation = wgpu::BlendOperation::Add;
+        color_blend_component.srcFactor = wgpu::BlendFactor::One;
+        color_blend_component.dstFactor = wgpu::BlendFactor::One;
+
+        auto blend_state = wgpu::BlendState {};
+        blend_state.color = color_blend_component;
+        blend_state.alpha = color_blend_component;
+
+        uint32_t target_state_count = 0;
+        std::array<wgpu::ColorTargetState, 16> target_states;
+        for(auto const& [_, value] : *outputs) {
+            RGAttachment const& attachment = attachments->at(value);
+
+            if(auto const* data = std::get_if<RGAttachment::DepthStencilAttachment>(&attachment.attachment)) {
+                continue;
+            }
+
+            target_states[target_state_count].format = attachment.format;
+            target_states[target_state_count].blend = &blend_state;
+            
+            target_state_count ++;
+        }
+
+        auto fragment_state = wgpu::FragmentState {};
+        fragment_state.module = render_task.shader->get_shader_module();
+        fragment_state.entryPoint = "fs_main";
+        fragment_state.targetCount = target_state_count;
+        fragment_state.targets = target_states.data();
+
+        auto primitive_state = wgpu::PrimitiveState {};
+        primitive_state.topology = wgpu::PrimitiveTopology::TriangleList;
+        primitive_state.cullMode = wgpu::CullMode::Front;
+        primitive_state.frontFace = wgpu::FrontFace::CCW;
+
+        auto multisample_state = wgpu::MultisampleState {};
+        multisample_state.setDefault();
+
+        wgpu::PipelineLayout pipeline_layout{nullptr};
+        {
+            auto descriptor = wgpu::PipelineLayoutDescriptor {};
+            descriptor.bindGroupLayoutCount = 0;
+            
+            pipeline_layout = context->get_device().createPipelineLayout(descriptor);
+        }
+
+        auto descriptor = wgpu::RenderPipelineDescriptor {};
+        descriptor.layout = pipeline_layout;
+        descriptor.vertex = vertex_state;
+        descriptor.fragment = &fragment_state;
+        descriptor.primitive = primitive_state;
+        descriptor.depthStencil = nullptr;
+        descriptor.multisample = multisample_state;
+
+        render_pipeline = context->get_device().createRenderPipeline(descriptor);
+    }
+
+    encoder->setPipeline(render_pipeline);
+
+    auto vertex_buffer = render_task.primitive->get_vertex_buffer();
+    auto index_buffer = render_task.primitive->get_index_buffer();
+
+    encoder->setVertexBuffer(0, vertex_buffer.buffer->get_buffer(), vertex_buffer.offset, vertex_buffer.size);
+    encoder->setIndexBuffer(index_buffer.buffer->get_buffer(), wgpu::IndexFormat::Uint32, index_buffer.offset, index_buffer.size);
+    encoder->drawIndexed(render_task.index_count, 1, 0, 0, 0);
+}
+
 RenderGraph::RenderGraph(
     Context& context, 
     std::vector<RGRenderPass> const& steps,
@@ -172,14 +257,18 @@ auto RenderGraph::execute(ShaderCache& shader_cache) -> void {
                 descriptor.colorAttachments = data.colors.data();
 
                 auto render_pass = encoder.beginRenderPass(descriptor);
-                render_pass.setViewport(0, 0, data.width, data.height, 0.0, 1.0);
+                render_pass.setViewport(0, 0, static_cast<float>(data.width), static_cast<float>(data.height), 0.0, 1.0);
 
                 auto ctx = RGRenderPassContext {
                     .inputs = &step.inputs,
+                    .outputs = &step.outputs,
                     .attachments = &attachments,
                     .resource_cache = &resource_cache,
                     .width = data.width,
-                    .height = data.height
+                    .height = data.height,
+                    .encoder = &render_pass,
+                    .shader_cache = &shader_cache,
+                    .context = context
                 };
                 data.callback(ctx);
 

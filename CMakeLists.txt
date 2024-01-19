@@ -8,6 +8,10 @@ add_subdirectory(thirdparty/webgpu)
 add_subdirectory(thirdparty/simdjson)
 add_subdirectory(thirdparty/pybind11)
 
+if (WIN32)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+endif ()
+
 add_library(engine SHARED
     "platform/window_loop.cpp"
     "platform/window_win32.cpp"
@@ -39,17 +43,17 @@ add_library(engine SHARED
 
 target_precompile_headers(engine PRIVATE precompiled.h)
 
-target_include_directories(engine PRIVATE
+target_include_directories(engine PUBLIC
     "${PROJECT_SOURCE_DIR}"
     "thirdparty/xxhash/include"
     "C:/Program Files/Python311/include"
 )
 
-target_link_directories(engine PRIVATE
+target_link_directories(engine PUBLIC
     "C:/Program Files/Python311/libs"
 )
 
-target_link_libraries(engine
+target_link_libraries(engine PUBLIC
     webgpu
     simdjson
     pybind11::headers
@@ -58,4 +62,18 @@ target_link_libraries(engine
 
 target_compile_definitions(engine PRIVATE 
 
+)
+
+add_executable(project 
+    "engine/main.cpp"
+)
+
+target_include_directories(project PRIVATE
+    "${PROJECT_SOURCE_DIR}"
+)
+
+target_precompile_headers(project PRIVATE precompiled.h)
+
+target_link_libraries(project PUBLIC
+    engine
 )

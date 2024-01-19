@@ -10,6 +10,10 @@ class RenderQueue {
 public:
 
     RenderQueue() = default;
+
+private:
+
+    
 };
 
 }

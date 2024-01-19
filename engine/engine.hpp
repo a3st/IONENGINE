@@ -18,14 +18,11 @@ public:
 
     auto run() -> void;
 
-    
-
 private:
 
     core::ref_ptr<platform::WindowLoop> window_loop{nullptr};
     core::ref_ptr<platform::Window> window{nullptr};
     core::ref_ptr<renderer::Renderer> renderer{nullptr};
-
 };
 
 }

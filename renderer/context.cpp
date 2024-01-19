@@ -58,6 +58,7 @@ Context::Context(platform::Window const& window) {
 
     {
         auto descriptor = wgpu::DeviceDescriptor {};
+        
         adapter.requestDevice(descriptor, [&](wgpu::RequestDeviceStatus status, wgpu::Device device, char const * message) -> void {
             if(status == wgpu::RequestDeviceStatus::Success) {
                 this->device = device;
@@ -77,7 +78,7 @@ Context::Context(platform::Window const& window) {
     });
 
     work_done_callback = queue.onSubmittedWorkDone(0, [](wgpu::QueueWorkDoneStatus status) -> void {
-        // std::cout << status << std::endl;
+        std::cout << "Submitted work done with " << status << std::endl;
     });
 }
 

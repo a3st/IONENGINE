@@ -15,11 +15,13 @@ struct PrimitiveData {
     std::vector<uint8_t> buffer;
     std::span<uint8_t const> vertices;
     std::span<uint8_t const> indices;
+    uint64_t hash;
 };
 
 struct MeshData {
     std::vector<PrimitiveData> primitives;
     std::vector<uint32_t> materials;
+    std::vector<uint32_t> index_counts;
 };
 
 class Model {
