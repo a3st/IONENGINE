@@ -23,6 +23,12 @@ add_library(engine SHARED
     "asset/model.cpp"
     "asset/asset_manager.cpp"
 
+    "renderer/rhi/dx12/descriptor_allocator.cpp"
+    "renderer/rhi/dx12/texture.cpp"
+    "renderer/rhi/dx12/buffer.cpp"
+    "renderer/rhi/dx12/device.cpp"
+    "renderer/rhi/device.cpp"
+
     "renderer/context.cpp"
     "renderer/texture.cpp"
     "renderer/buffer.cpp"

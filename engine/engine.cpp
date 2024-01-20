@@ -76,7 +76,7 @@ auto Engine::run() -> void {
                                 .hash = model.get_mesh(j).primitives[i].hash
                             };
 
-                            renderer->add_render_task(primitive_data, model.get_mesh(j).index_counts[i], "3d");
+                            // renderer->add_render_task(primitive_data, model.get_mesh(j).index_counts[i], "3d");
                         }
                     }
 

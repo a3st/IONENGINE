@@ -8,7 +8,7 @@
 #define UNICODE
 #include <d3d12.h>
 #include <dxgi1_4.h>
-#include <wrl/client.h>
+#include <winrt/base.h>
 #include <dxcapi.h>
 
 #ifndef THROW_IF_FAILED

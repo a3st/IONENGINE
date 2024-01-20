@@ -12,6 +12,7 @@
 #include "texture_cache.hpp"
 #include "camera.hpp"
 #include "render_task.hpp"
+#include "rhi/device.hpp"
 
 namespace ionengine {
 
@@ -54,6 +55,7 @@ public:
 
 private:
 
+    core::ref_ptr<rhi::Device> device;
     Context context;
     core::ref_ptr<RenderPipeline> render_pipeline;
     core::ref_ptr<RenderGraph> render_graph{nullptr};

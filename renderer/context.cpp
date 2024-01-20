@@ -71,7 +71,7 @@ Context::Context(platform::Window const& window) {
 
     queue = device.getQueue();
 
-    recreate_swapchain(window.get_width(), window.get_height());
+    // recreate_swapchain(window.get_width(), window.get_height());
 
     error_callback = device.setUncapturedErrorCallback([](wgpu::ErrorType type, char const * message) -> void {
         std::cout << type << " " << message << std::endl;

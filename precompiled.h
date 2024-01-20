@@ -38,11 +38,15 @@
 
 #ifndef DECLARE_ENUM_CLASS_BIT_FLAG
 #define DECLARE_ENUM_CLASS_BIT_FLAG(EnumClass) \
-inline EnumClass operator|(const EnumClass lhs, const EnumClass rhs) { \
-	return static_cast<EnumClass>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs)); \
+using EnumClass##Flags = uint32_t; \
+inline auto operator|(EnumClass const lhs, EnumClass const rhs) -> EnumClass##Flags { \
+	return static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs); \
 } \
-inline bool operator&(const EnumClass lhs, const EnumClass rhs) { \
+inline auto operator&(EnumClass const lhs, EnumClass const rhs) -> bool { \
 	return static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs); \
+} \
+inline auto operator&(EnumClass##Flags const lhs, EnumClass const rhs) -> bool { \
+	return lhs & static_cast<uint32_t>(rhs); \
 }
 #endif // DECLARE_ENUM_CLASS_BIT_FLAG
 

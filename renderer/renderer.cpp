@@ -10,7 +10,8 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Window const& window) : 
+Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Window const& window) :
+    device(rhi::Device::create(rhi::BackendType::DirectX12, window)),
     context(window), 
     render_pipeline(render_pipeline),
     shader_cache(context),
@@ -70,7 +71,7 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
         is_graph_initialized = true;
     }
 
-    render_graph->execute(shader_cache);
+    // render_graph->execute(shader_cache);
     render_tasks.clear();
 }
 

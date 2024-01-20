@@ -53,6 +53,10 @@ struct BaseDeleter {
 
 template<typename Type, typename Deleter = BaseDeleter<Type>>
 class ref_ptr {
+
+    template<typename Derived, typename DerivedDeleter>
+    friend class ref_ptr;
+
 public:
 
     ref_ptr(std::nullptr_t) : ptr(nullptr) { }
@@ -73,7 +77,7 @@ public:
     }
 
     template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
-    ref_ptr(ref_ptr<Derived, DerivedDeleter> other) : ptr(other.get()) { 
+    ref_ptr(ref_ptr<Derived, DerivedDeleter> other) : ptr(other.ptr) { 
         if(ptr) {
             ptr->add_ref();
         }
@@ -95,7 +99,7 @@ public:
 
     template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
     auto operator=(ref_ptr<Derived, DerivedDeleter> other) -> ref_ptr& {
-        ptr = other.get();
+        ptr = other.ptr;
         if(ptr) {
             ptr->add_ref();
         }
