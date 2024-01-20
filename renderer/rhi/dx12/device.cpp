@@ -4,6 +4,7 @@
 #include "device.hpp"
 #include "texture.hpp"
 #include "buffer.hpp"
+#include "allocator.hpp"
 #include "utils.hpp"
 #include "core/exception.hpp"
 #include "platform/window.hpp"
@@ -97,14 +98,7 @@ DX12Device::DX12Device(platform::Window const& window) {
         }
     }
 
-    auto ranges = std::vector<DescriptorAllocatorHeap> {
-        {
-            .heap_type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-            .count = 6
-        }
-    };
-
-    pool_allocator = core::make_ref<PoolDescriptorAllocator>(device.get(), ranges, true);
+    pool_allocator = core::make_ref<PoolDescriptorAllocator>(device.get(), true);
 
     // Create swapchain using device queue
     {
@@ -137,12 +131,17 @@ DX12Device::DX12Device(platform::Window const& window) {
     }
 }
 
+auto DX12Device::create_allocator(size_t const block_size, size_t const shrink_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> {
+
+    return core::make_ref<DX12MemoryAllocator>(block_size, shrink_size, flags);
+}
+
 auto DX12Device::create_texture() -> Future<Texture> {
 
     return Future<DX12Texture>();
 }
 
-auto DX12Device::create_buffer(MemoryAllocator& allocator, size_t const size, std::span<uint8_t const> const data) -> Future<Buffer> {
+auto DX12Device::create_buffer(MemoryAllocator& allocator, size_t const size, BufferUsageFlags const flags, std::span<uint8_t const> const data) -> Future<Buffer> {
 
     auto buffer = core::make_ref<DX12Buffer>();
     

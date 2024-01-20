@@ -17,7 +17,7 @@ public:
 
     auto get_size() -> size_t override {
 
-        return allocation.size;
+        return 0;
     }
 
     auto get_flags() -> BufferUsageFlags override {
@@ -28,7 +28,6 @@ public:
 protected:
 
     BufferUsageFlags flags;
-    MemoryAllocation allocation;
 };
 
 }

@@ -27,9 +27,11 @@ public:
 
     DX12Device(platform::Window const& window);
 
+	auto create_allocator(size_t const block_size, size_t const shrink_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> override;
+
     auto create_texture() -> Future<Texture> override;
 
-    auto create_buffer(MemoryAllocator& allocator, size_t const size, std::span<uint8_t const> const data) -> Future<Buffer> override;
+    auto create_buffer(MemoryAllocator& allocator, size_t const size, BufferUsageFlags const flags, std::span<uint8_t const> const data) -> Future<Buffer> override;
 
     auto write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> override;
 
@@ -60,7 +62,7 @@ private:
 
 	SwapchainInfo swapchain_info;
 
-	
+
 };
 
 }

@@ -28,9 +28,11 @@ public:
 
     static auto create(BackendType const backend_type, platform::Window const& window) -> core::ref_ptr<Device>;
 
+    virtual auto create_allocator(size_t const block_size, size_t const chunk_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> = 0;
+
     virtual auto create_texture() -> Future<Texture> = 0;
 
-    virtual auto create_buffer(MemoryAllocator& allocator, size_t const size, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
+    virtual auto create_buffer(MemoryAllocator& allocator, size_t const size, BufferUsageFlags const flags, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
 
     virtual auto write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
 };

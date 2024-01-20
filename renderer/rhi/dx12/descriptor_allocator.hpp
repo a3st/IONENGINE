@@ -51,7 +51,7 @@ struct DescriptorAllocatorHeap {
 class PoolDescriptorAllocator : public DescriptorAllocator {
 public:
 
-    PoolDescriptorAllocator(ID3D12Device1* device, std::span<DescriptorAllocatorHeap const> const heaps, bool const cpu_visible);
+    PoolDescriptorAllocator(ID3D12Device1* device, bool const cpu_visible);
 
     auto allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const size) -> DescriptorAllocation override;
 
@@ -75,8 +75,12 @@ private:
         uint32_t size;
     };
 
+    ID3D12Device1* device;
     std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, std::vector<Chunk>> chunks;
     std::unordered_map<uintptr_t, uint32_t> ptr_chunks;
+    bool cpu_visible;
+
+    auto create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, bool const cpu_visible) -> void;
 };
 
 class LinearDescriptorAllocator : public DescriptorAllocator {

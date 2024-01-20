@@ -28,11 +28,6 @@ public:
     virtual auto get_size() -> size_t = 0;
 
     virtual auto get_flags() -> BufferUsageFlags = 0;
-
-protected:
-
-    BufferUsageFlags flags;
-    MemoryAllocation allocation;
 };
 
 }

@@ -15,17 +15,17 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
     context(window), 
     render_pipeline(render_pipeline),
     shader_cache(context),
-    primitive_allocator(
+    primitive_allocator_2(
         context, 
         16 * 1024 * 1024, 
         wgpu::BufferUsage::CopyDst | wgpu::BufferUsage::Vertex | wgpu::BufferUsage::Index
     ),
     texture_cache(context),
-    primitive_cache(context, primitive_allocator),
+    primitive_cache(context, primitive_allocator_2),
     width(window.get_width()),
     height(window.get_height())
 {
-    
+    primitive_allocator = device->create_allocator(4 * 1024 * 1024, 64 * 1024 * 1024, rhi::BufferUsage::Vertex | rhi::BufferUsage::Index);
 }
 
 auto Renderer::update(float const dt) -> void {

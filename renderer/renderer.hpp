@@ -56,11 +56,12 @@ public:
 private:
 
     core::ref_ptr<rhi::Device> device;
+    core::ref_ptr<rhi::MemoryAllocator> primitive_allocator{nullptr};
     Context context;
     core::ref_ptr<RenderPipeline> render_pipeline;
     core::ref_ptr<RenderGraph> render_graph{nullptr};
     ShaderCache shader_cache;
-    BufferAllocator<LinearAllocator> primitive_allocator;
+    BufferAllocator<LinearAllocator> primitive_allocator_2;
     TextureCache texture_cache;
     PrimitiveCache primitive_cache;
     bool is_graph_initialized{false};
