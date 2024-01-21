@@ -25,7 +25,11 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
     width(window.get_width()),
     height(window.get_height())
 {
-    primitive_allocator = device->create_allocator(4 * 1024 * 1024, 64 * 1024 * 1024, rhi::BufferUsage::Vertex | rhi::BufferUsage::Index);
+    primitive_allocator = device->create_allocator(
+        4 * 1024 * 1024, 
+        64 * 1024 * 1024, 
+        (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex | rhi::BufferUsage::Index)
+    );
 }
 
 auto Renderer::update(float const dt) -> void {

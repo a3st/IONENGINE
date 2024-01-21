@@ -25,14 +25,13 @@ DX12MemoryAllocator::DX12MemoryAllocator(
     chunks.try_emplace(D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT);
 }
 
-auto DX12MemoryAllocator::allocate(ID3D12Resource* resource) -> MemoryAllocation {
+auto DX12MemoryAllocator::allocate(D3D12_RESOURCE_DESC const& resource_desc) -> MemoryAllocation {
 
-    auto d3d12_resource_desc = resource->GetDesc();
-    auto allocation_info = device->GetResourceAllocationInfo(0, 1, &d3d12_resource_desc);
+    auto allocation_info = device->GetResourceAllocationInfo(0, 1, &resource_desc);
 
     assert((chunks.find(allocation_info.Alignment) != chunks.end()) && "Required heap not found when allocating memory");
 
-    MemoryAllocation allocation;
+    auto allocation = MemoryAllocation {};
 
     for(auto& chunk : chunks[allocation_info.Alignment]) {
         if(allocation_info.SizeInBytes > chunk.size - chunk.offset) {
@@ -105,9 +104,9 @@ auto DX12MemoryAllocator::reset() -> void {
     assert(false && "DX12MemoryAllocator doesn't support reset method");
 }
 
-auto DX12MemoryAllocator::create_chunk(const uint32_t alignment) -> void {
+auto DX12MemoryAllocator::create_chunk(uint64_t const alignment) -> void {
 
-    //assert((chunk_size % block_size == 0) && "Chunk size must be completely divisible by block size");
+    assert((chunk_size % block_size == 0) && "Chunk size must be completely divisible by block size");
 
     D3D12_HEAP_TYPE heap_type;
     if(flags & BufferUsage::MapWrite) {

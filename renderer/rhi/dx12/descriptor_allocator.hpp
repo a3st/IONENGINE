@@ -80,7 +80,7 @@ private:
     std::unordered_map<uintptr_t, uint32_t> ptr_chunks;
     bool cpu_visible;
 
-    auto create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, bool const cpu_visible) -> void;
+    auto create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> void;
 };
 
 class LinearDescriptorAllocator : public DescriptorAllocator {

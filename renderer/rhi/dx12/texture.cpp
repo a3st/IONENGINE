@@ -31,8 +31,16 @@ DX12Texture::DX12Texture(ID3D12Device1* device, DescriptorAllocator& allocator, 
     
 }
 
-DX12Texture::DX12Texture(ID3D12Device1* device, winrt::com_ptr<ID3D12Resource> resource, DescriptorAllocator& allocator, TextureUsageFlags const flags) : resource(resource) {
-
+DX12Texture::DX12Texture(
+    ID3D12Device1* device, 
+    winrt::com_ptr<ID3D12Resource> resource, 
+    DescriptorAllocator& allocator, 
+    TextureUsageFlags const flags
+) : 
+    descriptor_allocator(&allocator),
+    resource(resource),
+    flags(flags)
+{
     auto d3d12_resource_desc = resource->GetDesc();
     width = static_cast<uint32_t>(d3d12_resource_desc.Width);
     height = d3d12_resource_desc.Height;
@@ -45,12 +53,19 @@ DX12Texture::DX12Texture(ID3D12Device1* device, winrt::com_ptr<ID3D12Resource> r
         if(!allocation.heap) {
             throw core::Exception("An error in descriptor allocation when creating a texture");
         }
-        this->allocation = allocation;
+        this->descriptor_allocation = allocation;
 
         auto d3d12_render_target_view_desc = D3D12_RENDER_TARGET_VIEW_DESC {};
         d3d12_render_target_view_desc.Format = d3d12_resource_desc.Format;
         d3d12_render_target_view_desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
         device->CreateRenderTargetView(resource.get(), &d3d12_render_target_view_desc, allocation.cpu_handle());
+    }
+}
+
+DX12Texture::~DX12Texture() {
+
+    if(descriptor_allocation.heap) {
+        descriptor_allocator->deallocate(descriptor_allocation);
     }
 }

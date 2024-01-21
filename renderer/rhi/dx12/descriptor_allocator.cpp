@@ -11,7 +11,6 @@ using namespace ionengine::renderer::rhi;
 
 PoolDescriptorAllocator::PoolDescriptorAllocator(ID3D12Device1* device, bool const cpu_visible) : device(device), cpu_visible(cpu_visible) {
 
-    std::vector<D3D12_DESCRIPTOR_HEAP_TYPE> heap_types;
     if(cpu_visible) {
         chunks.try_emplace(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
         chunks.try_emplace(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -27,7 +26,7 @@ auto PoolDescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_typ
 
     assert((chunks.find(heap_type) != chunks.end()) && "Required heap not found when allocating descriptor");
 
-    DescriptorAllocation allocation;
+    auto allocation = DescriptorAllocation {};
 
     for(auto& chunk : chunks[heap_type]) {
         if(size > chunk.size - chunk.offset) {
@@ -67,7 +66,7 @@ auto PoolDescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_typ
     }
 
     if(!allocation.heap) {
-        create_chunk(heap_type, cpu_visible);
+        create_chunk(heap_type);
 
         auto& chunk = chunks[heap_type].back();
         uint32_t start = chunk.offset;
@@ -102,7 +101,7 @@ auto PoolDescriptorAllocator::reset() -> void {
     assert(false && "PoolDescriptorAllocator doesn't support reset method");
 }
 
-auto PoolDescriptorAllocator::create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, bool const cpu_visible) -> void {
+auto PoolDescriptorAllocator::create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> void {
 	increment_sizes.try_emplace(heap_type, device->GetDescriptorHandleIncrementSize(heap_type));
 
 	uint32_t alloc_size = 0;
@@ -130,7 +129,7 @@ auto PoolDescriptorAllocator::create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap
 	THROW_IF_FAILED(device->CreateDescriptorHeap(&d3d12_descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), descriptor_heap.put_void()));
 
 	auto chunk = Chunk {
-        .heap = descriptor_heap, 
+        .heap = descriptor_heap,
         .offset = 0, 
         .size = alloc_size
     };

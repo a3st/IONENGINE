@@ -32,7 +32,12 @@ public:
 
     virtual auto create_texture() -> Future<Texture> = 0;
 
-    virtual auto create_buffer(MemoryAllocator& allocator, size_t const size, BufferUsageFlags const flags, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
+    virtual auto create_buffer(
+        MemoryAllocator& allocator, 
+        size_t const size, 
+        BufferUsageFlags const flags, 
+        std::span<uint8_t const> const data
+    ) -> Future<Buffer> = 0;
 
     virtual auto write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
 };

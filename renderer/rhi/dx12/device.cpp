@@ -133,7 +133,7 @@ DX12Device::DX12Device(platform::Window const& window) {
 
 auto DX12Device::create_allocator(size_t const block_size, size_t const shrink_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> {
 
-    return core::make_ref<DX12MemoryAllocator>(block_size, shrink_size, flags);
+    return core::make_ref<DX12MemoryAllocator>(device.get(), block_size, shrink_size, flags);
 }
 
 auto DX12Device::create_texture() -> Future<Texture> {
@@ -141,9 +141,20 @@ auto DX12Device::create_texture() -> Future<Texture> {
     return Future<DX12Texture>();
 }
 
-auto DX12Device::create_buffer(MemoryAllocator& allocator, size_t const size, BufferUsageFlags const flags, std::span<uint8_t const> const data) -> Future<Buffer> {
-
-    auto buffer = core::make_ref<DX12Buffer>();
+auto DX12Device::create_buffer(
+    MemoryAllocator& allocator, 
+    size_t const size, 
+    BufferUsageFlags const flags, 
+    std::span<uint8_t const> const data
+) -> Future<Buffer> 
+{
+    auto buffer = core::make_ref<DX12Buffer>(
+        device.get(),
+        allocator,
+        &pool_allocator,
+        size,
+        flags
+    );
     
     return Future<DX12Buffer>(buffer);
 }

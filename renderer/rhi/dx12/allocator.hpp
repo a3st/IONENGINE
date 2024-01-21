@@ -26,7 +26,7 @@ public:
 
     DX12MemoryAllocator(ID3D12Device1* device, size_t const block_size, size_t const chunk_size, BufferUsageFlags const flags);
 
-    auto allocate(ID3D12Resource* resource) -> MemoryAllocation;
+    auto allocate(D3D12_RESOURCE_DESC const& resource_desc) -> MemoryAllocation;
 
     auto deallocate(MemoryAllocation const& allocation) -> void;
 

@@ -10,7 +10,13 @@ namespace renderer {
 
 namespace rhi {
 
-class MemoryAllocator : public core::ref_counted_object { };
+class Shader : public core::ref_counted_object {
+public:
+
+private:
+
+
+};
 
 }
 

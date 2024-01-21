@@ -20,6 +20,8 @@ public:
 
     DX12Texture(ID3D12Device1* device, winrt::com_ptr<ID3D12Resource> resource, DescriptorAllocator& allocator, TextureUsageFlags const flags);
 
+    ~DX12Texture();
+
     auto get_width() const -> uint32_t override {
         
         return width;
@@ -47,13 +49,15 @@ public:
 
 private:
 
+    DescriptorAllocator* descriptor_allocator;
     winrt::com_ptr<ID3D12Resource> resource;
-    DescriptorAllocation allocation;
+    DescriptorAllocation descriptor_allocation;
     uint32_t width;
     uint32_t height;
     uint32_t depth;
     uint32_t mip_levels;
     TextureFormat format;
+    TextureUsageFlags flags;
 };
 
 }

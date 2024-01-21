@@ -31,7 +31,12 @@ public:
 
     auto create_texture() -> Future<Texture> override;
 
-    auto create_buffer(MemoryAllocator& allocator, size_t const size, BufferUsageFlags const flags, std::span<uint8_t const> const data) -> Future<Buffer> override;
+    auto create_buffer(
+		MemoryAllocator& allocator, 
+		size_t const size, 
+		BufferUsageFlags const flags, 
+		std::span<uint8_t const> const data
+	) -> Future<Buffer> override;
 
     auto write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> override;
 

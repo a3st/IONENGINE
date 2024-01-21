@@ -14,10 +14,13 @@ namespace rhi {
 enum class BufferUsage {
     Vertex = 1 << 0,
     Index = 1 << 1,
-    MapWrite = 1 << 2,
-    MapRead = 1 << 3,
-    CopySrc = 1 << 4,
-    CopyDst = 1 << 5
+    ConstantBuffer = 1 << 2,
+    ShaderResource = 1 << 3,
+    UnorderedAccess = 1 << 4,
+    MapWrite = 1 << 5,
+    MapRead = 1 << 6,
+    CopySrc = 1 << 7,
+    CopyDst = 1 << 8
 };
 
 DECLARE_ENUM_CLASS_BIT_FLAG(BufferUsage)
