@@ -43,6 +43,12 @@ public:
     ) -> Future<Buffer> = 0;
 
     virtual auto write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
+
+    virtual auto submit_command_lists(std::span<core::ref_ptr<CommandBuffer>> const command_buffers) -> void = 0;
+
+    virtual auto request_next_swapchain_buffer() -> core::ref_ptr<Texture> = 0;
+
+    virtual auto present() -> void = 0;
 };
 
 }

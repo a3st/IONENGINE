@@ -59,6 +59,8 @@ auto DX12MemoryAllocator::allocate(D3D12_RESOURCE_DESC const& resource_desc) -> 
         if(success) {
             std::fill(chunk.free.begin() + start / block_size, chunk.free.begin() + start / block_size + alloc_size / block_size, 0);
 
+            chunk.offset += alloc_size;
+
             allocation = {
                 .heap = chunk.heap.get(),
                 .alignment = allocation_info.Alignment,
@@ -77,6 +79,8 @@ auto DX12MemoryAllocator::allocate(D3D12_RESOURCE_DESC const& resource_desc) -> 
         size_t alloc_size = (allocation_info.Alignment + (chunk_size - 1)) & ~(chunk_size - 1);
 
         std::fill(chunk.free.begin() + start / block_size, chunk.free.begin() + start / block_size + alloc_size / block_size, 0);
+
+        chunk.offset += alloc_size;
 
         allocation = {
             .heap = chunk.heap.get(),

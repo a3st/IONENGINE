@@ -27,6 +27,24 @@ auto ionengine::renderer::rhi::dxgi_to_texture_format(DXGI_FORMAT const format) 
     }
 }
 
+auto ionengine::renderer::rhi::texture_format_to_dxgi(TextureFormat const format) -> DXGI_FORMAT {
+
+    switch(format) {
+        case TextureFormat::Unknown: return DXGI_FORMAT_UNKNOWN;
+        case TextureFormat::RGBA8_UNORM: return DXGI_FORMAT_R8G8B8A8_UNORM;
+        case TextureFormat::BGRA8_UNORM: return DXGI_FORMAT_B8G8R8A8_UNORM;
+        case TextureFormat::BGR8_UNORM: return DXGI_FORMAT_B8G8R8X8_UNORM;
+        case TextureFormat::R8_UNORM: return DXGI_FORMAT_R8_UNORM;
+        case TextureFormat::BC1: return DXGI_FORMAT_BC1_UNORM;
+        case TextureFormat::BC3: return DXGI_FORMAT_BC3_UNORM;
+        case TextureFormat::BC4: return DXGI_FORMAT_BC4_UNORM;
+        case TextureFormat::BC5: return DXGI_FORMAT_BC5_UNORM;
+        case TextureFormat::D32_FLOAT: return DXGI_FORMAT_R32_TYPELESS;
+        case TextureFormat::RGBA16_FLOAT: return DXGI_FORMAT_R16G16B16A16_FLOAT;
+        default: return DXGI_FORMAT_UNKNOWN;
+    }
+}
+
 DX12Texture::DX12Texture(ID3D12Device1* device, DescriptorAllocator& allocator, TextureUsageFlags const flags) {
     
 }
@@ -39,7 +57,8 @@ DX12Texture::DX12Texture(
 ) : 
     descriptor_allocator(&allocator),
     resource(resource),
-    flags(flags)
+    flags(flags),
+    resource_state(D3D12_RESOURCE_STATE_COMMON)
 {
     auto d3d12_resource_desc = resource->GetDesc();
     width = static_cast<uint32_t>(d3d12_resource_desc.Width);

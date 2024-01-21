@@ -114,6 +114,8 @@ enum class CommandBufferType {
 class CommandBuffer : public core::ref_counted_object {
 public:
 
+    virtual auto close() -> void = 0;
+
     virtual auto set_graphics_pipeline_options(
         core::ref_ptr<Shader> shader,
         RasterizerStageInfo const& rasterizer,

@@ -13,6 +13,8 @@ namespace rhi {
 
 auto dxgi_to_texture_format(DXGI_FORMAT const format) -> TextureFormat;
 
+auto texture_format_to_dxgi(TextureFormat const format) -> DXGI_FORMAT;
+
 class DX12Texture : public Texture {
 public:
 
@@ -47,11 +49,32 @@ public:
         return format;
     }
 
+    auto get_descriptor() -> DescriptorAllocation {
+
+        return descriptor_allocation;
+    }
+
+    auto get_resource() -> ID3D12Resource* {
+
+        return resource.get();
+    }
+
+    auto get_resource_state() const -> D3D12_RESOURCE_STATES {
+
+        return resource_state;
+    }
+
+    auto set_resource_state(D3D12_RESOURCE_STATES const state) -> void {
+
+        resource_state = state;
+    }
+
 private:
 
     DescriptorAllocator* descriptor_allocator;
     winrt::com_ptr<ID3D12Resource> resource;
     DescriptorAllocation descriptor_allocation;
+    D3D12_RESOURCE_STATES resource_state;
     uint32_t width;
     uint32_t height;
     uint32_t depth;

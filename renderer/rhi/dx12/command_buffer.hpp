@@ -5,6 +5,7 @@
 #include "renderer/rhi/command_buffer.hpp"
 #include <d3d12.h>
 #include <dxgi1_4.h>
+#include <winrt/base.h>
 
 namespace ionengine {
 
@@ -14,10 +15,23 @@ namespace rhi {
 
 auto d3d12_to_command_buffer_type(D3D12_COMMAND_LIST_TYPE const list_type) -> CommandBufferType;
 
+auto render_pass_load_to_d3d12(RenderPassLoadOp const load_op) -> D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE;
+
+auto render_pass_store_to_d3d12(RenderPassStoreOp const store_op) -> D3D12_RENDER_PASS_ENDING_ACCESS_TYPE;
+
 class DX12CommandBuffer : public CommandBuffer {
 public:
 
-    DX12CommandBuffer(ID3D12Device1* device);
+    DX12CommandBuffer(
+        ID3D12Device1* device, 
+        ID3D12CommandAllocator* allocator, 
+        winrt::com_ptr<ID3D12GraphicsCommandList4> command_list, 
+        D3D12_COMMAND_LIST_TYPE const list_type
+    );
+
+    auto reset() -> void;
+
+    auto close() -> void override;
 
     auto set_graphics_pipeline_options(
         core::ref_ptr<Shader> shader,
@@ -39,9 +53,33 @@ public:
 
     auto draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t instance_offset) -> void override;
 
+    auto get_command_list() -> ID3D12GraphicsCommandList4* {
+
+        return command_list.get();
+    }
+
+    auto get_list_type() const -> D3D12_COMMAND_LIST_TYPE {
+
+        return list_type;
+    } 
+
 private:
 
-    ID3D12GraphicsCommandList4* command_list;
+    ID3D12CommandAllocator* allocator;
+    winrt::com_ptr<ID3D12GraphicsCommandList4> command_list;
+    D3D12_COMMAND_LIST_TYPE list_type;
+
+    struct ResourceTrackerInfo {
+        std::variant<Texture*, Buffer*> resource;
+        D3D12_RESOURCE_STATES begin_state;
+        D3D12_RESOURCE_STATES end_state;
+    };
+    std::vector<ResourceTrackerInfo> trackers;
+    std::vector<D3D12_RESOURCE_BARRIER> barriers;
+
+    auto begin_barrier_resources() -> void;
+
+    auto end_barrier_resources() -> void;
 };
 
 }

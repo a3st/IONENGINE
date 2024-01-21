@@ -75,6 +75,31 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
         is_graph_initialized = true;
     }
 
+    auto swapchain = device->request_next_swapchain_buffer();
+
+    auto command_buffer = device->allocate_command_buffer(rhi::CommandBufferType::Graphics);
+
+    std::array<rhi::RenderPassColorInfo, 1> colors = {
+        rhi::RenderPassColorInfo {
+            .texture = swapchain,
+            .load_op = rhi::RenderPassLoadOp::Clear,
+            .store_op = rhi::RenderPassStoreOp::Store,
+            .clear_color = math::Color(0.2f, 0.3f, 0.2f, 1.0f)
+        }
+    };
+
+    command_buffer->begin_render_pass(colors, std::nullopt);
+    command_buffer->end_render_pass();
+    command_buffer->close();
+
+    std::array<core::ref_ptr<rhi::CommandBuffer>, 1> submits = {
+        command_buffer
+    };
+
+    device->submit_command_lists(submits);
+
+    device->present();
+
     // render_graph->execute(shader_cache);
     render_tasks.clear();
 }

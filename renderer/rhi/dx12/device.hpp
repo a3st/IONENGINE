@@ -43,6 +43,12 @@ public:
 
     auto write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> override;
 
+	auto submit_command_lists(std::span<core::ref_ptr<CommandBuffer>> const command_buffers) -> void override;
+
+	auto request_next_swapchain_buffer() -> core::ref_ptr<Texture> override;
+
+	auto present() -> void override;
+
 private:
 
 #ifdef _DEBUG
@@ -55,21 +61,24 @@ private:
 	struct QueueInfo {
 		winrt::com_ptr<ID3D12CommandQueue> queue;
 		winrt::com_ptr<ID3D12Fence> fence;
-		uint64_t fence_value;	
+		uint64_t fence_value;
 	};
 	std::vector<QueueInfo> queue_infos;
 	HANDLE fence_event;
 
 	core::ref_ptr<PoolDescriptorAllocator> pool_allocator{nullptr};
 
-	winrt::com_ptr<IDXGISwapChain1> swapchain;
+	winrt::com_ptr<IDXGISwapChain3> swapchain;
 
 	struct FrameInfo {
 		core::ref_ptr<Texture> swapchain_buffer;
 		core::ref_ptr<CommandAllocator> command_allocator;
+		uint64_t present_fence_value;
 	};
 	std::vector<FrameInfo> frame_infos;
 	uint32_t frame_index{0};
+
+	std::vector<ID3D12CommandList*> command_batches;
 };
 
 }

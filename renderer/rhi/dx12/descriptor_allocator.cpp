@@ -54,6 +54,8 @@ auto PoolDescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_typ
         if(success) {
             std::fill(chunk.free.begin() + start, chunk.free.begin() + start + alloc_size, 0);
 
+            chunk.offset += alloc_size;
+
             allocation = {
                 .heap = chunk.heap.get(),
                 .heap_type = heap_type,
@@ -73,6 +75,8 @@ auto PoolDescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_typ
         uint32_t alloc_size = size;
 
         std::fill(chunk.free.begin() + start, chunk.free.begin() + start + alloc_size, 0);
+
+        chunk.offset += alloc_size;
 
         allocation = {
             .heap = chunk.heap.get(),
