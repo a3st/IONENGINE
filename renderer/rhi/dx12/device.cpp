@@ -4,6 +4,7 @@
 #include "device.hpp"
 #include "texture.hpp"
 #include "buffer.hpp"
+#include "command_buffer.hpp"
 #include "allocator.hpp"
 #include "utils.hpp"
 #include "core/exception.hpp"
@@ -118,15 +119,20 @@ DX12Device::DX12Device(platform::Window const& window) {
             &dxgi_swapchain_desc, 
             nullptr, 
             nullptr, 
-            swapchain_info.swapchain.put())
+            swapchain.put())
         );
 
         for(uint32_t i = 0; i < 2; ++i) {
             winrt::com_ptr<ID3D12Resource> resource;
-            THROW_IF_FAILED(swapchain_info.swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
+            THROW_IF_FAILED(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
 
             auto texture = core::make_ref<DX12Texture>(device.get(), resource, &pool_allocator, (TextureUsageFlags)TextureUsage::RenderTarget);
-            swapchain_info.buffers.emplace_back(texture);
+            
+            auto frame_info = FrameInfo {
+                .swapchain_buffer = texture,
+                .command_allocator = core::make_ref<CommandAllocator>(device.get())
+            };
+            frame_infos.emplace_back(frame_info);
         }
     }
 }
@@ -134,6 +140,27 @@ DX12Device::DX12Device(platform::Window const& window) {
 auto DX12Device::create_allocator(size_t const block_size, size_t const shrink_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> {
 
     return core::make_ref<DX12MemoryAllocator>(device.get(), block_size, shrink_size, flags);
+}
+
+auto DX12Device::allocate_command_buffer(CommandBufferType const buffer_type) -> core::ref_ptr<CommandBuffer> {
+
+    D3D12_COMMAND_LIST_TYPE list_type;
+    switch(buffer_type) {
+        case CommandBufferType::Graphics: {
+            list_type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        } break;
+        case CommandBufferType::Copy: {
+            list_type = D3D12_COMMAND_LIST_TYPE_COPY;
+        } break;
+        case CommandBufferType::Compute: {
+            list_type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        } break;
+        default: {
+            assert(false && "Unsupported command buffer type for allocation");
+        } break;
+    }
+
+    return frame_infos[frame_index].command_allocator->allocate(list_type);
 }
 
 auto DX12Device::create_texture() -> Future<Texture> {

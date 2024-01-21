@@ -4,6 +4,7 @@
 
 #include "renderer/rhi/device.hpp"
 #include "descriptor_allocator.hpp"
+#include "command_allocator.hpp"
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <dxcapi.h>
@@ -28,6 +29,8 @@ public:
     DX12Device(platform::Window const& window);
 
 	auto create_allocator(size_t const block_size, size_t const shrink_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> override;
+
+	auto allocate_command_buffer(CommandBufferType const buffer_type) -> core::ref_ptr<CommandBuffer> override;
 
     auto create_texture() -> Future<Texture> override;
 
@@ -54,20 +57,19 @@ private:
 		winrt::com_ptr<ID3D12Fence> fence;
 		uint64_t fence_value;	
 	};
-
 	std::vector<QueueInfo> queue_infos;
 	HANDLE fence_event;
 
 	core::ref_ptr<PoolDescriptorAllocator> pool_allocator{nullptr};
 
-	struct SwapchainInfo {
-		winrt::com_ptr<IDXGISwapChain1> swapchain;
-		std::vector<core::ref_ptr<Texture>> buffers;
+	winrt::com_ptr<IDXGISwapChain1> swapchain;
+
+	struct FrameInfo {
+		core::ref_ptr<Texture> swapchain_buffer;
+		core::ref_ptr<CommandAllocator> command_allocator;
 	};
-
-	SwapchainInfo swapchain_info;
-
-
+	std::vector<FrameInfo> frame_infos;
+	uint32_t frame_index{0};
 };
 
 }

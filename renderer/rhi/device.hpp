@@ -5,6 +5,7 @@
 #include "core/ref_ptr.hpp"
 #include "texture.hpp"
 #include "buffer.hpp"
+#include "command_buffer.hpp"
 #include "allocator.hpp"
 #include "future.hpp"
 
@@ -31,6 +32,8 @@ public:
     virtual auto create_allocator(size_t const block_size, size_t const chunk_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> = 0;
 
     virtual auto create_texture() -> Future<Texture> = 0;
+
+    virtual auto allocate_command_buffer(CommandBufferType const buffer_type) -> core::ref_ptr<CommandBuffer> = 0;
 
     virtual auto create_buffer(
         MemoryAllocator& allocator, 

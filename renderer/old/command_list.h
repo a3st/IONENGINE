@@ -16,7 +16,7 @@ enum class CommandListError {
 struct CommandList {
     backend::Handle<backend::CommandList> command_list;
     backend::QueueFlags flags;
-    bool is_bundle;\
+    bool is_bundle;
 
     void close(backend::Device& device);
 
