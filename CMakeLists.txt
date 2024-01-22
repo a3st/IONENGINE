@@ -26,6 +26,7 @@ add_library(engine SHARED
     "renderer/rhi/dx12/allocator.cpp"
     "renderer/rhi/dx12/descriptor_allocator.cpp"
     "renderer/rhi/dx12/command_allocator.cpp"
+    "renderer/rhi/dx12/upload_context.cpp"
     "renderer/rhi/dx12/texture.cpp"
     "renderer/rhi/dx12/buffer.cpp"
     "renderer/rhi/dx12/command_buffer.cpp"

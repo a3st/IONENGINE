@@ -30,6 +30,13 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
         64 * 1024 * 1024, 
         (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex | rhi::BufferUsage::Index)
     );
+
+    device->create_buffer(
+        &primitive_allocator, 
+        16 * 1024 * 1024, 
+        (rhi::BufferUsageFlags)rhi::BufferUsage::Vertex,
+        {}
+    );
 }
 
 auto Renderer::update(float const dt) -> void {
@@ -89,6 +96,7 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
     };
 
     command_buffer->begin_render_pass(colors, std::nullopt);
+    
     command_buffer->end_render_pass();
     command_buffer->close();
 

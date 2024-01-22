@@ -100,6 +100,15 @@ DX12Device::DX12Device(platform::Window const& window) {
     }
 
     pool_allocator = core::make_ref<PoolDescriptorAllocator>(device.get(), true);
+    command_allocator = core::make_ref<CommandAllocator>(device.get());
+    upload_context = core::make_ref<UploadContext>(
+        device.get(), 
+        queue_infos[1].queue.get(), 
+        queue_infos[1].fence.get(), 
+        queue_infos[1].fence_value,
+        &command_allocator,
+        32 * 1024 * 1024
+    );
 
     // Create swapchain using device queue
     {
@@ -195,7 +204,9 @@ auto DX12Device::create_buffer(
         size,
         flags
     );
-    
+
+    upload_context->upload(static_cast<DX12Buffer*>(buffer.get())->get_resource(), data);
+
     return Future<DX12Buffer>(buffer);
 }
 

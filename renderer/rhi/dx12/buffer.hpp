@@ -35,6 +35,11 @@ public:
         return flags;
     }
 
+    auto get_resource() -> ID3D12Resource* {
+
+        return resource.get();
+    }
+
 protected:
 
     DX12MemoryAllocator* memory_allocator;

@@ -17,7 +17,8 @@ DX12MemoryAllocator::DX12MemoryAllocator(
 ) : 
     device(device),
     block_size(block_size),
-    chunk_size(chunk_size)
+    chunk_size(chunk_size),
+    flags(flags)
 {
     chunks.try_emplace(D3D12_SMALL_RESOURCE_PLACEMENT_ALIGNMENT);
     chunks.try_emplace(D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT);
@@ -124,6 +125,7 @@ auto DX12MemoryAllocator::create_chunk(uint64_t const alignment) -> void {
     auto d3d12_heap_desc = D3D12_HEAP_DESC {};
     d3d12_heap_desc.Alignment = alignment;
     d3d12_heap_desc.SizeInBytes = chunk_size;
+    d3d12_heap_desc.Properties.Type = heap_type;
 
     winrt::com_ptr<ID3D12Heap> heap;
     THROW_IF_FAILED(device->CreateHeap(&d3d12_heap_desc, __uuidof(ID3D12Heap), heap.put_void()));
