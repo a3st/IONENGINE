@@ -28,6 +28,8 @@ public:
 
     DX12Device(platform::Window const& window);
 
+	~DX12Device();
+
 	auto create_allocator(size_t const block_size, size_t const shrink_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> override;
 
 	auto allocate_command_buffer(CommandBufferType const buffer_type) -> core::ref_ptr<CommandBuffer> override;
@@ -45,9 +47,13 @@ public:
 
 	auto submit_command_lists(std::span<core::ref_ptr<CommandBuffer>> const command_buffers) -> void override;
 
+	auto wait_for_idle() -> void override;
+
 	auto request_next_swapchain_buffer() -> core::ref_ptr<Texture> override;
 
 	auto present() -> void override;
+
+	auto resize_swapchain_buffers(uint32_t const width, uint32_t const height) -> void override;
 
 private:
 
@@ -57,6 +63,7 @@ private:
     winrt::com_ptr<IDXGIFactory4> factory;
     winrt::com_ptr<IDXGIAdapter1> adapter;
     winrt::com_ptr<ID3D12Device4> device;
+	winrt::com_ptr<IDXGISwapChain3> swapchain;
 
 	struct QueueInfo {
 		winrt::com_ptr<ID3D12CommandQueue> queue;
@@ -67,8 +74,6 @@ private:
 	HANDLE fence_event;
 
 	core::ref_ptr<PoolDescriptorAllocator> pool_allocator{nullptr};
-
-	winrt::com_ptr<IDXGISwapChain3> swapchain;
 
 	struct FrameInfo {
 		core::ref_ptr<Texture> swapchain_buffer;

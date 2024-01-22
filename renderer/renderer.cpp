@@ -41,7 +41,7 @@ auto Renderer::update(float const dt) -> void {
 
 auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
 
-    if(!is_graph_initialized) {
+    /*if(!is_graph_initialized) {
         RenderGraphBuilder builder(context);
         {
             std::vector<RGAttachment> inputs;
@@ -73,7 +73,7 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
         }
         render_graph = builder.build();
         is_graph_initialized = true;
-    }
+    }*/
 
     auto swapchain = device->request_next_swapchain_buffer();
 
@@ -109,7 +109,9 @@ auto Renderer::resize(uint32_t const width, uint32_t const height) -> void {
     this->width = width;
     this->height = height;
     is_graph_initialized = false;
-    context.recreate_swapchain(width, height);
+    render_graph = nullptr;
+    
+    device->resize_swapchain_buffers(width, height);
 }
 
 auto Renderer::load_shaders(std::span<ShaderData const> const shaders) -> bool {

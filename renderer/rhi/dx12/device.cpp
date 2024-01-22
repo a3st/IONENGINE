@@ -126,7 +126,7 @@ DX12Device::DX12Device(platform::Window const& window) {
             swapchain.as(this->swapchain);
         }
 
-        for(uint32_t i = 0; i < 2; ++i) {
+        for(uint32_t i = 0; i < dxgi_swapchain_desc.BufferCount; ++i) {
             winrt::com_ptr<ID3D12Resource> resource;
             THROW_IF_FAILED(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
 
@@ -141,6 +141,11 @@ DX12Device::DX12Device(platform::Window const& window) {
     }
 
     command_batches.reserve(64);
+}
+
+DX12Device::~DX12Device() {
+
+    wait_for_idle();
 }
 
 auto DX12Device::create_allocator(size_t const block_size, size_t const shrink_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> {
@@ -224,15 +229,26 @@ auto DX12Device::submit_command_lists(std::span<core::ref_ptr<CommandBuffer>> co
     }
 
     queue_infos[queue_index].queue->ExecuteCommandLists(static_cast<uint32_t>(command_batches.size()), command_batches.data());
+    command_batches.clear();
+
     queue_infos[queue_index].fence_value++;
     THROW_IF_FAILED(queue_infos[queue_index].queue->Signal(queue_infos[queue_index].fence.get(), queue_infos[queue_index].fence_value));
 }
 
+auto DX12Device::wait_for_idle() -> void {
+
+    for(auto& queue_info : queue_infos) {
+        queue_info.fence_value++;
+        THROW_IF_FAILED(queue_info.queue->Signal(queue_info.fence.get(), queue_info.fence_value));
+        THROW_IF_FAILED(queue_info.fence->SetEventOnCompletion(queue_info.fence_value, fence_event));
+        ::WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
+    }
+}
+
 auto DX12Device::request_next_swapchain_buffer() -> core::ref_ptr<Texture> {
 
-    frame_infos[frame_index].command_allocator->reset();
-
     frame_index = swapchain->GetCurrentBackBufferIndex();
+    frame_infos[frame_index].command_allocator->reset();
     return frame_infos[frame_index].swapchain_buffer;
 }
 
@@ -240,7 +256,6 @@ auto DX12Device::present() -> void {
 
     uint64_t const prev_fence_value = frame_infos[(frame_index + 1) % frame_infos.size()].present_fence_value;
 
-    std::cout << queue_infos[0].fence->GetCompletedValue() << std::endl;
     if(queue_infos[0].fence->GetCompletedValue() < prev_fence_value) {
         THROW_IF_FAILED(queue_infos[0].fence->SetEventOnCompletion(prev_fence_value, fence_event));
         ::WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
@@ -249,4 +264,26 @@ auto DX12Device::present() -> void {
     frame_infos[frame_index].present_fence_value = queue_infos[0].fence_value;
     
     THROW_IF_FAILED(swapchain->Present(0, 0));
+}
+
+auto DX12Device::resize_swapchain_buffers(uint32_t const width, uint32_t const height) -> void {
+
+    wait_for_idle();
+
+    for(auto& frame_info : frame_infos) {
+        frame_info.swapchain_buffer = nullptr;
+    }
+
+    auto dxgi_swapchain_desc = DXGI_SWAP_CHAIN_DESC1 {};
+    THROW_IF_FAILED(swapchain->GetDesc1(&dxgi_swapchain_desc));
+
+    THROW_IF_FAILED(swapchain->ResizeBuffers(dxgi_swapchain_desc.BufferCount, width, height, dxgi_swapchain_desc.Format, 0));
+
+    for(uint32_t i = 0; i < dxgi_swapchain_desc.BufferCount; ++i) {
+        winrt::com_ptr<ID3D12Resource> resource;
+        THROW_IF_FAILED(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
+
+        auto texture = core::make_ref<DX12Texture>(device.get(), resource, &pool_allocator, (TextureUsageFlags)TextureUsage::RenderTarget);
+        frame_infos[i].swapchain_buffer = texture;
+    }
 }

@@ -9,13 +9,9 @@ namespace core {
 class ref_counted_object {
 public:
 
-    ref_counted_object() : ref_count(0) {
-        // std::cout << "Construct object" << std::endl;
-    }
+    ref_counted_object() : ref_count(0) { }
 
-    virtual ~ref_counted_object() {
-        // std::cout << "Cleanup object" << std::endl;
-    }
+    virtual ~ref_counted_object() = default;
 
     ref_counted_object(ref_counted_object const& other) : ref_count(other.ref_count.load()) { }
 
@@ -62,6 +58,106 @@ public:
     ref_ptr(std::nullptr_t) : ptr(nullptr) { }
 
     ~ref_ptr() {
+
+        release_ref();
+    }
+
+    ref_ptr(Type* ptr_) : ptr(ptr_) {
+
+        add_ref();
+    }
+
+    template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
+    ref_ptr(ref_ptr<Derived, DerivedDeleter> other) : ptr(other.ptr) { 
+
+        add_ref();
+    }
+
+    ref_ptr(ref_ptr const& other) : ptr(other.ptr) {
+
+        add_ref();
+    }
+
+    auto operator=(ref_ptr const& other) -> ref_ptr& {
+
+        copy_ref(other.ptr);
+        return *this;
+    }
+
+    template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
+    auto operator=(ref_ptr<Derived, DerivedDeleter> other) -> ref_ptr& {
+
+        copy_ref(other.ptr);
+        return *this;
+    }
+
+    auto operator->() -> Type* {
+
+        assert(ptr != nullptr && "ref_ptr is null");
+        return ptr;
+    }
+
+    auto operator->() const -> Type* const {
+
+        assert(ptr != nullptr && "ref_ptr is null");
+        return ptr;
+    }
+
+    auto operator&() -> Type& {
+
+        assert(ptr != nullptr && "ref_ptr is null");
+        return *ptr;
+    }
+
+    auto operator&() const -> Type const& {
+
+        assert(ptr != nullptr && "ref_ptr is null");
+        return *ptr;
+    }
+
+    auto get() -> Type* {
+
+        assert(ptr != nullptr && "ref_ptr is null");
+        return ptr;
+    }
+
+    auto get() const -> Type* const {
+
+        assert(ptr != nullptr && "ref_ptr is null");
+        return ptr;
+    }
+
+    auto release() -> Type* {
+
+        release_ref();
+        return ptr;
+    }
+
+    operator bool() const {
+
+        return ptr != nullptr;
+    }
+    
+private:
+
+    auto copy_ref(Type* other) -> void {
+
+        if(ptr != other) {
+            release_ref();
+            ptr = other;
+            add_ref();
+        }
+    }
+
+    auto add_ref() -> void {
+
+        if(ptr) {
+            ptr->add_ref();
+        }
+    }
+
+    auto release_ref() -> void {
+
         if(ptr) {
             uint32_t const count = ptr->release();
             if(count == 0) {
@@ -69,83 +165,6 @@ public:
             }
         }
     }
-
-    ref_ptr(Type* ptr_) : ptr(ptr_) {
-        if(ptr) {
-            ptr->add_ref();
-        }
-    }
-
-    template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
-    ref_ptr(ref_ptr<Derived, DerivedDeleter> other) : ptr(other.ptr) { 
-        if(ptr) {
-            ptr->add_ref();
-        }
-    }
-
-    ref_ptr(ref_ptr const& other) : ptr(other.ptr) {
-        if(ptr) {
-            ptr->add_ref();
-        }
-    }
-
-    auto operator=(ref_ptr const& other) -> ref_ptr& {
-        ptr = other.ptr;
-        if(ptr) {
-            ptr->add_ref();
-        }
-        return *this;
-    }
-
-    template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
-    auto operator=(ref_ptr<Derived, DerivedDeleter> other) -> ref_ptr& {
-        ptr = other.ptr;
-        if(ptr) {
-            ptr->add_ref();
-        }
-        return *this;
-    }
-
-    auto operator->() -> Type* {
-        assert(ptr != nullptr && "ref_ptr is null");
-        return ptr;
-    }
-
-    auto operator->() const -> Type* const {
-        assert(ptr != nullptr && "ref_ptr is null");
-        return ptr;
-    }
-
-    auto operator&() -> Type& {
-        assert(ptr != nullptr && "ref_ptr is null");
-        return *ptr;
-    }
-
-    auto operator&() const -> Type const& {
-        assert(ptr != nullptr && "ref_ptr is null");
-        return *ptr;
-    }
-
-    auto get() -> Type* {
-        assert(ptr != nullptr && "ref_ptr is null");
-        return ptr;
-    }
-
-    auto get() const -> Type* const {
-        assert(ptr != nullptr && "ref_ptr is null");
-        return ptr;
-    }
-
-    auto release() -> Type* {
-        ptr->release();
-        return ptr;
-    }
-
-    operator bool() const {
-        return ptr != nullptr;
-    }
-    
-private:
 
     Type* ptr;
 };

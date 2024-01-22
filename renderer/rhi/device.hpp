@@ -27,6 +27,8 @@ enum class BackendType {
 class Device : public core::ref_counted_object {
 public:
 
+    virtual ~Device() = default;
+
     static auto create(BackendType const backend_type, platform::Window const& window) -> core::ref_ptr<Device>;
 
     virtual auto create_allocator(size_t const block_size, size_t const chunk_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> = 0;
@@ -46,9 +48,13 @@ public:
 
     virtual auto submit_command_lists(std::span<core::ref_ptr<CommandBuffer>> const command_buffers) -> void = 0;
 
+    virtual auto wait_for_idle() -> void = 0;
+
     virtual auto request_next_swapchain_buffer() -> core::ref_ptr<Texture> = 0;
 
     virtual auto present() -> void = 0;
+
+    virtual auto resize_swapchain_buffers(uint32_t const width, uint32_t const height) -> void = 0;
 };
 
 }
