@@ -186,6 +186,14 @@ auto DX12Device::allocate_command_buffer(CommandBufferType const buffer_type) ->
     return command_buffer;
 }
 
+auto DX12Device::create_shader(
+
+) -> core::ref_ptr<Shader> 
+{
+
+    return nullptr;
+}
+
 auto DX12Device::create_texture(
     uint32_t const width,
     uint32_t const height,

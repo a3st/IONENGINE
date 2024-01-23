@@ -35,6 +35,10 @@ public:
 
 	auto allocate_command_buffer(CommandBufferType const buffer_type) -> core::ref_ptr<CommandBuffer> override;
 
+	virtual auto create_shader(
+
+    ) -> core::ref_ptr<Shader> override;
+
     auto create_texture(
 		uint32_t const width,
         uint32_t const height,

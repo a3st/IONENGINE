@@ -33,6 +33,10 @@ public:
 
     virtual auto create_allocator(size_t const block_size, size_t const chunk_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> = 0;
 
+    virtual auto create_shader(
+
+    ) -> core::ref_ptr<Shader> = 0;
+
     virtual auto create_texture(
         uint32_t const width,
         uint32_t const height,

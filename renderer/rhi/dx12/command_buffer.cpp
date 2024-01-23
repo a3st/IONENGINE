@@ -166,6 +166,7 @@ auto DX12CommandBuffer::end_render_pass() -> void {
 
 auto DX12CommandBuffer::bind_vertex_buffer(uint32_t const slot, core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void {
 
+    
 }
 
 auto DX12CommandBuffer::bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size, IndexFormat const format) -> void {
