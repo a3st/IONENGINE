@@ -38,8 +38,8 @@ struct RenderPassDepthStencilInfo {
     RenderPassStoreOp depth_store_op;
     RenderPassLoadOp stencil_load_op;
     RenderPassStoreOp stencil_store_op;
-    float const clear_depth;
-    uint8_t const clear_stencil;
+    float clear_depth;
+    uint8_t clear_stencil;
 };
 
 enum class IndexFormat {

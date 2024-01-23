@@ -4,8 +4,6 @@
 
 #include "core/ref_ptr.hpp"
 #include "render_graph.hpp"
-#include "render_task.hpp"
-#include "camera.hpp"
 
 namespace ionengine {
 
@@ -26,10 +24,10 @@ public:
 
     virtual auto setup(
         RenderGraphBuilder& builder, 
-        core::ref_ptr<Camera> camera, 
+        //core::ref_ptr<Camera> camera, 
         uint32_t const width, 
-        uint32_t const height,
-        std::span<RenderTask> const render_tasks
+        uint32_t const height
+        //std::span<RenderTask> const render_tasks
     ) -> std::vector<RGAttachment> = 0;
 
 protected:

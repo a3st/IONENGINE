@@ -16,7 +16,7 @@ Engine::Engine(
     auto render_pipeline = core::make_ref<renderer::MyRenderPipeline>();
     renderer = core::make_ref<renderer::Renderer>(render_pipeline, &window);
 
-    std::string shader_bytes;
+    /*std::string shader_bytes;
     {
         std::ifstream ifs("shaders/3d.wgsl");
         ifs.seekg(0, std::ios::end);
@@ -33,15 +33,15 @@ Engine::Engine(
             .shader_code = shader_bytes
         }
     );
-    renderer->load_shaders(shaders);
+    renderer->load_shaders(shaders);*/
 }
 
 auto Engine::run() -> void {
 
-    auto main_camera = renderer->create_camera(renderer::CameraProjectionType::Perspective);
+    //auto main_camera = renderer->create_camera(renderer::CameraProjectionType::Perspective);
 
-    std::vector<core::ref_ptr<renderer::Camera>> targets;
-    targets.emplace_back(main_camera);
+    //std::vector<core::ref_ptr<renderer::Camera>> targets;
+    //targets.emplace_back(main_camera);
 
     std::vector<uint8_t> object_bytes;
     {
@@ -80,7 +80,7 @@ auto Engine::run() -> void {
                         }
                     }
 
-                    renderer->render(targets);
+                    renderer->render();
                 },
                 [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {      
                     renderer->resize(data.width, data.height);

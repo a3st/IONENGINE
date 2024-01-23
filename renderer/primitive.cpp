@@ -2,12 +2,11 @@
 
 #include "precompiled.h"
 #include "primitive.hpp"
-#include "context.hpp"
 #include "core/exception.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
-
+/*
 Primitive::Primitive(
     Context& context, 
     BufferAllocator<LinearAllocator>& allocator,
@@ -39,4 +38,4 @@ Primitive::Primitive(
         data.indices.data(),
         data.indices.size()
     );
-}
+}*/

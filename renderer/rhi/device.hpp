@@ -33,7 +33,14 @@ public:
 
     virtual auto create_allocator(size_t const block_size, size_t const chunk_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> = 0;
 
-    virtual auto create_texture() -> Future<Texture> = 0;
+    virtual auto create_texture(
+        uint32_t const width,
+        uint32_t const height,
+        uint32_t const depth,
+        TextureFormat const format,
+        TextureDimension const dimension,
+        TextureUsageFlags const flags
+    ) -> Future<Texture> = 0;
 
     virtual auto allocate_command_buffer(CommandBufferType const buffer_type) -> core::ref_ptr<CommandBuffer> = 0;
 

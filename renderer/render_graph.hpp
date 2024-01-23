@@ -2,62 +2,57 @@
 
 #pragma once
 
-#include <webgpu/webgpu.hpp>
-#include <xxhash/xxhash64.h>
-#include "core/ref_ptr.hpp"
-#include "texture.hpp"
+#include "cache/rg_resource_cache.hpp"
 
 namespace ionengine {
 
 namespace renderer {
 
-class Context;
-class ShaderCache;
-struct RenderTask;
-
 struct RGAttachment {
     std::string name;
-    wgpu::TextureFormat format;
+    rhi::TextureFormat format;
     uint32_t sample_count;
-    core::ref_ptr<Texture> texture{nullptr};
+    core::ref_ptr<rhi::Texture> texture{nullptr};
+    bool is_swapchain{false};
     
     struct ColorAttachment {
-        wgpu::LoadOp load_op;
-        wgpu::StoreOp store_op;
-        wgpu::Color clear_color;
+        rhi::RenderPassLoadOp load_op;
+        rhi::RenderPassStoreOp store_op;
+        math::Color clear_color;
     };
 
     struct DepthStencilAttachment {
-        wgpu::LoadOp depth_load_op;
-        wgpu::StoreOp depth_store_op;
-        wgpu::LoadOp stencil_load_op;
-        wgpu::StoreOp stencil_store_op;
+        rhi::RenderPassLoadOp depth_load_op;
+        rhi::RenderPassStoreOp depth_store_op;
+        rhi::RenderPassLoadOp stencil_load_op;
+        rhi::RenderPassStoreOp stencil_store_op;
         float clear_depth;
-        uint32_t clear_stencil;
+        uint8_t clear_stencil;
     };
 
     std::variant<ColorAttachment, DepthStencilAttachment> attachment;
 
     static auto swapchain(
-        wgpu::LoadOp const load_op, 
-        wgpu::StoreOp const store_op, 
-        wgpu::Color const& color = wgpu::Color(0.0, 0.0, 0.0, 0.0)
+        rhi::RenderPassLoadOp const load_op, 
+        rhi::RenderPassStoreOp const store_op, 
+        math::Color const& color = math::Color(0.0f, 0.0f, 0.0f, 0.0f)
     ) -> RGAttachment {
         return RGAttachment {
             .name = "__swapchain__",
-            .format = wgpu::TextureFormat::Undefined,
+            .format = rhi::TextureFormat::Unknown,
             .sample_count = 1,
+            .is_swapchain = true,
             .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
         };
     }
 
     static auto render_target(
         std::string_view const name, 
-        wgpu::TextureFormat const format, 
+        rhi::TextureFormat const format, 
         uint32_t const sample_count,
-        wgpu::LoadOp const load_op, 
-        wgpu::StoreOp const store_op, 
-        wgpu::Color const& color = wgpu::Color(0.0, 0.0, 0.0, 0.0)
+        rhi::RenderPassLoadOp const load_op, 
+        rhi::RenderPassStoreOp const store_op, 
+        math::Color const& color = math::Color(0.0f, 0.0f, 0.0f, 0.0f)
     ) -> RGAttachment {
         return RGAttachment {
             .name = std::string(name),
@@ -68,78 +63,41 @@ struct RGAttachment {
     }
 
     static auto external(
-        core::ref_ptr<Texture> texture,
-        wgpu::LoadOp const load_op, 
-        wgpu::StoreOp const store_op, 
-        wgpu::Color const& color = wgpu::Color(0.0, 0.0, 0.0, 0.0)
+        core::ref_ptr<rhi::Texture> texture,
+        rhi::RenderPassLoadOp const load_op, 
+        rhi::RenderPassStoreOp const store_op, 
+        math::Color const& color = math::Color(0.0f, 0.0f, 0.0f, 0.0f)
     ) -> RGAttachment {
         return RGAttachment {
-            .name = std::format("__external_{}__", (uint64_t)texture->get_texture()),
-            .format = texture->get_texture().getFormat(),
-            .sample_count = texture->get_texture().getSampleCount(),
+            .name = std::format("__external_{}__", (uintptr_t)texture.get()),
+            .format = texture->get_format(),
+            .sample_count = 1,
             .texture = texture,
             .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
         };
     }
 };
 
-struct RGResource {
-    core::ref_ptr<Texture> texture{nullptr};
-};
-
-class RGResourceCache {
+class RGRenderPassContext {
 public:
 
-    struct Entry {
-        wgpu::TextureFormat format;
-        uint32_t sample_count;
-        uint32_t width;
-        uint32_t height;
+    RGRenderPassContext(
+        std::unordered_map<uint32_t, uint64_t>& inputs,
+        std::unordered_map<uint32_t, uint64_t>& outputs,
+        std::unordered_map<uint64_t, RGAttachment>& attachments,
+        RGResourceCache& resource_cache,
+        uint32_t const width,
+        uint32_t const height,
+        rhi::CommandBuffer& command_buffer
+    );
 
-        auto operator==(Entry const& other) const -> bool {
-            return std::tie(format, sample_count, width, height) == 
-                std::tie(other.format, other.sample_count, other.width, other.height);
-        }
-    };
+    // auto get_resource_by_index(uint32_t const index) -> RGResource;
 
-    struct EntryHasher {
-        auto operator()(const Entry& entry) const -> std::size_t {
-            return 
-                XXHash64::hash(&entry.format, sizeof(wgpu::TextureFormat), 0) ^
-                XXHash64::hash(&entry.sample_count, sizeof(uint32_t), 0) ^
-                XXHash64::hash(&entry.width, sizeof(uint32_t), 0) ^
-                XXHash64::hash(&entry.height, sizeof(uint32_t), 0)
-            ;
-        }
-    };
+    // auto blit(RGResource const& source) -> void;
 
-    RGResourceCache(Context& context);
-
-    auto get(
-        uint64_t const id,
-        wgpu::TextureFormat const format, 
-        uint32_t const sample_count, 
-        uint32_t const width, 
-        uint32_t const height
-    ) -> RGResource;
-
-    auto update() -> void;
+    // auto draw(RenderTask const& render_task) -> void;
 
 private:
-
-    auto get_from_entries(
-        wgpu::TextureFormat const format, 
-        uint32_t const sample_count, 
-        uint32_t const width, 
-        uint32_t const height
-    ) -> RGResource;
-
-    Context* context;
-    std::unordered_map<Entry, std::queue<RGResource>, EntryHasher> entries;
-    std::unordered_map<uint64_t, std::optional<std::tuple<RGResource, uint32_t>>> resources;
-};
-
-struct RGRenderPassContext {
 
     std::unordered_map<uint32_t, uint64_t>* inputs;
     std::unordered_map<uint32_t, uint64_t>* outputs;
@@ -147,15 +105,7 @@ struct RGRenderPassContext {
     RGResourceCache* resource_cache;
     uint32_t width;
     uint32_t height;
-    wgpu::RenderPassEncoder* encoder;
-    ShaderCache* shader_cache;
-    Context* context;
-
-    auto get_resource_by_index(uint32_t const index) -> RGResource;
-
-    auto blit(RGResource const& source) -> void;
-
-    auto draw(RenderTask const& render_task) -> void;
+    rhi::CommandBuffer* command_buffer;
 };
 
 using graphics_pass_func_t = std::function<void(RGRenderPassContext&)>;
@@ -168,8 +118,8 @@ struct RGRenderPass {
     struct GraphicsPass {
         uint32_t width;
         uint32_t height;
-        std::vector<wgpu::RenderPassColorAttachment> colors;
-        std::optional<wgpu::RenderPassDepthStencilAttachment> depth_stencil;
+        std::vector<rhi::RenderPassColorInfo> colors;
+        std::optional<rhi::RenderPassDepthStencilInfo> depth_stencil;
         graphics_pass_func_t callback;
     };
 
@@ -184,8 +134,8 @@ struct RGRenderPass {
         std::string_view const pass_name, 
         uint32_t const width, 
         uint32_t const height, 
-        std::vector<wgpu::RenderPassColorAttachment> const& colors,
-        std::optional<wgpu::RenderPassDepthStencilAttachment> const depth_stencil = std::nullopt
+        std::vector<rhi::RenderPassColorInfo> const& colors,
+        std::optional<rhi::RenderPassDepthStencilInfo> const depth_stencil = std::nullopt
     ) {
         return RGRenderPass {
             .pass_name = std::string(pass_name),
@@ -204,28 +154,27 @@ class RenderGraph : public core::ref_counted_object {
 public:
 
     RenderGraph(
-        Context& context, 
+        rhi::Device& device, 
         std::vector<RGRenderPass> const& steps,
         std::unordered_map<uint64_t, RGAttachment> const& attachments
     );
 
-    auto execute(ShaderCache& shader_cache) -> void;
+    auto execute() -> void;
 
 private:
 
-    Context* context;
+    rhi::Device* device;
     std::vector<RGRenderPass> steps;
     std::unordered_map<uint64_t, RGAttachment> attachments;
     RGResourceCache resource_cache;
     uint32_t frame_index{0};
-
-    const uint64_t SWAPCHAIN_NAME = 17433375051057668844;
+    std::vector<core::ref_ptr<rhi::CommandBuffer>> submits;
 };
 
 class RenderGraphBuilder {
 public:
 
-    RenderGraphBuilder(Context& context);
+    RenderGraphBuilder(rhi::Device& device);
 
     auto add_graphics_pass(
         std::string_view const pass_name,
@@ -242,7 +191,7 @@ public:
 
 private:
 
-    Context* context;
+    rhi::Device* device;
     std::vector<RGRenderPass> steps;
     std::unordered_map<uint64_t, RGAttachment> attachments;
 };

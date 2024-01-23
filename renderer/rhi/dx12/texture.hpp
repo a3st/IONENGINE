@@ -18,7 +18,11 @@ auto texture_format_to_dxgi(TextureFormat const format) -> DXGI_FORMAT;
 class DX12Texture : public Texture {
 public:
 
-    DX12Texture(ID3D12Device1* device, DescriptorAllocator& allocator, TextureUsageFlags const flags);
+    DX12Texture(
+        ID3D12Device1* device, 
+        DescriptorAllocator& allocator, 
+        TextureUsageFlags const flags
+    );
 
     DX12Texture(ID3D12Device1* device, winrt::com_ptr<ID3D12Resource> resource, DescriptorAllocator& allocator, TextureUsageFlags const flags);
 

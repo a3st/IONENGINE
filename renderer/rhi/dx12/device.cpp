@@ -186,7 +186,16 @@ auto DX12Device::allocate_command_buffer(CommandBufferType const buffer_type) ->
     return command_buffer;
 }
 
-auto DX12Device::create_texture() -> Future<Texture> {
+auto DX12Device::create_texture(
+    uint32_t const width,
+    uint32_t const height,
+    uint32_t const depth,
+    TextureFormat const format,
+    TextureDimension const dimension,
+    TextureUsageFlags const flags
+) -> Future<Texture> 
+{
+
 
     return Future<DX12Texture>();
 }

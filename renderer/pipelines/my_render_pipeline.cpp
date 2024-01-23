@@ -2,7 +2,6 @@
 
 #include "precompiled.h"
 #include "renderer/pipelines/my_render_pipeline.hpp"
-#include "renderer/context.hpp"
 #include "platform/window.hpp"
 
 using namespace ionengine;
@@ -10,13 +9,13 @@ using namespace ionengine::renderer;
 
 auto MyRenderPipeline::setup(
     RenderGraphBuilder& builder, 
-    core::ref_ptr<Camera> camera, 
+    //core::ref_ptr<Camera> camera, 
     uint32_t const width, 
-    uint32_t const height,
-    std::span<RenderTask> const render_tasks
+    uint32_t const height
+    //std::span<RenderTask> const render_tasks
 ) -> std::vector<RGAttachment> {
 
-    std::vector<RGAttachment> inputs = {
+    /*std::vector<RGAttachment> inputs = {
         RGAttachment::render_target("albedo", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store),
         RGAttachment::render_target("normal", wgpu::TextureFormat::BGRA8Unorm, 1, wgpu::LoadOp::Clear, wgpu::StoreOp::Store)
     };
@@ -37,7 +36,7 @@ auto MyRenderPipeline::setup(
                 ctx.draw(render_task);
             }
         }
-    );
+    );*/
 
-    return outputs;
+    return {};
 }

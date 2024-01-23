@@ -4,7 +4,6 @@ project(IONENGINE VERSION 0.0.5)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(thirdparty/webgpu)
 add_subdirectory(thirdparty/simdjson)
 add_subdirectory(thirdparty/pybind11)
 
@@ -34,14 +33,10 @@ add_library(engine SHARED
     "renderer/rhi/dx12/device.cpp"
     "renderer/rhi/device.cpp"
 
-    "renderer/context.cpp"
-    "renderer/texture.cpp"
-    "renderer/buffer.cpp"
-    "renderer/shader.cpp"
-    "renderer/primitive.cpp"
-    "renderer/camera.cpp"
-    "renderer/texture_cache.cpp"
-    "renderer/primitive_cache.cpp"
+    "renderer/cache/rg_resource_cache.cpp"
+    #"renderer/primitive.cpp"
+    #"renderer/camera.cpp"
+    #"renderer/primitive_cache.cpp"
     "renderer/render_graph.cpp"
     "renderer/renderer.cpp"
 
@@ -65,7 +60,6 @@ target_link_directories(engine PUBLIC
 )
 
 target_link_libraries(engine PUBLIC
-    webgpu
     simdjson
     pybind11::headers
     python311.lib

@@ -35,7 +35,14 @@ public:
 
 	auto allocate_command_buffer(CommandBufferType const buffer_type) -> core::ref_ptr<CommandBuffer> override;
 
-    auto create_texture() -> Future<Texture> override;
+    auto create_texture(
+		uint32_t const width,
+        uint32_t const height,
+        uint32_t const depth,
+        TextureFormat const format,
+        TextureDimension const dimension,
+        TextureUsageFlags const flags
+	) -> Future<Texture> override;
 
     auto create_buffer(
 		MemoryAllocator& allocator, 

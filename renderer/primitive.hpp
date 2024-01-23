@@ -2,13 +2,11 @@
 
 #pragma once
 
-#include "buffer.hpp"
+#include "core/ref_ptr.hpp"
 
 namespace ionengine {
 
 namespace renderer {
-
-class Context;
 
 struct PrimitiveData {
     std::span<uint8_t const> vertices;
@@ -18,7 +16,7 @@ struct PrimitiveData {
 
 class Primitive : public core::ref_counted_object {
 public:
-
+    /*
     inline static std::vector<wgpu::VertexAttribute> attributes = {
         WGPUVertexAttribute {
             .format = wgpu::VertexFormat::Float32x3,
@@ -51,14 +49,11 @@ public:
     auto get_index_buffer() const -> BufferAllocation const& {
 
         return index_buffer;
-    }
+    }*/
 
 private:
 
-    Context* context;
-    BufferAllocator<LinearAllocator>* allocator;
-    BufferAllocation vertex_buffer;
-    BufferAllocation index_buffer;
+    // Context* context;
 };
 
 }
