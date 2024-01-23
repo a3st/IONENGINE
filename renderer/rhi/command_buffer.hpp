@@ -135,6 +135,14 @@ public:
     virtual auto bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size, IndexFormat const format) -> void = 0;
 
     virtual auto draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t instance_offset) -> void = 0;
+
+    virtual auto copy_buffer(
+        core::ref_ptr<Buffer> dst, 
+        uint64_t const dst_offset, 
+        core::ref_ptr<Buffer> src, 
+        uint64_t const src_offset,
+        size_t const size
+    ) -> void = 0;
 };
 
 }

@@ -75,7 +75,6 @@ private:
 	HANDLE fence_event;
 
 	core::ref_ptr<PoolDescriptorAllocator> pool_allocator{nullptr};
-	core::ref_ptr<CommandAllocator> command_allocator{nullptr};
 	core::ref_ptr<UploadContext> upload_context{nullptr};
 
 	struct FrameInfo {

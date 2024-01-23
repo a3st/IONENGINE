@@ -2,7 +2,6 @@
 
 #include "precompiled.h"
 #include "command_buffer.hpp"
-#include "texture.hpp"
 #include "utils.hpp"
 #include "core/exception.hpp"
 
@@ -177,6 +176,32 @@ auto DX12CommandBuffer::draw_indexed(uint32_t const index_count, uint32_t const 
 
 }
 
+auto DX12CommandBuffer::copy_buffer(
+    core::ref_ptr<Buffer> dst, 
+    uint64_t const dst_offset, 
+    core::ref_ptr<Buffer> src, 
+    uint64_t const src_offset,
+    size_t const size
+) -> void 
+{
+    auto tracker = ResourceTrackerInfo {
+        .resource = static_cast<DX12Buffer*>(dst.get()),
+        .begin_state = D3D12_RESOURCE_STATE_COPY_DEST,
+        .end_state = static_cast<DX12Buffer*>(dst.get())->get_resource_state()
+    };
+    trackers.emplace_back(tracker);
+
+    begin_barrier_resources();
+    command_list->CopyBufferRegion(
+        static_cast<DX12Buffer*>(dst.get())->get_resource(), 
+        dst_offset,
+        static_cast<DX12Buffer*>(src.get())->get_resource(), 
+        src_offset,
+        size
+    );
+    end_barrier_resources();
+}
+
 auto DX12CommandBuffer::begin_barrier_resources() -> void {
 
     for(auto const& tracker : trackers) {
@@ -187,11 +212,11 @@ auto DX12CommandBuffer::begin_barrier_resources() -> void {
         d3d12_resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
         auto visitor = make_visitor(
-            [&](Texture* data) {
-                d3d12_resource_barrier.Transition.pResource = static_cast<DX12Texture*>(data)->get_resource();
+            [&](DX12Texture* data) {
+                d3d12_resource_barrier.Transition.pResource = data->get_resource();
             },
-            [&](Buffer* data) {
-
+            [&](DX12Buffer* data) {
+                d3d12_resource_barrier.Transition.pResource = data->get_resource();
             }
         );
 
@@ -213,11 +238,11 @@ auto DX12CommandBuffer::end_barrier_resources() -> void {
         d3d12_resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
         auto visitor = make_visitor(
-            [&](Texture* data) {
-                d3d12_resource_barrier.Transition.pResource = static_cast<DX12Texture*>(data)->get_resource();
+            [&](DX12Texture* data) {
+                d3d12_resource_barrier.Transition.pResource = data->get_resource();
             },
-            [&](Buffer* data) {
-
+            [&](DX12Buffer* data) {
+                d3d12_resource_barrier.Transition.pResource = data->get_resource();
             }
         );
 

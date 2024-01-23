@@ -30,6 +30,7 @@ add_library(engine SHARED
     "renderer/rhi/dx12/texture.cpp"
     "renderer/rhi/dx12/buffer.cpp"
     "renderer/rhi/dx12/command_buffer.cpp"
+    "renderer/rhi/dx12/future.cpp"
     "renderer/rhi/dx12/device.cpp"
     "renderer/rhi/device.cpp"
 

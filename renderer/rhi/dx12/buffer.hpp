@@ -15,15 +15,15 @@ namespace rhi {
 class DX12Buffer : public Buffer {
 public:
 
-    DX12Buffer();
-
     DX12Buffer(
         ID3D12Device1* device, 
         MemoryAllocator& memory_allocator,
-        DescriptorAllocator& descriptor_allocator,
+        DescriptorAllocator* descriptor_allocator,
         size_t const size,
         BufferUsageFlags const flags
     );
+
+    ~DX12Buffer();
 
     auto get_size() -> size_t override {
 
@@ -40,13 +40,24 @@ public:
         return resource.get();
     }
 
-protected:
+    auto get_resource_state() const -> D3D12_RESOURCE_STATES {
 
-    DX12MemoryAllocator* memory_allocator;
-    DescriptorAllocator* descriptor_allocator;
+        return resource_state;
+    }
+
+    auto set_resource_state(D3D12_RESOURCE_STATES const state) -> void {
+
+        resource_state = state;
+    }
+
+private:
+
+    DX12MemoryAllocator* memory_allocator{nullptr};
+    DescriptorAllocator* descriptor_allocator{nullptr};
     winrt::com_ptr<ID3D12Resource> resource;
-    MemoryAllocation memory_allocation;
-    DescriptorAllocation descriptor_allocation;
+    D3D12_RESOURCE_STATES resource_state;
+    MemoryAllocation memory_allocation{};
+    DescriptorAllocation descriptor_allocation{};
     size_t size;
     BufferUsageFlags flags;
 };

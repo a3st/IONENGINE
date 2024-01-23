@@ -31,12 +31,16 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
         (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex | rhi::BufferUsage::Index)
     );
 
-    device->create_buffer(
+    std::vector<uint8_t> trash_data(1024);
+
+    auto test_buffer = device->create_buffer(
         &primitive_allocator, 
         16 * 1024 * 1024, 
         (rhi::BufferUsageFlags)rhi::BufferUsage::Vertex,
-        {}
+        trash_data
     );
+
+    test_buffer.wait();
 }
 
 auto Renderer::update(float const dt) -> void {

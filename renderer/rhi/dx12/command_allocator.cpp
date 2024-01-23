@@ -4,7 +4,6 @@
 
 #include "precompiled.h"
 #include "command_allocator.hpp"
-#include "command_buffer.hpp"
 #include "utils.hpp"
 #include "core/exception.hpp"
 
@@ -33,11 +32,11 @@ CommandAllocator::CommandAllocator(ID3D12Device4* device) : device(device) {
     }
 }
 
-auto CommandAllocator::allocate(D3D12_COMMAND_LIST_TYPE const list_type) -> core::ref_ptr<CommandBuffer> {
+auto CommandAllocator::allocate(D3D12_COMMAND_LIST_TYPE const list_type) -> core::ref_ptr<DX12CommandBuffer> {
 
     assert((chunks.find(list_type) != chunks.end()) && "Required list type not found when allocating command buffer");
     
-    core::ref_ptr<CommandBuffer> buffer{nullptr};
+    core::ref_ptr<DX12CommandBuffer> buffer{nullptr};
 
     for(auto& chunk : chunks[list_type]) {
         if(1 > chunk.size - chunk.offset) {
@@ -87,7 +86,7 @@ auto CommandAllocator::reset() -> void {
 
 auto CommandAllocator::create_chunk(D3D12_COMMAND_LIST_TYPE const list_type) -> void {
 
-    std::vector<core::ref_ptr<CommandBuffer>> buffers;
+    std::vector<core::ref_ptr<DX12CommandBuffer>> buffers;
 
     uint32_t alloc_size = 0;
     switch(list_type) {

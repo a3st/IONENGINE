@@ -5,6 +5,7 @@
 #include "texture.hpp"
 #include "buffer.hpp"
 #include "command_buffer.hpp"
+#include "future.hpp"
 #include "allocator.hpp"
 #include "utils.hpp"
 #include "core/exception.hpp"
@@ -100,13 +101,12 @@ DX12Device::DX12Device(platform::Window const& window) {
     }
 
     pool_allocator = core::make_ref<PoolDescriptorAllocator>(device.get(), true);
-    command_allocator = core::make_ref<CommandAllocator>(device.get());
     upload_context = core::make_ref<UploadContext>(
         device.get(), 
         queue_infos[1].queue.get(), 
         queue_infos[1].fence.get(), 
+        fence_event,
         queue_infos[1].fence_value,
-        &command_allocator,
         32 * 1024 * 1024
     );
 
@@ -155,6 +155,7 @@ DX12Device::DX12Device(platform::Window const& window) {
 DX12Device::~DX12Device() {
 
     wait_for_idle();
+    ::CloseHandle(fence_event);
 }
 
 auto DX12Device::create_allocator(size_t const block_size, size_t const shrink_size, BufferUsageFlags const flags) -> core::ref_ptr<MemoryAllocator> {
@@ -181,7 +182,7 @@ auto DX12Device::allocate_command_buffer(CommandBufferType const buffer_type) ->
     }
 
     auto command_buffer = frame_infos[frame_index].command_allocator->allocate(list_type);
-    static_cast<DX12CommandBuffer*>(command_buffer.get())->reset();
+    command_buffer->reset();
     return command_buffer;
 }
 
@@ -200,21 +201,30 @@ auto DX12Device::create_buffer(
     auto buffer = core::make_ref<DX12Buffer>(
         device.get(),
         allocator,
-        &pool_allocator,
+        pool_allocator.get(),
         size,
         flags
     );
 
-    upload_context->upload(static_cast<DX12Buffer*>(buffer.get())->get_resource(), data);
+    if(!data.empty()) {
+        upload_context->upload(buffer, data);
+    }
 
-    return Future<DX12Buffer>(buffer);
+    auto future_impl = std::make_unique<DX12FutureImpl>(
+        queue_infos[1].queue.get(), 
+        queue_infos[1].fence.get(),
+        fence_event,
+        queue_infos[1].fence_value
+    );
+
+    return Future<DX12Buffer>(buffer, std::move(future_impl));
 }
 
 auto DX12Device::write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> {
 
-    auto buffer2 = core::make_ref<DX12Buffer>();
+    // auto buffer2 = core::make_ref<DX12Buffer>();
 
-    return Future<DX12Buffer>(buffer2);
+    return Future<DX12Buffer>();
 }
 
 auto DX12Device::submit_command_lists(std::span<core::ref_ptr<CommandBuffer>> const command_buffers) -> void {
@@ -259,7 +269,10 @@ auto DX12Device::wait_for_idle() -> void {
 auto DX12Device::request_next_swapchain_buffer() -> core::ref_ptr<Texture> {
 
     frame_index = swapchain->GetCurrentBackBufferIndex();
+
     frame_infos[frame_index].command_allocator->reset();
+    upload_context->try_reset();
+    
     return frame_infos[frame_index].swapchain_buffer;
 }
 

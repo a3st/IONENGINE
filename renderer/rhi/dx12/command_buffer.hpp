@@ -3,6 +3,8 @@
 #pragma once
 
 #include "renderer/rhi/command_buffer.hpp"
+#include "texture.hpp"
+#include "buffer.hpp"
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <winrt/base.h>
@@ -53,6 +55,14 @@ public:
 
     auto draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t instance_offset) -> void override;
 
+    auto copy_buffer(
+        core::ref_ptr<Buffer> dst, 
+        uint64_t const dst_offset, 
+        core::ref_ptr<Buffer> src, 
+        uint64_t const src_offset,
+        size_t const size
+    ) -> void override;
+
     auto get_command_list() -> ID3D12GraphicsCommandList4* {
 
         return command_list.get();
@@ -70,7 +80,7 @@ private:
     D3D12_COMMAND_LIST_TYPE list_type;
 
     struct ResourceTrackerInfo {
-        std::variant<Texture*, Buffer*> resource;
+        std::variant<DX12Texture*, DX12Buffer*> resource;
         D3D12_RESOURCE_STATES begin_state;
         D3D12_RESOURCE_STATES end_state;
     };

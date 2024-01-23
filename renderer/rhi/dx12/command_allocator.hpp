@@ -3,7 +3,7 @@
 #pragma once
 
 #include "core/ref_ptr.hpp"
-#include "renderer/rhi/command_buffer.hpp"
+#include "command_buffer.hpp"
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <winrt/base.h>
@@ -19,7 +19,7 @@ public:
 
     CommandAllocator(ID3D12Device4* device);
 
-    auto allocate(D3D12_COMMAND_LIST_TYPE const list_type) -> core::ref_ptr<CommandBuffer>;
+    auto allocate(D3D12_COMMAND_LIST_TYPE const list_type) -> core::ref_ptr<DX12CommandBuffer>;
 
     auto reset() -> void;
 
@@ -30,7 +30,7 @@ private:
     inline static uint32_t CHUNK_COMMAND_LIST_COMPUTE_MAX = 4;
 
     struct Chunk {
-        std::vector<core::ref_ptr<CommandBuffer>> buffers;
+        std::vector<core::ref_ptr<DX12CommandBuffer>> buffers;
         uint32_t offset;
         uint32_t size;
     };
