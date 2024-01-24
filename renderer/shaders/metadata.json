@@ -1,0 +1,46 @@
+{
+    "shaderName" : "Basic",
+    "stages" : {
+        "VERTEX_SHADER" : {
+            "entryPoint" : "vs_main",
+            "inputs" : [
+                {
+                    "type" : "FLOAT3",
+                    "semantic" : "POSITION0"
+                },
+                {
+                    "type" : "FLOAT3",
+                    "semantic" : "NORMAL"
+                },
+                {
+                    "type" : "FLOAT2",
+                    "semantic" : "TEXCOORD0"
+                }
+            ]
+        },
+        "PIXEL_SHADER" : { 
+            "entryPoint" : "ps_main"
+        }
+    },
+    "exports" : {
+        "WorldData" : {
+            "binding" : 0,
+            "type" : "CONSTANT_BUFFER",
+            "elements" : [
+                {
+                    "name" : "model",
+                    "type" : "FLOAT4x4"
+                },
+                {
+                    "name" : "view",
+                    "type" : "FLOAT4x4"
+                },
+                {
+                    "name" : "projection",
+                    "type" : "FLOAT4x4"
+                }
+            ],
+            "sizeInBytes" : "192"
+        }
+    }
+}

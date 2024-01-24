@@ -43,7 +43,7 @@ auto Engine::run() -> void {
     //std::vector<core::ref_ptr<renderer::Camera>> targets;
     //targets.emplace_back(main_camera);
 
-    std::vector<uint8_t> object_bytes;
+    /*std::vector<uint8_t> object_bytes;
     {
         std::ifstream ifs("models/vehicle-1mat.glb", std::ios::binary);
         ifs.seekg(0, std::ios::end);
@@ -53,7 +53,7 @@ auto Engine::run() -> void {
         ifs.read(reinterpret_cast<char* const>(object_bytes.data()), size);
     }
     
-    Model model(object_bytes, ModelFormat::GLB);
+    Model model(object_bytes, ModelFormat::GLB);*/
 
     window_loop->run(
         &window, 
@@ -68,7 +68,7 @@ auto Engine::run() -> void {
 
                     renderer->update(0.1f);
                     
-                    for(uint32_t j = 5; j < 6; ++j) {
+                    /*for(uint32_t j = 5; j < 6; ++j) {
                         for(uint32_t i = 0; i < model.get_mesh(j).primitives.size(); ++i) {
                             auto primitive_data = renderer::PrimitiveData {
                                 .vertices = model.get_mesh(j).primitives[i].vertices,
@@ -78,7 +78,7 @@ auto Engine::run() -> void {
 
                             // renderer->add_render_task(primitive_data, model.get_mesh(j).index_counts[i], "3d");
                         }
-                    }
+                    }*/
 
                     renderer->render();
                 },

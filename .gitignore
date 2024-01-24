@@ -33,11 +33,6 @@
 
 # Folders
 build
-!/build/Debug/
-/build/Debug/*
-!/build/Debug/engine
-!/build/Debug/content
-!/build/Debug/new_material_system
-/.gradle/*
-/thirdparty/*
+.gradle
+thirdparty
 *.egg-info

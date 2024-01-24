@@ -2,7 +2,10 @@
 
 #pragma once
 
-#include "core/ref_ptr.hpp"
+#include "renderer/rhi/shader.hpp"
+#include <d3d12.h>
+#include <dxgi1_4.h>
+#include <winrt/base.h>
 
 namespace ionengine {
 
@@ -10,13 +13,7 @@ namespace renderer {
 
 namespace rhi {
 
-class Shader : public core::ref_counted_object {
-public:
-
-    
-
-private:
-
+class DX12Shader : public Shader {
 
 };
 
