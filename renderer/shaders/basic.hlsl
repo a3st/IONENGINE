@@ -1,13 +1,19 @@
 
 struct ShaderResources {
-    uint world_data;
-    uint lighting_data;
+    uint worldData;
+    uint lightingData;
+    uint textureColor;
 };
 
 struct WorldData {
     float4x4 model;
     float4x4 view;
     float4x4 projection;
+};
+
+struct LightingData {
+    float3 direction;
+    float distance;
 };
 
 struct VSInput {

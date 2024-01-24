@@ -1,11 +1,13 @@
-import regex
+import re
 from shader import ShaderParser
+import json
 
 str = ''
 
-with open("tools/shaderc/basic.hlsl", mode="r") as fp:
-    str = fp.read() 
+with open("renderer/shaders/basic.hlsl", mode="r") as fp:
+    str = fp.read()
 
-shader = ShaderParser()
 
-regex.Regex('')
+parser = ShaderParser(str)
+print(parser.stages)
+print(parser.exports)

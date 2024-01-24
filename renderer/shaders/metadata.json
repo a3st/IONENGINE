@@ -16,7 +16,8 @@
                     "type" : "FLOAT2",
                     "semantic" : "TEXCOORD0"
                 }
-            ]
+            ],
+            "inputsSizePerVertex": 22
         },
         "PIXEL_SHADER" : { 
             "entryPoint" : "ps_main"
@@ -25,7 +26,7 @@
     "exports" : {
         "WorldData" : {
             "binding" : 0,
-            "type" : "CONSTANT_BUFFER",
+            "type" : "BUFFER",
             "elements" : [
                 {
                     "name" : "model",
@@ -40,7 +41,26 @@
                     "type" : "FLOAT4x4"
                 }
             ],
-            "sizeInBytes" : "192"
+            "sizeInBytes" : 192
+        },
+        "LightingData" : {
+            "binding" : 1,
+            "type" : "BUFFER",
+            "elements" : [
+                {
+                    "name" : "direction",
+                    "type" : "FLOAT3"
+                },
+                {
+                    "name" : "distance",
+                    "type" : "FLOAT"
+                }
+            ],
+            "sizeInBytes" : 16
+        },
+        "TextureColor" : {
+            "binding" : 2,
+            "type" : "TEXTURE_OR_UAV"
         }
     }
 }
