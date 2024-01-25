@@ -1,4 +1,6 @@
 import re
+import os
+import subprocess
 
 data_types = {
     'float4x4':     "FLOAT4x4",
@@ -30,7 +32,6 @@ data_type_sizes = {
 }
 
 class ShaderParser:
-    
     def __init__(self, data: str):
         self.stages = {}
         self.exports = {}
@@ -41,18 +42,22 @@ class ShaderParser:
         self.entry_func_pattern = re.compile(r'\w+\s+(\w+)\s*[(].+[)]')
 
         matches = re.findall(self.entry_func_pattern, data)
+        offset = 0
 
         for match in matches:
             match match:
                 case 'vs_main':
                     self.stages['VERTEX_SHADER'] = {
+                        'buffer': offset,
                         'entryPoint': match,
                         'inputs': []
                     }
                 case _:
                     self.stages[shader_stages[match]] = {
+                        'buffer': offset,
                         'entryPoint': match
                     }
+            offset += 1
 
         matches = re.findall(self.struct_pattern, data)
 
@@ -80,8 +85,9 @@ class ShaderParser:
                 }
                 offset += 1
             else:
-                raise TypeError("ShaderResources cannot contain data types other than uint")
+                raise RuntimeError("ShaderResources cannot contain data types other than uint")
             
+
     def __parse_buffer_elements__(self, name: str, elements: str):
         matches = re.findall(self.struct_data_elements_pattern, elements)
         size = 0
@@ -111,3 +117,39 @@ class ShaderParser:
             size += data_type_sizes[match[0]]
         
         self.stages['VERTEX_SHADER']['inputsSizePerVertex'] = size
+
+
+class BackendType:
+    DirectX12 = 0
+    Vulkan = 1
+
+
+class ShaderCompiler:
+    TARGET_PROFILE_VERSION = '6_6'
+
+    def __init__(self, backend_type: BackendType):
+        match backend_type:
+            case BackendType.DirectX12:
+                self.compiler_path = os.path.join(os.path.dirname(__file__), 'dxc')
+            case BackendType.Vulkan:
+                raise RuntimeError("Unsupported shader backend type")
+            
+
+    def compile(self, shader_path: str, target: str, entry_point: str, output_path: str):
+        match target:
+            case 'VERTEX_SHADER':
+                target_options = 'vs_' + ShaderCompiler.TARGET_PROFILE_VERSION
+            case 'PIXEL_SHADER':
+                target_options = 'ps_' + ShaderCompiler.TARGET_PROFILE_VERSION
+            case _:
+                raise RuntimeError("Unsupported shader target type")
+            
+        subprocess.check_output(
+            [
+                os.path.join(self.compiler_path, 'dxc.exe'),
+                shader_path,
+                '-T', target_options,
+                '-E', entry_point,
+                '-Fo', os.path.join(output_path, entry_point + ".bin")
+            ]
+        )

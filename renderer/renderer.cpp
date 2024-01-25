@@ -4,6 +4,7 @@
 #include "renderer/renderer.hpp"
 #include "platform/window.hpp"
 #include "core/exception.hpp"
+#include "math/matrix.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -24,20 +25,32 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
 
     std::vector<uint8_t> trash_data(1024);
 
-    auto test_buffer = device->create_buffer(
+    auto future = device->create_buffer(
         &primitive_allocator, 
         16 * 1024 * 1024, 
         (rhi::BufferUsageFlags)rhi::BufferUsage::Vertex,
         trash_data
     );
 
-    test_buffer.wait();
+    test_buffer = future.get();
+
+    std::vector<uint8_t> shader_bytes;
+    {
+        std::ifstream ifs("shaders/basic.bin", std::ios::binary);
+        ifs.seekg(0, std::ios::end);
+        auto size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        shader_bytes.resize(size);
+        ifs.read(reinterpret_cast<char* const>(shader_bytes.data()), size);
+    }
+
+    auto shader = device->create_shader(shader_bytes);
 }
 
 auto Renderer::update(float const dt) -> void {
 
     // primitive_cache.update(dt);
-    //texture_cache.update(dt);
+    // texture_cache.update(dt);
 }
 
 auto Renderer::render() -> void {
@@ -66,8 +79,17 @@ auto Renderer::render() -> void {
                 height,
                 {},
                 outputs,
-                [](RGRenderPassContext& ctx) {
-                    
+                [&](RGRenderPassContext& ctx) {
+
+                    struct WorldData {
+                        math::Matrixf model;
+                        math::Matrixf view;
+                        math::Matrixf projection;
+                    };
+                    auto world_data = WorldData { };
+
+                    //ctx.bind_buffer<WorldData>("WorldData", world_data);
+                    ctx.get_command_buffer().bind_descriptor("WorldData", test_buffer);
                 }
             );
         }

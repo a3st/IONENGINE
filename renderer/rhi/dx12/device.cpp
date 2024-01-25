@@ -3,6 +3,7 @@
 #include "precompiled.h"
 #include "device.hpp"
 #include "texture.hpp"
+#include "shader.hpp"
 #include "buffer.hpp"
 #include "command_buffer.hpp"
 #include "future.hpp"
@@ -100,7 +101,7 @@ DX12Device::DX12Device(platform::Window const& window) {
         }
     }
 
-    pool_allocator = core::make_ref<PoolDescriptorAllocator>(device.get(), true);
+    bindless_allocator = core::make_ref<BindlessDescriptorAllocator>(device.get());
     upload_context = core::make_ref<UploadContext>(
         device.get(), 
         queue_infos[1].queue.get(), 
@@ -139,7 +140,7 @@ DX12Device::DX12Device(platform::Window const& window) {
             winrt::com_ptr<ID3D12Resource> resource;
             THROW_IF_FAILED(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
 
-            auto texture = core::make_ref<DX12Texture>(device.get(), resource, &pool_allocator, (TextureUsageFlags)TextureUsage::RenderTarget);
+            auto texture = core::make_ref<DX12Texture>(device.get(), resource, &bindless_allocator, (TextureUsageFlags)TextureUsage::RenderTarget);
             
             auto frame_info = FrameInfo {
                 .swapchain_buffer = texture,
@@ -186,12 +187,9 @@ auto DX12Device::allocate_command_buffer(CommandBufferType const buffer_type) ->
     return command_buffer;
 }
 
-auto DX12Device::create_shader(
-
-) -> core::ref_ptr<Shader> 
-{
-
-    return nullptr;
+auto DX12Device::create_shader(std::span<uint8_t const> const data_bytes) -> core::ref_ptr<Shader> {
+    
+    return core::make_ref<DX12Shader>(device.get(), data_bytes);
 }
 
 auto DX12Device::create_texture(
@@ -203,7 +201,6 @@ auto DX12Device::create_texture(
     TextureUsageFlags const flags
 ) -> Future<Texture> 
 {
-
 
     return Future<DX12Texture>();
 }
@@ -218,7 +215,7 @@ auto DX12Device::create_buffer(
     auto buffer = core::make_ref<DX12Buffer>(
         device.get(),
         allocator,
-        pool_allocator.get(),
+        bindless_allocator.get(),
         size,
         flags
     );
@@ -238,8 +235,6 @@ auto DX12Device::create_buffer(
 }
 
 auto DX12Device::write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> {
-
-    // auto buffer2 = core::make_ref<DX12Buffer>();
 
     return Future<DX12Buffer>();
 }
@@ -324,7 +319,7 @@ auto DX12Device::resize_swapchain_buffers(uint32_t const width, uint32_t const h
         winrt::com_ptr<ID3D12Resource> resource;
         THROW_IF_FAILED(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
 
-        auto texture = core::make_ref<DX12Texture>(device.get(), resource, &pool_allocator, (TextureUsageFlags)TextureUsage::RenderTarget);
+        auto texture = core::make_ref<DX12Texture>(device.get(), resource, &bindless_allocator, (TextureUsageFlags)TextureUsage::RenderTarget);
         frame_infos[i].swapchain_buffer = texture;
     }
 }

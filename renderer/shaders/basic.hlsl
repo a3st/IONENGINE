@@ -30,6 +30,9 @@ struct VSOutput {
 
 VSOutput vs_main(VSInput input) {
     VSOutput output;
+    output.position = float4(0.1f, 0.2f, 0.3f, 1.0f);
+    output.normal = float3(0.2f, 0.3f, 0.2f);
+    output.uv = float2(0.2f, 0.1f);
     return output;
 }
 
@@ -39,5 +42,6 @@ struct PSOutput {
 
 PSOutput ps_main(VSOutput input) {
     PSOutput output;
+    output.color = float4(0.2f, 0.3f, 0.6f, 1.0f);
     return output;
 }

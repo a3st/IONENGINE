@@ -83,10 +83,10 @@ private:
     auto create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> void;
 };
 
-class LinearDescriptorAllocator : public DescriptorAllocator {
+class BindlessDescriptorAllocator : public DescriptorAllocator {
 public:
 
-    LinearDescriptorAllocator(ID3D12Device1* device, std::span<DescriptorAllocatorHeap const> const ranges, bool const cpu_visible);
+    BindlessDescriptorAllocator(ID3D12Device1* device);
 
     auto allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const size) -> DescriptorAllocation override;
 
@@ -96,7 +96,24 @@ public:
 
 private:
 
+    inline static uint32_t DESCRIPTOR_HEAP_RTV_MAX = 128;
+    inline static uint32_t DESCRIPTOR_HEAP_CBV_SRV_UAV_MAX = 16 * 1024;
+    inline static uint32_t DESCRIPTOR_HEAP_SAMPLER_MAX = 256;
+    inline static uint32_t DESCRIPTOR_HEAP_DSV_MAX = 32;
 
+    std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, uint32_t> increment_sizes;
+
+    struct Chunk {
+        winrt::com_ptr<ID3D12DescriptorHeap> heap;
+        std::vector<uint8_t> free;
+        uint32_t offset;
+        uint32_t size;
+    };
+
+    ID3D12Device1* device;
+    std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, Chunk> chunks;
+
+    auto create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> void;
 };
 
 }

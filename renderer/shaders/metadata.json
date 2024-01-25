@@ -2,6 +2,7 @@
     "shaderName" : "Basic",
     "stages" : {
         "VERTEX_SHADER" : {
+            "buffer" : 0,
             "entryPoint" : "vs_main",
             "inputs" : [
                 {
@@ -19,7 +20,8 @@
             ],
             "inputsSizePerVertex": 22
         },
-        "PIXEL_SHADER" : { 
+        "PIXEL_SHADER" : {
+            "buffer" : 1, 
             "entryPoint" : "ps_main"
         }
     },

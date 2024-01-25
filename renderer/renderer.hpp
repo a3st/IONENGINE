@@ -55,6 +55,7 @@ private:
     uint32_t width;
     uint32_t height;
     //std::vector<RenderTask> render_tasks;
+    core::ref_ptr<rhi::Buffer> test_buffer{nullptr};
 };
 
 }

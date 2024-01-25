@@ -123,6 +123,11 @@ public:
         std::optional<DepthStencilStageInfo> const depth_stencil
     ) -> void = 0;
 
+    virtual auto bind_descriptor(
+        std::string_view const binding,
+        std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> resource
+    ) -> void = 0;
+
     virtual auto begin_render_pass(
         std::span<RenderPassColorInfo const> const colors,
         std::optional<RenderPassDepthStencilInfo> depth_stencil

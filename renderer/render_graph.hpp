@@ -91,6 +91,11 @@ public:
         rhi::CommandBuffer& command_buffer
     );
 
+    auto get_command_buffer() -> rhi::CommandBuffer& {
+
+        return *command_buffer;
+    }
+
     // auto get_resource_by_index(uint32_t const index) -> RGResource;
 
     // auto blit(RGResource const& source) -> void;

@@ -35,9 +35,7 @@ public:
 
 	auto allocate_command_buffer(CommandBufferType const buffer_type) -> core::ref_ptr<CommandBuffer> override;
 
-	virtual auto create_shader(
-
-    ) -> core::ref_ptr<Shader> override;
+	virtual auto create_shader(std::span<uint8_t const> const data_bytes) -> core::ref_ptr<Shader> override;
 
     auto create_texture(
 		uint32_t const width,
@@ -85,7 +83,7 @@ private:
 	std::vector<QueueInfo> queue_infos;
 	HANDLE fence_event;
 
-	core::ref_ptr<PoolDescriptorAllocator> pool_allocator{nullptr};
+	core::ref_ptr<BindlessDescriptorAllocator> bindless_allocator{nullptr};
 	core::ref_ptr<UploadContext> upload_context{nullptr};
 
 	struct FrameInfo {

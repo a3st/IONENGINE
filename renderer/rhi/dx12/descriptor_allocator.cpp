@@ -106,6 +106,7 @@ auto PoolDescriptorAllocator::reset() -> void {
 }
 
 auto PoolDescriptorAllocator::create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> void {
+
 	increment_sizes.try_emplace(heap_type, device->GetDescriptorHandleIncrementSize(heap_type));
 
 	uint32_t alloc_size = 0;
@@ -142,18 +143,112 @@ auto PoolDescriptorAllocator::create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap
 	ptr_chunks.emplace((uintptr_t)descriptor_heap.get(), static_cast<uint32_t>(chunks[heap_type].size() - 1));
 }
 
-LinearDescriptorAllocator::LinearDescriptorAllocator(ID3D12Device1* device, std::span<DescriptorAllocatorHeap const> const ranges, bool const cpu_visible) {
+BindlessDescriptorAllocator::BindlessDescriptorAllocator(ID3D12Device1* device) : device(device) {
 
+    create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+    create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+    create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
 
-auto LinearDescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const size) -> DescriptorAllocation {
-    return {};
+auto BindlessDescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const size) -> DescriptorAllocation {
+
+    assert((chunks.find(heap_type) != chunks.end()) && "Required heap not found when allocating descriptor");
+
+    auto allocation = DescriptorAllocation {};
+    auto& chunk = chunks[heap_type];
+
+    if(size > chunk.size - chunk.offset) {
+        throw core::Exception("Required heap does not contain free descriptors");
+    }
+
+    uint32_t start = chunk.offset;
+    uint32_t alloc_size = 0;
+    bool success = false;
+
+    for(uint32_t i = chunk.offset; i < chunk.size; ++i) {
+        if(alloc_size == size) {
+            success = true;
+            break;
+        }
+
+        if(chunk.free[i] == 1) {
+            alloc_size++;
+        } else {
+            start = i + 1;
+            alloc_size = 0;
+        }
+    }
+        
+    if(success) {
+        std::fill(chunk.free.begin() + start, chunk.free.begin() + start + alloc_size, 0);
+
+        chunk.offset += alloc_size;
+
+        allocation = {
+            .heap = chunk.heap.get(),
+            .heap_type = heap_type,
+            .increment_size = increment_sizes[heap_type],
+            .offset = start,
+            .size = size
+        };
+    } else {
+        throw core::Exception("Required heap does not contain free descriptors");
+    }
+    return allocation;
 }
 
-auto LinearDescriptorAllocator::deallocate(DescriptorAllocation const& allocation) -> void {
+auto BindlessDescriptorAllocator::deallocate(DescriptorAllocation const& allocation) -> void {
 
+    assert((chunks.find(allocation.heap_type) != chunks.end()) && "Required heap not found when deallocating descriptor");
+
+    auto& chunk = chunks[allocation.heap_type];
+    chunk.offset = allocation.offset;
+    std::fill(chunk.free.begin() + allocation.offset, chunk.free.begin() + allocation.offset + allocation.size, 1);
 }
 
-auto LinearDescriptorAllocator::reset() -> void {
+auto BindlessDescriptorAllocator::reset() -> void {
     
+    assert(false && "BindlessDescriptorAllocator doesn't support reset method");
+}
+
+auto BindlessDescriptorAllocator::create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> void {
+
+	increment_sizes.try_emplace(heap_type, device->GetDescriptorHandleIncrementSize(heap_type));
+
+	uint32_t alloc_size = 0;
+    D3D12_DESCRIPTOR_HEAP_FLAGS flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+	switch (heap_type) {
+        case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV: {
+            alloc_size = DESCRIPTOR_HEAP_CBV_SRV_UAV_MAX;
+            flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+        } break;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_RTV: {
+            alloc_size = DESCRIPTOR_HEAP_RTV_MAX;
+        } break;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_DSV: {
+            alloc_size = DESCRIPTOR_HEAP_DSV_MAX;
+        } break;
+        case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER: {
+            alloc_size = DESCRIPTOR_HEAP_SAMPLER_MAX;
+            flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+        } break;
+	}
+
+	auto d3d12_descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {};
+	d3d12_descriptor_heap_desc.NumDescriptors = alloc_size;
+	d3d12_descriptor_heap_desc.Type = heap_type;
+	d3d12_descriptor_heap_desc.Flags = flags;
+
+	winrt::com_ptr<ID3D12DescriptorHeap> descriptor_heap;
+	THROW_IF_FAILED(device->CreateDescriptorHeap(&d3d12_descriptor_heap_desc, __uuidof(ID3D12DescriptorHeap), descriptor_heap.put_void()));
+
+	auto chunk = Chunk {
+        .heap = descriptor_heap,
+        .offset = 0, 
+        .size = alloc_size
+    };
+	chunk.free.resize(alloc_size, 1);
+	chunks.emplace(heap_type, chunk);
 }
