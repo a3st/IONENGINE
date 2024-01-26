@@ -59,7 +59,7 @@ private:
     std::unordered_map<rhi::shader_file::ShaderStageType, D3D12_SHADER_BYTECODE> stages;
     std::vector<D3D12_INPUT_ELEMENT_DESC> inputs;
     uint32_t inputs_size_per_vertex;
-    std::vector<std::string> semantic_names;
+    std::list<std::string> semantic_names;
     std::vector<std::vector<uint8_t>> buffers;
     std::unordered_map<std::string, uint32_t> bindings;
     uint64_t hash;

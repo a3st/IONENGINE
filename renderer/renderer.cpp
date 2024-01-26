@@ -42,7 +42,7 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
         ifs.read(reinterpret_cast<char* const>(shader_bytes.data()), size);
     }
 
-    auto shader = device->create_shader(shader_bytes);
+    test_shader = device->create_shader(shader_bytes);
 }
 
 auto Renderer::update(float const dt) -> void {
@@ -88,6 +88,16 @@ auto Renderer::render() -> void {
 
                     //ctx.bind_buffer<WorldData>("WorldData", world_data);
                     ctx.get_command_buffer().bind_descriptor("WorldData", test_buffer);
+
+                    ctx.get_command_buffer().set_graphics_pipeline_options(
+                        test_shader,
+                        rhi::RasterizerStageInfo {
+                            .fill_mode = rhi::FillMode::Wireframe,
+                            .cull_mode = rhi::CullMode::Back
+                        },
+                        rhi::BlendColorInfo::Opaque(),
+                        std::nullopt
+                    );
                 }
             );
         }

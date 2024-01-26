@@ -141,7 +141,6 @@ auto DX12CommandBuffer::begin_render_pass(
 
             render_pass_depth_stencil.DepthBeginningAccess = begin;
             render_pass_depth_stencil.DepthEndingAccess = end;
-            
         }
 
         {

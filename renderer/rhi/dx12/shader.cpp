@@ -68,15 +68,16 @@ DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const dat
         if(result != shader_file.get_stages().end()) {
             uint32_t offset = 0;
             for(auto const& input : result->second.inputs) {
-                semantic_names.emplace_back(input.semantic);
-
                 uint32_t index = 0;
                 if(std::isdigit(input.semantic.back()) != 0) {
                     index = (int32_t)input.semantic.back() - 48;
+                    semantic_names.emplace_back(input.semantic.substr(0, input.semantic.size() - 1));
+                } else {
+                    semantic_names.emplace_back(input.semantic);
                 }
 
                 auto d3d12_input_element = D3D12_INPUT_ELEMENT_DESC {};
-                d3d12_input_element.SemanticName = semantic_names.back().data();
+                d3d12_input_element.SemanticName = semantic_names.back().c_str();
                 d3d12_input_element.SemanticIndex = index;
                 d3d12_input_element.Format = element_type_to_dxgi(input.element_type);
                 d3d12_input_element.InputSlot = 0;

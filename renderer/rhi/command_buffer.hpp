@@ -25,23 +25,6 @@ enum class RenderPassStoreOp {
     DontCare
 };
 
-struct RenderPassColorInfo {
-    core::ref_ptr<Texture> texture;
-    RenderPassLoadOp load_op;
-    RenderPassStoreOp store_op;
-    math::Color clear_color;
-};
-
-struct RenderPassDepthStencilInfo {
-    core::ref_ptr<Texture> texture;
-    RenderPassLoadOp depth_load_op;
-    RenderPassStoreOp depth_store_op;
-    RenderPassLoadOp stencil_load_op;
-    RenderPassStoreOp stencil_store_op;
-    float clear_depth;
-    uint8_t clear_stencil;
-};
-
 enum class IndexFormat {
     Uint16,
     Uint32
@@ -85,6 +68,29 @@ enum class BlendOp {
     Max
 };
 
+enum class CommandBufferType {
+    Graphics,
+    Copy,
+    Compute
+};
+
+struct RenderPassColorInfo {
+    core::ref_ptr<Texture> texture;
+    RenderPassLoadOp load_op;
+    RenderPassStoreOp store_op;
+    math::Color clear_color;
+};
+
+struct RenderPassDepthStencilInfo {
+    core::ref_ptr<Texture> texture;
+    RenderPassLoadOp depth_load_op;
+    RenderPassStoreOp depth_store_op;
+    RenderPassLoadOp stencil_load_op;
+    RenderPassStoreOp stencil_store_op;
+    float clear_depth;
+    uint8_t clear_stencil;
+};
+
 struct DepthStencilStageInfo {
     CompareOp depth_func;
     bool write_enable;
@@ -106,17 +112,63 @@ struct BlendColorInfo {
     Blend blend_src_alpha;
     Blend blend_dst_alpha;
     BlendOp blend_op_alpha;
+
+    static auto Opaque() -> BlendColorInfo const& {
+        static const BlendColorInfo instance = {
+            .blend_enable = false,
+            .blend_src = Blend::Zero,
+            .blend_dst = Blend::Zero,
+            .blend_op = BlendOp::Add,
+            .blend_src_alpha = Blend::Zero,
+            .blend_dst_alpha = Blend::Zero,
+            .blend_op_alpha = BlendOp::Add
+        };
+        return instance;
+    }
+
+    static auto Add() -> BlendColorInfo const& {
+        static const BlendColorInfo instance = {
+            .blend_enable = true,
+            .blend_src = Blend::One,
+            .blend_dst = Blend::One,
+            .blend_op = BlendOp::Add,
+            .blend_src_alpha = Blend::One,
+            .blend_dst_alpha = Blend::Zero,
+            .blend_op_alpha = BlendOp::Add
+        };
+        return instance;
+    }
+
+    static auto Mixed() -> BlendColorInfo const& {
+        static const BlendColorInfo instance = {
+            .blend_enable = true,
+            .blend_src = Blend::One,
+            .blend_dst = Blend::InvSrcAlpha,
+            .blend_op = BlendOp::Add,
+            .blend_src_alpha = Blend::One,
+            .blend_dst_alpha = Blend::Zero,
+            .blend_op_alpha = BlendOp::Add
+        };
+        return instance;
+    }
+
+    static auto AlphaBlend() -> BlendColorInfo const& {
+        static const BlendColorInfo instance = {
+            .blend_enable = true,
+            .blend_src = Blend::SrcAlpha,
+            .blend_dst = Blend::InvSrcAlpha,
+            .blend_op = BlendOp::Add,
+            .blend_src_alpha = Blend::One,
+            .blend_dst_alpha = Blend::Zero,
+            .blend_op_alpha = BlendOp::Add
+        };
+        return instance;
+    }
 };
 
 struct RasterizerStageInfo {
     FillMode fill_mode;
     CullMode cull_mode;
-};
-
-enum class CommandBufferType {
-    Graphics,
-    Copy,
-    Compute
 };
 
 class CommandBuffer : public core::ref_counted_object {
