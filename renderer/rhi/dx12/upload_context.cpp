@@ -24,7 +24,7 @@ UploadContext::UploadContext(
     fence_event(fence_event),
     fence_value(&fence_value)
 {
-    command_allocator = core::make_ref<CommandAllocator>(device);
+    command_allocator = core::make_ref<CommandAllocator>(device, nullptr, nullptr);
     memory_allocator = core::make_ref<DX12MemoryAllocator>(
         device, 
         1 * 1024 * 1024, 

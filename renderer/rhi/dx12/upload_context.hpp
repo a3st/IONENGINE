@@ -6,6 +6,7 @@
 #include "buffer.hpp"
 #include "command_allocator.hpp"
 #include "allocator.hpp"
+#define NOMINMAX
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <winrt/base.h>

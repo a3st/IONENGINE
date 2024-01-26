@@ -126,7 +126,7 @@ private:
 class Shader : public core::ref_counted_object {
 public:
 
-
+    virtual auto get_name() -> std::string_view = 0;
 };
 
 }

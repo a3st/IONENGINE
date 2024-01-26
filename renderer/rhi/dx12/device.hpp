@@ -6,6 +6,8 @@
 #include "descriptor_allocator.hpp"
 #include "command_allocator.hpp"
 #include "upload_context.hpp"
+#include "pipeline_cache.hpp"
+#define NOMINMAX
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <dxcapi.h>
@@ -83,8 +85,9 @@ private:
 	std::vector<QueueInfo> queue_infos;
 	HANDLE fence_event;
 
-	core::ref_ptr<BindlessDescriptorAllocator> bindless_allocator{nullptr};
+	core::ref_ptr<DescriptorAllocator> bindless_allocator{nullptr};
 	core::ref_ptr<UploadContext> upload_context{nullptr};
+	core::ref_ptr<PipelineCache> pipeline_cache{nullptr};
 
 	struct FrameInfo {
 		core::ref_ptr<Texture> swapchain_buffer;

@@ -3,8 +3,10 @@
 #pragma once
 
 #include "renderer/rhi/command_buffer.hpp"
+#include "pipeline_cache.hpp"
 #include "texture.hpp"
 #include "buffer.hpp"
+#define NOMINMAX
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <winrt/base.h>
@@ -27,6 +29,8 @@ public:
     DX12CommandBuffer(
         ID3D12Device1* device, 
         ID3D12CommandAllocator* allocator, 
+        PipelineCache* pipeline_cache,
+        DescriptorAllocator* descriptor_allocator,
         winrt::com_ptr<ID3D12GraphicsCommandList4> command_list, 
         D3D12_COMMAND_LIST_TYPE const list_type
     );
@@ -44,7 +48,7 @@ public:
 
     auto bind_descriptor(
         std::string_view const binding,
-        std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> resource
+        std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> const resource
     ) -> void override;
 
     auto begin_render_pass(
@@ -54,7 +58,7 @@ public:
 
     auto end_render_pass() -> void override;
 
-    auto bind_vertex_buffer(uint32_t const slot, core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void override;
+    auto bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void override;
 
     auto bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size, IndexFormat const format) -> void override;
 
@@ -81,8 +85,12 @@ public:
 private:
 
     ID3D12CommandAllocator* allocator;
+    PipelineCache* pipeline_cache;
+    DescriptorAllocator* descriptor_allocator;
     winrt::com_ptr<ID3D12GraphicsCommandList4> command_list;
     D3D12_COMMAND_LIST_TYPE list_type;
+    core::ref_ptr<DX12Shader> current_shader{nullptr};
+    bool is_root_signature_binded;
 
     struct ResourceTrackerInfo {
         std::variant<DX12Texture*, DX12Buffer*> resource;

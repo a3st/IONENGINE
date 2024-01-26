@@ -3,6 +3,7 @@
 #pragma once
 
 #include "renderer/rhi/shader.hpp"
+#define NOMINMAX
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <winrt/base.h>
@@ -22,7 +23,7 @@ public:
 
     DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const data_bytes);
 
-    auto get_name() -> std::string_view {
+    auto get_name() -> std::string_view override {
 
         return shader_name;
     }
@@ -30,6 +31,11 @@ public:
     auto get_inputs() -> std::span<D3D12_INPUT_ELEMENT_DESC const> {
 
         return inputs;
+    }
+
+    auto get_inputs_size_per_vertex() -> uint32_t {
+
+        return inputs_size_per_vertex;
     }
 
     auto get_stages() -> std::unordered_map<rhi::shader_file::ShaderStageType, D3D12_SHADER_BYTECODE> const& {
@@ -42,14 +48,21 @@ public:
         return bindings;
     }
 
+    auto get_hash() -> uint64_t {
+
+        return hash;
+    }
+
 private:
 
     std::string shader_name;
     std::unordered_map<rhi::shader_file::ShaderStageType, D3D12_SHADER_BYTECODE> stages;
     std::vector<D3D12_INPUT_ELEMENT_DESC> inputs;
+    uint32_t inputs_size_per_vertex;
     std::vector<std::string> semantic_names;
     std::vector<std::vector<uint8_t>> buffers;
     std::unordered_map<std::string, uint32_t> bindings;
+    uint64_t hash;
 };
 
 }

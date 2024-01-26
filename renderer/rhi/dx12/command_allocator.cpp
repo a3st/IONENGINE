@@ -11,8 +11,15 @@ using namespace ionengine;
 using namespace ionengine::renderer;
 using namespace ionengine::renderer::rhi;
 
-CommandAllocator::CommandAllocator(ID3D12Device4* device) : device(device) {
-
+CommandAllocator::CommandAllocator(
+    ID3D12Device4* device, 
+    PipelineCache* pipeline_cache, 
+    DescriptorAllocator* descriptor_allocator
+) : 
+    device(device), 
+    pipeline_cache(pipeline_cache),
+    descriptor_allocator(descriptor_allocator)
+{
     auto list_types = std::array<D3D12_COMMAND_LIST_TYPE, 4> {
         D3D12_COMMAND_LIST_TYPE_DIRECT,
         D3D12_COMMAND_LIST_TYPE_COPY,
@@ -114,7 +121,14 @@ auto CommandAllocator::create_chunk(D3D12_COMMAND_LIST_TYPE const list_type) -> 
             command_list.put_void()
         ));
 
-        buffers.emplace_back(core::make_ref<DX12CommandBuffer>(device, allocators[list_type].get(), command_list, list_type));
+        buffers.emplace_back(core::make_ref<DX12CommandBuffer>(
+            device, 
+            allocators[list_type].get(), 
+            pipeline_cache, 
+            descriptor_allocator, 
+            command_list, 
+            list_type
+        ));
     }
 
     auto chunk = Chunk {

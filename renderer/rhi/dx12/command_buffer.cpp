@@ -31,10 +31,14 @@ auto ionengine::renderer::rhi::render_pass_store_to_d3d12(RenderPassStoreOp cons
 DX12CommandBuffer::DX12CommandBuffer(
     ID3D12Device1* device, 
     ID3D12CommandAllocator* allocator, 
+    PipelineCache* pipeline_cache,
+    DescriptorAllocator* descriptor_allocator,
     winrt::com_ptr<ID3D12GraphicsCommandList4> command_list,
     D3D12_COMMAND_LIST_TYPE const list_type
 ) :
     allocator(allocator),
+    pipeline_cache(pipeline_cache),
+    descriptor_allocator(descriptor_allocator),
     command_list(command_list),
     list_type(list_type)
 {
@@ -45,6 +49,16 @@ DX12CommandBuffer::DX12CommandBuffer(
 auto DX12CommandBuffer::reset() -> void {
     
     THROW_IF_FAILED(command_list->Reset(allocator, nullptr));
+
+    if(descriptor_allocator) {
+        auto descriptors = std::array<ID3D12DescriptorHeap*, 2> {
+            descriptor_allocator->get_heap(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),
+            descriptor_allocator->get_heap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)
+        };
+        command_list->SetDescriptorHeaps(static_cast<uint32_t>(descriptors.size()), descriptors.data());
+    }
+    is_root_signature_binded = false;
+    current_shader = nullptr;
 }
 
 auto DX12CommandBuffer::close() -> void {
@@ -57,16 +71,25 @@ auto DX12CommandBuffer::set_graphics_pipeline_options(
     RasterizerStageInfo const& rasterizer,
     BlendColorInfo const& blend_color,
     std::optional<DepthStencilStageInfo> const depth_stencil
-) -> void 
+) -> void
 {
+    auto pipeline = pipeline_cache->get(static_cast<DX12Shader&>(&shader), rasterizer, blend_color, depth_stencil);
 
+    if(!is_root_signature_binded) {
+        command_list->SetGraphicsRootSignature(pipeline->get_root_signature());
+        is_root_signature_binded = true;
+    }
+
+    command_list->SetPipelineState(pipeline->get_pipeline_state());
+    current_shader = shader;
 }
 
 auto DX12CommandBuffer::bind_descriptor(
     std::string_view const binding,
-    std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> resource
-) -> void {
-
+    std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> const resource
+) -> void 
+{
+    
 }
 
 auto DX12CommandBuffer::begin_render_pass(
@@ -171,17 +194,36 @@ auto DX12CommandBuffer::end_render_pass() -> void {
     end_barrier_resources();
 }
 
-auto DX12CommandBuffer::bind_vertex_buffer(uint32_t const slot, core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void {
+auto DX12CommandBuffer::bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void {
 
-    
+    auto d3d12_vertex_buffer_view = D3D12_VERTEX_BUFFER_VIEW {};
+    d3d12_vertex_buffer_view.BufferLocation = static_cast<DX12Buffer*>(buffer.get())->get_resource()->GetGPUVirtualAddress() + offset;
+    d3d12_vertex_buffer_view.SizeInBytes = static_cast<uint32_t>(size);
+    d3d12_vertex_buffer_view.StrideInBytes = current_shader->get_inputs_size_per_vertex();
+
+    command_list->IASetVertexBuffers(0, 1, &d3d12_vertex_buffer_view);
 }
 
 auto DX12CommandBuffer::bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size, IndexFormat const format) -> void {
 
+    auto d3d12_index_buffer_view = D3D12_INDEX_BUFFER_VIEW {};
+    d3d12_index_buffer_view.BufferLocation = static_cast<DX12Buffer*>(buffer.get())->get_resource()->GetGPUVirtualAddress() + offset;
+    switch(format) {
+        case IndexFormat::Uint32: {
+            d3d12_index_buffer_view.Format = DXGI_FORMAT_R32_UINT;
+        } break;
+        case IndexFormat::Uint16: {
+            d3d12_index_buffer_view.Format = DXGI_FORMAT_R16_UINT;
+        } break;
+    }
+    d3d12_index_buffer_view.SizeInBytes = size;
+
+    command_list->IASetIndexBuffer(&d3d12_index_buffer_view);
 }
 
 auto DX12CommandBuffer::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t instance_offset) -> void {
 
+    command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
 }
 
 auto DX12CommandBuffer::copy_buffer(

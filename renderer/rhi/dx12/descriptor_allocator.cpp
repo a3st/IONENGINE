@@ -105,6 +105,12 @@ auto PoolDescriptorAllocator::reset() -> void {
     assert(false && "PoolDescriptorAllocator doesn't support reset method");
 }
 
+auto PoolDescriptorAllocator::get_heap(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> ID3D12DescriptorHeap* {
+
+    assert(false && "PoolDescriptorAllocator doesn't support get_heap method");
+    return nullptr;
+}
+
 auto PoolDescriptorAllocator::create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> void {
 
 	increment_sizes.try_emplace(heap_type, device->GetDescriptorHandleIncrementSize(heap_type));
@@ -210,6 +216,11 @@ auto BindlessDescriptorAllocator::deallocate(DescriptorAllocation const& allocat
 auto BindlessDescriptorAllocator::reset() -> void {
     
     assert(false && "BindlessDescriptorAllocator doesn't support reset method");
+}
+
+auto BindlessDescriptorAllocator::get_heap(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> ID3D12DescriptorHeap* {
+
+    return chunks[heap_type].heap.get();
 }
 
 auto BindlessDescriptorAllocator::create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> void {

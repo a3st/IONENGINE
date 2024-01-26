@@ -3,6 +3,7 @@
 #pragma once
 
 #include "renderer/rhi/future.hpp"
+#define NOMINMAX
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <winrt/base.h>

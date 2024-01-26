@@ -12,8 +12,6 @@ using namespace ionengine::renderer;
 Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Window const& window) :
     device(rhi::Device::create(rhi::BackendType::DirectX12, window)),
     render_pipeline(render_pipeline),
-    //texture_cache(context),
-    //primitive_cache(context, primitive_allocator_2),
     width(window.get_width()),
     height(window.get_height())
 {

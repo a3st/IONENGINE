@@ -110,6 +110,7 @@ DX12Device::DX12Device(platform::Window const& window) {
         queue_infos[1].fence_value,
         32 * 1024 * 1024
     );
+    pipeline_cache = core::make_ref<PipelineCache>(device.get());
 
     // Create swapchain using device queue
     {
@@ -144,7 +145,7 @@ DX12Device::DX12Device(platform::Window const& window) {
             
             auto frame_info = FrameInfo {
                 .swapchain_buffer = texture,
-                .command_allocator = core::make_ref<CommandAllocator>(device.get())
+                .command_allocator = core::make_ref<CommandAllocator>(device.get(), pipeline_cache.get(), bindless_allocator.get())
             };
             frame_infos.emplace_back(frame_info);
         }

@@ -88,6 +88,14 @@ enum class BlendOp {
 struct DepthStencilStageInfo {
     CompareOp depth_func;
     bool write_enable;
+
+    static auto Default() -> DepthStencilStageInfo const& {
+        static const DepthStencilStageInfo instance = {
+            .depth_func = CompareOp::Never,
+            .write_enable = false
+        };
+        return instance;
+    }
 };
 
 struct BlendColorInfo {
@@ -125,7 +133,7 @@ public:
 
     virtual auto bind_descriptor(
         std::string_view const binding,
-        std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> resource
+        std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> const resource
     ) -> void = 0;
 
     virtual auto begin_render_pass(
@@ -135,7 +143,7 @@ public:
 
     virtual auto end_render_pass() -> void = 0;
 
-    virtual auto bind_vertex_buffer(uint32_t const slot, core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void = 0;
+    virtual auto bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void = 0;
 
     virtual auto bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size, IndexFormat const format) -> void = 0;
 

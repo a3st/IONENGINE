@@ -3,6 +3,7 @@
 #pragma once
 
 #include "core/ref_ptr.hpp"
+#define NOMINMAX
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <winrt/base.h>
@@ -41,6 +42,8 @@ public:
     virtual auto deallocate(DescriptorAllocation const& allocation) -> void = 0;
 
     virtual auto reset() -> void = 0;
+
+    virtual auto get_heap(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> ID3D12DescriptorHeap* = 0;
 };
 
 struct DescriptorAllocatorHeap {
@@ -58,6 +61,8 @@ public:
     auto deallocate(DescriptorAllocation const& allocation) -> void override;
 
     auto reset() -> void override;
+
+    auto get_heap(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> ID3D12DescriptorHeap* override;
 
 private:
 
@@ -93,6 +98,8 @@ public:
     auto deallocate(DescriptorAllocation const& allocation) -> void override;
 
     auto reset() -> void override;
+
+    auto get_heap(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> ID3D12DescriptorHeap* override;
 
 private:
 

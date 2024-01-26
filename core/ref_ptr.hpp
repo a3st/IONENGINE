@@ -68,7 +68,7 @@ public:
     }
 
     template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
-    ref_ptr(ref_ptr<Derived, DerivedDeleter> other) : ptr(other.ptr) { 
+    ref_ptr(ref_ptr<Derived, DerivedDeleter> other) : ptr(static_cast<Type*>(other.ptr)) { 
 
         add_ref();
     }
@@ -87,7 +87,7 @@ public:
     template<typename Derived, typename DerivedDeleter = BaseDeleter<Derived>>
     auto operator=(ref_ptr<Derived, DerivedDeleter> other) -> ref_ptr& {
 
-        copy_ref(other.ptr);
+        copy_ref(static_cast<Type*>(other.ptr));
         return *this;
     }
 

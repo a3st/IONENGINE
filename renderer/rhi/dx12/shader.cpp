@@ -2,6 +2,7 @@
 
 #include "precompiled.h"
 #include "shader.hpp"
+#include <xxhash/xxhash64.h>
 
 using namespace ionengine;
 using namespace ionengine::renderer;
@@ -43,6 +44,7 @@ DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const dat
 
     shader_name = shader_file.get_name();
 
+    XXHash64 hasher(0);
     for(auto const& [stage, data] : shader_file.get_stages()) {
         std::vector<uint8_t> buffer;
         {
@@ -50,6 +52,7 @@ DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const dat
             buffer.resize(shader_bytes.size());
             std::memcpy(buffer.data(), shader_bytes.data(), buffer.size());
         }
+        hasher.add(buffer.data(), buffer.size());
         buffers.emplace_back(buffer);
 
         auto d3d12_shader_bytecode = D3D12_SHADER_BYTECODE {};
@@ -58,6 +61,7 @@ DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const dat
 
         stages.emplace(stage, d3d12_shader_bytecode);
     }
+    hash = hasher.hash();
 
     {
         auto result = shader_file.get_stages().find(shader_file::ShaderStageType::Vertex);
@@ -83,6 +87,7 @@ DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const dat
 
                 offset += element_type_size(input.element_type);
             }
+            inputs_size_per_vertex = result->second.inputs_size_per_vertex;
         }
     }
 
