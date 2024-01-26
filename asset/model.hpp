@@ -3,7 +3,6 @@
 #pragma once
 
 #include "glb_model.hpp"
-#include "renderer/primitive.hpp"
 
 namespace ionengine {
 

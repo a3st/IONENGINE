@@ -215,7 +215,7 @@ auto DX12Device::create_buffer(
 {
     auto buffer = core::make_ref<DX12Buffer>(
         device.get(),
-        allocator,
+        static_cast<DX12MemoryAllocator&>(allocator),
         bindless_allocator.get(),
         size,
         flags

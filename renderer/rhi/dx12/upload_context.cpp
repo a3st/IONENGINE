@@ -54,11 +54,11 @@ auto UploadContext::upload(core::ref_ptr<Buffer> src, std::span<uint8_t const> c
     }
 
     auto range = D3D12_RANGE {};
-    uint8_t* mapped_bytes = nullptr;
+    uint8_t* mapped_bytes;
     THROW_IF_FAILED(buffer->get_resource()->Map(0, &range, reinterpret_cast<void**>(&mapped_bytes)));
     std::memcpy(mapped_bytes + offset, data.data(), data.size());
     offset += data.size();
-    buffer->get_resource()->Unmap(0, &range);
+    buffer->get_resource()->Unmap(0, nullptr);
 
     auto command_buffer = command_allocator->allocate(D3D12_COMMAND_LIST_TYPE_COPY);
     command_buffer->reset();

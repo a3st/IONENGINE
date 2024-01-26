@@ -13,25 +13,9 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
     device(rhi::Device::create(rhi::BackendType::DirectX12, window)),
     render_pipeline(render_pipeline),
     width(window.get_width()),
-    height(window.get_height())
+    height(window.get_height()),
+    primitive_cache(&device)
 {
-    primitive_allocator = device->create_allocator(
-        4 * 1024 * 1024, 
-        64 * 1024 * 1024, 
-        (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex | rhi::BufferUsage::Index)
-    );
-
-    std::vector<uint8_t> trash_data(1024);
-
-    auto future = device->create_buffer(
-        &primitive_allocator, 
-        16 * 1024 * 1024, 
-        (rhi::BufferUsageFlags)rhi::BufferUsage::Vertex,
-        trash_data
-    );
-
-    test_buffer = future.get();
-
     std::vector<uint8_t> shader_bytes;
     {
         std::ifstream ifs("shaders/basic.bin", std::ios::binary);
@@ -106,7 +90,7 @@ auto Renderer::render() -> void {
     }
     
     render_graph->execute();
-    //render_tasks.clear();
+    render_tasks.clear();
 }
 
 auto Renderer::resize(uint32_t const width, uint32_t const height) -> void {
@@ -132,19 +116,16 @@ auto Renderer::create_camera(CameraProjectionType const projection_type) -> core
 
     return core::make_ref<Camera>(context, projection_type);
 }
-
 */
-/*
-auto Renderer::add_render_task(
-    PrimitiveData const& data, 
-    uint32_t const index_count, 
-    std::string_view const shader_name
-) -> void 
-{
-    auto render_task = RenderTask {
-        .primitive = primitive_cache.get(data),
-        .index_count = index_count,
-        .shader = shader_cache.get(ShaderData { .shader_name = shader_name })
-    };
-    render_tasks.emplace_back(render_task);
-}*/
+
+auto Renderer::add_render_task(RenderTaskData const& data) -> void {
+
+    auto result = primitive_cache.get(data.primitive);
+    if(result) {
+        auto render_task = RenderTask {
+            .drawable = result.value(),
+            .index_count = data.index_count
+        };
+        render_tasks.emplace_back(render_task);
+    }
+}

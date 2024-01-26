@@ -11,12 +11,12 @@ using namespace ionengine::renderer::rhi;
 
 DX12Buffer::DX12Buffer(
     ID3D12Device1* device, 
-    MemoryAllocator& memory_allocator,
+    DX12MemoryAllocator& memory_allocator,
     DescriptorAllocator* descriptor_allocator,
     size_t const size,
     BufferUsageFlags const flags
 ) :
-    memory_allocator(static_cast<DX12MemoryAllocator*>(&memory_allocator)),
+    memory_allocator(&memory_allocator),
     descriptor_allocator(descriptor_allocator),
     size(size),
     flags(flags)

@@ -17,7 +17,7 @@ public:
 
     DX12Buffer(
         ID3D12Device1* device, 
-        MemoryAllocator& memory_allocator,
+        DX12MemoryAllocator& memory_allocator,
         DescriptorAllocator* descriptor_allocator,
         size_t const size,
         BufferUsageFlags const flags

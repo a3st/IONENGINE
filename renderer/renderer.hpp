@@ -5,6 +5,8 @@
 #include "rhi/device.hpp"
 #include "render_graph.hpp"
 #include "render_pipeline.hpp"
+#include "cache/primitive_cache.hpp"
+#include "render_task.hpp"
 
 namespace ionengine {
 
@@ -39,22 +41,18 @@ public:
 
     //auto create_camera(CameraProjectionType const projection_type) -> core::ref_ptr<Camera>;
 
-    /*auto add_render_task(
-        PrimitiveData const& data, 
-        uint32_t const index_count,
-        std::string_view const shader_name
-    ) -> void;*/
+    auto add_render_task(RenderTaskData const& data) -> void;
 
 private:
 
     core::ref_ptr<rhi::Device> device;
-    core::ref_ptr<rhi::MemoryAllocator> primitive_allocator{nullptr};
     core::ref_ptr<RenderPipeline> render_pipeline;
     core::ref_ptr<RenderGraph> render_graph{nullptr};
     bool is_graph_initialized{false};
     uint32_t width;
     uint32_t height;
-    //std::vector<RenderTask> render_tasks;
+    std::vector<RenderTask> render_tasks;
+    PrimitiveCache primitive_cache;
     core::ref_ptr<rhi::Buffer> test_buffer{nullptr};
     core::ref_ptr<rhi::Shader> test_shader{nullptr};
 };

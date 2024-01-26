@@ -37,7 +37,7 @@ add_library(engine SHARED
     "renderer/rhi/shader.cpp"
 
     "renderer/cache/rg_resource_cache.cpp"
-    #"renderer/primitive.cpp"
+    "renderer/cache/primitive_cache.cpp"
     #"renderer/camera.cpp"
     #"renderer/primitive_cache.cpp"
     "renderer/render_graph.cpp"
