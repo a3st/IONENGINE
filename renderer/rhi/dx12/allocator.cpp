@@ -76,8 +76,8 @@ auto DX12MemoryAllocator::allocate(D3D12_RESOURCE_DESC const& resource_desc) -> 
         create_chunk(allocation_info.Alignment);
 
         auto& chunk = chunks[allocation_info.Alignment].back();
-        uint64_t start = chunk.offset;
-        size_t alloc_size = (allocation_info.Alignment + (block_size - 1)) & ~(block_size - 1);
+        uint64_t const start = chunk.offset;
+        size_t const alloc_size = (allocation_info.SizeInBytes + (block_size - 1)) & ~(block_size - 1);
 
         std::fill(chunk.free.begin() + start / block_size, chunk.free.begin() + start / block_size + alloc_size / block_size, 0);
 

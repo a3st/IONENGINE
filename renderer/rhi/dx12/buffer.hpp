@@ -12,6 +12,8 @@ namespace renderer {
 
 namespace rhi {
 
+inline uint32_t DX12_CONSTANT_BUFFER_ALIGNMENT = 256;
+
 class DX12Buffer : public Buffer {
 public:
 
@@ -40,6 +42,11 @@ public:
         return resource.get();
     }
 
+    auto get_descriptor(BufferUsage const usage) const -> DescriptorAllocation const& {
+
+        return descriptor_allocations.at(usage);
+    }
+
     auto get_resource_state() const -> D3D12_RESOURCE_STATES {
 
         return resource_state;
@@ -57,7 +64,7 @@ private:
     winrt::com_ptr<ID3D12Resource> resource;
     D3D12_RESOURCE_STATES resource_state;
     MemoryAllocation memory_allocation{};
-    DescriptorAllocation descriptor_allocation{};
+    std::unordered_map<BufferUsage, DescriptorAllocation> descriptor_allocations;
     size_t size;
     BufferUsageFlags flags;
 };

@@ -20,7 +20,7 @@ class ShaderFileFlags:
 
 class ShaderFile:
     def __init__(self):
-        self.cache_path = os.path.join(os.path.dirname(__file__), 'cache')
+        self.cache_path = os.path.join(os.path.dirname(__file__), '__cache__')
         os.makedirs(self.cache_path, exist_ok=True)
 
     

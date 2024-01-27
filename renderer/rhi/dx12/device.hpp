@@ -55,7 +55,7 @@ public:
 		std::span<uint8_t const> const data
 	) -> Future<Buffer> override;
 
-    auto write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> override;
+    auto write_buffer(core::ref_ptr<Buffer> buffer, std::span<uint8_t const> const data) -> Future<Buffer> override;
 
 	auto submit_command_lists(std::span<core::ref_ptr<CommandBuffer>> const command_buffers) -> void override;
 

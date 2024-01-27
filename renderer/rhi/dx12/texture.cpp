@@ -72,7 +72,7 @@ DX12Texture::DX12Texture(
         if(!allocation.heap) {
             throw core::Exception("An error in descriptor allocation when creating a texture");
         }
-        this->descriptor_allocation = allocation;
+        descriptor_allocations.emplace(TextureUsage::RenderTarget, allocation);
 
         auto d3d12_render_target_view_desc = D3D12_RENDER_TARGET_VIEW_DESC {};
         d3d12_render_target_view_desc.Format = d3d12_resource_desc.Format;
@@ -84,7 +84,7 @@ DX12Texture::DX12Texture(
 
 DX12Texture::~DX12Texture() {
 
-    if(descriptor_allocation.heap) {
-        descriptor_allocator->deallocate(descriptor_allocation);
+    for(auto const& [usage, allocation] : descriptor_allocations) {
+        descriptor_allocator->deallocate(allocation);
     }
 }

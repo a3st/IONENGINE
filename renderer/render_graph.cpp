@@ -12,6 +12,7 @@ RGRenderPassContext::RGRenderPassContext(
     std::unordered_map<uint32_t, uint64_t>& outputs,
     std::unordered_map<uint64_t, RGAttachment>& attachments,
     RGResourceCache& resource_cache,
+    BufferPool& buffer_pool,
     uint32_t const width,
     uint32_t const height,
     rhi::CommandBuffer& command_buffer
@@ -20,117 +21,13 @@ RGRenderPassContext::RGRenderPassContext(
     outputs(&outputs),
     attachments(&attachments),
     resource_cache(&resource_cache),
+    buffer_pool(&buffer_pool),
     width(width),
     height(height),
     command_buffer(&command_buffer)
 {
 
 }
-
-/*
-auto RGRenderPassContext::get_resource_by_index(uint32_t const index) -> RGResource {
-    
-    auto result = inputs->find(index);
-    assert(result != inputs->end());
-
-    RGAttachment& attachment = attachments->at(result->second);
-
-    RGResource resource;
-    if(!attachment.texture) {
-        resource = resource_cache->get(result->second, attachment.format, attachment.sample_count, width, height);
-    } else {
-        resource = RGResource { .texture = attachment.texture };
-    }
-    return resource;
-}
-
-auto RGRenderPassContext::blit(RGResource const& source) -> void {
-
-}
-
-auto RGRenderPassContext::draw(RenderTask const& render_task) -> void {
-
-    wgpu::RenderPipeline render_pipeline{nullptr};
-    {
-        auto buffer_layout = wgpu::VertexBufferLayout {};
-        buffer_layout.attributes = render_task.primitive->attributes.data();
-        buffer_layout.attributeCount = render_task.primitive->attributes.size();
-        buffer_layout.arrayStride = 32;
-        buffer_layout.stepMode = wgpu::VertexStepMode::Vertex;
-
-        auto vertex_state = wgpu::VertexState {};
-        vertex_state.module = render_task.shader->get_shader_module();
-        vertex_state.entryPoint = "vs_main";
-        vertex_state.bufferCount = 1;
-        vertex_state.buffers = &buffer_layout;
-
-        auto color_blend_component = wgpu::BlendComponent {};
-        color_blend_component.operation = wgpu::BlendOperation::Add;
-        color_blend_component.srcFactor = wgpu::BlendFactor::One;
-        color_blend_component.dstFactor = wgpu::BlendFactor::One;
-
-        auto blend_state = wgpu::BlendState {};
-        blend_state.color = color_blend_component;
-        blend_state.alpha = color_blend_component;
-
-        uint32_t target_state_count = 0;
-        std::array<wgpu::ColorTargetState, 16> target_states;
-        for(auto const& [_, value] : *outputs) {
-            RGAttachment const& attachment = attachments->at(value);
-
-            if(auto const* data = std::get_if<RGAttachment::DepthStencilAttachment>(&attachment.attachment)) {
-                continue;
-            }
-
-            target_states[target_state_count].format = attachment.format;
-            target_states[target_state_count].blend = &blend_state;
-            
-            target_state_count ++;
-        }
-
-        auto fragment_state = wgpu::FragmentState {};
-        fragment_state.module = render_task.shader->get_shader_module();
-        fragment_state.entryPoint = "fs_main";
-        fragment_state.targetCount = target_state_count;
-        fragment_state.targets = target_states.data();
-
-        auto primitive_state = wgpu::PrimitiveState {};
-        primitive_state.topology = wgpu::PrimitiveTopology::TriangleList;
-        primitive_state.cullMode = wgpu::CullMode::Front;
-        primitive_state.frontFace = wgpu::FrontFace::CCW;
-
-        auto multisample_state = wgpu::MultisampleState {};
-        multisample_state.setDefault();
-
-        wgpu::PipelineLayout pipeline_layout{nullptr};
-        {
-            auto descriptor = wgpu::PipelineLayoutDescriptor {};
-            descriptor.bindGroupLayoutCount = 0;
-            
-            pipeline_layout = context->get_device().createPipelineLayout(descriptor);
-        }
-
-        auto descriptor = wgpu::RenderPipelineDescriptor {};
-        descriptor.layout = pipeline_layout;
-        descriptor.vertex = vertex_state;
-        descriptor.fragment = &fragment_state;
-        descriptor.primitive = primitive_state;
-        descriptor.depthStencil = nullptr;
-        descriptor.multisample = multisample_state;
-
-        render_pipeline = context->get_device().createRenderPipeline(descriptor);
-    }
-
-    encoder->setPipeline(render_pipeline);
-
-    auto vertex_buffer = render_task.primitive->get_vertex_buffer();
-    auto index_buffer = render_task.primitive->get_index_buffer();
-
-    encoder->setVertexBuffer(0, vertex_buffer.buffer->get_buffer(), vertex_buffer.offset, vertex_buffer.size);
-    encoder->setIndexBuffer(index_buffer.buffer->get_buffer(), wgpu::IndexFormat::Uint32, index_buffer.offset, index_buffer.size);
-    encoder->drawIndexed(render_task.index_count, 1, 0, 0, 0);
-}
-*/
 
 RenderGraph::RenderGraph(
     rhi::Device& device, 
@@ -142,12 +39,16 @@ RenderGraph::RenderGraph(
     resource_cache(device),
     attachments(attachments)
 {
-
+    for(uint32_t i = 0; i < 2; ++i) {
+        auto buffer_pool = core::make_ref<BufferPool>(device);
+        buffer_pools.emplace_back(buffer_pool);
+    }
 }
 
 auto RenderGraph::execute() -> void {
 
     auto swapchain_buffer = device->request_next_swapchain_buffer();
+    buffer_pools[frame_index]->reset();
 
     for(auto& step : steps) {
         auto command_buffer = device->allocate_command_buffer(rhi::CommandBufferType::Graphics);
@@ -184,6 +85,8 @@ auto RenderGraph::execute() -> void {
                     }
                 }
 
+                command_buffer->set_viewport(0, 0, data.width, data.height);
+                command_buffer->set_scissor(0, 0, data.width, data.height);
                 command_buffer->begin_render_pass(data.colors, data.depth_stencil);
 
                 RGRenderPassContext ctx(
@@ -191,6 +94,7 @@ auto RenderGraph::execute() -> void {
                     step.outputs,
                     attachments,
                     resource_cache,
+                    &buffer_pools[frame_index],
                     data.width,
                     data.height,
                     &command_buffer

@@ -4,6 +4,7 @@ struct ShaderResources {
     uint lightingData;
     uint textureColor;
 };
+ConstantBuffer<ShaderResources> shaderResources : register(b0, space0);
 
 struct WorldData {
     float4x4 model;
@@ -30,9 +31,12 @@ struct VSOutput {
 
 VSOutput vs_main(VSInput input) {
     VSOutput output;
-    output.position = float4(0.1f, 0.2f, 0.3f, 1.0f);
-    output.normal = float3(0.2f, 0.3f, 0.2f);
-    output.uv = float2(0.2f, 0.1f);
+
+    ConstantBuffer<WorldData> worldData = ResourceDescriptorHeap[shaderResources.worldData];
+
+    float4 world_pos = mul(worldData.model, float4(input.position, 1.0f));
+    output.position = mul(worldData.projection, mul(worldData.view, world_pos));
+    output.uv = float2(input.uv.x, 1.0f - input.uv.y);
     return output;
 }
 
@@ -42,6 +46,6 @@ struct PSOutput {
 
 PSOutput ps_main(VSOutput input) {
     PSOutput output;
-    output.color = float4(0.2f, 0.3f, 0.6f, 1.0f);
+    output.color = float4(1.0f, 1.0f, 1.0f, 1.0f);
     return output;
 }

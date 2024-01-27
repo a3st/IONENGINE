@@ -72,6 +72,10 @@ public:
         size_t const size
     ) -> void override;
 
+    auto set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height) -> void override;
+
+    auto set_scissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom) -> void override;
+
     auto get_command_list() -> ID3D12GraphicsCommandList4* {
 
         return command_list.get();
@@ -99,6 +103,7 @@ private:
     };
     std::vector<ResourceTrackerInfo> trackers;
     std::vector<D3D12_RESOURCE_BARRIER> barriers;
+    std::array<uint32_t, 16> bindings;
 
     auto begin_barrier_resources() -> void;
 

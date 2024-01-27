@@ -23,7 +23,11 @@ DX12Buffer::DX12Buffer(
 {
     auto d3d12_resource_desc = D3D12_RESOURCE_DESC {};
     d3d12_resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-    d3d12_resource_desc.Width = size;
+    if(flags & BufferUsage::ConstantBuffer) {
+        d3d12_resource_desc.Width = (size + (DX12_CONSTANT_BUFFER_ALIGNMENT - 1)) & ~(DX12_CONSTANT_BUFFER_ALIGNMENT - 1);
+    } else {
+        d3d12_resource_desc.Width = size;
+    }
     d3d12_resource_desc.Height = 1;
     d3d12_resource_desc.MipLevels = 1;
     d3d12_resource_desc.DepthOrArraySize = 1;
@@ -55,17 +59,17 @@ DX12Buffer::DX12Buffer(
     ));
 
     if(flags & BufferUsage::ConstantBuffer) {
-        assert(!descriptor_allocator && "To create a buffer with views, you need to pass the allocator descriptor");
+        assert(descriptor_allocator && "To create a buffer with views, you need to pass the allocator descriptor");
 
         auto allocation = descriptor_allocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);
         if(!allocation.heap) {
             throw core::Exception("An error in descriptor allocation when creating a buffer");
         }
-        this->descriptor_allocation = allocation;
+        descriptor_allocations.emplace(BufferUsage::ConstantBuffer, allocation);
 
         auto d3d12_constant_buffer_view_desc = D3D12_CONSTANT_BUFFER_VIEW_DESC {};
         d3d12_constant_buffer_view_desc.BufferLocation = resource->GetGPUVirtualAddress();
-        d3d12_constant_buffer_view_desc.SizeInBytes = static_cast<uint32_t>(size);
+        d3d12_constant_buffer_view_desc.SizeInBytes = static_cast<uint32_t>(d3d12_resource_desc.Width);
 
         device->CreateConstantBufferView(&d3d12_constant_buffer_view_desc, allocation.cpu_handle());
     }
@@ -73,7 +77,9 @@ DX12Buffer::DX12Buffer(
 
 DX12Buffer::~DX12Buffer() {
 
-    if(descriptor_allocator && descriptor_allocation.heap) {
-        descriptor_allocator->deallocate(descriptor_allocation);
+    if(descriptor_allocator) {
+        for(auto const& [usage, allocation] : descriptor_allocations) {
+            descriptor_allocator->deallocate(allocation);
+        }
     }
 }

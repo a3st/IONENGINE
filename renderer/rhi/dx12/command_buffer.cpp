@@ -91,7 +91,16 @@ auto DX12CommandBuffer::bind_descriptor(
     std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> const resource
 ) -> void 
 {
-    
+    uint32_t const index = current_shader->get_bindings().at(std::string(binding));
+    auto visitor = make_visitor(
+        [&](core::ref_ptr<Buffer> data) {
+            bindings[index] = static_cast<DX12Buffer*>(data.get())->get_descriptor(rhi::BufferUsage::ConstantBuffer).offset;
+        },
+        [&](core::ref_ptr<Texture> data) {
+
+        }
+    );
+    std::visit(visitor, resource);
 }
 
 auto DX12CommandBuffer::begin_render_pass(
@@ -116,7 +125,7 @@ auto DX12CommandBuffer::begin_render_pass(
 
         render_pass_render_targets[i].BeginningAccess = begin;
         render_pass_render_targets[i].EndingAccess = end;
-        render_pass_render_targets[i].cpuDescriptor = static_cast<DX12Texture*>(colors[i].texture.get())->get_descriptor().cpu_handle();
+        render_pass_render_targets[i].cpuDescriptor = static_cast<DX12Texture*>(colors[i].texture.get())->get_descriptor(TextureUsage::RenderTarget).cpu_handle();
 
         if(static_cast<DX12Texture*>(colors[i].texture.get())->get_resource_state() != D3D12_RESOURCE_STATE_RENDER_TARGET) {
             auto tracker = ResourceTrackerInfo {
@@ -157,7 +166,7 @@ auto DX12CommandBuffer::begin_render_pass(
             render_pass_depth_stencil.StencilBeginningAccess = begin;
             render_pass_depth_stencil.StencilEndingAccess = end;
         }
-        render_pass_depth_stencil.cpuDescriptor = static_cast<DX12Texture*>(value.texture.get())->get_descriptor().cpu_handle();
+        render_pass_depth_stencil.cpuDescriptor = static_cast<DX12Texture*>(value.texture.get())->get_descriptor(TextureUsage::RenderTarget).cpu_handle();
 
         if(static_cast<DX12Texture*>(value.texture.get())->get_resource_state() != D3D12_RESOURCE_STATE_DEPTH_WRITE) {
             auto tracker = ResourceTrackerInfo {
@@ -224,6 +233,8 @@ auto DX12CommandBuffer::bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t
 
 auto DX12CommandBuffer::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t instance_offset) -> void {
 
+    command_list->SetGraphicsRoot32BitConstants(0, static_cast<uint32_t>(bindings.size()), bindings.data(), 0);
+
     command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
 }
 
@@ -251,6 +262,30 @@ auto DX12CommandBuffer::copy_buffer(
         size
     );
     end_barrier_resources();
+}
+
+auto DX12CommandBuffer::set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height) -> void {
+
+    auto d3d12_viewport = D3D12_VIEWPORT {};
+    d3d12_viewport.TopLeftX = static_cast<float>(x);
+    d3d12_viewport.TopLeftY = static_cast<float>(y);
+    d3d12_viewport.Width = static_cast<float>(width);
+    d3d12_viewport.Height = static_cast<float>(height);
+    d3d12_viewport.MinDepth = D3D12_MIN_DEPTH;
+    d3d12_viewport.MaxDepth = D3D12_MAX_DEPTH;
+
+    command_list->RSSetViewports(1, &d3d12_viewport);
+}
+
+auto DX12CommandBuffer::set_scissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom) -> void {
+    
+    auto d3d12_rect = D3D12_RECT {};
+    d3d12_rect.top = static_cast<LONG>(top);
+    d3d12_rect.bottom = static_cast<LONG>(bottom);
+    d3d12_rect.left = static_cast<LONG>(left);
+    d3d12_rect.right = static_cast<LONG>(right);
+
+    command_list->RSSetScissorRects(1, &d3d12_rect);
 }
 
 auto DX12CommandBuffer::begin_barrier_resources() -> void {

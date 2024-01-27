@@ -52,7 +52,7 @@ auto Renderer::render() -> void {
             }*/
             
             std::vector<RGAttachment> outputs = {
-                RGAttachment::swapchain(rhi::RenderPassLoadOp::Clear, rhi::RenderPassStoreOp::Store, math::Color(0.5f, 0.5f, 0.5f, 1.0f))
+                RGAttachment::swapchain(rhi::RenderPassLoadOp::Clear, rhi::RenderPassStoreOp::Store, math::Color(0.0f, 0.5f, 0.8f, 1.0f))
             };
 
             builder.add_graphics_pass(
@@ -62,26 +62,37 @@ auto Renderer::render() -> void {
                 {},
                 outputs,
                 [&](RGRenderPassContext& ctx) {
-
                     struct WorldData {
                         math::Matrixf model;
                         math::Matrixf view;
                         math::Matrixf projection;
                     };
-                    auto world_data = WorldData { };
-
-                    //ctx.bind_buffer<WorldData>("WorldData", world_data);
-                    // ctx.get_command_buffer().bind_descriptor("WorldData", test_buffer);
+                    auto world_data = WorldData { 
+                        .model = math::Matrixf::scale(math::Vector3f(3.0f, 3.0f, 3.0f)),
+                        .view = math::Matrixf::look_at_rh(
+                            math::Vector3f(5.0f, 0.0, 5.0f), 
+                            math::Vector3f(0.0f, 0.0f, 0.0f), 
+                            math::Vector3f(0.0f, 1.0f, 0.0f)
+                        ),
+                        .projection = math::Matrixf::perspective_rh(
+                            68.0f * static_cast<float>(std::numbers::pi) / 180.0f,
+                            4 / 3,
+                            0.1f,
+                            100.0f
+                        )
+                    };
 
                     ctx.get_command_buffer().set_graphics_pipeline_options(
                         test_shader,
                         rhi::RasterizerStageInfo {
-                            .fill_mode = rhi::FillMode::Wireframe,
-                            .cull_mode = rhi::CullMode::Back
+                            .fill_mode = rhi::FillMode::Solid,
+                            .cull_mode = rhi::CullMode::Front
                         },
                         rhi::BlendColorInfo::Opaque(),
                         std::nullopt
                     );
+
+                    ctx.bind_buffer<WorldData>("WorldData", world_data);
 
                     for(auto const& task : render_tasks) {
                         ctx.get_command_buffer().bind_vertex_buffer(task.drawable.first, 0, task.drawable.first->get_size());

@@ -235,9 +235,20 @@ auto DX12Device::create_buffer(
     return Future<DX12Buffer>(buffer, std::move(future_impl));
 }
 
-auto DX12Device::write_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const data) -> Future<Buffer> {
+auto DX12Device::write_buffer(core::ref_ptr<Buffer> buffer, std::span<uint8_t const> const data) -> Future<Buffer> {
 
-    return Future<DX12Buffer>();
+    assert(!data.empty() && "Empty data cannot be written to the buffer");
+
+    upload_context->upload(buffer, data);
+
+    auto future_impl = std::make_unique<DX12FutureImpl>(
+        queue_infos[1].queue.get(), 
+        queue_infos[1].fence.get(),
+        fence_event,
+        queue_infos[1].fence_value
+    );
+
+    return Future<DX12Buffer>(buffer, std::move(future_impl));
 }
 
 auto DX12Device::submit_command_lists(std::span<core::ref_ptr<CommandBuffer>> const command_buffers) -> void {

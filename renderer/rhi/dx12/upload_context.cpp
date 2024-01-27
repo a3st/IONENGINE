@@ -42,37 +42,44 @@ UploadContext::UploadContext(
 
 auto UploadContext::upload(core::ref_ptr<Buffer> src, std::span<uint8_t const> const data) -> void {
 
-    if(data.size() > buffer->get_size() - offset) {
-        
-        if(fence->GetCompletedValue() < *fence_value) {
-            THROW_IF_FAILED(fence->SetEventOnCompletion(*fence_value, fence_event));
-            ::WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
+    if(src->get_flags() & BufferUsage::MapWrite) {
+        auto range = D3D12_RANGE {};
+        uint8_t* mapped_bytes;
+        THROW_IF_FAILED(static_cast<DX12Buffer*>(src.get())->get_resource()->Map(0, &range, reinterpret_cast<void**>(&mapped_bytes)));
+        std::memcpy(mapped_bytes, data.data(), data.size());
+        static_cast<DX12Buffer*>(src.get())->get_resource()->Unmap(0, nullptr);
+    } else {
+        if(data.size() > buffer->get_size() - offset) {
+            if(fence->GetCompletedValue() < *fence_value) {
+                THROW_IF_FAILED(fence->SetEventOnCompletion(*fence_value, fence_event));
+                ::WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
+            }
+
+            command_allocator->reset();
+            offset = 0;
         }
 
-        command_allocator->reset();
-        offset = 0;
+        auto range = D3D12_RANGE {};
+        uint8_t* mapped_bytes;
+        THROW_IF_FAILED(buffer->get_resource()->Map(0, &range, reinterpret_cast<void**>(&mapped_bytes)));
+        std::memcpy(mapped_bytes + offset, data.data(), data.size());
+        buffer->get_resource()->Unmap(0, nullptr);
+
+        auto command_buffer = command_allocator->allocate(D3D12_COMMAND_LIST_TYPE_COPY);
+        command_buffer->reset();
+        command_buffer->copy_buffer(src, 0, buffer, offset, data.size());
+        command_buffer->close();
+
+        offset += data.size();
+
+        auto command_batches = std::array<ID3D12CommandList*, 1> { 
+            reinterpret_cast<ID3D12CommandList*>(static_cast<DX12CommandBuffer*>(command_buffer.get())->get_command_list())
+        };
+
+        queue->ExecuteCommandLists(static_cast<uint32_t>(command_batches.size()), command_batches.data());
+        (*fence_value)++;
+        THROW_IF_FAILED(queue->Signal(fence, *fence_value));
     }
-
-    auto range = D3D12_RANGE {};
-    uint8_t* mapped_bytes;
-    THROW_IF_FAILED(buffer->get_resource()->Map(0, &range, reinterpret_cast<void**>(&mapped_bytes)));
-    std::memcpy(mapped_bytes + offset, data.data(), data.size());
-    buffer->get_resource()->Unmap(0, nullptr);
-
-    auto command_buffer = command_allocator->allocate(D3D12_COMMAND_LIST_TYPE_COPY);
-    command_buffer->reset();
-    command_buffer->copy_buffer(src, 0, buffer, offset, data.size());
-    command_buffer->close();
-
-    offset += data.size();
-
-    auto command_batches = std::array<ID3D12CommandList*, 1> { 
-        reinterpret_cast<ID3D12CommandList*>(static_cast<DX12CommandBuffer*>(command_buffer.get())->get_command_list())
-    };
-
-    queue->ExecuteCommandLists(static_cast<uint32_t>(command_batches.size()), command_batches.data());
-    (*fence_value)++;
-    THROW_IF_FAILED(queue->Signal(fence, *fence_value));
 }
 
 auto UploadContext::try_reset() -> void {

@@ -208,6 +208,10 @@ public:
         uint64_t const src_offset,
         size_t const size
     ) -> void = 0;
+
+    virtual auto set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height) -> void = 0;
+
+    virtual auto set_scissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom) -> void = 0;
 };
 
 }

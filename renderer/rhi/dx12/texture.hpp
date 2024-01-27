@@ -53,9 +53,9 @@ public:
         return format;
     }
 
-    auto get_descriptor() -> DescriptorAllocation {
+    auto get_descriptor(TextureUsage const usage) const -> DescriptorAllocation const& {
 
-        return descriptor_allocation;
+        return descriptor_allocations.at(usage);
     }
 
     auto get_resource() -> ID3D12Resource* {
@@ -77,7 +77,7 @@ private:
 
     DescriptorAllocator* descriptor_allocator;
     winrt::com_ptr<ID3D12Resource> resource;
-    DescriptorAllocation descriptor_allocation;
+    std::unordered_map<TextureUsage, DescriptorAllocation> descriptor_allocations;
     D3D12_RESOURCE_STATES resource_state;
     uint32_t width;
     uint32_t height;

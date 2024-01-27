@@ -3,6 +3,7 @@
 #pragma once
 
 #include "cache/rg_resource_cache.hpp"
+#include "buffer_pool.hpp"
 
 namespace ionengine {
 
@@ -86,6 +87,7 @@ public:
         std::unordered_map<uint32_t, uint64_t>& outputs,
         std::unordered_map<uint64_t, RGAttachment>& attachments,
         RGResourceCache& resource_cache,
+        BufferPool& buffer_pool,
         uint32_t const width,
         uint32_t const height,
         rhi::CommandBuffer& command_buffer
@@ -96,11 +98,17 @@ public:
         return *command_buffer;
     }
 
-    // auto get_resource_by_index(uint32_t const index) -> RGResource;
+    template<typename Type>
+    auto bind_buffer(std::string_view const binding, Type const& data) -> void {
+        
+        auto buffer = buffer_pool->allocate(
+            sizeof(Type),
+            (rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite | rhi::BufferUsage::ConstantBuffer,
+            std::span<uint8_t const>((uint8_t*)&data, sizeof(Type))
+        );
 
-    // auto blit(RGResource const& source) -> void;
-
-    // auto draw(RenderTask const& render_task) -> void;
+        command_buffer->bind_descriptor(binding, buffer);
+    }
 
 private:
 
@@ -108,6 +116,7 @@ private:
     std::unordered_map<uint32_t, uint64_t>* outputs;
     std::unordered_map<uint64_t, RGAttachment>* attachments;
     RGResourceCache* resource_cache;
+    BufferPool* buffer_pool;
     uint32_t width;
     uint32_t height;
     rhi::CommandBuffer* command_buffer;
@@ -172,6 +181,7 @@ private:
     std::vector<RGRenderPass> steps;
     std::unordered_map<uint64_t, RGAttachment> attachments;
     RGResourceCache resource_cache;
+    std::vector<core::ref_ptr<BufferPool>> buffer_pools;
     uint32_t frame_index{0};
     std::vector<core::ref_ptr<rhi::CommandBuffer>> submits;
 };

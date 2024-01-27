@@ -21,13 +21,13 @@ struct DescriptorAllocation {
     uint32_t offset;
     uint32_t size;
 
-    auto cpu_handle(uint32_t const index = 0) -> D3D12_CPU_DESCRIPTOR_HANDLE {
+    auto cpu_handle(uint32_t const index = 0) const -> D3D12_CPU_DESCRIPTOR_HANDLE {
         return {
             .ptr = heap->GetCPUDescriptorHandleForHeapStart().ptr + increment_size * offset + index
         };
     }
 
-    auto gpu_handle(uint32_t const index = 0) -> D3D12_GPU_DESCRIPTOR_HANDLE {
+    auto gpu_handle(uint32_t const index = 0) const -> D3D12_GPU_DESCRIPTOR_HANDLE {
         return {
             .ptr = heap->GetGPUDescriptorHandleForHeapStart().ptr + increment_size * offset + index
         };
