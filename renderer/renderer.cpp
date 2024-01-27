@@ -71,7 +71,7 @@ auto Renderer::render() -> void {
                     auto world_data = WorldData { };
 
                     //ctx.bind_buffer<WorldData>("WorldData", world_data);
-                    ctx.get_command_buffer().bind_descriptor("WorldData", test_buffer);
+                    // ctx.get_command_buffer().bind_descriptor("WorldData", test_buffer);
 
                     ctx.get_command_buffer().set_graphics_pipeline_options(
                         test_shader,
@@ -82,13 +82,19 @@ auto Renderer::render() -> void {
                         rhi::BlendColorInfo::Opaque(),
                         std::nullopt
                     );
+
+                    for(auto const& task : render_tasks) {
+                        ctx.get_command_buffer().bind_vertex_buffer(task.drawable.first, 0, task.drawable.first->get_size());
+                        ctx.get_command_buffer().bind_index_buffer(task.drawable.second, 0, task.drawable.second->get_size(), rhi::IndexFormat::Uint32);
+                        ctx.get_command_buffer().draw_indexed(task.index_count, 1, 0);
+                    }
                 }
             );
         }
         render_graph = builder.build();
         is_graph_initialized = true;
     }
-    
+
     render_graph->execute();
     render_tasks.clear();
 }
@@ -102,21 +108,6 @@ auto Renderer::resize(uint32_t const width, uint32_t const height) -> void {
     
     device->resize_swapchain_buffers(width, height);
 }
-
-/*
-auto Renderer::load_shaders(std::span<ShaderData const> const shaders) -> bool {
-
-    for(auto const& shader : shaders) {
-        shader_cache.get(shader);
-    }
-    return true;
-}
-
-auto Renderer::create_camera(CameraProjectionType const projection_type) -> core::ref_ptr<Camera> {
-
-    return core::make_ref<Camera>(context, projection_type);
-}
-*/
 
 auto Renderer::add_render_task(RenderTaskData const& data) -> void {
 

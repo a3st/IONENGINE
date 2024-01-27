@@ -91,7 +91,7 @@ GLBModel::GLBModel(std::span<uint8_t> const data_bytes) {
             stream.read((uint8_t*)chunk_buffer_data.data(), chunk_header.chunk_length);
         }
 
-        buffers.emplace_back(chunk_buffer_data);
+        buffers.emplace_back(std::move(chunk_buffer_data));
     } while(header.length > stream.tellg());
 }
 

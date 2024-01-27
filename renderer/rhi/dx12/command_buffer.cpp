@@ -81,6 +81,8 @@ auto DX12CommandBuffer::set_graphics_pipeline_options(
     }
 
     command_list->SetPipelineState(pipeline->get_pipeline_state());
+    command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
     current_shader = shader;
 }
 

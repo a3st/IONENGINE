@@ -53,7 +53,7 @@ DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const dat
             std::memcpy(buffer.data(), shader_bytes.data(), buffer.size());
         }
         hasher.add(buffer.data(), buffer.size());
-        buffers.emplace_back(buffer);
+        buffers.emplace_back(std::move(buffer));
 
         auto d3d12_shader_bytecode = D3D12_SHADER_BYTECODE {};
         d3d12_shader_bytecode.pShaderBytecode = buffers.back().data();

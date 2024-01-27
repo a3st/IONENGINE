@@ -150,8 +150,8 @@ Model::Model(std::span<uint8_t> const data_bytes, ModelFormat const format) {
                         .hash = hash
                     };
 
-                    primitives.emplace_back(primitive_data);
-                    index_counts.emplace_back(index_count);
+                    primitives.emplace_back(std::move(primitive_data));
+                    index_counts.emplace_back(std::move(index_count));
                 }
 
                 auto mesh_data = MeshData {
@@ -159,7 +159,7 @@ Model::Model(std::span<uint8_t> const data_bytes, ModelFormat const format) {
                     .index_counts = std::move(index_counts)
                 };
 
-                meshes.emplace_back(mesh_data);
+                meshes.emplace_back(std::move(mesh_data));
             }
 
         } break;

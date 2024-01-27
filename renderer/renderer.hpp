@@ -23,23 +23,11 @@ public:
 
     Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Window const& window);
 
-    Renderer(Renderer const&) = delete;
-
-    Renderer(Renderer&&) = delete;
-
-    auto operator=(Renderer const&) -> Renderer& = delete;
-
-    auto operator=(Renderer&&) -> Renderer& = delete;
-
     auto update(float const dt) -> void;
 
     auto render() -> void;
 
     auto resize(uint32_t const width, uint32_t const height) -> void;
-
-    // auto load_shaders(std::span<ShaderData const> const shaders) -> bool;
-
-    //auto create_camera(CameraProjectionType const projection_type) -> core::ref_ptr<Camera>;
 
     auto add_render_task(RenderTaskData const& data) -> void;
 
@@ -53,7 +41,6 @@ private:
     uint32_t height;
     std::vector<RenderTask> render_tasks;
     PrimitiveCache primitive_cache;
-    core::ref_ptr<rhi::Buffer> test_buffer{nullptr};
     core::ref_ptr<rhi::Shader> test_shader{nullptr};
 };
 
