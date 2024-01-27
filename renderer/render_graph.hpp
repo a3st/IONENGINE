@@ -33,7 +33,7 @@ struct RGAttachment {
 
     std::variant<ColorAttachment, DepthStencilAttachment> attachment;
 
-    static auto swapchain(
+    static auto Swapchain(
         rhi::RenderPassLoadOp const load_op, 
         rhi::RenderPassStoreOp const store_op, 
         math::Color const& color = math::Color(0.0f, 0.0f, 0.0f, 0.0f)
@@ -47,7 +47,7 @@ struct RGAttachment {
         };
     }
 
-    static auto render_target(
+    static auto RenderTarget(
         std::string_view const name, 
         rhi::TextureFormat const format, 
         uint32_t const sample_count,
@@ -63,7 +63,7 @@ struct RGAttachment {
         };
     }
 
-    static auto external(
+    static auto External(
         core::ref_ptr<rhi::Texture> texture,
         rhi::RenderPassLoadOp const load_op, 
         rhi::RenderPassStoreOp const store_op, 
@@ -99,11 +99,11 @@ public:
     }
 
     template<typename Type>
-    auto bind_buffer(std::string_view const binding, Type const& data) -> void {
+    auto bind_buffer(std::string_view const binding, Type const& data, rhi::BufferUsage const usage) -> void {
         
         auto buffer = buffer_pool->allocate(
             sizeof(Type),
-            (rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite | rhi::BufferUsage::ConstantBuffer,
+            (rhi::BufferUsageFlags)(rhi::BufferUsage::MapWrite | usage),
             std::span<uint8_t const>((uint8_t*)&data, sizeof(Type))
         );
 

@@ -1,36 +1,33 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
 #include "core/ref_ptr.hpp"
 #include "platform/window.hpp"
 
-namespace ionengine::platform {
+namespace ionengine {
+
+namespace platform {
 
 enum class WindowEventFlow {
-    Unknown,
     Poll,
     Exit
 };
+
+using window_callback_func_t = std::function<void(WindowEvent const&, WindowEventFlow&)>;
 
 class WindowLoop : public core::ref_counted_object {
 public:
 
     WindowLoop() = default;
 
-    WindowLoop(WindowLoop const&) = delete;
-
-    WindowLoop(WindowLoop&&) noexcept { }
-
-    WindowLoop& operator=(WindowLoop const&) = delete;
-
-    WindowLoop& operator=(WindowLoop&&) noexcept { }
-
-    void run(Window& window, std::function<void(WindowEvent const&, WindowEventFlow&)> const& run_func);
+    void run(Window& window, window_callback_func_t const& callback);
 
 private:
 
-    WindowEventFlow flow{WindowEventFlow::Unknown};
+    WindowEventFlow flow{WindowEventFlow::Poll};
 };
+
+}
 
 }

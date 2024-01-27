@@ -12,8 +12,9 @@ if (WIN32)
 endif ()
 
 add_library(engine SHARED
+    "platform/windows/window.cpp"
     "platform/window_loop.cpp"
-    "platform/window_win32.cpp"
+    "platform/window.cpp"
 
     "math/color.cpp"
 
@@ -70,7 +71,7 @@ target_link_libraries(engine PUBLIC
 )
 
 target_compile_definitions(engine PRIVATE 
-
+    IONENGINE_PLATFORM_WIN32
 )
 
 add_executable(project 

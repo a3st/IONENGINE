@@ -3,18 +3,13 @@
 #pragma once
 
 #include "rhi/device.hpp"
+#include "platform/window.hpp"
 #include "render_graph.hpp"
 #include "render_pipeline.hpp"
 #include "cache/primitive_cache.hpp"
 #include "render_task.hpp"
 
 namespace ionengine {
-
-namespace platform {
-
-class Window;
-
-}
 
 namespace renderer {
 

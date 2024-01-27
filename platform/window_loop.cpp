@@ -5,15 +5,15 @@
 
 using namespace ionengine::platform;
 
-void WindowLoop::run(Window& window, std::function<void(WindowEvent const&, WindowEventFlow&)> const& run_func) {
-    bool running = true;
+void WindowLoop::run(Window& window, window_callback_func_t const& callback) {
 
+    bool running = true;
     while(running) {
         auto& messages = window.get_queue_message();
 
         while(!messages.empty()) {
             WindowEvent event = messages.front();
-            run_func(event, flow);
+            callback(event, flow);
             messages.pop();
 
             if(flow == WindowEventFlow::Exit) {

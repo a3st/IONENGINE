@@ -1,10 +1,12 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
 #include "core/ref_ptr.hpp"
 
-namespace ionengine::platform {
+namespace ionengine {
+
+namespace platform {
 
 enum class WindowEventType {
     Closed,
@@ -67,77 +69,51 @@ struct WindowEvent {
         WindowEventData<WindowEventType::MouseInput>
     > data;
 
-    static WindowEvent sized(uint32_t const width, uint32_t const height) {
+    static WindowEvent Sized(uint32_t const width, uint32_t const height) {
         return WindowEvent { .data = WindowEventData<WindowEventType::Sized> { .width = width, .height = height } };
     }
 
-    static WindowEvent closed() {
+    static WindowEvent Closed() {
         return WindowEvent { .data = WindowEventData<WindowEventType::Closed> { } };
     }
 
-    static WindowEvent updated() {
+    static WindowEvent Updated() {
         return WindowEvent { .data = WindowEventData<WindowEventType::Updated> { } };
     }
 
-    static WindowEvent keyboard_input(uint32_t const scan_code, InputState const input_state) {
+    static WindowEvent KeyboardInput(uint32_t const scan_code, InputState const input_state) {
         return WindowEvent { .data = WindowEventData<WindowEventType::KeyboardInput> { .scan_code = scan_code, .input_state = input_state } };
     }
 
-    static WindowEvent mouse_input(MouseButton const button, InputState const input_state) {
+    static WindowEvent MouseInput(MouseButton const button, InputState const input_state) {
         return WindowEvent { .data = WindowEventData<WindowEventType::MouseInput> { .button = button, .input_state = input_state } };
     }
 
-    static WindowEvent mouse_moved(int32_t const x, int32_t const y, int32_t const x_relative, int32_t const y_relative) {
+    static WindowEvent MouseMoved(int32_t const x, int32_t const y, int32_t const x_relative, int32_t const y_relative) {
         return WindowEvent { .data = WindowEventData<WindowEventType::MouseMoved> { .x = x, .y = y, .x_relative = x_relative, .y_relative = y_relative } };
     }
 };
 
 class Window : public core::ref_counted_object {
 public:
-    //! Create a new window
-    /*! 
-        \param label a window title
-        \param width a window width
-        \param height a window height
-        \param fullscreen is fullscreen window
-    */
-    Window(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen);
 
-    ~Window();
+    static auto create(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen) -> core::ref_ptr<Window>;
 
-    Window(Window const&) = delete;
+    virtual auto get_width() const -> uint32_t = 0;
 
-    Window(Window&& other) noexcept;
+    virtual auto get_height() const -> uint32_t = 0;
 
-    Window& operator=(Window const&) = delete;
+    virtual auto get_native_handle() const -> void* = 0;
 
-    Window& operator=(Window&& other) noexcept;
+    virtual auto set_label(std::string_view const label) -> void = 0;
 
-    //! Get a window width
-    uint32_t get_width() const;
+    virtual auto is_cursor() const -> bool = 0;
 
-    //! Get a window height
-    uint32_t get_height() const;
+    virtual auto show_cursor(bool const show) -> void = 0;
 
-    //! Get a native handle
-    void* get_native_handle() const;
-
-    //! Set a window label
-    void set_label(std::string_view const label);
-
-    //! Is check a cursor
-    bool is_cursor() const;
-
-    //! Show a cursor
-    void show_cursor(bool const show);
-
-    std::queue<WindowEvent>& get_queue_message();
-
-private:
-
-    struct Impl;
-    struct impl_deleter { void operator()(Impl* ptr) const; };
-    std::unique_ptr<Impl, impl_deleter> impl;
+    virtual auto get_queue_message() -> std::queue<WindowEvent>& = 0;
 };
+
+}
 
 }

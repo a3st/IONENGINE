@@ -52,7 +52,7 @@ auto Renderer::render() -> void {
             }*/
             
             std::vector<RGAttachment> outputs = {
-                RGAttachment::swapchain(rhi::RenderPassLoadOp::Clear, rhi::RenderPassStoreOp::Store, math::Color(0.0f, 0.5f, 0.8f, 1.0f))
+                RGAttachment::Swapchain(rhi::RenderPassLoadOp::Clear, rhi::RenderPassStoreOp::Store, math::Color(0.0f, 0.5f, 0.8f, 1.0f))
             };
 
             builder.add_graphics_pass(
@@ -85,14 +85,14 @@ auto Renderer::render() -> void {
                     ctx.get_command_buffer().set_graphics_pipeline_options(
                         test_shader,
                         rhi::RasterizerStageInfo {
-                            .fill_mode = rhi::FillMode::Solid,
+                            .fill_mode = rhi::FillMode::Wireframe,
                             .cull_mode = rhi::CullMode::Front
                         },
                         rhi::BlendColorInfo::Opaque(),
                         std::nullopt
                     );
 
-                    ctx.bind_buffer<WorldData>("WorldData", world_data);
+                    ctx.bind_buffer<WorldData>("WorldData", world_data, rhi::BufferUsage::ConstantBuffer);
 
                     for(auto const& task : render_tasks) {
                         ctx.get_command_buffer().bind_vertex_buffer(task.drawable.first, 0, task.drawable.first->get_size());

@@ -11,7 +11,7 @@ Engine::Engine(
     std::string_view const title
 ) {
     window_loop = core::make_ref<platform::WindowLoop>();
-    window = core::make_ref<platform::Window>(title, 800, 600, false);
+    window = platform::Window::create(title, 800, 600, false);
 
     auto render_pipeline = core::make_ref<renderer::MyRenderPipeline>();
     renderer = core::make_ref<renderer::Renderer>(render_pipeline, &window);
