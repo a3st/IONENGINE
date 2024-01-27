@@ -2,3 +2,5 @@ build
 .gradle
 thirdparty
 *.egg-info
+__cache__
+__pycache__
