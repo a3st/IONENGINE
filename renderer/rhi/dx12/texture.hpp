@@ -3,6 +3,7 @@
 #pragma once
 
 #include "renderer/rhi/texture.hpp"
+#include "allocator.hpp"
 #include "descriptor_allocator.hpp"
 
 namespace ionengine {
@@ -20,11 +21,18 @@ public:
 
     DX12Texture(
         ID3D12Device1* device, 
-        DescriptorAllocator& allocator, 
+        DX12MemoryAllocator& memory_allocator,
+        DescriptorAllocator* descriptor_allocator,
+        uint32_t const width,
+        uint32_t const height,
+        uint32_t const depth,
+        uint32_t const mip_levels,
+        TextureFormat const format,
+        TextureDimension const dimension,
         TextureUsageFlags const flags
     );
 
-    DX12Texture(ID3D12Device1* device, winrt::com_ptr<ID3D12Resource> resource, DescriptorAllocator& allocator, TextureUsageFlags const flags);
+    DX12Texture(ID3D12Device1* device, winrt::com_ptr<ID3D12Resource> resource, DescriptorAllocator& descriptor_allocator, TextureUsageFlags const flags);
 
     ~DX12Texture();
 
@@ -75,8 +83,10 @@ public:
 
 private:
 
+    DX12MemoryAllocator* memory_allocator;
     DescriptorAllocator* descriptor_allocator;
     winrt::com_ptr<ID3D12Resource> resource;
+    MemoryAllocation memory_allocation;
     std::unordered_map<TextureUsage, DescriptorAllocation> descriptor_allocations;
     D3D12_RESOURCE_STATES resource_state;
     uint32_t width;
@@ -84,6 +94,7 @@ private:
     uint32_t depth;
     uint32_t mip_levels;
     TextureFormat format;
+    TextureDimension dimension;
     TextureUsageFlags flags;
 };
 

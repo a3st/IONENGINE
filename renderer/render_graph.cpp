@@ -13,8 +13,6 @@ RGRenderPassContext::RGRenderPassContext(
     std::unordered_map<uint64_t, RGAttachment>& attachments,
     RGResourceCache& resource_cache,
     BufferPool& buffer_pool,
-    uint32_t const width,
-    uint32_t const height,
     rhi::CommandBuffer& command_buffer
 ) : 
     inputs(&inputs),
@@ -22,8 +20,6 @@ RGRenderPassContext::RGRenderPassContext(
     attachments(&attachments),
     resource_cache(&resource_cache),
     buffer_pool(&buffer_pool),
-    width(width),
-    height(height),
     command_buffer(&command_buffer)
 {
 
@@ -31,14 +27,16 @@ RGRenderPassContext::RGRenderPassContext(
 
 RenderGraph::RenderGraph(
     rhi::Device& device, 
+    core::ref_ptr<rhi::MemoryAllocator> allocator,
     std::vector<RGRenderPass> const& steps,
     std::unordered_map<uint64_t, RGAttachment> const& attachments
 ) : 
     device(&device), 
     steps(steps),
-    resource_cache(device),
     attachments(attachments)
 {
+    resource_cache = core::make_ref<RGResourceCache>(device, allocator);
+
     for(uint32_t i = 0; i < 2; ++i) {
         auto buffer_pool = core::make_ref<BufferPool>(device);
         buffer_pools.emplace_back(buffer_pool);
@@ -55,34 +53,48 @@ auto RenderGraph::execute() -> void {
 
         auto visitor = make_visitor(
             [&](RGRenderPass::GraphicsPass& data) {
-                uint32_t start_index = 0;
-                
-                if(data.depth_stencil.has_value()) {
-                    start_index = 1;
-                }
+                uint32_t offset = 0;
 
-                for(uint32_t i = 0; i < data.colors.size(); ++i) {
-                    auto result = step.outputs.find(start_index + i);
+                for(size_t i = 0; i < step.outputs.size(); ++i) {
+                    auto result = step.outputs.find(offset);
                     assert(result != step.outputs.end());
 
                     RGAttachment& attachment = attachments.at(result->second);
-
-                    if(!attachment.texture) {
-                        if(!attachment.is_swapchain) {
-                            RGResource resource = resource_cache.get(
+                    
+                    auto visitor = make_visitor(
+                        [&](RGAttachment::ColorAttachment const&) {
+                            if(!attachment.texture) {
+                                if(!attachment.is_swapchain) {
+                                    data.colors[offset].texture = resource_cache->get(
+                                        frame_index, 
+                                        attachment.format,
+                                        attachment.sample_count,
+                                        data.width,
+                                        data.height,
+                                        (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource),
+                                        result->second
+                                    );
+                                } else {
+                                    data.colors[offset].texture = swapchain_buffer;
+                                }
+                            } else {
+                                data.colors[offset].texture = attachment.texture;
+                            }
+                            offset++;
+                        },
+                        [&](RGAttachment::DepthStencilAttachment const&) {
+                            data.depth_stencil.value().texture = resource_cache->get(
                                 frame_index, 
-                                attachment.format, 
-                                attachment.sample_count, 
-                                data.width, 
-                                data.height, 
+                                attachment.format,
+                                attachment.sample_count,
+                                data.width,
+                                data.height,
+                                (rhi::TextureUsageFlags)rhi::TextureUsage::DepthStencil,
                                 result->second
                             );
-                        } else {
-                            data.colors[i].texture = swapchain_buffer;
                         }
-                    } else {
-                        data.colors[i].texture = attachment.texture;
-                    }
+                    );
+                    std::visit(visitor, attachment.attachment);
                 }
 
                 command_buffer->set_viewport(0, 0, data.width, data.height);
@@ -93,10 +105,8 @@ auto RenderGraph::execute() -> void {
                     step.inputs,
                     step.outputs,
                     attachments,
-                    resource_cache,
+                    &resource_cache,
                     &buffer_pools[frame_index],
-                    data.width,
-                    data.height,
                     &command_buffer
                 );
                 data.callback(ctx);
@@ -111,7 +121,7 @@ auto RenderGraph::execute() -> void {
 
         std::visit(visitor, step.pass);
 
-        resource_cache.update();
+        resource_cache->update();
         submits.emplace_back(command_buffer);
         device->submit_command_lists(submits);
         submits.clear();
@@ -119,10 +129,6 @@ auto RenderGraph::execute() -> void {
 
     device->present();
     frame_index = (frame_index + 1) % 2;
-}
-
-RenderGraphBuilder::RenderGraphBuilder(rhi::Device& device) : device(&device) {
-
 }
 
 auto RenderGraphBuilder::add_graphics_pass(
@@ -185,7 +191,7 @@ auto RenderGraphBuilder::add_graphics_pass(
     return *this;
 }
 
-auto RenderGraphBuilder::build() -> core::ref_ptr<RenderGraph> {
+auto RenderGraphBuilder::build(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator) -> core::ref_ptr<RenderGraph> {
 
-    return core::make_ref<RenderGraph>(*device, steps, attachments);
+    return core::make_ref<RenderGraph>(device, allocator, steps, attachments);
 }

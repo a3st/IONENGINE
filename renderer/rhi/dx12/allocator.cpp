@@ -137,5 +137,5 @@ auto DX12MemoryAllocator::create_chunk(uint64_t const alignment) -> void {
     };
     chunk.free.resize(chunk_size / block_size, 1);
     chunks[alignment].emplace_back(chunk);
-    ptr_chunks.emplace((uintptr_t)heap.get(), static_cast<uint32_t>(chunks[heap_type].size() - 1));
+    ptr_chunks.emplace((uintptr_t)heap.get(), static_cast<uint32_t>(chunks[alignment].size() - 1));
 }

@@ -13,6 +13,8 @@ struct RGAttachment {
     std::string name;
     rhi::TextureFormat format;
     uint32_t sample_count;
+    uint32_t width;
+    uint32_t height;
     core::ref_ptr<rhi::Texture> texture{nullptr};
     bool is_swapchain{false};
     
@@ -51,6 +53,8 @@ struct RGAttachment {
         std::string_view const name, 
         rhi::TextureFormat const format, 
         uint32_t const sample_count,
+        uint32_t const width,
+        uint32_t const height,
         rhi::RenderPassLoadOp const load_op, 
         rhi::RenderPassStoreOp const store_op, 
         math::Color const& color = math::Color(0.0f, 0.0f, 0.0f, 0.0f)
@@ -59,6 +63,8 @@ struct RGAttachment {
             .name = std::string(name),
             .format = format,
             .sample_count = sample_count,
+            .width = width,
+            .height = height,
             .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
         };
     }
@@ -88,8 +94,6 @@ public:
         std::unordered_map<uint64_t, RGAttachment>& attachments,
         RGResourceCache& resource_cache,
         BufferPool& buffer_pool,
-        uint32_t const width,
-        uint32_t const height,
         rhi::CommandBuffer& command_buffer
     );
 
@@ -117,8 +121,6 @@ private:
     std::unordered_map<uint64_t, RGAttachment>* attachments;
     RGResourceCache* resource_cache;
     BufferPool* buffer_pool;
-    uint32_t width;
-    uint32_t height;
     rhi::CommandBuffer* command_buffer;
 };
 
@@ -168,7 +170,8 @@ class RenderGraph : public core::ref_counted_object {
 public:
 
     RenderGraph(
-        rhi::Device& device, 
+        rhi::Device& device,
+        core::ref_ptr<rhi::MemoryAllocator> allocator,
         std::vector<RGRenderPass> const& steps,
         std::unordered_map<uint64_t, RGAttachment> const& attachments
     );
@@ -178,10 +181,10 @@ public:
 private:
 
     rhi::Device* device;
+    std::vector<core::ref_ptr<BufferPool>> buffer_pools;
+    core::ref_ptr<RGResourceCache> resource_cache{nullptr};
     std::vector<RGRenderPass> steps;
     std::unordered_map<uint64_t, RGAttachment> attachments;
-    RGResourceCache resource_cache;
-    std::vector<core::ref_ptr<BufferPool>> buffer_pools;
     uint32_t frame_index{0};
     std::vector<core::ref_ptr<rhi::CommandBuffer>> submits;
 };
@@ -189,7 +192,7 @@ private:
 class RenderGraphBuilder {
 public:
 
-    RenderGraphBuilder(rhi::Device& device);
+    RenderGraphBuilder() = default;
 
     auto add_graphics_pass(
         std::string_view const pass_name,
@@ -202,11 +205,10 @@ public:
 
     auto add_compute_pass() -> RenderGraphBuilder&;
 
-    auto build() -> core::ref_ptr<RenderGraph>;
+    auto build(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator) -> core::ref_ptr<RenderGraph>;
 
 private:
 
-    rhi::Device* device;
     std::vector<RGRenderPass> steps;
     std::unordered_map<uint64_t, RGAttachment> attachments;
 };

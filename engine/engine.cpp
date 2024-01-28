@@ -38,10 +38,10 @@ Engine::Engine(
 
 auto Engine::run() -> void {
 
-    //auto main_camera = renderer->create_camera(renderer::CameraProjectionType::Perspective);
+    auto main_camera = renderer->create_camera(renderer::CameraProjectionType::Perspective, window->get_width(), window->get_height());
 
-    //std::vector<core::ref_ptr<renderer::Camera>> targets;
-    //targets.emplace_back(main_camera);
+    std::vector<core::ref_ptr<renderer::Camera>> targets;
+    targets.emplace_back(main_camera);
 
     std::vector<uint8_t> object_bytes;
     {
@@ -80,11 +80,11 @@ auto Engine::run() -> void {
                                 .primitive = primitive_data,
                                 .index_count = model.get_mesh(j).index_counts[i]
                             };
-                            renderer->add_render_task(render_task_data);
+                            renderer->add_render_tasks(render_task_data);
                         }
                     }
 
-                    renderer->render();
+                    renderer->render(targets);
                 },
                 [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {      
                     renderer->resize(data.width, data.height);

@@ -65,7 +65,7 @@ auto BufferPool::create_chunk(size_t const size, rhi::BufferUsageFlags const fla
     if(flags & rhi::BufferUsage::MapWrite) {
         for(uint32_t i = 0; i < BUFFER_POOL_CHUNK_DEFAULT_SIZE; ++i) {
             auto future = device->create_buffer(
-                &allocators.at((rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite),
+                allocators.at((rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite),
                 size,
                 flags,
                 {}
@@ -75,7 +75,7 @@ auto BufferPool::create_chunk(size_t const size, rhi::BufferUsageFlags const fla
     } else {
         for(uint32_t i = 0; i < BUFFER_POOL_CHUNK_DEFAULT_SIZE; ++i) {
             auto future = device->create_buffer(
-                &allocators.at((rhi::BufferUsageFlags)0),
+                allocators.at((rhi::BufferUsageFlags)0),
                 size,
                 flags,
                 {}

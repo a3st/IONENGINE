@@ -2,37 +2,29 @@
 
 #include "precompiled.h"
 #include "camera.hpp"
-#include "context.hpp"
 
 using namespace ionengine;
 using namespace ionengine::renderer;
 
 Camera::Camera(
-    Context& context, 
-    CameraProjectionType const projection_type
+    rhi::Device& device, 
+    core::ref_ptr<rhi::MemoryAllocator> allocator, 
+    CameraProjectionType const projection_type, 
+    uint32_t const resolution_width, 
+    uint32_t const resolution_height
 ) : 
-    context(&context),
+    device(&device),
     projection_type(projection_type),
     field_of_view(68.0f),
     near_dst(0.0f),
     far_dst(100.0f)
 {
-
+    render_target = core::make_ref<RenderTarget>(device, allocator, resolution_width, resolution_height);
+    aspect_ratio = static_cast<float>(resolution_width / resolution_height);
 }
 
 auto Camera::resize(uint32_t const width, uint32_t const height) -> void {
 
-    default_render_target = core::make_ref<Texture2D>(
-        *context,
-        width,
-        height,
-        1,
-        wgpu::TextureFormat::BGRA8Unorm,
-        1,
-        wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TextureBinding
-    );
-
-    aspect_ratio = static_cast<float>(width / height);
 }
 
 auto Camera::calculate(math::Vector3f const& position, math::Quaternionf const& rotation) -> void {

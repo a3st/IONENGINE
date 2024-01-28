@@ -16,10 +16,10 @@ struct PrimitiveData {
 
 using Primitive = std::pair<core::ref_ptr<rhi::Buffer>, core::ref_ptr<rhi::Buffer>>;
 
-class PrimitiveCache {
+class PrimitiveCache : public core::ref_counted_object {
 public:
 
-    PrimitiveCache(rhi::Device& device);
+    PrimitiveCache(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator);
 
     auto get(PrimitiveData const& data, bool const immediate = false) -> std::optional<Primitive>;
 
@@ -31,14 +31,14 @@ private:
     size_t size{0};
 
     rhi::Device* device;
-    core::ref_ptr<rhi::MemoryAllocator> allocator{nullptr};
+    core::ref_ptr<rhi::MemoryAllocator> allocator;
 
-    struct PrimitiveInfo {
+    struct TimedResource {
         rhi::Future<rhi::Buffer> vertices;
         rhi::Future<rhi::Buffer> indices;
         uint64_t lifetime;
     };
-    std::unordered_map<uint64_t, PrimitiveInfo> entries;
+    std::unordered_map<uint64_t, TimedResource> entries;
 };
 
 }

@@ -4,18 +4,12 @@
 
 #include "core/ref_ptr.hpp"
 #include "render_graph.hpp"
+#include "camera.hpp"
+#include "render_task.hpp"
 
 namespace ionengine {
 
-namespace platform {
-
-class Window;
-
-}
-
 namespace renderer {
-
-class Context;
 
 class RenderPipeline : public core::ref_counted_object {
 public:
@@ -24,10 +18,9 @@ public:
 
     virtual auto setup(
         RenderGraphBuilder& builder, 
-        //core::ref_ptr<Camera> camera, 
-        uint32_t const width, 
-        uint32_t const height
-        //std::span<RenderTask> const render_tasks
+        core::ref_ptr<Camera> camera,
+        std::span<RenderTask> const render_tasks,
+        core::ref_ptr<rhi::Shader> test_shader
     ) -> std::vector<RGAttachment> = 0;
 
 protected:

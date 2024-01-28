@@ -82,4 +82,6 @@ DX12Buffer::~DX12Buffer() {
             descriptor_allocator->deallocate(allocation);
         }
     }
+
+    memory_allocator->deallocate(memory_allocation);
 }

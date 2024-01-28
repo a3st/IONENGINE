@@ -40,16 +40,19 @@ public:
 	virtual auto create_shader(std::span<uint8_t const> const data_bytes) -> core::ref_ptr<Shader> override;
 
     auto create_texture(
+		core::ref_ptr<MemoryAllocator> allocator, 
 		uint32_t const width,
         uint32_t const height,
         uint32_t const depth,
+		uint32_t const mip_levels,
         TextureFormat const format,
         TextureDimension const dimension,
-        TextureUsageFlags const flags
+        TextureUsageFlags const flags,
+		std::span<uint8_t const> const data
 	) -> Future<Texture> override;
 
     auto create_buffer(
-		MemoryAllocator& allocator, 
+		core::ref_ptr<MemoryAllocator> allocator, 
 		size_t const size, 
 		BufferUsageFlags const flags, 
 		std::span<uint8_t const> const data

@@ -194,20 +194,45 @@ auto DX12Device::create_shader(std::span<uint8_t const> const data_bytes) -> cor
 }
 
 auto DX12Device::create_texture(
+    core::ref_ptr<MemoryAllocator> allocator, 
     uint32_t const width,
     uint32_t const height,
     uint32_t const depth,
+    uint32_t const mip_levels,
     TextureFormat const format,
     TextureDimension const dimension,
-    TextureUsageFlags const flags
+    TextureUsageFlags const flags,
+    std::span<uint8_t const> const data
 ) -> Future<Texture> 
 {
+    auto texture = core::make_ref<DX12Texture>(
+        device.get(),
+        static_cast<DX12MemoryAllocator&>(&allocator),
+        bindless_allocator.get(),
+        width,
+        height,
+        depth,
+        mip_levels,
+        format,
+        dimension,
+        flags
+    );
 
-    return Future<DX12Texture>();
+    if(!data.empty()) {
+        // upload_context->upload(texture, data);
+    }
+
+    auto future_impl = std::make_unique<DX12FutureImpl>(
+        queue_infos[1].queue.get(), 
+        queue_infos[1].fence.get(),
+        fence_event,
+        queue_infos[1].fence_value
+    );
+    return Future<DX12Texture>(texture, std::move(future_impl));
 }
 
 auto DX12Device::create_buffer(
-    MemoryAllocator& allocator, 
+    core::ref_ptr<MemoryAllocator> allocator, 
     size_t const size, 
     BufferUsageFlags const flags, 
     std::span<uint8_t const> const data
@@ -215,7 +240,7 @@ auto DX12Device::create_buffer(
 {
     auto buffer = core::make_ref<DX12Buffer>(
         device.get(),
-        static_cast<DX12MemoryAllocator&>(allocator),
+        static_cast<DX12MemoryAllocator&>(&allocator),
         bindless_allocator.get(),
         size,
         flags

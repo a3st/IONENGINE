@@ -6,13 +6,8 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-PrimitiveCache::PrimitiveCache(rhi::Device& device) : device(&device) {
+PrimitiveCache::PrimitiveCache(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator) : device(&device), allocator(allocator) {
 
-    allocator = device.create_allocator(
-        1 * 1024 * 1024, 
-        32 * 1024 * 1024, 
-        (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex | rhi::BufferUsage::Index | rhi::BufferUsage::CopyDst)
-    );
 }
 
 auto PrimitiveCache::get(PrimitiveData const& data, bool const immediate) -> std::optional<Primitive> {
@@ -27,15 +22,15 @@ auto PrimitiveCache::get(PrimitiveData const& data, bool const immediate) -> std
             return std::nullopt;
         }
     } else {
-        auto primitive_info = PrimitiveInfo {
+        auto resource = TimedResource {
             .vertices = device->create_buffer(
-                &allocator, 
+                allocator, 
                 data.vertices.size(), 
                 (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex),
                 data.vertices
             ),
             .indices = device->create_buffer(
-                &allocator,
+                allocator,
                 data.indices.size(),
                 (rhi::BufferUsageFlags)(rhi::BufferUsage::Index),
                 data.indices
@@ -50,7 +45,7 @@ auto PrimitiveCache::get(PrimitiveData const& data, bool const immediate) -> std
             );
         }
        
-        entries.emplace(data.hash, std::move(primitive_info));
+        entries.emplace(data.hash, std::move(resource));
         return ret;
     }
 }

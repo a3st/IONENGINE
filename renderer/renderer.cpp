@@ -13,9 +13,16 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
     device(rhi::Device::create(rhi::BackendType::DirectX12, window)),
     render_pipeline(render_pipeline),
     width(window.get_width()),
-    height(window.get_height()),
-    primitive_cache(&device)
+    height(window.get_height())
 {
+    resource_allocator = device->create_allocator(
+        512 * 1024,
+        128 * 1024 * 1024,
+        (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex | rhi::BufferUsage::Index | rhi::BufferUsage::CopyDst | rhi::BufferUsage::ShaderResource)
+    );
+
+    primitive_cache = core::make_ref<PrimitiveCache>(&device, resource_allocator);
+
     std::vector<uint8_t> shader_bytes;
     {
         std::ifstream ifs("shaders/basic.bin", std::ios::binary);
@@ -31,78 +38,44 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
 
 auto Renderer::update(float const dt) -> void {
 
-    // primitive_cache.update(dt);
-    // texture_cache.update(dt);
 }
 
-auto Renderer::render() -> void {
+auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
 
     if(!is_graph_initialized) {
-        RenderGraphBuilder builder(&device);
+        RenderGraphBuilder builder;
         {
-            /*std::vector<RGAttachment> inputs;
+            std::vector<RGAttachment> inputs;
             for(auto& target : targets) {
-                target->resize(width, height);
-
-                if(target->is_custom_render_target()) {
-                    render_pipeline->setup(builder, target, width, height, render_tasks);
+                if(target->is_render_to_texture()) {
+                    render_pipeline->setup(builder, target, render_tasks, test_shader);
                 } else {
-                    inputs = render_pipeline->setup(builder, target, width, height, render_tasks);
+                    inputs = render_pipeline->setup(builder, target, render_tasks, test_shader);
                 }
-            }*/
-            
+            }
+
+            /*
             std::vector<RGAttachment> outputs = {
-                RGAttachment::Swapchain(rhi::RenderPassLoadOp::Clear, rhi::RenderPassStoreOp::Store, math::Color(0.0f, 0.5f, 0.8f, 1.0f))
+                RGAttachment::Swapchain(rhi::RenderPassLoadOp::Load, rhi::RenderPassStoreOp::Store)
             };
 
             builder.add_graphics_pass(
-                "present_pass",
+                "ui_pass",
                 width,
                 height,
                 {},
                 outputs,
                 [&](RGRenderPassContext& ctx) {
-                    struct WorldData {
-                        math::Matrixf model;
-                        math::Matrixf view;
-                        math::Matrixf projection;
-                    };
-                    auto world_data = WorldData { 
-                        .model = math::Matrixf::scale(math::Vector3f(3.0f, 3.0f, 3.0f)),
-                        .view = math::Matrixf::look_at_rh(
-                            math::Vector3f(5.0f, 0.0, 5.0f), 
-                            math::Vector3f(0.0f, 0.0f, 0.0f), 
-                            math::Vector3f(0.0f, 1.0f, 0.0f)
-                        ),
-                        .projection = math::Matrixf::perspective_rh(
-                            68.0f * static_cast<float>(std::numbers::pi) / 180.0f,
-                            4 / 3,
-                            0.1f,
-                            100.0f
-                        )
-                    };
+                    auto& queue = render_queues["UI"];
 
-                    ctx.get_command_buffer().set_graphics_pipeline_options(
-                        test_shader,
-                        rhi::RasterizerStageInfo {
-                            .fill_mode = rhi::FillMode::Wireframe,
-                            .cull_mode = rhi::CullMode::Front
-                        },
-                        rhi::BlendColorInfo::Opaque(),
-                        std::nullopt
-                    );
-
-                    ctx.bind_buffer<WorldData>("WorldData", world_data, rhi::BufferUsage::ConstantBuffer);
-
-                    for(auto const& task : render_tasks) {
-                        ctx.get_command_buffer().bind_vertex_buffer(task.drawable.first, 0, task.drawable.first->get_size());
-                        ctx.get_command_buffer().bind_index_buffer(task.drawable.second, 0, task.drawable.second->get_size(), rhi::IndexFormat::Uint32);
-                        ctx.get_command_buffer().draw_indexed(task.index_count, 1, 0);
+                    for(auto const& element : queue) {
+                        ctx.get_command_buffer()->draw_indexed();
                     }
                 }
             );
+            */
         }
-        render_graph = builder.build();
+        render_graph = builder.build(&device, resource_allocator);
         is_graph_initialized = true;
     }
 
@@ -120,9 +93,9 @@ auto Renderer::resize(uint32_t const width, uint32_t const height) -> void {
     device->resize_swapchain_buffers(width, height);
 }
 
-auto Renderer::add_render_task(RenderTaskData const& data) -> void {
+auto Renderer::add_render_tasks(RenderTaskData const& data) -> void {
 
-    auto result = primitive_cache.get(data.primitive);
+    auto result = primitive_cache->get(data.primitive);
     if(result) {
         auto render_task = RenderTask {
             .drawable = result.value(),
@@ -130,4 +103,18 @@ auto Renderer::add_render_task(RenderTaskData const& data) -> void {
         };
         render_tasks.emplace_back(render_task);
     }
+}
+
+auto Renderer::create_render_target(uint32_t const width, uint32_t const height) -> core::ref_ptr<RenderTarget> {
+
+    return core::make_ref<RenderTarget>(&device, resource_allocator, width, height);
+}
+
+auto Renderer::create_camera(
+    CameraProjectionType const projection_type, 
+    uint32_t const resolution_width,
+    uint32_t const resolution_height
+) -> core::ref_ptr<Camera> 
+{
+    return core::make_ref<Camera>(&device, resource_allocator, projection_type, resolution_width, resolution_height);
 }

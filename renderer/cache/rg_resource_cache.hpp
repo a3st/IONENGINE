@@ -9,11 +9,7 @@ namespace ionengine {
 
 namespace renderer {
 
-struct RGResource {
-    core::ref_ptr<rhi::Texture> texture{nullptr};
-};
-
-class RGResourceCache {
+class RGResourceCache : public core::ref_counted_object {
 public:
 
     struct Entry {
@@ -22,10 +18,11 @@ public:
         uint32_t sample_count;
         uint32_t width;
         uint32_t height;
+        rhi::TextureUsageFlags flags;
 
         auto operator==(Entry const& other) const -> bool {
-            return std::tie(frame_index, format, sample_count, width, height) == 
-                std::tie(other.frame_index, other.format, other.sample_count, other.width, other.height);
+            return std::tie(frame_index, format, sample_count, width, height, flags) == 
+                std::tie(other.frame_index, other.format, other.sample_count, other.width, other.height, flags);
         }
     };
 
@@ -36,12 +33,13 @@ public:
                 XXHash64::hash(&entry.format, sizeof(rhi::TextureFormat), 0) ^
                 XXHash64::hash(&entry.sample_count, sizeof(uint32_t), 0) ^
                 XXHash64::hash(&entry.width, sizeof(uint32_t), 0) ^
-                XXHash64::hash(&entry.height, sizeof(uint32_t), 0)
+                XXHash64::hash(&entry.height, sizeof(uint32_t), 0) ^
+                XXHash64::hash(&entry.flags, sizeof(uint32_t), 0)
             ;
         }
     };
 
-    RGResourceCache(rhi::Device& device);
+    RGResourceCache(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator);
 
     auto get(
         uint32_t const frame_index,
@@ -49,8 +47,9 @@ public:
         uint32_t const sample_count, 
         uint32_t const width, 
         uint32_t const height,
+        rhi::TextureUsageFlags const flags,
         uint64_t const hash
-    ) -> RGResource;
+    ) -> core::ref_ptr<rhi::Texture>;
 
     auto update() -> void;
 
@@ -59,18 +58,19 @@ private:
     inline static uint32_t const DEFAULT_LIFETIME_VALUE = 1; 
 
     rhi::Device* device;
+    core::ref_ptr<rhi::MemoryAllocator> allocator;
 
-    struct Region {
-        std::vector<RGResource> resources;
+    using TimedResource = std::pair<core::ref_ptr<rhi::Texture>, uint64_t>;
+
+    struct Chunk {
+        std::vector<TimedResource> resources;
         std::vector<uint32_t> free;
-        std::vector<uint32_t> lifetimes;
         uint32_t offset;
     };
-    std::vector<Region> regions;
-    std::unordered_map<Entry, Region, EntryHasher> entries;
+    std::unordered_map<Entry, std::unique_ptr<Chunk>, EntryHasher> entries;
 
     struct ResourceAllocation {
-        Region* region;
+        Chunk* chunk;
         uint32_t offset;
     };
     std::unordered_map<uint64_t, ResourceAllocation> allocations;

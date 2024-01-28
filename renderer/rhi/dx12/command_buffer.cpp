@@ -290,6 +290,10 @@ auto DX12CommandBuffer::set_scissor(int32_t const left, int32_t const top, int32
 
 auto DX12CommandBuffer::begin_barrier_resources() -> void {
 
+    if(trackers.empty()) {
+        return;
+    }
+
     for(auto const& tracker : trackers) {
         auto d3d12_resource_barrier = D3D12_RESOURCE_BARRIER {};
         d3d12_resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -315,6 +319,10 @@ auto DX12CommandBuffer::begin_barrier_resources() -> void {
 }
 
 auto DX12CommandBuffer::end_barrier_resources() -> void {
+
+    if(trackers.empty()) {
+        return;
+    }
 
     for(auto const& tracker : trackers) {
         auto d3d12_resource_barrier = D3D12_RESOURCE_BARRIER {};

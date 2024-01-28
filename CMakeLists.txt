@@ -40,8 +40,8 @@ add_library(engine SHARED
     "renderer/cache/rg_resource_cache.cpp"
     "renderer/cache/primitive_cache.cpp"
     "renderer/buffer_pool.cpp"
-    #"renderer/camera.cpp"
-    #"renderer/primitive_cache.cpp"
+    "renderer/render_target.cpp"
+    "renderer/camera.cpp"
     "renderer/render_graph.cpp"
     "renderer/renderer.cpp"
 
