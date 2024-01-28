@@ -4,7 +4,9 @@
 
 #include "core/exception.hpp"
 
-namespace ionengine::glb {
+namespace ionengine {
+
+namespace glb {
 
 inline uint32_t const GLB_MAGIC = 0x46546C67;
 
@@ -93,5 +95,7 @@ private:
     std::vector<MeshData> meshes;
     std::vector<std::vector<uint8_t>> buffers;
 };
+
+}
 
 }

@@ -48,7 +48,7 @@ public:
         TextureFormat const format,
         TextureDimension const dimension,
         TextureUsageFlags const flags,
-		std::span<uint8_t const> const data
+		std::array<std::span<uint8_t const>, 16> const data
 	) -> Future<Texture> override;
 
     auto create_buffer(

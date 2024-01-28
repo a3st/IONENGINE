@@ -202,7 +202,7 @@ auto DX12Device::create_texture(
     TextureFormat const format,
     TextureDimension const dimension,
     TextureUsageFlags const flags,
-    std::span<uint8_t const> const data
+    std::array<std::span<uint8_t const>, 16> const data
 ) -> Future<Texture> 
 {
     auto texture = core::make_ref<DX12Texture>(
@@ -219,7 +219,7 @@ auto DX12Device::create_texture(
     );
 
     if(!data.empty()) {
-        // upload_context->upload(texture, data);
+        upload_context->upload(texture, data);
     }
 
     auto future_impl = std::make_unique<DX12FutureImpl>(

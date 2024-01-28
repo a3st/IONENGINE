@@ -11,11 +11,14 @@ namespace renderer {
 struct RenderTaskData {
     PrimitiveData primitive;
     uint32_t index_count;
+    math::Matrixf model;
+    
 };
 
 struct RenderTask {
     Primitive drawable;
     uint32_t index_count;
+    math::Matrixf model;
 };
 
 }

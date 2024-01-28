@@ -16,7 +16,7 @@ public:
     auto setup(
         RenderGraphBuilder& builder, 
         core::ref_ptr<Camera> camera,
-        std::span<RenderTask> const render_tasks,
+        std::vector<RenderTask>& render_tasks,
         core::ref_ptr<rhi::Shader> test_shader
     ) -> std::vector<RGAttachment> override;
 };

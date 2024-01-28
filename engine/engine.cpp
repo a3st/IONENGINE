@@ -4,6 +4,7 @@
 #include "engine.hpp"
 #include "renderer/pipelines/my_render_pipeline.hpp"
 #include "asset/model.hpp"
+#include "asset/ktx2_image.hpp"
 
 using namespace ionengine;
 
@@ -39,7 +40,6 @@ Engine::Engine(
 auto Engine::run() -> void {
 
     auto main_camera = renderer->create_camera(renderer::CameraProjectionType::Perspective, window->get_width(), window->get_height());
-
     std::vector<core::ref_ptr<renderer::Camera>> targets;
     targets.emplace_back(main_camera);
 
@@ -55,6 +55,25 @@ auto Engine::run() -> void {
     
     Model model(object_bytes, ModelFormat::GLB);
 
+    std::vector<uint8_t> image_bytes;
+    {
+        std::ifstream ifs("textures/bird.ktx2", std::ios::binary);
+        ifs.seekg(0, std::ios::end);
+        auto size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        image_bytes.resize(size);
+        ifs.read(reinterpret_cast<char* const>(image_bytes.data()), size);
+    }
+    
+    ktx2::Ktx2Image ktx2(image_bytes);
+
+    auto rot = 
+        math::Quaternionf::angle_axis(0.0f, math::Vector3f(0.0f, 1.0f, 0.0f)) * 
+        math::Quaternionf::angle_axis(20.0f, math::Vector3f(0.0f, 1.0f, 0.0f)) *
+        math::Quaternionf::angle_axis(0.0f, math::Vector3f(1.0f, 0.0f, 0.0f))
+    ;
+    main_camera->calculate(math::Vector3f(1.0f, 0.0f, 5.0f), rot);
+
     window_loop->run(
         &window, 
         [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
@@ -68,7 +87,7 @@ auto Engine::run() -> void {
 
                     renderer->update(0.1f);
                     
-                    for(uint32_t j = 5; j < 6; ++j) {
+                    for(uint32_t j = 0; j < model.get_size(); ++j) {
                         for(uint32_t i = 0; i < model.get_mesh(j).primitives.size(); ++i) {
                             auto primitive_data = renderer::PrimitiveData {
                                 .vertices = model.get_mesh(j).primitives[i].vertices,
@@ -78,9 +97,10 @@ auto Engine::run() -> void {
 
                             auto render_task_data = renderer::RenderTaskData {
                                 .primitive = primitive_data,
-                                .index_count = model.get_mesh(j).index_counts[i]
+                                .index_count = model.get_mesh(j).index_counts[i],
+                                .model = math::Matrixf::scale(math::Vector3f(-3.0f, -3.0f, -3.0f))
                             };
-                            renderer->add_render_tasks(render_task_data);
+                            renderer.tasks() << render_task_data;
                         }
                     }
 

@@ -22,6 +22,7 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
     );
 
     primitive_cache = core::make_ref<PrimitiveCache>(&device, resource_allocator);
+    texture_cache = core::make_ref<TextureCache>(&device, resource_allocator);
 
     std::vector<uint8_t> shader_bytes;
     {
@@ -53,27 +54,6 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
                     inputs = render_pipeline->setup(builder, target, render_tasks, test_shader);
                 }
             }
-
-            /*
-            std::vector<RGAttachment> outputs = {
-                RGAttachment::Swapchain(rhi::RenderPassLoadOp::Load, rhi::RenderPassStoreOp::Store)
-            };
-
-            builder.add_graphics_pass(
-                "ui_pass",
-                width,
-                height,
-                {},
-                outputs,
-                [&](RGRenderPassContext& ctx) {
-                    auto& queue = render_queues["UI"];
-
-                    for(auto const& element : queue) {
-                        ctx.get_command_buffer()->draw_indexed();
-                    }
-                }
-            );
-            */
         }
         render_graph = builder.build(&device, resource_allocator);
         is_graph_initialized = true;
@@ -99,7 +79,8 @@ auto Renderer::add_render_tasks(RenderTaskData const& data) -> void {
     if(result) {
         auto render_task = RenderTask {
             .drawable = result.value(),
-            .index_count = data.index_count
+            .index_count = data.index_count,
+            .model = data.model
         };
         render_tasks.emplace_back(render_task);
     }

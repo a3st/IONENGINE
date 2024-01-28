@@ -11,7 +11,7 @@ GLBModel::GLBModel(std::span<uint8_t> const data_bytes) {
 
     std::basic_ispanstream<uint8_t> stream(data_bytes, std::ios::binary);
 
-    Header header;
+    auto header = Header {};
 	stream.read((uint8_t*)&header, sizeof(Header));
 
     if(header.magic != GLB_MAGIC) {

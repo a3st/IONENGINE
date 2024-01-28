@@ -82,6 +82,11 @@ auto UploadContext::upload(core::ref_ptr<Buffer> src, std::span<uint8_t const> c
     }
 }
 
+auto UploadContext::upload(core::ref_ptr<Texture> src, std::array<std::span<uint8_t const>, 16> const data) -> void {
+
+
+}
+
 auto UploadContext::try_reset() -> void {
 
     if(fence->GetCompletedValue() >= *fence_value) {

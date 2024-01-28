@@ -31,6 +31,8 @@ public:
 
     auto upload(core::ref_ptr<Buffer> src, std::span<uint8_t const> const data) -> void;
 
+    auto upload(core::ref_ptr<Texture> src, std::array<std::span<uint8_t const>, 16> const data) -> void;
+
     auto try_reset() -> void;
 
 private:

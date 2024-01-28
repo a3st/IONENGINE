@@ -7,6 +7,7 @@
 #include "render_graph.hpp"
 #include "render_pipeline.hpp"
 #include "cache/primitive_cache.hpp"
+#include "cache/texture_cache.hpp"
 #include "render_task.hpp"
 #include "camera.hpp"
 #include "render_target.hpp"
@@ -43,6 +44,7 @@ private:
     
     core::ref_ptr<rhi::MemoryAllocator> resource_allocator{nullptr};
     core::ref_ptr<PrimitiveCache> primitive_cache{nullptr};
+    core::ref_ptr<TextureCache> texture_cache{nullptr};
 
     core::ref_ptr<RenderGraph> render_graph{nullptr};
     bool is_graph_initialized{false};
