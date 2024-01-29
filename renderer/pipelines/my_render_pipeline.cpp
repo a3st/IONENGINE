@@ -10,7 +10,7 @@ using namespace ionengine::renderer;
 auto MyRenderPipeline::setup(
     RenderGraphBuilder& builder, 
     core::ref_ptr<Camera> camera,
-    std::vector<RenderTask>& render_tasks,
+    RenderTaskStream& render_task_stream,
     core::ref_ptr<rhi::Shader> test_shader
 ) -> std::vector<RGAttachment> 
 {   
@@ -30,7 +30,7 @@ auto MyRenderPipeline::setup(
         camera_buffer->get_height(),
         {},
         outputs,
-        [test_shader, &render_tasks, camera](RGRenderPassContext& ctx) {
+        [test_shader, &render_task_stream, camera](RGRenderPassContext& ctx) {
             struct WorldData {
                 math::Matrixf model;
                 math::Matrixf view;
@@ -47,8 +47,8 @@ auto MyRenderPipeline::setup(
                 std::nullopt
             );
 
-            for(auto const& task : render_tasks) {
-
+            for(auto const& task : render_task_stream | std::views::filter([](auto& element) { return element.mask == (uint8_t)MyRenderMask::Opaque; })) {
+                
                 auto world_data = WorldData {
                     .model = task.model,
                     .view = camera->get_view(),

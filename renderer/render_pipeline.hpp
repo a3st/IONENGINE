@@ -19,7 +19,7 @@ public:
     virtual auto setup(
         RenderGraphBuilder& builder, 
         core::ref_ptr<Camera> camera,
-        std::vector<RenderTask>& render_tasks,
+        RenderTaskStream& render_task_stream,
         core::ref_ptr<rhi::Shader> test_shader
     ) -> std::vector<RGAttachment> = 0;
 

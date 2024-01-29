@@ -27,8 +27,6 @@ public:
 
     auto resize(uint32_t const width, uint32_t const height) -> void;
 
-    auto add_render_tasks(RenderTaskData const& data) -> void;
-
     auto create_render_target(uint32_t const width, uint32_t const height) -> core::ref_ptr<RenderTarget>;
 
     auto create_camera(
@@ -36,6 +34,11 @@ public:
         uint32_t const resolution_width,
         uint32_t const resolution_height
     ) -> core::ref_ptr<Camera>;
+
+    auto tasks() -> RenderTaskStream& {
+
+        return render_task_stream;
+    }
 
 private:
 
@@ -51,8 +54,8 @@ private:
     uint32_t width;
     uint32_t height;
 
-    std::vector<RenderTask> render_tasks;
     core::ref_ptr<rhi::Shader> test_shader{nullptr};
+    RenderTaskStream render_task_stream;
 };
 
 }

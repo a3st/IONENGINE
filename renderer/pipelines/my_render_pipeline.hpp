@@ -8,6 +8,10 @@ namespace ionengine {
 
 namespace renderer {
 
+enum class MyRenderMask : uint8_t {
+    Opaque = 1 << 0
+};
+
 class MyRenderPipeline : public RenderPipeline {
 public:
 
@@ -16,7 +20,7 @@ public:
     auto setup(
         RenderGraphBuilder& builder, 
         core::ref_ptr<Camera> camera,
-        std::vector<RenderTask>& render_tasks,
+        RenderTaskStream& render_task_stream,
         core::ref_ptr<rhi::Shader> test_shader
     ) -> std::vector<RGAttachment> override;
 };

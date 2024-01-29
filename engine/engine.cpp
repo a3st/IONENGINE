@@ -16,25 +16,6 @@ Engine::Engine(
 
     auto render_pipeline = core::make_ref<renderer::MyRenderPipeline>();
     renderer = core::make_ref<renderer::Renderer>(render_pipeline, &window);
-
-    /*std::string shader_bytes;
-    {
-        std::ifstream ifs("shaders/3d.wgsl");
-        ifs.seekg(0, std::ios::end);
-        auto size = ifs.tellg();
-        ifs.seekg(0, std::ios::beg);
-        shader_bytes.resize(size);
-        ifs.read(reinterpret_cast<char* const>(shader_bytes.data()), size);
-    }
-    
-    std::vector<renderer::ShaderData> shaders;
-    shaders.emplace_back(
-        renderer::ShaderData {
-            .shader_name = "3d",
-            .shader_code = shader_bytes
-        }
-    );
-    renderer->load_shaders(shaders);*/
 }
 
 auto Engine::run() -> void {
@@ -84,8 +65,6 @@ auto Engine::run() -> void {
                     flow = platform::WindowEventFlow::Exit;
                 },
                 [&](platform::WindowEventData<platform::WindowEventType::Updated> const& data) {
-
-                    renderer->update(0.1f);
                     
                     for(uint32_t j = 0; j < model.get_size(); ++j) {
                         for(uint32_t i = 0; i < model.get_mesh(j).primitives.size(); ++i) {
@@ -98,9 +77,10 @@ auto Engine::run() -> void {
                             auto render_task_data = renderer::RenderTaskData {
                                 .primitive = primitive_data,
                                 .index_count = model.get_mesh(j).index_counts[i],
-                                .model = math::Matrixf::scale(math::Vector3f(-3.0f, -3.0f, -3.0f))
+                                .model = math::Matrixf::scale(math::Vector3f(-3.0f, -3.0f, -3.0f)),
+                                .mask = (uint8_t)renderer::MyRenderMask::Opaque
                             };
-                            renderer.tasks() << render_task_data;
+                            renderer->tasks() << render_task_data;
                         }
                     }
 
