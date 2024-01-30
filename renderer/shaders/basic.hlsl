@@ -2,9 +2,11 @@
 struct ShaderResources {
     uint worldData;
     uint lightingData;
-    uint textureColor;
+    uint colorTexture;
 };
 ConstantBuffer<ShaderResources> shaderResources : register(b0, space0);
+
+SamplerState static_sampler : register(s0, space0);
 
 struct WorldData {
     float4x4 model;
@@ -36,7 +38,7 @@ VSOutput vs_main(VSInput input) {
 
     float4 world_pos = mul(worldData.model, float4(input.position, 1.0f));
     output.position = mul(worldData.projection, mul(worldData.view, world_pos));
-    output.uv = float2(input.uv.x, 1.0f - input.uv.y);
+    output.uv = float2(input.uv.x, input.uv.y);
     return output;
 }
 
@@ -46,6 +48,9 @@ struct PSOutput {
 
 PSOutput ps_main(VSOutput input) {
     PSOutput output;
-    output.color = float4(1.0f, 1.0f, 1.0f, 1.0f);
+
+    Texture2D colorTexture = ResourceDescriptorHeap[shaderResources.colorTexture];
+
+    output.color = colorTexture.Sample(static_sampler, input.uv);
     return output;
 }

@@ -3,7 +3,8 @@
 #pragma once
 
 #include "core/ref_ptr.hpp"
-#include "cache/primitive_cache.hpp"
+#include "primitive.hpp"
+#include "texture.hpp"
 #include "render_queue.hpp"
 #include "math/matrix.hpp"
 
@@ -12,16 +13,18 @@ namespace ionengine {
 namespace renderer {
 
 struct RenderTaskData {
-    PrimitiveData primitive;
-    uint32_t index_count;
+    core::ref_ptr<Primitive> primitive;
     math::Matrixf model;
+    uint64_t shader;
+    core::ref_ptr<Texture> texture;
     uint8_t mask;
 };
 
 struct RenderTask {
-    Primitive drawable;
-    uint32_t index_count;
+    core::ref_ptr<Primitive> drawable;
     math::Matrixf model;
+    uint64_t shader;
+    core::ref_ptr<Texture> texture;
     uint8_t mask;
 };
 
@@ -77,9 +80,7 @@ public:
     using iterator = RenderTaskIterator<RenderTask>;
     using const_iterator = RenderTaskIterator<RenderTask const>;
 
-    RenderTaskStream(PrimitiveCache& primitive_cache) : primitive_cache(&primitive_cache) {
-
-    }
+    RenderTaskStream() = default;
 
     auto begin() -> iterator {
         
@@ -103,12 +104,12 @@ public:
 
     auto write(RenderTaskData const& data) -> void {
 
-        auto result = primitive_cache->get(data.primitive);
+        auto result = data.primitive->is_ready();
         if(result) {
             auto render_task = RenderTask {
-                .drawable = result.value(),
-                .index_count = data.index_count,
+                .drawable = data.primitive,
                 .model = data.model,
+                .texture = data.texture,
                 .mask = data.mask
             };
             tasks.emplace_back(render_task);
@@ -128,8 +129,54 @@ public:
 
 private:
 
-    PrimitiveCache* primitive_cache;
     std::vector<RenderTask> tasks;
+};
+
+template<std::ranges::input_range Range, typename Predicate>
+class culling_view : public std::ranges::view_interface<culling_view<Range, Predicate>> {
+public:
+
+    culling_view() = default;
+
+    culling_view(Range range, Predicate predicate) : _base(range), _iter(std::begin(_base)), _predicate(predicate) { }
+
+    auto base() const& -> Range {
+
+        return _base;
+    }
+
+    auto base() && -> Range {
+
+        return std::move(_base);
+    }
+
+    auto begin() {
+
+        return _iter;
+    }
+
+    auto end() {
+
+        return std::end(_base);
+    }
+
+private:
+
+    Range _base;
+    std::ranges::iterator_t<Range> _iter;
+    Predicate _predicate;
+};
+
+template<typename Predicate>
+struct culling : std::ranges::range_adaptor_closure<culling<Predicate>> {
+    Predicate predicate;
+    
+    culling(Predicate&& predicate) : predicate(predicate) { }
+
+    template<std::ranges::viewable_range Range>
+    auto operator()(Range&& range) const {
+        return sort_view(range, predicate);
+    }
 };
 
 }

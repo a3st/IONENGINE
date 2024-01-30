@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "cache/rg_resource_cache.hpp"
+#include "rg_resource_cache.hpp"
 #include "buffer_pool.hpp"
 
 namespace ionengine {
@@ -16,8 +16,7 @@ struct RGAttachment {
     uint32_t width;
     uint32_t height;
     core::ref_ptr<rhi::Texture> texture{nullptr};
-    bool is_swapchain{false};
-    
+
     struct ColorAttachment {
         rhi::RenderPassLoadOp load_op;
         rhi::RenderPassStoreOp store_op;
@@ -35,6 +34,33 @@ struct RGAttachment {
 
     std::variant<ColorAttachment, DepthStencilAttachment> attachment;
 
+    static auto DepthStencil(
+        std::string_view const name, 
+        rhi::TextureFormat const format,
+        uint32_t const width,
+        uint32_t const height,
+        rhi::RenderPassLoadOp const depth_load_op, 
+        rhi::RenderPassStoreOp const depth_store_op, 
+        rhi::RenderPassLoadOp const stencil_load_op, 
+        rhi::RenderPassStoreOp const stencil_store_op, 
+        float const clear_depth = 1.0f,
+        uint8_t const clear_stencil = 0x0
+    ) -> RGAttachment {
+        return RGAttachment {
+            .name = std::string(name),
+            .format = format,
+            .sample_count = 1,
+            .attachment = DepthStencilAttachment { 
+                .depth_load_op = depth_load_op, 
+                .depth_store_op = depth_store_op, 
+                .stencil_load_op = stencil_load_op, 
+                .stencil_store_op = stencil_store_op, 
+                .clear_depth = clear_depth,
+                .clear_stencil = clear_stencil
+            }
+        };
+    }
+
     static auto Swapchain(
         rhi::RenderPassLoadOp const load_op, 
         rhi::RenderPassStoreOp const store_op, 
@@ -44,7 +70,6 @@ struct RGAttachment {
             .name = "__swapchain__",
             .format = rhi::TextureFormat::Unknown,
             .sample_count = 1,
-            .is_swapchain = true,
             .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
         };
     }
@@ -71,16 +96,16 @@ struct RGAttachment {
 
     static auto External(
         core::ref_ptr<rhi::Texture> texture,
-        rhi::RenderPassLoadOp const load_op, 
-        rhi::RenderPassStoreOp const store_op, 
-        math::Color const& color = math::Color(0.0f, 0.0f, 0.0f, 0.0f)
+        std::variant<ColorAttachment, DepthStencilAttachment> const attachment
     ) -> RGAttachment {
         return RGAttachment {
             .name = std::format("__external_{}__", (uintptr_t)texture.get()),
             .format = texture->get_format(),
             .sample_count = 1,
+            .width = texture->get_width(),
+            .height = texture->get_height(),
             .texture = texture,
-            .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
+            .attachment = attachment
         };
     }
 };
@@ -111,7 +136,12 @@ public:
             std::span<uint8_t const>((uint8_t*)&data, sizeof(Type))
         );
 
-        command_buffer->bind_descriptor(binding, buffer);
+        command_buffer->bind_descriptor(binding, rhi::BufferBindData { buffer, usage });
+    }
+
+    auto bind_texture(std::string_view const binding, core::ref_ptr<rhi::Texture> texture, rhi::TextureUsage const usage) -> void {
+
+        command_buffer->bind_descriptor(binding, rhi::TextureBindData { texture, usage });
     }
 
 private:

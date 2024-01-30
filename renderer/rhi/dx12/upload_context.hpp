@@ -31,7 +31,7 @@ public:
 
     auto upload(core::ref_ptr<Buffer> src, std::span<uint8_t const> const data) -> void;
 
-    auto upload(core::ref_ptr<Texture> src, std::array<std::span<uint8_t const>, 16> const data) -> void;
+    auto upload(core::ref_ptr<Texture> src, std::vector<std::span<uint8_t const>> const& data) -> void;
 
     auto try_reset() -> void;
 
@@ -45,6 +45,14 @@ private:
     core::ref_ptr<CommandAllocator> command_allocator{nullptr};
     core::ref_ptr<DX12Buffer> buffer{nullptr};
     uint64_t offset{0};
+
+    auto get_texture_data(
+        rhi::TextureFormat const format, 
+        uint32_t const mip_width, 
+        uint32_t const mip_height, 
+        size_t& row_bytes, 
+        uint32_t& row_count
+    ) -> void;
 };
 
 }

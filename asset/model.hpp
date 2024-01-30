@@ -3,6 +3,7 @@
 #pragma once
 
 #include "glb_model.hpp"
+#include "renderer/renderer.hpp"
 
 namespace ionengine {
 
@@ -10,23 +11,15 @@ enum class ModelFormat {
     GLB
 };
 
-struct PrimitiveData {
-    std::vector<uint8_t> buffer;
-    std::span<uint8_t const> vertices;
-    std::span<uint8_t const> indices;
-    uint64_t hash;
-};
-
 struct MeshData {
-    std::vector<PrimitiveData> primitives;
+    std::vector<core::ref_ptr<renderer::Primitive>> primitives;
     std::vector<uint32_t> materials;
-    std::vector<uint32_t> index_counts;
 };
 
 class Model {
 public:
 
-    Model(std::span<uint8_t> const data_bytes, ModelFormat const format);
+    Model(renderer::Renderer& renderer, std::span<uint8_t> const data_bytes, ModelFormat const format, bool const immediate = false);
 
     auto get_size() const -> size_t {
 

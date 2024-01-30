@@ -48,7 +48,7 @@ public:
 
     auto bind_descriptor(
         std::string_view const binding,
-        std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> const resource
+        std::variant<BufferBindData, TextureBindData> const data
     ) -> void override;
 
     auto begin_render_pass(
@@ -70,6 +70,12 @@ public:
         core::ref_ptr<Buffer> src, 
         uint64_t const src_offset,
         size_t const size
+    ) -> void override;
+
+    auto copy_buffer(
+        core::ref_ptr<Texture> dst,
+        core::ref_ptr<Buffer> src,
+        std::span<TextureCopyRegion const> const regions
     ) -> void override;
 
     auto set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height) -> void override;

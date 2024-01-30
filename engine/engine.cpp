@@ -34,7 +34,7 @@ auto Engine::run() -> void {
         ifs.read(reinterpret_cast<char* const>(object_bytes.data()), size);
     }
     
-    Model model(object_bytes, ModelFormat::GLB);
+    Model model(&renderer, object_bytes, ModelFormat::GLB);
 
     std::vector<uint8_t> image_bytes;
     {
@@ -48,12 +48,27 @@ auto Engine::run() -> void {
     
     ktx2::Ktx2Image ktx2(image_bytes);
 
+    auto image_data = ktx2.get_image_data();
+
+    auto texture = renderer->create_texture(
+        image_data.pixel_width,
+        image_data.pixel_height,
+        1,
+        3,
+        renderer::rhi::TextureFormat::BC3,
+        renderer::rhi::TextureDimension::_2D,
+        {
+            ktx2.get_mip_data(0),
+            ktx2.get_mip_data(1),
+            ktx2.get_mip_data(2)
+        }
+    );
+
     auto rot = 
         math::Quaternionf::angle_axis(0.0f, math::Vector3f(0.0f, 1.0f, 0.0f)) * 
-        math::Quaternionf::angle_axis(20.0f, math::Vector3f(0.0f, 1.0f, 0.0f)) *
+        math::Quaternionf::angle_axis(0.0f, math::Vector3f(0.0f, 1.0f, 0.0f)) *
         math::Quaternionf::angle_axis(0.0f, math::Vector3f(1.0f, 0.0f, 0.0f))
     ;
-    main_camera->calculate(math::Vector3f(1.0f, 0.0f, 5.0f), rot);
 
     window_loop->run(
         &window, 
@@ -65,19 +80,16 @@ auto Engine::run() -> void {
                     flow = platform::WindowEventFlow::Exit;
                 },
                 [&](platform::WindowEventData<platform::WindowEventType::Updated> const& data) {
+
+                    main_camera->calculate(math::Vector3f(5.0f, 5.0f, 5.0f), rot);
                     
                     for(uint32_t j = 0; j < model.get_size(); ++j) {
                         for(uint32_t i = 0; i < model.get_mesh(j).primitives.size(); ++i) {
-                            auto primitive_data = renderer::PrimitiveData {
-                                .vertices = model.get_mesh(j).primitives[i].vertices,
-                                .indices = model.get_mesh(j).primitives[i].indices,
-                                .hash = model.get_mesh(j).primitives[i].hash
-                            };
-
                             auto render_task_data = renderer::RenderTaskData {
-                                .primitive = primitive_data,
-                                .index_count = model.get_mesh(j).index_counts[i],
-                                .model = math::Matrixf::scale(math::Vector3f(-3.0f, -3.0f, -3.0f)),
+                                .primitive = model.get_mesh(j).primitives[i],
+                                .model = math::Matrixf::scale(math::Vector3f(3.0f, 3.0f, 3.0f)) * math::Matrixf::translate(math::Vector3f(0.0f, 0.0f, 0.0f)),
+                                .shader = 0,
+                                .texture = texture,
                                 .mask = (uint8_t)renderer::MyRenderMask::Opaque
                             };
                             renderer->tasks() << render_task_data;
@@ -86,7 +98,7 @@ auto Engine::run() -> void {
 
                     renderer->render(targets);
                 },
-                [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {      
+                [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {
                     renderer->resize(data.width, data.height);
                 },
                 [&](platform::WindowEventData<platform::WindowEventType::KeyboardInput> const& data) {

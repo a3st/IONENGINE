@@ -93,12 +93,14 @@ struct RenderPassDepthStencilInfo {
 
 struct DepthStencilStageInfo {
     CompareOp depth_func;
-    bool write_enable;
+    bool depth_write;
+    bool stencil_write;
 
     static auto Default() -> DepthStencilStageInfo const& {
         static const DepthStencilStageInfo instance = {
             .depth_func = CompareOp::Never,
-            .write_enable = false
+            .depth_write = false,
+            .stencil_write = false
         };
         return instance;
     }
@@ -171,6 +173,24 @@ struct RasterizerStageInfo {
     CullMode cull_mode;
 };
 
+struct BufferBindData {
+    core::ref_ptr<Buffer> resource;
+    BufferUsage usage;
+};
+
+struct TextureBindData {
+    core::ref_ptr<Texture> resource;
+    TextureUsage usage;
+};
+
+struct TextureCopyRegion {
+    uint32_t mip_width;
+    uint32_t mip_height;
+    uint32_t mip_depth;
+    uint32_t row_pitch;
+    uint64_t offset;
+};
+
 class CommandBuffer : public core::ref_counted_object {
 public:
 
@@ -185,7 +205,7 @@ public:
 
     virtual auto bind_descriptor(
         std::string_view const binding,
-        std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> const resource
+        std::variant<BufferBindData, TextureBindData> const data
     ) -> void = 0;
 
     virtual auto begin_render_pass(
@@ -207,6 +227,12 @@ public:
         core::ref_ptr<Buffer> src, 
         uint64_t const src_offset,
         size_t const size
+    ) -> void = 0;
+
+    virtual auto copy_buffer(
+        core::ref_ptr<Texture> dst,
+        core::ref_ptr<Buffer> src,
+        std::span<TextureCopyRegion const> const regions
     ) -> void = 0;
 
     virtual auto set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height) -> void = 0;

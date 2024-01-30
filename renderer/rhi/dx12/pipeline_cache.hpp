@@ -74,7 +74,8 @@ public:
                 blend_color.blend_src,
                 blend_color.blend_src_alpha,
                 depth_stencil.value_or(DepthStencilStageInfo::Default()).depth_func,
-                depth_stencil.value_or(DepthStencilStageInfo::Default()).write_enable
+                depth_stencil.value_or(DepthStencilStageInfo::Default()).depth_write,
+                depth_stencil.value_or(DepthStencilStageInfo::Default()).stencil_write
             ) == std::make_tuple(
                 other.shader_hash, 
                 other.rasterizer.fill_mode,
@@ -87,7 +88,8 @@ public:
                 other.blend_color.blend_src,
                 other.blend_color.blend_src_alpha,
                 other.depth_stencil.value_or(DepthStencilStageInfo::Default()).depth_func,
-                other.depth_stencil.value_or(DepthStencilStageInfo::Default()).write_enable
+                other.depth_stencil.value_or(DepthStencilStageInfo::Default()).depth_write,
+                other.depth_stencil.value_or(DepthStencilStageInfo::Default()).stencil_write
             );
         }
     };
@@ -107,7 +109,8 @@ public:
                 XXHash64::hash(&entry.blend_color.blend_src, sizeof(uint32_t), 0) ^
                 XXHash64::hash(&entry.blend_color.blend_src_alpha, sizeof(uint32_t), 0) ^
                 XXHash64::hash(&depth_stencil.depth_func, sizeof(uint32_t), 0) ^
-                XXHash64::hash(&depth_stencil.write_enable, sizeof(uint32_t), 0)
+                XXHash64::hash(&depth_stencil.depth_write, sizeof(uint32_t), 0) ^
+                XXHash64::hash(&depth_stencil.stencil_write, sizeof(uint32_t), 0)
             ;
         }
     };

@@ -289,7 +289,7 @@ struct Matrix {
 		mat.m11 = static_cast<Type>(1) / std::tan(fovy / static_cast<Type>(2));
 		mat.m22 = far_dst / (near_dst - far_dst);
 		mat.m23 = - static_cast<Type>(1);
-		mat.m32 = - (far_dst * near_dst) / (far_dst - near_dst);
+		mat.m32 = (far_dst * near_dst) / (near_dst - far_dst);
 		return mat;
 	}
 
@@ -302,18 +302,18 @@ struct Matrix {
 		auto mat = Matrix<Type>::identity();
 		mat.m00 = static_cast<Type>(2) / (right - left);
 		mat.m11 = static_cast<Type>(2) / (top - bottom);
-		mat.m22 = - static_cast<Type>(1) / (far_dst - near_dst);
+		mat.m22 = static_cast<Type>(1) / (near_dst - far_dst);
 		mat.m30 = - (right + left) / (right - left);
 		mat.m31 = - (top + bottom) / (top - bottom);
-		mat.m32 = - near_dst / (far_dst - near_dst);
+		mat.m32 = near_dst / (near_dst - far_dst);
 		return mat;
 	}
 
 	static Matrix look_at_rh(Vector3<Type> const& eye, Vector3<Type> const& center, Vector3<Type> const& up) {
 
-		Vector3<Type> f = (center - eye).normalize();
-		Vector3<Type> r = Vector3(f).cross(up).normalize();
-		Vector3<Type> u = Vector3(r).cross(f);
+		Vector3<Type> f = (eye - center).normalize();
+		Vector3<Type> r = Vector3(up).cross(f).normalize();
+		Vector3<Type> u = Vector3(f).cross(r);
 
 		Matrix<Type> mat = Matrix<Type>::identity();
 		mat.m00 = r.x;
@@ -322,12 +322,12 @@ struct Matrix {
 		mat.m01 = u.x;
 		mat.m11 = u.y;
 		mat.m21 = u.z;
-		mat.m02 = -f.x;
-		mat.m12 = -f.y;
-		mat.m22 = -f.z;
+		mat.m02 = f.x;
+		mat.m12 = f.y;
+		mat.m22 = f.z;
 		mat.m30 = -r.dot(eye);
 		mat.m31 = -u.dot(eye);
-		mat.m32 = f.dot(eye);
+		mat.m32 = -f.dot(eye);
 		return mat;
 	}
 

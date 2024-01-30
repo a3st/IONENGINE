@@ -202,7 +202,7 @@ auto DX12Device::create_texture(
     TextureFormat const format,
     TextureDimension const dimension,
     TextureUsageFlags const flags,
-    std::array<std::span<uint8_t const>, 16> const data
+    std::vector<std::span<uint8_t const>> const& data
 ) -> Future<Texture> 
 {
     auto texture = core::make_ref<DX12Texture>(

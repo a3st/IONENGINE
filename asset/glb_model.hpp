@@ -24,11 +24,11 @@ struct ChunkHeader {
 enum class AccessorType { Scalar, Vec2, Vec3, Vec4, Mat2, Mat3, Mat4 };
 
 enum class ComponentType {
-	SByte = 5120,
-	UByte = 5121,
-	SShort = 5122,
-	UShort = 5123,
-	UInt = 5125,
+	Sbyte = 5120,
+	Ubyte = 5121,
+	Sshort = 5122,
+	Ushort = 5123,
+	Uint = 5125,
 	Float = 5126
 };
 

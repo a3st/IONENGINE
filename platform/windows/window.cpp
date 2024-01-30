@@ -134,6 +134,11 @@ auto WindowsWindow::window_procedure(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
 			window_impl->width = std::max<uint32_t>(1, width - style_width);
 			window_impl->height = std::max<uint32_t>(1, height - style_height);
 
+			if(wparam & SIZE_MAXIMIZED) {
+				window_impl->events.push(WindowEvent::Sized(window_impl->width, window_impl->height));
+			}
+		} break;
+		case WM_EXITSIZEMOVE: {
 			window_impl->events.push(WindowEvent::Sized(window_impl->width, window_impl->height));
 		} break;
 		case WM_MOUSEMOVE: {

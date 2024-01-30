@@ -88,19 +88,19 @@ auto DX12CommandBuffer::set_graphics_pipeline_options(
 
 auto DX12CommandBuffer::bind_descriptor(
     std::string_view const binding,
-    std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> const resource
+    std::variant<BufferBindData, TextureBindData> const data
 ) -> void 
 {
     uint32_t const index = current_shader->get_bindings().at(std::string(binding));
     auto visitor = make_visitor(
-        [&](core::ref_ptr<Buffer> data) {
-            bindings[index] = static_cast<DX12Buffer*>(data.get())->get_descriptor(rhi::BufferUsage::ConstantBuffer).offset;
+        [&](BufferBindData const& data) {
+            bindings[index] = static_cast<DX12Buffer*>(data.resource.get())->get_descriptor(data.usage).offset;
         },
-        [&](core::ref_ptr<Texture> data) {
-
+        [&](TextureBindData const& data) {
+            bindings[index] = static_cast<DX12Texture*>(data.resource.get())->get_descriptor(data.usage).offset;
         }
     );
-    std::visit(visitor, resource);
+    std::visit(visitor, data);
 }
 
 auto DX12CommandBuffer::begin_render_pass(
@@ -166,7 +166,7 @@ auto DX12CommandBuffer::begin_render_pass(
             render_pass_depth_stencil.StencilBeginningAccess = begin;
             render_pass_depth_stencil.StencilEndingAccess = end;
         }
-        render_pass_depth_stencil.cpuDescriptor = static_cast<DX12Texture*>(value.texture.get())->get_descriptor(TextureUsage::RenderTarget).cpu_handle();
+        render_pass_depth_stencil.cpuDescriptor = static_cast<DX12Texture*>(value.texture.get())->get_descriptor(TextureUsage::DepthStencil).cpu_handle();
 
         if(static_cast<DX12Texture*>(value.texture.get())->get_resource_state() != D3D12_RESOURCE_STATE_DEPTH_WRITE) {
             auto tracker = ResourceTrackerInfo {
@@ -261,6 +261,44 @@ auto DX12CommandBuffer::copy_buffer(
         src_offset,
         size
     );
+    end_barrier_resources();
+}
+
+auto DX12CommandBuffer::copy_buffer(
+    core::ref_ptr<Texture> dst,
+    core::ref_ptr<Buffer> src,
+    std::span<TextureCopyRegion const> const regions
+) -> void 
+{
+    auto tracker = ResourceTrackerInfo {
+        .resource = static_cast<DX12Texture*>(dst.get()),
+        .begin_state = D3D12_RESOURCE_STATE_COPY_DEST,
+        .end_state = static_cast<DX12Texture*>(dst.get())->get_resource_state()
+    };
+    trackers.emplace_back(tracker);
+
+    begin_barrier_resources();
+    for(size_t i = 0; i < regions.size(); ++i) {
+        auto d3d12_subresource_footprint = D3D12_PLACED_SUBRESOURCE_FOOTPRINT {};
+        d3d12_subresource_footprint.Footprint.Format = static_cast<DX12Texture*>(dst.get())->get_resource()->GetDesc().Format;
+        d3d12_subresource_footprint.Footprint.Width = regions[i].mip_width;
+        d3d12_subresource_footprint.Footprint.Height = regions[i].mip_height;
+        d3d12_subresource_footprint.Footprint.Depth = regions[i].mip_depth;
+        d3d12_subresource_footprint.Footprint.RowPitch = regions[i].row_pitch;
+        d3d12_subresource_footprint.Offset = regions[i].offset;
+
+        auto d3d12_source_location = D3D12_TEXTURE_COPY_LOCATION {};
+        d3d12_source_location.pResource = static_cast<DX12Buffer*>(src.get())->get_resource();
+        d3d12_source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        d3d12_source_location.PlacedFootprint = d3d12_subresource_footprint;
+
+        auto d3d12_dest_location = D3D12_TEXTURE_COPY_LOCATION {};
+        d3d12_dest_location.pResource = static_cast<DX12Texture*>(dst.get())->get_resource();
+        d3d12_dest_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        d3d12_dest_location.SubresourceIndex = i;
+
+        command_list->CopyTextureRegion(&d3d12_dest_location, 0, 0, 0, &d3d12_source_location, nullptr);
+    }
     end_barrier_resources();
 }
 

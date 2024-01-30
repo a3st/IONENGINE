@@ -32,6 +32,7 @@ auto BufferPool::allocate(size_t const size, rhi::BufferUsageFlags const flags, 
 
         buffer = chunk.buffers[chunk.offset];
         chunk.offset++;
+        break;
     }
 
     if(!buffer) {

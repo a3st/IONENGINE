@@ -26,7 +26,7 @@ public:
         uint32_t const resolution_height
     );
 
-    auto resize(uint32_t const width, uint32_t const height) -> void;
+    auto resize(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator, uint32_t const width, uint32_t const height) -> void;
 
     auto calculate(math::Vector3f const& position, math::Quaternionf const& rotation) -> void;
 

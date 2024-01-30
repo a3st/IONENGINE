@@ -65,7 +65,8 @@ DX12Texture::DX12Texture(
     mip_levels(mip_levels),
     format(format),
     dimension(dimension),
-    flags(flags)
+    flags(flags),
+    resource_state(D3D12_RESOURCE_STATE_COMMON)
 {
     auto d3d12_resource_desc = D3D12_RESOURCE_DESC {};
     switch(dimension) {
@@ -132,8 +133,59 @@ DX12Texture::DX12Texture(
         device->CreateRenderTargetView(resource.get(), &d3d12_render_target_view_desc, allocation.cpu_handle());
     }
 
-    if(flags & TextureUsage::ShaderResource) {
+    if(flags & TextureUsage::DepthStencil) {
+        auto allocation = descriptor_allocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1);
+        if(!allocation.heap) {
+            throw core::Exception("An error in descriptor allocation when creating a texture");
+        }
+        descriptor_allocations.emplace(TextureUsage::DepthStencil, allocation);
 
+        auto d3d12_depth_stencil_view = D3D12_DEPTH_STENCIL_VIEW_DESC {};
+        d3d12_depth_stencil_view.Format = DXGI_FORMAT_D32_FLOAT;
+        switch(dimension) {
+            case TextureDimension::_1D: {
+                d3d12_depth_stencil_view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
+                d3d12_depth_stencil_view.Texture1D.MipSlice = mip_levels;
+            } break;
+            case TextureDimension::_2D: {
+                d3d12_depth_stencil_view.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+                d3d12_depth_stencil_view.Texture2D.MipSlice = mip_levels - 1;
+            } break;
+        }
+
+        device->CreateDepthStencilView(resource.get(), &d3d12_depth_stencil_view, allocation.cpu_handle());
+    }
+
+    if(flags & TextureUsage::ShaderResource) {
+        auto allocation = descriptor_allocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);
+        if(!allocation.heap) {
+            throw core::Exception("An error in descriptor allocation when creating a texture");
+        }
+        descriptor_allocations.emplace(TextureUsage::ShaderResource, allocation);
+
+        auto d3d12_shader_resource_view = D3D12_SHADER_RESOURCE_VIEW_DESC {};
+        d3d12_shader_resource_view.Format = d3d12_resource_desc.Format;
+        d3d12_shader_resource_view.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        switch(dimension) {
+            case TextureDimension::_1D: {
+                d3d12_shader_resource_view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+                d3d12_shader_resource_view.Texture1D.MipLevels = mip_levels;
+            } break;
+            case TextureDimension::_2D: {
+                d3d12_shader_resource_view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+                d3d12_shader_resource_view.Texture2D.MipLevels = mip_levels;
+            } break;
+            case TextureDimension::_3D: {
+                d3d12_shader_resource_view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+                d3d12_shader_resource_view.Texture3D.MipLevels = mip_levels;
+            } break;
+            case TextureDimension::Cube: {
+                d3d12_shader_resource_view.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+                d3d12_shader_resource_view.Texture3D.MipLevels = mip_levels;
+            } break;
+        }
+
+        device->CreateShaderResourceView(resource.get(), &d3d12_shader_resource_view, allocation.cpu_handle());
     }
 }
 

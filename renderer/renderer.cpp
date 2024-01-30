@@ -18,10 +18,7 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
         512 * 1024,
         128 * 1024 * 1024,
         (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex | rhi::BufferUsage::Index | rhi::BufferUsage::CopyDst | rhi::BufferUsage::ShaderResource)
-    )),
-    primitive_cache(core::make_ref<PrimitiveCache>(&device, resource_allocator)),
-    texture_cache(core::make_ref<TextureCache>(&device, resource_allocator)),
-    render_task_stream(&primitive_cache)
+    ))
 {
     std::vector<uint8_t> shader_bytes;
     {
@@ -47,6 +44,7 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
         {
             std::vector<RGAttachment> inputs;
             for(auto& target : targets) {
+                target->resize(&device, resource_allocator, width, height);
                 if(target->is_render_to_texture()) {
                     render_pipeline->setup(builder, target, render_task_stream, test_shader);
                 } else {
@@ -84,4 +82,39 @@ auto Renderer::create_camera(
 ) -> core::ref_ptr<Camera> 
 {
     return core::make_ref<Camera>(&device, resource_allocator, projection_type, resolution_width, resolution_height);
+}
+
+auto Renderer::create_primitive(
+    uint32_t const index_count,
+    std::span<uint8_t const> const vertices,
+    std::span<uint8_t const> const indices,
+    bool const immediate
+) -> core::ref_ptr<Primitive> {
+
+    return core::make_ref<Primitive>(&device, resource_allocator, index_count, vertices, indices, immediate);
+}
+
+auto Renderer::create_texture(
+    uint32_t const width,
+    uint32_t const height,
+    uint32_t const depth,
+    uint32_t const mip_levels,
+    rhi::TextureFormat const format,
+    rhi::TextureDimension const dimension,
+    std::vector<std::span<uint8_t const>> const& data,
+    bool const immediate
+) -> core::ref_ptr<Texture> {
+
+    return core::make_ref<Texture>(
+        &device,
+        resource_allocator,
+        width,
+        height,
+        depth,
+        mip_levels,
+        format,
+        dimension,
+        data,
+        immediate
+    );
 }

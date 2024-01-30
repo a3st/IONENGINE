@@ -37,11 +37,11 @@ add_library(engine SHARED
     "renderer/rhi/device.cpp"
     "renderer/rhi/shader.cpp"
 
-    "renderer/cache/rg_resource_cache.cpp"
-    "renderer/cache/primitive_cache.cpp"
-    "renderer/cache/texture_cache.cpp"
+    "renderer/rg_resource_cache.cpp"
     "renderer/buffer_pool.cpp"
     "renderer/render_target.cpp"
+    "renderer/primitive.cpp"
+    "renderer/texture.cpp"
     "renderer/camera.cpp"
     "renderer/render_graph.cpp"
     "renderer/renderer.cpp"
@@ -73,6 +73,7 @@ target_link_libraries(engine PUBLIC
 
 target_compile_definitions(engine PRIVATE 
     IONENGINE_PLATFORM_WIN32
+    IONENGINE_RENDERER_DIRECTX12
 )
 
 add_executable(project 

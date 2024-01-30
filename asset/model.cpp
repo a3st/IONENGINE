@@ -7,7 +7,7 @@
 
 using namespace ionengine;
 
-Model::Model(std::span<uint8_t> const data_bytes, ModelFormat const format) {
+Model::Model(renderer::Renderer& renderer, std::span<uint8_t> const data_bytes, ModelFormat const format, bool const immediate) {
     
     switch(format) {
         case ModelFormat::GLB: {
@@ -16,7 +16,7 @@ Model::Model(std::span<uint8_t> const data_bytes, ModelFormat const format) {
 
             for(auto const& mesh : model.get_meshes()) {
 
-                std::vector<PrimitiveData> primitives;
+                std::vector<core::ref_ptr<renderer::Primitive>> primitives;
                 std::vector<uint32_t> index_counts;
                 
                 for(auto const& primitive : mesh.primitives) {
@@ -85,7 +85,7 @@ Model::Model(std::span<uint8_t> const data_bytes, ModelFormat const format) {
                             index_count = accessor.count;
 
                             switch(accessor.component_type) {
-                                case glb::ComponentType::UInt: {
+                                case glb::ComponentType::Uint: {
                                     auto indices = std::span<uint32_t const>(
                                         reinterpret_cast<uint32_t const*>(model.get_buffer(buffer_view.buffer).data() + buffer_view.offset), 
                                         buffer_view.length / sizeof(uint32_t)
@@ -100,7 +100,7 @@ Model::Model(std::span<uint8_t> const data_bytes, ModelFormat const format) {
                                         buffer.insert(buffer.end(), into_buffer.begin(), into_buffer.end());
                                     }
                                 } break;
-                                case glb::ComponentType::UShort: {
+                                case glb::ComponentType::Ushort: {
                                     auto indices = std::span<uint16_t const>(
                                         reinterpret_cast<uint16_t const*>(model.get_buffer(buffer_view.buffer).data() + buffer_view.offset), 
                                         buffer_view.length / sizeof(uint16_t)
@@ -115,7 +115,7 @@ Model::Model(std::span<uint8_t> const data_bytes, ModelFormat const format) {
                                         buffer.insert(buffer.end(), into_buffer.begin(), into_buffer.end());
                                     }
                                 } break;
-                                case glb::ComponentType::UByte: {
+                                case glb::ComponentType::Ubyte: {
                                     auto indices = std::span<uint8_t const>(
                                         reinterpret_cast<uint8_t const*>(model.get_buffer(buffer_view.buffer).data() + buffer_view.offset), 
                                         buffer_view.length
@@ -141,27 +141,16 @@ Model::Model(std::span<uint8_t> const data_bytes, ModelFormat const format) {
 
                     auto vertices = std::span<uint8_t const>(buffer.data(), vertex_size);
                     auto indices = std::span<uint8_t const>(buffer.data() + vertex_size, index_size);
-                    uint64_t const hash = XXHash64::hash(buffer.data(), buffer.size(), 0);
 
-                    auto primitive_data = PrimitiveData {
-                        .buffer = std::move(buffer),
-                        .vertices = vertices,
-                        .indices = indices,
-                        .hash = hash
-                    };
-
-                    primitives.emplace_back(std::move(primitive_data));
-                    index_counts.emplace_back(std::move(index_count));
+                    primitives.emplace_back(renderer.create_primitive(index_count, vertices, indices, immediate));
                 }
 
                 auto mesh_data = MeshData {
-                    .primitives = std::move(primitives),
-                    .index_counts = std::move(index_counts)
+                    .primitives = std::move(primitives)
                 };
 
                 meshes.emplace_back(std::move(mesh_data));
             }
-
         } break;
         default: {
             throw core::Exception("Downloadable data in this format is not available");

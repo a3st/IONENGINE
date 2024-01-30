@@ -93,7 +93,7 @@ Pipeline::Pipeline(
 
                 d3d12_pipeline_desc.BlendState = d3d12_blend;
 
-                d3d12_pipeline_desc.DSVFormat = DXGI_FORMAT_UNKNOWN;
+                d3d12_pipeline_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
             } break;
         }
     }
@@ -119,9 +119,9 @@ Pipeline::Pipeline(
         } break;
     }
     d3d12_rasterizer.FrontCounterClockwise = true;
-    d3d12_rasterizer.DepthBias = 0;
-    d3d12_rasterizer.DepthBiasClamp = 0.0f;
-    d3d12_rasterizer.SlopeScaledDepthBias = 0.0f;
+    d3d12_rasterizer.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
+    d3d12_rasterizer.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+    d3d12_rasterizer.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
     d3d12_rasterizer.DepthClipEnable = true;
     d3d12_rasterizer.MultisampleEnable = false;
     d3d12_rasterizer.AntialiasedLineEnable = false;
@@ -143,9 +143,9 @@ Pipeline::Pipeline(
     auto d3d12_depth_stencil = D3D12_DEPTH_STENCIL_DESC {};
     auto depth_stencil_value = depth_stencil.value_or(DepthStencilStageInfo::Default());
     d3d12_depth_stencil.DepthFunc = compare_op_to_d3d12(depth_stencil_value.depth_func);
-    d3d12_depth_stencil.DepthEnable = depth_stencil_value.write_enable;
-    d3d12_depth_stencil.StencilEnable = depth_stencil_value.write_enable;
-    d3d12_depth_stencil.DepthWriteMask = depth_stencil_value.write_enable ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
+    d3d12_depth_stencil.DepthEnable = depth_stencil_value.depth_write;
+    d3d12_depth_stencil.StencilEnable = depth_stencil_value.stencil_write;
+    d3d12_depth_stencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
     d3d12_depth_stencil.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
     d3d12_depth_stencil.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
     d3d12_depth_stencil.FrontFace = d3d12_depth_stencil_face;
@@ -171,16 +171,30 @@ PipelineCache::PipelineCache(ID3D12Device4* device) : device(device) {
 
     D3D12_ROOT_PARAMETER1 d3d12_root_parameter = {};
     d3d12_root_parameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-    d3d12_root_parameter.Constants.RegisterSpace = 0;
     d3d12_root_parameter.Constants.ShaderRegister = 0;
+    d3d12_root_parameter.Constants.RegisterSpace = 0;
     d3d12_root_parameter.Constants.Num32BitValues = 16;
     d3d12_root_parameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+    auto d3d12_static_sampler = D3D12_STATIC_SAMPLER_DESC {};
+    d3d12_static_sampler.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+    d3d12_static_sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    d3d12_static_sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    d3d12_static_sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    d3d12_static_sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+    d3d12_static_sampler.MaxAnisotropy = 2;
+    d3d12_static_sampler.MaxLOD = D3D12_FLOAT32_MAX;
+    d3d12_static_sampler.ShaderRegister = 0;
+    d3d12_static_sampler.RegisterSpace = 0;
+    d3d12_static_sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
     auto d3d12_root_signature = D3D12_VERSIONED_ROOT_SIGNATURE_DESC {};
     d3d12_root_signature.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
     d3d12_root_signature.Desc_1_1 = {
         .NumParameters = 1,
         .pParameters = &d3d12_root_parameter,
+        .NumStaticSamplers = 1,
+        .pStaticSamplers = &d3d12_static_sampler,
         .Flags = 
             D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | 
             D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | 

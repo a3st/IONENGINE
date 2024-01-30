@@ -64,7 +64,7 @@ auto RenderGraph::execute() -> void {
                     auto visitor = make_visitor(
                         [&](RGAttachment::ColorAttachment const&) {
                             if(!attachment.texture) {
-                                if(!attachment.is_swapchain) {
+                                if(attachment.format != rhi::TextureFormat::Unknown) {
                                     data.colors[offset].texture = resource_cache->get(
                                         frame_index, 
                                         attachment.format,
