@@ -17,9 +17,16 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
     resource_allocator(device->create_allocator(
         512 * 1024,
         128 * 1024 * 1024,
-        (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex | rhi::BufferUsage::Index | rhi::BufferUsage::CopyDst | rhi::BufferUsage::ShaderResource)
+        rhi::MemoryAllocatorUsage::Default
+    )),
+    resource_allocator2(device->create_allocator(
+        512 * 1024,
+        64 * 1024 * 1024,
+        rhi::MemoryAllocatorUsage::Default
     ))
 {
+    render_pipeline->initialize(&render_task_stream);
+
     std::vector<uint8_t> shader_bytes;
     {
         std::ifstream ifs("shaders/basic.bin", std::ios::binary);
@@ -31,6 +38,17 @@ Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Wind
     }
 
     test_shader = device->create_shader(shader_bytes);
+
+    {
+        std::ifstream ifs("shaders/quad.bin", std::ios::binary);
+        ifs.seekg(0, std::ios::end);
+        auto size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        shader_bytes.resize(size);
+        ifs.read(reinterpret_cast<char* const>(shader_bytes.data()), size);
+    }
+
+    quad_shader = device->create_shader(shader_bytes);
 }
 
 auto Renderer::update(float const dt) -> void {
@@ -42,13 +60,45 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
     if(!is_graph_initialized) {
         RenderGraphBuilder builder;
         {
-            std::vector<RGAttachment> inputs;
             for(auto& target : targets) {
                 target->resize(&device, resource_allocator, width, height);
                 if(target->is_render_to_texture()) {
-                    render_pipeline->setup(builder, target, render_task_stream, test_shader);
+                    render_pipeline->setup(builder, target, test_shader);
                 } else {
-                    inputs = render_pipeline->setup(builder, target, render_task_stream, test_shader);
+                    render_pipeline->setup(builder, target, test_shader);
+
+                    /*builder.add_graphics_pass(
+                        "PresentPass",
+                        width,
+                        height,
+                        {
+                            "ForwardColor"
+                        },
+                        {
+                            RGAttachmentInfo {
+                                "Swapchain",
+                                RGColorAttachment {
+                                    rhi::RenderPassLoadOp::Clear, 
+                                    rhi::RenderPassStoreOp::Store, 
+                                    math::Color(0.0f, 0.0f, 0.0f, 1.0f)
+                                }
+                            }
+                        },
+                        [&](RGRenderPassContext& ctx) {
+                            ctx.get_command_buffer().set_graphics_pipeline_options(
+                                quad_shader,
+                                rhi::RasterizerStageInfo {
+                                    .fill_mode = rhi::FillMode::Solid,
+                                    .cull_mode = rhi::CullMode::Back
+                                },
+                                rhi::BlendColorInfo::Opaque(),
+                                std::nullopt
+                            );
+
+                            ctx.bind_attachment_as(0, "ForwardTexture");
+                            ctx.get_command_buffer().draw(3, 1, 0);
+                        }
+                    );*/
                 }
             }
         }
@@ -62,12 +112,10 @@ auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void {
 
 auto Renderer::resize(uint32_t const width, uint32_t const height) -> void {
 
-    this->width = width;
-    this->height = height;
-    is_graph_initialized = false;
-    render_graph = nullptr;
-    
-    device->resize_swapchain_buffers(width, height);
+    //device->resize_swapchain_buffers(width, height);
+    //this->width = width;
+    //this->height = height;
+    //is_graph_initialized = false;
 }
 
 auto Renderer::create_render_target(uint32_t const width, uint32_t const height) -> core::ref_ptr<RenderTarget> {
@@ -107,7 +155,7 @@ auto Renderer::create_texture(
 
     return core::make_ref<Texture>(
         &device,
-        resource_allocator,
+        resource_allocator2,
         width,
         height,
         depth,

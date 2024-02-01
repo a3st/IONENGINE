@@ -63,6 +63,7 @@ private:
     core::ref_ptr<rhi::Device> device;
     core::ref_ptr<RenderPipeline> render_pipeline;
     core::ref_ptr<rhi::MemoryAllocator> resource_allocator;
+    core::ref_ptr<rhi::MemoryAllocator> resource_allocator2;
 
     core::ref_ptr<RenderGraph> render_graph{nullptr};
     bool is_graph_initialized{false};
@@ -70,6 +71,7 @@ private:
     uint32_t height;
 
     core::ref_ptr<rhi::Shader> test_shader{nullptr};
+    core::ref_ptr<rhi::Shader> quad_shader{nullptr};
     RenderTaskStream render_task_stream;
 };
 

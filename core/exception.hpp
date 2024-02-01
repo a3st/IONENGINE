@@ -2,20 +2,21 @@
 
 #pragma once
 
-namespace ionengine::core {
+namespace ionengine::core
+{
+    class Exception : public std::exception
+    {
+      public:
+        Exception(std::string_view const error) : message(error)
+        {
+        }
 
-class Exception : public std::exception {
-public:
+        const char* what() const noexcept
+        {
+            return reinterpret_cast<const char*>(message.c_str());
+        }
 
-    Exception(std::string_view const error) : message(error) { }
-
-    const char* what() const noexcept {
-    	return reinterpret_cast<const char*>(message.c_str());
-    }
-
-private:
-
-    std::string message;
-};
-
-}
+      private:
+        std::string message;
+    };
+} // namespace ionengine::core

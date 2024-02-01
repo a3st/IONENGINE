@@ -23,7 +23,7 @@ add_library(engine SHARED
     "asset/model.cpp"
     "asset/asset_manager.cpp"
 
-    "renderer/rhi/dx12/allocator.cpp"
+    "renderer/rhi/dx12/memory_allocator.cpp"
     "renderer/rhi/dx12/descriptor_allocator.cpp"
     "renderer/rhi/dx12/command_allocator.cpp"
     "renderer/rhi/dx12/upload_context.cpp"
@@ -37,7 +37,6 @@ add_library(engine SHARED
     "renderer/rhi/device.cpp"
     "renderer/rhi/shader.cpp"
 
-    "renderer/rg_resource_cache.cpp"
     "renderer/buffer_pool.cpp"
     "renderer/render_target.cpp"
     "renderer/primitive.cpp"

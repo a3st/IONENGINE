@@ -49,7 +49,7 @@ struct PSOutput {
 PSOutput ps_main(VSOutput input) {
     PSOutput output;
 
-    Texture2D colorTexture = ResourceDescriptorHeap[shaderResources.colorTexture];
+    Texture2D colorTexture = ResourceDescriptorHeap[NonUniformResourceIndex(shaderResources.colorTexture)];
 
     output.color = colorTexture.Sample(static_sampler, input.uv);
     return output;

@@ -16,16 +16,20 @@ public:
 
     RenderPipeline() = default;
 
+    auto initialize(RenderTaskStream* stream) -> void {
+
+        this->stream = stream;
+    }
+
     virtual auto setup(
         RenderGraphBuilder& builder, 
         core::ref_ptr<Camera> camera,
-        RenderTaskStream& render_task_stream,
         core::ref_ptr<rhi::Shader> test_shader
-    ) -> std::vector<RGAttachment> = 0;
+    ) -> void = 0;
 
 protected:
 
-    
+    RenderTaskStream* stream;
 };
 
 }

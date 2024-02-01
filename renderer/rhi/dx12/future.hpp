@@ -8,36 +8,21 @@
 #include <dxgi1_4.h>
 #include <winrt/base.h>
 
-namespace ionengine {
+namespace ionengine::renderer::rhi
+{
+    class DX12FutureImpl : public FutureImpl
+    {
+      public:
+        DX12FutureImpl(ID3D12CommandQueue* queue, ID3D12Fence* fence, HANDLE fence_event, uint64_t const fence_value);
 
-namespace renderer {
+        auto get_result() const -> bool override;
 
-namespace rhi {
+        auto wait() -> void override;
 
-class DX12FutureImpl : public FutureImpl {
-public:
-
-    DX12FutureImpl(
-        ID3D12CommandQueue* queue,
-        ID3D12Fence* fence,
-        HANDLE fence_event,
-        uint64_t const fence_value
-    );
-
-    auto get_result() const -> bool override;
-
-    auto wait() -> void override;
-
-private:
-
-    ID3D12CommandQueue* queue;
-    ID3D12Fence* fence;
-    HANDLE fence_event;
-    uint64_t fence_value;
-};
-
-}
-
-}
-
-}
+      private:
+        ID3D12CommandQueue* queue;
+        ID3D12Fence* fence;
+        HANDLE fence_event;
+        uint64_t fence_value;
+    };
+} // namespace ionengine::renderer::rhi

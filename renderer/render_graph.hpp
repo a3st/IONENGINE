@@ -2,125 +2,134 @@
 
 #pragma once
 
-#include "rg_resource_cache.hpp"
 #include "buffer_pool.hpp"
+#include "render_target.hpp"
+#include <xxhash/xxhash64.h>
 
 namespace ionengine {
 
 namespace renderer {
 
+inline uint32_t const RG_RESOURCE_DEFAULT_LIFETIME = 1; 
+
+class RGResourcePool : public core::ref_counted_object {
+public:
+
+    struct Entry {
+        rhi::TextureFormat format;
+        uint32_t sample_count;
+        uint32_t width;
+        uint32_t height;
+        rhi::TextureUsageFlags flags;
+
+        auto operator==(Entry const& other) const -> bool {
+            return std::tie(format, sample_count, width, height, flags) == 
+                std::tie(other.format, other.sample_count, other.width, other.height, flags);
+        }
+    };
+
+    struct EntryHasher {
+        auto operator()(const Entry& entry) const -> std::size_t {
+            return 
+                XXHash64::hash(&entry.format, sizeof(rhi::TextureFormat), 0) ^
+                XXHash64::hash(&entry.sample_count, sizeof(uint32_t), 0) ^
+                XXHash64::hash(&entry.width, sizeof(uint32_t), 0) ^
+                XXHash64::hash(&entry.height, sizeof(uint32_t), 0) ^
+                XXHash64::hash(&entry.flags, sizeof(uint32_t), 0)
+            ;
+        }
+    };
+
+    RGResourcePool(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator);
+
+    auto get(
+        rhi::TextureFormat const format, 
+        uint32_t const sample_count, 
+        uint32_t const width, 
+        uint32_t const height,
+        rhi::TextureUsageFlags const flags,
+        uint64_t const hash
+    ) -> core::ref_ptr<rhi::Texture>;
+
+    auto update() -> void;
+
+    auto reset() -> void;
+
+private:
+
+    rhi::Device* device;
+    core::ref_ptr<rhi::MemoryAllocator> allocator;
+
+    using TimedResource = std::pair<core::ref_ptr<rhi::Texture>, uint64_t>;
+
+    struct Chunk {
+        std::vector<TimedResource> resources;
+        std::vector<uint32_t> free;
+        uint32_t offset;
+    };
+    std::unordered_map<Entry, std::unique_ptr<Chunk>, EntryHasher> entries;
+
+    struct ResourceAllocation {
+        Chunk* chunk;
+        uint32_t offset;
+    };
+    std::unordered_map<uint64_t, ResourceAllocation> allocations;
+};
+
+enum class RGAttachmentUsage {
+    RenderTarget,
+    DepthStencil
+};
+
+struct RGColorAttachment {
+    rhi::RenderPassLoadOp load_op;
+    rhi::RenderPassStoreOp store_op;
+    math::Color clear_color;
+};
+
+struct RGDepthStencilAttachment {
+    rhi::RenderPassLoadOp depth_load_op;
+    rhi::RenderPassStoreOp depth_store_op;
+    rhi::RenderPassLoadOp stencil_load_op;
+    rhi::RenderPassStoreOp stencil_store_op;
+    float clear_depth;
+    uint8_t clear_stencil;
+};
+
+struct RGAttachmentInfo {
+    std::string attachment_name;
+    std::variant<RGColorAttachment, RGDepthStencilAttachment> data;
+};
+
 struct RGAttachment {
     std::string name;
-    rhi::TextureFormat format;
-    uint32_t sample_count;
     uint32_t width;
     uint32_t height;
-    core::ref_ptr<rhi::Texture> texture{nullptr};
-
-    struct ColorAttachment {
-        rhi::RenderPassLoadOp load_op;
-        rhi::RenderPassStoreOp store_op;
-        math::Color clear_color;
-    };
-
-    struct DepthStencilAttachment {
-        rhi::RenderPassLoadOp depth_load_op;
-        rhi::RenderPassStoreOp depth_store_op;
-        rhi::RenderPassLoadOp stencil_load_op;
-        rhi::RenderPassStoreOp stencil_store_op;
-        float clear_depth;
-        uint8_t clear_stencil;
-    };
-
-    std::variant<ColorAttachment, DepthStencilAttachment> attachment;
-
-    static auto DepthStencil(
-        std::string_view const name, 
-        rhi::TextureFormat const format,
-        uint32_t const width,
-        uint32_t const height,
-        rhi::RenderPassLoadOp const depth_load_op, 
-        rhi::RenderPassStoreOp const depth_store_op, 
-        rhi::RenderPassLoadOp const stencil_load_op, 
-        rhi::RenderPassStoreOp const stencil_store_op, 
-        float const clear_depth = 1.0f,
-        uint8_t const clear_stencil = 0x0
-    ) -> RGAttachment {
-        return RGAttachment {
-            .name = std::string(name),
-            .format = format,
-            .sample_count = 1,
-            .attachment = DepthStencilAttachment { 
-                .depth_load_op = depth_load_op, 
-                .depth_store_op = depth_store_op, 
-                .stencil_load_op = stencil_load_op, 
-                .stencil_store_op = stencil_store_op, 
-                .clear_depth = clear_depth,
-                .clear_stencil = clear_stencil
-            }
-        };
-    }
-
-    static auto Swapchain(
-        rhi::RenderPassLoadOp const load_op, 
-        rhi::RenderPassStoreOp const store_op, 
-        math::Color const& color = math::Color(0.0f, 0.0f, 0.0f, 0.0f)
-    ) -> RGAttachment {
-        return RGAttachment {
-            .name = "__swapchain__",
-            .format = rhi::TextureFormat::Unknown,
-            .sample_count = 1,
-            .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
-        };
-    }
-
-    static auto RenderTarget(
-        std::string_view const name, 
-        rhi::TextureFormat const format, 
-        uint32_t const sample_count,
-        uint32_t const width,
-        uint32_t const height,
-        rhi::RenderPassLoadOp const load_op, 
-        rhi::RenderPassStoreOp const store_op, 
-        math::Color const& color = math::Color(0.0f, 0.0f, 0.0f, 0.0f)
-    ) -> RGAttachment {
-        return RGAttachment {
-            .name = std::string(name),
-            .format = format,
-            .sample_count = sample_count,
-            .width = width,
-            .height = height,
-            .attachment = ColorAttachment { .load_op = load_op, .store_op = store_op, .clear_color = color }
-        };
-    }
-
-    static auto External(
-        core::ref_ptr<rhi::Texture> texture,
-        std::variant<ColorAttachment, DepthStencilAttachment> const attachment
-    ) -> RGAttachment {
-        return RGAttachment {
-            .name = std::format("__external_{}__", (uintptr_t)texture.get()),
-            .format = texture->get_format(),
-            .sample_count = 1,
-            .width = texture->get_width(),
-            .height = texture->get_height(),
-            .texture = texture,
-            .attachment = attachment
-        };
-    }
+    RGAttachmentUsage usage;
+    core::ref_ptr<RenderTarget> render_target;
 };
+
+using RGGraphicsAttachment = std::pair<uint64_t, std::variant<RGColorAttachment, RGDepthStencilAttachment>>;
 
 class RGRenderPassContext {
 public:
 
     RGRenderPassContext(
-        std::unordered_map<uint32_t, uint64_t>& inputs,
-        std::unordered_map<uint32_t, uint64_t>& outputs,
+        std::vector<uint64_t>& inputs,
+        std::vector<RGGraphicsAttachment>& outputs,
         std::unordered_map<uint64_t, RGAttachment>& attachments,
-        RGResourceCache& resource_cache,
+        RGResourcePool& resource_pool,
         BufferPool& buffer_pool,
-        rhi::CommandBuffer& command_buffer
-    );
+        rhi::CommandBuffer& command_buffer,
+        uint32_t const frame_index
+    ) : 
+        inputs(&inputs),
+        outputs(&outputs),
+        attachments(&attachments),
+        resource_pool(&resource_pool),
+        buffer_pool(&buffer_pool),
+        command_buffer(&command_buffer),
+        frame_index(frame_index) { }
 
     auto get_command_buffer() -> rhi::CommandBuffer& {
 
@@ -144,56 +153,109 @@ public:
         command_buffer->bind_descriptor(binding, rhi::TextureBindData { texture, usage });
     }
 
+    auto bind_attachment_as(uint32_t const index, std::string_view const binding) -> void {
+
+        auto result = attachments->find(inputs->at(index));
+        assert(result != attachments->end());
+
+        core::ref_ptr<rhi::Texture> texture = nullptr;
+
+        rhi::TextureUsageFlags flags = 0;
+        rhi::TextureFormat format = rhi::TextureFormat::Unknown;
+
+        if(result->second.render_target) {
+            texture = result->second.render_target->get_buffer(frame_index);
+        } else {
+            if(result->second.usage == RGAttachmentUsage::RenderTarget) {
+                flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource);
+                format = rhi::TextureFormat::RGBA8_UNORM;
+            } else {
+                flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::DepthStencil);
+                format = rhi::TextureFormat::D32_FLOAT;
+            }
+
+            texture = resource_pool->get(
+                format,
+                1,
+                result->second.width,
+                result->second.height,
+                flags,
+                result->first
+            );
+        }
+
+        if(binding.empty()) {
+            command_buffer->bind_descriptor(result->second.name, rhi::TextureBindData { texture, rhi::TextureUsage::ShaderResource });
+        } else {
+            command_buffer->bind_descriptor(binding, rhi::TextureBindData { texture, rhi::TextureUsage::ShaderResource });
+        }
+    }
+
 private:
 
-    std::unordered_map<uint32_t, uint64_t>* inputs;
-    std::unordered_map<uint32_t, uint64_t>* outputs;
+    std::vector<uint64_t>* inputs;
+    std::vector<RGGraphicsAttachment>* outputs;
     std::unordered_map<uint64_t, RGAttachment>* attachments;
-    RGResourceCache* resource_cache;
+    RGResourcePool* resource_pool;
     BufferPool* buffer_pool;
     rhi::CommandBuffer* command_buffer;
+    uint32_t frame_index;
 };
 
 using graphics_pass_func_t = std::function<void(RGRenderPassContext&)>;
 
-struct RGRenderPass {
-    std::string pass_name;
-    std::unordered_map<uint32_t, uint64_t> inputs;
-    std::unordered_map<uint32_t, uint64_t> outputs;
+class RGRenderPass {
+public:
 
-    struct GraphicsPass {
-        uint32_t width;
-        uint32_t height;
-        std::vector<rhi::RenderPassColorInfo> colors;
-        std::optional<rhi::RenderPassDepthStencilInfo> depth_stencil;
-        graphics_pass_func_t callback;
-    };
+    RGRenderPass(std::string_view const pass_name) : pass_name(pass_name) { }
 
-    struct ComputePass {
+    auto get_name() -> std::string_view {
 
-    };
-
-    std::variant<GraphicsPass, ComputePass> pass;
-
-    static auto graphics(
-        graphics_pass_func_t callback,
-        std::string_view const pass_name, 
-        uint32_t const width, 
-        uint32_t const height, 
-        std::vector<rhi::RenderPassColorInfo> const& colors,
-        std::optional<rhi::RenderPassDepthStencilInfo> const depth_stencil = std::nullopt
-    ) {
-        return RGRenderPass {
-            .pass_name = std::string(pass_name),
-            .pass = GraphicsPass {
-                .width = width,
-                .height = height,
-                .colors = colors,
-                .depth_stencil = depth_stencil,
-                .callback = callback
-            }
-        };
+        return pass_name;
     }
+
+    virtual auto setup(
+        rhi::Device& device,
+        std::unordered_map<uint64_t, RGAttachment>& attachments,
+        RGResourcePool& resource_pool,
+        BufferPool& buffer_pool,
+        core::ref_ptr<rhi::Texture> swapchain,
+        uint32_t const frame_index
+    ) -> void = 0;
+
+private:
+
+    std::string pass_name;
+};
+
+class RGGraphicsRenderPass : public RGRenderPass {
+public:
+
+    RGGraphicsRenderPass(
+        std::string_view const pass_name,
+        uint32_t const width,
+        uint32_t const height,
+        std::vector<uint64_t> const& inputs,
+        std::vector<RGGraphicsAttachment> const& outputs,
+        graphics_pass_func_t callback
+    );
+
+    auto setup(
+        rhi::Device& device,
+        std::unordered_map<uint64_t, RGAttachment>& attachments,
+        RGResourcePool& resource_pool,
+        BufferPool& buffer_pool,
+        core::ref_ptr<rhi::Texture> swapchain,
+        uint32_t const frame_index
+    ) -> void override;
+
+private:
+
+    std::vector<uint64_t> inputs;
+    std::vector<RGGraphicsAttachment> outputs;
+    uint32_t width;
+    uint32_t height;
+    graphics_pass_func_t callback;
 };
 
 class RenderGraph : public core::ref_counted_object {
@@ -202,21 +264,27 @@ public:
     RenderGraph(
         rhi::Device& device,
         core::ref_ptr<rhi::MemoryAllocator> allocator,
-        std::vector<RGRenderPass> const& steps,
-        std::unordered_map<uint64_t, RGAttachment> const& attachments
+        std::vector<std::unique_ptr<RGRenderPass>>&& render_passes,
+        std::unordered_map<uint64_t, RGAttachment>&& attachments
     );
 
     auto execute() -> void;
 
+    inline uint64_t static SWAPCHAIN_RESERVED_HASH;
+
 private:
 
     rhi::Device* device;
-    std::vector<core::ref_ptr<BufferPool>> buffer_pools;
-    core::ref_ptr<RGResourceCache> resource_cache{nullptr};
-    std::vector<RGRenderPass> steps;
+
+    struct FrameInfo {
+        core::ref_ptr<BufferPool> buffer_pool;
+        core::ref_ptr<RGResourcePool> resource_pool;
+    };
+    std::vector<FrameInfo> frame_infos;
+
+    std::vector<std::unique_ptr<RGRenderPass>> render_passes;
     std::unordered_map<uint64_t, RGAttachment> attachments;
-    uint32_t frame_index{0};
-    std::vector<core::ref_ptr<rhi::CommandBuffer>> submits;
+    uint32_t frame_index;
 };
 
 class RenderGraphBuilder {
@@ -224,22 +292,28 @@ public:
 
     RenderGraphBuilder() = default;
 
+    auto add_attachment(
+        std::string_view const attachment_name,
+        uint32_t const width,
+        uint32_t const height,
+        RGAttachmentUsage const usage,
+        core::ref_ptr<RenderTarget> render_target = nullptr
+    ) -> RenderGraphBuilder&;
+
     auto add_graphics_pass(
         std::string_view const pass_name,
         uint32_t const width,
         uint32_t const height,
-        std::span<RGAttachment const> const inputs,
-        std::span<RGAttachment const> const outputs,
+        std::vector<std::string> const& inputs,
+        std::vector<RGAttachmentInfo> const& outputs,
         graphics_pass_func_t const& callback
     ) -> RenderGraphBuilder&;
-
-    auto add_compute_pass() -> RenderGraphBuilder&;
 
     auto build(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator) -> core::ref_ptr<RenderGraph>;
 
 private:
 
-    std::vector<RGRenderPass> steps;
+    std::vector<std::unique_ptr<RGRenderPass>> render_passes;
     std::unordered_map<uint64_t, RGAttachment> attachments;
 };
 

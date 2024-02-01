@@ -112,7 +112,7 @@ public:
                 .texture = data.texture,
                 .mask = data.mask
             };
-            tasks.emplace_back(render_task);
+            tasks.emplace_back(std::move(render_task));
         }
     }
 

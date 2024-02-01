@@ -6,7 +6,7 @@
 using namespace ionengine;
 using namespace ionengine::renderer;
 
-RenderTarget::RenderTarget(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator, uint32_t const width, uint32_t const height) {
+RenderTarget::RenderTarget(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator, uint32_t const width, uint32_t const height) : width(width), height(height) {
 
     for(uint32_t i = 0; i < 2; ++i) {
         auto texture = device.create_texture(

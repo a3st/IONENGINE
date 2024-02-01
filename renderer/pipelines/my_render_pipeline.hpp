@@ -20,9 +20,8 @@ public:
     auto setup(
         RenderGraphBuilder& builder, 
         core::ref_ptr<Camera> camera,
-        RenderTaskStream& render_task_stream,
         core::ref_ptr<rhi::Shader> test_shader
-    ) -> std::vector<RGAttachment> override;
+    ) -> void override;
 };
 
 }

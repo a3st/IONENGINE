@@ -4,62 +4,58 @@
 
 #include "core/ref_ptr.hpp"
 
-namespace ionengine {
+namespace ionengine::renderer::rhi
+{
+    enum class TextureFormat
+    {
+        Unknown,
+        BGRA8_UNORM,
+        BGR8_UNORM,
+        RGBA8_UNORM,
+        R8_UNORM,
+        BC1,
+        BC3,
+        BC4,
+        BC5,
+        D32_FLOAT,
+        RGBA16_FLOAT
+    };
 
-namespace renderer {
+    enum class TextureDimension
+    {
+        _1D,
+        _2D,
+        _2DArray,
+        _3D,
+        Cube,
+        CubeArray
+    };
 
-namespace rhi {
+    enum class TextureUsage
+    {
+        ShaderResource = 1 << 0,
+        RenderTarget = 1 << 1,
+        DepthStencil = 1 << 2,
+        UnorderedAccess = 1 << 3,
+        CopySrc = 1 << 4,
+        CopyDst = 1 << 5
+    };
 
-enum class TextureFormat {
-    Unknown,
-    BGRA8_UNORM,
-    BGR8_UNORM,
-    RGBA8_UNORM,
-    R8_UNORM,
-    BC1,
-    BC3,
-    BC4,
-    BC5,
-    D32_FLOAT,
-    RGBA16_FLOAT
-};
+    DECLARE_ENUM_CLASS_BIT_FLAG(TextureUsage)
 
-enum class TextureDimension {
-    _1D,
-    _2D,
-    _2DArray,
-    _3D,
-    Cube,
-    CubeArray
-};
+    class Texture : public core::ref_counted_object
+    {
+      public:
+        virtual auto get_width() const -> uint32_t = 0;
 
-enum class TextureUsage {
-    ShaderResource = 1 << 0,
-    RenderTarget = 1 << 1,
-    DepthStencil = 1 << 2,
-    UnorderedAccess = 1 << 3,
-    CopySrc = 1 << 4,
-    CopyDst = 1 << 5
-};
+        virtual auto get_height() const -> uint32_t = 0;
 
-DECLARE_ENUM_CLASS_BIT_FLAG(TextureUsage)
+        virtual auto get_depth() const -> uint32_t = 0;
 
-class Texture : public core::ref_counted_object {
-public:
+        virtual auto get_mip_levels() const -> uint32_t = 0;
 
-    virtual auto get_width() const -> uint32_t = 0;
+        virtual auto get_format() const -> TextureFormat = 0;
 
-    virtual auto get_height() const -> uint32_t = 0;
-
-    virtual auto get_depth() const -> uint32_t = 0;
-
-    virtual auto get_mip_levels() const -> uint32_t = 0;
-
-    virtual auto get_format() const -> TextureFormat = 0;
-};
-
-}
-
-}
-
-}
+        virtual auto get_flags() const -> TextureUsageFlags = 0;
+    };
+} // namespace ionengine::renderer::rhi

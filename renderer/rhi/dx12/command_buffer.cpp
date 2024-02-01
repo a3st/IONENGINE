@@ -42,8 +42,7 @@ DX12CommandBuffer::DX12CommandBuffer(
     command_list(command_list),
     list_type(list_type)
 {
-    trackers.reserve(32);
-    barriers.reserve(32);
+
 }
 
 auto DX12CommandBuffer::reset() -> void {
@@ -57,6 +56,7 @@ auto DX12CommandBuffer::reset() -> void {
         };
         command_list->SetDescriptorHeaps(static_cast<uint32_t>(descriptors.size()), descriptors.data());
     }
+    
     is_root_signature_binded = false;
     current_shader = nullptr;
 }
@@ -81,7 +81,6 @@ auto DX12CommandBuffer::set_graphics_pipeline_options(
     }
 
     command_list->SetPipelineState(pipeline->get_pipeline_state());
-    command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     current_shader = shader;
 }
@@ -95,12 +94,55 @@ auto DX12CommandBuffer::bind_descriptor(
     auto visitor = make_visitor(
         [&](BufferBindData const& data) {
             bindings[index] = static_cast<DX12Buffer*>(data.resource.get())->get_descriptor(data.usage).offset;
+
+            D3D12_RESOURCE_STATES begin_state = static_cast<DX12Buffer*>(data.resource.get())->get_resource_state();
+            switch(data.usage) {
+                case BufferUsage::ConstantBuffer: {
+                    // begin_state = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+                } break;
+                case BufferUsage::ShaderResource: {
+                    begin_state = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+                } break;
+                case BufferUsage::UnorderedAccess: {
+                    begin_state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+                }
+            }
+
+            if(static_cast<DX12Buffer*>(data.resource.get())->get_resource_state() != begin_state) {
+                auto tracker = ResourceTrackerInfo {
+                    .resource = static_cast<DX12Buffer*>(data.resource.get()),
+                    .begin_state = begin_state,
+                    .end_state = static_cast<DX12Buffer*>(data.resource.get())->get_resource_state()
+                };
+                binding_trackers.emplace_back(tracker);
+            }
         },
         [&](TextureBindData const& data) {
             bindings[index] = static_cast<DX12Texture*>(data.resource.get())->get_descriptor(data.usage).offset;
+
+            D3D12_RESOURCE_STATES begin_state = D3D12_RESOURCE_STATE_COMMON;
+            switch(data.usage) {
+                case TextureUsage::ShaderResource: {
+                    begin_state = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                } break;
+                case TextureUsage::UnorderedAccess: {
+                    begin_state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+                }
+            }
+
+            if(static_cast<DX12Texture*>(data.resource.get())->get_resource_state() != begin_state) {
+                auto tracker = ResourceTrackerInfo {
+                    .resource = static_cast<DX12Texture*>(data.resource.get()),
+                    .begin_state = begin_state,
+                    .end_state = static_cast<DX12Texture*>(data.resource.get())->get_resource_state()
+                };
+                binding_trackers.emplace_back(tracker);
+            }
         }
     );
     std::visit(visitor, data);
+
+    begin_barrier_resources(binding_trackers);
 }
 
 auto DX12CommandBuffer::begin_render_pass(
@@ -133,8 +175,13 @@ auto DX12CommandBuffer::begin_render_pass(
                 .begin_state = D3D12_RESOURCE_STATE_RENDER_TARGET,
                 .end_state = static_cast<DX12Texture*>(colors[i].texture.get())->get_resource_state()
             };
-            trackers.emplace_back(tracker);
+            render_pass_trackers.emplace_back(tracker);
         }
+    }
+
+    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtvs;
+    for(auto const& color : colors) {
+        rtvs.emplace_back(static_cast<DX12Texture*>(color.texture.get())->get_descriptor(rhi::TextureUsage::RenderTarget).cpu_handle());
     }
 
     if(depth_stencil.has_value()) {
@@ -174,34 +221,68 @@ auto DX12CommandBuffer::begin_render_pass(
                 .begin_state = D3D12_RESOURCE_STATE_DEPTH_WRITE,
                 .end_state = static_cast<DX12Texture*>(value.texture.get())->get_resource_state()
             };
-            trackers.emplace_back(tracker);
+            render_pass_trackers.emplace_back(tracker);
         }
 
-        begin_barrier_resources();
+        begin_barrier_resources(render_pass_trackers);
 
-        command_list->BeginRenderPass(
+        /*command_list->BeginRenderPass(
             static_cast<uint32_t>(colors.size()), 
             render_pass_render_targets.data(), 
             &render_pass_depth_stencil, 
             D3D12_RENDER_PASS_FLAG_NONE
-        );
-    } else {
-        begin_barrier_resources();
+        );*/
 
-        command_list->BeginRenderPass(
+        
+        D3D12_CPU_DESCRIPTOR_HANDLE depth_stencil = static_cast<DX12Texture*>(value.texture.get())->get_descriptor(TextureUsage::DepthStencil).cpu_handle();
+
+        command_list->OMSetRenderTargets(colors.size(), rtvs.data(), FALSE, &depth_stencil);
+
+        for(uint32_t i = 0; i < colors.size(); ++i) {
+            
+            std::array<float, 4> color;
+            color[0] = colors[i].clear_color.r;
+            color[1] = colors[i].clear_color.g;
+            color[2] = colors[i].clear_color.b;
+            color[3] = colors[i].clear_color.a;
+            command_list->ClearRenderTargetView(rtvs[i], color.data(), 0, nullptr);
+        }
+        command_list->ClearDepthStencilView(depth_stencil, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 1u, 0, nullptr);
+
+        command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    } else {
+        begin_barrier_resources(render_pass_trackers);
+
+        command_list->OMSetRenderTargets(colors.size(), rtvs.data(), FALSE, nullptr);
+
+        for(uint32_t i = 0; i < colors.size(); ++i) {
+            
+            std::array<float, 4> color;
+            color[0] = colors[i].clear_color.r;
+            color[1] = colors[i].clear_color.g;
+            color[2] = colors[i].clear_color.b;
+            color[3] = colors[i].clear_color.a;
+            command_list->ClearRenderTargetView(rtvs[i], color.data(), 0, nullptr);
+        }
+
+        command_list->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        /*command_list->BeginRenderPass(
             static_cast<uint32_t>(colors.size()), 
             render_pass_render_targets.data(), 
             nullptr, 
             D3D12_RENDER_PASS_FLAG_NONE
-        );
+        );*/
     }
 }
 
 auto DX12CommandBuffer::end_render_pass() -> void {
     
-    command_list->EndRenderPass();
+    // command_list->EndRenderPass();
 
-    end_barrier_resources();
+    end_barrier_resources(render_pass_trackers);
+    render_pass_trackers.clear();
 }
 
 auto DX12CommandBuffer::bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void {
@@ -215,6 +296,21 @@ auto DX12CommandBuffer::bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_
 }
 
 auto DX12CommandBuffer::bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size, IndexFormat const format) -> void {
+
+    if(static_cast<DX12Buffer*>(buffer.get())->get_resource_state() != D3D12_RESOURCE_STATE_INDEX_BUFFER) {
+        auto d3d12_resource_barrier = D3D12_RESOURCE_BARRIER {};
+        d3d12_resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        d3d12_resource_barrier.Transition.pResource = static_cast<DX12Buffer*>(buffer.get())->get_resource();
+        d3d12_resource_barrier.Transition.StateBefore = static_cast<DX12Buffer*>(buffer.get())->get_resource_state();
+        d3d12_resource_barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_INDEX_BUFFER;
+        d3d12_resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+        barriers.emplace_back(d3d12_resource_barrier);
+        command_list->ResourceBarrier(static_cast<uint32_t>(barriers.size()), barriers.data());
+        barriers.clear();
+
+        static_cast<DX12Buffer*>(buffer.get())->set_resource_state(D3D12_RESOURCE_STATE_INDEX_BUFFER);
+    }
 
     auto d3d12_index_buffer_view = D3D12_INDEX_BUFFER_VIEW {};
     d3d12_index_buffer_view.BufferLocation = static_cast<DX12Buffer*>(buffer.get())->get_resource()->GetGPUVirtualAddress() + offset;
@@ -231,11 +327,24 @@ auto DX12CommandBuffer::bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t
     command_list->IASetIndexBuffer(&d3d12_index_buffer_view);
 }
 
-auto DX12CommandBuffer::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t instance_offset) -> void {
+auto DX12CommandBuffer::draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) -> void {
 
     command_list->SetGraphicsRoot32BitConstants(0, static_cast<uint32_t>(bindings.size()), bindings.data(), 0);
 
     command_list->DrawIndexedInstanced(index_count, instance_count, 0, 0, instance_offset);
+
+    end_barrier_resources(binding_trackers);
+    binding_trackers.clear();
+}
+
+auto DX12CommandBuffer::draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const instance_offset) -> void {
+
+    command_list->SetGraphicsRoot32BitConstants(0, static_cast<uint32_t>(bindings.size()), bindings.data(), 0);
+
+    command_list->DrawInstanced(vertex_count, instance_count, 0, instance_offset);
+
+    end_barrier_resources(binding_trackers);
+    binding_trackers.clear();
 }
 
 auto DX12CommandBuffer::copy_buffer(
@@ -251,9 +360,9 @@ auto DX12CommandBuffer::copy_buffer(
         .begin_state = D3D12_RESOURCE_STATE_COPY_DEST,
         .end_state = static_cast<DX12Buffer*>(dst.get())->get_resource_state()
     };
-    trackers.emplace_back(tracker);
+    std::array<ResourceTrackerInfo, 1> trackers = { tracker };
 
-    begin_barrier_resources();
+    begin_barrier_resources(trackers);
     command_list->CopyBufferRegion(
         static_cast<DX12Buffer*>(dst.get())->get_resource(), 
         dst_offset,
@@ -261,7 +370,7 @@ auto DX12CommandBuffer::copy_buffer(
         src_offset,
         size
     );
-    end_barrier_resources();
+    end_barrier_resources(trackers);
 }
 
 auto DX12CommandBuffer::copy_buffer(
@@ -275,9 +384,9 @@ auto DX12CommandBuffer::copy_buffer(
         .begin_state = D3D12_RESOURCE_STATE_COPY_DEST,
         .end_state = static_cast<DX12Texture*>(dst.get())->get_resource_state()
     };
-    trackers.emplace_back(tracker);
+    std::array<ResourceTrackerInfo, 1> trackers = { tracker };
 
-    begin_barrier_resources();
+    begin_barrier_resources(trackers);
     for(size_t i = 0; i < regions.size(); ++i) {
         auto d3d12_subresource_footprint = D3D12_PLACED_SUBRESOURCE_FOOTPRINT {};
         d3d12_subresource_footprint.Footprint.Format = static_cast<DX12Texture*>(dst.get())->get_resource()->GetDesc().Format;
@@ -299,7 +408,7 @@ auto DX12CommandBuffer::copy_buffer(
 
         command_list->CopyTextureRegion(&d3d12_dest_location, 0, 0, 0, &d3d12_source_location, nullptr);
     }
-    end_barrier_resources();
+    end_barrier_resources(trackers);
 }
 
 auto DX12CommandBuffer::set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height) -> void {
@@ -326,7 +435,7 @@ auto DX12CommandBuffer::set_scissor(int32_t const left, int32_t const top, int32
     command_list->RSSetScissorRects(1, &d3d12_rect);
 }
 
-auto DX12CommandBuffer::begin_barrier_resources() -> void {
+auto DX12CommandBuffer::begin_barrier_resources(std::span<ResourceTrackerInfo> const trackers) -> void {
 
     if(trackers.empty()) {
         return;
@@ -356,7 +465,7 @@ auto DX12CommandBuffer::begin_barrier_resources() -> void {
     barriers.clear();
 }
 
-auto DX12CommandBuffer::end_barrier_resources() -> void {
+auto DX12CommandBuffer::end_barrier_resources(std::span<ResourceTrackerInfo> const trackers) -> void {
 
     if(trackers.empty()) {
         return;
@@ -384,6 +493,4 @@ auto DX12CommandBuffer::end_barrier_resources() -> void {
 
     command_list->ResourceBarrier(static_cast<uint32_t>(barriers.size()), barriers.data());
     barriers.clear();
-
-    trackers.clear();
 }

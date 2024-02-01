@@ -50,7 +50,8 @@ class ShaderParser:
                     self.stages['VERTEX_SHADER'] = {
                         'buffer': offset,
                         'entryPoint': match,
-                        'inputs': []
+                        'inputs': [],
+                        'inputsSizePerVertex': 0
                     }
                 case _:
                     self.stages[shader_stages[match]] = {
@@ -81,7 +82,7 @@ class ShaderParser:
             if match[0] == 'uint':
                 self.exports[match[1][0].upper() + match[1][1:]] = {
                     'binding': offset,
-                    'type': 'TEXTURE_UAV'
+                    'type': 'NON_BUFFER'
                 }
                 offset += 1
             else:

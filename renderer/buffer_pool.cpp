@@ -11,13 +11,13 @@ BufferPool::BufferPool(rhi::Device& device) : device(&device) {
     allocators.emplace((rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite, device.create_allocator(
         32 * 1024,
         32 * 1024 * 1024,
-        (rhi::BufferUsageFlags)(rhi::BufferUsage::MapWrite | rhi::BufferUsage::ShaderResource | rhi::BufferUsage::UnorderedAccess | rhi::BufferUsage::ConstantBuffer)
+        rhi::MemoryAllocatorUsage::Upload
     ));
 
     allocators.emplace((rhi::BufferUsageFlags)0, device.create_allocator(
         32 * 1024,
         32 * 1024 * 1024,
-        (rhi::BufferUsageFlags)(rhi::BufferUsage::CopyDst | rhi::BufferUsage::ShaderResource | rhi::BufferUsage::UnorderedAccess | rhi::BufferUsage::ConstantBuffer)
+        rhi::MemoryAllocatorUsage::Default
     ));
 }
 
@@ -43,7 +43,7 @@ auto BufferPool::allocate(size_t const size, rhi::BufferUsageFlags const flags, 
         chunk.offset++;
     }
     
-    device->write_buffer(buffer, data);
+    buffer = device->write_buffer(buffer, data).get();
     return buffer;
 }
 

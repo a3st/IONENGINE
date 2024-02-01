@@ -85,9 +85,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     match args.t:
-        case 'dx12':
+        case 'DX12':
             backend_type = BackendType.DirectX12
-        case 'vk':
+        case 'VK':
             backend_type = BackendType.Vulkan
         case _:
             raise RuntimeError("Unsupported shader backend type")

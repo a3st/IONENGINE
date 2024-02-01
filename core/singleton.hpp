@@ -2,28 +2,24 @@
 
 #pragma once
 
-namespace ionengine {
+namespace ionengine::core
+{
+    template <typename Type>
+    class Singleton
+    {
+      public:
+        Singleton(Singleton const&) = delete;
 
-namespace core {
+        auto operator=(Singleton const&) = delete;
 
-template<typename Type>
-class Singleton {
-public:
+        static auto instance() -> Type&
+        {
+            static const auto instance = std::make_unique<Type>();
+            return *instance;
+        }
 
-    Singleton(Singleton const&) = delete;
+      private:
+        Singleton() = default;
+    };
 
-    auto operator=(Singleton const&) = delete;
-
-    static auto instance() -> Type& {
-        static const auto instance = std::make_unique<Type>();
-        return *instance;
-    }
-
-private:
-
-    Singleton() = default;
-};
-
-}
-
-}
+} // namespace ionengine::core

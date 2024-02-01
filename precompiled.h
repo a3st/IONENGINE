@@ -28,6 +28,7 @@
 #include <regex>
 #include <spanstream>
 #include <numbers>
+#include <mutex>
 
 #ifndef DECLARE_ENUM_CLASS_BIT_FLAG
 #define DECLARE_ENUM_CLASS_BIT_FLAG(EnumClass) \

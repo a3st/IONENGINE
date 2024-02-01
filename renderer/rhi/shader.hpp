@@ -4,133 +4,137 @@
 
 #include "core/ref_ptr.hpp"
 
-namespace ionengine {
+namespace ionengine::renderer::rhi::shader_file
+{
+    inline std::array<uint8_t, 8> const SHADER_MAGIC{'S', 'H', 'A', 'D', 'E', 'R', '.', '1'};
 
-namespace renderer {
+    enum class ElementType
+    {
+        Float4x4,
+        Float3x3,
+        Float2x2,
+        Float4,
+        Float3,
+        Float2,
+        Float,
+        Uint,
+        Bool
+    };
 
-namespace rhi {
+    enum class ResourceType
+    {
+        Buffer,
+        NonBuffer
+    };
 
-namespace shader_file {
+    enum class ShaderStageType
+    {
+        Vertex,
+        Pixel
+    };
 
-inline std::array<uint8_t, 8> const SHADER_MAGIC{ 'S', 'H', 'A', 'D', 'E', 'R', '.', '1' };
+    enum class ShaderFileFlags
+    {
+        DXIL_Binary = 0,
+        SPIRV_Binary = 1
+    };
 
-enum class ElementType {
-    Float4x4,
-    Float3x3,
-    Float2x2,
-    Float4,
-    Float3,
-    Float2,
-    Float,
-    Uint,
-    Bool
-};
+    struct Header
+    {
+        std::array<uint8_t, 8> magic;
+        uint32_t length;
+        uint32_t flags;
+    };
 
-enum class ResourceType {
-    Buffer,
-    Texture_UAV
-};
+    struct ChunkHeader
+    {
+        uint32_t chunk_type;
+        uint32_t chunk_length;
+    };
 
-enum class ShaderStageType {
-    Vertex,
-    Pixel
-};
+    struct VertexStageInput
+    {
+        ElementType element_type;
+        std::string semantic;
+    };
 
-enum class ShaderFileFlags {
-    DXIL_Binary = 0,
-    SPIRV_Binary = 1
-};
+    struct ShaderStageData
+    {
+        uint32_t buffer;
+        std::string entry_point;
+        std::vector<VertexStageInput> inputs;
+        uint32_t inputs_size_per_vertex;
+    };
 
-struct Header {
-    std::array<uint8_t, 8> magic;
-    uint32_t length;
-    uint32_t flags;
-};
+    struct ElementData
+    {
+        std::string name;
+        ElementType element_type;
+    };
 
-struct ChunkHeader {
-    uint32_t chunk_type;
-    uint32_t chunk_length;
-};
+    struct ResourceData
+    {
+        uint32_t binding;
+        ResourceType resource_type;
+        std::vector<ElementData> elements;
+        uint32_t size;
+    };
 
-struct VertexStageInput {
-    ElementType element_type;
-    std::string semantic;
-};
+    auto get_element_type_by_string(std::string_view const element_type) -> ElementType;
 
-struct ShaderStageData {
-    uint32_t buffer;
-    std::string entry_point;
-    std::vector<VertexStageInput> inputs;
-    uint32_t inputs_size_per_vertex;
-};
+    auto get_resource_type_by_string(std::string_view const resource_type) -> ResourceType;
 
-struct ElementData {
-    std::string name;
-    ElementType element_type;
-};
+    auto get_shader_stage_type_by_string(std::string_view const stage_type) -> ShaderStageType;
 
-struct ResourceData {
-    uint32_t binding;
-    ResourceType resource_type;
-    std::vector<ElementData> elements;
-    uint32_t size;
-};
+    class ShaderFile
+    {
+      public:
+        ShaderFile(std::span<uint8_t const> const data_bytes);
 
-auto get_element_type_by_string(std::string_view const element_type) -> ElementType;
+        auto get_name() -> std::string_view
+        {
 
-auto get_resource_type_by_string(std::string_view const resource_type) -> ResourceType;
+            return shader_name;
+        }
 
-auto get_shader_stage_type_by_string(std::string_view const stage_type) -> ShaderStageType;
+        auto get_exports() -> std::unordered_map<std::string, ResourceData> const&
+        {
 
-class ShaderFile {
-public:
+            return exports;
+        }
 
-    ShaderFile(std::span<uint8_t const> const data_bytes);
+        auto get_stages() -> std::unordered_map<ShaderStageType, ShaderStageData> const&
+        {
 
-    auto get_name() -> std::string_view {
+            return stages;
+        }
 
-        return shader_name;
-    }
+        auto get_buffer(uint32_t const index) -> std::span<uint8_t const>
+        {
 
-    auto get_exports() -> std::unordered_map<std::string, ResourceData> const& {
+            return buffers[index];
+        }
 
-        return exports;
-    }
+        auto get_flags() -> ShaderFileFlags
+        {
 
-    auto get_stages() -> std::unordered_map<ShaderStageType, ShaderStageData> const& {
+            return flags;
+        }
 
-        return stages;
-    }
+      private:
+        std::string shader_name;
+        std::unordered_map<ShaderStageType, ShaderStageData> stages;
+        std::unordered_map<std::string, ResourceData> exports;
+        std::vector<std::vector<uint8_t>> buffers;
+        ShaderFileFlags flags;
+    };
+} // namespace ionengine::renderer::rhi::shader_file
 
-    auto get_buffer(uint32_t const index) -> std::span<uint8_t const> {
-
-        return buffers[index];
-    }
-
-    auto get_flags() -> ShaderFileFlags {
-
-        return flags;
-    }
-
-private:
-
-    std::string shader_name;
-    std::unordered_map<ShaderStageType, ShaderStageData> stages;
-    std::unordered_map<std::string, ResourceData> exports;
-    std::vector<std::vector<uint8_t>> buffers;
-    ShaderFileFlags flags;
-};
-
-}
-
-class Shader : public core::ref_counted_object {
-public:
-
-    virtual auto get_name() -> std::string_view = 0;
-};
-
-}
-
-}
-
-}
+namespace ionengine::renderer::rhi
+{
+    class Shader : public core::ref_counted_object
+    {
+      public:
+        virtual auto get_name() -> std::string_view = 0;
+    };
+} // namespace ionengine::renderer::rhi

@@ -26,7 +26,7 @@ auto Engine::run() -> void {
 
     std::vector<uint8_t> object_bytes;
     {
-        std::ifstream ifs("models/vehicle-1mat.glb", std::ios::binary);
+        std::ifstream ifs("models/cube.glb", std::ios::binary);
         ifs.seekg(0, std::ios::end);
         auto size = ifs.tellg();
         ifs.seekg(0, std::ios::beg);

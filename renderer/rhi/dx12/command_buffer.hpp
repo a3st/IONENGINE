@@ -62,7 +62,9 @@ public:
 
     auto bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size, IndexFormat const format) -> void override;
 
-    auto draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t instance_offset) -> void override;
+    auto draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) -> void override;
+
+    auto draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const instance_offset) -> void override;
 
     auto copy_buffer(
         core::ref_ptr<Buffer> dst, 
@@ -107,13 +109,15 @@ private:
         D3D12_RESOURCE_STATES begin_state;
         D3D12_RESOURCE_STATES end_state;
     };
-    std::vector<ResourceTrackerInfo> trackers;
+    std::vector<ResourceTrackerInfo> render_pass_trackers;
+    std::vector<ResourceTrackerInfo> binding_trackers;
+
     std::vector<D3D12_RESOURCE_BARRIER> barriers;
     std::array<uint32_t, 16> bindings;
 
-    auto begin_barrier_resources() -> void;
+    auto begin_barrier_resources(std::span<ResourceTrackerInfo> const trackers) -> void;
 
-    auto end_barrier_resources() -> void;
+    auto end_barrier_resources(std::span<ResourceTrackerInfo> const trackers) -> void;
 };
 
 }
