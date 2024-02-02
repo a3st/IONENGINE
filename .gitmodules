@@ -1,0 +1,3 @@
+[submodule "thirdparty/thirdparty"]
+	path = thirdparty/thirdparty
+	url = https://github.com/simdjson/simdjson

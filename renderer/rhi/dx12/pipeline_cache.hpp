@@ -24,7 +24,9 @@ namespace ionengine::renderer::rhi
       public:
         Pipeline(ID3D12Device4* device, ID3D12RootSignature* root_signature, DX12Shader& shader,
                  RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
-                 std::optional<DepthStencilStageInfo> const depth_stencil, ID3DBlob* blob);
+                 std::optional<DepthStencilStageInfo> const depth_stencil,
+                 std::span<DXGI_FORMAT const> const render_target_formats, DXGI_FORMAT const depth_stencil_format,
+                 ID3DBlob* blob);
 
         auto get_pipeline_state() -> ID3D12PipelineState*
         {

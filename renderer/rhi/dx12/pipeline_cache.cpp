@@ -72,7 +72,9 @@ namespace ionengine::renderer::rhi
 
     Pipeline::Pipeline(ID3D12Device4* device, ID3D12RootSignature* root_signature, DX12Shader& shader,
                        RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
-                       std::optional<DepthStencilStageInfo> const depth_stencil, ID3DBlob* blob)
+                       std::optional<DepthStencilStageInfo> const depth_stencil,
+                       std::span<DXGI_FORMAT const> const render_target_formats, DXGI_FORMAT const depth_stencil_format,
+                       ID3DBlob* blob)
         : root_signature(root_signature)
     {
         auto d3d12_pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC{};
@@ -94,9 +96,6 @@ namespace ionengine::renderer::rhi
                 case shader_file::ShaderStageType::Pixel: {
                     d3d12_pipeline_desc.PS = data;
 
-                    d3d12_pipeline_desc.NumRenderTargets = 1;
-                    d3d12_pipeline_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-
                     auto d3d12_render_target_blend = D3D12_RENDER_TARGET_BLEND_DESC{};
                     d3d12_render_target_blend.BlendEnable = blend_color.blend_enable;
                     d3d12_render_target_blend.SrcBlend = blend_to_d3d12(blend_color.blend_src);
@@ -108,13 +107,16 @@ namespace ionengine::renderer::rhi
                     d3d12_render_target_blend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
                     auto d3d12_blend = D3D12_BLEND_DESC{};
-                    d3d12_blend.RenderTarget[0] = d3d12_render_target_blend;
+                    d3d12_pipeline_desc.NumRenderTargets = static_cast<uint32_t>(render_target_formats.size());
+                    for (uint32_t const i : std::views::iota(0u, render_target_formats.size()))
+                    {
+                        d3d12_pipeline_desc.RTVFormats[i] = render_target_formats[i];
+                        d3d12_blend.RenderTarget[i] = d3d12_render_target_blend;
+                    }
 
                     d3d12_pipeline_desc.BlendState = d3d12_blend;
 
-                    auto depth_stencil_value = depth_stencil.value_or(DepthStencilStageInfo::Default());
-                    d3d12_pipeline_desc.DSVFormat =
-                        depth_stencil_value.depth_write ? DXGI_FORMAT_D32_FLOAT : DXGI_FORMAT_UNKNOWN;
+                    d3d12_pipeline_desc.DSVFormat = depth_stencil_format;
                     break;
                 }
             }
