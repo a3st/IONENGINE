@@ -284,11 +284,14 @@ namespace ionengine::renderer::rhi
         */
     }
 
-    auto PipelineCache::get(DX12Shader& shader, RasterizerStageInfo const& rasterizer,
-                            BlendColorInfo const& blend_color, std::optional<DepthStencilStageInfo> const depth_stencil)
-        -> core::ref_ptr<Pipeline>
+    auto PipelineCache::get(
+        DX12Shader& shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
+        std::optional<DepthStencilStageInfo> const depth_stencil,
+        std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& render_target_formats,
+        DXGI_FORMAT const depth_stencil_format) -> core::ref_ptr<Pipeline>
     {
-        auto entry = Entry{shader.get_hash(), rasterizer, blend_color, depth_stencil};
+        auto entry = Entry{shader.get_hash(),     rasterizer,          blend_color, depth_stencil,
+                           render_target_formats, depth_stencil_format};
 
         std::unique_lock lock(mutex);
         auto result = entries.find(entry);
@@ -299,8 +302,9 @@ namespace ionengine::renderer::rhi
         else
         {
             lock.unlock();
-            auto pipeline = core::make_ref<Pipeline>(device, root_signature.get(), shader, rasterizer, blend_color,
-                                                     depth_stencil, nullptr);
+            auto pipeline =
+                core::make_ref<Pipeline>(device, root_signature.get(), shader, rasterizer, blend_color, depth_stencil,
+                                         render_target_formats, depth_stencil_format, nullptr);
 
             lock.lock();
             entries.emplace(entry, pipeline);

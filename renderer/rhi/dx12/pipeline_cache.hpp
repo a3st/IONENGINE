@@ -52,6 +52,8 @@ namespace ionengine::renderer::rhi
             RasterizerStageInfo rasterizer;
             BlendColorInfo blend_color;
             std::optional<DepthStencilStageInfo> depth_stencil;
+            std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> render_target_formats;
+            DXGI_FORMAT depth_stencil_format;
 
             auto operator==(Entry const& other) const -> bool
             {
@@ -60,7 +62,8 @@ namespace ionengine::renderer::rhi
                                        blend_color.blend_op_alpha, blend_color.blend_src, blend_color.blend_src_alpha,
                                        depth_stencil.value_or(DepthStencilStageInfo::Default()).depth_func,
                                        depth_stencil.value_or(DepthStencilStageInfo::Default()).depth_write,
-                                       depth_stencil.value_or(DepthStencilStageInfo::Default()).stencil_write) ==
+                                       depth_stencil.value_or(DepthStencilStageInfo::Default()).stencil_write,
+                                       render_target_formats, depth_stencil_format) ==
                        std::make_tuple(other.shader_hash, other.rasterizer.fill_mode, other.rasterizer.cull_mode,
                                        other.blend_color.blend_dst, other.blend_color.blend_dst_alpha,
                                        other.blend_color.blend_enable, other.blend_color.blend_op,
@@ -68,7 +71,8 @@ namespace ionengine::renderer::rhi
                                        other.blend_color.blend_src_alpha,
                                        other.depth_stencil.value_or(DepthStencilStageInfo::Default()).depth_func,
                                        other.depth_stencil.value_or(DepthStencilStageInfo::Default()).depth_write,
-                                       other.depth_stencil.value_or(DepthStencilStageInfo::Default()).stencil_write);
+                                       other.depth_stencil.value_or(DepthStencilStageInfo::Default()).stencil_write,
+                                       other.render_target_formats, other.depth_stencil_format);
             }
         };
 
@@ -88,7 +92,9 @@ namespace ionengine::renderer::rhi
                        XXHash64::hash(&entry.blend_color.blend_src_alpha, sizeof(uint32_t), 0) ^
                        XXHash64::hash(&depth_stencil.depth_func, sizeof(uint32_t), 0) ^
                        XXHash64::hash(&depth_stencil.depth_write, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&depth_stencil.stencil_write, sizeof(uint32_t), 0);
+                       XXHash64::hash(&depth_stencil.stencil_write, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&entry.render_target_formats, entry.render_target_formats.size(), 0) ^
+                       XXHash64::hash(&entry.depth_stencil_format, sizeof(DXGI_FORMAT), 0);
             }
         };
 
@@ -97,7 +103,9 @@ namespace ionengine::renderer::rhi
         ~PipelineCache();
 
         auto get(DX12Shader& shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
-                 std::optional<DepthStencilStageInfo> const depth_stencil) -> core::ref_ptr<Pipeline>;
+                 std::optional<DepthStencilStageInfo> const depth_stencil,
+                 std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& render_target_formats,
+                 DXGI_FORMAT const depth_stencil_format) -> core::ref_ptr<Pipeline>;
 
         auto reset() -> void;
 
