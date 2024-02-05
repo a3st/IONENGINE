@@ -240,48 +240,6 @@ namespace ionengine::renderer::rhi
         THROW_IF_FAILED(::D3D12SerializeVersionedRootSignature(&d3d12_root_signature, blob.put(), nullptr));
         THROW_IF_FAILED(device->CreateRootSignature(0, blob->GetBufferPointer(), blob->GetBufferSize(),
                                                     __uuidof(ID3D12RootSignature), root_signature.put_void()));
-
-        /*
-        TODO! Pipeline cache mechanism
-
-        {
-            HRESULT result = E_INVALIDARG;
-            std::basic_ifstream<uint8_t> ifs("shader_cache.bin", std::ios::binary);
-            if(ifs.is_open()) {
-                std::vector<uint8_t> cache_bytes;
-                ifs.seekg(0, std::ios::end);
-                size_t size = ifs.tellg();
-                ifs.seekg(0, std::ios::beg);
-                cache_bytes.resize(size);
-                ifs.read(cache_bytes.data(), cache_bytes.size());
-
-                result = device->CreatePipelineLibrary(cache_bytes.data(), cache_bytes.size(),
-        __uuidof(ID3D12PipelineLibrary), pipeline_library.put_void());
-            }
-
-            if(result == D3D12_ERROR_ADAPTER_NOT_FOUND | result == D3D12_ERROR_DRIVER_VERSION_MISMATCH | result ==
-        E_INVALIDARG) { THROW_IF_FAILED(device->CreatePipelineLibrary(nullptr, 0, __uuidof(ID3D12PipelineLibrary),
-        pipeline_library.put_void())); } else { THROW_IF_FAILED(result);
-            }
-        }
-
-        */
-    }
-
-    PipelineCache::~PipelineCache()
-    {
-
-        /*
-        TODO! Pipeline cache mechanism
-
-        std::vector<uint8_t> cache_bytes(pipeline_library->GetSerializedSize());
-        auto result = pipeline_library->Serialize(cache_bytes.data(), cache_bytes.size());
-        if(result != E_FAIL) {
-            std::basic_ofstream<uint8_t> ofs("shaders_cache.bin", std::ios::binary);
-            ofs.write(cache_bytes.data(), cache_bytes.size());
-        }
-
-        */
     }
 
     auto PipelineCache::get(

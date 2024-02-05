@@ -100,8 +100,6 @@ namespace ionengine::renderer::rhi
 
         PipelineCache(ID3D12Device4* device);
 
-        ~PipelineCache();
-
         auto get(DX12Shader& shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
                  std::optional<DepthStencilStageInfo> const depth_stencil,
                  std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& render_target_formats,
@@ -114,6 +112,5 @@ namespace ionengine::renderer::rhi
         ID3D12Device4* device;
         winrt::com_ptr<ID3D12RootSignature> root_signature;
         std::unordered_map<Entry, core::ref_ptr<Pipeline>, EntryHasher> entries;
-        // winrt::com_ptr<ID3D12PipelineLibrary> pipeline_library;
     };
 } // namespace ionengine::renderer::rhi

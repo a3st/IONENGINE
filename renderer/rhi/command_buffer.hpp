@@ -209,9 +209,9 @@ namespace ionengine::renderer::rhi
             -> void = 0;
 
         virtual auto bind_descriptor(std::string_view const binding,
-                                     std::variant<BufferBindData, TextureBindData> const data) -> void = 0;
+                                     std::variant<BufferBindData, TextureBindData> data) -> void = 0;
 
-        virtual auto begin_render_pass(std::span<RenderPassColorInfo const> const colors,
+        virtual auto begin_render_pass(std::span<RenderPassColorInfo> const colors,
                                        std::optional<RenderPassDepthStencilInfo> depth_stencil) -> void = 0;
 
         virtual auto end_render_pass() -> void = 0;

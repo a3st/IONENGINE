@@ -2,126 +2,93 @@
 
 #pragma once
 
-#include "renderer/rhi/command_buffer.hpp"
-#include "pipeline_cache.hpp"
-#include "texture.hpp"
 #include "buffer.hpp"
+#include "pipeline_cache.hpp"
+#include "renderer/rhi/command_buffer.hpp"
+#include "texture.hpp"
 #define NOMINMAX
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <winrt/base.h>
 
-namespace ionengine {
+namespace ionengine::renderer::rhi
+{
+    auto d3d12_to_command_buffer_type(D3D12_COMMAND_LIST_TYPE const list_type) -> CommandBufferType;
 
-namespace renderer {
+    auto render_pass_load_to_d3d12(RenderPassLoadOp const load_op) -> D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE;
 
-namespace rhi {
+    auto render_pass_store_to_d3d12(RenderPassStoreOp const store_op) -> D3D12_RENDER_PASS_ENDING_ACCESS_TYPE;
 
-auto d3d12_to_command_buffer_type(D3D12_COMMAND_LIST_TYPE const list_type) -> CommandBufferType;
+    class DX12CommandBuffer : public CommandBuffer
+    {
+      public:
+        DX12CommandBuffer(ID3D12Device1* device, ID3D12CommandAllocator* allocator, PipelineCache* pipeline_cache,
+                          DescriptorAllocator* descriptor_allocator,
+                          winrt::com_ptr<ID3D12GraphicsCommandList4> command_list,
+                          D3D12_COMMAND_LIST_TYPE const list_type);
 
-auto render_pass_load_to_d3d12(RenderPassLoadOp const load_op) -> D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE;
+        auto reset() -> void;
 
-auto render_pass_store_to_d3d12(RenderPassStoreOp const store_op) -> D3D12_RENDER_PASS_ENDING_ACCESS_TYPE;
+        auto close() -> void override;
 
-class DX12CommandBuffer : public CommandBuffer {
-public:
+        auto set_graphics_pipeline_options(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
+                                           BlendColorInfo const& blend_color,
+                                           std::optional<DepthStencilStageInfo> const depth_stencil) -> void override;
 
-    DX12CommandBuffer(
-        ID3D12Device1* device, 
-        ID3D12CommandAllocator* allocator, 
-        PipelineCache* pipeline_cache,
-        DescriptorAllocator* descriptor_allocator,
-        winrt::com_ptr<ID3D12GraphicsCommandList4> command_list, 
-        D3D12_COMMAND_LIST_TYPE const list_type
-    );
+        auto bind_descriptor(std::string_view const binding, std::variant<BufferBindData, TextureBindData> data)
+            -> void override;
 
-    auto reset() -> void;
+        auto begin_render_pass(std::span<RenderPassColorInfo> const colors,
+                               std::optional<RenderPassDepthStencilInfo> depth_stencil) -> void override;
 
-    auto close() -> void override;
+        auto end_render_pass() -> void override;
 
-    auto set_graphics_pipeline_options(
-        core::ref_ptr<Shader> shader,
-        RasterizerStageInfo const& rasterizer,
-        BlendColorInfo const& blend_color,
-        std::optional<DepthStencilStageInfo> const depth_stencil
-    ) -> void override;
+        auto bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
+            -> void override;
 
-    auto bind_descriptor(
-        std::string_view const binding,
-        std::variant<BufferBindData, TextureBindData> const data
-    ) -> void override;
+        auto bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
+                               IndexFormat const format) -> void override;
 
-    auto begin_render_pass(
-        std::span<RenderPassColorInfo const> const colors,
-        std::optional<RenderPassDepthStencilInfo> depth_stencil
-    ) -> void override;
+        auto draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset)
+            -> void override;
 
-    auto end_render_pass() -> void override;
+        auto draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const instance_offset)
+            -> void override;
 
-    auto bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void override;
+        auto copy_buffer(core::ref_ptr<Buffer> dst, uint64_t const dst_offset, core::ref_ptr<Buffer> src,
+                         uint64_t const src_offset, size_t const size) -> void override;
 
-    auto bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size, IndexFormat const format) -> void override;
+        auto copy_buffer(core::ref_ptr<Texture> dst, core::ref_ptr<Buffer> src,
+                         std::span<TextureCopyRegion const> const regions) -> void override;
 
-    auto draw_indexed(uint32_t const index_count, uint32_t const instance_count, uint32_t const instance_offset) -> void override;
+        auto set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height)
+            -> void override;
 
-    auto draw(uint32_t const vertex_count, uint32_t const instance_count, uint32_t const instance_offset) -> void override;
+        auto set_scissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom)
+            -> void override;
 
-    auto copy_buffer(
-        core::ref_ptr<Buffer> dst, 
-        uint64_t const dst_offset, 
-        core::ref_ptr<Buffer> src, 
-        uint64_t const src_offset,
-        size_t const size
-    ) -> void override;
+        auto get_command_list() -> ID3D12GraphicsCommandList4*
+        {
+            return command_list.get();
+        }
 
-    auto copy_buffer(
-        core::ref_ptr<Texture> dst,
-        core::ref_ptr<Buffer> src,
-        std::span<TextureCopyRegion const> const regions
-    ) -> void override;
+        auto get_list_type() const -> D3D12_COMMAND_LIST_TYPE
+        {
+            return list_type;
+        }
 
-    auto set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height) -> void override;
-
-    auto set_scissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom) -> void override;
-
-    auto get_command_list() -> ID3D12GraphicsCommandList4* {
-
-        return command_list.get();
-    }
-
-    auto get_list_type() const -> D3D12_COMMAND_LIST_TYPE {
-
-        return list_type;
-    } 
-
-private:
-
-    ID3D12CommandAllocator* allocator;
-    PipelineCache* pipeline_cache;
-    DescriptorAllocator* descriptor_allocator;
-    winrt::com_ptr<ID3D12GraphicsCommandList4> command_list;
-    D3D12_COMMAND_LIST_TYPE list_type;
-    core::ref_ptr<DX12Shader> current_shader{nullptr};
-    bool is_root_signature_binded;
-
-    struct ResourceTrackerInfo {
-        std::variant<DX12Texture*, DX12Buffer*> resource;
-        D3D12_RESOURCE_STATES begin_state;
-        D3D12_RESOURCE_STATES end_state;
+      private:
+        ID3D12CommandAllocator* allocator;
+        PipelineCache* pipeline_cache;
+        DescriptorAllocator* descriptor_allocator;
+        winrt::com_ptr<ID3D12GraphicsCommandList4> command_list;
+        D3D12_COMMAND_LIST_TYPE list_type;
+        core::ref_ptr<DX12Shader> current_shader;
+        bool is_root_signature_binded;
+        std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> render_target_formats;
+        DXGI_FORMAT depth_stencil_format;
+        std::array<DX12Texture*, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> render_target_textures;
+        DX12Texture* depth_stencil_texture;
+        std::array<uint32_t, 16> bindings;
     };
-    std::vector<ResourceTrackerInfo> render_pass_trackers;
-    std::vector<ResourceTrackerInfo> binding_trackers;
-
-    std::vector<D3D12_RESOURCE_BARRIER> barriers;
-    std::array<uint32_t, 16> bindings;
-
-    auto begin_barrier_resources(std::span<ResourceTrackerInfo> const trackers) -> void;
-
-    auto end_barrier_resources(std::span<ResourceTrackerInfo> const trackers) -> void;
-};
-
-}
-
-}
-
-}
+} // namespace ionengine::renderer::rhi

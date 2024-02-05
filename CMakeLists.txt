@@ -3,6 +3,7 @@ project(IONENGINE VERSION 0.0.5)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 add_subdirectory(thirdparty/simdjson)
 add_subdirectory(thirdparty/pybind11)
@@ -23,6 +24,7 @@ add_library(engine SHARED
     "asset/model.cpp"
     "asset/asset_manager.cpp"
 
+    "renderer/rhi/dx12/barrier_proxy.cpp"
     "renderer/rhi/dx12/memory_allocator.cpp"
     "renderer/rhi/dx12/descriptor_allocator.cpp"
     "renderer/rhi/dx12/command_allocator.cpp"

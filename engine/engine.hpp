@@ -7,22 +7,18 @@
 #include "platform/window_loop.hpp"
 #include "renderer/renderer.hpp"
 
-namespace ionengine {
+namespace ionengine
+{
+    class Engine
+    {
+      public:
+        Engine(std::string_view const title);
 
-class Engine {
-public:
+        auto run() -> void;
 
-    Engine(
-        std::string_view const title
-    );
-
-    auto run() -> void;
-
-private:
-
-    core::ref_ptr<platform::WindowLoop> window_loop{nullptr};
-    core::ref_ptr<platform::Window> window{nullptr};
-    core::ref_ptr<renderer::Renderer> renderer{nullptr};
-};
-
-}
+      private:
+        core::ref_ptr<platform::WindowLoop> window_loop;
+        core::ref_ptr<platform::Window> window;
+        core::ref_ptr<renderer::Renderer> renderer;
+    };
+} // namespace ionengine
