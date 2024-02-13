@@ -1,9 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "shader.hpp"
-#include "math/vector.hpp"
 #include "precompiled.h"
-#include <xxhash/xxhash64.h>
 
 namespace ionengine
 {

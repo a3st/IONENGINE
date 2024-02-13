@@ -26,6 +26,7 @@ add_library(engine SHARED
     
     "asset/model.cpp"
     "asset/shader.cpp"
+    "asset/texture.cpp"
     "asset/asset_manager.cpp"
 
     "renderer/rhi/dx12/barrier_proxy.cpp"

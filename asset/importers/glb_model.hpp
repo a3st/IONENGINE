@@ -81,7 +81,7 @@ namespace ionengine::glb
     class GLBModel
     {
       public:
-        GLBModel(std::span<uint8_t> const data_bytes);
+        GLBModel(std::span<uint8_t const> const data_bytes);
 
         auto get_meshes() -> std::span<MeshData const>
         {

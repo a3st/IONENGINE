@@ -22,25 +22,8 @@ namespace ionengine
         std::vector<core::ref_ptr<renderer::Camera>> targets;
         targets.emplace_back(main_camera);
 
-        auto model = asset_manager->load_model("models/vehicle-1mat.glb");
-
-        std::vector<uint8_t> image_bytes;
-        {
-            std::ifstream ifs("textures/bird.ktx2", std::ios::binary);
-            ifs.seekg(0, std::ios::end);
-            auto size = ifs.tellg();
-            ifs.seekg(0, std::ios::beg);
-            image_bytes.resize(size);
-            ifs.read(reinterpret_cast<char* const>(image_bytes.data()), size);
-        }
-
-        ktx2::Ktx2Image ktx2(image_bytes);
-
-        auto image_data = ktx2.get_image_data();
-
-        auto texture = renderer->create_texture(image_data.pixel_width, image_data.pixel_height, 1, 3,
-                                                renderer::rhi::TextureFormat::BC3, renderer::rhi::TextureDimension::_2D,
-                                                {ktx2.get_mip_data(0), ktx2.get_mip_data(1), ktx2.get_mip_data(2)});
+        auto model = asset_manager->load_model("models/cube.glb");
+        auto texture = asset_manager->load_texture("textures/bird.ktx2");
 
         auto rot = math::Quaternionf::angle_axis(0.0f, math::Vector3f(0.0f, 1.0f, 0.0f)) *
                    math::Quaternionf::angle_axis(0.0f, math::Vector3f(0.0f, 1.0f, 0.0f)) *
@@ -74,7 +57,7 @@ namespace ionengine
                                     .model = math::Matrixf::scale(math::Vector3f(3.0f, 3.0f, 3.0f)) *
                                              math::Matrixf::translate(math::Vector3f(0.0f, 0.0f, 0.0f)),
                                     .shader = basic_shader->get_shader(),
-                                    .texture = texture,
+                                    .texture = texture.get()->get_texture(),
                                     .mask = (uint8_t)renderer::MyRenderMask::Opaque};
                                 renderer->tasks() << render_task_data;
                             }

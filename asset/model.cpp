@@ -11,7 +11,7 @@ namespace ionengine
     {
     }
 
-    auto Model::load(std::span<uint8_t> const data_bytes, ModelFormat const format, bool const immediate) -> bool
+    auto Model::load(std::span<uint8_t const> const data_bytes, ModelFormat const format, bool const immediate) -> bool
     {
         switch (format)
         {

@@ -6,9 +6,10 @@
 
 namespace ionengine::glb
 {
-    GLBModel::GLBModel(std::span<uint8_t> const data_bytes)
+    GLBModel::GLBModel(std::span<uint8_t const> const data_bytes)
     {
-        std::basic_ispanstream<uint8_t> stream(data_bytes, std::ios::binary);
+        std::basic_ispanstream<uint8_t> stream(
+            std::span<uint8_t>(const_cast<uint8_t*>(data_bytes.data()), data_bytes.size()), std::ios::binary);
 
         auto header = Header{};
         stream.read((uint8_t*)&header, sizeof(Header));

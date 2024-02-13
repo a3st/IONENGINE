@@ -24,7 +24,7 @@ namespace ionengine
       public:
         Model(renderer::Renderer& renderer);
 
-        auto load(std::span<uint8_t> const data_bytes, ModelFormat const format, bool const immediate = false) -> bool;
+        auto load(std::span<uint8_t const> const data_bytes, ModelFormat const format, bool const immediate = false) -> bool;
 
         auto get_size() const -> size_t
         {
