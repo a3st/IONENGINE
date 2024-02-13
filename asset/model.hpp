@@ -2,38 +2,43 @@
 
 #pragma once
 
-#include "glb_model.hpp"
+#include "asset.hpp"
+#include "importers/glb_model.hpp"
 #include "renderer/renderer.hpp"
 
-namespace ionengine {
+namespace ionengine
+{
+    enum class ModelFormat
+    {
+        GLB
+    };
 
-enum class ModelFormat {
-    GLB
-};
+    struct MeshData
+    {
+        std::vector<core::ref_ptr<renderer::Primitive>> primitives;
+        std::vector<uint32_t> materials;
+    };
 
-struct MeshData {
-    std::vector<core::ref_ptr<renderer::Primitive>> primitives;
-    std::vector<uint32_t> materials;
-};
+    class Model : public Asset
+    {
+      public:
+        Model(renderer::Renderer& renderer);
 
-class Model {
-public:
+        auto load(std::span<uint8_t> const data_bytes, ModelFormat const format, bool const immediate = false) -> bool;
 
-    Model(renderer::Renderer& renderer, std::span<uint8_t> const data_bytes, ModelFormat const format, bool const immediate = false);
+        auto get_size() const -> size_t
+        {
+            return meshes.size();
+        }
 
-    auto get_size() const -> size_t {
+        auto get_mesh(uint32_t const index) const -> MeshData const&
+        {
+            return meshes[index];
+        }
 
-        return meshes.size();
-    }
+      private:
+        renderer::Renderer* renderer;
+        std::vector<MeshData> meshes;
+    };
 
-    auto get_mesh(uint32_t const index) const -> MeshData const& {
-
-        return meshes[index];
-    }
-
-private:
-
-    std::vector<MeshData> meshes;
-};
-
-}
+} // namespace ionengine

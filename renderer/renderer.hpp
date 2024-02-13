@@ -9,7 +9,7 @@
 #include "render_pipeline.hpp"
 #include "render_target.hpp"
 #include "render_task.hpp"
-#include "rhi/device.hpp"
+#include "shader.hpp"
 #include "texture.hpp"
 
 namespace ionengine::renderer
@@ -17,11 +17,11 @@ namespace ionengine::renderer
     class Renderer : public core::ref_counted_object
     {
       public:
-        Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Window const& window);
+        Renderer(platform::Window const& window);
 
         auto update(float const dt) -> void;
 
-        auto render(std::span<core::ref_ptr<Camera>> const targets) -> void;
+        auto render(std::span<core::ref_ptr<Camera>> const targets, core::ref_ptr<Shader> quad_shader) -> void;
 
         auto resize(uint32_t const width, uint32_t const height) -> void;
 
@@ -39,6 +39,10 @@ namespace ionengine::renderer
                             rhi::TextureDimension const dimension, std::vector<std::span<uint8_t const>> const& data,
                             bool const immediate = false) -> core::ref_ptr<Texture>;
 
+        auto create_shader(std::span<uint8_t const> const data_bytes) -> core::ref_ptr<Shader>;
+
+        auto set_render_pipeline(core::ref_ptr<RenderPipeline> render_pipeline) -> void;
+
         auto tasks() -> RenderTaskStream&
         {
             return render_task_stream;
@@ -54,8 +58,6 @@ namespace ionengine::renderer
         uint32_t width;
         uint32_t height;
 
-        core::ref_ptr<rhi::Shader> test_shader{nullptr};
-        core::ref_ptr<rhi::Shader> quad_shader{nullptr};
         RenderTaskStream render_task_stream;
     };
 } // namespace ionengine::renderer

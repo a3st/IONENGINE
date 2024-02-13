@@ -6,8 +6,7 @@
 
 namespace ionengine::renderer
 {
-    auto MyRenderPipeline::setup(RenderGraphBuilder& builder, core::ref_ptr<Camera> camera,
-                                 core::ref_ptr<rhi::Shader> test_shader) -> void
+    auto MyRenderPipeline::setup(RenderGraphBuilder& builder, core::ref_ptr<Camera> camera) -> void
     {
         builder
             .add_attachment("ForwardColor", camera->get_render_target()->get_width(),
@@ -26,7 +25,7 @@ namespace ionengine::renderer
                                                                        rhi::RenderPassLoadOp::DontCare,
                                                                        rhi::RenderPassStoreOp::DontCare, 1.0f, 0x0}},
                 },
-                [&, test_shader, camera](RGRenderPassContext& ctx) {
+                [&, camera](RGRenderPassContext& ctx) {
                     struct WorldData
                     {
                         math::Matrixf model;
@@ -34,20 +33,28 @@ namespace ionengine::renderer
                         math::Matrixf projection;
                     };
 
-                    ctx.get_command_buffer().set_graphics_pipeline_options(
-                        test_shader,
-                        rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid, .cull_mode = rhi::CullMode::Back},
-                        rhi::BlendColorInfo::Opaque(),
-                        rhi::DepthStencilStageInfo{.depth_func = rhi::CompareOp::Less, .depth_write = true});
-
                     auto tasks = *stream | std::views::filter([](auto& element) {
                         return element.mask == (uint8_t)MyRenderMask::Opaque;
                     }) | std::ranges::to<std::vector>();
 
                     std::ranges::sort(tasks, [](auto const& lhs, auto const& rhs) { return lhs.shader < rhs.shader; });
 
+                    core::ref_ptr<Shader> last_used_shader;
+
                     for (auto& task : tasks)
                     {
+                        if (last_used_shader != task.shader)
+                        {
+                            ctx.get_command_buffer().set_graphics_pipeline_options(
+                                task.shader->get_shader(),
+                                rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid,
+                                                         .cull_mode = rhi::CullMode::Back},
+                                rhi::BlendColorInfo::Opaque(),
+                                rhi::DepthStencilStageInfo{.depth_func = rhi::CompareOp::Less, .depth_write = true});
+
+                            last_used_shader = task.shader;
+                        }
+
                         auto world_data = WorldData{
                             .model = task.model, .view = camera->get_view(), .projection = camera->get_projection()};
                         ctx.bind_buffer<WorldData>("WorldData", world_data, rhi::BufferUsage::ConstantBuffer);

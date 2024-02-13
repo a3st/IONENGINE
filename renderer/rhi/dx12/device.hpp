@@ -53,6 +53,8 @@ namespace ionengine::renderer::rhi
         auto resize_swapchain_buffers(uint32_t const width, uint32_t const height) -> void override;
 
       private:
+        std::mutex mutex;
+        
 #ifdef _DEBUG
         winrt::com_ptr<ID3D12Debug1> debug;
 #endif

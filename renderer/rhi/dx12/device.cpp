@@ -1,9 +1,9 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
+#include "device.hpp"
 #include "buffer.hpp"
 #include "command_buffer.hpp"
 #include "core/exception.hpp"
-#include "device.hpp"
 #include "future.hpp"
 #include "memory_allocator.hpp"
 #include "platform/window.hpp"
@@ -173,6 +173,8 @@ namespace ionengine::renderer::rhi
                                     TextureUsageFlags const flags, std::vector<std::span<uint8_t const>> const& data)
         -> Future<Texture>
     {
+        std::lock_guard lock(mutex);
+
         auto texture = core::make_ref<DX12Texture>(device.get(), static_cast<DX12MemoryAllocator&>(&allocator),
                                                    descriptor_allocator.get(), width, height, depth, mip_levels, format,
                                                    dimension, flags);
@@ -190,6 +192,8 @@ namespace ionengine::renderer::rhi
     auto DX12Device::create_buffer(core::ref_ptr<MemoryAllocator> allocator, size_t const size,
                                    BufferUsageFlags const flags, std::span<uint8_t const> const data) -> Future<Buffer>
     {
+        std::lock_guard lock(mutex);
+
         auto buffer = core::make_ref<DX12Buffer>(device.get(), static_cast<DX12MemoryAllocator&>(&allocator),
                                                  descriptor_allocator.get(), size, flags);
 
@@ -207,6 +211,8 @@ namespace ionengine::renderer::rhi
     auto DX12Device::write_buffer(core::ref_ptr<Buffer> buffer, std::span<uint8_t const> const data) -> Future<Buffer>
     {
         assert(!data.empty() && "Empty data cannot be written to the buffer");
+
+        std::lock_guard lock(mutex);
 
         upload_context->upload(buffer, data);
 
@@ -261,7 +267,8 @@ namespace ionengine::renderer::rhi
             queue_info.fence_value++;
             THROW_IF_FAILED(queue_info.queue->Signal(queue_info.fence.get(), queue_info.fence_value));
 
-            if(queue_info.fence->GetCompletedValue() < queue_info.fence_value) {
+            if (queue_info.fence->GetCompletedValue() < queue_info.fence_value)
+            {
                 THROW_IF_FAILED(queue_info.fence->SetEventOnCompletion(queue_info.fence_value, fence_event));
                 ::WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
             }
@@ -272,12 +279,15 @@ namespace ionengine::renderer::rhi
     {
         frame_index = swapchain->GetCurrentBackBufferIndex();
 
-        if(queue_infos[0].fence->GetCompletedValue() < frame_infos[frame_index].present_fence_value) {
-            THROW_IF_FAILED(queue_infos[0].fence->SetEventOnCompletion(frame_infos[frame_index].present_fence_value, fence_event));
+        if (queue_infos[0].fence->GetCompletedValue() < frame_infos[frame_index].present_fence_value)
+        {
+            THROW_IF_FAILED(
+                queue_infos[0].fence->SetEventOnCompletion(frame_infos[frame_index].present_fence_value, fence_event));
             ::WaitForSingleObjectEx(fence_event, INFINITE, FALSE);
         }
 
-        frame_infos[frame_index].present_fence_value = frame_infos[(frame_index + 1) % FRAMES_IN_FLIGHT].present_fence_value + 1;
+        frame_infos[frame_index].present_fence_value =
+            frame_infos[(frame_index + 1) % FRAMES_IN_FLIGHT].present_fence_value + 1;
 
         frame_infos[frame_index].command_allocator->reset();
         upload_context->try_reset();

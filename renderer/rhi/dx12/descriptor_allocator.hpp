@@ -57,7 +57,6 @@ namespace ionengine::renderer::rhi
             uint32_t size;
         };
 
-        std::mutex mutex;
         ID3D12Device1* device;
         std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, Chunk> chunks;
 

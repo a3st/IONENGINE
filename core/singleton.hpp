@@ -7,6 +7,8 @@ namespace ionengine::core
     template <typename Type>
     class Singleton
     {
+        friend typename Type;
+
       public:
         Singleton(Singleton const&) = delete;
 
@@ -14,12 +16,15 @@ namespace ionengine::core
 
         static auto instance() -> Type&
         {
-            static const auto instance = std::make_unique<Type>();
-            return *instance;
+            std::call_once(init_flag, [&]() { ptr = std::make_unique<Type>(); });
+            return *ptr;
         }
 
       private:
         Singleton() = default;
+
+        inline static std::unique_ptr<Type> ptr;
+        inline static std::once_flag init_flag;
     };
 
 } // namespace ionengine::core

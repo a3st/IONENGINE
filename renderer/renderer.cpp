@@ -8,44 +8,25 @@
 
 namespace ionengine::renderer
 {
-    Renderer::Renderer(core::ref_ptr<RenderPipeline> render_pipeline, platform::Window const& window)
-        : device(rhi::Device::create(rhi::BackendType::DirectX12, window)), render_pipeline(render_pipeline),
-          width(window.get_width()), height(window.get_height()),
-          resource_allocator(
-              device->create_allocator(512 * 1024, 128 * 1024 * 1024, rhi::MemoryAllocatorUsage::Default)),
+    Renderer::Renderer(platform::Window const& window)
+        : device(rhi::Device::create(rhi::BackendType::DirectX12, window)), width(window.get_width()),
+          height(window.get_height()), resource_allocator(device->create_allocator(512 * 1024, 128 * 1024 * 1024,
+                                                                                   rhi::MemoryAllocatorUsage::Default)),
           render_graph(nullptr), is_graph_initialized(false)
     {
+    }
+
+    auto Renderer::set_render_pipeline(core::ref_ptr<RenderPipeline> render_pipeline) -> void
+    {
+        this->render_pipeline = render_pipeline;
         render_pipeline->initialize(&render_task_stream);
-
-        std::vector<uint8_t> shader_bytes;
-        {
-            std::ifstream ifs("shaders/basic.bin", std::ios::binary);
-            ifs.seekg(0, std::ios::end);
-            auto size = ifs.tellg();
-            ifs.seekg(0, std::ios::beg);
-            shader_bytes.resize(size);
-            ifs.read(reinterpret_cast<char* const>(shader_bytes.data()), size);
-        }
-
-        test_shader = device->create_shader(shader_bytes);
-
-        {
-            std::ifstream ifs("shaders/quad.bin", std::ios::binary);
-            ifs.seekg(0, std::ios::end);
-            auto size = ifs.tellg();
-            ifs.seekg(0, std::ios::beg);
-            shader_bytes.resize(size);
-            ifs.read(reinterpret_cast<char* const>(shader_bytes.data()), size);
-        }
-
-        quad_shader = device->create_shader(shader_bytes);
     }
 
     auto Renderer::update(float const dt) -> void
     {
     }
 
-    auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets) -> void
+    auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets, core::ref_ptr<Shader> quad_shader) -> void
     {
         if (!is_graph_initialized)
         {
@@ -56,44 +37,27 @@ namespace ionengine::renderer
                     target->resize(&device, resource_allocator, width, height);
                     if (target->is_render_to_texture())
                     {
-                        render_pipeline->setup(builder, target, test_shader);
+                        render_pipeline->setup(builder, target);
                     }
                     else
                     {
-                        render_pipeline->setup(builder, target, test_shader);
+                        render_pipeline->setup(builder, target);
 
                         builder.add_graphics_pass(
-                            "PresentPass",
-                            width,
-                            height,
-                            {
-                                "ForwardColor"
-                            },
-                            {
-                                RGAttachmentInfo {
-                                    "Swapchain",
-                                    RGColorAttachment {
-                                        rhi::RenderPassLoadOp::Clear,
-                                        rhi::RenderPassStoreOp::Store,
-                                        math::Color(0.0f, 0.0f, 0.0f, 1.0f)
-                                    }
-                                }
-                            },
+                            "PresentPass", width, height, {"ForwardColor"},
+                            {RGAttachmentInfo{"Swapchain", RGColorAttachment{rhi::RenderPassLoadOp::Clear,
+                                                                             rhi::RenderPassStoreOp::Store,
+                                                                             math::Color(0.0f, 0.0f, 0.0f, 1.0f)}}},
                             [&](RGRenderPassContext& ctx) {
                                 ctx.get_command_buffer().set_graphics_pipeline_options(
-                                    quad_shader,
-                                    rhi::RasterizerStageInfo {
-                                        .fill_mode = rhi::FillMode::Solid,
-                                        .cull_mode = rhi::CullMode::Back
-                                    },
-                                    rhi::BlendColorInfo::Opaque(),
-                                    std::nullopt
-                                );
+                                    quad_shader->get_shader(),
+                                    rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid,
+                                                             .cull_mode = rhi::CullMode::Back},
+                                    rhi::BlendColorInfo::Opaque(), std::nullopt);
 
                                 ctx.bind_attachment_as(0, "ForwardTexture");
                                 ctx.get_command_buffer().draw(3, 1, 0);
-                            }
-                        );
+                            });
                     }
                 }
             }
@@ -140,5 +104,10 @@ namespace ionengine::renderer
     {
         return core::make_ref<Texture>(&device, resource_allocator, width, height, depth, mip_levels, format, dimension,
                                        data, immediate);
+    }
+
+    auto Renderer::create_shader(std::span<uint8_t const> const data_bytes) -> core::ref_ptr<Shader>
+    {
+        return core::make_ref<Shader>(&device, data_bytes);
     }
 } // namespace ionengine::renderer

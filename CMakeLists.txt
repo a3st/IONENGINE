@@ -19,9 +19,13 @@ add_library(engine SHARED
 
     "math/color.cpp"
 
-    "asset/ktx2_image.cpp"
-    "asset/glb_model.cpp"
+    "core/job_system.cpp"
+
+    "asset/importers/ktx2_image.cpp"
+    "asset/importers/glb_model.cpp"
+    
     "asset/model.cpp"
+    "asset/shader.cpp"
     "asset/asset_manager.cpp"
 
     "renderer/rhi/dx12/barrier_proxy.cpp"
@@ -44,6 +48,7 @@ add_library(engine SHARED
     "renderer/primitive.cpp"
     "renderer/texture.cpp"
     "renderer/camera.cpp"
+    "renderer/shader.cpp"
     "renderer/render_graph.cpp"
     "renderer/renderer.cpp"
 

@@ -4,3 +4,4 @@ build
 __cache__
 __pycache__
 dist
+node_modules

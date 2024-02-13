@@ -42,7 +42,6 @@ namespace ionengine::renderer::rhi
 
         auto operator=(Future&& other) -> Future&
         {
-
             ptr = std::move(other.ptr);
             impl = std::move(other.impl);
             return *this;

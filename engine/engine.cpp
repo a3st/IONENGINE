@@ -1,8 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "engine.hpp"
-#include "asset/ktx2_image.hpp"
-#include "asset/model.hpp"
+#include "asset/importers/ktx2_image.hpp"
 #include "precompiled.h"
 #include "renderer/pipelines/my_render_pipeline.hpp"
 
@@ -10,7 +9,9 @@ namespace ionengine
 {
     Engine::Engine(std::string_view const title)
         : window_loop(core::make_ref<platform::WindowLoop>()), window(platform::Window::create(title, 800, 600, false)),
-          renderer(core::make_ref<renderer::Renderer>(core::make_ref<renderer::MyRenderPipeline>(), &window))
+          job_system(core::make_ref<core::JobSystem>()), renderer(core::make_ref<renderer::Renderer>(&window)),
+          render_pipeline(core::make_ref<renderer::MyRenderPipeline>()),
+          asset_manager(core::make_ref<AssetManager>(job_system, &renderer))
     {
     }
 
@@ -21,17 +22,7 @@ namespace ionengine
         std::vector<core::ref_ptr<renderer::Camera>> targets;
         targets.emplace_back(main_camera);
 
-        std::vector<uint8_t> object_bytes;
-        {
-            std::ifstream ifs("models/vehicle-1mat.glb", std::ios::binary);
-            ifs.seekg(0, std::ios::end);
-            auto size = ifs.tellg();
-            ifs.seekg(0, std::ios::beg);
-            object_bytes.resize(size);
-            ifs.read(reinterpret_cast<char* const>(object_bytes.data()), size);
-        }
-
-        Model model(&renderer, object_bytes, ModelFormat::GLB);
+        auto model = asset_manager->load_model("models/vehicle-1mat.glb");
 
         std::vector<uint8_t> image_bytes;
         {
@@ -55,6 +46,13 @@ namespace ionengine
                    math::Quaternionf::angle_axis(0.0f, math::Vector3f(0.0f, 1.0f, 0.0f)) *
                    math::Quaternionf::angle_axis(0.0f, math::Vector3f(1.0f, 0.0f, 0.0f));
 
+        auto basic_shader = asset_manager->load_shader("shaders/basic.bin").get();
+        // render_pipeline->add_custom_shader(basic_shader->get_shader());
+
+        auto quad_shader = asset_manager->load_shader("shaders/quad.bin").get();
+
+        renderer->set_render_pipeline(render_pipeline);
+
         window_loop->run(&window, [&](platform::WindowEvent const& event, platform::WindowEventFlow& flow) {
             flow = platform::WindowEventFlow::Poll;
 
@@ -65,22 +63,25 @@ namespace ionengine
                 [&](platform::WindowEventData<platform::WindowEventType::Updated> const& data) {
                     main_camera->calculate(math::Vector3f(5.0f, 5.0f, 5.0f), rot);
 
-                    for (uint32_t j = 0; j < model.get_size(); ++j)
+                    if (model.get_result())
                     {
-                        for (uint32_t i = 0; i < model.get_mesh(j).primitives.size(); ++i)
+                        for (uint32_t j = 0; j < model.get()->get_size(); ++j)
                         {
-                            auto render_task_data = renderer::RenderTaskData{
-                                .primitive = model.get_mesh(j).primitives[i],
-                                .model = math::Matrixf::scale(math::Vector3f(3.0f, 3.0f, 3.0f)) *
-                                         math::Matrixf::translate(math::Vector3f(0.0f, 0.0f, 0.0f)),
-                                .shader = 0,
-                                .texture = texture,
-                                .mask = (uint8_t)renderer::MyRenderMask::Opaque};
-                            renderer->tasks() << render_task_data;
+                            for (uint32_t i = 0; i < model.get()->get_mesh(j).primitives.size(); ++i)
+                            {
+                                auto render_task_data = renderer::RenderTaskData{
+                                    .primitive = model.get()->get_mesh(j).primitives[i],
+                                    .model = math::Matrixf::scale(math::Vector3f(3.0f, 3.0f, 3.0f)) *
+                                             math::Matrixf::translate(math::Vector3f(0.0f, 0.0f, 0.0f)),
+                                    .shader = basic_shader->get_shader(),
+                                    .texture = texture,
+                                    .mask = (uint8_t)renderer::MyRenderMask::Opaque};
+                                renderer->tasks() << render_task_data;
+                            }
                         }
                     }
 
-                    renderer->render(targets);
+                    renderer->render(targets, quad_shader->get_shader());
                 },
                 [&](platform::WindowEventData<platform::WindowEventType::Sized> const& data) {
                     renderer->resize(data.width, data.height);

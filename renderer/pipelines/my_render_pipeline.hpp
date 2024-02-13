@@ -16,7 +16,6 @@ namespace ionengine::renderer
       public:
         MyRenderPipeline() = default;
 
-        auto setup(RenderGraphBuilder& builder, core::ref_ptr<Camera> camera, core::ref_ptr<rhi::Shader> test_shader)
-            -> void override;
+        auto setup(RenderGraphBuilder& builder, core::ref_ptr<Camera> camera) -> void override;
     };
 } // namespace ionengine::renderer
