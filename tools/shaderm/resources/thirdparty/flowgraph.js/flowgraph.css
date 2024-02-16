@@ -51,6 +51,10 @@
     outline: rgb(42, 143, 42) solid 2.5px;
 }
 
+.flowgraph-node-container.focused {
+    outline: rgb(180, 180, 180) solid 2.5px;
+}
+
 .flowgraph-node-root {
     display: flex;
     flex-direction: column;

@@ -35,6 +35,4 @@ $(document).ready(function() {
     ], [
         { "name": "Result", "type": "float3" }
     ], html);
-
-    //graph.addConnection(split_node, 0, mul_node, 0);
 });
