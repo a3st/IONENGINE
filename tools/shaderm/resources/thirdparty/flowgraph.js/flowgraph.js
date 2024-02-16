@@ -37,11 +37,33 @@ export default class FlowGraph {
                     style="width: ${this.canvasOptions.width}px; height: ${this.canvasOptions.height}px;" xmlns="http://www.w3.org/2000/svg"></svg>
             </div>
         `);
+        $(this.rootNode).append(`
+            <div class="flowgraph-context-container" style="display: none;">
+                <div class="flowgraph-context-main">
+                    <label class="flowgraph-context-label">Math</label>
+                    <div class="flowgraph-context-group">
+                        <button class="flowgraph-context-btn">Multiply</button>
+                        <button class="flowgraph-context-btn">Add</button>
+                        <button class="flowgraph-context-btn">Minus</button>
+                        <button class="flowgraph-context-btn">Divide</button>
+                    </div>
+                    <button class="flowgraph-context-btn">PBR</button>
+                    <button class="flowgraph-context-btn">Sampler</button>
+                </div>
+            </div>
+        `);
 
         this.rootNode.addEventListener('mousewheel', this.#zoomEventHandler.bind(this));
-        this.rootNode.addEventListener('mousedown', this.#dragNodeBeginHandler.bind(this));
+        this.rootNode.addEventListener('mousedown', event => {
+            if (event.which == 1) {
+                this.#dragNodeBeginHandler(event);
+            } else if(event.which == 3) {
+                this.#rightClickHandler(event);
+            }
+        });
         this.rootNode.addEventListener('mouseup', this.#dragNodeEndHandler.bind(this));
         this.rootNode.addEventListener('mousemove', this.#moveNodeHandler.bind(this));
+        this.rootNode.addEventListener("contextmenu", event => event.preventDefault());
 
         document.addEventListener('keydown', this.#keyHandler.bind(this));
 
@@ -62,6 +84,19 @@ export default class FlowGraph {
         }
     }
 
+    #rightClickHandler(e) {
+        if ($(e.target).closest('.flowgraph-context-container').length > 0) {
+
+        } else {
+            const posX = e.clientX;
+            const posY = e.clientY;
+
+            $(this.rootNode).children('.flowgraph-context-container')
+                .css('display', 'block')
+                .css('transform', `translate(${posX}px, ${posY}px)`);
+        }
+    }
+
     #dragNodeBeginHandler(e) {
         if ($(e.target).closest('.flowgraph-io').closest('.flowgraph-io-row.left').length > 0) {
             this.dragMode = "io.input";
@@ -73,6 +108,13 @@ export default class FlowGraph {
             this.dragMode = "connection";
         } else if ($(e.target).closest('.flowgraph-canvas').length > 0) {
             this.dragMode = "canvas";
+        }
+        
+        if ($(e.target).closest('.flowgraph-context-container').length > 0) {
+
+        } else {
+            $(this.rootNode).children('.flowgraph-context-container')
+                .css('display', 'none');
         }
 
         if (this.focusedElement) {
@@ -163,10 +205,10 @@ export default class FlowGraph {
             case "io.input": {
                 if ($(e.target).closest('.flowgraph-io').closest('.flowgraph-io-row.left').length > 0) {
                     let destElement = $(e.target).closest('.flowgraph-io')[0];
-                    
+
                     const [destNode, inIndex] = destElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
                     let connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
-                    
+
                     if (connection) {
                         this.removeConnection(connection.id);
                     }
@@ -278,30 +320,6 @@ export default class FlowGraph {
         return this.nodes[sourceNode].outputs[outIndex].type == this.nodes[destNode].inputs[inIndex].type;
     }
 
-    #updateNode(nodeId) {
-        const connections = Object.values(this.connections).filter(value => (value.source == nodeId || value.dest == nodeId));
-
-        for (const [_, value] of Object.entries(connections)) {
-            const sourceElement = $(`#node_${this.connections[value.id].source}_out_${this.connections[value.id].out}`).get(0);
-            const sourceMatrix = $(`#node_${this.connections[value.id].source}`)
-                .css('transform')
-                .match(/-?[\d\.]+/g);
-
-            const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
-            const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
-
-            const destElement = $(`#node_${this.connections[value.id].dest}_in_${this.connections[value.id].in}`).get(0);
-            const destMatrix = $(`#node_${this.connections[value.id].dest}`)
-                .css('transform')
-                .match(/-?[\d\.]+/g);
-
-            const destX = Number(destMatrix[4]) + destElement.offsetLeft + destElement.offsetWidth / 2;
-            const destY = Number(destMatrix[5]) + destElement.offsetTop + destElement.offsetHeight / 2;
-
-            this.#updateConnectionPosition(value.id, sourceX, sourceY, destX, destY);
-        }
-    }
-
     #moveNodeHandler(e) {
         const relativeClientX = e.clientX - this.lastClientX;
         const relativeClientY = e.clientY - this.lastClientY;
@@ -335,7 +353,27 @@ export default class FlowGraph {
                     $(this.selectedElement).css('transform', `translate(${posX}px, ${posY}px)`);
 
                     const nodeId = Number(this.selectedElement.id.match(/-?[\d]/g)[0]);
-                    this.#updateNode(nodeId);
+                    const connections = Object.values(this.connections).filter(value => (value.source == nodeId || value.dest == nodeId));
+
+                    for (const [_, value] of Object.entries(connections)) {
+                        const sourceElement = $(`#node_${this.connections[value.id].source}_out_${this.connections[value.id].out}`).get(0);
+                        const sourceMatrix = $(`#node_${this.connections[value.id].source}`)
+                            .css('transform')
+                            .match(/-?[\d\.]+/g);
+
+                        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
+                        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
+
+                        const destElement = $(`#node_${this.connections[value.id].dest}_in_${this.connections[value.id].in}`).get(0);
+                        const destMatrix = $(`#node_${this.connections[value.id].dest}`)
+                            .css('transform')
+                            .match(/-?[\d\.]+/g);
+
+                        const destX = Number(destMatrix[4]) + destElement.offsetLeft + destElement.offsetWidth / 2;
+                        const destY = Number(destMatrix[5]) + destElement.offsetTop + destElement.offsetHeight / 2;
+
+                        this.#updateConnectionPosition(value.id, sourceX, sourceY, destX, destY);
+                    }
                 }
                 break;
             }
@@ -410,31 +448,35 @@ export default class FlowGraph {
     }
 
     #zoomEventHandler(e) {
-        e.preventDefault();
+        if ($(e.target).closest('.flowgraph-context-container').length > 0) {
 
-        if (e.deltaY > 0) {
-            if (this.zoomScale > 0.4) {
-                this.zoomScale -= 0.05;
-            }
         } else {
-            if (this.zoomScale < 1.3) {
-                this.zoomScale += 0.05;
+            e.preventDefault();
+
+            if (e.deltaY > 0) {
+                if (this.zoomScale > 0.4) {
+                    this.zoomScale -= 0.05;
+                }
+            } else {
+                if (this.zoomScale < 1.3) {
+                    this.zoomScale += 0.05;
+                }
             }
+
+            const posMatrix = $(this.rootNode)
+                .children('.flowgraph-canvas')
+                .css('transform')
+                .match(/-?[\d\.]+/g);
+
+            const posX = (Number(posMatrix[4]) / this.lastZoomScale) * this.zoomScale;
+            const posY = (Number(posMatrix[5]) / this.lastZoomScale) * this.zoomScale;
+
+            this.lastZoomScale = this.zoomScale;
+
+            $(this.rootNode)
+                .children('.flowgraph-canvas')
+                .css('transform', `translate(${posX}px, ${posY}px) scale(${this.zoomScale})`);
         }
-
-        const posMatrix = $(this.rootNode)
-            .children('.flowgraph-canvas')
-            .css('transform')
-            .match(/-?[\d\.]+/g);
-
-        const posX = (Number(posMatrix[4]) / this.lastZoomScale) * this.zoomScale;
-        const posY = (Number(posMatrix[5]) / this.lastZoomScale) * this.zoomScale;
-
-        this.lastZoomScale = this.zoomScale;
-
-        $(this.rootNode)
-            .children('.flowgraph-canvas')
-            .css('transform', `translate(${posX}px, ${posY}px) scale(${this.zoomScale})`);
     }
 
     removeConnection(connectionId) {

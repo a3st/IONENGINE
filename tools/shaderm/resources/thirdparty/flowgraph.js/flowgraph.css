@@ -1,5 +1,3 @@
-
-
 .flowgraph-container {
     display: block;
     width: 100%;
@@ -32,7 +30,7 @@
     background-color: var(--paper-color);
     background-size: var(--grid-dash) var(--grid-dash), var(--grid-size) var(--grid-size);
     background-image:
-        linear-gradient(to bottom, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)), 
+        linear-gradient(to bottom, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
         linear-gradient(to right, var(--grid-color) var(--grid-strength), transparent var(--grid-strength)),
         linear-gradient(to right, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
         linear-gradient(to bottom, var(--grid-color) var(--grid-strength), transparent var(--grid-strength));
@@ -79,9 +77,9 @@
 }
 
 .flowgraph-io-list {
-    width: 50%; 
-    display: flex; 
-    flex-direction: column; 
+    width: 50%;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
@@ -112,4 +110,78 @@
 .flowgraph-io.connected {
     background-color: rgb(42, 143, 42);
     outline: #ffffff solid 2.5px;
+}
+
+.flowgraph-context-container {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    width: 230px;
+    height: 200px;
+    background-color: rgb(245, 245, 245);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.395);
+}
+
+.flowgraph-context-main {
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+    max-height: calc(100% - 15px);
+    overflow-y: auto;
+}
+
+.flowgraph-context-main::-webkit-scrollbar {
+    width: 6px;
+}
+
+.flowgraph-context-main::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.flowgraph-context-main::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.flowgraph-context-main::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.flowgraph-context-label {
+    text-align: left;
+    text-indent: 10px;
+    font-size: 16px;
+}
+
+.flowgraph-context-group {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid rgb(180, 180, 180);
+    border-bottom: 1px solid rgb(180, 180, 180);
+}
+
+.flowgraph-context-group button:first-child {
+    margin-top: 5px;
+}
+
+.flowgraph-context-group button:last-child {
+    margin-bottom: 5px;
+}
+
+.flowgraph-context-btn {
+    outline: none;
+    border: none;
+    border-radius: 4px;
+    padding: 5px;
+    text-align: left;
+    text-indent: 15px;
+    background-color: rgb(245, 245, 245);
+}
+
+.flowgraph-context-btn:hover {
+    background-color: rgb(210, 210, 210);
 }
