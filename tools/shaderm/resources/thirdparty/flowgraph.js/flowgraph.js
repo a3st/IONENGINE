@@ -1,6 +1,13 @@
 import 'https://code.jquery.com/jquery-3.6.0.min.js';
 const $ = window.$;
 
+export class FlowGraphContextMenuEvent {
+    constructor(positionX, positionY) {
+        this.positionX = positionX;
+        this.positionY = positionY;
+    }
+};
+
 export default class FlowGraph {
     constructor(rootNode, canvasOptions = { "width": 8096, "height": 8096 }) {
         this.rootNode = rootNode;
@@ -22,7 +29,15 @@ export default class FlowGraph {
 
         this.lastClientX = 0;
         this.lastClientY = 0;
-        this.lastZoomScale = 1.0;
+
+        this.groups = {};
+    }
+
+    addContextItem(group, item, callback) {
+        if (this.groups[group] == null) {
+            this.groups[group] = [];
+        }
+        this.groups[group].push({ 'item': item, 'callback': callback });
     }
 
     start() {
@@ -39,35 +54,85 @@ export default class FlowGraph {
         `);
         $(this.rootNode).append(`
             <div class="flowgraph-context-container" style="display: none;">
-                <div class="flowgraph-context-main">
-                    <label class="flowgraph-context-label">Math</label>
-                    <div class="flowgraph-context-group">
-                        <button class="flowgraph-context-btn">Multiply</button>
-                        <button class="flowgraph-context-btn">Add</button>
-                        <button class="flowgraph-context-btn">Minus</button>
-                        <button class="flowgraph-context-btn">Divide</button>
-                    </div>
-                    <button class="flowgraph-context-btn">PBR</button>
-                    <button class="flowgraph-context-btn">Sampler</button>
+                <div class="flowgraph-context-search">
+                    <object data="thirdparty/flowgraph.js/search.svg" width="16" height="16"> </object>
+                    <input type="text" placeholder="Type to search" search />
                 </div>
+                <div class="flowgraph-context-main"></div>
             </div>
         `);
+        $('.flowgraph-context-search input').bind('input', e => { this.#renderContextMenu(); });
+        $(this.rootNode).append(`
+            <div class="flowgraph-info-container"
+                style="transform: translate(${this.rootNode.offsetWidth - 200}px, ${this.rootNode.offsetHeight - 60}px);">
+                
+                <div class="flowgraph-info-main">
+                    <span>X: ${0} Y: ${0}</span>
+                    <span>Zoom: ${this.zoomScale.toFixed(2)}</span>
+                </div>
+            </div>
+        `)
 
         this.rootNode.addEventListener('mousewheel', this.#zoomEventHandler.bind(this));
         this.rootNode.addEventListener('mousedown', event => {
             if (event.which == 1) {
                 this.#dragNodeBeginHandler(event);
-            } else if(event.which == 3) {
+            } else if (event.which == 3) {
                 this.#rightClickHandler(event);
             }
         });
         this.rootNode.addEventListener('mouseup', this.#dragNodeEndHandler.bind(this));
         this.rootNode.addEventListener('mousemove', this.#moveNodeHandler.bind(this));
-        this.rootNode.addEventListener("contextmenu", event => event.preventDefault());
+        this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
 
         document.addEventListener('keydown', this.#keyHandler.bind(this));
 
         $(this.rootNode).children('.flowgraph-canvas').css('transform', `translate(${-this.relativeCanvasX}px, ${-this.relativeCanvasY}px)`);
+    }
+
+    #renderContextMenu() {
+        let contextMenuElement = $('.flowgraph-context-main')
+            .empty();
+
+        const canvasMatrix = $('.flowgraph-canvas')
+            .css('transform')
+            .match(/-?[\d\.]+/g);
+
+        const posX = this.lastClientX + (-this.relativeCanvasX - Number(canvasMatrix[4]));
+        const posY = this.lastClientY + (-this.relativeCanvasY - Number(canvasMatrix[5]));
+
+        const searchPattern = $('.flowgraph-context-search input').get(0).value;
+        let filteredGroups;
+        if (searchPattern.length == 0) {
+            filteredGroups = Object.entries(this.groups);
+        } else {
+            filteredGroups = Object.entries(this.groups).filter(
+                (key, value) => (
+                    Object.values(this.groups["Math"]).filter(
+                        value => String(value.item).includes(searchPattern)
+                    ).length > 0 | String(key).includes(searchPattern)
+                )
+            );
+        }
+
+        for (const [group, data] of filteredGroups) {
+            contextMenuElement
+                .append(`<label>${group}</label>`)
+                .append(`<div class="flowgraph-context-group"></div>`);
+
+            let groupMenuElement = $('.flowgraph-context-group').last();
+            for (const item of data) {
+                groupMenuElement.append(`<button>${item.item}</button>`);
+                $('.flowgraph-context-group button')
+                    .last()
+                    .bind('click', e => {
+                        item.callback(new FlowGraphContextMenuEvent(posX, posY));
+                        $(this.rootNode).children('.flowgraph-context-container')
+                            .css('display', 'none');
+                    });
+            }
+            contextMenuElement.append(`</div>`);
+        }
     }
 
     #keyHandler(e) {
@@ -88,12 +153,11 @@ export default class FlowGraph {
         if ($(e.target).closest('.flowgraph-context-container').length > 0) {
 
         } else {
-            const posX = e.clientX;
-            const posY = e.clientY;
-
             $(this.rootNode).children('.flowgraph-context-container')
                 .css('display', 'block')
-                .css('transform', `translate(${posX}px, ${posY}px)`);
+                .css('transform', `translate(${this.lastClientX}px, ${this.lastClientY}px)`);
+
+            this.#renderContextMenu();
         }
     }
 
@@ -109,7 +173,7 @@ export default class FlowGraph {
         } else if ($(e.target).closest('.flowgraph-canvas').length > 0) {
             this.dragMode = "canvas";
         }
-        
+
         if ($(e.target).closest('.flowgraph-context-container').length > 0) {
 
         } else {
@@ -216,7 +280,9 @@ export default class FlowGraph {
                     const [selectedNode, selectedIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
                     connection = Object.values(this.connections).find(value => (value.dest == selectedNode && value.in == selectedIndex));
 
-                    this.#updateConnection(connection.id, connection.source, connection.out, destNode, inIndex);
+                    if (connection) {
+                        this.#updateConnection(connection.id, connection.source, connection.out, destNode, inIndex);
+                    }
                 } else {
                     const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
                     const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
@@ -333,12 +399,19 @@ export default class FlowGraph {
                     .css('transform')
                     .match(/-?[\d\.]+/g);
 
-                const posX = Number(posMatrix[4]) + relativeClientX / this.zoomScale;
-                const posY = Number(posMatrix[5]) + relativeClientY / this.zoomScale;
+                const posX = Number(posMatrix[4]) + relativeClientX;
+                const posY = Number(posMatrix[5]) + relativeClientY;
 
                 $(this.rootNode)
                     .children('.flowgraph-canvas')
                     .css('transform', `translate(${posX}px, ${posY}px) scale(${this.zoomScale})`);
+
+                $('.flowgraph-info-main')
+                    .empty()
+                    .append(`
+                        <span>X: ${-this.relativeCanvasX - posX} Y: ${-this.relativeCanvasX - posY}</span>
+                        <span>Zoom: ${this.zoomScale.toFixed(2)}</span>
+                    `);
                 break;
             }
             case "node": {
@@ -468,14 +541,19 @@ export default class FlowGraph {
                 .css('transform')
                 .match(/-?[\d\.]+/g);
 
-            const posX = (Number(posMatrix[4]) / this.lastZoomScale) * this.zoomScale;
-            const posY = (Number(posMatrix[5]) / this.lastZoomScale) * this.zoomScale;
-
-            this.lastZoomScale = this.zoomScale;
+            const posX = Number(posMatrix[4]);
+            const posY = Number(posMatrix[5]);
 
             $(this.rootNode)
                 .children('.flowgraph-canvas')
                 .css('transform', `translate(${posX}px, ${posY}px) scale(${this.zoomScale})`);
+
+            $('.flowgraph-info-main')
+                .empty()
+                .append(`
+                    <span>X: ${-this.relativeCanvasX - posX} Y: ${-this.relativeCanvasX - posY}</span>
+                    <span>Zoom: ${this.zoomScale.toFixed(2)}</span>
+                `);
         }
     }
 

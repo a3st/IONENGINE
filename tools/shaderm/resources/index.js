@@ -4,6 +4,20 @@ import FlowGraph from '/thirdparty/flowgraph.js/flowgraph.js'
 
 const graph = new FlowGraph($('#root').get(0));
 
+graph.addContextItem(
+    'Math',
+    'Multiply',
+    (e) => {
+        const html = `<span style="color: white;">Multiply</span>`;
+        graph.addNode(e.positionX, e.positionY, [
+            { "name": "A", "type": "float3" },
+            { "name": "B", "type": "float3" }
+        ], [
+            { "name": "Result", "type": "float3" }
+        ], html);
+    }
+)
+
 
 $(document).ready(function() {
     graph.start();
@@ -27,12 +41,4 @@ $(document).ready(function() {
     ], html);
 
     graph.addConnection(pbr_node.id, 0, split_node.id, 0);
-
-    html = `<span style="color: white;">Multiply</span>`;
-    const mul_node = graph.addNode(1000, 10, [
-        { "name": "A", "type": "float3" },
-        { "name": "B", "type": "float3" }
-    ], [
-        { "name": "Result", "type": "float3" }
-    ], html);
 });

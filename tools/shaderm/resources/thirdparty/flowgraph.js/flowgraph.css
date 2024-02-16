@@ -24,7 +24,7 @@
     --grid-strength: 1px;
     --grid-dash: 10px;
     --grid-gap: 5px;
-    --grid-color: #8b8b8b;
+    --grid-color: #6e6e6e;
     --paper-color: #353535;
 
     background-color: var(--paper-color);
@@ -39,6 +39,10 @@
 .flowgraph-node-container {
     position: absolute;
     display: block;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
     user-select: none;
     background-color: rgb(69, 78, 98);
     border-radius: 8px;
@@ -121,9 +125,25 @@
     top: 0;
     width: 230px;
     height: 200px;
+    z-index: 1;
+}
+
+.flowgraph-context-search {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
     background-color: rgb(245, 245, 245);
     border-radius: 8px;
     border: 1px solid rgba(0, 0, 0, 0.395);
+    padding: 5px;
+    margin-bottom: 5px;
+}
+
+.flowgraph-context-search input {
+    outline: none;
+    width: 100%;
+    border: none;
+    background-color: rgb(245, 245, 245);
 }
 
 .flowgraph-context-main {
@@ -132,6 +152,9 @@
     padding: 5px;
     max-height: calc(100% - 15px);
     overflow-y: auto;
+    background-color: rgb(245, 245, 245);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.395);
 }
 
 .flowgraph-context-main::-webkit-scrollbar {
@@ -144,14 +167,14 @@
 
 .flowgraph-context-main::-webkit-scrollbar-thumb {
     background: #888;
-    border-radius: 4px;
+    border-radius: 2px;
 }
 
 .flowgraph-context-main::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
 
-.flowgraph-context-label {
+.flowgraph-context-main label {
     text-align: left;
     text-indent: 10px;
     font-size: 16px;
@@ -161,7 +184,6 @@
     display: flex;
     flex-direction: column;
     border-top: 1px solid rgb(180, 180, 180);
-    border-bottom: 1px solid rgb(180, 180, 180);
 }
 
 .flowgraph-context-group button:first-child {
@@ -172,7 +194,7 @@
     margin-bottom: 5px;
 }
 
-.flowgraph-context-btn {
+.flowgraph-context-group button {
     outline: none;
     border: none;
     border-radius: 4px;
@@ -182,6 +204,28 @@
     background-color: rgb(245, 245, 245);
 }
 
-.flowgraph-context-btn:hover {
+.flowgraph-context-group button:hover {
     background-color: rgb(210, 210, 210);
+}
+
+.flowgraph-info-container {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    width: 200px;
+    height: 60px;
+}
+
+.flowgraph-info-main {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.flowgraph-info-main span {
+    color: white;
+    font-size: 22px;
 }
