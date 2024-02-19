@@ -1,5 +1,4 @@
-import 'https://code.jquery.com/jquery-3.6.0.min.js';
-const $ = window.$;
+import $ from 'jquery'
 
 export class FlowGraphContextMenuEvent {
     constructor(positionX, positionY) {
@@ -9,8 +8,10 @@ export class FlowGraphContextMenuEvent {
 };
 
 export default class FlowGraph {
-    constructor(rootNode, canvasOptions = { "width": 8096, "height": 8096 }) {
+    constructor(rootNode, width, height, canvasOptions = { "width": 8096, "height": 8096 }) {
         this.rootNode = rootNode;
+        this.width = width;
+        this.height = height;
         this.canvasOptions = canvasOptions;
 
         this.nodeIndex = 0;
@@ -40,8 +41,25 @@ export default class FlowGraph {
         this.groups[group].push({ 'item': item, 'callback': callback });
     }
 
+    resize(width, height) {
+        $(this.rootNode)
+            .css('width', width)
+            .css('height', height);
+        $('.flowgraph-bg-container')
+            .css('width', width)
+            .css('height', height);
+        $('.flowgraph-info-container')
+            .css('transform', `translate(${this.rootNode.offsetWidth - 200}px, ${this.rootNode.offsetHeight - 60}px)`);
+
+        this.width = width;
+        this.height = height;
+    }
+
     start() {
-        $(this.rootNode).addClass('flowgraph-container');
+        $(this.rootNode)
+            .addClass('flowgraph-container')
+            .css('width', this.width)
+            .css('height', this.height);
         $(this.rootNode).append(`
             <div class="flowgraph-bg-container" 
                 style="width: ${this.rootNode.style.width}; height: ${this.rootNode.style.height};"></div>
@@ -55,7 +73,7 @@ export default class FlowGraph {
         $(this.rootNode).append(`
             <div class="flowgraph-context-container" style="display: none;">
                 <div class="flowgraph-context-search">
-                    <object data="thirdparty/flowgraph.js/search.svg" width="16" height="16"> </object>
+                    <object data="images/search.svg" width="16" height="16"> </object>
                     <input type="text" placeholder="Type to search" search />
                 </div>
                 <div class="flowgraph-context-main"></div>

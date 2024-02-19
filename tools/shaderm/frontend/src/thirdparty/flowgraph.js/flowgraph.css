@@ -74,7 +74,6 @@
 .flowgraph-node-header {
     background-color: #448fd6;
     display: flex;
-    height: 40px;
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     padding: 20px;
@@ -178,6 +177,7 @@
     text-align: left;
     text-indent: 10px;
     font-size: 16px;
+    color: black;
 }
 
 .flowgraph-context-group {
@@ -202,6 +202,7 @@
     text-align: left;
     text-indent: 15px;
     background-color: rgb(245, 245, 245);
+    font-size: 14px;
 }
 
 .flowgraph-context-group button:hover {
@@ -217,6 +218,7 @@
     top: 0;
     width: 200px;
     height: 60px;
+    user-select: none;
 }
 
 .flowgraph-info-main {
