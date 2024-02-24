@@ -14,8 +14,16 @@ auto main(int32_t argc, char** argv) -> int32_t
 
         auto device = rhi::Device::create(window.get());
 
+        auto buffer = device->create_buffer(1024 * 1024, 0, rhi::BufferUsageFlags(rhi::BufferUsage::Vertex));
+
         auto graphics_context = device->create_graphics_context();
         auto copy_context = device->create_copy_context();
+
+        copy_context->reset();
+
+        std::vector<uint8_t> dummy = { 1, 2, 3, 4, 5 };
+        auto future_copy = copy_context->write_buffer(buffer, dummy);
+        copy_context->execute();
 
         bool is_running = true;
         platform::WindowEvent event;

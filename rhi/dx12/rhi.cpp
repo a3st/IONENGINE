@@ -1352,9 +1352,46 @@ namespace ionengine::rhi
         return Future<Query>(query, std::move(future_impl));
     }
 
+    auto get_surface_data(rhi::TextureFormat const format, uint32_t const width, uint32_t const height,
+                          size_t& row_bytes, uint32_t& row_count) -> void
+    {
+        bool bc = false;
+        uint32_t bpe = 0;
+
+        switch (format)
+        {
+            case rhi::TextureFormat::BC1:
+            case rhi::TextureFormat::BC4: {
+                bc = true;
+                bpe = 8;
+                break;
+            }
+            case rhi::TextureFormat::BC3:
+            case rhi::TextureFormat::BC5: {
+                bc = true;
+                bpe = 16;
+                break;
+            }
+        }
+
+        if (bc)
+        {
+            uint64_t const block_wide = std::max<uint64_t>(1u, (static_cast<uint64_t>(width) + 3u) / 4u);
+            uint64_t const block_high = std::max<uint64_t>(1u, (static_cast<uint64_t>(height) + 3u) / 4u);
+            row_bytes = block_wide * bpe;
+            row_count = static_cast<uint32_t>(block_high);
+        }
+        else
+        {
+            size_t const bpp = 32;
+            row_bytes = (width * bpp + 7) / 8;
+            row_count = height;
+        }
+    }
+
     DX12CopyContext::DX12CopyContext(ID3D12Device4* device, ID3D12CommandQueue* queue, ID3D12Fence* fence,
                                      HANDLE fence_event, uint64_t& fence_value)
-        : queue(queue), fence(fence), fence_event(fence_event), fence_value(&fence_value)
+        : device(device), queue(queue), fence(fence), fence_event(fence_event), fence_value(&fence_value)
     {
         THROW_IF_FAILED(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, __uuidof(ID3D12CommandAllocator),
                                                        command_allocator.put_void()));
@@ -1384,18 +1421,121 @@ namespace ionengine::rhi
 
     auto DX12CopyContext::write_buffer(core::ref_ptr<Buffer> dst, std::span<uint8_t const> const data) -> Future<Buffer>
     {
+        if (data.size() >= write_info.buffer->get_size() - write_info.offset)
+        {
+            execute();
+            reset();
+        }
 
-        return Future<Buffer>();
+        uint64_t offset = 0;
+        {
+            uint8_t* mapped_bytes = write_info.buffer->map_memory();
+            std::basic_spanstream<uint8_t> stream(
+                std::span<uint8_t>(mapped_bytes + write_info.offset, write_info.buffer->get_size()));
+            offset = stream.tellg();
+            stream.write(data.data(), data.size());
+            write_info.offset = stream.tellg();
+            write_info.buffer->unmap_memory();
+        }
+
+        command_list->CopyBufferRegion(static_cast<DX12Buffer&>(*dst).get_resource(), 0,
+                                       static_cast<DX12Buffer&>(*write_info.buffer).get_resource(), offset,
+                                       data.size());
+
+        auto future_impl = std::make_unique<DX12FutureImpl>(queue, fence, fence_event, (*fence_value) + 1);
+        return Future<Buffer>(dst, std::move(future_impl));
     }
 
     auto DX12CopyContext::write_texture(core::ref_ptr<Texture> dst, std::vector<std::span<uint8_t const>> const& data)
         -> Future<Texture>
     {
-        return Future<Texture>();
+        size_t row_bytes = 0;
+        uint32_t row_count = 0;
+        size_t total_bytes = 0;
+
+        uint32_t const row_pitch_alignment_mask = D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1;
+        uint32_t const resource_alignment_mask = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1;
+        uint32_t const stride = 4;
+
+        std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprints;
+        footprints.resize(dst->get_mip_levels());
+
+        auto d3d12_resource_desc = static_cast<DX12Texture&>(*dst).get_resource()->GetDesc();
+
+        device->GetCopyableFootprints(&d3d12_resource_desc, 0, dst->get_mip_levels(), 0, footprints.data(), nullptr,
+                                      nullptr, &total_bytes);
+
+        if (total_bytes >= write_info.buffer->get_size() - write_info.offset)
+        {
+            execute();
+            reset();
+        }
+
+        {
+            uint8_t* mapped_bytes = write_info.buffer->map_memory();
+            std::basic_spanstream<uint8_t> stream(
+                std::span<uint8_t>(mapped_bytes + write_info.offset, write_info.buffer->get_size()));
+
+            for (uint32_t const i : std::views::iota(0u, data.size()))
+            {
+                get_surface_data(dst->get_format(), footprints[i].Footprint.Width, footprints[i].Footprint.Height,
+                                 row_bytes, row_count);
+
+                footprints[i].Footprint.RowPitch =
+                    (footprints[i].Footprint.Width * stride * row_pitch_alignment_mask) & ~row_pitch_alignment_mask;
+                footprints[i].Offset = stream.tellg();
+
+                for (uint32_t const j : std::views::iota(0u, row_count))
+                {
+                    stream.write(data[i].data() + row_bytes * j, row_bytes);
+                    stream.seekg(footprints[i].Footprint.RowPitch - row_bytes, std::ios::cur);
+                }
+
+                size_t const total_size = (uint64_t)stream.tellg() - footprints[i].Offset;
+                stream.seekg(((total_size + resource_alignment_mask) & ~resource_alignment_mask) - total_size, std::ios::cur);
+            }
+
+            write_info.offset = stream.tellg();
+            write_info.buffer->unmap_memory();
+        }
+
+        for (uint32_t const i : std::views::iota(0u, data.size()))
+        {
+            auto d3d12_source_location = D3D12_TEXTURE_COPY_LOCATION{};
+            d3d12_source_location.pResource = static_cast<DX12Buffer&>(*write_info.buffer).get_resource();
+            d3d12_source_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+            d3d12_source_location.PlacedFootprint = footprints[i];
+
+            auto d3d12_dest_location = D3D12_TEXTURE_COPY_LOCATION{};
+            d3d12_dest_location.pResource = static_cast<DX12Texture&>(*dst).get_resource();
+            d3d12_dest_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+            d3d12_dest_location.SubresourceIndex = i;
+
+            command_list->CopyTextureRegion(&d3d12_dest_location, 0, 0, 0, &d3d12_source_location, nullptr);
+        }
+
+        auto future_impl = std::make_unique<DX12FutureImpl>(queue, fence, fence_event, (*fence_value) + 1);
+        return Future<Texture>(dst, std::move(future_impl));
     }
 
     auto DX12CopyContext::read_buffer(core::ref_ptr<Buffer> dst, std::vector<uint8_t>& data) -> void
     {
+        command_list->CopyBufferRegion(static_cast<DX12Buffer&>(*read_info.buffer).get_resource(), read_info.offset,
+                                       static_cast<DX12Buffer&>(*dst).get_resource(), 0, dst->get_size());
+
+        Future<Query> result = execute();
+        result.wait();
+        reset();
+
+        {
+            uint8_t* mapped_bytes = read_info.buffer->map_memory();
+            std::basic_spanstream<uint8_t> stream(
+                std::span<uint8_t>(mapped_bytes + read_info.offset, read_info.buffer->get_size()));
+            data.resize(dst->get_size());
+            stream.read(data.data(), data.size());
+            read_info.offset = stream.tellg();
+            read_info.buffer->unmap_memory();
+        }
     }
 
     auto DX12CopyContext::read_texture(core::ref_ptr<Texture> dst, std::vector<std::vector<uint8_t>>& data) -> void
@@ -1404,7 +1544,21 @@ namespace ionengine::rhi
 
     auto DX12CopyContext::execute() -> Future<Query>
     {
-        return Future<Query>();
+        write_info.offset = 0;
+        read_info.offset = 0;
+
+        THROW_IF_FAILED(command_list->Close());
+
+        auto command_batches =
+            std::array<ID3D12CommandList*, 1>{reinterpret_cast<ID3D12CommandList*>(command_list.get())};
+
+        queue->ExecuteCommandLists(static_cast<uint32_t>(command_batches.size()), command_batches.data());
+        (*fence_value)++;
+        THROW_IF_FAILED(queue->Signal(fence, *fence_value));
+
+        auto query = core::make_ref<DX12Query>();
+        auto future_impl = std::make_unique<DX12FutureImpl>(queue, fence, fence_event, *fence_value);
+        return Future<Query>(query, std::move(future_impl));
     }
 
     DX12Device::DX12Device(platform::Window* window) : frame_index(0)
@@ -1601,7 +1755,12 @@ namespace ionengine::rhi
 
     auto DX12Device::create_copy_context() -> core::ref_ptr<CopyContext>
     {
-        return nullptr;
+        std::lock_guard lock(mutex);
+
+        auto context = core::make_ref<DX12CopyContext>(device.get(), copy_info.queue.get(), copy_info.fence.get(),
+                                                       fence_event, copy_info.fence_value);
+
+        return context;
     }
 
     auto DX12Device::request_back_buffer() -> core::ref_ptr<Texture>

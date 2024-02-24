@@ -497,6 +497,12 @@ namespace ionengine::rhi
         std::array<uint32_t, 16> bindings;
     };
 
+    inline uint32_t constexpr DX12_RESOURCE_MEMORY_ALIGNMENT = 256;
+    inline uint32_t constexpr DX12_TEXTURE_ROW_PITH_ALIGNMENT = 512;
+
+    auto get_surface_data(rhi::TextureFormat const format, uint32_t const width, uint32_t const height,
+                          size_t& row_bytes, uint32_t& row_count) -> void;
+
     class DX12CopyContext final : public CopyContext
     {
       public:
@@ -517,6 +523,7 @@ namespace ionengine::rhi
         auto execute() -> Future<Query> override;
 
       private:
+        ID3D12Device4* device;
         winrt::com_ptr<ID3D12CommandAllocator> command_allocator;
         winrt::com_ptr<ID3D12GraphicsCommandList4> command_list;
 
