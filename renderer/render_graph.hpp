@@ -117,9 +117,9 @@ namespace ionengine::renderer
       public:
         RGRenderPassContext(std::vector<uint64_t>& inputs, std::vector<RGGraphicsAttachment>& outputs,
                             std::unordered_map<uint64_t, RGAttachment>& attachments, RGResourcePool& resource_pool,
-                            BufferPool& buffer_pool, rhi::CommandBuffer& command_buffer, uint32_t const frame_index)
+                            BufferPool& buffer_pool, rhi::CommandBuffer& command_buffer)
             : inputs(&inputs), outputs(&outputs), attachments(&attachments), resource_pool(&resource_pool),
-              buffer_pool(&buffer_pool), command_buffer(&command_buffer), frame_index(frame_index)
+              buffer_pool(&buffer_pool), command_buffer(&command_buffer)
         {
         }
 
@@ -156,7 +156,7 @@ namespace ionengine::renderer
 
             if (result->second.render_target)
             {
-                texture = result->second.render_target->get_buffer(frame_index);
+                texture = result->second.render_target->get_buffer();
             }
             else
             {
@@ -195,7 +195,6 @@ namespace ionengine::renderer
         RGResourcePool* resource_pool;
         BufferPool* buffer_pool;
         rhi::CommandBuffer* command_buffer;
-        uint32_t frame_index;
     };
 
     using graphics_pass_func_t = std::function<void(RGRenderPassContext&)>;
@@ -261,7 +260,6 @@ namespace ionengine::renderer
 
         std::vector<std::unique_ptr<RGRenderPass>> render_passes;
         std::unordered_map<uint64_t, RGAttachment> attachments;
-        uint32_t frame_index;
     };
 
     class RenderGraphBuilder

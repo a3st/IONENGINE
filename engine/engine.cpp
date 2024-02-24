@@ -7,7 +7,23 @@
 
 namespace ionengine
 {
-    Engine::Engine(std::string_view const title)
+    Engine::Engine(std::filesystem::path const shader_path, core::ref_ptr<platform::Window> window) : window(window)
+    {
+        if (window)
+        {
+            renderer = core::make_ref<renderer::Renderer>(window.get());
+        }
+        else
+        {
+            renderer = core::make_ref<renderer::Renderer>(nullptr);
+        }
+    }
+
+    auto Engine::tick() -> void
+    {
+    }
+
+    /*Engine::Engine(std::string_view const title)
         : window_loop(core::make_ref<platform::WindowLoop>()), window(platform::Window::create(title, 800, 600, false)),
           job_system(core::make_ref<core::JobSystem>()), renderer(core::make_ref<renderer::Renderer>(&window)),
           render_pipeline(core::make_ref<renderer::MyRenderPipeline>()),
@@ -81,5 +97,29 @@ namespace ionengine
 
             std::visit(event_visitor, event.data);
         });
-    }
+    }*/
 } // namespace ionengine
+
+/*
+    core::ref_ptr<rhi::Device> device = ...
+
+    auto buffer = device->create_buffer(6_mb, BufferUsage::MapWrite);
+    auto texture = device->create_texture(...);
+    auto graphics_context = device->create_graphics_context();
+    auto copy_context = device->create_copy_context();
+
+    copy_context->write_texture(...);
+    copy_context->write_texture(...);
+    Future<Query> result = copy_context->execute();
+    
+    graphics_context->reset();
+    graphics_context->set_scissor(...);
+    graphics_context->begin_render_pass(...);
+    graphics_context->draw(...);
+    graphics_context->draw(...);
+    graphics_context->end_render_pass();
+    Future<Query> result = graphics_context->execute();
+
+    device->present_back_buffer();
+    result.wait();
+*/

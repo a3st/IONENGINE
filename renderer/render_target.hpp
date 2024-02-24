@@ -12,9 +12,9 @@ namespace ionengine::renderer
         RenderTarget(rhi::Device& device, core::ref_ptr<rhi::MemoryAllocator> allocator, uint32_t const width,
                      uint32_t const height);
 
-        auto get_buffer(uint32_t const index) -> core::ref_ptr<rhi::Texture>
+        auto get_buffer() -> core::ref_ptr<rhi::Texture>
         {
-            return buffers[index];
+            return buffers[device->get_swapchain_buffer_index()];
         }
 
         auto get_width() const -> uint32_t
@@ -28,6 +28,7 @@ namespace ionengine::renderer
         }
 
       private:
+        rhi::Device* device;
         std::vector<core::ref_ptr<rhi::Texture>> buffers;
         uint32_t width;
         uint32_t height;

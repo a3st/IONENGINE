@@ -17,15 +17,11 @@ namespace ionengine::renderer
     class Renderer : public core::ref_counted_object
     {
       public:
-        Renderer(platform::Window const& window);
-
-        auto update(float const dt) -> void;
+        Renderer(platform::Window* window);
 
         auto render(std::span<core::ref_ptr<Camera>> const targets, core::ref_ptr<Shader> quad_shader) -> void;
 
         auto resize(uint32_t const width, uint32_t const height) -> void;
-
-        auto create_render_target(uint32_t const width, uint32_t const height) -> core::ref_ptr<RenderTarget>;
 
         auto create_camera(CameraProjectionType const projection_type, uint32_t const resolution_width,
                            uint32_t const resolution_height) -> core::ref_ptr<Camera>;

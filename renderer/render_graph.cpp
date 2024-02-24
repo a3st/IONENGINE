@@ -174,7 +174,7 @@ namespace ionengine::renderer
 
                 if (result->second.render_target)
                 {
-                    colors[offset].texture = result->second.render_target->get_buffer(frame_index);
+                    colors[offset].texture = result->second.render_target->get_buffer();
                 }
                 else
                 {
@@ -200,7 +200,7 @@ namespace ionengine::renderer
 
                 if (result->second.render_target)
                 {
-                    depth_stencil.value().texture = result->second.render_target->get_buffer(frame_index);
+                    depth_stencil.value().texture = result->second.render_target->get_buffer();
                 }
                 else
                 {
@@ -214,7 +214,7 @@ namespace ionengine::renderer
         command_buffer->set_viewport(0, 0, width, height);
         command_buffer->set_scissor(0, 0, width, height);
         command_buffer->begin_render_pass(std::span<rhi::RenderPassColorInfo>(colors.data(), offset), depth_stencil);
-        RGRenderPassContext ctx(inputs, outputs, attachments, resource_pool, buffer_pool, &command_buffer, frame_index);
+        RGRenderPassContext ctx(inputs, outputs, attachments, resource_pool, buffer_pool, *command_buffer);
         callback(ctx);
         command_buffer->end_render_pass();
 
@@ -227,7 +227,7 @@ namespace ionengine::renderer
 
     RenderGraph::RenderGraph(rhi::Device& device, std::vector<std::unique_ptr<RGRenderPass>>&& render_passes,
                              std::unordered_map<uint64_t, RGAttachment>&& attachments)
-        : device(&device), render_passes(std::move(render_passes)), attachments(std::move(attachments)), frame_index(0)
+        : device(&device), render_passes(std::move(render_passes)), attachments(std::move(attachments))
     {
         for (uint32_t i = 0; i < 2; ++i)
         {
@@ -242,19 +242,20 @@ namespace ionengine::renderer
 
     auto RenderGraph::execute() -> void
     {
-        auto swapchain_buffer = device->request_next_swapchain_buffer();
+        auto swapchain_buffer = device->request_swapchain_buffer();
+        uint32_t const frame_index = device->get_swapchain_buffer_index();
+
         frame_infos[frame_index].buffer_pool->reset();
         frame_infos[frame_index].resource_pool->reset();
 
         for (auto& render_pass : render_passes)
         {
-            render_pass->setup(*device, attachments, &frame_infos[frame_index].resource_pool,
-                               &frame_infos[frame_index].buffer_pool, swapchain_buffer, frame_index);
+            render_pass->setup(*device, attachments, *frame_infos[frame_index].resource_pool,
+                               *frame_infos[frame_index].buffer_pool, swapchain_buffer, frame_index);
             frame_infos[frame_index].resource_pool->update();
         }
 
         device->present();
-        frame_index = (frame_index + 1) % 2;
     }
 
     auto RenderGraphBuilder::add_attachment(std::string_view const attachment_name, uint32_t const width,

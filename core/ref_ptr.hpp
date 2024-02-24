@@ -59,7 +59,6 @@ namespace ionengine::core
     template <typename Type, typename Deleter = BaseDeleter<Type>>
     class ref_ptr
     {
-
         template <typename Derived, typename DerivedDeleter>
         friend class ref_ptr;
 
@@ -77,7 +76,7 @@ namespace ionengine::core
             release_ref();
         }
 
-        ref_ptr(Type* ptr_) : ptr(ptr_)
+        ref_ptr(Type* ptr) : ptr(ptr)
         {
             add_ref();
         }
@@ -106,37 +105,19 @@ namespace ionengine::core
             return *this;
         }
 
-        auto operator->() -> Type*
+        auto operator->() const -> Type*
         {
             assert(ptr != nullptr && "ref_ptr is null");
             return ptr;
         }
 
-        auto operator->() const -> Type* const
-        {
-            assert(ptr != nullptr && "ref_ptr is null");
-            return ptr;
-        }
-
-        auto operator&() -> Type&
+        auto operator*() const -> Type&
         {
             assert(ptr != nullptr && "ref_ptr is null");
             return *ptr;
         }
 
-        auto operator&() const -> Type const&
-        {
-            assert(ptr != nullptr && "ref_ptr is null");
-            return *ptr;
-        }
-
-        auto get() -> Type*
-        {
-            assert(ptr != nullptr && "ref_ptr is null");
-            return ptr;
-        }
-
-        auto get() const -> Type* const
+        auto get() const -> Type*
         {
             assert(ptr != nullptr && "ref_ptr is null");
             return ptr;
@@ -174,7 +155,6 @@ namespace ionengine::core
 
         auto release_ref() -> void
         {
-
             if (ptr)
             {
                 uint32_t const count = ptr->release();

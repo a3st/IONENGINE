@@ -7,58 +7,52 @@
 #define UNICODE
 #include <windows.h>
 
-namespace ionengine {
+namespace ionengine::platform
+{
+    class WindowsWindow : public Window
+    {
+      public:
+        WindowsWindow(std::string_view const label, uint32_t const width, uint32_t const height);
 
-namespace platform {
+        ~WindowsWindow();
 
-class WindowsWindow : public Window {
-public:
+        auto get_width() const -> uint32_t override
+        {
+            return width;
+        }
 
-    WindowsWindow(std::string_view const label, uint32_t const width, uint32_t const height, bool const fullscreen);
+        auto get_height() const -> uint32_t override
+        {
+            return height;
+        }
 
-    ~WindowsWindow();
+        auto get_native_handle() const -> void* override
+        {
+            return reinterpret_cast<void*>(window);
+        }
 
-    auto get_width() const -> uint32_t override {
+        auto set_label(std::string_view const label) -> void override;
 
-        return width;
-    }
+        auto is_cursor() const -> bool override
+        {
+            return cursor;
+        }
 
-    auto get_height() const -> uint32_t override {
+        auto show_cursor(bool const show) -> void override
+        {
+            cursor = show;
+        }
 
-        return height;
-    }
+        auto try_get_event(WindowEvent& event) -> bool override;
 
-    auto get_native_handle() const -> void* override {
+      private:
+        HWND window;
+        std::array<RAWINPUTDEVICE, 2> raw_devices;
+        uint32_t width;
+        uint32_t height;
+        bool cursor;
+        WindowEvent event;
 
-        return reinterpret_cast<void*>(window);
-    }
-
-    auto set_label(std::string_view const label) -> void override;
-
-    auto is_cursor() const -> bool override {
-
-        return cursor;
-    }
-
-    auto show_cursor(bool const show) -> void override {
-
-        cursor = show;
-    }
-
-    auto get_queue_message() -> std::queue<WindowEvent>& override;
-
-private:
-
-    HWND window;
-	std::array<RAWINPUTDEVICE, 2> raw_devices;
-	uint32_t width;
-	uint32_t height;
-	bool cursor;
-	std::queue<WindowEvent> events;
-
-    static auto window_procedure(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) -> LRESULT;
-};
-
-}
-
-}
+        static auto window_procedure(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) -> LRESULT;
+    };
+} // namespace ionengine::platform

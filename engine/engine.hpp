@@ -6,7 +6,6 @@
 #include "core/job_system.hpp"
 #include "core/ref_ptr.hpp"
 #include "platform/window.hpp"
-#include "platform/window_loop.hpp"
 #include "renderer/renderer.hpp"
 
 namespace ionengine
@@ -14,12 +13,11 @@ namespace ionengine
     class Engine
     {
       public:
-        Engine(std::string_view const title);
+        Engine(std::filesystem::path const shader_path, core::ref_ptr<platform::Window> window);
 
-        auto run() -> void;
+        auto tick() -> void;
 
       private:
-        core::ref_ptr<platform::WindowLoop> window_loop;
         core::ref_ptr<platform::Window> window;
         core::ref_ptr<core::JobSystem> job_system;
         core::ref_ptr<renderer::Renderer> renderer;

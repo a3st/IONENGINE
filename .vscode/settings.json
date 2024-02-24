@@ -121,5 +121,6 @@
         "numbers": "cpp",
         "*.hpp11": "cpp"
     },
-    "C_Cpp.intelliSenseEngineFallback": "disabled"
+    "C_Cpp.intelliSenseEngineFallback": "disabled",
+    "C_Cpp.default.compilerPath": "cl.exe"
 }

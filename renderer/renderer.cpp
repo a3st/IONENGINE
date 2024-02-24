@@ -8,10 +8,10 @@
 
 namespace ionengine::renderer
 {
-    Renderer::Renderer(platform::Window const& window)
-        : device(rhi::Device::create(rhi::BackendType::DirectX12, window)), width(window.get_width()),
-          height(window.get_height()), resource_allocator(device->create_allocator(512 * 1024, 128 * 1024 * 1024,
-                                                                                   rhi::MemoryAllocatorUsage::Default)),
+    Renderer::Renderer(platform::Window* window)
+        : device(rhi::Device::create(rhi::BackendType::DirectX12, window)),
+          resource_allocator(
+              device->create_allocator(512 * 1024, 128 * 1024 * 1024, rhi::MemoryAllocatorUsage::Default)),
           render_graph(nullptr), is_graph_initialized(false)
     {
     }
@@ -22,10 +22,6 @@ namespace ionengine::renderer
         render_pipeline->initialize(&render_task_stream);
     }
 
-    auto Renderer::update(float const dt) -> void
-    {
-    }
-
     auto Renderer::render(std::span<core::ref_ptr<Camera>> const targets, core::ref_ptr<Shader> quad_shader) -> void
     {
         if (!is_graph_initialized)
@@ -34,7 +30,7 @@ namespace ionengine::renderer
             {
                 for (auto& target : targets)
                 {
-                    target->resize(&device, resource_allocator, width, height);
+                    target->resize(*device, resource_allocator, width, height);
                     if (target->is_render_to_texture())
                     {
                         render_pipeline->setup(builder, target);
@@ -61,7 +57,7 @@ namespace ionengine::renderer
                     }
                 }
             }
-            render_graph = builder.build(&device);
+            render_graph = builder.build(*device);
             is_graph_initialized = true;
         }
 
@@ -71,21 +67,12 @@ namespace ionengine::renderer
 
     auto Renderer::resize(uint32_t const width, uint32_t const height) -> void
     {
-        // device->resize_swapchain_buffers(width, height);
-        // this->width = width;
-        // this->height = height;
-        // is_graph_initialized = false;
-    }
-
-    auto Renderer::create_render_target(uint32_t const width, uint32_t const height) -> core::ref_ptr<RenderTarget>
-    {
-        return core::make_ref<RenderTarget>(&device, resource_allocator, width, height);
     }
 
     auto Renderer::create_camera(CameraProjectionType const projection_type, uint32_t const resolution_width,
                                  uint32_t const resolution_height) -> core::ref_ptr<Camera>
     {
-        return core::make_ref<Camera>(&device, resource_allocator, projection_type, resolution_width,
+        return core::make_ref<Camera>(*device, resource_allocator, projection_type, resolution_width,
                                       resolution_height);
     }
 
@@ -93,7 +80,7 @@ namespace ionengine::renderer
                                     std::span<uint8_t const> const indices, bool const immediate)
         -> core::ref_ptr<Primitive>
     {
-        return core::make_ref<Primitive>(&device, resource_allocator, index_count, vertices, indices, immediate);
+        return core::make_ref<Primitive>(*device, resource_allocator, index_count, vertices, indices, immediate);
     }
 
     auto Renderer::create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
@@ -102,12 +89,12 @@ namespace ionengine::renderer
                                   std::vector<std::span<uint8_t const>> const& data, bool const immediate)
         -> core::ref_ptr<Texture>
     {
-        return core::make_ref<Texture>(&device, resource_allocator, width, height, depth, mip_levels, format, dimension,
+        return core::make_ref<Texture>(*device, resource_allocator, width, height, depth, mip_levels, format, dimension,
                                        data, immediate);
     }
 
     auto Renderer::create_shader(std::span<uint8_t const> const data_bytes) -> core::ref_ptr<Shader>
     {
-        return core::make_ref<Shader>(&device, data_bytes);
+        return core::make_ref<Shader>(*device, data_bytes);
     }
 } // namespace ionengine::renderer

@@ -2,56 +2,83 @@
 
 #pragma once
 
-#include <iostream>
-#include <fstream>
+#include <array>
+#include <cassert>
+#include <exception>
 #include <filesystem>
 #include <format>
-#include <random>
-#include <limits>
+#include <fstream>
 #include <functional>
-#include <exception>
-#include <cassert>
-#include <vector>
-#include <numeric>
-#include <memory>
-#include <array>
-#include <queue>
+#include <iostream>
+#include <limits>
 #include <map>
-#include <string>
-#include <variant>
-#include <span>
-#include <string_view>
+#include <memory>
+#include <mutex>
+#include <numbers>
+#include <numeric>
+#include <queue>
+#include <random>
 #include <ranges>
+#include <regex>
+#include <semaphore>
+#include <shared_mutex>
+#include <span>
+#include <spanstream>
+#include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_set>
-#include <semaphore>
-#include <regex>
-#include <spanstream>
-#include <numbers>
-#include <mutex>
-#include <shared_mutex>
+#include <variant>
+#include <vector>
 
 #ifndef DECLARE_ENUM_CLASS_BIT_FLAG
-#define DECLARE_ENUM_CLASS_BIT_FLAG(EnumClass) \
-using EnumClass##Flags = uint32_t; \
-inline auto operator|(EnumClass const lhs, EnumClass const rhs) -> EnumClass##Flags { \
-	return static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs); \
-} \
-inline auto operator|(EnumClass##Flags const lhs, EnumClass const rhs) -> EnumClass##Flags { \
-	return lhs | static_cast<uint32_t>(rhs); \
-} \
-inline auto operator&(EnumClass const lhs, EnumClass const rhs) -> bool { \
-	return static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs); \
-} \
-inline auto operator&(EnumClass##Flags const lhs, EnumClass const rhs) -> bool { \
-	return lhs & static_cast<uint32_t>(rhs); \
-}
+#define DECLARE_ENUM_CLASS_BIT_FLAG(EnumClass)                                                                         \
+    using EnumClass##Flags = uint32_t;                                                                                 \
+    inline auto operator|(EnumClass const lhs, EnumClass const rhs) -> EnumClass##Flags                                \
+    {                                                                                                                  \
+        return static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs);                                                \
+    }                                                                                                                  \
+    inline auto operator|(EnumClass##Flags const lhs, EnumClass const rhs) -> EnumClass##Flags                         \
+    {                                                                                                                  \
+        return lhs | static_cast<uint32_t>(rhs);                                                                       \
+    }                                                                                                                  \
+    inline auto operator&(EnumClass const lhs, EnumClass const rhs) -> bool                                            \
+    {                                                                                                                  \
+        return static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs);                                                \
+    }                                                                                                                  \
+    inline auto operator&(EnumClass##Flags const lhs, EnumClass const rhs) -> bool                                     \
+    {                                                                                                                  \
+        return lhs & static_cast<uint32_t>(rhs);                                                                       \
+    }
 #endif // DECLARE_ENUM_CLASS_BIT_FLAG
 
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+namespace utils
+{
+    template <typename... Args>
+    class VariantMatcher
+    {
+      public:
+        VariantMatcher(std::variant<Args...> object) : object(object)
+        {
+        }
 
-template <class... Ts>
-inline auto make_visitor(Ts... ts) {
+        template <typename Type>
+        auto case_(std::function<void(Type&)> callback) -> VariantMatcher&
+        {
+            if (auto value = std::get_if<Type>(&object))
+            {
+                callback(*value);
+            }
+            return *this;
+        }
 
-    return overloaded<Ts...>(ts...);
-}
+      private:
+        std::variant<Args...> object;
+    };
+
+    template <typename... Args>
+    inline auto variant_match(std::variant<Args...> object) -> VariantMatcher<Args...>
+    {
+        return VariantMatcher(object);
+    }
+} // namespace utils

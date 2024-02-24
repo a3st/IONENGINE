@@ -2,9 +2,7 @@
 
 #pragma once
 
-#include "core/ref_ptr.hpp"
-
-namespace ionengine::renderer::rhi::shader_file
+namespace ionengine::rhi::shader_file
 {
     inline std::array<uint8_t, 8> const SHADER_MAGIC{'S', 'H', 'A', 'D', 'E', 'R', '.', '1'};
 
@@ -35,8 +33,8 @@ namespace ionengine::renderer::rhi::shader_file
 
     enum class ShaderFileFlags
     {
-        DXIL_Binary = 0,
-        SPIRV_Binary = 1
+        DXIL = 0,
+        SPIRV = 1
     };
 
     struct Header
@@ -93,31 +91,26 @@ namespace ionengine::renderer::rhi::shader_file
 
         auto get_name() -> std::string_view
         {
-
             return shader_name;
         }
 
         auto get_exports() -> std::unordered_map<std::string, ResourceData> const&
         {
-
             return exports;
         }
 
         auto get_stages() -> std::unordered_map<ShaderStageType, ShaderStageData> const&
         {
-
             return stages;
         }
 
         auto get_buffer(uint32_t const index) -> std::span<uint8_t const>
         {
-
             return buffers[index];
         }
 
         auto get_flags() -> ShaderFileFlags
         {
-
             return flags;
         }
 
@@ -128,13 +121,4 @@ namespace ionengine::renderer::rhi::shader_file
         std::vector<std::vector<uint8_t>> buffers;
         ShaderFileFlags flags;
     };
-} // namespace ionengine::renderer::rhi::shader_file
-
-namespace ionengine::renderer::rhi
-{
-    class Shader : public core::ref_counted_object
-    {
-      public:
-        virtual auto get_name() -> std::string_view = 0;
-    };
-} // namespace ionengine::renderer::rhi
+} // namespace ionengine::rhi::shader_file

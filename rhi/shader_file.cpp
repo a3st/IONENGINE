@@ -2,12 +2,12 @@
 
 #pragma once
 
+#include "shader_file.hpp"
 #include "core/exception.hpp"
 #include "precompiled.h"
-#include "shader.hpp"
 #include <simdjson.h>
 
-namespace ionengine::renderer::rhi::shader_file
+namespace ionengine::rhi::shader_file
 {
     auto get_element_type_by_string(std::string_view const element_type) -> ElementType
     {
@@ -177,4 +177,4 @@ namespace ionengine::renderer::rhi::shader_file
             buffers.emplace_back(chunk_buffer_data);
         } while (header.length > stream.tellg());
     }
-} // namespace ionengine::renderer::rhi::shader_file
+} // namespace ionengine::rhi::shader_file

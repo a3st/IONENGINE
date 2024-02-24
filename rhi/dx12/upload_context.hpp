@@ -37,8 +37,5 @@ namespace ionengine::renderer::rhi
         core::ref_ptr<CommandAllocator> command_allocator;
         core::ref_ptr<DX12Buffer> buffer;
         uint64_t offset;
-
-        auto get_texture_data(rhi::TextureFormat const format, uint32_t const mip_width, uint32_t const mip_height,
-                              size_t& row_bytes, uint32_t& row_count) -> void;
     };
 } // namespace ionengine::renderer::rhi

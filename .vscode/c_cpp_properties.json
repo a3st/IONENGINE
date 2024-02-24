@@ -10,7 +10,6 @@
                 "_UNICODE"
             ],
             "windowsSdkVersion": "10.0.22000.0",
-            "compilerPath": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.30.30705\\bin\\Hostx64\\x64\\cl.exe",
             "configurationProvider": "ms-vscode.cmake-tools",
             "compileCommands": "${workspaceFolder}/build/compile_commands.json"
         }

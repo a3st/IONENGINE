@@ -1,8 +1,8 @@
 <template>
     <toolbar></toolbar>
 
-    <div style="display: flex; flex-direction: row; width: 100%; height: calc(100% - 80px);">
-        <div id="graph-container" style="width: 60%; height: 100%;">
+    <div style="display: flex; flex-direction: row; width: 100%; height: calc(100% - 55px);">
+        <div id="graph-container" style="width: 61%; height: 100%;">
             <div id="graph-root"></div>
         </div>
 
@@ -22,16 +22,20 @@
             </div>
         </div>
     </div>
+
+    <footbar></footbar>
 </template>
 
 <script>
 import $ from 'jquery'
 import FlowGraph from '../thirdparty/flowgraph.js/flowgraph';
 import ToolbarComponent from '../components/toolbar.vue';
+import FootbarComponent from '../components/footbar.vue';
 
 export default {
     components: {
-        'toolbar': ToolbarComponent
+        'toolbar': ToolbarComponent,
+        'footbar': FootbarComponent
     },
     data() {
         return {
@@ -97,8 +101,7 @@ export default {
         onPanelResize() {
             console.log("resize");
         },
-        graphResized(e) {
-            console.log(e);
+        graphResized(event) {
             const container = $('#graph-container');
             this.flowgraph.resize(container.width(), container.height());
         }

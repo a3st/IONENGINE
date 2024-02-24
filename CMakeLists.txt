@@ -14,7 +14,6 @@ endif ()
 
 add_library(engine SHARED
     "platform/windows/window.cpp"
-    "platform/window_loop.cpp"
     "platform/window.cpp"
 
     "math/color.cpp"
@@ -29,20 +28,6 @@ add_library(engine SHARED
     "asset/texture.cpp"
     "asset/asset_manager.cpp"
 
-    "renderer/rhi/dx12/barrier_proxy.cpp"
-    "renderer/rhi/dx12/memory_allocator.cpp"
-    "renderer/rhi/dx12/descriptor_allocator.cpp"
-    "renderer/rhi/dx12/command_allocator.cpp"
-    "renderer/rhi/dx12/upload_context.cpp"
-    "renderer/rhi/dx12/pipeline_cache.cpp"
-    "renderer/rhi/dx12/texture.cpp"
-    "renderer/rhi/dx12/buffer.cpp"
-    "renderer/rhi/dx12/shader.cpp"
-    "renderer/rhi/dx12/command_buffer.cpp"
-    "renderer/rhi/dx12/future.cpp"
-    "renderer/rhi/dx12/device.cpp"
-    "renderer/rhi/device.cpp"
-    "renderer/rhi/shader.cpp"
 
     "renderer/buffer_pool.cpp"
     "renderer/render_target.cpp"
@@ -94,5 +79,32 @@ target_include_directories(project PRIVATE
 target_precompile_headers(project PRIVATE precompiled.h)
 
 target_link_libraries(project PUBLIC
-    engine
+    rhi-test
+)
+
+add_library(rhi-test SHARED
+    "platform/windows/window.cpp"
+    "platform/window.cpp"
+
+    "math/color.cpp"
+
+    "rhi/dx12/rhi.cpp"
+    "rhi/rhi.cpp"
+    "rhi/shader_file.cpp"
+)
+
+target_precompile_headers(rhi-test PRIVATE precompiled.h)
+
+target_include_directories(rhi-test PUBLIC
+    "${PROJECT_SOURCE_DIR}"
+    "thirdparty/xxhash/include"
+)
+
+target_link_libraries(rhi-test PUBLIC
+    simdjson
+)
+
+target_compile_definitions(rhi-test PRIVATE 
+    IONENGINE_PLATFORM_WIN32
+    IONENGINE_RHI_DIRECTX12
 )
