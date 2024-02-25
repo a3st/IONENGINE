@@ -19,6 +19,7 @@ namespace ionengine
 
         py::class_<Engine>(self, "Engine")
             .def(py::init<std::string, core::ref_ptr<platform::Window>>())
-            .def("tick", &Engine::tick);
+            .def("tick", &Engine::tick)
+            .def("run", &Engine::run);
     }
 } // namespace ionengine

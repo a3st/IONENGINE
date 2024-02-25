@@ -2,11 +2,8 @@
 
 #pragma once
 
-#include "asset/asset_manager.hpp"
-#include "core/job_system.hpp"
-#include "core/ref_ptr.hpp"
 #include "platform/window.hpp"
-#include "renderer/renderer.hpp"
+#include "rhi/rhi.hpp"
 
 namespace ionengine
 {
@@ -17,11 +14,14 @@ namespace ionengine
 
         auto tick() -> void;
 
+        auto run() -> void;
+
       private:
+        
         core::ref_ptr<platform::Window> window;
-        core::ref_ptr<core::JobSystem> job_system;
-        core::ref_ptr<renderer::Renderer> renderer;
-        core::ref_ptr<renderer::RenderPipeline> render_pipeline;
-        core::ref_ptr<AssetManager> asset_manager;
+
+        core::ref_ptr<rhi::Device> device;
+        core::ref_ptr<rhi::GraphicsContext> graphics_context;
+        
     };
 } // namespace ionengine

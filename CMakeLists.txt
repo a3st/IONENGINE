@@ -18,27 +18,9 @@ add_library(engine SHARED
 
     "math/color.cpp"
 
-    "core/job_system.cpp"
-
-    "asset/importers/ktx2_image.cpp"
-    "asset/importers/glb_model.cpp"
-    
-    "asset/model.cpp"
-    "asset/shader.cpp"
-    "asset/texture.cpp"
-    "asset/asset_manager.cpp"
-
-
-    "renderer/buffer_pool.cpp"
-    "renderer/render_target.cpp"
-    "renderer/primitive.cpp"
-    "renderer/texture.cpp"
-    "renderer/camera.cpp"
-    "renderer/shader.cpp"
-    "renderer/render_graph.cpp"
-    "renderer/renderer.cpp"
-
-    "renderer/pipelines/my_render_pipeline.cpp"
+    "rhi/dx12/rhi.cpp"
+    "rhi/rhi.cpp"
+    "rhi/shader_file.cpp"
 
     "engine/engine.cpp"
 
@@ -65,7 +47,7 @@ target_link_libraries(engine PUBLIC
 
 target_compile_definitions(engine PRIVATE 
     IONENGINE_PLATFORM_WIN32
-    IONENGINE_RENDERER_DIRECTX12
+    IONENGINE_RHI_DIRECTX12
 )
 
 add_executable(project 
