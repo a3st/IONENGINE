@@ -1,8 +1,8 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "rhi.hpp"
 #include "platform/window.hpp"
 #include "precompiled.h"
+#include "rhi.hpp"
 
 namespace ionengine::rhi
 {
@@ -1492,7 +1492,8 @@ namespace ionengine::rhi
                 }
 
                 size_t const total_size = (uint64_t)stream.tellg() - footprints[i].Offset;
-                stream.seekg(((total_size + resource_alignment_mask) & ~resource_alignment_mask) - total_size, std::ios::cur);
+                stream.seekg(((total_size + resource_alignment_mask) & ~resource_alignment_mask) - total_size,
+                             std::ios::cur);
             }
 
             write_info.offset = stream.tellg();
@@ -1561,7 +1562,7 @@ namespace ionengine::rhi
         return Future<Query>(query, std::move(future_impl));
     }
 
-    DX12Device::DX12Device(platform::Window* window) : frame_index(0)
+    DX12Device::DX12Device(platform::Window* window)
     {
 #ifdef _DEBUG
         THROW_IF_FAILED(::D3D12GetDebugInterface(__uuidof(ID3D12Debug1), debug.put_void()));
@@ -1657,8 +1658,8 @@ namespace ionengine::rhi
         memory_allocator = core::make_ref<MemoryAllocator>(device.get(), 1024 * 1024, 64 * 1024 * 1024);
         pipeline_cache = core::make_ref<PipelineCache>(device.get());
 
+        if (window)
         {
-            if (window)
             {
                 auto dxgi_swapchain_desc = DXGI_SWAP_CHAIN_DESC1{};
                 dxgi_swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -1676,14 +1677,10 @@ namespace ionengine::rhi
                     &dxgi_swapchain_desc, nullptr, nullptr, swapchain.put()));
                 swapchain.as(this->swapchain);
             }
-            else
-            {
-            }
 
             for (uint32_t const i : std::views::iota(0u, 2u))
             {
                 core::ref_ptr<Texture> texture;
-                if (window)
                 {
                     winrt::com_ptr<ID3D12Resource> resource;
                     THROW_IF_FAILED(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
@@ -1691,14 +1688,6 @@ namespace ionengine::rhi
                     texture = core::make_ref<DX12Texture>(device.get(), resource, *descriptor_allocator,
                                                           (TextureUsageFlags)TextureUsage::RenderTarget);
                 }
-                else
-                {
-                    texture = core::make_ref<DX12Texture>(
-                        device.get(), static_cast<MemoryAllocator&>(*memory_allocator), *descriptor_allocator, 800, 600,
-                        1, 1, TextureFormat::RGBA8_UNORM, TextureDimension::_2D,
-                        TextureUsageFlags(TextureUsage::RenderTarget));
-                }
-
                 back_buffers.emplace_back(texture);
             }
         }
@@ -1765,6 +1754,11 @@ namespace ionengine::rhi
 
     auto DX12Device::request_back_buffer() -> core::ref_ptr<Texture>
     {
+        if (!swapchain)
+        {
+            throw core::Exception("Swapchain is not found");
+        }
+
         if (graphics_info.fence->GetCompletedValue() < graphics_info.fence_value)
         {
             THROW_IF_FAILED(graphics_info.fence->SetEventOnCompletion(graphics_info.fence_value, fence_event));
@@ -1776,6 +1770,11 @@ namespace ionengine::rhi
 
     auto DX12Device::present_back_buffer() -> void
     {
+        if (!swapchain)
+        {
+            throw core::Exception("Swapchain is not found");
+        }
+
         THROW_IF_FAILED(swapchain->Present(0, 0));
 
         graphics_info.fence_value++;

@@ -35,7 +35,7 @@ class CMakeBuildExt(build_ext):
 
         try:
             output = subprocess.check_output([
-                os.path.abspath(os.path.join("C:", "Program Files (x86)", "Microsoft Visual Studio", "Installer", "vswhere.exe")), 
+                os.path.join("C:/", "Program Files (x86)", "Microsoft Visual Studio", "Installer", "vswhere.exe"), 
                 "-products", "*", 
                 "-format", "json", 
                 "-utf8", 

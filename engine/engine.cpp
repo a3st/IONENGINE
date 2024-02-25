@@ -30,6 +30,13 @@ namespace ionengine
         }
 
         graphics_context->reset();
+
+        rhi::Future<rhi::Query> result = graphics_context->execute();
+
+        if(back_buffer) {
+            device->present_back_buffer();
+        }
+        result.wait();
     }
 
     auto Engine::run() -> void

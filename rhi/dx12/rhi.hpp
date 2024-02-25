@@ -612,6 +612,5 @@ namespace ionengine::rhi
         core::ref_ptr<PipelineCache> pipeline_cache;
 
         std::vector<core::ref_ptr<Texture>> back_buffers;
-        uint32_t frame_index;
     };
 } // namespace ionengine::rhi
