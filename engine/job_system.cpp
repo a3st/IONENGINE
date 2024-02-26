@@ -1,8 +1,9 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "job_system.hpp"
+#include "precompiled.h"
 
-namespace ionengine::core
+namespace ionengine
 {
     JobWorker::JobWorker(std::atomic<uint64_t>& fence_value)
         : thread(&JobWorker::loop, this), fence_value(&fence_value), running(true)
@@ -70,4 +71,4 @@ namespace ionengine::core
             std::this_thread::sleep_for(std::chrono::microseconds(1));
         }
     }
-} // namespace ionengine::core
+} // namespace ionengine

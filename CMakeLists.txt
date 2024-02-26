@@ -7,6 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 add_subdirectory(thirdparty/simdjson)
 add_subdirectory(thirdparty/pybind11)
+add_subdirectory(thirdparty/tinygltf)
 
 if (WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
@@ -22,7 +23,12 @@ add_library(engine SHARED
     "rhi/rhi.cpp"
     "rhi/shader_file.cpp"
 
+    "engine/job_system.cpp"
+    "engine/material.cpp"
+    "engine/model.cpp"
     "engine/engine.cpp"
+
+    "extensions/importers/glb.cpp"
 
     "bindings/python/engine.cpp"
 )
@@ -43,6 +49,7 @@ target_link_libraries(engine PUBLIC
     simdjson
     pybind11::headers
     python311.lib
+    tinygltf
 )
 
 target_compile_definitions(engine PRIVATE 

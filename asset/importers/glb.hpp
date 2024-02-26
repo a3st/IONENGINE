@@ -6,7 +6,7 @@
 
 namespace ionengine::glb
 {
-    inline uint32_t const GLB_MAGIC = 0x46546C67;
+    inline uint32_t constexpr GLB_MAGIC = 0x46546C67;
 
     struct Header
     {
@@ -32,7 +32,7 @@ namespace ionengine::glb
         Mat4
     };
 
-	auto get_accesor_type_by_string(std::string_view const type) -> AccessorType;
+    auto get_accesor_type_by_string(std::string_view const type) -> AccessorType;
 
     enum class ComponentType
     {
@@ -78,10 +78,10 @@ namespace ionengine::glb
         std::vector<PrimitiveData> primitives;
     };
 
-    class GLBModel
+    class GLB
     {
       public:
-        GLBModel(std::span<uint8_t const> const data_bytes);
+        GLB(std::span<uint8_t const> const data);
 
         auto get_meshes() -> std::span<MeshData const>
         {
@@ -109,4 +109,4 @@ namespace ionengine::glb
         std::vector<MeshData> meshes;
         std::vector<std::vector<uint8_t>> buffers;
     };
-}
+} // namespace ionengine::glb

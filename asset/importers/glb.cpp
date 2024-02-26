@@ -1,15 +1,15 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "glb_model.hpp"
+#include "extensions/importers/glb.hpp"
 #include "precompiled.h"
 #include <simdjson.h>
 
 namespace ionengine::glb
 {
-    GLBModel::GLBModel(std::span<uint8_t const> const data_bytes)
+    GLB::GLB(std::span<uint8_t const> const data)
     {
-        std::basic_ispanstream<uint8_t> stream(
-            std::span<uint8_t>(const_cast<uint8_t*>(data_bytes.data()), data_bytes.size()), std::ios::binary);
+        std::basic_ispanstream<uint8_t> stream(std::span<uint8_t>(const_cast<uint8_t*>(data.data()), data.size()),
+                                               std::ios::binary);
 
         auto header = Header{};
         stream.read((uint8_t*)&header, sizeof(Header));

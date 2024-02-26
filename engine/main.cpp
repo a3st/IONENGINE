@@ -21,7 +21,7 @@ auto main(int32_t argc, char** argv) -> int32_t
 
         copy_context->reset();
 
-        std::vector<uint8_t> dummy = { 1, 2, 3, 4, 5 };
+        std::vector<uint8_t> dummy = {1, 2, 3, 4, 5};
         auto future_copy = copy_context->write_buffer(buffer, dummy);
         copy_context->execute();
 
@@ -56,12 +56,11 @@ auto main(int32_t argc, char** argv) -> int32_t
 
             result.wait();
         }
+        return EXIT_SUCCESS;
     }
     catch (core::Exception e)
     {
         std::cout << e.what() << std::endl;
         return EXIT_FAILURE;
     }
-
-    return EXIT_SUCCESS;
 }

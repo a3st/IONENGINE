@@ -2,11 +2,9 @@
 
 #pragma once
 
-#include "ref_ptr.hpp"
-#include "ring_buffer.hpp"
-#include "singleton.hpp"
+#include "core/ref_ptr.hpp"
 
-namespace ionengine::core
+namespace ionengine
 {
     enum class JobQueuePriority
     {
@@ -57,4 +55,4 @@ namespace ionengine::core
         std::vector<std::unique_ptr<JobWorker>> workers;
         uint32_t last_index;
     };
-} // namespace ionengine::core
+} // namespace ionengine

@@ -2,8 +2,9 @@
 
 #pragma once
 
-#include "platform/window.hpp"
-#include "rhi/rhi.hpp"
+#include "model.hpp"
+#include "render_context.hpp"
+#include "texture.hpp"
 
 namespace ionengine
 {
@@ -16,12 +17,13 @@ namespace ionengine
 
         auto run() -> void;
 
-      private:
-        
-        core::ref_ptr<platform::Window> window;
+        auto load_model(std::filesystem::path const& file_path) -> AssetFuture<Model>;
 
-        core::ref_ptr<rhi::Device> device;
-        core::ref_ptr<rhi::GraphicsContext> graphics_context;
-        
+        auto load_texture(std::filesystem::path const& file_path) -> AssetFuture<Texture>;
+
+      private:
+        core::ref_ptr<platform::Window> window;
+        core::ref_ptr<JobSystem> job_system;
+        RenderContext render_context;
     };
 } // namespace ionengine

@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "core/job_system.hpp"
-#include "core/ref_ptr.hpp"
+#include "job_system.hpp"
 
 namespace ionengine
 {
@@ -15,7 +14,7 @@ namespace ionengine
         {
         }
 
-        AssetFuture(core::ref_ptr<Type> ptr, core::ref_ptr<core::JobSystem> job_system, uint64_t const fence_value)
+        AssetFuture(core::ref_ptr<Type> ptr, core::ref_ptr<JobSystem> job_system, uint64_t const fence_value)
             : ptr(ptr), job_system(job_system), fence_value(fence_value)
         {
         }
@@ -56,8 +55,11 @@ namespace ionengine
 
       private:
         core::ref_ptr<Type> ptr;
-        core::ref_ptr<core::JobSystem> job_system;
+        core::ref_ptr<JobSystem> job_system;
         uint64_t fence_value;
     };
 
+    class Asset : public core::ref_counted_object
+    {
+    };
 } // namespace ionengine
