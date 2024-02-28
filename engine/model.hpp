@@ -1,8 +1,8 @@
 #pragma once
 
 #include "extensions/importer.hpp"
+#include "linked_device.hpp"
 #include "material.hpp"
-#include "render_context.hpp"
 
 namespace ionengine
 {
@@ -22,13 +22,12 @@ namespace ionengine
     class Model : public Asset
     {
       public:
-        Model(RenderContext& context);
+        Model(LinkedDevice& device);
 
-        auto load_from_memory(std::span<uint8_t const> const data, ModelImporter& importer)
-            -> bool;
+        auto load_from_memory(std::span<uint8_t const> const data, ModelImporter& importer) -> bool;
 
       private:
-        RenderContext* context;
+        LinkedDevice* device;
         std::vector<Mesh> meshes;
     };
 } // namespace ionengine

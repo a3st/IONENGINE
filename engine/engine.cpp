@@ -3,6 +3,7 @@
 #include "engine.hpp"
 #include "core/exception.hpp"
 #include "extensions/importers/glb.hpp"
+#include "libpng16/png.h"
 #include "precompiled.h"
 
 namespace ionengine
@@ -12,64 +13,61 @@ namespace ionengine
     {
         if (window)
         {
-            render_context.device = rhi::Device::create(window.get());
+            device = core::make_ref<LinkedDevice>(window.get());
         }
         else
         {
-            render_context.device = rhi::Device::create(nullptr);
+            device = core::make_ref<LinkedDevice>(nullptr);
         }
-
-        render_context.graphics_context = render_context.device->create_graphics_context();
-        render_context.copy_context = render_context.device->create_copy_context();
     }
 
     auto Engine::tick() -> void
     {
-        if (render_context.copy_task.get_result())
-        {
-            if (!render_context.streaming.empty())
-            {
-                render_context.copy_context->reset();
-                
-                auto asset = render_context.streaming.front();
-                render_context.streaming.pop();
-
-                utils::variant_match(asset)
-                    .case_<StreamingData<Model>>([&](auto& data) {
-                        render_context.copy_context->write_buffer(data.buffer, data.data);
-                    });
-            }
-        }
-
-        core::ref_ptr<rhi::Texture> back_buffer;
-
-        if (window)
-        {
-            back_buffer = render_context.device->request_back_buffer();
-        }
-
-        render_context.graphics_context->reset();
+        device->begin_frame();
 
         std::vector<rhi::RenderPassColorInfo> colors = {
-            rhi::RenderPassColorInfo{.texture = back_buffer,
+            rhi::RenderPassColorInfo{.texture = device->get_frame_texture(),
                                      .load_op = rhi::RenderPassLoadOp::Clear,
                                      .store_op = rhi::RenderPassStoreOp::Store,
                                      .clear_color = math::Color(0.2f, 0.3f, 0.5f, 1.0f)}};
 
-        render_context.graphics_context->barrier(back_buffer, rhi::ResourceState::Common,
-                                                 rhi::ResourceState::RenderTarget);
-        render_context.graphics_context->begin_render_pass(colors, std::nullopt);
-        render_context.graphics_context->end_render_pass();
-        render_context.graphics_context->barrier(back_buffer, rhi::ResourceState::RenderTarget,
-                                                 rhi::ResourceState::Common);
+        device->get_graphics_context().barrier(device->get_frame_texture(), rhi::ResourceState::Common,
+                                               rhi::ResourceState::RenderTarget);
+        device->get_graphics_context().begin_render_pass(colors, std::nullopt);
+        device->get_graphics_context().end_render_pass();
+        device->get_graphics_context().barrier(device->get_frame_texture(), rhi::ResourceState::RenderTarget,
+                                               rhi::ResourceState::Common);
 
-        rhi::Future<rhi::Query> result = render_context.graphics_context->execute();
+        device->end_frame();
 
-        if (back_buffer)
+        std::vector<std::vector<uint8_t>> data;
+
+        device->begin_upload();
+        device->read(device->get_frame_texture(), data);
+        device->end_upload();
+
+        std::vector<uint8_t*> image(device->get_frame_texture()->get_height());
+
+        for (uint32_t const i : std::views::iota(0u, image.size()))
         {
-            render_context.device->present_back_buffer();
+            image[i] = data[0].data() + i * device->get_frame_texture()->get_width() * 4;
         }
-        result.wait();
+
+        FILE* fp = fopen("test.png", "wb");
+        png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+        png_infop png_info = png_create_info_struct(png_ptr);
+        png_init_io(png_ptr, fp);
+        png_set_IHDR(png_ptr, png_info, device->get_frame_texture()->get_width(), device->get_frame_texture()->get_height(), 8, PNG_COLOR_TYPE_RGBA,
+                     PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+        png_set_rows(png_ptr, png_info, &image[0]);
+        png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
+        png_write_end(png_ptr, png_info);
+        png_destroy_write_struct(&png_ptr, nullptr);
+        fclose(fp);
+
+        std::cout << "Successful" << std::endl;
+
+        std::exit(EXIT_SUCCESS);
     }
 
     auto Engine::run() -> void
@@ -102,10 +100,10 @@ namespace ionengine
 
     auto Engine::load_model(std::filesystem::path const& file_path) -> AssetFuture<Model>
     {
-        auto model = core::make_ref<Model>(render_context);
+        auto model = core::make_ref<Model>(*device);
 
         auto result = job_system->submit(
-            [&, file_path]() {
+            [&, model, file_path]() {
                 std::vector<uint8_t> data;
                 {
                     std::basic_ifstream<uint8_t> ifs(file_path, std::ios::binary);

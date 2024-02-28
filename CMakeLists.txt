@@ -8,6 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 add_subdirectory(thirdparty/simdjson)
 add_subdirectory(thirdparty/pybind11)
 add_subdirectory(thirdparty/tinygltf)
+add_subdirectory(thirdparty/libpng)
 
 if (WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
@@ -27,6 +28,7 @@ add_library(engine SHARED
     "engine/material.cpp"
     "engine/model.cpp"
     "engine/engine.cpp"
+    "engine/linked_device.cpp"
 
     "extensions/importers/glb.cpp"
 
@@ -50,6 +52,7 @@ target_link_libraries(engine PUBLIC
     pybind11::headers
     python311.lib
     tinygltf
+    png_static
 )
 
 target_compile_definitions(engine PRIVATE 
@@ -68,7 +71,7 @@ target_include_directories(project PRIVATE
 target_precompile_headers(project PRIVATE precompiled.h)
 
 target_link_libraries(project PUBLIC
-    rhi-test
+    engine
 )
 
 add_library(rhi-test SHARED

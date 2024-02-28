@@ -1,8 +1,8 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
+#include "rhi.hpp"
 #include "platform/window.hpp"
 #include "precompiled.h"
-#include "rhi.hpp"
 
 namespace ionengine::rhi
 {
@@ -1092,6 +1092,10 @@ namespace ionengine::rhi
                 return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
             case ResourceState::NonPixelShaderRead:
                 return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+            case ResourceState::CopySrc:
+                return D3D12_RESOURCE_STATE_COPY_SOURCE;
+            case ResourceState::CopyDst:
+                return D3D12_RESOURCE_STATE_COPY_DEST;
             default:
                 return D3D12_RESOURCE_STATE_COMMON;
         }
@@ -1431,7 +1435,8 @@ namespace ionengine::rhi
         {
             uint8_t* mapped_bytes = write_info.buffer->map_memory();
             std::basic_spanstream<uint8_t> stream(
-                std::span<uint8_t>(mapped_bytes + write_info.offset, write_info.buffer->get_size()));
+                std::span<uint8_t>(mapped_bytes + write_info.offset, write_info.buffer->get_size()),
+                std::ios::binary | std::ios::out);
             offset = stream.tellg();
             stream.write(data.data(), data.size());
             write_info.offset = stream.tellg();
@@ -1474,7 +1479,8 @@ namespace ionengine::rhi
         {
             uint8_t* mapped_bytes = write_info.buffer->map_memory();
             std::basic_spanstream<uint8_t> stream(
-                std::span<uint8_t>(mapped_bytes + write_info.offset, write_info.buffer->get_size()));
+                std::span<uint8_t>(mapped_bytes + write_info.offset, write_info.buffer->get_size()),
+                std::ios::binary | std::ios::out);
 
             for (uint32_t const i : std::views::iota(0u, data.size()))
             {
@@ -1531,7 +1537,8 @@ namespace ionengine::rhi
         {
             uint8_t* mapped_bytes = read_info.buffer->map_memory();
             std::basic_spanstream<uint8_t> stream(
-                std::span<uint8_t>(mapped_bytes + read_info.offset, read_info.buffer->get_size()));
+                std::span<uint8_t>(mapped_bytes + read_info.offset, read_info.buffer->get_size()),
+                std::ios::binary | std::ios::in);
             data.resize(dst->get_size());
             stream.read(data.data(), data.size());
             read_info.offset = stream.tellg();
@@ -1541,6 +1548,88 @@ namespace ionengine::rhi
 
     auto DX12CopyContext::read_texture(core::ref_ptr<Texture> dst, std::vector<std::vector<uint8_t>>& data) -> void
     {
+        size_t row_bytes = 0;
+        uint32_t row_count = 0;
+        size_t total_bytes = 0;
+
+        uint32_t const resource_alignment_mask = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1;
+
+        std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footprints;
+        footprints.resize(dst->get_mip_levels());
+
+        auto d3d12_resource_desc = static_cast<DX12Texture&>(*dst).get_resource()->GetDesc();
+
+        device->GetCopyableFootprints(&d3d12_resource_desc, 0, dst->get_mip_levels(), 0, footprints.data(), nullptr,
+                                      nullptr, &total_bytes);
+
+        for (uint32_t const i : std::views::iota(0u, footprints.size()))
+        {
+            auto d3d12_source_location = D3D12_TEXTURE_COPY_LOCATION{};
+            d3d12_source_location.pResource = static_cast<DX12Texture&>(*dst).get_resource();
+            d3d12_source_location.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+            d3d12_source_location.SubresourceIndex = i;
+
+            auto d3d12_dest_location = D3D12_TEXTURE_COPY_LOCATION{};
+            d3d12_dest_location.pResource = static_cast<DX12Buffer&>(*read_info.buffer).get_resource();
+            d3d12_dest_location.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+            d3d12_dest_location.PlacedFootprint = footprints[i];
+
+            command_list->CopyTextureRegion(&d3d12_dest_location, 0, 0, 0, &d3d12_source_location, nullptr);
+        }
+
+        Future<Query> result = execute();
+        result.wait();
+        reset();
+
+        {
+            uint8_t* mapped_bytes = read_info.buffer->map_memory();
+            std::basic_spanstream<uint8_t> stream(
+                std::span<uint8_t>(mapped_bytes + read_info.offset, read_info.buffer->get_size()),
+                std::ios::binary | std::ios::in);
+
+            data.resize(footprints.size());
+
+            for (uint32_t const i : std::views::iota(0u, footprints.size()))
+            {   
+                get_surface_data(dst->get_format(), footprints[i].Footprint.Width, footprints[i].Footprint.Height,
+                                 row_bytes, row_count);
+
+                data[i].resize(row_bytes * row_count);
+
+                for (uint32_t const j : std::views::iota(0u, row_count))
+                {
+                    stream.read(data[i].data() + row_bytes * j, row_bytes);
+                    stream.seekg(footprints[i].Footprint.RowPitch - row_bytes, std::ios::cur);
+                }
+
+                size_t const total_size = (uint64_t)stream.tellg() - footprints[i].Offset;
+                stream.seekg(((total_size + resource_alignment_mask) & ~resource_alignment_mask) - total_size,
+                             std::ios::cur);
+            }
+
+            read_info.offset = stream.tellg();
+            read_info.buffer->unmap_memory();
+        }
+    }
+
+    auto DX12CopyContext::barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst,
+                                  ResourceState const before, ResourceState const after) -> void
+    {
+        auto d3d12_resource_barrier = D3D12_RESOURCE_BARRIER{};
+        d3d12_resource_barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+        d3d12_resource_barrier.Transition.StateBefore = resource_state_to_d3d12(before);
+        d3d12_resource_barrier.Transition.StateAfter = resource_state_to_d3d12(after);
+        d3d12_resource_barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+        utils::variant_match(dst)
+            .case_<core::ref_ptr<Buffer>>([&](auto& data) {
+                d3d12_resource_barrier.Transition.pResource = static_cast<DX12Buffer*>(data.get())->get_resource();
+            })
+            .case_<core::ref_ptr<Texture>>([&](auto& data) {
+                d3d12_resource_barrier.Transition.pResource = static_cast<DX12Texture*>(data.get())->get_resource();
+            });
+
+        command_list->ResourceBarrier(1, &d3d12_resource_barrier);
     }
 
     auto DX12CopyContext::execute() -> Future<Query>

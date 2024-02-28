@@ -4,7 +4,7 @@
 
 namespace ionengine
 {
-    Model::Model(RenderContext& context) : context(&context)
+    Model::Model(LinkedDevice& device) : device(&device)
     {
     }
 
@@ -17,20 +17,30 @@ namespace ionengine
             return false;
         }
 
+        device->begin_upload();
+
         for (auto const& mesh : importer.get().meshes)
         {
+            std::vector<Primitive> primitives;
 
             for (auto const& primitive : mesh.primitives)
             {
-                auto vertex_buffer = core::make_ref<rhi::Buffer>(primitive.vertices.size(), 0,
-                                                                 rhi::BufferUsageFlags(rhi::BufferUsage::Vertex));
-                auto index_buffer = core::make_ref<rhi::Buffer>(primitive.indices.size(), 0,
-                                                                rhi::BufferUsageFlags(rhi::BufferUsage::Index));
+                auto vertex_buffer = device->get_device().create_buffer(
+                    primitive.vertices.size(), 0, rhi::BufferUsageFlags(rhi::BufferUsage::Vertex));
+                auto index_buffer = device->get_device().create_buffer(primitive.indices.size(), 0,
+                                                                       rhi::BufferUsageFlags(rhi::BufferUsage::Index));
 
-                
+                device->upload(vertex_buffer, primitive.vertices);
+                device->upload(index_buffer, primitive.indices);
+
+                primitives.emplace_back(Primitive{
+                    .vertices = vertex_buffer, .indices = index_buffer, .index_count = primitive.index_count});
             }
+
+            meshes.emplace_back(Mesh{.material = nullptr, .primitives = primitives});
         }
 
+        device->end_upload();
         return true;
     }
 } // namespace ionengine

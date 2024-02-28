@@ -2,8 +2,9 @@
 
 #pragma once
 
+#include "linked_device.hpp"
 #include "model.hpp"
-#include "render_context.hpp"
+#include "platform/window.hpp"
 #include "texture.hpp"
 
 namespace ionengine
@@ -24,6 +25,6 @@ namespace ionengine
       private:
         core::ref_ptr<platform::Window> window;
         core::ref_ptr<JobSystem> job_system;
-        RenderContext render_context;
+        core::ref_ptr<LinkedDevice> device;
     };
 } // namespace ionengine

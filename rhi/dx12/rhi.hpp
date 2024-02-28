@@ -520,6 +520,9 @@ namespace ionengine::rhi
 
         auto read_texture(core::ref_ptr<Texture> dst, std::vector<std::vector<uint8_t>>& data) -> void override;
 
+        auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst, ResourceState const before,
+                     ResourceState const after) -> void override;
+
         auto execute() -> Future<Query> override;
 
       private:

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "core/event.hpp"
 #include "job_system.hpp"
 
 namespace ionengine
@@ -58,6 +59,8 @@ namespace ionengine
         core::ref_ptr<JobSystem> job_system;
         uint64_t fence_value;
     };
+
+    class Asset;
 
     class Asset : public core::ref_counted_object
     {

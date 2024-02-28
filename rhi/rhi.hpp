@@ -168,7 +168,9 @@ namespace ionengine::rhi
         DepthWrite,
         NonPixelShaderRead,
         PixelShaderRead,
-        UnorderedAccess
+        UnorderedAccess,
+        CopyDst,
+        CopySrc
     };
 
     struct RenderPassColorInfo
@@ -334,6 +336,10 @@ namespace ionengine::rhi
 
         auto get_result() const -> bool
         {
+            if (!impl && !ptr)
+            {
+                return true;
+            }
             return impl->get_result();
         }
 
@@ -413,6 +419,9 @@ namespace ionengine::rhi
         virtual auto read_buffer(core::ref_ptr<Buffer> dst, std::vector<uint8_t>& data) -> void = 0;
 
         virtual auto read_texture(core::ref_ptr<Texture> dst, std::vector<std::vector<uint8_t>>& data) -> void = 0;
+
+        virtual auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst,
+                             ResourceState const before, ResourceState const after) -> void = 0;
 
         virtual auto execute() -> Future<Query> = 0;
     };
