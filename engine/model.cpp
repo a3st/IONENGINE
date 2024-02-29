@@ -43,4 +43,14 @@ namespace ionengine
         device->end_upload();
         return true;
     }
+
+    auto Model::get_mesh_count() const -> uint32_t
+    {
+        return static_cast<uint32_t>(meshes.size());
+    }
+
+    auto Model::get_mesh(uint32_t const index) -> Mesh&
+    {
+        return meshes[index];
+    }
 } // namespace ionengine

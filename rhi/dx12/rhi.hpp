@@ -195,6 +195,11 @@ namespace ionengine::rhi
             return descriptor_allocations.at(usage);
         }
 
+        auto get(BufferUsage const usage) const -> uint32_t override
+        {
+            return descriptor_allocations.at(usage).offset;
+        }
+
       private:
         MemoryAllocator* memory_allocator;
         DescriptorAllocator* descriptor_allocator;
@@ -261,6 +266,11 @@ namespace ionengine::rhi
             return resource.get();
         }
 
+        auto get(TextureUsage const usage) const -> uint32_t override
+        {
+            return descriptor_allocations.at(usage).offset;
+        }
+
       private:
         MemoryAllocator* memory_allocator;
         DescriptorAllocator* descriptor_allocator;
@@ -283,37 +293,19 @@ namespace ionengine::rhi
     class DX12Shader final : public Shader
     {
       public:
-        DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const data_bytes);
+        DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const data);
 
-        auto get_name() -> std::string_view override
-        {
-            return shader_name;
-        }
+        auto get_name() const -> std::string_view override;
 
-        auto get_inputs() -> std::span<D3D12_INPUT_ELEMENT_DESC const>
-        {
-            return inputs;
-        }
+        auto get_inputs() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
 
-        auto get_inputs_size_per_vertex() -> uint32_t
-        {
-            return inputs_size_per_vertex;
-        }
+        auto get_inputs_size_per_vertex() const -> uint32_t;
 
-        auto get_stages() -> std::unordered_map<rhi::shader_file::ShaderStageType, D3D12_SHADER_BYTECODE> const&
-        {
-            return stages;
-        }
+        auto get_stages() const -> std::unordered_map<shader_file::ShaderStageType, D3D12_SHADER_BYTECODE> const&;
 
-        auto get_bindings() -> std::unordered_map<std::string, uint32_t> const&
-        {
-            return bindings;
-        }
+        auto get_bindings() const -> std::unordered_map<std::string, shader_file::ResourceData> const& override;
 
-        auto get_hash() -> uint64_t
-        {
-            return hash;
-        }
+        auto get_hash() const -> uint64_t;
 
       private:
         std::string shader_name;
@@ -322,7 +314,7 @@ namespace ionengine::rhi
         uint32_t inputs_size_per_vertex;
         std::list<std::string> semantic_names;
         std::vector<std::vector<uint8_t>> buffers;
-        std::unordered_map<std::string, uint32_t> bindings;
+        std::unordered_map<std::string, shader_file::ResourceData> bindings;
         uint64_t hash;
     };
 
@@ -450,8 +442,7 @@ namespace ionengine::rhi
                                            BlendColorInfo const& blend_color,
                                            std::optional<DepthStencilStageInfo> const depth_stencil) -> void override;
 
-        auto bind_descriptor(std::string_view const binding, std::variant<BufferBindData, TextureBindData> data)
-            -> void override;
+        auto bind_descriptor(std::string_view const binding, uint32_t const descriptor) -> void override;
 
         auto begin_render_pass(std::span<RenderPassColorInfo> const colors,
                                std::optional<RenderPassDepthStencilInfo> depth_stencil) -> void override;
@@ -570,7 +561,7 @@ namespace ionengine::rhi
 
         ~DX12Device();
 
-        auto create_shader(std::span<uint8_t const> const data_bytes) -> core::ref_ptr<Shader> override;
+        auto create_shader(std::span<uint8_t const> const data) -> core::ref_ptr<Shader> override;
 
         auto create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
                             uint32_t const mip_levels, TextureFormat const format, TextureDimension const dimension,

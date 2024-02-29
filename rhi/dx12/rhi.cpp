@@ -678,9 +678,9 @@ namespace ionengine::rhi
         }
     }
 
-    DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const data_bytes)
+    DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const data)
     {
-        shader_file::ShaderFile shader_file(data_bytes);
+        shader_file::ShaderFile shader_file(data);
 
         if (shader_file.get_flags() != shader_file::ShaderFileFlags::DXIL)
         {
@@ -743,10 +743,38 @@ namespace ionengine::rhi
             }
         }
 
-        for (auto const& [name, data] : shader_file.get_exports())
-        {
-            bindings.emplace(name, data.binding);
-        }
+        bindings = shader_file.get_exports();
+    }
+
+    auto DX12Shader::get_name() const -> std::string_view
+    {
+        return shader_name;
+    }
+
+    auto DX12Shader::get_inputs() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>
+    {
+        return inputs;
+    }
+
+    auto DX12Shader::get_inputs_size_per_vertex() const -> uint32_t
+    {
+        return inputs_size_per_vertex;
+    }
+
+    auto DX12Shader::get_stages() const
+        -> std::unordered_map<shader_file::ShaderStageType, D3D12_SHADER_BYTECODE> const&
+    {
+        return stages;
+    }
+
+    auto DX12Shader::get_bindings() const -> std::unordered_map<std::string, shader_file::ResourceData> const&
+    {
+        return bindings;
+    }
+
+    auto DX12Shader::get_hash() const -> uint64_t
+    {
+        return hash;
     }
 
     auto compare_op_to_d3d12(CompareOp const compare_op) -> D3D12_COMPARISON_FUNC
@@ -1151,18 +1179,10 @@ namespace ionengine::rhi
         current_shader = shader;
     }
 
-    auto DX12GraphicsContext::bind_descriptor(std::string_view const binding,
-                                              std::variant<BufferBindData, TextureBindData> data) -> void
+    auto DX12GraphicsContext::bind_descriptor(std::string_view const binding, uint32_t const descriptor) -> void
     {
-        uint32_t const index = current_shader->get_bindings().at(std::string(binding));
-
-        utils::variant_match(data)
-            .case_<BufferBindData>([&](auto& data) {
-                bindings[index] = static_cast<DX12Buffer*>(data.resource.get())->get_descriptor(data.usage).offset;
-            })
-            .case_<TextureBindData>([&](auto& data) {
-                bindings[index] = static_cast<DX12Texture*>(data.resource.get())->get_descriptor(data.usage).offset;
-            });
+        uint32_t const index = current_shader->get_bindings().at(std::string(binding)).binding;
+        bindings[index] = descriptor;
     }
 
     auto DX12GraphicsContext::begin_render_pass(std::span<RenderPassColorInfo> const colors,
@@ -1590,7 +1610,7 @@ namespace ionengine::rhi
             data.resize(footprints.size());
 
             for (uint32_t const i : std::views::iota(0u, footprints.size()))
-            {   
+            {
                 get_surface_data(dst->get_format(), footprints[i].Footprint.Width, footprints[i].Footprint.Height,
                                  row_bytes, row_count);
 
@@ -1787,11 +1807,11 @@ namespace ionengine::rhi
         ::CloseHandle(fence_event);
     }
 
-    auto DX12Device::create_shader(std::span<uint8_t const> const data_bytes) -> core::ref_ptr<Shader>
+    auto DX12Device::create_shader(std::span<uint8_t const> const data) -> core::ref_ptr<Shader>
     {
         std::lock_guard lock(mutex);
 
-        auto shader = core::make_ref<DX12Shader>(device.get(), data_bytes);
+        auto shader = core::make_ref<DX12Shader>(device.get(), data);
 
         return shader;
     }

@@ -6,36 +6,33 @@
 #include "libpng16/png.h"
 #include "precompiled.h"
 
+#include "material.hpp"
+
 namespace ionengine
 {
     Engine::Engine(std::filesystem::path const shader_path, core::ref_ptr<platform::Window> window)
-        : window(window), job_system(core::make_ref<JobSystem>())
+        : window(window), device({}, window.get())
     {
-        if (window)
-        {
-            device = core::make_ref<LinkedDevice>(window.get());
-        }
-        else
-        {
-            device = core::make_ref<LinkedDevice>(nullptr);
-        }
+        auto material = core::make_ref<Material>(device);
+        material->create_using_shader("basic");
+        material->set_param<float>("Opacity", 2.0f);
     }
 
     auto Engine::tick() -> void
     {
-        device->begin_frame();
+        /*device->begin_frame();
 
         std::vector<rhi::RenderPassColorInfo> colors = {
-            rhi::RenderPassColorInfo{.texture = device->get_frame_texture(),
+            rhi::RenderPassColorInfo{.texture = device->get_back_buffer(),
                                      .load_op = rhi::RenderPassLoadOp::Clear,
                                      .store_op = rhi::RenderPassStoreOp::Store,
                                      .clear_color = math::Color(0.2f, 0.3f, 0.5f, 1.0f)}};
 
-        device->get_graphics_context().barrier(device->get_frame_texture(), rhi::ResourceState::Common,
+        device->get_graphics_context().barrier(device->get_back_buffer(), rhi::ResourceState::Common,
                                                rhi::ResourceState::RenderTarget);
         device->get_graphics_context().begin_render_pass(colors, std::nullopt);
         device->get_graphics_context().end_render_pass();
-        device->get_graphics_context().barrier(device->get_frame_texture(), rhi::ResourceState::RenderTarget,
+        device->get_graphics_context().barrier(device->get_back_buffer(), rhi::ResourceState::RenderTarget,
                                                rhi::ResourceState::Common);
 
         device->end_frame();
@@ -43,22 +40,22 @@ namespace ionengine
         std::vector<std::vector<uint8_t>> data;
 
         device->begin_upload();
-        device->read(device->get_frame_texture(), data);
+        device->read(device->get_back_buffer(), data);
         device->end_upload();
 
-        std::vector<uint8_t*> image(device->get_frame_texture()->get_height());
+        std::vector<uint8_t*> image(device->get_back_buffer()->get_height());
 
         for (uint32_t const i : std::views::iota(0u, image.size()))
         {
-            image[i] = data[0].data() + i * device->get_frame_texture()->get_width() * 4;
+            image[i] = data[0].data() + i * device->get_back_buffer()->get_width() * 4;
         }
 
         FILE* fp = fopen("test.png", "wb");
         png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
         png_infop png_info = png_create_info_struct(png_ptr);
         png_init_io(png_ptr, fp);
-        png_set_IHDR(png_ptr, png_info, device->get_frame_texture()->get_width(), device->get_frame_texture()->get_height(), 8, PNG_COLOR_TYPE_RGBA,
-                     PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+        png_set_IHDR(png_ptr, png_info, device->get_back_buffer()->get_width(), device->get_back_buffer()->get_height(),
+                     8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
         png_set_rows(png_ptr, png_info, &image[0]);
         png_write_png(png_ptr, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
         png_write_end(png_ptr, png_info);
@@ -67,7 +64,7 @@ namespace ionengine
 
         std::cout << "Successful" << std::endl;
 
-        std::exit(EXIT_SUCCESS);
+        std::exit(EXIT_SUCCESS);*/
     }
 
     auto Engine::run() -> void
@@ -98,11 +95,11 @@ namespace ionengine
         }
     }
 
-    auto Engine::load_model(std::filesystem::path const& file_path) -> AssetFuture<Model>
+    auto Engine::load_model(std::filesystem::path const& file_path) -> std::tuple<JobFuture, core::ref_ptr<Model>>
     {
-        auto model = core::make_ref<Model>(*device);
+        auto model = core::make_ref<Model>(device);
 
-        auto result = job_system->submit(
+        JobFuture result = job_system.submit(
             [&, model, file_path]() {
                 std::vector<uint8_t> data;
                 {
@@ -125,11 +122,11 @@ namespace ionengine
             },
             JobQueuePriority::Low);
 
-        return AssetFuture<Model>(model, job_system, result);
+        return std::make_tuple(std::move(result), model);
     }
 
-    auto Engine::load_texture(std::filesystem::path const& file_path) -> AssetFuture<Texture>
+    auto Engine::load_texture(std::filesystem::path const& file_path) -> std::tuple<JobFuture, core::ref_ptr<Texture>>
     {
-        return AssetFuture<Texture>();
+        return {};
     }
 } // namespace ionengine

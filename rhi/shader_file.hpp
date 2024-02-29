@@ -21,8 +21,8 @@ namespace ionengine::rhi::shader_file
 
     enum class ResourceType
     {
-        Buffer,
-        NonBuffer
+        Uniform,
+        NonUniform
     };
 
     enum class ShaderStageType
@@ -68,6 +68,7 @@ namespace ionengine::rhi::shader_file
     {
         std::string name;
         ElementType element_type;
+        uint64_t offset;
     };
 
     struct ResourceData
@@ -87,32 +88,17 @@ namespace ionengine::rhi::shader_file
     class ShaderFile
     {
       public:
-        ShaderFile(std::span<uint8_t const> const data_bytes);
+        ShaderFile(std::span<uint8_t const> const data);
 
-        auto get_name() -> std::string_view
-        {
-            return shader_name;
-        }
+        auto get_name() const -> std::string_view;
 
-        auto get_exports() -> std::unordered_map<std::string, ResourceData> const&
-        {
-            return exports;
-        }
+        auto get_exports() const -> std::unordered_map<std::string, ResourceData> const&;
 
-        auto get_stages() -> std::unordered_map<ShaderStageType, ShaderStageData> const&
-        {
-            return stages;
-        }
+        auto get_stages() const -> std::unordered_map<ShaderStageType, ShaderStageData> const&;
 
-        auto get_buffer(uint32_t const index) -> std::span<uint8_t const>
-        {
-            return buffers[index];
-        }
+        auto get_buffer(uint32_t const index) const -> std::span<uint8_t const>;
 
-        auto get_flags() -> ShaderFileFlags
-        {
-            return flags;
-        }
+        auto get_flags() const -> ShaderFileFlags;
 
       private:
         std::string shader_name;

@@ -1,35 +1,29 @@
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+
 #pragma once
 
 #include "core/ref_ptr.hpp"
-#include "platform/window.hpp"
 #include "rhi/rhi.hpp"
 
 namespace ionengine
 {
-    class LinkedDevice : public core::ref_counted_object
+    namespace platform
+    {
+        class Window;
+    }
+
+    class LinkedDevice
     {
       public:
-        LinkedDevice(platform::Window* window);
+        LinkedDevice(std::span<std::filesystem::path const> const shaders, platform::Window* window);
 
-        auto get_device() -> rhi::Device&
-        {
-            return *device;
-        }
+        auto get_device() -> rhi::Device&;
 
-        auto get_graphics_context() -> rhi::GraphicsContext&
-        {
-            return *graphics_context;
-        }
+        auto get_graphics_context() -> rhi::GraphicsContext&;
 
-        auto get_copy_context() -> rhi::CopyContext&
-        {
-            return *copy_context;
-        }
+        auto get_copy_context() -> rhi::CopyContext&;
 
-        auto get_frame_texture() const -> core::ref_ptr<rhi::Texture>
-        {
-            return frame_texture;
-        }
+        auto get_back_buffer() const -> core::ref_ptr<rhi::Texture>;
 
         auto begin_frame() -> void;
 
@@ -45,15 +39,18 @@ namespace ionengine
 
         auto read(core::ref_ptr<rhi::Texture> texture, std::vector<std::vector<uint8_t>>& data) -> void;
 
+        auto get_shader_by_name(std::string_view const shader_name) -> core::ref_ptr<rhi::Shader>;
+
       private:
         std::mutex mutex;
         core::ref_ptr<rhi::Device> device;
-
         core::ref_ptr<rhi::GraphicsContext> graphics_context;
         core::ref_ptr<rhi::CopyContext> copy_context;
-
-        rhi::Future<rhi::Query> copy_future;
-        core::ref_ptr<rhi::Texture> frame_texture;
         bool is_windowed_rendering;
+        rhi::Future<rhi::Query> copy_future;
+        core::ref_ptr<rhi::Texture> back_buffer;
+        std::unordered_map<std::string, core::ref_ptr<rhi::Shader>> shaders;
+
+        auto initialize_shaders(std::span<std::filesystem::path const> const shader_paths) -> void;
     };
 } // namespace ionengine

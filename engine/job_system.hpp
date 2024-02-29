@@ -14,6 +14,54 @@ namespace ionengine
         Low
     };
 
+    class JobFuture
+    {
+      public:
+        JobFuture() : sys_fence_value(nullptr), worker_fence_value(nullptr)
+        {
+        }
+
+        JobFuture(uint64_t const fence_value, std::atomic<uint64_t>* worker_fence_value,
+                  std::atomic<uint64_t>* sys_fence_value)
+            : worker_fence_value(worker_fence_value), sys_fence_value(sys_fence_value)
+        {
+        }
+
+        JobFuture(JobFuture&& other)
+            : sys_fence_value(other.sys_fence_value), worker_fence_value(other.worker_fence_value),
+              fence_value(fence_value)
+        {
+        }
+
+        JobFuture(JobFuture const&) = delete;
+
+        auto operator=(JobFuture&& other) -> JobFuture&
+        {
+            sys_fence_value = other.sys_fence_value;
+            worker_fence_value = other.worker_fence_value;
+            fence_value = fence_value;
+            return *this;
+        }
+
+        auto get_result() const -> bool
+        {
+            return *worker_fence_value >= fence_value;
+        }
+
+        auto wait() -> void
+        {
+            while (*worker_fence_value < fence_value)
+            {
+                std::this_thread::sleep_for(std::chrono::microseconds(1));
+            }
+        }
+
+      private:
+        std::atomic<uint64_t>* worker_fence_value;
+        std::atomic<uint64_t>* sys_fence_value;
+        uint64_t fence_value;
+    };
+
     using job_func_t = std::function<void()>;
 
     class JobWorker
@@ -35,19 +83,12 @@ namespace ionengine
         std::atomic<uint64_t>* fence_value;
     };
 
-    class JobSystem : public core::ref_counted_object
+    class JobSystem
     {
       public:
         JobSystem();
 
-        auto submit(job_func_t func, JobQueuePriority const priority) -> uint64_t;
-
-        auto wait(uint64_t const fence_value) -> void;
-
-        auto get_result(uint64_t const fence_value) const -> bool
-        {
-            return worker_fence_value >= fence_value;
-        }
+        auto submit(job_func_t func, JobQueuePriority const priority) -> JobFuture;
 
       private:
         std::atomic<uint64_t> worker_fence_value;

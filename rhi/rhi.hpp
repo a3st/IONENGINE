@@ -4,6 +4,7 @@
 
 #include "core/ref_ptr.hpp"
 #include "math/color.hpp"
+#include "shader_file.hpp"
 
 namespace ionengine::platform
 {
@@ -37,6 +38,8 @@ namespace ionengine::rhi
         virtual auto map_memory() -> uint8_t* = 0;
 
         virtual auto unmap_memory() -> void = 0;
+
+        virtual auto get(BufferUsage const usage) const -> uint32_t = 0;
     };
 
     enum class TextureFormat
@@ -90,12 +93,16 @@ namespace ionengine::rhi
         virtual auto get_format() const -> TextureFormat = 0;
 
         virtual auto get_flags() const -> TextureUsageFlags = 0;
+
+        virtual auto get(TextureUsage const usage) const -> uint32_t = 0;
     };
 
     class Shader : public core::ref_counted_object
     {
       public:
-        virtual auto get_name() -> std::string_view = 0;
+        virtual auto get_name() const -> std::string_view = 0;
+
+        virtual auto get_bindings() const -> std::unordered_map<std::string, shader_file::ResourceData> const& = 0;
     };
 
     enum class RenderPassLoadOp
@@ -376,8 +383,7 @@ namespace ionengine::rhi
                                                    std::optional<DepthStencilStageInfo> const depth_stencil)
             -> void = 0;
 
-        virtual auto bind_descriptor(std::string_view const binding, std::variant<BufferBindData, TextureBindData> data)
-            -> void = 0;
+        virtual auto bind_descriptor(std::string_view const binding, uint32_t const descriptor) -> void = 0;
 
         virtual auto begin_render_pass(std::span<RenderPassColorInfo> const colors,
                                        std::optional<RenderPassDepthStencilInfo> depth_stencil) -> void = 0;
@@ -431,7 +437,7 @@ namespace ionengine::rhi
       public:
         static auto create(platform::Window* window) -> core::ref_ptr<Device>;
 
-        virtual auto create_shader(std::span<uint8_t const> const data_bytes) -> core::ref_ptr<Shader> = 0;
+        virtual auto create_shader(std::span<uint8_t const> const data) -> core::ref_ptr<Shader> = 0;
 
         virtual auto create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
                                     uint32_t const mip_levels, TextureFormat const format,

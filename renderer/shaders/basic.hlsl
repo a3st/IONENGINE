@@ -2,7 +2,7 @@
 struct ShaderResources {
     uint worldData;
     uint lightingData;
-    uint colorTexture;
+    uint materialData;
 };
 ConstantBuffer<ShaderResources> shaderResources : register(b0, space0);
 
@@ -17,6 +17,11 @@ struct WorldData {
 struct LightingData {
     float3 direction;
     float distance;
+};
+
+struct MaterialData {
+    float opacity;
+    uint colorTexture;
 };
 
 struct VSInput {
@@ -49,7 +54,8 @@ struct PSOutput {
 PSOutput ps_main(VSOutput input) {
     PSOutput output;
 
-    Texture2D colorTexture = ResourceDescriptorHeap[NonUniformResourceIndex(shaderResources.colorTexture)];
+    ConstantBuffer<MaterialData> materialData = ResourceDescriptorHeap[shaderResources.materialData];
+    Texture2D colorTexture = ResourceDescriptorHeap[NonUniformResourceIndex(materialData.colorTexture)];
 
     output.color = colorTexture.Sample(static_sampler, input.uv);
     return output;

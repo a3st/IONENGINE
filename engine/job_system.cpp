@@ -57,18 +57,10 @@ namespace ionengine
         }
     }
 
-    auto JobSystem::submit(job_func_t func, JobQueuePriority const priority) -> uint64_t
+    auto JobSystem::submit(job_func_t func, JobQueuePriority const priority) -> JobFuture
     {
         workers[last_index]->insert(std::move(func), priority);
         last_index = (last_index + 1) % static_cast<uint32_t>(workers.size());
-        return ++sys_fence_value;
-    }
-
-    auto JobSystem::wait(uint64_t const fence_value) -> void
-    {
-        while (worker_fence_value < fence_value)
-        {
-            std::this_thread::sleep_for(std::chrono::microseconds(1));
-        }
+        return JobFuture(++sys_fence_value, &sys_fence_value, &worker_fence_value);
     }
 } // namespace ionengine

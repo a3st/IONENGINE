@@ -54,13 +54,13 @@ namespace ionengine::rhi::shader_file
     auto get_resource_type_by_string(std::string_view const resource_type) -> ResourceType
     {
         ResourceType ret{};
-        if (resource_type.compare("BUFFER") == 0)
+        if (resource_type.compare("UNIFORM") == 0)
         {
-            ret = ResourceType::Buffer;
+            ret = ResourceType::Uniform;
         }
-        else if (resource_type.compare("NON_BUFFER") == 0)
+        else if (resource_type.compare("NON_UNIFORM") == 0)
         {
-            ret = ResourceType::NonBuffer;
+            ret = ResourceType::NonUniform;
         }
         return ret;
     }
@@ -80,10 +80,10 @@ namespace ionengine::rhi::shader_file
         return ret;
     }
 
-    ShaderFile::ShaderFile(std::span<uint8_t const> const data_bytes)
+    ShaderFile::ShaderFile(std::span<uint8_t const> const data)
     {
-        std::basic_ispanstream<uint8_t> stream(
-            std::span<uint8_t>(const_cast<uint8_t*>(data_bytes.data()), data_bytes.size()), std::ios::binary);
+        std::basic_ispanstream<uint8_t> stream(std::span<uint8_t>(const_cast<uint8_t*>(data.data()), data.size()),
+                                               std::ios::binary | std::ios::in);
 
         Header header;
         stream.read((uint8_t*)&header, sizeof(Header));
@@ -143,13 +143,15 @@ namespace ionengine::rhi::shader_file
             uint32_t size = 0;
 
             ResourceType resource_type = get_resource_type_by_string(resource.value()["type"].get_string().value());
-            if (resource_type == ResourceType::Buffer)
+
+            if (resource_type == ResourceType::Uniform)
             {
                 for (auto element : resource.value()["elements"])
                 {
                     auto input_data =
                         ElementData{.name = std::string(element["name"].get_string().value()),
-                                    .element_type = get_element_type_by_string(element["type"].get_string().value())};
+                                    .element_type = get_element_type_by_string(element["type"].get_string().value()),
+                                    .offset = element["offset"].get_uint64().value()};
                     elements.emplace_back(input_data);
                 }
                 size = static_cast<uint32_t>(resource.value()["sizeInBytes"].get_uint64());
@@ -176,5 +178,30 @@ namespace ionengine::rhi::shader_file
             }
             buffers.emplace_back(chunk_buffer_data);
         } while (header.length > stream.tellg());
+    }
+
+    auto ShaderFile::get_name() const -> std::string_view
+    {
+        return shader_name;
+    }
+
+    auto ShaderFile::get_exports() const -> std::unordered_map<std::string, ResourceData> const&
+    {
+        return exports;
+    }
+
+    auto ShaderFile::get_stages() const -> std::unordered_map<ShaderStageType, ShaderStageData> const&
+    {
+        return stages;
+    }
+
+    auto ShaderFile::get_buffer(uint32_t const index) const -> std::span<uint8_t const>
+    {
+        return buffers[index];
+    }
+
+    auto ShaderFile::get_flags() const -> ShaderFileFlags
+    {
+        return flags;
     }
 } // namespace ionengine::rhi::shader_file

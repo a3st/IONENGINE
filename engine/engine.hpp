@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "job_system.hpp"
 #include "linked_device.hpp"
 #include "model.hpp"
 #include "platform/window.hpp"
@@ -9,7 +10,7 @@
 
 namespace ionengine
 {
-    class Engine
+    class Engine : public core::ref_counted_object
     {
       public:
         Engine(std::filesystem::path const shader_path, core::ref_ptr<platform::Window> window);
@@ -18,13 +19,13 @@ namespace ionengine
 
         auto run() -> void;
 
-        auto load_model(std::filesystem::path const& file_path) -> AssetFuture<Model>;
+        auto load_model(std::filesystem::path const& file_path) -> std::tuple<JobFuture, core::ref_ptr<Model>>;
 
-        auto load_texture(std::filesystem::path const& file_path) -> AssetFuture<Texture>;
+        auto load_texture(std::filesystem::path const& file_path) -> std::tuple<JobFuture, core::ref_ptr<Texture>>;
 
       private:
         core::ref_ptr<platform::Window> window;
-        core::ref_ptr<JobSystem> job_system;
-        core::ref_ptr<LinkedDevice> device;
+        JobSystem job_system;
+        LinkedDevice device;
     };
 } // namespace ionengine

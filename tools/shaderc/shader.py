@@ -82,7 +82,7 @@ class ShaderParser:
             if match[0] == 'uint':
                 self.exports[match[1][0].upper() + match[1][1:]] = {
                     'binding': offset,
-                    'type': 'NON_BUFFER'
+                    'type': 'NON_UNIFORM'
                 }
                 offset += 1
             else:
@@ -93,13 +93,14 @@ class ShaderParser:
         matches = re.findall(self.struct_data_elements_pattern, elements)
         size = 0
 
-        self.exports[name]['type'] = 'BUFFER'
+        self.exports[name]['type'] = 'UNIFORM'
         self.exports[name]['elements'] = []
 
         for match in matches:
             self.exports[name]['elements'].append({
                 'name': match[1],
-                'type': data_types[match[0]]
+                'type': data_types[match[0]],
+                'offset': size
             })
             size += data_type_sizes[match[0]]
 

@@ -26,6 +26,10 @@ namespace ionengine
 
         auto load_from_memory(std::span<uint8_t const> const data, ModelImporter& importer) -> bool;
 
+        auto get_mesh_count() const -> uint32_t;
+
+        auto get_mesh(uint32_t const index) -> Mesh&;
+
       private:
         LinkedDevice* device;
         std::vector<Mesh> meshes;

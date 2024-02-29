@@ -15,7 +15,7 @@ namespace ionengine
 
     PYBIND11_MODULE(engine, self)
     {
-        py::class_<platform::Window, core::ref_ptr<platform::Window>>(self, "Window")
+        /*py::class_<platform::Window, core::ref_ptr<platform::Window>>(self, "Window")
             .def(py::init(&platform::Window::create));
 
         py::class_<Model, core::ref_ptr<Model>>(self, "Model");
@@ -35,8 +35,8 @@ namespace ionengine
         py::class_<Engine>(self, "Engine")
             .def(py::init<std::string, core::ref_ptr<platform::Window>>())
             .def("tick", &Engine::tick)
-            .def("run", &Engine::run)
-            .def("load_model", &Engine::load_model)
-            .def("load_texture", &Engine::load_texture);
+            .def("run", &Engine::run);*/
+            //.def("load_model", &Engine::load_model)
+            //.def("load_texture", &Engine::load_texture);
     }
 } // namespace ionengine
