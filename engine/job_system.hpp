@@ -17,19 +17,16 @@ namespace ionengine
     class JobFuture
     {
       public:
-        JobFuture() : sys_fence_value(nullptr), worker_fence_value(nullptr)
+        JobFuture() : worker_fence_value(nullptr), fence_value(0)
         {
         }
 
-        JobFuture(uint64_t const fence_value, std::atomic<uint64_t>* worker_fence_value,
-                  std::atomic<uint64_t>* sys_fence_value)
-            : worker_fence_value(worker_fence_value), sys_fence_value(sys_fence_value)
+        JobFuture(uint64_t const fence_value, std::atomic<uint64_t>& worker_fence_value)
+            : fence_value(fence_value), worker_fence_value(&worker_fence_value)
         {
         }
 
-        JobFuture(JobFuture&& other)
-            : sys_fence_value(other.sys_fence_value), worker_fence_value(other.worker_fence_value),
-              fence_value(fence_value)
+        JobFuture(JobFuture&& other) : worker_fence_value(other.worker_fence_value), fence_value(other.fence_value)
         {
         }
 
@@ -37,11 +34,12 @@ namespace ionengine
 
         auto operator=(JobFuture&& other) -> JobFuture&
         {
-            sys_fence_value = other.sys_fence_value;
             worker_fence_value = other.worker_fence_value;
-            fence_value = fence_value;
+            fence_value = other.fence_value;
             return *this;
         }
+
+        auto operator=(JobFuture const&) -> JobFuture& = delete;
 
         auto get_result() const -> bool
         {
@@ -58,7 +56,6 @@ namespace ionengine
 
       private:
         std::atomic<uint64_t>* worker_fence_value;
-        std::atomic<uint64_t>* sys_fence_value;
         uint64_t fence_value;
     };
 

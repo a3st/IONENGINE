@@ -1,3 +1,5 @@
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+
 #pragma once
 
 #include "extensions/importer.hpp"
@@ -15,7 +17,7 @@ namespace ionengine
 
     struct Mesh
     {
-        core::ref_ptr<Material> material;
+        mutable core::ref_ptr<Material> material;
         std::vector<Primitive> primitives;
     };
 
@@ -26,9 +28,7 @@ namespace ionengine
 
         auto load_from_memory(std::span<uint8_t const> const data, ModelImporter& importer) -> bool;
 
-        auto get_mesh_count() const -> uint32_t;
-
-        auto get_mesh(uint32_t const index) -> Mesh&;
+        auto get_meshes() const -> std::span<Mesh const>;
 
       private:
         LinkedDevice* device;

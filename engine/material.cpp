@@ -65,4 +65,14 @@ namespace ionengine
 
         // std::memcpy(buffer_data.data() + result->second.first, texture., size);
     }
+
+    auto Material::get_shader() const -> core::ref_ptr<rhi::Shader>
+    {
+        return shader;
+    }
+
+    auto Material::get_buffer() -> core::ref_ptr<rhi::Buffer>
+    {
+        return buffer;
+    }
 } // namespace ionengine

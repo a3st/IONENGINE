@@ -1120,6 +1120,8 @@ namespace ionengine::rhi
                 return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
             case ResourceState::NonPixelShaderRead:
                 return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+            case ResourceState::AllShaderRead:
+                return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
             case ResourceState::CopySrc:
                 return D3D12_RESOURCE_STATE_COPY_SOURCE;
             case ResourceState::CopyDst:

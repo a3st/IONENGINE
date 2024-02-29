@@ -36,6 +36,10 @@ namespace ionengine
             }
         }
 
+        auto get_shader() const -> core::ref_ptr<rhi::Shader>;
+
+        auto get_buffer() -> core::ref_ptr<rhi::Buffer>;
+
       private:
         LinkedDevice* device;
         core::ref_ptr<rhi::Shader> shader;

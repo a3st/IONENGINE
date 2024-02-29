@@ -98,7 +98,7 @@ class ShaderParser:
 
         for match in matches:
             self.exports[name]['elements'].append({
-                'name': match[1],
+                'name': match[1][0].upper() + match[1][1:],
                 'type': data_types[match[0]],
                 'offset': size
             })

@@ -1,3 +1,4 @@
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "model.hpp"
 #include "precompiled.h"
@@ -44,13 +45,8 @@ namespace ionengine
         return true;
     }
 
-    auto Model::get_mesh_count() const -> uint32_t
+    auto Model::get_meshes() const -> std::span<Mesh const>
     {
-        return static_cast<uint32_t>(meshes.size());
-    }
-
-    auto Model::get_mesh(uint32_t const index) -> Mesh&
-    {
-        return meshes[index];
+        return meshes;
     }
 } // namespace ionengine

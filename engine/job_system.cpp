@@ -61,6 +61,6 @@ namespace ionengine
     {
         workers[last_index]->insert(std::move(func), priority);
         last_index = (last_index + 1) % static_cast<uint32_t>(workers.size());
-        return JobFuture(++sys_fence_value, &sys_fence_value, &worker_fence_value);
+        return JobFuture(++sys_fence_value, worker_fence_value);
     }
 } // namespace ionengine

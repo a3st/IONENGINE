@@ -61,42 +61,15 @@ target_compile_definitions(engine PRIVATE
 )
 
 add_executable(project 
-    "engine/main.cpp"
+    "tests/main.cpp"
 )
 
 target_include_directories(project PRIVATE
     "${PROJECT_SOURCE_DIR}"
 )
 
-target_precompile_headers(project PRIVATE precompiled.h)
-
 target_link_libraries(project PUBLIC
     engine
 )
 
-add_library(rhi-test SHARED
-    "platform/windows/window.cpp"
-    "platform/window.cpp"
-
-    "math/color.cpp"
-
-    "rhi/dx12/rhi.cpp"
-    "rhi/rhi.cpp"
-    "rhi/shader_file.cpp"
-)
-
-target_precompile_headers(rhi-test PRIVATE precompiled.h)
-
-target_include_directories(rhi-test PUBLIC
-    "${PROJECT_SOURCE_DIR}"
-    "thirdparty/xxhash/include"
-)
-
-target_link_libraries(rhi-test PUBLIC
-    simdjson
-)
-
-target_compile_definitions(rhi-test PRIVATE 
-    IONENGINE_PLATFORM_WIN32
-    IONENGINE_RHI_DIRECTX12
-)
+target_precompile_headers(project PRIVATE precompiled.h)

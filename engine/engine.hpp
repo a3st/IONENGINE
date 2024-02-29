@@ -10,10 +10,14 @@
 
 namespace ionengine
 {
+    class RenderContext;
+
+    using render_func_t = std::function<void(RenderContext&)>;
+
     class Engine : public core::ref_counted_object
     {
       public:
-        Engine(std::filesystem::path const shader_path, core::ref_ptr<platform::Window> window);
+        Engine(std::vector<std::filesystem::path> const& shader_paths, core::ref_ptr<platform::Window> window);
 
         auto tick() -> void;
 
@@ -22,6 +26,8 @@ namespace ionengine
         auto load_model(std::filesystem::path const& file_path) -> std::tuple<JobFuture, core::ref_ptr<Model>>;
 
         auto load_texture(std::filesystem::path const& file_path) -> std::tuple<JobFuture, core::ref_ptr<Texture>>;
+
+        render_func_t on_render;
 
       private:
         core::ref_ptr<platform::Window> window;

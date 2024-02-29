@@ -7,36 +7,33 @@
 #include "precompiled.h"
 
 #include "material.hpp"
+#include "render_context.hpp"
 
 namespace ionengine
 {
-    Engine::Engine(std::filesystem::path const shader_path, core::ref_ptr<platform::Window> window)
-        : window(window), device({}, window.get())
+    Engine::Engine(std::vector<std::filesystem::path> const& shader_paths, core::ref_ptr<platform::Window> window)
+        : window(window), device(shader_paths, window.get())
     {
         auto material = core::make_ref<Material>(device);
-        material->create_using_shader("basic");
+        material->create_using_shader("Basic");
         material->set_param<float>("Opacity", 2.0f);
+
+        auto [future, model] = load_model("models/vehicle-1mat.glb");
+        future.wait();
+
+        model->get_meshes()[0].material = material;
     }
 
     auto Engine::tick() -> void
     {
-        /*device->begin_frame();
+        device.begin_frame();
+        {
+            RenderContext context(device);
+            on_render(context);
+        }
+        device.end_frame();
 
-        std::vector<rhi::RenderPassColorInfo> colors = {
-            rhi::RenderPassColorInfo{.texture = device->get_back_buffer(),
-                                     .load_op = rhi::RenderPassLoadOp::Clear,
-                                     .store_op = rhi::RenderPassStoreOp::Store,
-                                     .clear_color = math::Color(0.2f, 0.3f, 0.5f, 1.0f)}};
-
-        device->get_graphics_context().barrier(device->get_back_buffer(), rhi::ResourceState::Common,
-                                               rhi::ResourceState::RenderTarget);
-        device->get_graphics_context().begin_render_pass(colors, std::nullopt);
-        device->get_graphics_context().end_render_pass();
-        device->get_graphics_context().barrier(device->get_back_buffer(), rhi::ResourceState::RenderTarget,
-                                               rhi::ResourceState::Common);
-
-        device->end_frame();
-
+        /*
         std::vector<std::vector<uint8_t>> data;
 
         device->begin_upload();

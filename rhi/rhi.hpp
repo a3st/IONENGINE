@@ -175,6 +175,7 @@ namespace ionengine::rhi
         DepthWrite,
         NonPixelShaderRead,
         PixelShaderRead,
+        AllShaderRead,
         UnorderedAccess,
         CopyDst,
         CopySrc
