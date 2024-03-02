@@ -41,28 +41,42 @@ namespace ionengine
 
     auto Renderer::draw_quad(math::Matrixf const& view_proj) -> void
     {
-        
     }
 
     auto Renderer::begin_draw(std::span<core::ref_ptr<Texture> const> const colors,
                               core::ref_ptr<Texture> const& depth_stencil, math::Color const& clear_color,
                               float const clear_depth, uint8_t clear_stencil) -> void
     {
-        std::vector<rhi::RenderPassColorInfo> colors_ = {
-            rhi::RenderPassColorInfo{.texture = device->get_back_buffer(),
-                                     .load_op = rhi::RenderPassLoadOp::Clear,
-                                     .store_op = rhi::RenderPassStoreOp::Store,
-                                     .clear_color = math::Color(0.2f, 0.3f, 0.5f, 1.0f)}};
+        std::vector<rhi::RenderPassColorInfo> render_pass_colors;
 
-        device->get_graphics_context().barrier(device->get_back_buffer(), rhi::ResourceState::Common,
-                                               rhi::ResourceState::RenderTarget);
-        device->get_graphics_context().begin_render_pass(colors_, std::nullopt);
+        for (auto const color : colors)
+        {
+            render_pass_colors.emplace_back(
+                rhi::RenderPassColorInfo{.texture = color->get_texture(),
+                                         .load_op = rhi::RenderPassLoadOp::Clear,
+                                         .store_op = rhi::RenderPassStoreOp::Store,
+                                         .clear_color = math::Color(0.2f, 0.3f, 0.5f, 1.0f)});
+
+            render_pass_color_textures.emplace_back(color->get_texture());
+        }
+
+        for (auto const& texture : render_pass_color_textures)
+        {
+            device->get_graphics_context().barrier(texture, rhi::ResourceState::Common,
+                                                   rhi::ResourceState::RenderTarget);
+        }
+        device->get_graphics_context().begin_render_pass(render_pass_colors, std::nullopt);
     }
 
     auto Renderer::end_draw() -> void
     {
         device->get_graphics_context().end_render_pass();
-        device->get_graphics_context().barrier(device->get_back_buffer(), rhi::ResourceState::RenderTarget,
-                                               rhi::ResourceState::Common);
+
+        for (auto const& texture : render_pass_color_textures)
+        {
+            device->get_graphics_context().barrier(texture, rhi::ResourceState::RenderTarget,
+                                                   rhi::ResourceState::Common);
+        }
+        render_pass_color_textures.clear();
     }
 } // namespace ionengine

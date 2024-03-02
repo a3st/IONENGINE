@@ -39,5 +39,6 @@ namespace ionengine
 
       private:
         LinkedDevice* device;
+        std::vector<core::ref_ptr<rhi::Texture>> render_pass_color_textures;
     };
 } // namespace ionengine

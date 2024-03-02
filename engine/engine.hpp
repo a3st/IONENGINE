@@ -23,18 +23,20 @@ namespace ionengine
 
         auto run() -> int32_t;
 
-      protected:
-        virtual auto init() -> void;
-
-        virtual auto update(float const dt) -> void;
-
-        virtual auto render() -> void;
-
       private:
         core::ref_ptr<platform::Window> window;
         LinkedDevice device;
 
       protected:
+        virtual auto init() -> void = 0;
+
+        virtual auto update(float const dt) -> void = 0;
+
+        virtual auto render() -> void = 0;
+
+        auto create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)
+            -> core::ref_ptr<Texture>;
+
         ShaderManager shader_manager;
         AssetLoader asset_loader;
         Renderer renderer;
