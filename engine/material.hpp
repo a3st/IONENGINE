@@ -3,17 +3,19 @@
 #pragma once
 
 #include "asset.hpp"
-#include "linked_device.hpp"
 #include "math/color.hpp"
+#include "rhi/rhi.hpp"
 
 namespace ionengine
 {
+    class ShaderManager;
+    class LinkedDevice;
     class Texture;
 
     class Material : public Asset
     {
       public:
-        Material(LinkedDevice& device);
+        Material(LinkedDevice& device, ShaderManager& shader_manager);
 
         auto load_from_memory(std::span<uint8_t const> const data) -> bool;
 
@@ -42,6 +44,7 @@ namespace ionengine
 
       private:
         LinkedDevice* device;
+        ShaderManager* shader_manager;
         core::ref_ptr<rhi::Shader> shader;
         core::ref_ptr<rhi::Buffer> buffer;
         std::unordered_map<std::string, std::pair<uint64_t, rhi::shader_file::ElementType>> parameters;

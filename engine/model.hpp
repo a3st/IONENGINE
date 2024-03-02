@@ -2,12 +2,15 @@
 
 #pragma once
 
+#include "asset.hpp"
 #include "extensions/importer.hpp"
-#include "linked_device.hpp"
-#include "material.hpp"
+#include "rhi/rhi.hpp"
 
 namespace ionengine
 {
+    class Material;
+    class LinkedDevice;
+
     struct Primitive
     {
         core::ref_ptr<rhi::Buffer> vertices;

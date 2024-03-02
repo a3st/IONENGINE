@@ -2,36 +2,41 @@
 
 #pragma once
 
-#include "job_system.hpp"
+#include "asset_loader.hpp"
 #include "linked_device.hpp"
-#include "model.hpp"
-#include "platform/window.hpp"
-#include "texture.hpp"
+#include "renderer.hpp"
+#include "shader_manager.hpp"
 
 namespace ionengine
 {
-    class RenderContext;
-
-    using render_func_t = std::function<void(RenderContext&)>;
+    namespace platform
+    {
+        class Window;
+    }
 
     class Engine : public core::ref_counted_object
     {
       public:
-        Engine(std::vector<std::filesystem::path> const& shader_paths, core::ref_ptr<platform::Window> window);
+        Engine(core::ref_ptr<platform::Window> window);
 
         auto tick() -> void;
 
-        auto run() -> void;
+        auto run() -> int32_t;
 
-        auto load_model(std::filesystem::path const& file_path) -> std::tuple<JobFuture, core::ref_ptr<Model>>;
+      protected:
+        virtual auto init() -> void;
 
-        auto load_texture(std::filesystem::path const& file_path) -> std::tuple<JobFuture, core::ref_ptr<Texture>>;
+        virtual auto update(float const dt) -> void;
 
-        render_func_t on_render;
+        virtual auto render() -> void;
 
       private:
         core::ref_ptr<platform::Window> window;
-        JobSystem job_system;
         LinkedDevice device;
+
+      protected:
+        ShaderManager shader_manager;
+        AssetLoader asset_loader;
+        Renderer renderer;
     };
 } // namespace ionengine

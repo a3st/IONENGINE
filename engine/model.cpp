@@ -1,6 +1,8 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "model.hpp"
+#include "linked_device.hpp"
+#include "material.hpp"
 #include "precompiled.h"
 
 namespace ionengine

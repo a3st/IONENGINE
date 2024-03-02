@@ -15,7 +15,7 @@ namespace ionengine
     class LinkedDevice
     {
       public:
-        LinkedDevice(std::span<std::filesystem::path const> const shaders, platform::Window* window);
+        LinkedDevice(core::ref_ptr<platform::Window> window);
 
         auto get_device() -> rhi::Device&;
 
@@ -39,18 +39,12 @@ namespace ionengine
 
         auto read(core::ref_ptr<rhi::Texture> texture, std::vector<std::vector<uint8_t>>& data) -> void;
 
-        auto get_shader_by_name(std::string_view const shader_name) -> core::ref_ptr<rhi::Shader>;
-
       private:
-        std::mutex mutex;
         core::ref_ptr<rhi::Device> device;
         core::ref_ptr<rhi::GraphicsContext> graphics_context;
         core::ref_ptr<rhi::CopyContext> copy_context;
         bool is_windowed_rendering;
         rhi::Future<rhi::Query> copy_future;
         core::ref_ptr<rhi::Texture> back_buffer;
-        std::unordered_map<std::string, core::ref_ptr<rhi::Shader>> shaders;
-
-        auto initialize_shaders(std::span<std::filesystem::path const> const shader_paths) -> void;
     };
 } // namespace ionengine

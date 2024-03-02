@@ -29,6 +29,9 @@ add_library(engine SHARED
     "engine/model.cpp"
     "engine/engine.cpp"
     "engine/linked_device.cpp"
+    "engine/asset_loader.cpp"
+    "engine/renderer.cpp"
+    "engine/shader_manager.cpp"
 
     "extensions/importers/glb.cpp"
 

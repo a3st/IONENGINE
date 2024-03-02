@@ -1,6 +1,6 @@
 #pragma once
 
-#include "material.hpp"
+#include "asset.hpp"
 #include "rhi/rhi.hpp"
 
 namespace ionengine

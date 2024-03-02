@@ -1,3 +1,4 @@
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "linked_device.hpp"
 #include "core/exception.hpp"
@@ -6,11 +7,11 @@
 
 namespace ionengine
 {
-    LinkedDevice::LinkedDevice(std::span<std::filesystem::path const> const shader_paths, platform::Window* window)
+    LinkedDevice::LinkedDevice(core::ref_ptr<platform::Window> window)
     {
         if (window)
         {
-            device = rhi::Device::create(window);
+            device = rhi::Device::create(window.get());
             is_windowed_rendering = true;
         }
         else
@@ -21,35 +22,6 @@ namespace ionengine
 
         graphics_context = device->create_graphics_context();
         copy_context = device->create_copy_context();
-
-        initialize_shaders(shader_paths);
-    }
-
-    auto LinkedDevice::initialize_shaders(std::span<std::filesystem::path const> const shader_paths) -> void
-    {
-        for (auto const& shader_path : shader_paths)
-        {
-            std::vector<uint8_t> data;
-            {
-                std::basic_ifstream<uint8_t> ifs(shader_path, std::ios::binary | std::ios::in);
-                ifs.seekg(0, std::ios::end);
-                size_t const size = ifs.tellg();
-                ifs.seekg(0, std::ios::beg);
-                data.resize(size);
-                ifs.read(data.data(), data.size());
-            }
-
-            core::ref_ptr<rhi::Shader> shader = device->create_shader(data);
-
-            auto result = shaders.find(std::string(shader->get_name()));
-
-            if (result != shaders.end())
-            {
-                throw core::Exception("Cannot add an existing shader");
-            }
-
-            shaders.emplace(std::string(shader->get_name()), shader);
-        }
     }
 
     auto LinkedDevice::get_device() -> rhi::Device&
@@ -96,8 +68,6 @@ namespace ionengine
 
     auto LinkedDevice::begin_upload() -> void
     {
-        std::lock_guard lock(mutex);
-
         if (!copy_future.get_result())
         {
             copy_future.wait();
@@ -108,15 +78,11 @@ namespace ionengine
 
     auto LinkedDevice::end_upload() -> void
     {
-        std::lock_guard lock(mutex);
-
         copy_future = copy_context->execute();
     }
 
     auto LinkedDevice::upload(core::ref_ptr<rhi::Buffer> buffer, std::span<uint8_t const> const data) -> void
     {
-        std::lock_guard lock(mutex);
-
         copy_context->barrier(buffer, rhi::ResourceState::Common, rhi::ResourceState::CopyDst);
         copy_context->write_buffer(buffer, data);
         copy_context->barrier(buffer, rhi::ResourceState::CopyDst, rhi::ResourceState::Common);
@@ -125,8 +91,6 @@ namespace ionengine
     auto LinkedDevice::upload(core::ref_ptr<rhi::Texture> texture, std::vector<std::span<uint8_t const>> const& data)
         -> void
     {
-        std::lock_guard lock(mutex);
-
         copy_context->barrier(texture, rhi::ResourceState::Common, rhi::ResourceState::CopyDst);
         copy_context->write_texture(texture, data);
         copy_context->barrier(texture, rhi::ResourceState::CopyDst, rhi::ResourceState::Common);
@@ -134,24 +98,8 @@ namespace ionengine
 
     auto LinkedDevice::read(core::ref_ptr<rhi::Texture> texture, std::vector<std::vector<uint8_t>>& data) -> void
     {
-        std::lock_guard lock(mutex);
-
         copy_context->barrier(texture, rhi::ResourceState::Common, rhi::ResourceState::CopySrc);
         copy_context->read_texture(texture, data);
         copy_context->barrier(texture, rhi::ResourceState::CopySrc, rhi::ResourceState::Common);
-    }
-
-    auto LinkedDevice::get_shader_by_name(std::string_view const shader_name) -> core::ref_ptr<rhi::Shader>
-    {
-        std::lock_guard lock(mutex);
-
-        auto result = shaders.find(std::string(shader_name));
-
-        if (result == shaders.end())
-        {
-            throw core::Exception("Can't get a shader that doesn't exist");
-        }
-
-        return result->second;
     }
 } // namespace ionengine

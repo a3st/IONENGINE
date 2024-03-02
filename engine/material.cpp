@@ -2,12 +2,16 @@
 
 #include "material.hpp"
 #include "core/exception.hpp"
+#include "linked_device.hpp"
+#include "material.hpp"
 #include "precompiled.h"
+#include "shader_manager.hpp"
 #include "texture.hpp"
 
 namespace ionengine
 {
-    Material::Material(LinkedDevice& device) : device(&device)
+    Material::Material(LinkedDevice& device, ShaderManager& shader_manager)
+        : device(&device), shader_manager(&shader_manager)
     {
     }
 
@@ -18,7 +22,7 @@ namespace ionengine
 
     auto Material::create_using_shader(std::string_view const shader_name) -> bool
     {
-        core::ref_ptr<rhi::Shader> shader = device->get_shader_by_name(shader_name);
+        core::ref_ptr<rhi::Shader> shader = shader_manager->get_shader_by_name(shader_name);
 
         auto result = shader->get_bindings().find("MaterialData");
 
