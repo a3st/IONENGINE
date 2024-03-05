@@ -8,7 +8,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 add_subdirectory(thirdparty/simdjson)
 add_subdirectory(thirdparty/tinygltf)
 add_subdirectory(thirdparty/libpng)
-add_subdirectory(thirdparty/webui)
 
 if (WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
