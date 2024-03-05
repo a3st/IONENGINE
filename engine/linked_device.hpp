@@ -44,7 +44,6 @@ namespace ionengine
         core::ref_ptr<rhi::GraphicsContext> graphics_context;
         core::ref_ptr<rhi::CopyContext> copy_context;
         bool is_windowed_rendering;
-        rhi::Future<rhi::Query> copy_future;
         core::ref_ptr<rhi::Texture> back_buffer;
     };
 } // namespace ionengine

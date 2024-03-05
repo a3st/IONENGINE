@@ -24,31 +24,33 @@ namespace ionengine
     {
         try
         {
-            if (!window)
-            {
-                throw core::Exception("Window not found when creating an Engine instance");
-            }
-
             init();
 
-            bool is_running = true;
-            platform::WindowEvent event;
-            while (is_running)
+            if (window)
             {
-                while (window->try_get_event(event))
+                bool is_running = true;
+                platform::WindowEvent event;
+                while (is_running)
                 {
-                    utils::variant_match(event).case_<platform::WindowEventData<platform::WindowEventType::Closed>>(
-                        [&](auto& data) { is_running = false; });
-                }
+                    while (window->try_get_event(event))
+                    {
+                        utils::variant_match(event).case_<platform::WindowEventData<platform::WindowEventType::Closed>>(
+                            [&](auto& data) { is_running = false; });
+                    }
 
-                tick();
+                    tick();
+                }
+                return EXIT_SUCCESS;
+            }
+            else
+            {
+                return 0;
             }
         }
         catch (core::Exception e)
         {
             throw std::runtime_error(e.what());
         }
-        return EXIT_SUCCESS;
     }
 
     auto Engine::create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)

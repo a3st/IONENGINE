@@ -344,10 +344,6 @@ namespace ionengine::rhi
 
         auto get_result() const -> bool
         {
-            if (!impl && !ptr)
-            {
-                return true;
-            }
             return impl->get_result();
         }
 

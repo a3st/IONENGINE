@@ -50,10 +50,14 @@ auto main(int32_t argc, char** argv) -> int32_t
 {
     try
     {
-        auto window = platform::Window::create("Example", 800, 600);
-        auto engine = core::make_ref<project::MyEngine>(window);
-        
-        return engine->run();
+        auto engine = core::make_ref<project::MyEngine>(nullptr);
+
+        engine->run();
+        while (running)
+        {
+            engine->tick();
+        }
+        return EXIT_SUCCESS;
     }
     catch (core::Exception e)
     {

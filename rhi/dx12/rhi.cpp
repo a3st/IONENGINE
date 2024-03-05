@@ -1146,6 +1146,7 @@ namespace ionengine::rhi
 
     auto DX12GraphicsContext::reset() -> void
     {
+        THROW_IF_FAILED(command_allocator->Reset());
         THROW_IF_FAILED(command_list->Reset(command_allocator.get(), nullptr));
 
         if (descriptor_allocator)
@@ -1442,6 +1443,7 @@ namespace ionengine::rhi
 
     auto DX12CopyContext::reset() -> void
     {
+        THROW_IF_FAILED(command_allocator->Reset());
         THROW_IF_FAILED(command_list->Reset(command_allocator.get(), nullptr));
     }
 

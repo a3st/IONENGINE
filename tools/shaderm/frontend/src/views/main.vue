@@ -9,8 +9,7 @@
         <div class="panel-resizer" style="display: block; width: 8px; height: 100%;" @mousedown="onPanelResize"></div>
 
         <div style="display: flex; flex-direction: column; height: auto; width: calc(40% - 8px);">
-            <div style="width: 100%; height: 30%; background-color: rgb(255, 255, 255);">
-            </div>
+            <div id="preview" style="width: 100%; height: 30%;"></div>
             <div class="panel-resizer" style="display: block; width: 100%; height: 8px;" @mousedown="onPanelResize"></div>
             <div style="width: 100%; height: calc(70% - 8px);">
                 <div style="display: flex; flex-direction: column; padding: 15px;">
@@ -96,6 +95,10 @@ export default {
         ], html);
 
         this.flowgraph = graph;
+
+        webview.event('onPreviewUpdate', data => {
+            $('#preview').css('background-image', `url(${data})`);
+        });
     },
     methods: {
         onPanelResize() {

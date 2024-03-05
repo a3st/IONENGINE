@@ -68,17 +68,13 @@ namespace ionengine
 
     auto LinkedDevice::begin_upload() -> void
     {
-        if (!copy_future.get_result())
-        {
-            copy_future.wait();
-        }
-
         copy_context->reset();
     }
 
     auto LinkedDevice::end_upload() -> void
     {
-        copy_future = copy_context->execute();
+        rhi::Future<rhi::Query> copy_future = copy_context->execute();
+        copy_future.wait();
     }
 
     auto LinkedDevice::upload(core::ref_ptr<rhi::Buffer> buffer, std::span<uint8_t const> const data) -> void

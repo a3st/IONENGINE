@@ -43,13 +43,13 @@ namespace ionengine
     {
     }
 
-    auto Renderer::begin_draw(std::span<core::ref_ptr<Texture> const> const colors,
-                              core::ref_ptr<Texture> const& depth_stencil, math::Color const& clear_color,
-                              float const clear_depth, uint8_t clear_stencil) -> void
+    auto Renderer::begin_draw(std::span<core::ref_ptr<Texture> const> const colors, core::ref_ptr<Texture> depth_stencil,
+                              math::Color const& clear_color, float const clear_depth, uint8_t const clear_stencil)
+        -> void
     {
         std::vector<rhi::RenderPassColorInfo> render_pass_colors;
 
-        for (auto const color : colors)
+        for (auto const& color : colors)
         {
             render_pass_colors.emplace_back(
                 rhi::RenderPassColorInfo{.texture = color->get_texture(),

@@ -4,8 +4,8 @@
             <h1>С возвращением!</h1>
             <p>Откройте проект или создайте новый</p>
             <div style="display: flex; flex-direction: row; gap: 20px;">
-                <button>Открыть</button>
-                <button @click="openProject">Новый</button>
+                <button @click="openProject">Открыть</button>
+                <button @click="newProject">Новый</button>
             </div>
         </div>
     </div>
@@ -16,6 +16,9 @@ export default {
     methods: {
         openProject() {
             this.$router.push({ path: '/main' });
+        },
+        newProject() {
+            webview.invoke('test');
         }
     }
 }

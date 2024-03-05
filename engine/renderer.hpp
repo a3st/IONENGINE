@@ -31,9 +31,8 @@ namespace ionengine
 
         auto draw_quad(math::Matrixf const& view_proj) -> void;
 
-        auto begin_draw(std::span<core::ref_ptr<Texture> const> const colors,
-                        core::ref_ptr<Texture> const& depth_stencil, math::Color const& clear_color,
-                        float const clear_depth, uint8_t clear_stencil) -> void;
+        auto begin_draw(std::span<core::ref_ptr<Texture> const> const colors, core::ref_ptr<Texture> depth_stencil,
+                        math::Color const& clear_color, float const clear_depth, uint8_t const clear_stencil) -> void;
 
         auto end_draw() -> void;
 

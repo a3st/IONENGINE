@@ -10,3 +10,6 @@
 [submodule "thirdparty/libpng"]
 	path = thirdparty/libpng
 	url = https://github.com/pnggroup/libpng.git
+[submodule "thirdparty/webui"]
+	path = thirdparty/webui
+	url = https://github.com/webui-dev/webui

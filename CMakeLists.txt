@@ -6,9 +6,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 add_subdirectory(thirdparty/simdjson)
-add_subdirectory(thirdparty/pybind11)
 add_subdirectory(thirdparty/tinygltf)
 add_subdirectory(thirdparty/libpng)
+add_subdirectory(thirdparty/webui)
 
 if (WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
@@ -17,24 +17,18 @@ endif ()
 add_library(platform SHARED
     "platform/windows/window.cpp"
     "platform/window.cpp"
-
-    "bindings/python/platform.cpp"
 )
 
 target_precompile_headers(platform PRIVATE precompiled.h)
 
 target_include_directories(platform PUBLIC
     "${PROJECT_SOURCE_DIR}"
-    "C:/Program Files/Python311/include"
 )
 
 target_link_directories(platform PUBLIC
-    "C:/Program Files/Python311/libs"
 )
 
 target_link_libraries(platform PUBLIC
-    pybind11::headers
-    python311.lib
 )
 
 target_compile_definitions(platform PUBLIC 
@@ -59,8 +53,6 @@ add_library(engine SHARED
     "engine/shader_manager.cpp"
 
     "extensions/importers/glb.cpp"
-
-    "bindings/python/engine.cpp"
 )
 
 target_precompile_headers(engine PRIVATE precompiled.h)
@@ -68,17 +60,13 @@ target_precompile_headers(engine PRIVATE precompiled.h)
 target_include_directories(engine PUBLIC
     "${PROJECT_SOURCE_DIR}"
     "thirdparty/xxhash/include"
-    "C:/Program Files/Python311/include"
 )
 
 target_link_directories(engine PUBLIC
-    "C:/Program Files/Python311/libs"
 )
 
 target_link_libraries(engine PUBLIC
     simdjson
-    pybind11::headers
-    python311.lib
     tinygltf
     png_static
     platform
@@ -100,4 +88,19 @@ target_include_directories(project PRIVATE
 
 target_link_libraries(project PUBLIC
     engine
+)
+
+add_executable(shaderm 
+    "tools/shaderm/main.cpp"
+)
+
+target_precompile_headers(shaderm PRIVATE precompiled.h)
+
+target_include_directories(shaderm PRIVATE
+    "${PROJECT_SOURCE_DIR}"
+)
+
+target_link_libraries(shaderm PUBLIC
+    engine
+    webui
 )
