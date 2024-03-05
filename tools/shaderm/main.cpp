@@ -53,7 +53,7 @@ auto main(int32_t argc, char** argv) -> int32_t
         auto engine = core::make_ref<project::MyEngine>(nullptr);
 
         engine->run();
-        while (running)
+        while (running
         {
             engine->tick();
         }
