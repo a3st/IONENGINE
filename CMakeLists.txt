@@ -8,6 +8,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 add_subdirectory(thirdparty/simdjson)
 add_subdirectory(thirdparty/tinygltf)
 add_subdirectory(thirdparty/libpng)
+add_subdirectory(thirdparty/libwebview)
+add_subdirectory(thirdparty/base64pp)
 
 if (WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
@@ -101,5 +103,6 @@ target_include_directories(shaderm PRIVATE
 
 target_link_libraries(shaderm PUBLIC
     engine
-    webui
+    libwebview_edge_static
+    base64pp
 )

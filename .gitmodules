@@ -1,15 +1,15 @@
 [submodule "thirdparty/simdjson"]
 	path = thirdparty/simdjson
 	url = https://github.com/simdjson/simdjson
-[submodule "thirdparty/pybind11"]
-	path = thirdparty/pybind11
-	url = https://github.com/pybind/pybind11
 [submodule "thirdparty/tinygltf"]
 	path = thirdparty/tinygltf
 	url = https://github.com/syoyo/tinygltf
 [submodule "thirdparty/libpng"]
 	path = thirdparty/libpng
 	url = https://github.com/pnggroup/libpng.git
-[submodule "thirdparty/webui"]
-	path = thirdparty/webui
-	url = https://github.com/webui-dev/webui
+[submodule "thirdparty/libwebview"]
+	path = thirdparty/libwebview
+	url = https://github.com/a3st/libwebview
+[submodule "thirdparty/base64pp"]
+	path = thirdparty/base64pp
+	url = https://github.com/matheusgomes28/base64pp

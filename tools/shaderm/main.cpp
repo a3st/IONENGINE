@@ -3,6 +3,8 @@
 #include "engine/engine.hpp"
 #include "platform/window.hpp"
 #include "precompiled.h"
+#include <base64pp/base64pp.h>
+#include <webview.hpp>
 
 using namespace ionengine;
 
@@ -11,8 +13,14 @@ namespace project
     class MyEngine : public ionengine::Engine
     {
       public:
-        MyEngine(core::ref_ptr<platform::Window> window) : Engine(window)
+        MyEngine(core::ref_ptr<platform::Window> window, libwebview::App& app) : Engine(window)
         {
+            app.bind("requestRenderImage", [&](libwebview::EventArgs const& e) {
+                auto buffer = base_color->dump();
+                std::string const b64image = base64pp::encode(buffer);
+                std::string data = std::format("{{\"image\":\"data:image/png;base64,{}\"}}", b64image);
+                app.result(e.index, true, data);
+            });
         }
 
       protected:
@@ -26,12 +34,6 @@ namespace project
 
         auto update(float const dt) -> void override
         {
-            auto buffer = base_color->dump();
-
-            {
-                std::ofstream stream("output.png", std::ios::binary | std::ios::out);
-                stream.write(reinterpret_cast<char* const>(buffer.data()), buffer.size());
-            }
         }
 
         auto render() -> void override
@@ -50,13 +52,11 @@ auto main(int32_t argc, char** argv) -> int32_t
 {
     try
     {
-        auto engine = core::make_ref<project::MyEngine>(nullptr);
-
+        libwebview::App app("ionengine", "Shader Graph", 800, 600, true, true);
+        auto engine = core::make_ref<project::MyEngine>(nullptr, app);
         engine->run();
-        while (running
-        {
-            engine->tick();
-        }
+        app.idle([&]() { engine->tick(); });
+        app.run("resources/index.html");
         return EXIT_SUCCESS;
     }
     catch (core::Exception e)

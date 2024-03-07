@@ -96,8 +96,10 @@ export default {
 
         this.flowgraph = graph;
 
-        webview.event('onPreviewUpdate', data => {
-            $('#preview').css('background-image', `url(${data})`);
+        requestAnimationFrame(() => {
+            webview.invoke('requestRenderImage').then(data => {
+                $('#preview').css('background-image', `url(${data.image})`);
+            })
         });
     },
     methods: {
