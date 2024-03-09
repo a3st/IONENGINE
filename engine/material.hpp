@@ -47,7 +47,7 @@ namespace ionengine
         ShaderManager* shader_manager;
         core::ref_ptr<rhi::Shader> shader;
         core::ref_ptr<rhi::Buffer> buffer;
-        std::unordered_map<std::string, std::pair<uint64_t, rhi::shader_file::ElementType>> parameters;
+        std::unordered_map<std::string, std::pair<uint64_t, rhi::shaderfile::ElementType>> parameters;
         std::vector<uint8_t> buffer_data;
 
         auto set_parameter_data(std::string_view const param, void* data, size_t const size) -> void;

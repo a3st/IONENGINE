@@ -152,7 +152,7 @@ namespace ionengine::rhi
 
             for (uint64_t i = chunk.offset; i < chunk.size; i += block_size)
             {
-                if (alloc_size >= allocation_info.SizeInBytes)
+                if (alloc_size >= size)
                 {
                     success = true;
                     break;
@@ -240,10 +240,10 @@ namespace ionengine::rhi
         ptr_chunks.emplace((uintptr_t)heap.get(), static_cast<uint32_t>(chunks[{alignment, heap_type}].size() - 1));
     }
 
-    DX12Buffer::DX12Buffer(ID3D12Device1* device, MemoryAllocator& memory_allocator,
+    DX12Buffer::DX12Buffer(ID3D12Device1* device, D3D12MA::Allocator* memory_allocator,
                            DescriptorAllocator* descriptor_allocator, size_t const size, size_t const element_stride,
                            BufferUsageFlags const flags)
-        : memory_allocator(&memory_allocator), descriptor_allocator(descriptor_allocator), size(size), flags(flags)
+        : memory_allocator(memory_allocator), descriptor_allocator(descriptor_allocator), size(size), flags(flags)
     {
         auto d3d12_resource_desc = D3D12_RESOURCE_DESC{};
         d3d12_resource_desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -278,15 +278,12 @@ namespace ionengine::rhi
             heap_type = D3D12_HEAP_TYPE_READBACK;
         }
 
-        memory_allocation = this->memory_allocator->allocate(d3d12_resource_desc, heap_type);
-        if (memory_allocation.size == 0)
-        {
-            throw core::Exception("An error in memory allocation when creating a buffer");
-        }
+        auto d3d12ma_allocation_desc = D3D12MA::ALLOCATION_DESC{};
+        d3d12ma_allocation_desc.HeapType = heap_type;
 
-        THROW_IF_FAILED(device->CreatePlacedResource(memory_allocation.heap, memory_allocation.offset,
-                                                     &d3d12_resource_desc, initial_state, nullptr,
-                                                     __uuidof(ID3D12Resource), resource.put_void()));
+        THROW_IF_FAILED(memory_allocator->CreateResource(&d3d12ma_allocation_desc, &d3d12_resource_desc, initial_state,
+                                                         nullptr, memory_allocation.put(), __uuidof(ID3D12Resource),
+                                                         resource.put_void()));
 
         if (flags & BufferUsage::ConstantBuffer)
         {
@@ -354,7 +351,7 @@ namespace ionengine::rhi
             }
         }
 
-        memory_allocator->deallocate(memory_allocation);
+        // memory_allocator->deallocate(memory_allocation);
     }
 
     auto DX12Buffer::map_memory() -> uint8_t*
@@ -447,12 +444,12 @@ namespace ionengine::rhi
         }
     }
 
-    DX12Texture::DX12Texture(ID3D12Device1* device, MemoryAllocator& memory_allocator,
+    DX12Texture::DX12Texture(ID3D12Device1* device, D3D12MA::Allocator* memory_allocator,
                              DescriptorAllocator& descriptor_allocator, uint32_t const width, uint32_t const height,
                              uint32_t const depth, uint32_t const mip_levels, TextureFormat const format,
                              TextureDimension const dimension, TextureUsageFlags const flags)
-        : memory_allocator(&memory_allocator), descriptor_allocator(&descriptor_allocator), width(width),
-          height(height), depth(depth), mip_levels(mip_levels), format(format), dimension(dimension), flags(flags)
+        : memory_allocator(memory_allocator), descriptor_allocator(&descriptor_allocator), width(width), height(height),
+          depth(depth), mip_levels(mip_levels), format(format), dimension(dimension), flags(flags)
     {
         auto d3d12_resource_desc = D3D12_RESOURCE_DESC{};
         switch (dimension)
@@ -498,15 +495,12 @@ namespace ionengine::rhi
             d3d12_resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        memory_allocation = this->memory_allocator->allocate(d3d12_resource_desc, heap_type);
-        if (memory_allocation.size == 0)
-        {
-            throw core::Exception("An error in memory allocation when creating a texture");
-        }
+        auto d3d12ma_allocation_desc = D3D12MA::ALLOCATION_DESC{};
+        d3d12ma_allocation_desc.HeapType = heap_type;
 
-        THROW_IF_FAILED(device->CreatePlacedResource(memory_allocation.heap, memory_allocation.offset,
-                                                     &d3d12_resource_desc, initial_state, nullptr,
-                                                     __uuidof(ID3D12Resource), resource.put_void()));
+        THROW_IF_FAILED(memory_allocator->CreateResource(&d3d12ma_allocation_desc, &d3d12_resource_desc, initial_state,
+                                                         nullptr, memory_allocation.put(), __uuidof(ID3D12Resource),
+                                                         resource.put_void()));
 
         if (flags & TextureUsage::RenderTarget)
         {
@@ -627,51 +621,51 @@ namespace ionengine::rhi
 
         if (memory_allocator)
         {
-            memory_allocator->deallocate(memory_allocation);
+            // memory_allocator->deallocate(memory_allocation);
         }
     }
 
-    auto element_type_to_dxgi(shader_file::ElementType const element_type) -> DXGI_FORMAT
+    auto element_type_to_dxgi(shaderfile::ElementType const element_type) -> DXGI_FORMAT
     {
         switch (element_type)
         {
-            case shader_file::ElementType::Float4:
-            case shader_file::ElementType::Float4x4:
+            case shaderfile::ElementType::Float4:
+            case shaderfile::ElementType::Float4x4:
                 return DXGI_FORMAT_R32G32B32A32_FLOAT;
-            case shader_file::ElementType::Float3:
-            case shader_file::ElementType::Float3x3:
+            case shaderfile::ElementType::Float3:
+            case shaderfile::ElementType::Float3x3:
                 return DXGI_FORMAT_R32G32B32_FLOAT;
-            case shader_file::ElementType::Float2:
-            case shader_file::ElementType::Float2x2:
+            case shaderfile::ElementType::Float2:
+            case shaderfile::ElementType::Float2x2:
                 return DXGI_FORMAT_R32G32_FLOAT;
-            case shader_file::ElementType::Float:
+            case shaderfile::ElementType::Float:
                 return DXGI_FORMAT_R32_FLOAT;
-            case shader_file::ElementType::Uint:
+            case shaderfile::ElementType::Uint:
                 return DXGI_FORMAT_R32_UINT;
             default:
                 return DXGI_FORMAT_UNKNOWN;
         }
     }
 
-    auto element_type_size(rhi::shader_file::ElementType const element_type) -> uint32_t
+    auto element_type_size(rhi::shaderfile::ElementType const element_type) -> uint32_t
     {
         switch (element_type)
         {
-            case shader_file::ElementType::Float4:
+            case shaderfile::ElementType::Float4:
                 return sizeof(float) * 4;
-            case shader_file::ElementType::Float4x4:
+            case shaderfile::ElementType::Float4x4:
                 return sizeof(float) * 16;
-            case shader_file::ElementType::Float3:
+            case shaderfile::ElementType::Float3:
                 return sizeof(float) * 3;
-            case shader_file::ElementType::Float3x3:
+            case shaderfile::ElementType::Float3x3:
                 return sizeof(float) * 9;
-            case shader_file::ElementType::Float2:
+            case shaderfile::ElementType::Float2:
                 return sizeof(float) * 2;
-            case shader_file::ElementType::Float2x2:
+            case shaderfile::ElementType::Float2x2:
                 return sizeof(float) * 4;
-            case shader_file::ElementType::Float:
+            case shaderfile::ElementType::Float:
                 return sizeof(float);
-            case shader_file::ElementType::Uint:
+            case shaderfile::ElementType::Uint:
                 return sizeof(uint32_t);
             default:
                 return 0;
@@ -680,9 +674,9 @@ namespace ionengine::rhi
 
     DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const data)
     {
-        shader_file::ShaderFile shader_file(data);
+        shaderfile::ShaderFile shader_file(data);
 
-        if (shader_file.get_flags() != shader_file::ShaderFileFlags::DXIL)
+        if (shader_file.get_flags() != shaderfile::ShaderFileFlags::DXIL)
         {
             throw core::Exception("Unknown shader binary data");
         }
@@ -710,7 +704,7 @@ namespace ionengine::rhi
         hash = hasher.hash();
 
         {
-            auto result = shader_file.get_stages().find(shader_file::ShaderStageType::Vertex);
+            auto result = shader_file.get_stages().find(shaderfile::ShaderStageType::Vertex);
             if (result != shader_file.get_stages().end())
             {
                 uint32_t offset = 0;
@@ -761,13 +755,12 @@ namespace ionengine::rhi
         return inputs_size_per_vertex;
     }
 
-    auto DX12Shader::get_stages() const
-        -> std::unordered_map<shader_file::ShaderStageType, D3D12_SHADER_BYTECODE> const&
+    auto DX12Shader::get_stages() const -> std::unordered_map<shaderfile::ShaderStageType, D3D12_SHADER_BYTECODE> const&
     {
         return stages;
     }
 
-    auto DX12Shader::get_bindings() const -> std::unordered_map<std::string, shader_file::ResourceData> const&
+    auto DX12Shader::get_bindings() const -> std::unordered_map<std::string, shaderfile::ResourceData> const&
     {
         return bindings;
     }
@@ -853,7 +846,7 @@ namespace ionengine::rhi
         {
             switch (stage)
             {
-                case shader_file::ShaderStageType::Vertex: {
+                case shaderfile::ShaderStageType::Vertex: {
                     d3d12_pipeline_desc.VS = data;
 
                     auto d3d12_input_layout = D3D12_INPUT_LAYOUT_DESC{};
@@ -863,7 +856,7 @@ namespace ionengine::rhi
                     d3d12_pipeline_desc.InputLayout = d3d12_input_layout;
                     break;
                 }
-                case shader_file::ShaderStageType::Pixel: {
+                case shaderfile::ShaderStageType::Pixel: {
                     d3d12_pipeline_desc.PS = data;
 
                     auto d3d12_render_target_blend = D3D12_RENDER_TARGET_BLEND_DESC{};
@@ -1416,8 +1409,9 @@ namespace ionengine::rhi
         }
     }
 
-    DX12CopyContext::DX12CopyContext(ID3D12Device4* device, ID3D12CommandQueue* queue, ID3D12Fence* fence,
-                                     HANDLE fence_event, uint64_t& fence_value)
+    DX12CopyContext::DX12CopyContext(ID3D12Device4* device, D3D12MA::Allocator* memory_allocator,
+                                     ID3D12CommandQueue* queue, ID3D12Fence* fence, HANDLE fence_event,
+                                     uint64_t& fence_value)
         : device(device), queue(queue), fence(fence), fence_event(fence_event), fence_value(&fence_value)
     {
         THROW_IF_FAILED(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, __uuidof(ID3D12CommandAllocator),
@@ -1426,16 +1420,14 @@ namespace ionengine::rhi
         THROW_IF_FAILED(device->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_LIST_FLAG_NONE,
                                                    __uuidof(ID3D12GraphicsCommandList4), command_list.put_void()));
 
-        memory_allocator = core::make_ref<MemoryAllocator>(device, 512 * 1024, 16 * 1024 * 1024);
-
         {
-            write_info.buffer = core::make_ref<DX12Buffer>(device, *memory_allocator, nullptr, 16 * 1024 * 1024, 0,
+            write_info.buffer = core::make_ref<DX12Buffer>(device, memory_allocator, nullptr, 16 * 1024 * 1024, 0,
                                                            (BufferUsageFlags)(BufferUsage::MapWrite));
             write_info.offset = 0;
         }
 
         {
-            read_info.buffer = core::make_ref<DX12Buffer>(device, *memory_allocator, nullptr, 16 * 1024 * 1024, 0,
+            read_info.buffer = core::make_ref<DX12Buffer>(device, memory_allocator, nullptr, 16 * 1024 * 1024, 0,
                                                           (BufferUsageFlags)(BufferUsage::MapRead));
             read_info.offset = 0;
         }
@@ -1455,15 +1447,17 @@ namespace ionengine::rhi
             reset();
         }
 
+        uint32_t const resource_alignment_mask = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1;
+
         uint64_t offset = 0;
         {
             uint8_t* mapped_bytes = write_info.buffer->map_memory();
-            std::basic_spanstream<uint8_t> stream(
-                std::span<uint8_t>(mapped_bytes + write_info.offset, write_info.buffer->get_size()),
-                std::ios::binary | std::ios::out);
-            offset = stream.tellg();
+            std::basic_ospanstream<uint8_t> stream(std::span<uint8_t>(mapped_bytes, write_info.buffer->get_size()),
+                                                   std::ios::binary);
+            stream.seekp(write_info.offset, std::ios::beg);
+            offset = stream.tellp();
             stream.write(data.data(), data.size());
-            write_info.offset = stream.tellg();
+            write_info.offset = ((uint64_t)stream.tellp() + resource_alignment_mask) & ~resource_alignment_mask;
             write_info.buffer->unmap_memory();
         }
 
@@ -1502,9 +1496,10 @@ namespace ionengine::rhi
 
         {
             uint8_t* mapped_bytes = write_info.buffer->map_memory();
-            std::basic_spanstream<uint8_t> stream(
-                std::span<uint8_t>(mapped_bytes + write_info.offset, write_info.buffer->get_size()),
-                std::ios::binary | std::ios::out);
+            std::basic_spanstream<uint8_t> stream(std::span<uint8_t>(mapped_bytes, write_info.buffer->get_size()),
+                                                  std::ios::binary | std::ios::out);
+
+            stream.seekg(write_info.offset, std::ios::beg);
 
             for (uint32_t const i : std::views::iota(0u, data.size()))
             {
@@ -1768,7 +1763,14 @@ namespace ionengine::rhi
         }
 
         descriptor_allocator = core::make_ref<DescriptorAllocator>(device.get());
-        memory_allocator = core::make_ref<MemoryAllocator>(device.get(), 1024 * 1024, 64 * 1024 * 1024);
+
+        auto d3d12ma_allocator_desc = D3D12MA::ALLOCATOR_DESC{};
+        d3d12ma_allocator_desc.pDevice = device.get();
+        d3d12ma_allocator_desc.pAdapter = adapter.get();
+
+        THROW_IF_FAILED(D3D12MA::CreateAllocator(&d3d12ma_allocator_desc, memory_allocator.put()));
+
+        // memory_allocator = core::make_ref<MemoryAllocator>(device.get(), 1024 * 1024, 64 * 1024 * 1024);
         pipeline_cache = core::make_ref<PipelineCache>(device.get());
 
         if (window)
@@ -1827,7 +1829,7 @@ namespace ionengine::rhi
     {
         std::lock_guard lock(mutex);
 
-        auto texture = core::make_ref<DX12Texture>(device.get(), *memory_allocator, *descriptor_allocator, width,
+        auto texture = core::make_ref<DX12Texture>(device.get(), memory_allocator.get(), *descriptor_allocator, width,
                                                    height, depth, mip_levels, format, dimension, flags);
 
         return texture;
@@ -1838,7 +1840,7 @@ namespace ionengine::rhi
     {
         std::lock_guard lock(mutex);
 
-        auto buffer = core::make_ref<DX12Buffer>(device.get(), *memory_allocator, descriptor_allocator.get(), size,
+        auto buffer = core::make_ref<DX12Buffer>(device.get(), memory_allocator.get(), descriptor_allocator.get(), size,
                                                  element_stride, flags);
 
         return buffer;
@@ -1859,8 +1861,8 @@ namespace ionengine::rhi
     {
         std::lock_guard lock(mutex);
 
-        auto context = core::make_ref<DX12CopyContext>(device.get(), copy_info.queue.get(), copy_info.fence.get(),
-                                                       fence_event, copy_info.fence_value);
+        auto context = core::make_ref<DX12CopyContext>(device.get(), memory_allocator.get(), copy_info.queue.get(),
+                                                       copy_info.fence.get(), fence_event, copy_info.fence_value);
 
         return context;
     }

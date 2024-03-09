@@ -13,3 +13,6 @@
 [submodule "thirdparty/base64pp"]
 	path = thirdparty/base64pp
 	url = https://github.com/matheusgomes28/base64pp
+[submodule "thirdparty/d3d12ma"]
+	path = thirdparty/d3d12ma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator

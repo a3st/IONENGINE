@@ -7,7 +7,7 @@
 #include "precompiled.h"
 #include <simdjson.h>
 
-namespace ionengine::rhi::shader_file
+namespace ionengine::rhi::shaderfile
 {
     auto get_element_type_by_string(std::string_view const element_type) -> ElementType
     {

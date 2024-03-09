@@ -4,10 +4,10 @@
 
 #include "linked_device.hpp"
 #include "math/matrix.hpp"
+#include "model.hpp"
 
 namespace ionengine
 {
-    class Mesh;
     class Texture;
 
     class Renderer
@@ -27,7 +27,7 @@ namespace ionengine
         {
         }
 
-        auto draw_mesh(Mesh const& mesh, math::Matrixf const& model, math::Matrixf const& view_proj) -> void;
+        auto draw_mesh(Mesh const& mesh) -> void;
 
         auto draw_quad(math::Matrixf const& view_proj) -> void;
 
@@ -39,5 +39,6 @@ namespace ionengine
       private:
         LinkedDevice* device;
         std::vector<core::ref_ptr<rhi::Texture>> render_pass_color_textures;
+        core::ref_ptr<rhi::Buffer> test_buffer;
     };
 } // namespace ionengine

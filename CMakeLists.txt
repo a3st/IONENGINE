@@ -10,6 +10,7 @@ add_subdirectory(thirdparty/tinygltf)
 add_subdirectory(thirdparty/libpng)
 add_subdirectory(thirdparty/libwebview)
 add_subdirectory(thirdparty/base64pp)
+add_subdirectory(thirdparty/d3d12ma)
 
 if (WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
@@ -43,7 +44,6 @@ add_library(engine SHARED
     "rhi/rhi.cpp"
     "rhi/shader_file.cpp"
 
-    "engine/job_system.cpp"
     "engine/material.cpp"
     "engine/model.cpp"
     "engine/texture.cpp"
@@ -71,6 +71,7 @@ target_link_libraries(engine PUBLIC
     tinygltf
     png_static
     platform
+    D3D12MemoryAllocator
 )
 
 target_compile_definitions(engine PUBLIC 

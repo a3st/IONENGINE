@@ -62,8 +62,9 @@ struct PSOutput
 PSOutput ps_main(VSOutput input)
 {
     PSOutput output;
-    ConstantBuffer<MaterialData> materialData = ResourceDescriptorHeap[shaderData.materialData];
-    Texture2D colorTexture = ResourceDescriptorHeap[NonUniformResourceIndex(materialData.colorTexture)];
-    output.color = colorTexture.Sample(static_sampler, input.uv);
+    //ConstantBuffer<MaterialData> materialData = ResourceDescriptorHeap[shaderData.materialData];
+    //Texture2D colorTexture = ResourceDescriptorHeap[NonUniformResourceIndex(materialData.colorTexture)];
+    //output.color = colorTexture.Sample(static_sampler, input.uv);
+    output.color = float4(0.2f, 0.3f, 0.1f, 1.0f);
     return output;
 }

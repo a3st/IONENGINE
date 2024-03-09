@@ -22,7 +22,7 @@ namespace ionengine
 
     auto Material::create_using_shader(std::string_view const shader_name) -> bool
     {
-        core::ref_ptr<rhi::Shader> shader = shader_manager->get_shader_by_name(shader_name);
+        shader = shader_manager->get_shader_by_name(shader_name);
 
         auto result = shader->get_bindings().find("MaterialData");
 
@@ -30,7 +30,7 @@ namespace ionengine
         {
             throw core::Exception("Shader incompatible with material system");
         }
-        if (result->second.resource_type != rhi::shader_file::ResourceType::Uniform)
+        if (result->second.resource_type != rhi::shaderfile::ResourceType::Uniform)
         {
             throw core::Exception("Shader incompatible with material system");
         }

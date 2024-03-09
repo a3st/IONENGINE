@@ -1,5 +1,4 @@
 #include "glb.hpp"
-#include "math/vector.hpp"
 #include "precompiled.h"
 #include <tiny_gltf.h>
 
@@ -11,7 +10,6 @@ namespace ionengine
         tinygltf::Model model;
 
         bool result = loader.LoadBinaryFromMemory(&model, nullptr, nullptr, data.data(), data.size());
-
         if (!result)
         {
             return false;
@@ -20,7 +18,6 @@ namespace ionengine
         for (auto const& mesh : model.meshes)
         {
             std::vector<Primitive> primitives;
-
             for (auto const& primitive : mesh.primitives)
             {
                 std::span<uint8_t const> vertices;
@@ -51,32 +48,41 @@ namespace ionengine
                     }
                 }
 
-                struct StaticVertex
-                {
-                    math::Vector3f position;
-                    math::Vector3f normal;
-                    math::Vector2f uv;
-                };
-
                 auto out = Primitive{};
-                out.vertices.resize(vertex_count * sizeof(StaticVertex));
+                out.vertices.resize(vertex_count * sizeof(float) * 8);
+
+                std::basic_ospanstream<uint8_t> stream(std::span<uint8_t>(out.vertices.data(), out.vertices.size()),
+                                                       std::ios::binary);
 
                 for (uint32_t const i : std::views::iota(0u, vertex_count))
                 {
-                    auto vertex = StaticVertex{};
                     {
                         auto conv = reinterpret_cast<float const*>(vertices.data());
-                        vertex.position = math::Vector3f(conv[i * 3 + 0], conv[i * 3 + 1], conv[i * 3 + 2]);
+                        for (uint32_t const j : std::views::iota(0u, 3u))
+                        {
+                            std::array<uint8_t, 4> value;
+                            std::memcpy(value.data(), &conv[i * 3 + j], sizeof(float));
+                            stream.write(value.data(), value.size());
+                        }
                     }
                     {
                         auto conv = reinterpret_cast<float const*>(normals.data());
-                        vertex.normal = math::Vector3f(conv[i * 3 + 0], conv[i * 3 + 1], conv[i * 3 + 2]);
+                        for (uint32_t const j : std::views::iota(0u, 3u))
+                        {
+                            std::array<uint8_t, 4> value;
+                            std::memcpy(value.data(), &conv[i * 3 + j], sizeof(float));
+                            stream.write(value.data(), value.size());
+                        }
                     }
                     {
                         auto conv = reinterpret_cast<float const*>(uvs.data());
-                        vertex.uv = math::Vector2f(conv[i * 2 + 0], conv[i * 2 + 1]);
+                        for (uint32_t const j : std::views::iota(0u, 2u))
+                        {
+                            std::array<uint8_t, 4> value;
+                            std::memcpy(value.data(), &conv[i * 2 + j], sizeof(float));
+                            stream.write(value.data(), value.size());
+                        }
                     }
-                    std::memcpy(out.vertices.data() + i * sizeof(StaticVertex), &vertex, sizeof(StaticVertex));
                 }
 
                 uint32_t index_count = 0;
@@ -86,6 +92,8 @@ namespace ionengine
                     auto const& buffer = model.buffers[buffer_view.buffer].data;
 
                     index_count = accessor.count;
+                    out.index_count = index_count;
+
                     auto indices =
                         std::span<uint8_t const>(buffer.data() + buffer_view.byteOffset, buffer_view.byteLength);
 
@@ -98,7 +106,8 @@ namespace ionengine
 
                             for (uint32_t const i : std::views::iota(0u, index_count))
                             {
-                                std::memcpy(out.indices.data() + i * sizeof(uint32_t), &conv[i], sizeof(uint32_t));
+                                uint32_t const value = conv[i];
+                                std::memcpy(out.indices.data() + i * sizeof(uint32_t), &value, sizeof(uint32_t));
                             }
                             break;
                         }
@@ -107,7 +116,8 @@ namespace ionengine
 
                             for (uint32_t const i : std::views::iota(0u, index_count))
                             {
-                                std::memcpy(out.indices.data() + i * sizeof(uint32_t), &conv[i], sizeof(uint32_t));
+                                uint32_t const value = conv[i];
+                                std::memcpy(out.indices.data() + i * sizeof(uint32_t), &value, sizeof(uint32_t));
                             }
                             break;
                         }
@@ -116,7 +126,8 @@ namespace ionengine
 
                             for (uint32_t const i : std::views::iota(0u, index_count))
                             {
-                                std::memcpy(out.indices.data() + i * sizeof(uint32_t), &conv[i], sizeof(uint32_t));
+                                uint32_t const value = conv[i];
+                                std::memcpy(out.indices.data() + i * sizeof(uint32_t), &value, sizeof(uint32_t));
                             }
                             break;
                         }

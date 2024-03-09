@@ -7,6 +7,7 @@
 #include "rhi/shader_file.hpp"
 #include <xxhash/xxhash64.h>
 #define NOMINMAX
+#include <D3D12MemAlloc.h>
 #include <d3d12.h>
 #include <dxcapi.h>
 #include <dxgi1_4.h>
@@ -166,8 +167,9 @@ namespace ionengine::rhi
     class DX12Buffer final : public Buffer
     {
       public:
-        DX12Buffer(ID3D12Device1* device, MemoryAllocator& memory_allocator, DescriptorAllocator* descriptor_allocator,
-                   size_t const size, size_t const element_stride, BufferUsageFlags const flags);
+        DX12Buffer(ID3D12Device1* device, D3D12MA::Allocator* memory_allocator,
+                   DescriptorAllocator* descriptor_allocator, size_t const size, size_t const element_stride,
+                   BufferUsageFlags const flags);
 
         ~DX12Buffer();
 
@@ -201,10 +203,10 @@ namespace ionengine::rhi
         }
 
       private:
-        MemoryAllocator* memory_allocator;
+        D3D12MA::Allocator* memory_allocator;
         DescriptorAllocator* descriptor_allocator;
         winrt::com_ptr<ID3D12Resource> resource;
-        MemoryAllocation memory_allocation;
+        winrt::com_ptr<D3D12MA::Allocation> memory_allocation;
         std::unordered_map<BufferUsage, DescriptorAllocation> descriptor_allocations;
         size_t size;
         BufferUsageFlags flags;
@@ -217,9 +219,10 @@ namespace ionengine::rhi
     class DX12Texture final : public Texture
     {
       public:
-        DX12Texture(ID3D12Device1* device, MemoryAllocator& memory_allocator, DescriptorAllocator& descriptor_allocator,
-                    uint32_t const width, uint32_t const height, uint32_t const depth, uint32_t const mip_levels,
-                    TextureFormat const format, TextureDimension const dimension, TextureUsageFlags const flags);
+        DX12Texture(ID3D12Device1* device, D3D12MA::Allocator* memory_allocator,
+                    DescriptorAllocator& descriptor_allocator, uint32_t const width, uint32_t const height,
+                    uint32_t const depth, uint32_t const mip_levels, TextureFormat const format,
+                    TextureDimension const dimension, TextureUsageFlags const flags);
 
         DX12Texture(ID3D12Device1* device, winrt::com_ptr<ID3D12Resource> resource,
                     DescriptorAllocator& descriptor_allocator, TextureUsageFlags const flags);
@@ -272,10 +275,10 @@ namespace ionengine::rhi
         }
 
       private:
-        MemoryAllocator* memory_allocator;
+        D3D12MA::Allocator* memory_allocator;
         DescriptorAllocator* descriptor_allocator;
         winrt::com_ptr<ID3D12Resource> resource;
-        MemoryAllocation memory_allocation;
+        winrt::com_ptr<D3D12MA::Allocation> memory_allocation;
         std::unordered_map<TextureUsage, DescriptorAllocation> descriptor_allocations;
         uint32_t width;
         uint32_t height;
@@ -286,9 +289,9 @@ namespace ionengine::rhi
         TextureUsageFlags flags;
     };
 
-    auto element_type_to_dxgi(rhi::shader_file::ElementType const element_type) -> DXGI_FORMAT;
+    auto element_type_to_dxgi(rhi::shaderfile::ElementType const element_type) -> DXGI_FORMAT;
 
-    auto element_type_size(rhi::shader_file::ElementType const element_type) -> uint32_t;
+    auto element_type_size(rhi::shaderfile::ElementType const element_type) -> uint32_t;
 
     class DX12Shader final : public Shader
     {
@@ -301,20 +304,20 @@ namespace ionengine::rhi
 
         auto get_inputs_size_per_vertex() const -> uint32_t;
 
-        auto get_stages() const -> std::unordered_map<shader_file::ShaderStageType, D3D12_SHADER_BYTECODE> const&;
+        auto get_stages() const -> std::unordered_map<shaderfile::ShaderStageType, D3D12_SHADER_BYTECODE> const&;
 
-        auto get_bindings() const -> std::unordered_map<std::string, shader_file::ResourceData> const& override;
+        auto get_bindings() const -> std::unordered_map<std::string, shaderfile::ResourceData> const& override;
 
         auto get_hash() const -> uint64_t;
 
       private:
         std::string shader_name;
-        std::unordered_map<rhi::shader_file::ShaderStageType, D3D12_SHADER_BYTECODE> stages;
+        std::unordered_map<rhi::shaderfile::ShaderStageType, D3D12_SHADER_BYTECODE> stages;
         std::vector<D3D12_INPUT_ELEMENT_DESC> inputs;
         uint32_t inputs_size_per_vertex;
         std::list<std::string> semantic_names;
         std::vector<std::vector<uint8_t>> buffers;
-        std::unordered_map<std::string, shader_file::ResourceData> bindings;
+        std::unordered_map<std::string, shaderfile::ResourceData> bindings;
         uint64_t hash;
     };
 
@@ -497,8 +500,8 @@ namespace ionengine::rhi
     class DX12CopyContext final : public CopyContext
     {
       public:
-        DX12CopyContext(ID3D12Device4* device, ID3D12CommandQueue* queue, ID3D12Fence* fence, HANDLE fence_event,
-                        uint64_t& fence_value);
+        DX12CopyContext(ID3D12Device4* device, D3D12MA::Allocator* memory_allocator, ID3D12CommandQueue* queue,
+                        ID3D12Fence* fence, HANDLE fence_event, uint64_t& fence_value);
 
         auto reset() -> void override;
 
@@ -588,6 +591,7 @@ namespace ionengine::rhi
         winrt::com_ptr<IDXGIAdapter1> adapter;
         winrt::com_ptr<ID3D12Device4> device;
         winrt::com_ptr<IDXGISwapChain3> swapchain;
+        winrt::com_ptr<D3D12MA::Allocator> memory_allocator;
 
         struct QueueInfo
         {
@@ -602,7 +606,6 @@ namespace ionengine::rhi
         HANDLE fence_event;
 
         core::ref_ptr<DescriptorAllocator> descriptor_allocator;
-        core::ref_ptr<MemoryAllocator> memory_allocator;
         core::ref_ptr<PipelineCache> pipeline_cache;
 
         std::vector<core::ref_ptr<Texture>> back_buffers;

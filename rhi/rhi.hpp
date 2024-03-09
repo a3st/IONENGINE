@@ -102,7 +102,7 @@ namespace ionengine::rhi
       public:
         virtual auto get_name() const -> std::string_view = 0;
 
-        virtual auto get_bindings() const -> std::unordered_map<std::string, shader_file::ResourceData> const& = 0;
+        virtual auto get_bindings() const -> std::unordered_map<std::string, shaderfile::ResourceData> const& = 0;
     };
 
     enum class RenderPassLoadOp

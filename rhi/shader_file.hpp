@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::rhi::shader_file
+namespace ionengine::rhi::shaderfile
 {
     inline std::array<uint8_t, 8> const SHADER_MAGIC{'S', 'H', 'A', 'D', 'E', 'R', '.', '1'};
 

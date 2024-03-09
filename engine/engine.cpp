@@ -60,4 +60,11 @@ namespace ionengine
         texture->create(width, height, flags);
         return texture;
     }
+
+    auto Engine::create_material(std::string_view const shader_name) -> core::ref_ptr<Material>
+    {
+        auto material = core::make_ref<Material>(device, shader_manager);
+        material->create_using_shader(shader_name);
+        return material;
+    }
 } // namespace ionengine

@@ -21,28 +21,29 @@ namespace project
             model = asset_loader.load_model("models/cube.glb");
             shader_manager.load_shaders(std::vector<std::filesystem::path>{"shaders/basic.bin"});
 
-            base_color = create_texture(800, 600, TextureFlags::RenderTarget);
+            material = create_material("Basic");
+
+            model->get_meshes()[0].material = material;
+
+            //base_color = create_texture(800, 600, TextureFlags::RenderTarget);
         }
 
         auto update(float const dt) -> void override
         {
-            auto buffer = base_color->dump();
 
-            {
-                std::ofstream stream("output.png", std::ios::binary | std::ios::out);
-                stream.write(reinterpret_cast<char* const>(buffer.data()), buffer.size());
-            }
         }
 
         auto render() -> void override
         {
             renderer.begin_draw(std::vector<core::ref_ptr<Texture>>{base_color}, nullptr, {}, 0.0f, 0x0);
+            renderer.draw_mesh(model->get_meshes()[0]);
             renderer.end_draw();
         }
 
       private:
         core::ref_ptr<ionengine::Model> model;
         core::ref_ptr<ionengine::Texture> base_color;
+        core::ref_ptr<ionengine::Material> material;
     };
 } // namespace project
 
@@ -52,7 +53,6 @@ auto main(int32_t argc, char** argv) -> int32_t
     {
         auto window = platform::Window::create("Example", 800, 600);
         auto engine = core::make_ref<project::MyEngine>(window);
-        
         return engine->run();
     }
     catch (core::Exception e)

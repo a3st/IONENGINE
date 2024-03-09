@@ -37,6 +37,8 @@ namespace ionengine
         auto create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)
             -> core::ref_ptr<Texture>;
 
+        auto create_material(std::string_view const shader_name) -> core::ref_ptr<Material>;
+
         ShaderManager shader_manager;
         AssetLoader asset_loader;
         Renderer renderer;

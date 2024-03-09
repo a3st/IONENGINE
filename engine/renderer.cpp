@@ -2,30 +2,54 @@
 
 #include "renderer.hpp"
 #include "material.hpp"
-#include "model.hpp"
 #include "precompiled.h"
 #include "texture.hpp"
 
 namespace ionengine
 {
+    struct WorldData
+    {
+        math::Matrixf model;
+        math::Matrixf view;
+        math::Matrixf proj;
+    };
+
     Renderer::Renderer(LinkedDevice& device) : device(&device)
     {
+        test_buffer = device.get_device().create_buffer(
+            sizeof(WorldData), 0, (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer | rhi::BufferUsage::MapWrite);
     }
 
-    auto Renderer::draw_mesh(Mesh const& mesh, math::Matrixf const& model, math::Matrixf const& view_proj) -> void
+    auto Renderer::draw_mesh(Mesh const& mesh) -> void
     {
+        device->get_graphics_context().set_viewport(0, 0, 800, 600);
+        device->get_graphics_context().set_scissor(0, 0, 800, 600);
+
         device->get_graphics_context().set_graphics_pipeline_options(
             mesh.material->get_shader(),
             rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid, .cull_mode = rhi::CullMode::Back},
             rhi::BlendColorInfo::Opaque(), std::nullopt);
 
-        auto material_buffer = mesh.material->get_buffer();
+        uint8_t* buffer = test_buffer->map_memory();
+
+        auto world_buffer = WorldData{.model = math::Matrixf::scale(math::Vector3f(1.0f, 1.0f, 1.0f)),
+                                      .view = math::Matrixf::look_at_rh(math::Vector3f(5.0f, 5.0f, 0.0f),
+                                                                        math::Vector3f(0.0f, 0.0f, 0.0f),
+                                                                        math::Vector3f(0.0f, 1.0f, 0.0f)),
+                                      .proj = math::Matrixf::perspective_rh(1.04f, 800 / 600, 0.1f, 100.0f)};
+
+        memcpy(buffer, &world_buffer, sizeof(WorldData));
+        test_buffer->unmap_memory();
+
+        device->get_graphics_context().bind_descriptor("WorldData", test_buffer->get(rhi::BufferUsage::ConstantBuffer));
+
+        /*auto material_buffer = mesh.material->get_buffer();
 
         device->get_graphics_context().barrier(material_buffer, rhi::ResourceState::Common,
                                                rhi::ResourceState::AllShaderRead);
 
         device->get_graphics_context().bind_descriptor("MaterialData",
-                                                       material_buffer->get(rhi::BufferUsage::ConstantBuffer));
+                                                       material_buffer->get(rhi::BufferUsage::ConstantBuffer));*/
 
         for (auto const& primitive : mesh.primitives)
         {
@@ -35,17 +59,17 @@ namespace ionengine
             device->get_graphics_context().draw_indexed(primitive.index_count, 1);
         }
 
-        device->get_graphics_context().barrier(material_buffer, rhi::ResourceState::AllShaderRead,
-                                               rhi::ResourceState::Common);
+        // device->get_graphics_context().barrier(material_buffer, rhi::ResourceState::AllShaderRead,
+        //                                        rhi::ResourceState::Common);
     }
 
     auto Renderer::draw_quad(math::Matrixf const& view_proj) -> void
     {
     }
 
-    auto Renderer::begin_draw(std::span<core::ref_ptr<Texture> const> const colors, core::ref_ptr<Texture> depth_stencil,
-                              math::Color const& clear_color, float const clear_depth, uint8_t const clear_stencil)
-        -> void
+    auto Renderer::begin_draw(std::span<core::ref_ptr<Texture> const> const colors,
+                              core::ref_ptr<Texture> depth_stencil, math::Color const& clear_color,
+                              float const clear_depth, uint8_t const clear_stencil) -> void
     {
         std::vector<rhi::RenderPassColorInfo> render_pass_colors;
 
