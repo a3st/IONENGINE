@@ -107,3 +107,13 @@ target_link_libraries(shaderm PUBLIC
     libwebview_edge_static
     base64pp
 )
+
+add_executable(shaderc
+    "tools/shaderc/main.cpp"
+)
+
+target_precompile_headers(shaderc PRIVATE precompiled.h)
+
+target_include_directories(shaderc PRIVATE
+    "${PROJECT_SOURCE_DIR}"
+)

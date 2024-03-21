@@ -22,8 +22,8 @@ namespace ionengine
 
     auto Renderer::draw_mesh(Mesh const& mesh) -> void
     {
-        device->get_graphics_context().set_viewport(0, 0, 800, 600);
-        device->get_graphics_context().set_scissor(0, 0, 800, 600);
+        device->get_graphics_context().set_viewport(0, 0, 752, 286);
+        device->get_graphics_context().set_scissor(0, 0, 752, 286);
 
         device->get_graphics_context().set_graphics_pipeline_options(
             mesh.material->get_shader(),
@@ -32,11 +32,11 @@ namespace ionengine
 
         uint8_t* buffer = test_buffer->map_memory();
 
-        auto world_buffer = WorldData{.model = math::Matrixf::scale(math::Vector3f(1.0f, 1.0f, 1.0f)),
-                                      .view = math::Matrixf::look_at_rh(math::Vector3f(5.0f, 5.0f, 0.0f),
+        auto world_buffer = WorldData{.model = math::Matrixf::scale(math::Vector3f(1.5f, 1.5f, 1.5f)),
+                                      .view = math::Matrixf::look_at_rh(math::Vector3f(5.0f, 2.0f, 0.0f),
                                                                         math::Vector3f(0.0f, 0.0f, 0.0f),
                                                                         math::Vector3f(0.0f, 1.0f, 0.0f)),
-                                      .proj = math::Matrixf::perspective_rh(1.04f, 800 / 600, 0.1f, 100.0f)};
+                                      .proj = math::Matrixf::perspective_rh(1.04f, 752 / 286, 0.1f, 100.0f)};
 
         memcpy(buffer, &world_buffer, sizeof(WorldData));
         test_buffer->unmap_memory();
@@ -79,7 +79,7 @@ namespace ionengine
                 rhi::RenderPassColorInfo{.texture = color->get_texture(),
                                          .load_op = rhi::RenderPassLoadOp::Clear,
                                          .store_op = rhi::RenderPassStoreOp::Store,
-                                         .clear_color = math::Color(0.2f, 0.3f, 0.5f, 1.0f)});
+                                         .clear_color = clear_color});
 
             render_pass_color_textures.emplace_back(color->get_texture());
         }

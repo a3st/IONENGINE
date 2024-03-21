@@ -1,94 +1,93 @@
 {
     "shaderName": "Basic",
-    "permutations": [
-        "Skinning"
+    "technique": {
+        "vertexShader": {
+            "buffer": 0,
+            "entryPoint": "vs_main",
+            "entryInput": 0,
+            "entryOutput": 1
+        },
+        "pixelShader": {
+            "buffer": 1,
+            "entryPoint": "ps_main",
+            "entryInput": 0,
+            "entryOutput": 1
+        },
+        "depthWrite": false,
+        "stencilWrite": false,
+        "cullSide": "back"
+    },
+    "resources": [
+        {
+            "type": "TEXTURE_2D",
+            "structure": null
+        },
+        {
+            "type": "SAMPLER",
+            "structure": null
+        },
+        {
+            "type": "CONST_BUFFER",
+            "structure": 2
+        },
+        {
+            "type": "STORAGE_BUFFER",
+            "structure": 3
+        }
     ],
-    "shaders": [
+    "structures": [
         {
-            "conditions": ["Skinning"],
-            "stages": {
-                
-            }
-        },
-        {
-            "conditions": ["Skinning", "MSAA"],
-            "stages": {
-                
-            }
-        },
-        {
-            "conditions": ["MSAA"],
-            "stages": {
-                
-            }
-        },
-        {
-            "conditions": [],
-            "stages": {
-                "VERTEX_SHADER": {
-                    "buffer": 0,
-                    "entryPoint": "vs_main",
-                    "inputs": [
-                        {
-                            "type": "FLOAT3",
-                            "semantic": "POSITION0"
-                        },
-                        {
-                            "type": "FLOAT3",
-                            "semantic": "NORMAL"
-                        },
-                        {
-                            "type": "FLOAT2",
-                            "semantic": "TEXCOORD0"
-                        }
-                    ],
-                    "inputsSizePerVertex": 22
+            "name": "VS_INPUT",
+            "elements": [
+                {
+                    "name": "position",
+                    "type": "FLOAT3",
+                    "semantic": "POSITION0"
                 },
-                "PIXEL_SHADER": {
-                    "buffer": 1,
-                    "entryPoint": "ps_main"
+                {
+                    "name": "normal",
+                    "type": "FLOAT3",
+                    "semantic": "NORMAL"
+                },
+                {
+                    "name": "uv",
+                    "type": "FLOAT2",
+                    "semantic": "TEXCOORD0"
                 }
-            },
-            "exports": {
-                "WorldData": {
-                    "binding": 0,
-                    "type": "UNIFORM",
-                    "data": [
-                        {
-                            "name": "model",
-                            "type": "FLOAT4x4"
-                        },
-                        {
-                            "name": "view",
-                            "type": "FLOAT4x4"
-                        },
-                        {
-                            "name": "projection",
-                            "type": "FLOAT4x4"
-                        }
-                    ],
-                    "sizeInBytes": 192
-                },
-                "LightingData": {
-                    "binding": 1,
-                    "type": "UNIFORM",
-                    "data": [
-                        {
-                            "name": "direction",
-                            "type": "FLOAT3"
-                        },
-                        {
-                            "name": "distance",
-                            "type": "FLOAT"
-                        }
-                    ],
-                    "sizeInBytes": 16
-                },
-                "TextureColor": {
-                    "binding": 2,
-                    "type": "NON_UNIFORM"
+            ],
+            "sizeInBytes": 22
+        },
+        {
+            "name": "PS_OUTPUT",
+            "elements": [
+                {
+                    "name": "color",
+                    "type": "FLOAT4",
+                    "semantic": "SV_Target0"
                 }
-            }
+            ],
+            "sizeInBytes": 16
+        },
+        {
+            "name": "WorldData",
+            "elements": [
+                {
+                    "name": "model",
+                    "type": "FLOAT4x4",
+                    "semantic": null
+                },
+                {
+                    "name": "view",
+                    "type": "FLOAT4x4",
+                    "semantic": null
+                },
+                {
+                    "name": "projection",
+                    "type": "FLOAT4x4",
+                    "semantic": null
+                }
+            ],
+            "sizeInBytes": 192
         }
     ]
 }

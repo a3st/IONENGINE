@@ -19,7 +19,7 @@ namespace project
         auto init() -> void override
         {
             model = asset_loader.load_model("models/cube.glb");
-            shader_manager.load_shaders(std::vector<std::filesystem::path>{"shaders/basic.bin"});
+            shader_manager.load_shader("shaders/basic.bin");
 
             material = create_material("Basic");
 

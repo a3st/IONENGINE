@@ -34,6 +34,12 @@ export default class FlowGraph {
         this.groups = {};
     }
 
+    /**
+     * Add new element to context menu
+     * @param {string} group - Group of element
+     * @param {string} item - Function name
+     * @param {*} callback - Function callback
+     */
     addContextItem(group, item, callback) {
         if (this.groups[group] == null) {
             this.groups[group] = [];
@@ -746,6 +752,15 @@ export default class FlowGraph {
         delete this.nodes[nodeId];
     }
 
+    /**
+     * Add node to graph
+     * @param {int} x - X node position
+     * @param {int} y - Y node position
+     * @param {map} inputs - Input parameters
+     * @param {map} outputs - Output parameters
+     * @param {string} headerHTML - Header in HTML
+     * @returns 
+     */
     addNode(x, y, inputs, outputs, headerHTML) {
         let inputsHTML = "";
         let inputIndex = 0;

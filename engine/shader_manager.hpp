@@ -13,7 +13,7 @@ namespace ionengine
       public:
         ShaderManager(LinkedDevice& device);
 
-        auto load_shaders(std::span<std::filesystem::path const> const shaders) -> void;
+        auto load_shader(std::filesystem::path const& shader_path) -> void;
 
         auto get_shader_by_name(std::string_view const shader_name) -> core::ref_ptr<rhi::Shader>;
 

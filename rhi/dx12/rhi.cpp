@@ -119,127 +119,6 @@ namespace ionengine::rhi
         chunks.emplace(heap_type, chunk);
     }
 
-    MemoryAllocator::MemoryAllocator(ID3D12Device1* device, size_t const block_size, size_t const chunk_size)
-        : device(device), block_size(block_size), chunk_size(chunk_size)
-    {
-        assert((chunk_size % block_size == 0) && "Chunk size must be completely divisible by block size");
-        assert((chunk_size < DX12_MEMORY_ALLOCATOR_CHUNK_MAX_SIZE) &&
-               "Chunk size must be less than DX12_MEMORY_ALLOCATOR_CHUNK_MAX_SIZE");
-    }
-
-    auto MemoryAllocator::allocate(D3D12_RESOURCE_DESC const& resource_desc, D3D12_HEAP_TYPE const heap_type)
-        -> MemoryAllocation
-    {
-        auto allocation_info = device->GetResourceAllocationInfo(0, 1, &resource_desc);
-        size_t const size = (allocation_info.SizeInBytes + (block_size - 1)) & ~(block_size - 1);
-
-        std::lock_guard lock(mutex);
-
-        chunks.try_emplace({allocation_info.Alignment, heap_type});
-
-        auto allocation = MemoryAllocation{};
-
-        for (auto& chunk : chunks[{allocation_info.Alignment, heap_type}])
-        {
-            if (size > chunk.size - chunk.offset)
-            {
-                continue;
-            }
-
-            uint64_t alloc_start = chunk.offset;
-            size_t alloc_size = 0;
-            bool success = false;
-
-            for (uint64_t i = chunk.offset; i < chunk.size; i += block_size)
-            {
-                if (alloc_size >= size)
-                {
-                    success = true;
-                    break;
-                }
-
-                if (chunk.free[i / block_size] == 1)
-                {
-                    alloc_size += block_size;
-                }
-                else
-                {
-                    alloc_start = i + block_size;
-                    alloc_size = 0;
-                }
-            }
-
-            if (success)
-            {
-                std::fill(chunk.free.begin() + (alloc_start / block_size),
-                          chunk.free.begin() + (alloc_start / block_size) + (alloc_size / block_size), 0);
-                chunk.offset += alloc_size;
-
-                allocation = {.heap = chunk.heap.get(),
-                              .alignment = allocation_info.Alignment,
-                              .offset = alloc_start,
-                              .size = alloc_size};
-                break;
-            }
-        }
-
-        if (allocation.size == 0)
-        {
-            create_chunk(allocation_info.Alignment, heap_type);
-
-            auto& chunk = chunks[{allocation_info.Alignment, heap_type}].back();
-            uint64_t const alloc_start = chunk.offset;
-            size_t const alloc_size = size;
-
-            std::fill(chunk.free.begin() + (alloc_start / block_size),
-                      chunk.free.begin() + (alloc_start / block_size) + (alloc_size / block_size), 0);
-            chunk.offset += alloc_size;
-
-            allocation = {.heap = chunk.heap.get(),
-                          .alignment = allocation_info.Alignment,
-                          .offset = alloc_start,
-                          .size = alloc_size};
-        }
-        return allocation;
-    }
-
-    auto MemoryAllocator::deallocate(MemoryAllocation const& allocation) -> void
-    {
-        std::lock_guard lock(mutex);
-
-        assert((ptr_chunks.find((uintptr_t)allocation.heap) != ptr_chunks.end()) &&
-               "Required chunk not found when deallocating descriptor");
-
-        uint32_t const chunk_index = ptr_chunks[(uintptr_t)allocation.heap];
-        auto& chunk = chunks[{allocation.alignment, allocation.heap->GetDesc().Properties.Type}][chunk_index];
-
-        std::fill(chunk.free.begin() + (allocation.offset / block_size),
-                  chunk.free.begin() + (allocation.offset / block_size) + (allocation.size / block_size), 1);
-        chunk.offset = allocation.offset;
-    }
-
-    auto MemoryAllocator::reset() -> void
-    {
-        assert(false && "MemoryAllocator doesn't support reset method");
-    }
-
-    auto MemoryAllocator::create_chunk(uint64_t const alignment, D3D12_HEAP_TYPE const heap_type) -> void
-    {
-        auto d3d12_heap_desc = D3D12_HEAP_DESC{};
-        d3d12_heap_desc.Alignment = alignment;
-        d3d12_heap_desc.SizeInBytes = chunk_size;
-        d3d12_heap_desc.Properties.Type = heap_type;
-
-        winrt::com_ptr<ID3D12Heap> heap;
-        THROW_IF_FAILED(device->CreateHeap(&d3d12_heap_desc, __uuidof(ID3D12Heap), heap.put_void()));
-
-        auto chunk = Chunk{.heap = heap, .offset = 0, .size = chunk_size};
-        chunk.free.resize(chunk_size / block_size, 1);
-        chunks[{alignment, heap_type}].emplace_back(std::move(chunk));
-
-        ptr_chunks.emplace((uintptr_t)heap.get(), static_cast<uint32_t>(chunks[{alignment, heap_type}].size() - 1));
-    }
-
     DX12Buffer::DX12Buffer(ID3D12Device1* device, D3D12MA::Allocator* memory_allocator,
                            DescriptorAllocator* descriptor_allocator, size_t const size, size_t const element_stride,
                            BufferUsageFlags const flags)
@@ -737,7 +616,7 @@ namespace ionengine::rhi
             }
         }
 
-        bindings = shader_file.get_exports();
+        bindings = shader_file.get_resources();
     }
 
     auto DX12Shader::get_name() const -> std::string_view

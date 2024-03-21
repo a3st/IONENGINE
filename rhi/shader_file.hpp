@@ -92,7 +92,7 @@ namespace ionengine::rhi::shaderfile
 
         auto get_name() const -> std::string_view;
 
-        auto get_exports() const -> std::unordered_map<std::string, ResourceData> const&;
+        auto get_resources() const -> std::unordered_map<std::string, ResourceData> const&;
 
         auto get_stages() const -> std::unordered_map<ShaderStageType, ShaderStageData> const&;
 
@@ -103,8 +103,8 @@ namespace ionengine::rhi::shaderfile
       private:
         std::string shader_name;
         std::unordered_map<ShaderStageType, ShaderStageData> stages;
-        std::unordered_map<std::string, ResourceData> exports;
+        std::unordered_map<std::string, ResourceData> resources;
         std::vector<std::vector<uint8_t>> buffers;
         ShaderFileFlags flags;
     };
-} // namespace ionengine::rhi::shader_file
+} // namespace ionengine::rhi::shaderfile

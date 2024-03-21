@@ -27,13 +27,13 @@ namespace project
         auto init() -> void override
         {
             model = asset_loader.load_model("models/cube.glb");
-            shader_manager.load_shaders(std::vector<std::filesystem::path>{"shaders/basic.bin"});
+            shader_manager.load_shader("shaders/basic.bin");
 
             material = create_material("Basic");
 
             model->get_meshes()[0].material = material;
 
-            base_color = create_texture(800, 600, TextureFlags::RenderTarget);
+            base_color = create_texture(752, 286, TextureFlags::RenderTarget);
         }
 
         auto update(float const dt) -> void override
@@ -64,13 +64,13 @@ auto main(int32_t argc, char** argv) -> int32_t
         app.idle([&]() { engine->tick(); });
         if (!app.run("resources/index.html"))
         {
-            throw core::Exception("");
+            throw core::Exception("An error occurred while creating the interface");
         }
         return EXIT_SUCCESS;
     }
     catch (core::Exception e)
     {
-        std::cout << e.what() << std::endl;
+        std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 }

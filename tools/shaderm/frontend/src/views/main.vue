@@ -13,10 +13,7 @@
             <div class="panel-resizer" style="display: block; width: 100%; height: 8px;" @mousedown="onPanelResize"></div>
             <div style="width: 100%; height: calc(70% - 8px);">
                 <div style="display: flex; flex-direction: column; padding: 15px;">
-                    <span>1</span>
-                    <span>2</span>
-                    <span>3</span>
-                    <span>4</span>
+                    
                 </div>
             </div>
         </div>
@@ -62,6 +59,22 @@ export default {
                 ], [
                     { "name": "Result", "type": "float3" }
                 ], html);
+            }
+        );
+
+        graph.addContextItem(
+            'Math',
+            'Divide',
+            (e) => {
+                
+            }
+        );
+
+        graph.addContextItem(
+            'Math',
+            'Minus',
+            (e) => {
+                
             }
         );
         graph.start();

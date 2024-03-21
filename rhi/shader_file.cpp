@@ -67,7 +67,6 @@ namespace ionengine::rhi::shaderfile
 
     auto get_shader_stage_type_by_string(std::string_view const stage_type) -> ShaderStageType
     {
-
         ShaderStageType ret{};
         if (stage_type.compare("VERTEX_SHADER") == 0)
         {
@@ -83,7 +82,7 @@ namespace ionengine::rhi::shaderfile
     ShaderFile::ShaderFile(std::span<uint8_t const> const data)
     {
         std::basic_ispanstream<uint8_t> stream(std::span<uint8_t>(const_cast<uint8_t*>(data.data()), data.size()),
-                                               std::ios::binary | std::ios::in);
+                                               std::ios::binary);
 
         Header header;
         stream.read((uint8_t*)&header, sizeof(Header));
@@ -163,7 +162,7 @@ namespace ionengine::rhi::shaderfile
                              .elements = std::move(elements),
                              .size = size};
 
-            exports.emplace(resource.unescaped_key().value(), resource_data);
+            resources.emplace(resource.unescaped_key().value(), resource_data);
         }
 
         do
@@ -185,9 +184,9 @@ namespace ionengine::rhi::shaderfile
         return shader_name;
     }
 
-    auto ShaderFile::get_exports() const -> std::unordered_map<std::string, ResourceData> const&
+    auto ShaderFile::get_resources() const -> std::unordered_map<std::string, ResourceData> const&
     {
-        return exports;
+        return resources;
     }
 
     auto ShaderFile::get_stages() const -> std::unordered_map<ShaderStageType, ShaderStageData> const&
@@ -204,4 +203,4 @@ namespace ionengine::rhi::shaderfile
     {
         return flags;
     }
-} // namespace ionengine::rhi::shader_file
+} // namespace ionengine::rhi::shaderfile

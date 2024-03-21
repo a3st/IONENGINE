@@ -111,57 +111,6 @@ namespace ionengine::rhi
         auto create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type) -> void;
     };
 
-    struct MemoryAllocation
-    {
-        ID3D12Heap* heap;
-        uint64_t alignment;
-        uint64_t offset;
-        size_t size;
-    };
-
-    inline uint32_t constexpr DX12_MEMORY_ALLOCATOR_CHUNK_MAX_SIZE = 256 * 1024 * 1024;
-
-    class MemoryAllocator : public core::ref_counted_object
-    {
-      public:
-        MemoryAllocator(ID3D12Device1* device, size_t const block_size, size_t const chunk_size);
-
-        auto allocate(D3D12_RESOURCE_DESC const& resource_desc, D3D12_HEAP_TYPE const heap_type) -> MemoryAllocation;
-
-        auto deallocate(MemoryAllocation const& allocation) -> void;
-
-        auto reset() -> void;
-
-      private:
-        struct Chunk
-        {
-            winrt::com_ptr<ID3D12Heap> heap;
-            std::vector<uint8_t> free;
-            uint64_t offset;
-            size_t size;
-        };
-
-        std::mutex mutex;
-        ID3D12Device1* device;
-
-        using KeyChunk = std::pair<uint64_t, D3D12_HEAP_TYPE>;
-
-        struct KeyChunkHasher
-        {
-            auto operator()(const KeyChunk& key) const -> std::size_t
-            {
-                return std::hash<uint64_t>()(key.first) ^ std::hash<uint32_t>()(key.second);
-            }
-        };
-
-        std::unordered_map<KeyChunk, std::vector<Chunk>, KeyChunkHasher> chunks;
-        std::unordered_map<uintptr_t, uint32_t> ptr_chunks;
-        size_t block_size;
-        size_t chunk_size;
-
-        auto create_chunk(uint64_t const alignment, D3D12_HEAP_TYPE const heap_type) -> void;
-    };
-
     inline uint32_t constexpr DX12_CONSTANT_BUFFER_SIZE_ALIGNMENT = 256;
 
     class DX12Buffer final : public Buffer
@@ -528,8 +477,6 @@ namespace ionengine::rhi
         ID3D12Fence* fence;
         HANDLE fence_event;
         uint64_t* fence_value;
-
-        core::ref_ptr<MemoryAllocator> memory_allocator;
 
         struct BufferInfo
         {
