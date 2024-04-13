@@ -31,7 +31,7 @@ namespace ionengine::rhi::fx
 
         auto get_shader_constants(std::string const& shader_code) -> std::vector<ShaderConstantData>;
 
-        auto parse_shader_resources(std::string const& shader_code) -> std::set<std::string>;
+        auto get_shader_technique(std::string const& shader_code) -> ShaderTechniqueData;
 
         std::set<std::string> input_assembler_names;
     };

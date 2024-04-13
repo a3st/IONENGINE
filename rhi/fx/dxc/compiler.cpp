@@ -38,11 +38,10 @@ namespace ionengine::rhi::fx
     {
         std::string shader_code = merge_shader_code(file_path);
 
+        ShaderTechniqueData technique = get_shader_technique(shader_code);
         std::vector<ShaderConstantData> constants = get_shader_constants(shader_code);
-        std::vector<ShaderStructureData> structures;
 
-        // std::set<std::string> shader_resource_names = parse_shader_resources(shader_code);
-        //  = parse_shader_structs(shader_code, shader_resource_names);
+        std::vector<ShaderStructureData> structures;
 
         /*std::regex const struct_pattern("struct\\s+(\\w+)\\s+\\{((?:\\s+.+\\s+){1,})\\};");
 
@@ -183,6 +182,98 @@ namespace ionengine::rhi::fx
                 ShaderConstantData{.name = constant_name, .constant_type = constant_type, .structure = -1});
         }
         return constants;
+    }
+
+    auto DXCCompiler::get_shader_technique(std::string const& shader_code) -> ShaderTechniqueData
+    {
+        std::regex const technique_pattern("technique\\s*\\{\\s*pass\\s*\\{((?:\\s+.+\\s+){1,})\\}\\s*\\}");
+
+        std::smatch match;
+        if (std::regex_search(shader_code, match, technique_pattern))
+        {
+            std::string const parameters_code = match[1].str();
+            std::regex const parameter_pattern("(\\w+)\\s*=\\s*(.+);");
+
+            auto shader_technique = ShaderTechniqueData{.vertex_stage = ShaderStageData{.buffer = -1},
+                                                        .pixel_stage = ShaderStageData{.buffer = -1},
+                                                        .compute_stage = ShaderStageData{.buffer = -1}};
+
+            for (auto it = std::sregex_iterator(parameters_code.begin(), parameters_code.end(), parameter_pattern);
+                 it != std::sregex_iterator(); ++it)
+            {
+                match = *it;
+
+                std::string const parameter = match[1].str();
+                std::string const value = match[2].str();
+
+                if (parameter.compare("vertexShader") == 0)
+                {
+                    shader_technique.vertex_stage.entry_point = value.substr(0, value.size() - 2);
+                }
+                else if (parameter.compare("pixelShader") == 0)
+                {
+                    shader_technique.pixel_stage.entry_point = value.substr(0, value.size() - 2);
+                }
+                else if (parameter.compare("computeShader") == 0)
+                {
+                    shader_technique.compute_stage.entry_point = value.substr(0, value.size() - 2);
+                }
+                else if (parameter.compare("depthWrite") == 0)
+                {
+                    if (value.compare("true") == 0)
+                    {
+                        shader_technique.depth_write = true;
+                    }
+                    else if (value.compare("false") == 0)
+                    {
+                        shader_technique.depth_write = false;
+                    }
+                    else
+                    {
+                        // TO DO!
+                    }
+                }
+                else if (parameter.compare("stencilWrite") == 0)
+                {
+                    if (value.compare("true") == 0)
+                    {
+                        shader_technique.stencil_write = true;
+                    }
+                    else if (value.compare("false") == 0)
+                    {
+                        shader_technique.stencil_write = false;
+                    }
+                    else
+                    {
+                        // TO DO!
+                    }
+                }
+                else if (parameter.compare("cullSide") == 0)
+                {
+                    if (value.compare("\"back\"") == 0)
+                    {
+                        shader_technique.cull_side = ShaderCullSide::Back;
+                    }
+                    else if (value.compare("\"front\"") == 0)
+                    {
+                        shader_technique.cull_side = ShaderCullSide::Front;
+                    }
+                    else if (value.compare("\"none\"") == 0)
+                    {
+                        shader_technique.cull_side = ShaderCullSide::None;
+                    }
+                    else
+                    {
+                        // TO DO!
+                    }
+                }
+            }
+            return shader_technique;
+        }
+        else
+        {
+            // TO DO!
+        }
     }
 
     /*auto DXCCompiler::parse_shader_resources(std::string const& shader_code) -> std::set<std::string>

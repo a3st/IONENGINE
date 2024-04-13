@@ -77,7 +77,7 @@ namespace ionengine::rhi::fx
 
     struct ShaderStageData
     {
-        uint32_t buffer;
+        int32_t buffer;
         std::string entry_point;
     };
 
@@ -85,6 +85,7 @@ namespace ionengine::rhi::fx
     {
         ShaderStageData vertex_stage;
         ShaderStageData pixel_stage;
+        ShaderStageData compute_stage;
         bool depth_write;
         bool stencil_write;
         ShaderCullSide cull_side;
