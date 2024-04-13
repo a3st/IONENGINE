@@ -20,13 +20,13 @@ namespace ionengine
             sizeof(WorldData), 0, (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer | rhi::BufferUsage::MapWrite);
     }
 
-    auto Renderer::draw_mesh(Mesh const& mesh) -> void
+    auto Renderer::draw_mesh(core::ref_ptr<Mesh> mesh) -> void
     {
         device->get_graphics_context().set_viewport(0, 0, 752, 286);
         device->get_graphics_context().set_scissor(0, 0, 752, 286);
 
         device->get_graphics_context().set_graphics_pipeline_options(
-            mesh.material->get_shader(),
+            mesh->material->get_shader(),
             rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid, .cull_mode = rhi::CullMode::Back},
             rhi::BlendColorInfo::Opaque(), std::nullopt);
 
@@ -41,7 +41,7 @@ namespace ionengine
         memcpy(buffer, &world_buffer, sizeof(WorldData));
         test_buffer->unmap_memory();
 
-        device->get_graphics_context().bind_descriptor("WorldData", test_buffer->get(rhi::BufferUsage::ConstantBuffer));
+        device->get_graphics_context().bind_descriptor("WorldData", test_buffer->get_descriptor_offset(rhi::BufferUsage::ConstantBuffer));
 
         /*auto material_buffer = mesh.material->get_buffer();
 
@@ -51,7 +51,7 @@ namespace ionengine
         device->get_graphics_context().bind_descriptor("MaterialData",
                                                        material_buffer->get(rhi::BufferUsage::ConstantBuffer));*/
 
-        for (auto const& primitive : mesh.primitives)
+        for (auto const& primitive : mesh->primitives)
         {
             device->get_graphics_context().bind_vertex_buffer(primitive.vertices, 0, primitive.vertices->get_size());
             device->get_graphics_context().bind_index_buffer(primitive.indices, 0, primitive.indices->get_size(),

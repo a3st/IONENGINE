@@ -16,3 +16,6 @@
 [submodule "thirdparty/d3d12ma"]
 	path = thirdparty/d3d12ma
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator
+[submodule "thirdparty/googletest"]
+	path = thirdparty/googletest
+	url = https://github.com/google/googletest

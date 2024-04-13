@@ -4,11 +4,11 @@
 
 #include "linked_device.hpp"
 #include "math/matrix.hpp"
-#include "model.hpp"
 
 namespace ionengine
 {
     class Texture;
+    class Mesh;
 
     class Renderer
     {
@@ -27,7 +27,7 @@ namespace ionengine
         {
         }
 
-        auto draw_mesh(Mesh const& mesh) -> void;
+        auto draw_mesh(core::ref_ptr<Mesh> mesh) -> void;
 
         auto draw_quad(math::Matrixf const& view_proj) -> void;
 

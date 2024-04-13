@@ -11,6 +11,9 @@ add_subdirectory(thirdparty/libpng)
 add_subdirectory(thirdparty/libwebview)
 add_subdirectory(thirdparty/base64pp)
 add_subdirectory(thirdparty/d3d12ma)
+add_subdirectory(thirdparty/googletest)
+
+add_subdirectory(tests)
 
 if (WIN32)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
@@ -42,11 +45,11 @@ add_library(engine SHARED
 
     "rhi/dx12/rhi.cpp"
     "rhi/rhi.cpp"
-    "rhi/shader_file.cpp"
 
     "engine/material.cpp"
     "engine/model.cpp"
     "engine/texture.cpp"
+    "engine/shader.cpp"
     "engine/engine.cpp"
     "engine/linked_device.cpp"
     "engine/asset_loader.cpp"

@@ -1,9 +1,9 @@
 #include "engine.fx"
 
-Texture2D color;
-SamplerState linear_sampler;
-WorldData worldData;
-LightingData lightingData[];
+export MaterialData materialData;
+export SamplerState linearSampler;
+export WorldData worldData;
+export LightingData lightingData[];
 
 struct VS_INPUT {
     float3 position : POSITION;

@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include "shader_file.hpp"
+#include "fxsl.hpp"
 #include "core/exception.hpp"
 #include "precompiled.h"
 #include <simdjson.h>
 
+/*
 namespace ionengine::rhi::shaderfile
 {
     auto get_element_type_by_string(std::string_view const element_type) -> ElementType
@@ -204,3 +205,5 @@ namespace ionengine::rhi::shaderfile
         return flags;
     }
 } // namespace ionengine::rhi::shaderfile
+
+*/

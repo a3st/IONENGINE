@@ -4,7 +4,6 @@
 
 #include "core/exception.hpp"
 #include "rhi/rhi.hpp"
-#include "rhi/shader_file.hpp"
 #include <xxhash/xxhash64.h>
 #define NOMINMAX
 #include <D3D12MemAlloc.h>
@@ -146,7 +145,7 @@ namespace ionengine::rhi
             return descriptor_allocations.at(usage);
         }
 
-        auto get(BufferUsage const usage) const -> uint32_t override
+        auto get_descriptor_offset(BufferUsage const usage) const -> uint32_t override
         {
             return descriptor_allocations.at(usage).offset;
         }
@@ -218,7 +217,7 @@ namespace ionengine::rhi
             return resource.get();
         }
 
-        auto get(TextureUsage const usage) const -> uint32_t override
+        auto get_descriptor_offset(TextureUsage const usage) const -> uint32_t override
         {
             return descriptor_allocations.at(usage).offset;
         }

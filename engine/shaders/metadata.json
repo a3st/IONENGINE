@@ -1,38 +1,26 @@
 {
-    "shaderName": "Basic",
     "technique": {
         "vertexShader": {
             "buffer": 0,
-            "entryPoint": "vs_main",
-            "entryInput": 0,
-            "entryOutput": 1
+            "entryPoint": "vs_main"
         },
         "pixelShader": {
             "buffer": 1,
-            "entryPoint": "ps_main",
-            "entryInput": 0,
-            "entryOutput": 1
+            "entryPoint": "ps_main"
         },
         "depthWrite": false,
         "stencilWrite": false,
         "cullSide": "back"
     },
-    "resources": [
+    "constants": [
         {
-            "type": "TEXTURE_2D",
-            "structure": null
+            "name": "linearSampler",
+            "type": "SAMPLER_STATE"
         },
         {
-            "type": "SAMPLER",
-            "structure": null
-        },
-        {
+            "name": "worldData",
             "type": "CONST_BUFFER",
             "structure": 2
-        },
-        {
-            "type": "STORAGE_BUFFER",
-            "structure": 3
         }
     ],
     "structures": [

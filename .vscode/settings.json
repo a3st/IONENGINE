@@ -120,7 +120,7 @@
         "complex": "cpp",
         "numbers": "cpp",
         "*.hpp11": "cpp",
-        "*.hlsl": "c"
+        "*.hlsl": "hlsl"
     },
     "C_Cpp.intelliSenseEngineFallback": "disabled",
     "C_Cpp.default.compilerPath": "cl.exe"

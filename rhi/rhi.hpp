@@ -4,7 +4,6 @@
 
 #include "core/ref_ptr.hpp"
 #include "math/color.hpp"
-#include "shader_file.hpp"
 
 namespace ionengine::platform
 {
@@ -39,7 +38,7 @@ namespace ionengine::rhi
 
         virtual auto unmap_memory() -> void = 0;
 
-        virtual auto get(BufferUsage const usage) const -> uint32_t = 0;
+        virtual auto get_descriptor_offset(BufferUsage const usage) const -> uint32_t = 0;
     };
 
     enum class TextureFormat
@@ -94,7 +93,30 @@ namespace ionengine::rhi
 
         virtual auto get_flags() const -> TextureUsageFlags = 0;
 
-        virtual auto get(TextureUsage const usage) const -> uint32_t = 0;
+        virtual auto get_descriptor_offset(TextureUsage const usage) const -> uint32_t = 0;
+    };
+
+    enum class ShaderElementType
+    {
+        Float4x4,
+        Float3x3,
+        Float2x2,
+        Float4,
+        Float3,
+        Float2,
+        Float,
+        Uint,
+        Bool,
+        Texture2D,
+        Texture3D,
+        SamplerState
+    };
+
+    struct ShaderBindingInfo
+    {
+        uint32_t index;
+        uint32_t offset;
+        ShaderElementType element_type;
     };
 
     class Shader : public core::ref_counted_object
@@ -102,7 +124,7 @@ namespace ionengine::rhi
       public:
         virtual auto get_name() const -> std::string_view = 0;
 
-        virtual auto get_bindings() const -> std::unordered_map<std::string, shaderfile::ResourceData> const& = 0;
+        virtual auto get_bindings() const -> std::unordered_map<std::string, ShaderBindingInfo> const& = 0;
     };
 
     enum class RenderPassLoadOp
@@ -434,7 +456,8 @@ namespace ionengine::rhi
       public:
         static auto create(platform::Window* window) -> core::ref_ptr<Device>;
 
-        virtual auto create_shader(std::span<uint8_t const> const data) -> core::ref_ptr<Shader> = 0;
+        virtual auto create_shader(std::span<ShaderStageInfo const> const stages,
+                                   std::span<ShaderBindingInfo const> const bindings) -> core::ref_ptr<Shader> = 0;
 
         virtual auto create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
                                     uint32_t const mip_levels, TextureFormat const format,

@@ -18,7 +18,7 @@ namespace ionengine
         uint32_t index_count;
     };
 
-    struct Mesh
+    struct Mesh : public core::ref_counted_object
     {
         mutable core::ref_ptr<Material> material;
         std::vector<Primitive> primitives;
@@ -31,10 +31,10 @@ namespace ionengine
 
         auto load_from_memory(std::span<uint8_t const> const data, ModelImporter& importer) -> bool;
 
-        auto get_meshes() const -> std::span<Mesh const>;
+        auto get_meshes() const -> std::span<core::ref_ptr<Mesh>>;
 
       private:
         LinkedDevice* device;
-        std::vector<Mesh> meshes;
+        std::vector<core::ref_ptr<Mesh>> meshes;
     };
 } // namespace ionengine
