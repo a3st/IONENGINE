@@ -40,14 +40,14 @@ namespace ionengine
                     .vertices = vertex_buffer, .indices = index_buffer, .index_count = primitive.index_count});
             }
 
-            meshes.emplace_back(Mesh{.material = nullptr, .primitives = primitives});
+            // meshes.emplace_back(Mesh{.material = nullptr, .primitives = primitives});
         }
 
         device->end_upload();
         return true;
     }
 
-    auto Model::get_meshes() const -> std::span<Mesh const>
+    auto Model::get_meshes() const -> std::vector<core::ref_ptr<Mesh>> const&
     {
         return meshes;
     }

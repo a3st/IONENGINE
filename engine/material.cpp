@@ -22,7 +22,7 @@ namespace ionengine
 
     auto Material::create_using_shader(std::string_view const shader_name) -> bool
     {
-        shader = shader_manager->get_shader_by_name(shader_name);
+        /*shader = shader_manager->get_shader_by_name(shader_name);
 
         auto result = shader->get_bindings().find("MaterialData");
 
@@ -42,31 +42,31 @@ namespace ionengine
 
         buffer_data.resize(result->second.size);
         buffer = device->get_device().create_buffer(result->second.size, 0,
-                                                    (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer);
+                                                    (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer);*/
         return true;
     }
 
     auto Material::set_parameter_data(std::string_view const param, void* data, size_t const size) -> void
     {
-        auto result = parameters.find(std::string(param));
+        /*auto result = parameters.find(std::string(param));
 
         if (result == parameters.end())
         {
             throw core::Exception("Invalid parameter name passed to shader");
         }
 
-        std::memcpy(buffer_data.data() + result->second.first, data, size);
+        std::memcpy(buffer_data.data() + result->second.first, data, size);*/
     }
 
     auto Material::set_parameter_texture(std::string_view const param, Texture& texture) -> void
     {
-        auto result = parameters.find(std::string(param));
+        /*auto result = parameters.find(std::string(param));
 
         if (result == parameters.end())
         {
             throw core::Exception("Invalid parameter name passed to shader");
         }
-
+        */
         // std::memcpy(buffer_data.data() + result->second.first, texture., size);
     }
 

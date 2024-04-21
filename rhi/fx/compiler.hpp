@@ -2,10 +2,15 @@
 
 #pragma once
 
+#include "fxsl.hpp"
+
 namespace ionengine::rhi::fx
 {
     class FXSLCompiler
     {
       public:
+        virtual auto add_include_path(std::filesystem::path const& include_path) -> void = 0;
+
+        virtual auto compile(std::filesystem::path const& file_path) -> FXShaderBinary = 0;
     };
-} // namespace ionengine
+} // namespace ionengine::rhi::fx

@@ -13,7 +13,7 @@ namespace ionengine
 
     auto ShaderManager::load_shader(std::filesystem::path const& shader_path) -> void
     {
-        std::vector<uint8_t> data;
+        /*std::vector<uint8_t> data;
         {
             std::basic_ifstream<uint8_t> ifs(shader_path, std::ios::binary | std::ios::in);
             ifs.seekg(0, std::ios::end);
@@ -32,7 +32,7 @@ namespace ionengine
             throw core::Exception("Cannot add an existing shader");
         }
 
-        shaders.emplace(std::string(shader->get_name()), shader);
+        shaders.emplace(std::string(shader->get_name()), shader);*/
     }
 
     auto ShaderManager::get_shader_by_name(std::string_view const shader_name) -> core::ref_ptr<rhi::Shader>

@@ -96,35 +96,8 @@ namespace ionengine::rhi
         virtual auto get_descriptor_offset(TextureUsage const usage) const -> uint32_t = 0;
     };
 
-    enum class ShaderElementType
-    {
-        Float4x4,
-        Float3x3,
-        Float2x2,
-        Float4,
-        Float3,
-        Float2,
-        Float,
-        Uint,
-        Bool,
-        Texture2D,
-        Texture3D,
-        SamplerState
-    };
-
-    struct ShaderBindingInfo
-    {
-        uint32_t index;
-        uint32_t offset;
-        ShaderElementType element_type;
-    };
-
     class Shader : public core::ref_counted_object
     {
-      public:
-        virtual auto get_name() const -> std::string_view = 0;
-
-        virtual auto get_bindings() const -> std::unordered_map<std::string, ShaderBindingInfo> const& = 0;
     };
 
     enum class RenderPassLoadOp
@@ -295,6 +268,27 @@ namespace ionengine::rhi
         }
     };
 
+    enum class VertexFormat
+    {
+        Float4x4,
+        Float3x3,
+        Float2x2,
+        Float4,
+        Float3,
+        Float2,
+        Float,
+        Uint,
+        Bool
+    };
+
+    struct VertexDeclarationInfo
+    {
+        std::string semantic;
+        uint32_t index;
+        VertexFormat format;
+        uint32_t offset;
+    };
+
     struct RasterizerStageInfo
     {
         FillMode fill_mode;
@@ -397,12 +391,14 @@ namespace ionengine::rhi
       public:
         virtual auto reset() -> void = 0;
 
-        virtual auto set_graphics_pipeline_options(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
+        virtual auto set_graphics_pipeline_options(core::ref_ptr<Shader> shader,
+                                                   std::span<VertexDeclarationInfo const> const vertex_declarations,
+                                                   RasterizerStageInfo const& rasterizer,
                                                    BlendColorInfo const& blend_color,
                                                    std::optional<DepthStencilStageInfo> const depth_stencil)
             -> void = 0;
 
-        virtual auto bind_descriptor(std::string_view const binding, uint32_t const descriptor) -> void = 0;
+        virtual auto bind_descriptor(uint32_t const index, uint32_t const descriptor) -> void = 0;
 
         virtual auto begin_render_pass(std::span<RenderPassColorInfo> const colors,
                                        std::optional<RenderPassDepthStencilInfo> depth_stencil) -> void = 0;
@@ -456,8 +452,10 @@ namespace ionengine::rhi
       public:
         static auto create(platform::Window* window) -> core::ref_ptr<Device>;
 
-        virtual auto create_shader(std::span<ShaderStageInfo const> const stages,
-                                   std::span<ShaderBindingInfo const> const bindings) -> core::ref_ptr<Shader> = 0;
+        virtual auto create_shader(std::span<uint8_t const> const vs_data, std::span<uint8_t const> const ps_data)
+            -> core::ref_ptr<Shader> = 0;
+
+        virtual auto create_shader(std::span<uint8_t const> const cs_data) -> core::ref_ptr<Shader> = 0;
 
         virtual auto create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
                                     uint32_t const mip_levels, TextureFormat const format,

@@ -31,7 +31,7 @@ namespace ionengine
 
         auto load_from_memory(std::span<uint8_t const> const data, ModelImporter& importer) -> bool;
 
-        auto get_meshes() const -> std::span<core::ref_ptr<Mesh>>;
+        auto get_meshes() const -> std::vector<core::ref_ptr<Mesh>> const&;
 
       private:
         LinkedDevice* device;

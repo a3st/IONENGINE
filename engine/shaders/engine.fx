@@ -10,9 +10,3 @@ struct LightingData {
     float3 direction;
     float3 color;
 };
-
-struct MaterialData {
-    Texture2D<float4> diffuse;
-    Texture2D<float3> normal;
-    Texture2D<float3> roughness;
-};

@@ -2,6 +2,7 @@
 
 #include "renderer.hpp"
 #include "material.hpp"
+#include "model.hpp"
 #include "precompiled.h"
 #include "texture.hpp"
 
@@ -25,10 +26,10 @@ namespace ionengine
         device->get_graphics_context().set_viewport(0, 0, 752, 286);
         device->get_graphics_context().set_scissor(0, 0, 752, 286);
 
-        device->get_graphics_context().set_graphics_pipeline_options(
+        /*device->get_graphics_context().set_graphics_pipeline_options(
             mesh->material->get_shader(),
             rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid, .cull_mode = rhi::CullMode::Back},
-            rhi::BlendColorInfo::Opaque(), std::nullopt);
+            rhi::BlendColorInfo::Opaque(), std::nullopt);*/
 
         uint8_t* buffer = test_buffer->map_memory();
 
@@ -41,7 +42,8 @@ namespace ionengine
         memcpy(buffer, &world_buffer, sizeof(WorldData));
         test_buffer->unmap_memory();
 
-        device->get_graphics_context().bind_descriptor("WorldData", test_buffer->get_descriptor_offset(rhi::BufferUsage::ConstantBuffer));
+        // device->get_graphics_context().bind_descriptor("WorldData",
+        // test_buffer->get_descriptor_offset(rhi::BufferUsage::ConstantBuffer));
 
         /*auto material_buffer = mesh.material->get_buffer();
 
@@ -51,12 +53,13 @@ namespace ionengine
         device->get_graphics_context().bind_descriptor("MaterialData",
                                                        material_buffer->get(rhi::BufferUsage::ConstantBuffer));*/
 
-        for (auto const& primitive : mesh->primitives)
+        // for (auto const& primitive : mesh->primitives)
         {
-            device->get_graphics_context().bind_vertex_buffer(primitive.vertices, 0, primitive.vertices->get_size());
-            device->get_graphics_context().bind_index_buffer(primitive.indices, 0, primitive.indices->get_size(),
-                                                             rhi::IndexFormat::Uint32);
-            device->get_graphics_context().draw_indexed(primitive.index_count, 1);
+            //    device->get_graphics_context().bind_vertex_buffer(primitive.vertices, 0,
+            //    primitive.vertices->get_size()); device->get_graphics_context().bind_index_buffer(primitive.indices,
+            //    0, primitive.indices->get_size(),
+            //                                                     rhi::IndexFormat::Uint32);
+            //    device->get_graphics_context().draw_indexed(primitive.index_count, 1);
         }
 
         // device->get_graphics_context().barrier(material_buffer, rhi::ResourceState::AllShaderRead,
@@ -75,11 +78,10 @@ namespace ionengine
 
         for (auto const& color : colors)
         {
-            render_pass_colors.emplace_back(
-                rhi::RenderPassColorInfo{.texture = color->get_texture(),
-                                         .load_op = rhi::RenderPassLoadOp::Clear,
-                                         .store_op = rhi::RenderPassStoreOp::Store,
-                                         .clear_color = clear_color});
+            render_pass_colors.emplace_back(rhi::RenderPassColorInfo{.texture = color->get_texture(),
+                                                                     .load_op = rhi::RenderPassLoadOp::Clear,
+                                                                     .store_op = rhi::RenderPassStoreOp::Store,
+                                                                     .clear_color = clear_color});
 
             render_pass_color_textures.emplace_back(color->get_texture());
         }

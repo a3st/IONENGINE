@@ -2,15 +2,11 @@
     "technique": {
         "vertexShader": {
             "buffer": 0,
-            "entryPoint": "vs_main",
-            "inIA": 0,
-            "outIA": 1
+            "entryPoint": "vs_main"
         },
         "pixelShader": {
             "buffer": 1,
-            "entryPoint": "ps_main",
-            "inIA": 1,
-            "outIA": 2
+            "entryPoint": "ps_main"
         },
         "depthWrite": false,
         "stencilWrite": false,

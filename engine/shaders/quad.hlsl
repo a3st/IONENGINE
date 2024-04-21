@@ -31,3 +31,4 @@ PSOutput ps_main(VSOutput input) {
     output.color = forwardTexture.Sample(static_sampler, input.uv);
     return output;
 }
+

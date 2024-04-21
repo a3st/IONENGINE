@@ -1,5 +1,11 @@
 #include "engine.fx"
 
+struct MaterialData {
+    Texture2D diffuse;
+    Texture2D normal;
+    Texture2D roughness;
+};
+
 export MaterialData materialData;
 export SamplerState linearSampler;
 export WorldData worldData;
@@ -17,10 +23,22 @@ struct VS_OUTPUT {
     float2 uv : TEXCOORD0;
 };
 
+// C помощью регулярки найти границы функции
+// В ограниченной области найти все exports по очереди
+// Если export найден (и это ConstantBuffer), pos на !worldData. 
+// Находим переменную после . и проверяем ее тип, если Texture то обращаемся через 
+//      Texture2D(ResourceDescriptorHeap[NonUniformResourceIndex(ConstantBuffer<ConstName>(ResourceDescriptorHeap[shaderData.worldData]).name)]
+// Если нет то
+//      ConstantBuffer<ConstName>(ResourceDescriptorHeap[shaderData.worldData]).name
+
 VS_OUTPUT vs_main(VS_INPUT input) {
     VS_OUTPUT output;
-    float4 world_pos = mul(worldData.model, float4(input.position, 1.0f));
+    /*float4 world_pos = mul(worldData.model, float4(input.position, 1.0f));
     output.position = mul(worldData.projection, mul(worldData.view, world_pos));
+    output.uv = float2(input.uv.x, input.uv.y);*/
+    float4 world_pos = mul(ConstantBuffer<WorldData>(ResourceDescriptorHeap[shaderData.worldData]).model, float4(input.position, 1.0f));
+    output.position = mul(ConstantBuffer<WorldData>(ResourceDescriptorHeap[shaderData.worldData]).projection, 
+        mul(ConstantBuffer<WorldData>(ResourceDescriptorHeap[shaderData.worldData]).view, world_pos));
     output.uv = float2(input.uv.x, input.uv.y);
     return output;
 } 
@@ -31,6 +49,7 @@ struct PS_OUTPUT {
 
 PS_OUTPUT ps_main(VS_OUTPUT input) {
     PS_OUTPUT output;
+    Texture2D color = Texture2D(ResourceDescriptorHeap[NonUniformResourceIndex(ConstantBuffer<MaterialData>(ResourceDescriptorHeap[shaderData.materialData]).diffuse)]);
     output.color = float4(0.2f, 0.3f, 0.1f, 1.0f);
     return output;
 };

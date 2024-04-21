@@ -237,35 +237,28 @@ namespace ionengine::rhi
         TextureUsageFlags flags;
     };
 
-    auto element_type_to_dxgi(rhi::shaderfile::ElementType const element_type) -> DXGI_FORMAT;
-
-    auto element_type_size(rhi::shaderfile::ElementType const element_type) -> uint32_t;
+    enum D3D12_SHADER_TYPE
+    {
+        D3D12_SHADER_TYPE_VERTEX,
+        D3D12_SHADER_TYPE_PIXEL,
+        D3D12_SHADER_TYPE_COMPUTE
+    };
 
     class DX12Shader final : public Shader
     {
       public:
-        DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const data);
+        DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const vs_data,
+                   std::span<uint8_t const> const ps_data);
 
-        auto get_name() const -> std::string_view override;
-
-        auto get_inputs() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
-
-        auto get_inputs_size_per_vertex() const -> uint32_t;
-
-        auto get_stages() const -> std::unordered_map<shaderfile::ShaderStageType, D3D12_SHADER_BYTECODE> const&;
-
-        auto get_bindings() const -> std::unordered_map<std::string, shaderfile::ResourceData> const& override;
+        DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const cs_data);
 
         auto get_hash() const -> uint64_t;
 
+        auto get_stages() const -> std::unordered_map<D3D12_SHADER_TYPE, D3D12_SHADER_BYTECODE> const&;
+
       private:
-        std::string shader_name;
-        std::unordered_map<rhi::shaderfile::ShaderStageType, D3D12_SHADER_BYTECODE> stages;
-        std::vector<D3D12_INPUT_ELEMENT_DESC> inputs;
-        uint32_t inputs_size_per_vertex;
-        std::list<std::string> semantic_names;
+        std::unordered_map<D3D12_SHADER_TYPE, D3D12_SHADER_BYTECODE> stages;
         std::vector<std::vector<uint8_t>> buffers;
-        std::unordered_map<std::string, shaderfile::ResourceData> bindings;
         uint64_t hash;
     };
 
@@ -279,6 +272,7 @@ namespace ionengine::rhi
     {
       public:
         Pipeline(ID3D12Device4* device, ID3D12RootSignature* root_signature, DX12Shader& shader,
+                 std::span<VertexDeclarationInfo const> const vertex_declarations,
                  RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
                  std::optional<DepthStencilStageInfo> const depth_stencil,
                  std::span<DXGI_FORMAT const> const render_target_formats, DXGI_FORMAT const depth_stencil_format,
@@ -294,9 +288,15 @@ namespace ionengine::rhi
             return root_signature;
         }
 
+        auto get_vertex_stride_size() const -> uint32_t
+        {
+            return vertex_stride_size;
+        }
+
       private:
         ID3D12RootSignature* root_signature;
         winrt::com_ptr<ID3D12PipelineState> pipeline_state;
+        uint32_t vertex_stride_size;
     };
 
     class PipelineCache final : public core::ref_counted_object
@@ -349,14 +349,15 @@ namespace ionengine::rhi
                        XXHash64::hash(&depth_stencil.depth_func, sizeof(uint32_t), 0) ^
                        XXHash64::hash(&depth_stencil.depth_write, sizeof(uint32_t), 0) ^
                        XXHash64::hash(&depth_stencil.stencil_write, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.render_target_formats, entry.render_target_formats.size(), 0) ^
+                       XXHash64::hash(entry.render_target_formats.data(), entry.render_target_formats.size(), 0) ^
                        XXHash64::hash(&entry.depth_stencil_format, sizeof(DXGI_FORMAT), 0);
             }
         };
 
         PipelineCache(ID3D12Device4* device);
 
-        auto get(DX12Shader& shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
+        auto get(DX12Shader& shader, std::span<VertexDeclarationInfo const> const vertex_declarations,
+                 RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
                  std::optional<DepthStencilStageInfo> const depth_stencil,
                  std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& render_target_formats,
                  DXGI_FORMAT const depth_stencil_format) -> core::ref_ptr<Pipeline>;
@@ -389,11 +390,12 @@ namespace ionengine::rhi
 
         auto reset() -> void override;
 
-        auto set_graphics_pipeline_options(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
-                                           BlendColorInfo const& blend_color,
+        auto set_graphics_pipeline_options(core::ref_ptr<Shader> shader,
+                                           std::span<VertexDeclarationInfo const> const vertex_declarations,
+                                           RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
                                            std::optional<DepthStencilStageInfo> const depth_stencil) -> void override;
 
-        auto bind_descriptor(std::string_view const binding, uint32_t const descriptor) -> void override;
+        auto bind_descriptor(uint32_t const index, uint32_t const descriptor) -> void override;
 
         auto begin_render_pass(std::span<RenderPassColorInfo> const colors,
                                std::optional<RenderPassDepthStencilInfo> depth_stencil) -> void override;
@@ -437,6 +439,7 @@ namespace ionengine::rhi
         std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> render_target_formats;
         DXGI_FORMAT depth_stencil_format;
         std::array<uint32_t, 16> bindings;
+        uint32_t vertex_stride_size;
     };
 
     inline uint32_t constexpr DX12_RESOURCE_MEMORY_ALIGNMENT = 256;
@@ -510,7 +513,10 @@ namespace ionengine::rhi
 
         ~DX12Device();
 
-        auto create_shader(std::span<uint8_t const> const data) -> core::ref_ptr<Shader> override;
+        auto create_shader(std::span<uint8_t const> const vs_data, std::span<uint8_t const> const ps_data)
+            -> core::ref_ptr<Shader> override;
+
+        auto create_shader(std::span<uint8_t const> const cs_data) -> core::ref_ptr<Shader> override;
 
         auto create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
                             uint32_t const mip_levels, TextureFormat const format, TextureDimension const dimension,

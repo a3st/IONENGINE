@@ -36,8 +36,9 @@ struct VS_OUTPUT {
 
 VS_OUTPUT vs_main(VS_INPUT input) {
     VS_OUTPUT output;
-    float4 world_pos = mul(ResourceDescriptorHeap[shaderData.worldData].model, float4(input.position, 1.0f));
-    output.position = mul(ResourceDescriptorHeap[shaderData.worldData].projection, mul(ResourceDescriptorHeap[shaderData.worldData].view, world_pos));
+    float4 world_pos = mul(ConstantBuffer<WorldData>(ResourceDescriptorHeap[shaderData.worldData]).model, float4(input.position, 1.0f));
+    output.position = mul(ConstantBuffer<WorldData>(ResourceDescriptorHeap[shaderData.worldData]).projection, 
+        mul(ConstantBuffer<WorldData>(ResourceDescriptorHeap[shaderData.worldData]).view, world_pos));
     output.uv = float2(input.uv.x, input.uv.y);
     return output;
 }

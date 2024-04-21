@@ -14,6 +14,17 @@
             "cwd": "${workspaceFolder}/build",
             "environment": [],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "(Windows) Launch ShaderC",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tests/rhi_fx_test.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/tests",
+            "environment": [],
+            "console": "integratedTerminal"
         }
     ]
 }

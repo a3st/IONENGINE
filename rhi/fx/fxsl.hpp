@@ -94,7 +94,7 @@ namespace ionengine::rhi::fx
     /*!
         \brief FXSLParser class for parse FXSL effects
     */
-    class FXSLParser
+    class FXShaderBinary
     {
       public:
         /*!
@@ -102,7 +102,7 @@ namespace ionengine::rhi::fx
             
             \param data data binary buffer
         */
-        FXSLParser(std::span<uint8_t const> const data);
+        FXShaderBinary(std::span<uint8_t const> const data);
 
         /*!
             \brief Get FXSL target platform
