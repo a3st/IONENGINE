@@ -8,29 +8,16 @@ namespace ionengine::rhi::fx
     namespace hlslconv
     {
         std::unordered_map<std::string, ShaderElementType> types = {
-            {"float4x4", ShaderElementType::Float4x4},
-            {"float3x3", ShaderElementType::Float3x3},
-            {"float2x2", ShaderElementType::Float2x2},
-            {"float4", ShaderElementType::Float4},
-            {"float3", ShaderElementType::Float3},
-            {"float2", ShaderElementType::Float2},
-            {"float", ShaderElementType::Float},
-            {"bool", ShaderElementType::Bool},
-            {"uint", ShaderElementType::Uint},
-            {"SamplerState", ShaderElementType::SamplerState},
+            {"float4x4", ShaderElementType::Float4x4},  {"float3x3", ShaderElementType::Float3x3},
+            {"float2x2", ShaderElementType::Float2x2},  {"float4", ShaderElementType::Float4},
+            {"float3", ShaderElementType::Float3},      {"float2", ShaderElementType::Float2},
+            {"float", ShaderElementType::Float},        {"bool", ShaderElementType::Bool},
+            {"uint", ShaderElementType::Uint},          {"SamplerState", ShaderElementType::SamplerState},
             {"Texture2D", ShaderElementType::Texture2D}};
 
-        std::unordered_map<std::string, size_t> sizes = {{"float4x4", 64},
-                                                         {"float3x3", 36},
-                                                         {"float2x2", 16},
-                                                         {"float4", 16},
-                                                         {"float3", 12},
-                                                         {"float2", 8},
-                                                         {"float", 4},
-                                                         {"bool", 4},
-                                                         {"uint", 4},
-                                                         {"SamplerState", 4},
-                                                         {"Texture2D", 4}};
+        std::unordered_map<std::string, size_t> sizes = {
+            {"float4x4", 64}, {"float3x3", 36}, {"float2x2", 16}, {"float4", 16},      {"float3", 12},  {"float2", 8},
+            {"float", 4},     {"bool", 4},      {"uint", 4},      {"SamplerState", 4}, {"Texture2D", 4}};
     } // namespace hlslconv
 
     DXCCompiler::DXCCompiler()
@@ -45,50 +32,7 @@ namespace ionengine::rhi::fx
         include_paths.emplace_back(include_path);
     }
 
-    auto DXCCompiler::compile(std::filesystem::path const& file_path) -> void
-    {
-        std::string shader_code = merge_shader_code(file_path);
-
-        ShaderTechniqueData technique = get_shader_technique(shader_code);
-        auto [constants, mappings] = get_shader_constants(shader_code);
-        std::vector<ShaderStructureData> structures = get_shader_structures(shader_code, mappings);
-
-        shader_code = generate_shader_code_v1(shader_code, constants);
-        shader_code = generate_shader_code_v2(shader_code, mappings);
-
-        winrt::com_ptr<IDxcCompiler3> compiler;
-        ::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void());
-
-        DxcBuffer buffer;
-        buffer.Ptr = shader_code.data();
-        buffer.Size = shader_code.size();
-        buffer.Encoding = DXC_CP_ACP;
-
-        std::vector<LPCWSTR> arguments;
-        arguments.emplace_back(L"-T vs_6_6");
-        arguments.emplace_back(L"-E vs_main");
-        arguments.emplace_back(DXC_ARG_OPTIMIZATION_LEVEL3);
-
-        winrt::com_ptr<IDxcResult> result;
-        compiler->Compile(&buffer, arguments.data(), static_cast<uint32_t>(arguments.size()), nullptr, __uuidof(IDxcResult),
-                        result.put_void());
-
-        winrt::com_ptr<IDxcBlobUtf8> errors;
-        result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), errors.put_void(), nullptr);
-
-        if (errors && errors->GetStringLength() > 0)
-        {
-            std::cerr << std::string_view(reinterpret_cast<char*>(errors->GetBufferPointer()), errors->GetBufferSize())
-                    << std::endl;
-        }
-
-        winrt::com_ptr<IDxcBlob> shader;
-        result->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), shader.put_void(), nullptr);
-
-        std::cout << shader->GetBufferSize() << std::endl;
-    }
-
-    auto DXCCompiler::merge_shader_code(std::filesystem::path const& file_path) -> std::string
+    auto DXCCompiler::compile(std::filesystem::path const& file_path) -> std::optional<std::vector<uint8_t>>
     {
         std::string shader_code;
         {
@@ -97,13 +41,47 @@ namespace ionengine::rhi::fx
             {
                 std::cout << 1 << std::endl;
             }
-            stream.seekg(0, std::ios::end);
-            uint64_t const offset = stream.tellg();
-            shader_code.resize(offset);
-            stream.seekg(0, std::ios::beg);
-            stream.read(shader_code.data(), shader_code.size());
+            shader_code = { std::istreambuf_iterator<char>(stream.rdbuf()), {} };
         }
 
+        if (!merge_shader_code(shader_code))
+        {
+            return std::nullopt;
+        }
+
+        std::cout << shader_code << std::endl;
+
+        winrt::com_ptr<IDxcCompiler3> compiler;
+        ::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void());
+
+        DxcBuffer buffer;
+        buffer.Ptr = shader_code.c_str();
+        buffer.Size = shader_code.size();
+        buffer.Encoding = DXC_CP_UTF8;
+
+        std::vector<LPCWSTR> arguments;
+        arguments.emplace_back(L"-T vs_6_6");
+        arguments.emplace_back(L"-E vs_main");
+        arguments.emplace_back(DXC_ARG_OPTIMIZATION_LEVEL3);
+
+        winrt::com_ptr<IDxcResult> result;
+        compiler->Compile(&buffer, arguments.data(), static_cast<uint32_t>(arguments.size()), nullptr,
+                          __uuidof(IDxcResult), result.put_void());
+
+        winrt::com_ptr<IDxcBlobUtf8> errors;
+        result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), errors.put_void(), nullptr);
+
+        if (errors && errors->GetStringLength() > 0)
+        {
+            std::cerr << std::string_view(reinterpret_cast<char*>(errors->GetBufferPointer()), errors->GetBufferSize())
+                      << std::endl;
+        }
+
+        return std::nullopt;
+    }
+
+    auto DXCCompiler::merge_shader_code(std::string& shader_code) -> bool
+    {
         std::regex const include_pattern("#include\\s+\"(.+)\"");
 
         std::smatch match;
@@ -120,24 +98,20 @@ namespace ionengine::rhi::fx
                         std::basic_ifstream<char> stream(include_path / include_group);
                         if (!stream.is_open())
                         {
-                            std::cout << 1 << std::endl;
+                            return false;
                         }
-                        stream.seekg(0, std::ios::end);
-                        uint64_t const offset = stream.tellg();
-                        include_shader_code.resize(offset);
-                        stream.seekg(0, std::ios::beg);
-                        stream.read(include_shader_code.data(), include_shader_code.size());
+                        include_shader_code = { std::istreambuf_iterator<char>(stream.rdbuf()), {} };
                     }
 
                     auto begin_shader_code = shader_code.substr(0, match.position());
                     auto end_shader_code = shader_code.substr(match.position() + match.length(), std::string::npos);
-                    shader_code = begin_shader_code + include_shader_code + end_shader_code;
+                    shader_code = begin_shader_code + end_shader_code;
                 }
             }
         }
-        return shader_code;
+        return true;
     }
-
+    /*
     auto DXCCompiler::get_shader_constants(std::string const& shader_code)
         -> std::tuple<std::vector<ShaderConstantData>, std::set<std::string>>
     {
@@ -408,5 +382,5 @@ namespace ionengine::rhi::fx
 
         new_shader_code = std::regex_replace(new_shader_code, technique_pattern, "");
         return new_shader_code;
-    }
+    }*/
 } // namespace ionengine::rhi::fx

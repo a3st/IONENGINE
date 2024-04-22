@@ -11,6 +11,6 @@ namespace ionengine::rhi::fx
       public:
         virtual auto add_include_path(std::filesystem::path const& include_path) -> void = 0;
 
-        virtual auto compile(std::filesystem::path const& file_path) -> FXShaderBinary = 0;
+        virtual auto compile(std::filesystem::path const& file_path) -> std::optional<std::vector<uint8_t>> = 0;
     };
 } // namespace ionengine::rhi::fx

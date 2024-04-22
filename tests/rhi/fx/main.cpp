@@ -6,9 +6,7 @@
 TEST(rhi_fx, read_fx_file)
 {
     ionengine::rhi::fx::DXCCompiler compiler;
-
     compiler.add_include_path("../../engine/shaders");
-
     compiler.compile("../../engine/shaders/basic.fx");
 }
 

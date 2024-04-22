@@ -39,7 +39,8 @@ namespace ionengine::rhi::fx
     enum class ShaderStageType
     {
         Vertex,
-        Pixel
+        Pixel,
+        Compute
     };
 
     enum class ShaderTargetType : uint32_t
@@ -55,7 +56,8 @@ namespace ionengine::rhi::fx
         None
     };
 
-    struct ShaderConstantData {
+    struct ShaderConstantData
+    {
         std::string name;
         ShaderElementType constant_type;
         int32_t structure;
@@ -91,51 +93,19 @@ namespace ionengine::rhi::fx
         ShaderCullSide cull_side;
     };
 
-    /*!
-        \brief FXSLParser class for parse FXSL effects
-    */
-    class FXShaderBinary
+    struct FXSLObject
     {
-      public:
-        /*!
-            \brief Parse FXSL from given data binary buffer
-            
-            \param data data binary buffer
-        */
-        FXShaderBinary(std::span<uint8_t const> const data);
-
-        /*!
-            \brief Get FXSL target platform
-
-            \return a shader target platform (DXIL or SPIR-V)
-        */
-        auto get_target() const -> ShaderTargetType;
-
-        /*!
-            \brief Get FXSL shader technique info
-
-            \returns a shader technique info like using stages, culling or stencil/depth parameters
-        */
-        auto get_technique() const -> ShaderTechniqueData const&;
-
-        /*!
-            \brief Get FXSL shader structures
-
-            \returns a shader structures
-        */
-        auto get_structures() const -> std::span<ShaderStructureData>;
-
-        /*!
-            \brief Get binary shader buffer for graphics API
-
-            \returns a binary buffer that contains DXIL or SPIR-V data
-        */
-        auto get_buffer(uint32_t const index) const -> std::span<uint8_t const>;
-
-      private:
         ShaderTargetType target;
         ShaderTechniqueData technique;
         std::vector<ShaderStructureData> structures;
         std::vector<std::vector<uint8_t>> buffers;
+    };
+
+    class FXSL
+    {
+      public:
+        auto load_binary_from_memory(std::span<uint8_t const> const data) -> std::optional<FXSLObject>;
+
+        auto load_binary_from_file(std::filesystem::path const& file_path) -> std::optional<FXSLObject>;
     };
 } // namespace ionengine::rhi::fx

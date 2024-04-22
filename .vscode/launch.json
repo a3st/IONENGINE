@@ -16,10 +16,10 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "(Windows) Launch ShaderC",
+            "name": "(Windows) Launch rhi_fx_test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/tests/rhi_fx_test.exe",
+            "program": "rhi_fx_test.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/tests",
