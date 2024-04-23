@@ -41,7 +41,7 @@ namespace ionengine::rhi::fx
             {
                 std::cout << 1 << std::endl;
             }
-            shader_code = { std::istreambuf_iterator<char>(stream.rdbuf()), {} };
+            shader_code = {std::istreambuf_iterator<char>(stream.rdbuf()), {}};
         }
 
         if (!merge_shader_code(shader_code))
@@ -49,9 +49,23 @@ namespace ionengine::rhi::fx
             return std::nullopt;
         }
 
+        std::vector<ShaderConstantData> constants;
+
+        if (!convert_shader_constants(shader_code, constants))
+        {
+            return std::nullopt;
+        }
+
+        std::vector<ShaderStructureData> structures;
+
+        if (!convert_shader_structures(shader_code, structures))
+        {
+            return std::nullopt;
+        }
+
         std::cout << shader_code << std::endl;
 
-        winrt::com_ptr<IDxcCompiler3> compiler;
+        /*winrt::com_ptr<IDxcCompiler3> compiler;
         ::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void());
 
         DxcBuffer buffer;
@@ -75,7 +89,7 @@ namespace ionengine::rhi::fx
         {
             std::cerr << std::string_view(reinterpret_cast<char*>(errors->GetBufferPointer()), errors->GetBufferSize())
                       << std::endl;
-        }
+        }*/
 
         return std::nullopt;
     }
@@ -100,31 +114,26 @@ namespace ionengine::rhi::fx
                         {
                             return false;
                         }
-                        include_shader_code = { std::istreambuf_iterator<char>(stream.rdbuf()), {} };
+                        include_shader_code = {std::istreambuf_iterator<char>(stream.rdbuf()), {}};
                     }
 
                     auto begin_shader_code = shader_code.substr(0, match.position());
                     auto end_shader_code = shader_code.substr(match.position() + match.length(), std::string::npos);
-                    shader_code = begin_shader_code + end_shader_code;
+                    shader_code = begin_shader_code + include_shader_code + end_shader_code;
                 }
             }
         }
         return true;
     }
-    /*
-    auto DXCCompiler::get_shader_constants(std::string const& shader_code)
-        -> std::tuple<std::vector<ShaderConstantData>, std::set<std::string>>
+
+    auto DXCCompiler::convert_shader_constants(std::string& shader_code, std::vector<ShaderConstantData>& constants)
+        -> bool
     {
-        std::vector<ShaderConstantData> constants;
-        std::set<std::string> mappings;
+        std::regex const export_pattern("export\\s+(\\w+)\\s+(\\w+\\[\\]|\\w+);\\s*");
 
-        std::regex const export_pattern("export\\s+(\\w+)\\s+(\\w+\\[\\]|\\w+)");
-
-        for (auto it = std::sregex_iterator(shader_code.begin(), shader_code.end(), export_pattern);
-             it != std::sregex_iterator(); ++it)
+        std::smatch match;
+        while (std::regex_search(shader_code, match, export_pattern))
         {
-            std::smatch const match = *it;
-
             std::string const export_type_group = match[1].str();
             std::string const struct_name_group = match[2].str();
 
@@ -146,16 +155,32 @@ namespace ionengine::rhi::fx
                 {
                     constant_type = ShaderElementType::ConstantBuffer;
                 }
-
-                mappings.emplace(export_type_group);
             }
 
             constants.emplace_back(
                 ShaderConstantData{.name = constant_name, .constant_type = constant_type, .structure = -1});
+
+            auto begin_shader_code = shader_code.substr(0, match.position());
+            auto end_shader_code = shader_code.substr(match.position() + match.length(), std::string::npos);
+            shader_code = begin_shader_code + end_shader_code;
         }
-        return std::make_tuple(constants, mappings);
+        return true;
     }
 
+    auto DXCCompiler::convert_shader_structures(std::string& shader_code, std::vector<ShaderStructureData>& structures)
+        -> bool
+    {
+        std::regex const struct_pattern("struct\\s+(\\w+(?<_FX))\\s+\\{((?:\\s+.+\\s+){1,})\\};");
+
+        std::smatch match;
+        while (std::regex_search(shader_code, match, struct_pattern))
+        {
+            std::cout << 1 << std::endl;
+        }
+        return true;
+    }
+
+    /*
     auto DXCCompiler::get_shader_technique(std::string const& shader_code) -> ShaderTechniqueData
     {
         std::regex const technique_pattern("technique\\s*\\{\\s*pass\\s*\\{((?:\\s+.+\\s+){1,})\\}\\s*\\}");

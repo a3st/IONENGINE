@@ -28,6 +28,10 @@ namespace ionengine::rhi::fx
         std::vector<std::filesystem::path> include_paths;
 
         auto merge_shader_code(std::string& shader_code) -> bool;
+
+        auto convert_shader_constants(std::string& shader_code, std::vector<ShaderConstantData>& constants) -> bool;
+
+        auto convert_shader_structures(std::string& shader_code, std::vector<ShaderStructureData>& structures) -> bool;
         
         /*
         auto get_shader_constants(std::string const& shader_code)
