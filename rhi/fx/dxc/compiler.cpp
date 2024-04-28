@@ -50,15 +50,28 @@ namespace ionengine::rhi::fx
         }
 
         std::vector<ShaderConstantData> constants;
+        std::set<std::string> mappings;
 
-        if (!convert_shader_constants(shader_code, constants))
+        if (!convert_shader_constants(shader_code, constants, mappings))
         {
             return std::nullopt;
         }
 
         std::vector<ShaderStructureData> structures;
 
-        if (!convert_shader_structures(shader_code, structures))
+        if (!convert_shader_structures(shader_code, structures, mappings))
+        {
+            return std::nullopt;
+        }
+
+        ShaderTechniqueData technique;
+
+        if (!convert_shader_technique(shader_code, technique))
+        {
+            return std::nullopt;
+        }
+
+        if (!convert_bindless_constants(shader_code, constants, structures, technique))
         {
             return std::nullopt;
         }
@@ -126,14 +139,18 @@ namespace ionengine::rhi::fx
         return true;
     }
 
-    auto DXCCompiler::convert_shader_constants(std::string& shader_code, std::vector<ShaderConstantData>& constants)
-        -> bool
+    auto DXCCompiler::convert_shader_constants(std::string& shader_code, std::vector<ShaderConstantData>& constants,
+                                               std::set<std::string>& mappings) -> bool
     {
         std::regex const export_pattern("export\\s+(\\w+)\\s+(\\w+\\[\\]|\\w+);\\s*");
 
         std::smatch match;
+        uint32_t position = 0;
+
         while (std::regex_search(shader_code, match, export_pattern))
         {
+            position = match.position();
+
             std::string const export_type_group = match[1].str();
             std::string const struct_name_group = match[2].str();
 
@@ -154,6 +171,7 @@ namespace ionengine::rhi::fx
                 else
                 {
                     constant_type = ShaderElementType::ConstantBuffer;
+                    mappings.emplace(export_type_group);
                 }
             }
 
@@ -164,24 +182,189 @@ namespace ionengine::rhi::fx
             auto end_shader_code = shader_code.substr(match.position() + match.length(), std::string::npos);
             shader_code = begin_shader_code + end_shader_code;
         }
+
+        auto begin_shader_code = shader_code.substr(0, position);
+        auto end_shader_code = shader_code.substr(position, std::string::npos);
+
+        shader_code = begin_shader_code;
+        shader_code += "struct SHADER_DATA {\n";
+        for (auto const& constant : constants)
+        {
+            switch (constant.constant_type)
+            {
+                case ShaderElementType::Texture2D:
+                case ShaderElementType::ConstantBuffer:
+                case ShaderElementType::SamplerState:
+                case ShaderElementType::StorageBuffer: {
+                    shader_code = shader_code + "    " + "uint" + " " + constant.name + ";\n";
+                    break;
+                }
+            }
+        }
+        shader_code += "};\n\n";
+        shader_code += "ConstantBuffer<SHADER_DATA> shaderData : register(b0, space0);\n\n";
+        shader_code += end_shader_code;
         return true;
     }
 
-    auto DXCCompiler::convert_shader_structures(std::string& shader_code, std::vector<ShaderStructureData>& structures)
-        -> bool
+    auto DXCCompiler::convert_shader_structures(std::string& shader_code, std::vector<ShaderStructureData>& structures,
+                                                std::set<std::string> const& mappings) -> bool
     {
-        std::regex const struct_pattern("struct\\s+(\\w+(?<_FX))\\s+\\{((?:\\s+.+\\s+){1,})\\};");
+        uint64_t offset = 0;
 
-        std::smatch match;
-        while (std::regex_search(shader_code, match, struct_pattern))
+        while (offset != std::string::npos)
         {
-            std::cout << 1 << std::endl;
+            offset = shader_code.find("struct", offset);
+
+            if (offset == std::string::npos)
+            {
+                break;
+            }
+
+            offset = shader_code.find(" ", offset);
+
+            uint64_t const br_open = shader_code.find("{", offset) + 1;
+            uint64_t br_close = 0;
+
+            auto struct_name = std::string(shader_code.begin() + offset, shader_code.begin() + br_open - 1);
+
+            struct_name.erase(struct_name.begin(), std::find_if(struct_name.begin(), struct_name.end(),
+                                                                [](unsigned char ch) { return !std::isspace(ch); }));
+            struct_name.erase(std::find_if(struct_name.rbegin(), struct_name.rend(),
+                                           [](unsigned char ch) { return !std::isspace(ch); })
+                                  .base(),
+                              struct_name.end());
+
+            offset = br_open + 1;
+
+            if (input_assembler_names.find(struct_name) != input_assembler_names.end())
+            {
+                std::vector<ShaderStructureElementData> elements;
+                uint32_t size = 0;
+
+                do
+                {
+                    br_close = shader_code.find("};", offset);
+                    uint64_t const quote = shader_code.find(";", offset);
+
+                    auto member = std::string(shader_code.begin() + offset, shader_code.begin() + quote);
+
+                    member.erase(member.begin(), std::find_if(member.begin(), member.end(),
+                                                              [](unsigned char ch) { return !std::isspace(ch); }));
+
+                    auto member_type = std::string(member.begin(), member.begin() + member.find(" ", 0));
+
+                    auto member_name =
+                        std::string(member.begin() + member.find(" ", 0), member.begin() + member.find(":", 0));
+                    member_name.erase(member_name.begin(),
+                                      std::find_if(member_name.begin(), member_name.end(),
+                                                   [](unsigned char ch) { return !std::isspace(ch); }));
+                    member_name.erase(std::find_if(member_name.rbegin(), member_name.rend(),
+                                                   [](unsigned char ch) { return !std::isspace(ch); })
+                                          .base(),
+                                      member_name.end());
+
+                    auto member_semantic = std::string(member.begin() + member.find(":", 0) + 1, member.end());
+                    member_semantic.erase(member_semantic.begin(),
+                                          std::find_if(member_semantic.begin(), member_semantic.end(),
+                                                       [](unsigned char ch) { return !std::isspace(ch); }));
+                    member_semantic.erase(std::find_if(member_semantic.rbegin(), member_semantic.rend(),
+                                                       [](unsigned char ch) { return !std::isspace(ch); })
+                                              .base(),
+                                          member_semantic.end());
+
+                    elements.emplace_back(ShaderStructureElementData{.name = member_name,
+                                                                     .element_type = hlslconv::types[member_type],
+                                                                     .semantic = member_semantic});
+                    size += hlslconv::sizes[member_type];
+
+                    offset = quote + 1;
+
+                } while (offset < br_close - 1);
+
+                structures.emplace_back(
+                    ShaderStructureData{.name = struct_name, .elements = std::move(elements), .size = size});
+            }
+            else
+            {
+                if (mappings.find(struct_name) != mappings.end())
+                {
+                    std::vector<ShaderStructureElementData> elements;
+                    uint32_t size = 0;
+
+                    do
+                    {
+                        br_close = shader_code.find("};", offset);
+                        uint64_t const quote = shader_code.find(";", offset);
+
+                        auto member = std::string(shader_code.begin() + offset, shader_code.begin() + quote);
+
+                        member.erase(member.begin(), std::find_if(member.begin(), member.end(),
+                                                                  [](unsigned char ch) { return !std::isspace(ch); }));
+
+                        auto member_type = std::string(member.begin(), member.begin() + member.find(" ", 0));
+
+                        auto member_name = std::string(member.begin() + member.find(" ", 0), member.end());
+                        member_name.erase(member_name.begin(),
+                                          std::find_if(member_name.begin(), member_name.end(),
+                                                       [](unsigned char ch) { return !std::isspace(ch); }));
+                        member_name.erase(std::find_if(member_name.rbegin(), member_name.rend(),
+                                                       [](unsigned char ch) { return !std::isspace(ch); })
+                                              .base(),
+                                          member_name.end());
+
+                        switch (hlslconv::types[member_type])
+                        {
+                            case ShaderElementType::Texture2D: {
+                                uint64_t const begin_member_offset = shader_code.find(member_type, offset);
+                                uint64_t const end_member_offset = shader_code.find(member_name, begin_member_offset);
+
+                                auto begin_shader = shader_code.substr(0, begin_member_offset);
+                                auto end_shader = shader_code.substr(end_member_offset, std::string::npos);
+
+                                offset -= shader_code.size() - (begin_shader.size() + end_shader.size());
+                                shader_code = begin_shader + "uint " + end_shader;
+                                break;
+                            }
+                            case ShaderElementType::SamplerState: {
+                                uint64_t const begin_member_offset = shader_code.find(member_type, offset);
+                                uint64_t const end_member_offset = shader_code.find(member_name, begin_member_offset);
+
+                                auto begin_shader = shader_code.substr(0, begin_member_offset);
+                                auto end_shader = shader_code.substr(end_member_offset, std::string::npos);
+
+                                offset -= shader_code.size() - (begin_shader.size() + end_shader.size());
+                                shader_code = begin_shader + "uint " + end_shader;
+                                break;
+                            }
+                        }
+
+                        elements.emplace_back(ShaderStructureElementData{.name = member_name,
+                                                                         .element_type = hlslconv::types[member_type]});
+                        size += hlslconv::sizes[member_type];
+
+                        offset = quote + 1;
+
+                    } while (offset < br_close - 1);
+
+                    structures.emplace_back(
+                        ShaderStructureData{.name = struct_name, .elements = std::move(elements), .size = size});
+                }
+            }
         }
         return true;
     }
 
-    /*
-    auto DXCCompiler::get_shader_technique(std::string const& shader_code) -> ShaderTechniqueData
+    auto DXCCompiler::convert_bindless_constants(std::string& shader_code,
+                                                 std::span<ShaderConstantData const> const constants,
+                                                 std::span<ShaderStructureData const> const structures,
+                                                 ShaderTechniqueData const& technique) -> bool
+    {
+
+        return true;
+    }
+
+    auto DXCCompiler::convert_shader_technique(std::string& shader_code, ShaderTechniqueData& technique) -> bool
     {
         std::regex const technique_pattern("technique\\s*\\{\\s*pass\\s*\\{((?:\\s+.+\\s+){1,})\\}\\s*\\}");
 
@@ -265,147 +448,13 @@ namespace ionengine::rhi::fx
                     }
                 }
             }
-            return shader_technique;
         }
         else
         {
             // TO DO!
         }
+
+        shader_code = std::regex_replace(shader_code, technique_pattern, "");
+        return true;
     }
-
-    auto DXCCompiler::get_shader_structures(std::string const& shader_code, std::set<std::string> const& mappings)
-        -> std::vector<ShaderStructureData>
-    {
-        std::vector<ShaderStructureData> structures;
-
-        std::regex const struct_pattern("struct\\s+(\\w+)\\s+\\{((?:\\s+.+\\s+){1,})\\};");
-
-        for (auto it_struct = std::sregex_iterator(shader_code.begin(), shader_code.end(), struct_pattern);
-             it_struct != std::sregex_iterator(); ++it_struct)
-        {
-            std::smatch match = *it_struct;
-
-            std::string const struct_name_group = match[1].str();
-            std::string const struct_data_group = match[2].str();
-
-            if (input_assembler_names.find(struct_name_group) != input_assembler_names.end())
-            {
-                std::regex const struct_data_pattern(
-                    "(bool|uint|float[2-4]x[2-4]|float[2-4]*)\\s+(\\w+)\\s*:\\s*(\\w+)\\s*;");
-
-                std::vector<ShaderStructureElementData> elements;
-                uint32_t size = 0;
-
-                for (auto it_data =
-                         std::sregex_iterator(struct_data_group.begin(), struct_data_group.end(), struct_data_pattern);
-                     it_data != std::sregex_iterator(); ++it_data)
-                {
-                    match = *it_data;
-
-                    std::string const element_type_group = match[1].str();
-                    std::string const element_name_group = match[2].str();
-                    std::string const semantic_group = match[3].str();
-
-                    elements.emplace_back(
-                        ShaderStructureElementData{.name = element_name_group,
-                                                   .element_type = hlslconv::types[element_type_group],
-                                                   .semantic = semantic_group});
-                    size += hlslconv::sizes[element_type_group];
-                }
-
-                structures.emplace_back(
-                    ShaderStructureData{.name = struct_name_group, .elements = std::move(elements), .size = size});
-            }
-            else
-            {
-                if (mappings.find(struct_name_group) != mappings.end())
-                {
-                    std::regex const struct_data_pattern(
-                        "(Texture2D|bool|uint|float[2-4]x[2-4]|float[2-4]*)\\s+(\\w+);");
-
-                    std::vector<ShaderStructureElementData> elements;
-                    uint32_t size = 0;
-
-                    for (auto it_data = std::sregex_iterator(struct_data_group.begin(), struct_data_group.end(),
-                                                             struct_data_pattern);
-                         it_data != std::sregex_iterator(); ++it_data)
-                    {
-                        std::smatch match = *it_data;
-
-                        std::string const element_type_group = match[1].str();
-                        std::string const element_name_group = match[2].str();
-
-                        elements.emplace_back(ShaderStructureElementData{
-                            .name = element_name_group, .element_type = hlslconv::types[element_type_group]});
-                        size += hlslconv::sizes[element_type_group];
-                    }
-
-                    structures.emplace_back(
-                        ShaderStructureData{.name = struct_name_group, .elements = std::move(elements), .size = size});
-                }
-            }
-        }
-        return structures;
-    }
-
-    auto DXCCompiler::generate_shader_code_v1(std::string const& shader_code,
-                                              std::span<ShaderConstantData const> const constants) -> std::string
-    {
-        std::string new_shader_code = shader_code;
-
-        std::regex const export_pattern("export\\s+(\\w+)\\s+(\\w+\\[\\]|\\w+);");
-
-        uint32_t position = 0;
-        std::smatch match;
-
-        while (std::regex_search(new_shader_code, match, export_pattern))
-        {
-            position = match.position();
-            auto begin_shader_code = new_shader_code.substr(0, match.position());
-            auto end_shader_code = new_shader_code.substr(match.position() + match.length(), std::string::npos);
-            new_shader_code = begin_shader_code + end_shader_code;
-        }
-
-        {
-            auto begin_shader_code = new_shader_code.substr(0, position);
-            auto end_shader_code = new_shader_code.substr(position, std::string::npos);
-
-            new_shader_code = begin_shader_code;
-            new_shader_code += "struct SHADER_DATA {\n";
-            for (auto const& constant : constants)
-            {
-                switch (constant.constant_type)
-                {
-                    case ShaderElementType::Texture2D:
-                    case ShaderElementType::ConstantBuffer:
-                    case ShaderElementType::SamplerState:
-                    case ShaderElementType::StorageBuffer: {
-                        new_shader_code = new_shader_code + "    " + "uint" + " " + constant.name + ";\n";
-                        break;
-                    }
-                }
-            }
-            new_shader_code += "};\n\n";
-            new_shader_code += "ConstantBuffer<SHADER_DATA> shaderData : register(b0, space0);\n";
-            new_shader_code += end_shader_code;
-        }
-        return new_shader_code;
-    }
-
-    auto DXCCompiler::generate_shader_code_v2(std::string const& shader_code, std::set<std::string> const& mappings)
-        -> std::string
-    {
-        std::string new_shader_code = shader_code;
-
-        std::regex const bindless_type_pattern("Texture2D |SamplerState ");
-
-        // Idk how do it through std::regex_match replace only structs by name from mappings.
-        // Bad variant but works.
-        new_shader_code = std::regex_replace(new_shader_code, bindless_type_pattern, "uint ");
-
-        std::regex const technique_pattern("technique\\s*\\{\\s*pass\\s*\\{((?:\\s+.+\\s+){1,})\\}\\s*\\}");
-
-        new_shader_code = std::regex_replace(new_shader_code, technique_pattern, "");
-        return new_shader_code;
-    }*/
 } // namespace ionengine::rhi::fx

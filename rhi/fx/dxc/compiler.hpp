@@ -29,10 +29,18 @@ namespace ionengine::rhi::fx
 
         auto merge_shader_code(std::string& shader_code) -> bool;
 
-        auto convert_shader_constants(std::string& shader_code, std::vector<ShaderConstantData>& constants) -> bool;
+        auto convert_shader_constants(std::string& shader_code, std::vector<ShaderConstantData>& constants,
+                                      std::set<std::string>& mappings) -> bool;
 
-        auto convert_shader_structures(std::string& shader_code, std::vector<ShaderStructureData>& structures) -> bool;
-        
+        auto convert_shader_structures(std::string& shader_code, std::vector<ShaderStructureData>& structures,
+                                       std::set<std::string> const& mappings) -> bool;
+
+        auto convert_bindless_constants(std::string& shader_code, std::span<ShaderConstantData const> const constants,
+                                        std::span<ShaderStructureData const> const structures,
+                                        ShaderTechniqueData const& technique) -> bool;
+
+        auto convert_shader_technique(std::string& shader_code, ShaderTechniqueData& technique) -> bool;
+
         /*
         auto get_shader_constants(std::string const& shader_code)
             -> std::tuple<std::vector<ShaderConstantData>, std::set<std::string>>;
