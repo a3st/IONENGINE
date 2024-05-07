@@ -21,8 +21,8 @@ namespace ionengine::rhi::fx
 
     struct ChunkHeader
     {
-        uint32_t chunk_type;
-        uint32_t chunk_length;
+        uint32_t chunkType;
+        uint32_t chunkLength;
     };
 
     enum class ShaderElementType
@@ -65,14 +65,14 @@ namespace ionengine::rhi::fx
     struct ShaderConstantData
     {
         std::string name;
-        ShaderElementType constant_type;
+        ShaderElementType constantType;
         int32_t structure;
     };
 
     struct ShaderStructureElementData
     {
         std::string name;
-        ShaderElementType element_type;
+        ShaderElementType elementType;
         std::string semantic;
     };
 
@@ -86,21 +86,22 @@ namespace ionengine::rhi::fx
     struct ShaderStageData
     {
         int32_t buffer;
-        std::string entry_point;
+        std::string entryPoint;
     };
 
     struct ShaderTechniqueData
     {
         std::unordered_map<std::string, ShaderStageData> stages;
-        bool depth_write;
-        bool stencil_write;
-        ShaderCullSide cull_side;
+        bool depthWrite;
+        bool stencilWrite;
+        ShaderCullSide cullSide;
     };
 
-    struct FXSLObject
+    struct ShaderEffect
     {
         ShaderTargetType target;
         ShaderTechniqueData technique;
+        std::vector<ShaderConstantData> constants;
         std::vector<ShaderStructureData> structures;
         std::vector<std::vector<uint8_t>> buffers;
     };
@@ -108,8 +109,10 @@ namespace ionengine::rhi::fx
     class FXSL
     {
       public:
-        auto load_binary_from_memory(std::span<uint8_t const> const data) -> std::optional<FXSLObject>;
+        static auto loadFromMemory(std::span<uint8_t const> const data) -> std::optional<ShaderEffect>;
 
-        auto load_binary_from_file(std::filesystem::path const& file_path) -> std::optional<FXSLObject>;
+        static auto loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffect>;
+
+        static auto save(ShaderEffect& object, std::filesystem::path const& filePath) -> bool;
     };
 } // namespace ionengine::rhi::fx

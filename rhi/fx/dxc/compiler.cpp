@@ -20,20 +20,6 @@ namespace ionengine::rhi::fx
             {"float", 4},     {"bool", 4},      {"uint", 4},      {"SamplerState", 4}, {"Texture2D", 4}};
     } // namespace hlslconv
 
-    template <typename Type>
-    auto to_string(Type const type) -> std::string;
-
-    template <>
-    auto to_string(ShaderElementType const element_type) -> std::string
-    {
-        case ShaderElementType::Bool: {
-            element_type = "BOOL";
-            break;
-        }
-    }
-
-    auto from_string(std::string_view const element_type) -> ShaderElementType;
-
     DXCCompiler::DXCCompiler()
     {
         input_assembler_names.emplace("VS_INPUT");
@@ -101,10 +87,6 @@ namespace ionengine::rhi::fx
 
         std::vector<winrt::com_ptr<IDxcBlob>> buffers;
 
-        std::stringstream json(std::ios::out);
-
-        json << "{\"technique\":{";
-
         for (auto& [stage_name, stage_info] : technique.stages)
         {
             std::vector<LPCWSTR> arguments;
@@ -124,7 +106,7 @@ namespace ionengine::rhi::fx
 
             std::wstring entry_point_parameter;
             {
-                std::string const key = "-E " + stage_info.entry_point;
+                std::string const key = "-E " + stage_info.entryPoint;
 
                 size_t length = strlen(reinterpret_cast<const char*>(key.data())) + 1;
                 size_t result = 0;
@@ -156,47 +138,16 @@ namespace ionengine::rhi::fx
 
             stage_info.buffer = buffers.size();
             buffers.emplace_back(shader);
-
-            json << "\"" + stage_name + "\":{\"buffer\":" + std::to_string(stage_info.buffer) + ",\"entryPoint\":\"" +
-                        stage_info.entry_point + "\"},";
         }
 
-        std::string cull_side;
-        switch (technique.cull_side)
-        {
-            case ShaderCullSide::None: {
-                cull_side = "none";
-                break;
-            }
-            case ShaderCullSide::Back: {
-                cull_side = "back";
-                break;
-            }
-            case ShaderCullSide::Front: {
-                cull_side = "front";
-                break;
-            }
-        }
+        ShaderEffect effect = {
+            .target = ShaderTargetType::DXIL,
+            .technique = technique,
+            .constants = constants,
+            .structures = structures
+        };
 
-        json << "\"depthWrite\":" << std::boolalpha << technique.depth_write << ",\"stencilWrite\":" << std::boolalpha
-             << technique.stencil_write << ",\"cullSide\":"
-             << "\"" + cull_side + "\"},\"constants\":[";
-
-        for (auto const& constant : constants)
-        {
-            std::string element_type;
-            switch (constant.constant_type)
-            {
-                case ShaderElementType::Bool: {
-                    element_type = "BOOL";
-                    break;
-                }
-            }
-
-            json << "{\"name\":\"" + constant.name + "\",\"type\":\"";
-        }
-
-        std::cout << json.str() << std::endl;
+        FXSL::save(effect, "shaders/basic.bin");
 
         std::basic_stringstream<uint8_t> stream(std::ios::binary | std::ios::out);
 
@@ -205,7 +156,7 @@ namespace ionengine::rhi::fx
         stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
 
         ChunkHeader json_chunk = {
-            .chunk_type = static_cast<uint32_t>(ChunkType::Json),
+            .chunkType = static_cast<uint32_t>(ChunkType::Json),
         };
 
         return std::nullopt;
@@ -288,7 +239,7 @@ namespace ionengine::rhi::fx
             }
 
             constants.emplace_back(
-                ShaderConstantData{.name = constant_name, .constant_type = constant_type, .structure = structure});
+                ShaderConstantData{.name = constant_name, .constantType = constant_type, .structure = structure});
 
             auto begin_shader_code = shader_code.substr(0, match.position());
             auto end_shader_code = shader_code.substr(match.position() + match.length(), std::string::npos);
@@ -302,7 +253,7 @@ namespace ionengine::rhi::fx
         shader_code += "struct SHADER_DATA {\n";
         for (auto const& constant : constants)
         {
-            switch (constant.constant_type)
+            switch (constant.constantType)
             {
                 case ShaderElementType::Texture2D:
                 case ShaderElementType::ConstantBuffer:
@@ -386,7 +337,7 @@ namespace ionengine::rhi::fx
                                           member_semantic.end());
 
                     elements.emplace_back(ShaderStructureElementData{.name = member_name,
-                                                                     .element_type = hlslconv::types[member_type],
+                                                                     .elementType = hlslconv::types[member_type],
                                                                      .semantic = member_semantic});
                     size += hlslconv::sizes[member_type];
 
@@ -450,7 +401,7 @@ namespace ionengine::rhi::fx
                     }
 
                     elements.emplace_back(
-                        ShaderStructureElementData{.name = member_name, .element_type = hlslconv::types[member_type]});
+                        ShaderStructureElementData{.name = member_name, .elementType = hlslconv::types[member_type]});
                     size += hlslconv::sizes[member_type];
 
                     offset = quote + 1;
@@ -472,7 +423,7 @@ namespace ionengine::rhi::fx
         for (auto const& [stage_name, stage_info] : technique.stages)
         {
             uint64_t offset = 0;
-            offset = shader_code.find(stage_info.entry_point, offset);
+            offset = shader_code.find(stage_info.entryPoint, offset);
 
             uint64_t const br_open = shader_code.find("{", offset);
             uint64_t br_close = 0;
@@ -497,7 +448,7 @@ namespace ionengine::rhi::fx
                         break;
                     }
 
-                    switch (constant.constant_type)
+                    switch (constant.constantType)
                     {
                         case ShaderElementType::ConstantBuffer: {
                             auto member = std::string(shader_code.begin() + name_offset,
@@ -528,7 +479,7 @@ namespace ionengine::rhi::fx
                             {
                             }
 
-                            switch (it->element_type)
+                            switch (it->elementType)
                             {
                                 case ShaderElementType::Texture2D: {
                                     auto begin_shader = shader_code.substr(0, name_offset);
@@ -595,27 +546,27 @@ namespace ionengine::rhi::fx
                 if (parameter.compare("vertexShader") == 0)
                 {
                     technique.stages.emplace("vertexShader",
-                                             ShaderStageData{.entry_point = value.substr(0, value.size() - 2)});
+                                             ShaderStageData{.entryPoint = value.substr(0, value.size() - 2)});
                 }
                 else if (parameter.compare("pixelShader") == 0)
                 {
                     technique.stages.emplace("pixelShader",
-                                             ShaderStageData{.entry_point = value.substr(0, value.size() - 2)});
+                                             ShaderStageData{.entryPoint = value.substr(0, value.size() - 2)});
                 }
                 else if (parameter.compare("computeShader") == 0)
                 {
                     technique.stages.emplace("computeShader",
-                                             ShaderStageData{.entry_point = value.substr(0, value.size() - 2)});
+                                             ShaderStageData{.entryPoint = value.substr(0, value.size() - 2)});
                 }
                 else if (parameter.compare("depthWrite") == 0)
                 {
                     if (value.compare("true") == 0)
                     {
-                        technique.depth_write = true;
+                        technique.depthWrite = true;
                     }
                     else if (value.compare("false") == 0)
                     {
-                        technique.depth_write = false;
+                        technique.depthWrite = false;
                     }
                     else
                     {
@@ -626,11 +577,11 @@ namespace ionengine::rhi::fx
                 {
                     if (value.compare("true") == 0)
                     {
-                        technique.stencil_write = true;
+                        technique.stencilWrite = true;
                     }
                     else if (value.compare("false") == 0)
                     {
-                        technique.stencil_write = false;
+                        technique.stencilWrite = false;
                     }
                     else
                     {
@@ -641,15 +592,15 @@ namespace ionengine::rhi::fx
                 {
                     if (value.compare("\"back\"") == 0)
                     {
-                        technique.cull_side = ShaderCullSide::Back;
+                        technique.cullSide = ShaderCullSide::Back;
                     }
                     else if (value.compare("\"front\"") == 0)
                     {
-                        technique.cull_side = ShaderCullSide::Front;
+                        technique.cullSide = ShaderCullSide::Front;
                     }
                     else if (value.compare("\"none\"") == 0)
                     {
-                        technique.cull_side = ShaderCullSide::None;
+                        technique.cullSide = ShaderCullSide::None;
                     }
                     else
                     {

@@ -7,6 +7,129 @@
 #include "precompiled.h"
 #include <simdjson.h>
 
+namespace ionengine::rhi::fx
+{
+    template <typename Type>
+    auto toString(Type const type) -> std::string;
+
+    template <>
+    auto toString(ShaderCullSide const type) -> std::string
+    {
+        switch (type)
+        {
+            case ShaderCullSide::None: {
+                return "none";
+            }
+            case ShaderCullSide::Back: {
+                return "back";
+            }
+            case ShaderCullSide::Front: {
+                return "front";
+            }
+        }
+
+        throw std::invalid_argument("Passed invalid argument into function");
+    }
+
+    template <>
+    auto toString(ShaderElementType const type) -> std::string
+    {
+        switch (type)
+        {
+            case ShaderElementType::Bool: {
+                return "BOOL";
+            }
+            case ShaderElementType::ConstantBuffer: {
+                return "CONST_BUFFER";
+            }
+            case ShaderElementType::Float2: {
+                return "FLOAT2";
+            }
+            case ShaderElementType::Float2x2: {
+                return "FLOAT2x2";
+            }
+            case ShaderElementType::Float3: {
+                return "FLOAT3";
+            }
+            case ShaderElementType::Float3x3: {
+                return "FLOAT3x3";
+            }
+            case ShaderElementType::Float4: {
+                return "FLOAT4";
+            }
+            case ShaderElementType::Float4x4: {
+                return "FLOAT4x4";
+            }
+            case ShaderElementType::Float: {
+                return "FLOAT";
+            }
+            case ShaderElementType::SamplerState: {
+                return "SAMPLER_STATE";
+            }
+            case ShaderElementType::StorageBuffer: {
+                return "STORAGE_BUFFER";
+            }
+            case ShaderElementType::Texture2D: {
+                return "TEXTURE_2D";
+            }
+            case ShaderElementType::Uint: {
+                return "UINT";
+            }
+        }
+
+        throw std::invalid_argument("Passed invalid argument into function");
+    }
+
+    auto fromString(std::string_view const type) -> ShaderElementType;
+
+    auto FXSL::loadFromMemory(std::span<uint8_t const> const data) -> std::optional<ShaderEffect>
+    {
+        return std::nullopt;
+    }
+
+    auto FXSL::loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffect>
+    {
+        return std::nullopt;
+    }
+
+    auto FXSL::save(ShaderEffect& object, std::filesystem::path const& filePath) -> bool
+    {
+        std::stringstream json(std::ios::out);
+        json << "{\"technique\":{";
+        for (auto const& [stageName, stageInfo] : object.technique.stages)
+        {
+            json << "\"" + stageName + "\":{\"buffer\":" + std::to_string(stageInfo.buffer) + ",\"entryPoint\":\"" +
+                        stageInfo.entryPoint + "\"},";
+        }
+
+        json << "\"depthWrite\":" << std::boolalpha << object.technique.depthWrite
+             << ",\"stencilWrite\":" << std::boolalpha << object.technique.stencilWrite << ",\"cullSide\":"
+             << "\"" + toString(object.technique.cullSide) + "\"},\"constants\":[";
+
+        bool isFirst = true;
+
+        for (auto const& constant : object.constants)
+        {
+            if (!isFirst)
+            {
+                json << ",";
+            }
+
+            json << "{\"name\":\"" + constant.name + "\",\"type\":\"" + toString(constant.constantType) +
+                        "\",\"structure\":" + std::to_string(constant.structure) + "}";
+
+            isFirst = false;
+        }
+        json << "],";
+
+        std::cout << json.str() << std::endl;
+
+        std::basic_stringstream<uint8_t> stream(std::ios::binary | std::ios::out);
+        return false;
+    }
+
+} // namespace ionengine::rhi::fx
+
 /*
 namespace ionengine::rhi::shaderfile
 {
