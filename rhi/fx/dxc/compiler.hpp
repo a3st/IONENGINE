@@ -27,35 +27,19 @@ namespace ionengine::rhi::fx
         winrt::com_ptr<IDxcCompiler3> compiler;
         std::vector<std::filesystem::path> include_paths;
 
+        std::set<std::string> input_assembler_names;
+
         auto merge_shader_code(std::string& shader_code) -> bool;
 
         auto convert_shader_constants(std::string& shader_code, std::vector<ShaderConstantData>& constants,
-                                      std::set<std::string>& mappings) -> bool;
+                                      std::span<ShaderStructureData const> const structures) -> bool;
 
-        auto convert_shader_structures(std::string& shader_code, std::vector<ShaderStructureData>& structures,
-                                       std::set<std::string> const& mappings) -> bool;
+        auto convert_shader_structures(std::string& shader_code, std::vector<ShaderStructureData>& structures) -> bool;
 
         auto convert_bindless_constants(std::string& shader_code, std::span<ShaderConstantData const> const constants,
                                         std::span<ShaderStructureData const> const structures,
                                         ShaderTechniqueData const& technique) -> bool;
 
         auto convert_shader_technique(std::string& shader_code, ShaderTechniqueData& technique) -> bool;
-
-        /*
-        auto get_shader_constants(std::string const& shader_code)
-            -> std::tuple<std::vector<ShaderConstantData>, std::set<std::string>>;
-
-        auto get_shader_technique(std::string const& shader_code) -> ShaderTechniqueData;
-
-        auto get_shader_structures(std::string const& shader_code, std::set<std::string> const& mappings)
-            -> std::vector<ShaderStructureData>;
-
-        auto generate_shader_code_v1(std::string const& shader_code,
-                                     std::span<ShaderConstantData const> const constants) -> std::string;
-
-        auto generate_shader_code_v2(std::string const& shader_code,
-                                     std::set<std::string> const& mappings) -> std::string;*/
-
-        std::set<std::string> input_assembler_names;
     };
 } // namespace ionengine::rhi::fx

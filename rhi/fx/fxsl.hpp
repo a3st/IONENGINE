@@ -13,6 +13,12 @@ namespace ionengine::rhi::fx
         uint32_t target;
     };
 
+    enum class ChunkType : uint32_t
+    {
+        Json,
+        Binary
+    };
+
     struct ChunkHeader
     {
         uint32_t chunk_type;
@@ -85,9 +91,7 @@ namespace ionengine::rhi::fx
 
     struct ShaderTechniqueData
     {
-        ShaderStageData vertex_stage;
-        ShaderStageData pixel_stage;
-        ShaderStageData compute_stage;
+        std::unordered_map<std::string, ShaderStageData> stages;
         bool depth_write;
         bool stencil_write;
         ShaderCullSide cull_side;

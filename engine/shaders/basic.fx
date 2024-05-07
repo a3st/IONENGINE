@@ -29,7 +29,7 @@ VS_OUTPUT vs_main(VS_INPUT input) {
     output.position = mul(worldData.projection, mul(worldData.view, world_pos));
     output.uv = float2(input.uv.x, input.uv.y);
     return output;
-} 
+}
 
 struct PS_OUTPUT {
     float4 color : SV_Target0;
