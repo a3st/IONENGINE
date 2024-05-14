@@ -113,6 +113,13 @@ namespace ionengine::rhi::fx
 
         static auto loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffect>;
 
-        static auto save(ShaderEffect& object, std::filesystem::path const& filePath) -> bool;
+        static auto save(ShaderEffect const& object, std::filesystem::path const& filePath) -> bool;
+
+        static auto save(ShaderEffect const& object, std::basic_stringstream<uint8_t>& stream) -> bool;
+
+      private:
+        static auto generateJsonChunkData(ShaderEffect const& object) -> std::string;
+
+        static auto readJsonChunkData(ShaderEffect& object, std::vector<uint8_t>& data) -> bool;
     };
 } // namespace ionengine::rhi::fx

@@ -123,5 +123,18 @@
         "*.hlsl": "hlsl"
     },
     "C_Cpp.intelliSenseEngineFallback": "disabled",
-    "C_Cpp.default.compilerPath": "cl.exe"
+    "C_Cpp.default.compilerPath": "cl.exe",
+    "Lua.diagnostics.globals": [
+        "SlashCmdList",
+        "DEFAULT_CHAT_FRAME",
+        "LIGHTYELLOW_FONT_COLOR_CODE",
+        "FauxScrollFrame_Update",
+        "CloseDropDownMenus",
+        "UIDropDownMenu_Initialize",
+        "ToggleDropDownMenu",
+        "UIDropDownMenu_AddButton",
+        "UIDROPDOWNMENU_MENU_LEVEL",
+        "FauxScrollFrame_GetOffset",
+        "UIDropDownMenu_CreateInfo"
+    ]
 }

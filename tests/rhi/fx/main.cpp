@@ -6,8 +6,10 @@
 TEST(rhi_fx, read_fx_file)
 {
     ionengine::rhi::fx::DXCCompiler compiler;
-    compiler.add_include_path("../../engine/shaders");
-    compiler.compile("../../engine/shaders/basic.fx");
+    compiler.addIncludePath("../../engine/shaders");
+    compiler.compile("../../engine/shaders/basic.fx", "out.bin");
+
+    ionengine::rhi::fx::FXSL::loadFromFile("out.bin");
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

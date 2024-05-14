@@ -3,7 +3,6 @@
 #pragma once
 
 #include "fxsl.hpp"
-#include "core/exception.hpp"
 #include "precompiled.h"
 #include <simdjson.h>
 
@@ -80,253 +79,464 @@ namespace ionengine::rhi::fx
         throw std::invalid_argument("Passed invalid argument into function");
     }
 
-    auto fromString(std::string_view const type) -> ShaderElementType;
+    template <typename Type>
+    auto fromString(std::string_view const type) -> Type;
+
+    template <>
+    auto fromString(std::string_view const type) -> ShaderElementType
+    {
+        if (type.compare("UINT") == 0)
+        {
+            return ShaderElementType::Uint;
+        }
+        else if (type.compare("FLOAT") == 0)
+        {
+            return ShaderElementType::Float;
+        }
+        else if (type.compare("FLOAT2") == 0)
+        {
+            return ShaderElementType::Float2;
+        }
+        else if (type.compare("FLOAT3") == 0)
+        {
+            return ShaderElementType::Float3;
+        }
+        else if (type.compare("FLOAT4") == 0)
+        {
+            return ShaderElementType::Float4;
+        }
+        else if (type.compare("FLOAT3x3") == 0)
+        {
+            return ShaderElementType::Float3x3;
+        }
+        else if (type.compare("FLOAT4x4") == 0)
+        {
+            return ShaderElementType::Float4x4;
+        }
+        else if (type.compare("CONST_BUFFER") == 0)
+        {
+            return ShaderElementType::ConstantBuffer;
+        }
+        else if (type.compare("SAMPLER_STATE") == 0)
+        {
+            return ShaderElementType::SamplerState;
+        }
+        else if (type.compare("STORAGE_BUFFER") == 0)
+        {
+            return ShaderElementType::StorageBuffer;
+        }
+        else if (type.compare("TEXTURE_2D") == 0)
+        {
+            return ShaderElementType::Texture2D;
+        }
+        else if (type.compare("BOOL") == 0)
+        {
+            return ShaderElementType::Bool;
+        }
+        else
+        {
+            throw std::invalid_argument("Passed invalid argument into function");
+        }
+    }
+
+    template <>
+    auto fromString(std::string_view const type) -> ShaderCullSide
+    {
+        if (type.compare("none") == 0)
+        {
+            return ShaderCullSide::None;
+        }
+        else if (type.compare("back") == 0)
+        {
+            return ShaderCullSide::Back;
+        }
+        else if (type.compare("front") == 0)
+        {
+            return ShaderCullSide::Front;
+        }
+        else
+        {
+            throw std::invalid_argument("Passed invalid argument into function");
+        }
+    }
 
     auto FXSL::loadFromMemory(std::span<uint8_t const> const data) -> std::optional<ShaderEffect>
     {
-        return std::nullopt;
-    }
-
-    auto FXSL::loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffect>
-    {
-        return std::nullopt;
-    }
-
-    auto FXSL::save(ShaderEffect& object, std::filesystem::path const& filePath) -> bool
-    {
-        std::stringstream json(std::ios::out);
-        json << "{\"technique\":{";
-        for (auto const& [stageName, stageInfo] : object.technique.stages)
-        {
-            json << "\"" + stageName + "\":{\"buffer\":" + std::to_string(stageInfo.buffer) + ",\"entryPoint\":\"" +
-                        stageInfo.entryPoint + "\"},";
-        }
-
-        json << "\"depthWrite\":" << std::boolalpha << object.technique.depthWrite
-             << ",\"stencilWrite\":" << std::boolalpha << object.technique.stencilWrite << ",\"cullSide\":"
-             << "\"" + toString(object.technique.cullSide) + "\"},\"constants\":[";
-
-        bool isFirst = true;
-
-        for (auto const& constant : object.constants)
-        {
-            if (!isFirst)
-            {
-                json << ",";
-            }
-
-            json << "{\"name\":\"" + constant.name + "\",\"type\":\"" + toString(constant.constantType) +
-                        "\",\"structure\":" + std::to_string(constant.structure) + "}";
-
-            isFirst = false;
-        }
-        json << "],";
-
-        std::cout << json.str() << std::endl;
-
-        std::basic_stringstream<uint8_t> stream(std::ios::binary | std::ios::out);
-        return false;
-    }
-
-} // namespace ionengine::rhi::fx
-
-/*
-namespace ionengine::rhi::shaderfile
-{
-    auto get_element_type_by_string(std::string_view const element_type) -> ElementType
-    {
-        ElementType ret{};
-        if (element_type.compare("FLOAT4x4") == 0)
-        {
-            ret = ElementType::Float4x4;
-        }
-        else if (element_type.compare("FLOAT3x3") == 0)
-        {
-            ret = ElementType::Float3x3;
-        }
-        else if (element_type.compare("FLOAT2x2") == 0)
-        {
-            ret = ElementType::Float2x2;
-        }
-        else if (element_type.compare("FLOAT4") == 0)
-        {
-            ret = ElementType::Float4;
-        }
-        else if (element_type.compare("FLOAT3") == 0)
-        {
-            ret = ElementType::Float3;
-        }
-        else if (element_type.compare("FLOAT2") == 0)
-        {
-            ret = ElementType::Float2;
-        }
-        else if (element_type.compare("FLOAT") == 0)
-        {
-            ret = ElementType::Float;
-        }
-        else if (element_type.compare("UINT") == 0)
-        {
-            ret = ElementType::Uint;
-        }
-        else if (element_type.compare("BOOL") == 0)
-        {
-            ret = ElementType::Bool;
-        }
-        return ret;
-    }
-
-    auto get_resource_type_by_string(std::string_view const resource_type) -> ResourceType
-    {
-        ResourceType ret{};
-        if (resource_type.compare("UNIFORM") == 0)
-        {
-            ret = ResourceType::Uniform;
-        }
-        else if (resource_type.compare("NON_UNIFORM") == 0)
-        {
-            ret = ResourceType::NonUniform;
-        }
-        return ret;
-    }
-
-    auto get_shader_stage_type_by_string(std::string_view const stage_type) -> ShaderStageType
-    {
-        ShaderStageType ret{};
-        if (stage_type.compare("VERTEX_SHADER") == 0)
-        {
-            ret = ShaderStageType::Vertex;
-        }
-        else if (stage_type.compare("PIXEL_SHADER") == 0)
-        {
-            ret = ShaderStageType::Pixel;
-        }
-        return ret;
-    }
-
-    ShaderFile::ShaderFile(std::span<uint8_t const> const data)
-    {
-        std::basic_ispanstream<uint8_t> stream(std::span<uint8_t>(const_cast<uint8_t*>(data.data()), data.size()),
-                                               std::ios::binary);
+        std::basic_spanstream<uint8_t> stream(std::span<uint8_t>(const_cast<uint8_t*>(data.data()), data.size()),
+                                              std::ios::binary | std::ios::in);
 
         Header header;
         stream.read((uint8_t*)&header, sizeof(Header));
 
-        if (std::memcmp(header.magic.data(), SHADER_MAGIC.data(), sizeof(SHADER_MAGIC)) != 0)
+        if (std::memcmp(header.magic.data(), Magic.data(), Magic.size()) != 0)
         {
-            throw core::Exception("Trying to parse a corrupted shader");
+            return std::nullopt;
         }
 
-        flags = static_cast<ShaderFileFlags>(header.flags);
+        ChunkHeader chunkHeader;
+        stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
 
-        std::vector<uint8_t> chunk_json_data;
+        std::vector<uint8_t> chunkJsonData(chunkHeader.chunkLength);
+        stream.read(chunkJsonData.data(), chunkJsonData.size());
+
+        ShaderEffect effect = {};
+
+        if (!readJsonChunkData(effect, chunkJsonData))
         {
-            ChunkHeader chunk_header;
-            stream.read((uint8_t*)&chunk_header, sizeof(ChunkHeader));
-
-            chunk_json_data.resize(chunk_header.chunk_length);
-            stream.read(chunk_json_data.data(), chunk_json_data.size());
-        }
-
-        simdjson::ondemand::parser parser;
-        auto document = parser.iterate(chunk_json_data.data(), chunk_json_data.size(),
-                                       chunk_json_data.size() + simdjson::SIMDJSON_PADDING);
-
-        shader_name = document["shaderName"].get_string().value();
-
-        for (auto stage : document["stages"].get_object())
-        {
-            std::vector<VertexStageInput> inputs;
-            uint32_t inputs_size_per_vertex = 0;
-
-            ShaderStageType stage_type = get_shader_stage_type_by_string(stage.unescaped_key().value());
-            if (stage_type == ShaderStageType::Vertex)
-            {
-                for (auto input : stage.value()["inputs"])
-                {
-                    auto input_data =
-                        VertexStageInput{.element_type = get_element_type_by_string(input["type"].get_string().value()),
-                                         .semantic = std::string(input["semantic"].get_string().value())};
-                    inputs.emplace_back(input_data);
-                }
-                inputs_size_per_vertex = static_cast<uint32_t>(stage.value()["inputsSizePerVertex"].get_uint64());
-            }
-
-            auto stage_data =
-                ShaderStageData{.buffer = static_cast<uint32_t>(stage.value()["buffer"].get_uint64()),
-                                .entry_point = std::string(stage.value()["entryPoint"].get_string().value()),
-                                .inputs = std::move(inputs),
-                                .inputs_size_per_vertex = inputs_size_per_vertex};
-
-            stages.emplace(stage_type, stage_data);
-        }
-
-        for (auto resource : document["exports"].get_object())
-        {
-            std::vector<ElementData> elements;
-            uint32_t size = 0;
-
-            ResourceType resource_type = get_resource_type_by_string(resource.value()["type"].get_string().value());
-
-            if (resource_type == ResourceType::Uniform)
-            {
-                for (auto element : resource.value()["elements"])
-                {
-                    auto input_data =
-                        ElementData{.name = std::string(element["name"].get_string().value()),
-                                    .element_type = get_element_type_by_string(element["type"].get_string().value()),
-                                    .offset = element["offset"].get_uint64().value()};
-                    elements.emplace_back(input_data);
-                }
-                size = static_cast<uint32_t>(resource.value()["sizeInBytes"].get_uint64());
-            }
-
-            auto resource_data =
-                ResourceData{.binding = static_cast<uint32_t>(resource.value()["binding"].get_uint64()),
-                             .resource_type = resource_type,
-                             .elements = std::move(elements),
-                             .size = size};
-
-            resources.emplace(resource.unescaped_key().value(), resource_data);
+            return std::nullopt;
         }
 
         do
         {
-            std::vector<uint8_t> chunk_buffer_data;
-            {
-                ChunkHeader chunk_header;
-                stream.read((uint8_t*)&chunk_header, sizeof(ChunkHeader));
-
-                chunk_buffer_data.resize(chunk_header.chunk_length);
-                stream.read(chunk_buffer_data.data(), chunk_buffer_data.size());
-            }
-            buffers.emplace_back(chunk_buffer_data);
+            stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
+            std::vector<uint8_t> buffer(chunkHeader.chunkLength);
+            stream.read(buffer.data(), buffer.size());
+            effect.buffers.emplace_back(std::move(buffer));
         } while (header.length > stream.tellg());
+        return effect;
     }
 
-    auto ShaderFile::get_name() const -> std::string_view
+    auto FXSL::loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffect>
     {
-        return shader_name;
+        std::basic_fstream<uint8_t> stream(filePath, std::ios::binary | std::ios::in);
+
+        if (!stream.is_open())
+        {
+            return std::nullopt;
+        }
+
+        Header header;
+        stream.read((uint8_t*)&header, sizeof(Header));
+
+        if (std::memcmp(header.magic.data(), Magic.data(), Magic.size()) != 0)
+        {
+            return std::nullopt;
+        }
+
+        ChunkHeader chunkHeader;
+        stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
+
+        std::vector<uint8_t> chunkJsonData(chunkHeader.chunkLength);
+        stream.read(chunkJsonData.data(), chunkJsonData.size());
+
+        ShaderEffect effect = {};
+
+        if (!readJsonChunkData(effect, chunkJsonData))
+        {
+            return std::nullopt;
+        }
+
+        do
+        {
+            stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
+            std::vector<uint8_t> buffer(chunkHeader.chunkLength);
+            stream.read(buffer.data(), buffer.size());
+            effect.buffers.emplace_back(std::move(buffer));
+        } while (header.length > stream.tellg());
+        return effect;
     }
 
-    auto ShaderFile::get_resources() const -> std::unordered_map<std::string, ResourceData> const&
+    auto FXSL::readJsonChunkData(ShaderEffect& object, std::vector<uint8_t>& data) -> bool
     {
-        return resources;
+        simdjson::ondemand::parser parser;
+        auto document = parser.iterate(data.data(), data.size(), data.size() + simdjson::SIMDJSON_PADDING);
+
+        auto technique = document["technique"];
+
+        simdjson::fallback::ondemand::value computeShader;
+        auto error = technique["computeShader"].get(computeShader);
+
+        std::vector<std::string> stageNames;
+        bool isComputeShader = false;
+
+        if (error == simdjson::error_code::SUCCESS)
+        {
+            stageNames.emplace_back("computeShader");
+            isComputeShader = true;
+        }
+        else
+        {
+            stageNames.emplace_back("vertexShader");
+            stageNames.emplace_back("pixelShader");
+        }
+
+        for (auto const& stageName : stageNames)
+        {
+            simdjson::fallback::ondemand::value shader;
+            error = technique[stageName].get(shader);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            int64_t buffer;
+            error = shader["buffer"].get_int64().get(buffer);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            std::string_view entryPoint;
+            error = shader["entryPoint"].get_string().get(entryPoint);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            ShaderStageData stageData = {.buffer = static_cast<int32_t>(buffer), .entryPoint = std::string(entryPoint)};
+            object.technique.stages.emplace(stageName, stageData);
+        }
+
+        if (!isComputeShader)
+        {
+            bool depthWrite;
+            error = technique["depthWrite"].get_bool().get(depthWrite);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            object.technique.depthWrite = depthWrite;
+
+            bool stencilWrite;
+            error = technique["stencilWrite"].get_bool().get(stencilWrite);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            object.technique.stencilWrite = stencilWrite;
+
+            std::string_view cullSide;
+            error = technique["cullSide"].get_string().get(cullSide);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            object.technique.cullSide = fromString<ShaderCullSide>(cullSide);
+        }
+
+        for (auto constant : document["constants"])
+        {
+            ShaderConstantData constantData = {};
+
+            std::string_view name;
+            error = constant["name"].get_string().get(name);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            constantData.name = std::string(name);
+
+            std::string_view constantType;
+            error = constant["type"].get_string().get(constantType);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            constantData.constantType = fromString<ShaderElementType>(constantType);
+
+            int64_t structure;
+            error = constant["structure"].get_int64().get(structure);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            constantData.structure = static_cast<int32_t>(structure);
+
+            object.constants.emplace_back(std::move(constantData));
+        }
+
+        for (auto structure : document["structures"])
+        {
+            ShaderStructureData structureData = {};
+
+            std::string_view name;
+            error = structure["name"].get_string().get(name);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            structureData.name = std::string(name);
+
+            simdjson::fallback::ondemand::value elements;
+            error = structure["elements"].get(elements);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            for (auto element : elements)
+            {
+                ShaderStructureElementData elementData = {};
+
+                error = element["name"].get_string().get(name);
+                if (error != simdjson::error_code::SUCCESS)
+                {
+                    return false;
+                }
+
+                elementData.name = std::string(name);
+
+                std::string_view elementType;
+                error = element["type"].get_string().get(elementType);
+                if (error != simdjson::error_code::SUCCESS)
+                {
+                    return false;
+                }
+
+                elementData.elementType = fromString<ShaderElementType>(elementType);
+
+                std::string_view semantic;
+                error = element["semantic"].get_string().get(semantic);
+                if (error != simdjson::error_code::SUCCESS)
+                {
+                    return false;
+                }
+
+                elementData.semantic = std::move(semantic);
+
+                structureData.elements.emplace_back(std::move(elementData));
+            }
+
+            int64_t size;
+            error = structure["sizeInBytes"].get_int64().get(size);
+            if (error != simdjson::error_code::SUCCESS)
+            {
+                return false;
+            }
+
+            structureData.size = static_cast<int32_t>(size);
+
+            object.structures.emplace_back(std::move(structureData));
+        }
+        return true;
     }
 
-    auto ShaderFile::get_stages() const -> std::unordered_map<ShaderStageType, ShaderStageData> const&
+    auto FXSL::generateJsonChunkData(ShaderEffect const& object) -> std::string
     {
-        return stages;
+        std::string json;
+        {
+            std::stringstream stream(std::ios::out);
+            stream << "{\"technique\":{";
+            for (auto const& [stageName, stageInfo] : object.technique.stages)
+            {
+                stream << "\"" + stageName + "\":{\"buffer\":" + std::to_string(stageInfo.buffer) +
+                              ",\"entryPoint\":\"" + stageInfo.entryPoint + "\"},";
+            }
+
+            stream << "\"depthWrite\":" << std::boolalpha << object.technique.depthWrite
+                   << ",\"stencilWrite\":" << std::boolalpha << object.technique.stencilWrite
+                   << ",\"cullSide\":" << "\"" + toString(object.technique.cullSide) + "\"},\"constants\":[";
+
+            bool isFirst = true;
+
+            for (auto const& constant : object.constants)
+            {
+                if (!isFirst)
+                {
+                    stream << ",";
+                }
+
+                stream << "{\"name\":\"" + constant.name + "\",\"type\":\"" + toString(constant.constantType) +
+                              "\",\"structure\":" + std::to_string(constant.structure) + "}";
+
+                isFirst = false;
+            }
+            stream << "],\"structures\":[";
+
+            isFirst = true;
+
+            for (auto const& structure : object.structures)
+            {
+                if (!isFirst)
+                {
+                    stream << ",";
+                }
+
+                stream << "{\"name\":\"" + structure.name + "\",\"elements\":[";
+
+                isFirst = true;
+
+                for (auto const& element : structure.elements)
+                {
+                    if (!isFirst)
+                    {
+                        stream << ",";
+                    }
+
+                    stream << "{\"name\":\"" + element.name + "\",\"type\":\"" + toString(element.elementType) +
+                                  "\",\"semantic\":\"" + element.semantic + "\"}";
+
+                    isFirst = false;
+                }
+
+                stream << "],\"sizeInBytes\":" << std::to_string(0) << "}";
+
+                isFirst = false;
+            }
+            stream << "]}";
+            json = stream.str();
+        }
+        return json;
     }
 
-    auto ShaderFile::get_buffer(uint32_t const index) const -> std::span<uint8_t const>
+    auto FXSL::save(ShaderEffect const& object, std::filesystem::path const& filePath) -> bool
     {
-        return buffers[index];
+        std::string const json = generateJsonChunkData(object);
+
+        std::basic_fstream<uint8_t> stream(filePath, std::ios::binary | std::ios::out);
+        if (!stream.is_open())
+        {
+            return false;
+        }
+
+        Header header = {.magic = Magic, .length = 0, .target = static_cast<uint32_t>(object.target)};
+        stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
+        ChunkHeader json_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::Json),
+                                  .chunkLength = static_cast<uint32_t>(json.size())};
+        stream.write(reinterpret_cast<uint8_t const*>(&json_chunk), sizeof(ChunkHeader));
+        stream.write(reinterpret_cast<uint8_t const*>(json.data()), json.size());
+        for (auto& buffer : object.buffers)
+        {
+            ChunkHeader binary_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::Binary),
+                                        .chunkLength = static_cast<uint32_t>(buffer.size())};
+            stream.write(reinterpret_cast<uint8_t const*>(&binary_chunk), sizeof(ChunkHeader));
+            stream.write(reinterpret_cast<uint8_t const*>(buffer.data()), buffer.size());
+        }
+        uint64_t const offset = stream.tellg();
+        header.length = offset;
+        stream.seekg(0, std::ios::beg);
+        stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
+        return true;
     }
 
-    auto ShaderFile::get_flags() const -> ShaderFileFlags
+    auto FXSL::save(ShaderEffect const& object, std::basic_stringstream<uint8_t>& stream) -> bool
     {
-        return flags;
-    }
-} // namespace ionengine::rhi::shaderfile
+        std::string const json = generateJsonChunkData(object);
 
-*/
+        Header header = {.magic = Magic, .length = 0, .target = static_cast<uint32_t>(object.target)};
+        stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
+        ChunkHeader json_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::Json),
+                                  .chunkLength = static_cast<uint32_t>(json.size())};
+        stream.write(reinterpret_cast<uint8_t const*>(&json_chunk), sizeof(ChunkHeader));
+        stream.write(reinterpret_cast<uint8_t const*>(json.data()), json.size());
+        for (auto& buffer : object.buffers)
+        {
+            ChunkHeader binary_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::Binary),
+                                        .chunkLength = static_cast<uint32_t>(buffer.size())};
+            stream.write(reinterpret_cast<uint8_t const*>(&binary_chunk), sizeof(ChunkHeader));
+            stream.write(reinterpret_cast<uint8_t const*>(buffer.data()), buffer.size());
+        }
+        uint64_t const offset = stream.tellg();
+        header.length = offset;
+        stream.seekg(0, std::ios::beg);
+        stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
+        return true;
+    }
+} // namespace ionengine::rhi::fx

@@ -6,10 +6,10 @@ struct MaterialData {
     Texture2D roughness;
 };
 
-export MaterialData materialData;
-export SamplerState linearSampler;
-export WorldData worldData;
-export LightingData lightingData[];
+[[fx::shader_constant]] MaterialData materialData;
+[[fx::shader_constant]] SamplerState linearSampler;
+[[fx::shader_constant]] WorldData worldData;
+[[fx::shader_constant]] LightingData lightingData[];
 
 struct VS_INPUT {
     float3 position : POSITION;

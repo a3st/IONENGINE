@@ -1,96 +1,71 @@
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
+#include "compiler.hpp"
+#include "fx.hpp"
 #include "precompiled.h"
-#include <d3d12.h>
-#include <d3d12shader.h>
-#include <dxcapi.h>
-#include <dxgi1_4.h>
-#include <winrt/base.h>
+#include <argh.h>
 
-#pragma comment(lib, "dxcompiler.lib")
-#pragma comment(lib, "dxgi.lib")
-
-auto read_file(std::filesystem::path const& file_path) -> std::vector<uint8_t>
-{
-    std::vector<uint8_t> out;
-    {
-        std::basic_ifstream<uint8_t> stream(file_path, std::ios::binary);
-        stream.seekg(0, std::ios::end);
-        uint64_t const offset = stream.tellg();
-        out.resize(offset);
-        stream.seekg(0, std::ios::beg);
-        stream.read(out.data(), out.size());
-    }
-    return out;
-}
+namespace shaderc = ionengine::tools::shaderc;
 
 auto main(int32_t argc, char** argv) -> int32_t
 {
-    winrt::com_ptr<IDxcCompiler3> compiler;
-    ::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void());
+    argh::parser commandLine(argc, argv, argh::parser::PREFER_PARAM_FOR_UNREG_OPTION);
 
-    auto source = read_file("shader.hlsl");
+    std::cout << "Tools for IONENGINE > Shader Compiler" << std::endl;
+    std::cout << "Copyright (R) Dmitriy Lukovenko. All rights reserved." << std::endl;
+    std::cout << std::endl;
 
-    DxcBuffer buffer;
-    buffer.Ptr = source.data();
-    buffer.Size = source.size();
-    buffer.Encoding = DXC_CP_ACP;
-
-    std::vector<LPCWSTR> arguments;
-    arguments.emplace_back(L"-T vs_6_0");
-    arguments.emplace_back(L"-E vs_main");
-    arguments.emplace_back(DXC_ARG_OPTIMIZATION_LEVEL3);
-
-    winrt::com_ptr<IDxcResult> result;
-    compiler->Compile(&buffer, arguments.data(), static_cast<uint32_t>(arguments.size()), nullptr, __uuidof(IDxcResult),
-                      result.put_void());
-
-    winrt::com_ptr<IDxcBlobUtf8> errors;
-    result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), errors.put_void(), nullptr);
-
-    if (errors && errors->GetStringLength() > 0)
+    if (commandLine[{"-help", "--help"}])
     {
-        std::cerr << std::string_view(reinterpret_cast<char*>(errors->GetBufferPointer()), errors->GetBufferSize())
-                  << std::endl;
-        return EXIT_FAILURE;
+        std::cout << "usage: shaderc <command> [arguments] input_file" << std::endl;
+        std::cout << std::endl;
+        std::cout << "-target (--target)" << "\t\t\t" << "Compilation target" << std::endl;
+        std::cout << "\t\t\t\t\t" << "Available parameters: SPIRV, DXIL" << std::endl << std::endl;
+        std::cout << "-output (--output)" << "\t\t\t" << "Compilation output path (Optional)" << std::endl;
+        return EXIT_SUCCESS;
     }
 
-    winrt::com_ptr<IDxcBlob> shader;
-    result->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), shader.put_void(), nullptr);
-
-    D3D12_SHADER_BYTECODE d3d12_shader_bytecode;
-    d3d12_shader_bytecode.pShaderBytecode = shader->GetBufferPointer();
-    d3d12_shader_bytecode.BytecodeLength = shader->GetBufferSize();
-
-    winrt::com_ptr<IDxcUtils> utils;
-    ::DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), utils.put_void());
-
-    winrt::com_ptr<IDxcBlob> reflect;
-    result->GetOutput(DXC_OUT_REFLECTION, __uuidof(IDxcBlob), reflect.put_void(), nullptr);
-
-    DxcBuffer reflect_buffer;
-    reflect_buffer.Ptr = reflect->GetBufferPointer();
-    reflect_buffer.Size = reflect->GetBufferSize();
-    reflect_buffer.Encoding = DXC_CP_ACP;
-
-    winrt::com_ptr<ID3D12ShaderReflection> shader_reflection;
-    utils->CreateReflection(
-        &reflect_buffer, 
-        __uuidof(ID3D12ShaderReflection), 
-        shader_reflection.put_void()
-    );
-
-    D3D12_SHADER_DESC d3d12_shader_desc;
-    shader_reflection->GetDesc(&d3d12_shader_desc);
-
-    for (uint32_t const index : std::views::iota(0u, d3d12_shader_desc.ConstantBuffers))
+    std::string target;
+    if (!(commandLine({"-target", "--target"}) >> target))
     {
-        D3D12_SHADER_BUFFER_DESC d3d12_shader_buffer_desc;
-        shader_reflection->GetConstantBufferByIndex(0)->GetDesc(&d3d12_shader_buffer_desc);
-
-        std::cout << std::format("BufferName: {}, BufferSize: {}", 
-                                 d3d12_shader_buffer_desc.Name,
-                                 d3d12_shader_buffer_desc.Size)
-                  << std::endl;
+        std::cerr << "ERROR: Missing parameters (-target, --target)" << std::endl;
+        return EXIT_SUCCESS;
     }
+
+    std::string input;
+    if (!(commandLine(1) >> input))
+    {
+        std::cerr << "ERROR: Missing input file" << std::endl;
+        return EXIT_SUCCESS;
+    }
+
+    std::string output;
+    if (!(commandLine({"-output", "--output"}) >> output))
+    {
+        output = (std::filesystem::path(input).parent_path() / std::filesystem::path(input).stem()).string() + ".bin";
+    }
+
+    shaderc::FXCompiler fxCompiler;
+    fxCompiler.addIncludePath(std::filesystem::path(input).parent_path());
+
+    std::unique_ptr<shaderc::ShaderCompiler> shaderCompiler;
+
+    if (target.compare("DXIL") == 0)
+    {
+        shaderCompiler = std::make_unique<shaderc::DXC>();
+    }
+    else if (target.compare("SPIRV") == 0)
+    {
+        std::cout << "WARNING: This target is not currently supported by the compiler" << std::endl;
+        return EXIT_SUCCESS;
+    }
+    else
+    {
+        std::cerr << "ERROR: Invalid target parameter (see -help, --help)" << std::endl;
+        return EXIT_SUCCESS;
+    }
+
+    std::string errors;
+    fxCompiler.compile(*shaderCompiler, input, output, errors);
     return EXIT_SUCCESS;
 }
