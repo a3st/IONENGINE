@@ -31,6 +31,25 @@ namespace ionengine::rhi::fx
     }
 
     template <>
+    auto toString(ShaderStageType const type) -> std::string
+    {
+        switch (type)
+        {
+            case ShaderStageType::Vertex: {
+                return "vertexShader";
+            }
+            case ShaderStageType::Pixel: {
+                return "pixelShader";
+            }
+            case ShaderStageType::Compute: {
+                return "computeShader";
+            }
+        }
+
+        throw std::invalid_argument("Passed invalid argument into function");
+    }
+
+    template <>
     auto toString(ShaderElementType const type) -> std::string
     {
         switch (type)
@@ -81,6 +100,27 @@ namespace ionengine::rhi::fx
 
     template <typename Type>
     auto fromString(std::string_view const type) -> Type;
+
+    template <>
+    auto fromString(std::string_view const type) -> ShaderStageType
+    {
+        if (type.compare("vertexShader") == 0)
+        {
+            return ShaderStageType::Vertex;
+        }
+        else if (type.compare("pixelShader") == 0)
+        {
+            return ShaderStageType::Pixel;
+        }
+        else if (type.compare("computeShader") == 0)
+        {
+            return ShaderStageType::Compute;
+        }
+        else
+        {
+            throw std::invalid_argument("Passed invalid argument into function");
+        }
+    }
 
     template <>
     auto fromString(std::string_view const type) -> ShaderElementType
@@ -284,7 +324,7 @@ namespace ionengine::rhi::fx
             }
 
             ShaderStageData stageData = {.buffer = static_cast<int32_t>(buffer), .entryPoint = std::string(entryPoint)};
-            object.technique.stages.emplace(stageName, stageData);
+            object.technique.stages.emplace(fromString<ShaderStageType>(stageName), stageData);
         }
 
         if (!isComputeShader)
@@ -424,9 +464,9 @@ namespace ionengine::rhi::fx
         {
             std::stringstream stream(std::ios::out);
             stream << "{\"technique\":{";
-            for (auto const& [stageName, stageInfo] : object.technique.stages)
+            for (auto const& [stageType, stageInfo] : object.technique.stages)
             {
-                stream << "\"" + stageName + "\":{\"buffer\":" + std::to_string(stageInfo.buffer) +
+                stream << "\"" + toString(stageType) + "\":{\"buffer\":" + std::to_string(stageInfo.buffer) +
                               ",\"entryPoint\":\"" + stageInfo.entryPoint + "\"},";
             }
 

@@ -15,3 +15,4 @@ add_subdirectory(thirdparty/googletest)
 add_subdirectory(thirdparty/argh)
 
 add_subdirectory(tools)
+add_subdirectory(engine)

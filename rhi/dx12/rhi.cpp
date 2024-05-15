@@ -1623,7 +1623,6 @@ namespace ionengine::rhi
 
         THROW_IF_FAILED(D3D12MA::CreateAllocator(&d3d12ma_allocator_desc, memory_allocator.put()));
 
-        // memory_allocator = core::make_ref<MemoryAllocator>(device.get(), 1024 * 1024, 64 * 1024 * 1024);
         pipeline_cache = core::make_ref<PipelineCache>(device.get());
 
         if (window)

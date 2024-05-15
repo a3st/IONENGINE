@@ -1,0 +1,5 @@
+{
+    "componentName": "Multiply",
+    "group": "Math",
+    "shaderCodePath": "multiply.hlsl"
+}

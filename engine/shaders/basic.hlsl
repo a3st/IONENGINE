@@ -8,6 +8,12 @@ struct WorldData {
     float4x4 projection;
 };
 
+struct MaterialData {
+    uint diffuse;
+    uint normal;
+    uint roughness;
+};
+
 struct LightingData {
     float distance;
     float3 position;
@@ -35,10 +41,11 @@ struct VS_OUTPUT {
 };
 
 VS_OUTPUT vs_main(VS_INPUT input) {
+    ConstantBuffer<WorldData> worldDataCB = ResourceDescriptorHeap[shaderData.worldData];
+
     VS_OUTPUT output;
-    float4 world_pos = mul(ConstantBuffer<WorldData>(ResourceDescriptorHeap[shaderData.worldData]).model, float4(input.position, 1.0f));
-    output.position = mul(ConstantBuffer<WorldData>(ResourceDescriptorHeap[shaderData.worldData]).projection, 
-        mul(ConstantBuffer<WorldData>(ResourceDescriptorHeap[shaderData.worldData]).view, world_pos));
+    float4 world_pos = mul(worldDataCB.model, float4(input.position, 1.0f));
+    output.position = mul(worldDataCB.projection, mul(worldDataCB.view, world_pos));
     output.uv = float2(input.uv.x, input.uv.y);
     return output;
 }
@@ -48,7 +55,11 @@ struct PS_OUTPUT {
 };
 
 PS_OUTPUT ps_main(VS_OUTPUT input) {
+    ConstantBuffer<MaterialData> materialDataCB = ResourceDescriptorHeap[shaderData.materialData];
+    Texture2D diffuseTex = ResourceDescriptorHeap[NonUniformResourceIndex(materialDataCB.diffuse)];
+    SamplerState linearSamplerSS = SamplerDescriptorHeap[NonUniformResourceIndex(shaderData.linearSampler)];
+
     PS_OUTPUT output;
-    output.color = float4(0.2f, 0.3f, 0.1f, 1.0f);
+    output.color = diffuseTex.Sample(linearSamplerSS, input.uv);
     return output;
 };

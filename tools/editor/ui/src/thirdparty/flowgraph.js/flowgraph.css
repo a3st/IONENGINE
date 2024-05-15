@@ -1,0 +1,236 @@
+.flowgraph-container {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.flowgraph-canvas {
+    position: relative;
+    overflow: hidden;
+}
+
+.flowgraph-vectorlayer {
+    display: block;
+    position: absolute;
+    overflow: hidden;
+}
+
+.flowgraph-bg-container {
+    position: absolute;
+    display: block;
+
+    --grid-size: 30px;
+    --grid-strength: 1px;
+    --grid-dash: 10px;
+    --grid-gap: 5px;
+    --grid-color: #6e6e6e;
+    --paper-color: #353535;
+
+    background-color: var(--paper-color);
+    background-size: var(--grid-dash) var(--grid-dash), var(--grid-size) var(--grid-size);
+    background-image:
+        linear-gradient(to bottom, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
+        linear-gradient(to right, var(--grid-color) var(--grid-strength), transparent var(--grid-strength)),
+        linear-gradient(to right, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
+        linear-gradient(to bottom, var(--grid-color) var(--grid-strength), transparent var(--grid-strength));
+}
+
+.flowgraph-node-container {
+    position: absolute;
+    display: block;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    user-select: none;
+    background-color: rgb(69, 78, 98);
+    border: 1px solid rgba(0, 0, 0, 0.395);
+}
+
+.flowgraph-node-container.selected {
+    outline: rgb(42, 143, 42) solid 2.5px;
+}
+
+.flowgraph-node-container.focused {
+    outline: rgb(180, 180, 180) solid 2.5px;
+}
+
+.flowgraph-node-root {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.flowgraph-node-main {
+    display: flex;
+    height: 100%;
+    flex-direction: row;
+    padding: 15px;
+}
+
+.flowgraph-node-header {
+    background-color: #448fd6;
+    display: flex;
+    padding: 20px;
+}
+
+.flowgraph-node-footer {
+    background-color: #448fd6;
+    display: flex;
+    padding: 5px;
+}
+
+.flowgraph-io-list {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.flowgraph-io-row {
+    display: inline-flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.flowgraph-io-row.left {
+    justify-content: start;
+}
+
+.flowgraph-io-row.right {
+    justify-content: end;
+}
+
+.flowgraph-io.circle {
+    display: block;
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    background-color: #ffffff;
+}
+
+.flowgraph-io.connected {
+    background-color: rgb(42, 143, 42);
+    outline: #ffffff solid 2.5px;
+}
+
+.flowgraph-context-container {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    width: 230px;
+    height: 200px;
+    z-index: 1;
+}
+
+.flowgraph-context-search {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    background-color: rgb(245, 245, 245);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.395);
+    padding: 5px;
+    margin-bottom: 5px;
+}
+
+.flowgraph-context-search input {
+    outline: none;
+    width: 100%;
+    border: none;
+    background-color: rgb(245, 245, 245);
+}
+
+.flowgraph-context-main {
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+    max-height: calc(100% - 15px);
+    overflow-y: auto;
+    background-color: rgb(245, 245, 245);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.395);
+}
+
+.flowgraph-context-main::-webkit-scrollbar {
+    width: 6px;
+}
+
+.flowgraph-context-main::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.flowgraph-context-main::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 2px;
+}
+
+.flowgraph-context-main::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.flowgraph-context-main label {
+    text-align: left;
+    text-indent: 10px;
+    font-size: 16px;
+    color: black;
+}
+
+.flowgraph-context-group {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid rgb(180, 180, 180);
+}
+
+.flowgraph-context-group button:first-child {
+    margin-top: 5px;
+}
+
+.flowgraph-context-group button:last-child {
+    margin-bottom: 5px;
+}
+
+.flowgraph-context-group button {
+    outline: none;
+    border: none;
+    border-radius: 4px;
+    padding: 5px;
+    text-align: left;
+    text-indent: 15px;
+    background-color: rgb(245, 245, 245);
+    font-size: 14px;
+}
+
+.flowgraph-context-group button:hover {
+    background-color: rgb(210, 210, 210);
+}
+
+.flowgraph-info-container {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    width: 200px;
+    height: 60px;
+    user-select: none;
+}
+
+.flowgraph-info-main {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.flowgraph-info-main span {
+    color: white;
+    font-size: 22px;
+}

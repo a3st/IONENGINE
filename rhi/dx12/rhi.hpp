@@ -12,9 +12,6 @@
 #include <dxgi1_4.h>
 #include <winrt/base.h>
 
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
-
 #ifndef THROW_IF_FAILED
 #define THROW_IF_FAILED(Result)                                                                                        \
     if (FAILED(Result))                                                                                                \

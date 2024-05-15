@@ -7,17 +7,16 @@
 
 namespace ionengine
 {
-    Engine::Engine(core::ref_ptr<platform::Window> window)
-        : window(window), device(window), shader_manager(device), asset_loader(device), renderer(device)
+    Engine::Engine(platform::Window* window) : window(window), device(window)
     {
     }
 
     auto Engine::tick() -> void
     {
         update(0.0f);
-        device.begin_frame();
+        device.beginFrame();
         render();
-        device.end_frame();
+        device.endFrame();
     }
 
     auto Engine::run() -> int32_t
@@ -28,14 +27,14 @@ namespace ionengine
 
             if (window)
             {
-                bool is_running = true;
+                bool isRunning = true;
                 platform::WindowEvent event;
-                while (is_running)
+                while (isRunning)
                 {
                     while (window->try_get_event(event))
                     {
                         utils::variant_match(event).case_<platform::WindowEventData<platform::WindowEventType::Closed>>(
-                            [&](auto& data) { is_running = false; });
+                            [&](auto& data) { isRunning = false; });
                     }
 
                     tick();
@@ -53,7 +52,7 @@ namespace ionengine
         }
     }
 
-    auto Engine::create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)
+    /*auto Engine::create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)
         -> core::ref_ptr<Texture>
     {
         auto texture = core::make_ref<Texture>(device);
@@ -66,5 +65,5 @@ namespace ionengine
         auto material = core::make_ref<Material>(device, shader_manager);
         material->create_using_shader(shader_name);
         return material;
-    }
+    }*/
 } // namespace ionengine

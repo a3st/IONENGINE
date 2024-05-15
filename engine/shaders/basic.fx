@@ -37,9 +37,9 @@ struct PS_OUTPUT {
 
 PS_OUTPUT ps_main(VS_OUTPUT input) {
     PS_OUTPUT output;
-    output.color = float4(0.2f, 0.3f, 0.1f, 1.0f);
+    output.color = materialData.diffuse.Sample(linearSampler, input.uv).rgba;
     return output;
-};
+}
 
 technique {
     pass {

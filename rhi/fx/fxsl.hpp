@@ -91,7 +91,7 @@ namespace ionengine::rhi::fx
 
     struct ShaderTechniqueData
     {
-        std::unordered_map<std::string, ShaderStageData> stages;
+        std::unordered_map<ShaderStageType, ShaderStageData> stages;
         bool depthWrite;
         bool stencilWrite;
         ShaderCullSide cullSide;

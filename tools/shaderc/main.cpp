@@ -1,6 +1,5 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "compiler.hpp"
 #include "fx.hpp"
 #include "precompiled.h"
 #include <argh.h>
@@ -48,11 +47,8 @@ auto main(int32_t argc, char** argv) -> int32_t
     shaderc::FXCompiler fxCompiler;
     fxCompiler.addIncludePath(std::filesystem::path(input).parent_path());
 
-    std::unique_ptr<shaderc::ShaderCompiler> shaderCompiler;
-
     if (target.compare("DXIL") == 0)
     {
-        shaderCompiler = std::make_unique<shaderc::DXC>();
     }
     else if (target.compare("SPIRV") == 0)
     {
@@ -66,6 +62,13 @@ auto main(int32_t argc, char** argv) -> int32_t
     }
 
     std::string errors;
-    fxCompiler.compile(*shaderCompiler, input, output, errors);
+    if (fxCompiler.compile(input, output, errors))
+    {
+        std::cout << "Out: " << std::filesystem::path(output).generic_string() << std::endl;
+    }
+    else
+    {
+        std::cerr << "Compilation error: " << errors << std::endl;
+    }
     return EXIT_SUCCESS;
 }

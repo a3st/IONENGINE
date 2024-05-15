@@ -2,10 +2,7 @@
 
 #pragma once
 
-#include "asset_loader.hpp"
-#include "linked_device.hpp"
-#include "renderer.hpp"
-#include "shader_manager.hpp"
+#include "renderer/linked_device.hpp"
 
 namespace ionengine
 {
@@ -17,14 +14,14 @@ namespace ionengine
     class Engine : public core::ref_counted_object
     {
       public:
-        Engine(core::ref_ptr<platform::Window> window);
+        Engine(platform::Window* window);
 
         auto tick() -> void;
 
         auto run() -> int32_t;
 
       private:
-        core::ref_ptr<platform::Window> window;
+        platform::Window* window;
         LinkedDevice device;
 
       protected:
@@ -34,13 +31,13 @@ namespace ionengine
 
         virtual auto render() -> void = 0;
 
-        auto create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)
+        /*auto create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)
             -> core::ref_ptr<Texture>;
 
-        auto create_material(std::string_view const shader_name) -> core::ref_ptr<Material>;
+        auto create_material(std::string_view const shader_name) -> core::ref_ptr<Material>;*/
 
-        ShaderManager shader_manager;
-        AssetLoader asset_loader;
-        Renderer renderer;
+        //ShaderManager shader_manager;
+        //AssetLoader asset_loader;
+        //Renderer renderer;
     };
 } // namespace ionengine
