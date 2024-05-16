@@ -22,6 +22,14 @@ module.exports = {
                         {
                             source: path.join(__dirname, 'src', 'thirdparty', 'flowgraph.js', 'search.svg'),
                             destination: path.join(__dirname, '../../../build/tools/resources/images/search.svg')
+                        },
+                        {
+                            source: path.join(__dirname, 'src', 'thirdparty', 'flowgraph.js', 'angle-down.svg'),
+                            destination: path.join(__dirname, '../../../build/tools/resources/images/angle-down.svg')
+                        },
+                        {
+                            source: path.join(__dirname, 'src', 'thirdparty', 'flowgraph.js', 'angle-up.svg'),
+                            destination: path.join(__dirname, '../../../build/tools/resources/images/angle-up.svg')
                         }
                     ]
                 }

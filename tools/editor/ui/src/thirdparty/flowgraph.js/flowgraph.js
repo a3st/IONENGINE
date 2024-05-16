@@ -800,31 +800,82 @@ export default class FlowGraph {
             outputIndex += 1;
         }
 
-        let nodeHeight = 110 + Math.max(outputs.length * 20, inputs.length * 20) + 50;
+        let nodeWidth = 110 + Math.min(1, outputs.length) * 120 + Math.min(1, inputs.length) * 120;
+        let nodeHeight = 70 + Math.max(outputs.length * 22, inputs.length * 22) + 50;
+
+        let bodyHTML = "";
+        if (inputsHTML.length > 0) {
+            bodyHTML += `
+                <div class="flowgraph-io-list">
+                    ${inputsHTML}
+                </div>
+            `;
+        }
+        if (outputsHTML.length > 0) {
+            bodyHTML += `
+                <div class="flowgraph-io-list">
+                    ${outputsHTML}
+                </div>
+            `;
+        }
 
         $(this.rootNode).children('.flowgraph-canvas').append(`
-            <div id="node_${this.nodeIndex}" class="flowgraph-node-container" style="width: 350px; height: ${nodeHeight}px;"> 
+            <div id="node_${this.nodeIndex}" class="flowgraph-node-container" style="width: ${nodeWidth}px; height: ${nodeHeight}px;"> 
                 <div class="flowgraph-node-root">
                     <div class="flowgraph-node-header">
                         ${headerHTML}
                     </div>
 
                     <div class="flowgraph-node-main">
-                        <div class="flowgraph-io-list">
-                            ${inputsHTML}
-                        </div>
-
-                        <div class="flowgraph-io-list">
-                            ${outputsHTML}
-                        </div>
+                        ${bodyHTML}
                     </div>
 
                     <div class="flowgraph-node-footer">
-                        Expand
+                        <div class="flowgraph-expand-container">
+                            <object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>
+                        </div>
+                    </div>
+
+                    <div class="flowgraph-hidden-container" style="display: none;">
+                        
                     </div>
                 </div>
             </div>
         `);
+
+        let curNodeIndex = this.nodeIndex;
+        $(`#node_${this.nodeIndex}`).find('.flowgraph-expand-container').bind(
+            'click',
+            e => {
+                if (this.nodes[curNodeIndex].expanded) {
+                    let nodeHeight = 50 + Math.max(
+                        Object.keys(this.nodes[curNodeIndex].outputs).length * 22,
+                        Object.keys(this.nodes[curNodeIndex].inputs).length * 22) + 50;
+
+                    $(`#node_${curNodeIndex}`).css('height', `${nodeHeight}px`);
+                    $(`#node_${curNodeIndex}`)
+                        .find('.flowgraph-hidden-container')
+                        .css('display', 'none');
+                    $(`#node_${curNodeIndex}`)
+                        .find('.flowgraph-expand-container')
+                        .children('object')
+                        .replaceWith('<object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>');
+                } else {
+                    let nodeHeight = 50 + Math.max(
+                        Object.keys(this.nodes[curNodeIndex].outputs).length * 22,
+                        Object.keys(this.nodes[curNodeIndex].inputs).length * 22) + 50 + 300;
+
+                    $(`#node_${curNodeIndex}`).css('height', `${nodeHeight}px`);
+                    $(`#node_${curNodeIndex}`)
+                        .find('.flowgraph-hidden-container')
+                        .css('display', 'flex');
+                    $(`#node_${curNodeIndex}`)
+                        .find('.flowgraph-expand-container')
+                        .children('object')
+                        .replaceWith('<object data="images/angle-up.svg" width="16" height="16" style="pointer-events: none;"></object>');
+                }
+                this.nodes[curNodeIndex].expanded = !this.nodes[curNodeIndex].expanded;
+            });
 
         $(`#node_${this.nodeIndex}`).css('transform', `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
 
@@ -832,7 +883,8 @@ export default class FlowGraph {
             "id": this.nodeIndex,
             "position": [x, y],
             "inputs": inputsData,
-            "outputs": outputsData
+            "outputs": outputsData,
+            "expanded": false
         };
 
         this.nodeIndex += 1;
