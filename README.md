@@ -1,5 +1,4 @@
 # <p align="center"> IONENGINE </p>
-## <p align="center"> Modular Game Engine </p>
 
 *WARNING* THE PROJECT STILL IN DEVELOPMENT
 
@@ -7,60 +6,33 @@
 
 ### Core
 
-- [x] smart pointer
-- [x] exception
-- [ ] thread pool
+- [x] Smart Pointer
+- [x] Exception
 
 ### Math
 
-- [x] matrix
-- [x] vector
-- [x] quaternion
+- [x] Matrix
+- [x] Vector
+- [x] Quaternion
 
 ### Platform
 
-- [x] windowing, events
+- [x] Windowing, Events
 
-### Renderer
+### Tools
 
-- [ ] high level RHI (DirectX12 only, if you want support me, you can pull request with your backend)
-- [x] render graph
-- [x] primitive
-- [ ] camera
-- [ ] render task
-- [ ] texture cache
-- [ ] shader cache
-- [ ] primitive cache
-- [ ] render queue
-- [ ] render pipeline (for a custom render realization)
-
-### Asset System
-
-- [ ] ktx2 loader
-- [ ] glb (gltf binary) loader
-- [ ] model
-- [ ] texture
-- [ ] asset system
-- [ ] future
-
-### Scene
-
-- [ ] scene graph
-- [ ] basic components
-
-### Engine
-
-- [ ] engine
-
-### Python integration
-
-- [ ] engine
-- [ ] asset system
-- [ ] renderer
-- [ ] scene
+- [x] FXSL Compiler
+- [ ] Editor
 
 ## Thirdparty
 
 - [simdjson](https://github.com/simdjson/simdjson)
 - [xxhash](https://github.com/Cyan4973/xxHash)
-- [pybind11](https://github.com/pybind/pybind11)
+- [libwebview](https://github.com/a3st/libwebview)
+- [d3d12ma](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator)
+- [libpng](https://github.com/pnggroup/libpng)
+- [tinygltf](https://github.com/syoyo/tinygltf)
+- [googletest](https://github.com/google/googletest)
+- [argh](https://github.com/adishavit/argh)
+- [base64pp](https://github.com/matheusgomes28/base64pp)
+- [dxc](https://github.com/microsoft/DirectXShaderCompiler)

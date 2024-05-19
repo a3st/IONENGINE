@@ -10,7 +10,7 @@ namespace ionengine::tools::editor
     {
       public:
         Texture2DNode(uint64_t const nodeID, uint32_t const posX, uint32_t const posY)
-            : Node(nodeID, "Texture2D", posX, posY, {}, {{"Texture", "Texture2D"}})
+            : Node(nodeID, "Texture2D", posX, posY, {}, {{"Texture", "Texture2D"}}, true)
         {
         }
 

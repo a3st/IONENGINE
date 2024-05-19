@@ -29,7 +29,8 @@ namespace ionengine::tools::editor
 
             stream << "{\"nodeID\":" << node->getNodeID() << ",\"nodeName\":\"" << node->getNodeName()
                    << "\",\"position\":[" << std::to_string(std::get<0>(node->getPosition())) << ","
-                   << std::to_string(std::get<1>(node->getPosition())) << "],\"inputs\":[";
+                   << std::to_string(std::get<1>(node->getPosition())) << "],\"isExpand\":" << node->isExpanded()
+                   << ",\"inputs\":[";
 
             isFirst = true;
             for (auto const& socket : node->getInputSockets())

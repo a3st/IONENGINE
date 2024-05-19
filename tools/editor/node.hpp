@@ -16,7 +16,8 @@ namespace ionengine::tools::editor
         };
 
         Node(uint64_t const nodeID, std::string_view const nodeName, uint32_t const posX, uint32_t const posY,
-             std::vector<NodeSocketInfo> const& inputs, std::vector<NodeSocketInfo> const& outputs);
+             std::vector<NodeSocketInfo> const& inputs, std::vector<NodeSocketInfo> const& outputs,
+             bool const isExpand);
 
         auto getNodeID() const -> uint64_t;
 
@@ -27,6 +28,8 @@ namespace ionengine::tools::editor
         auto getOutputSockets() const -> std::span<NodeSocketInfo const> const;
 
         auto getPosition() const -> std::tuple<uint32_t, uint32_t>;
+
+        auto isExpanded() const -> bool;
 
         virtual auto generateInitialShaderCode() -> std::string = 0;
 
@@ -41,5 +44,6 @@ namespace ionengine::tools::editor
         std::vector<NodeSocketInfo> outputs;
         uint32_t posX;
         uint32_t posY;
+        bool isExpand;
     };
 } // namespace ionengine::tools::editor

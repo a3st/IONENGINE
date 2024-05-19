@@ -6,8 +6,10 @@
 namespace ionengine::tools::editor
 {
     Node::Node(uint64_t const nodeID, std::string_view const nodeName, uint32_t const posX, uint32_t const posY,
-               std::vector<NodeSocketInfo> const& inputs, std::vector<NodeSocketInfo> const& outputs)
-        : nodeID(nodeID), nodeName(nodeName), posX(posX), posY(posY), inputs(inputs), outputs(outputs)
+               std::vector<NodeSocketInfo> const& inputs, std::vector<NodeSocketInfo> const& outputs,
+               bool const isExpand)
+        : nodeID(nodeID), nodeName(nodeName), posX(posX), posY(posY), inputs(inputs), outputs(outputs),
+          isExpand(isExpand)
     {
     }
 
@@ -34,5 +36,10 @@ namespace ionengine::tools::editor
     auto Node::getPosition() const -> std::tuple<uint32_t, uint32_t>
     {
         return {posX, posY};
+    }
+
+    auto Node::isExpanded() const -> bool
+    {
+        return isExpand;
     }
 } // namespace ionengine::tools::editor
