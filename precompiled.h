@@ -31,6 +31,7 @@
 #include <variant>
 #include <vector>
 #include <set>
+#include <stack>
 
 #ifndef DECLARE_ENUM_CLASS_BIT_FLAG
 #define DECLARE_ENUM_CLASS_BIT_FLAG(EnumClass)                                                                         \

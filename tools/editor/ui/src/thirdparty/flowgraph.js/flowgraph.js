@@ -944,7 +944,6 @@ export default class FlowGraph {
 
         const connectionsIds = Object.keys(this.connectionsCache).map(key => parseInt(key));
         const nodesIds = Object.keys(this.nodesCache).map(key => parseInt(key));
-        
-        this.lastCreatedId = Math.max(connectionsIds, nodesIds) + 1;
+        this.lastCreatedId = Math.max(...connectionsIds, ...nodesIds) + 1;
     }
 }

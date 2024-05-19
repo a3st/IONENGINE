@@ -32,7 +32,7 @@ namespace ionengine::tools::editor
 
         virtual auto generateResourceShaderCode() -> std::string = 0;
 
-        virtual auto generateRepeatShaderCode() -> std::string = 0;
+        virtual auto generateComputeShaderCode() -> std::string = 0;
 
       private:
         uint64_t nodeID;
@@ -41,6 +41,5 @@ namespace ionengine::tools::editor
         std::vector<NodeSocketInfo> outputs;
         uint32_t posX;
         uint32_t posY;
-        std::string shaderCode;
     };
 } // namespace ionengine::tools::editor

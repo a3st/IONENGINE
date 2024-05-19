@@ -8,10 +8,10 @@
             "name": "(Windows) Launch Engine",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/shaderc.exe",
+            "program": "${workspaceFolder}/build/tools/editor.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build",
+            "cwd": "${workspaceFolder}/build/tools",
             "environment": [],
             "console": "integratedTerminal"
         },

@@ -32,7 +32,7 @@ namespace ionengine::tools::editor
       private:
         std::vector<core::ref_ptr<Node>> nodes;
         std::vector<core::ref_ptr<Connection>> connections;
-        std::unordered_map<uint64_t, std::vector<uint64_t>> connectionsOfNodes;
+        std::unordered_map<uint64_t, std::vector<size_t>> connectionsOfNodes;
         uint64_t allocIDIndex;
 
         auto addNodeToScene(core::ref_ptr<Node> node) -> void;

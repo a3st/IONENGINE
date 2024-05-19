@@ -5,9 +5,9 @@
 
 namespace ionengine::tools::editor
 {
-    Connection::Connection(uint64_t const connectionID, uint64_t const sourceNode, uint64_t const sourceIndex,
-                           uint64_t const destNodeID, uint64_t const destIndex)
-        : connectionID(connectionID), sourceNodeID(sourceNode), sourceIndex(sourceIndex), destNodeID(destNodeID),
+    Connection::Connection(uint64_t const connectionID, core::ref_ptr<Node> sourceNode, uint64_t const sourceIndex,
+                           core::ref_ptr<Node> destNode, uint64_t const destIndex)
+        : connectionID(connectionID), sourceNode(sourceNode), sourceIndex(sourceIndex), destNode(destNode),
           destIndex(destIndex)
     {
     }
@@ -17,9 +17,9 @@ namespace ionengine::tools::editor
         return connectionID;
     }
 
-    auto Connection::getSourceNodeID() const -> uint64_t
+    auto Connection::getSourceNode() const -> core::ref_ptr<Node>
     {
-        return sourceNodeID;
+        return sourceNode;
     }
 
     auto Connection::getSourceIndex() const -> uint64_t
@@ -27,9 +27,9 @@ namespace ionengine::tools::editor
         return sourceIndex;
     }
 
-    auto Connection::getDestNodeID() const -> uint64_t
+    auto Connection::getDestNode() const -> core::ref_ptr<Node>
     {
-        return destNodeID;
+        return destNode;
     }
 
     auto Connection::getDestIndex() const -> uint64_t

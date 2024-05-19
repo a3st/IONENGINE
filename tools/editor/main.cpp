@@ -69,9 +69,9 @@ auto main(int32_t argc, char** argv) -> int32_t
         editor::Scene scene;
 
         app.bind("newTestScene", [&](libwebview::EventArgs const& e) {
+            auto outputNode = scene.createNode<editor::OutputNode>(600, 10);
             auto textureNode = scene.createNode<editor::Texture2DNode>(10, 10);
             auto samplerNode = scene.createNode<editor::Sampler2DNode>(400, 10);
-            auto outputNode = scene.createNode<editor::OutputNode>(600, 10);
 
             scene.createConnection(textureNode, 0, samplerNode, 1);
             scene.createConnection(samplerNode, 0, outputNode, 0);

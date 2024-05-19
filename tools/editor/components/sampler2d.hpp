@@ -27,10 +27,10 @@ namespace ionengine::tools::editor
             return "";
         }
 
-        auto generateRepeatShaderCode() -> std::string override
+        auto generateComputeShaderCode() -> std::string override
         {
             return R"(
-                
+                ##Texture##.Sample(linearSampler, UV).rgba
             )";
         }
     };

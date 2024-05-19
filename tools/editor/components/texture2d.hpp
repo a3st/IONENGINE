@@ -19,16 +19,17 @@ namespace ionengine::tools::editor
             return "";
         }
 
-        auto generateResourceShaderCode() -> std::string override {
+        auto generateResourceShaderCode() -> std::string override
+        {
             return R"(
                 [fx::shader_constant]
                 Texture2D ##textureName##Tex;
             )";
         }
 
-        auto generateRepeatShaderCode() -> std::string override
+        auto generateComputeShaderCode() -> std::string override
         {
-            return "";
+            return "##textureName##Tex";
         }
     };
 } // namespace ionengine::tools::editor
