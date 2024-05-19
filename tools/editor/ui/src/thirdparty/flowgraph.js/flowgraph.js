@@ -14,11 +14,11 @@ export default class FlowGraph {
         this.height = height;
         this.canvasOptions = canvasOptions;
 
-        this.nodeIndex = 0;
-        this.nodes = {};
+        this.nodes = [];
+        this.nodesCache = {};
 
-        this.connectionIndex = 0;
-        this.connections = {};
+        this.connections = [];
+        this.connectionsCache = {};
 
         this.focusedElement = null;
         this.selectedElement = null;
@@ -32,6 +32,12 @@ export default class FlowGraph {
         this.lastClientY = 0;
 
         this.groups = {};
+
+        this.lastCreatedId = 0;
+    }
+
+    destructor() {
+
     }
 
     /**
@@ -107,7 +113,7 @@ export default class FlowGraph {
         });
         this.rootNode.addEventListener('mouseup', this.#dragNodeEndHandler.bind(this));
         this.rootNode.addEventListener('mousemove', this.#moveNodeHandler.bind(this));
-        this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
+        //this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
 
         document.addEventListener('keydown', this.#keyHandler.bind(this));
 
@@ -333,9 +339,9 @@ export default class FlowGraph {
                     if (connection) {
                         if (this.#nodeInputTypeCheck(sourceNode, outIndex, destNode, inIndex)) {
                             const connections = Object.values(this.connections).filter(
-                                value => (value.source == this.connections[connection.id].source && value.out == this.connections[connection.id].out));
+                                value => (value.source == this.connections[this.connectionsCache[connection.id]].source && value.out == this.connections[this.connectionsCache[connection.id]].out));
                             if (connections.length == 1) {
-                                $(`#node_${this.connections[connection.id].source}_out_${this.connections[connection.id].out}`)
+                                $(`#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`)
                                     .removeClass('connected')
                                     .get(0);
                             }
@@ -407,7 +413,7 @@ export default class FlowGraph {
     }
 
     #nodeInputTypeCheck(sourceNode, outIndex, destNode, inIndex) {
-        return this.nodes[sourceNode].outputs[outIndex].type == this.nodes[destNode].inputs[inIndex].type;
+        return this.nodes[this.nodesCache[sourceNode]].outputs[outIndex].type == this.nodes[this.nodesCache[destNode]].inputs[inIndex].type;
     }
 
     #moveNodeHandler(e) {
@@ -453,16 +459,16 @@ export default class FlowGraph {
                     const connections = Object.values(this.connections).filter(value => (value.source == nodeId || value.dest == nodeId));
 
                     for (const [_, value] of Object.entries(connections)) {
-                        const sourceElement = $(`#node_${this.connections[value.id].source}_out_${this.connections[value.id].out}`).get(0);
-                        const sourceMatrix = $(`#node_${this.connections[value.id].source}`)
+                        const sourceElement = $(`#node_${this.connections[this.connectionsCache[value.id]].source}_out_${this.connections[this.connectionsCache[value.id]].out}`).get(0);
+                        const sourceMatrix = $(`#node_${this.connections[this.connectionsCache[value.id]].source}`)
                             .css('transform')
                             .match(/-?[\d\.]+/g);
 
                         const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
                         const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
 
-                        const destElement = $(`#node_${this.connections[value.id].dest}_in_${this.connections[value.id].in}`).get(0);
-                        const destMatrix = $(`#node_${this.connections[value.id].dest}`)
+                        const destElement = $(`#node_${this.connections[this.connectionsCache[value.id]].dest}_in_${this.connections[this.connectionsCache[value.id]].in}`).get(0);
+                        const destMatrix = $(`#node_${this.connections[this.connectionsCache[value.id]].dest}`)
                             .css('transform')
                             .match(/-?[\d\.]+/g);
 
@@ -494,8 +500,8 @@ export default class FlowGraph {
                     const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
 
                     if (connection) {
-                        const sourceElement = $(`#node_${this.connections[connection.id].source}_out_${this.connections[connection.id].out}`).get(0);
-                        const sourceMatrix = $(`#node_${this.connections[connection.id].source}`)
+                        const sourceElement = $(`#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`).get(0);
+                        const sourceMatrix = $(`#node_${this.connections[this.connectionsCache[connection.id]].source}`)
                             .css('transform')
                             .match(/-?[\d\.]+/g);
 
@@ -582,19 +588,19 @@ export default class FlowGraph {
     }
 
     removeConnection(connectionId) {
-        if (this.connections[connectionId] == null) {
+        if (this.connectionsCache[connectionId] == null) {
             throw new Error("Connection with this ID does not exist");
         }
 
         const connections = Object.values(this.connections).filter(
-            value => (value.source == this.connections[connectionId].source && value.out == this.connections[connectionId].out));
+            value => (value.source == this.connections[this.connectionsCache[connectionId]].source && value.out == this.connections[this.connectionsCache[connectionId]].out));
         if (connections.length == 1) {
-            $(`#node_${this.connections[connectionId].source}_out_${this.connections[connectionId].out}`)
+            $(`#node_${this.connections[this.connectionsCache[connectionId]].source}_out_${this.connections[this.connectionsCache[connectionId]].out}`)
                 .removeClass('connected')
                 .get(0);
         }
 
-        $(`#node_${this.connections[connectionId].dest}_in_${this.connections[connectionId].in}`)
+        $(`#node_${this.connections[this.connectionsCache[connectionId]].dest}_in_${this.connections[this.connectionsCache[connectionId]].in}`)
             .removeClass('connected')
             .get(0);
 
@@ -606,7 +612,12 @@ export default class FlowGraph {
         let svgElement = vectorLayer.getElementById(`connection_${connectionId}`);
         svgElement.remove();
 
-        delete this.connections[connectionId];
+        this.connections.splice(this.connectionsCache[connectionId], 1);
+
+        this.connectionsCache = {};
+        for (let i = 0; i < this.connections.length; i++) {
+            this.connectionsCache[this.connections[i].id] = i;
+        }
     }
 
     #updateConnectionPosition(connectionId, sourceX, sourceY, destX, destY) {
@@ -673,7 +684,7 @@ export default class FlowGraph {
         const destX = Number(destMatrix[4]) + destElement.offsetLeft + destElement.offsetWidth / 2;
         const destY = Number(destMatrix[5]) + destElement.offsetTop + destElement.offsetHeight / 2;
 
-        this.connections[connectionId] = {
+        this.connections[this.connectionsCache[connectionId]] = {
             "id": connectionId,
             "source": sourceNodeId,
             "out": outIndex,
@@ -684,7 +695,7 @@ export default class FlowGraph {
         this.#updateConnectionPosition(connectionId, sourceX, sourceY, destX, destY);
     }
 
-    addConnection(sourceNodeId, outIndex, destNodeId, inIndex) {
+    #internalAddConnection(id, sourceNodeId, outIndex, destNodeId, inIndex) {
         if (!this.#nodeInputTypeCheck(sourceNodeId, outIndex, destNodeId, inIndex)) {
             throw new TypeError("Cannot join different data types");
         }
@@ -711,7 +722,7 @@ export default class FlowGraph {
 
         let svgElement = document.createElementNS("http://www.w3.org/2000/svg", 'path');
         svgElement.classList.add('flowgraph-connection');
-        svgElement.setAttribute('id', `connection_${this.connectionIndex}`);
+        svgElement.setAttribute('id', `connection_${id}`);
         svgElement.setAttribute('stroke', 'rgb(42, 143, 42)');
         svgElement.setAttribute('stroke-width', '8');
         svgElement.setAttribute('fill', 'transparent');
@@ -721,27 +732,32 @@ export default class FlowGraph {
             .children('.flowgraph-vectorlayer')
             .append(svgElement);
 
-        this.connections[this.connectionIndex] = {
-            "id": this.connectionIndex,
+        const size = this.connections.push({
+            "id": id,
             "source": sourceNodeId,
             "out": outIndex,
             "dest": destNodeId,
             "in": inIndex
-        };
+        });
 
-        this.#updateConnectionPosition(this.connectionIndex, sourceX, sourceY, destX, destY);
+        this.connectionsCache[id] = size - 1;
 
-        this.connectionIndex += 1;
-        return this.connections[this.connectionIndex - 1];
+        this.#updateConnectionPosition(id, sourceX, sourceY, destX, destY);
+    }
+
+    addConnection(sourceNodeId, outIndex, destNodeId, inIndex) {
+        const id = this.lastCreatedId;
+        this.#internalAddConnection(id, sourceNodeId, outIndex, destNodeId, inIndex);
+        this.lastCreatedId++;
     }
 
     removeNode(nodeId) {
-        if (this.nodes[nodeId] == null) {
+        if (this.nodesCache[nodeId] == null) {
             throw new Error("Node with this ID does not exist");
         }
 
         const connections = Object.values(this.connections).filter(value => (value.source == nodeId || value.dest == nodeId));
-        for (const [_, value] of Object.entries(connections)) {
+        for (const value of Object.values(connections)) {
             this.removeConnection(value.id);
         }
 
@@ -749,55 +765,33 @@ export default class FlowGraph {
             .get(0)
             .remove();
 
-        delete this.nodes[nodeId];
+        this.nodes.splice(this.nodesCache[nodeId], 1)
+
+        this.nodesCache = {};
+        for (let i = 0; i < this.nodes.length; i++) {
+            this.nodesCache[this.nodes[i].id] = i;
+        }
     }
 
-    /**
-     * Add node to graph
-     * @param {int} x - X node position
-     * @param {int} y - Y node position
-     * @param {map} inputs - Input parameters
-     * @param {map} outputs - Output parameters
-     * @param {string} headerHTML - Header in HTML
-     * @returns 
-     */
-    addNode(x, y, inputs, outputs, headerHTML) {
+    #internalAddNode(id, x, y, inputs, outputs, title) {
         let inputsHTML = "";
-        let inputIndex = 0;
-        let inputsData = {};
-
-        for (const input of inputs) {
+        for (let i = 0; i < inputs.length; i++) {
             inputsHTML += `
                 <div class="flowgraph-io-row left">
-                    <div id="node_${this.nodeIndex}_in_${inputIndex}" class="flowgraph-io circle"></div>
-                    <span style="color: white;">${input.name} (${input.type})</span>
+                    <div id="node_${id}_in_${i}" class="flowgraph-io circle"></div>
+                    <span style="color: white;">${inputs[i].name} (${inputs[i].type})</span>
                 </div>
             `;
-
-            inputsData[inputIndex] = {
-                "name": input.name, "type": input.type
-            }
-
-            inputIndex += 1;
         }
 
         let outputsHTML = "";
-        let outputIndex = 0;
-        let outputsData = {};
-
-        for (const output of outputs) {
+        for (let i = 0; i < outputs.length; i++) {
             outputsHTML += `
                 <div class="flowgraph-io-row right">
-                    <span style="color: white;">${output.name} (${output.type})</span>
-                    <div id="node_${this.nodeIndex}_out_${outputIndex}" class="flowgraph-io circle"></div>
+                    <span style="color: white;">${outputs[i].name} (${outputs[i].type})</span>
+                    <div id="node_${id}_out_${i}" class="flowgraph-io circle"></div>
                 </div>
             `;
-
-            outputsData[outputIndex] = {
-                "name": output.name, "type": output.type
-            }
-
-            outputIndex += 1;
         }
 
         let nodeWidth = 110 + Math.min(1, outputs.length) * 120 + Math.min(1, inputs.length) * 120;
@@ -820,10 +814,10 @@ export default class FlowGraph {
         }
 
         $(this.rootNode).children('.flowgraph-canvas').append(`
-            <div id="node_${this.nodeIndex}" class="flowgraph-node-container" style="width: ${nodeWidth}px; height: ${nodeHeight}px;"> 
+            <div id="node_${id}" class="flowgraph-node-container" style="width: ${nodeWidth}px; height: ${nodeHeight}px;"> 
                 <div class="flowgraph-node-root">
                     <div class="flowgraph-node-header">
-                        ${headerHTML}
+                        <span style="color: white;">${title}</span>
                     </div>
 
                     <div class="flowgraph-node-main">
@@ -843,51 +837,114 @@ export default class FlowGraph {
             </div>
         `);
 
-        let curNodeIndex = this.nodeIndex;
-        $(`#node_${this.nodeIndex}`).find('.flowgraph-expand-container').bind(
+        $(`#node_${id}`).find('.flowgraph-expand-container').bind(
             'click',
             e => {
-                if (this.nodes[curNodeIndex].expanded) {
+                if (this.nodes[id].expanded) {
                     let nodeHeight = 50 + Math.max(
-                        Object.keys(this.nodes[curNodeIndex].outputs).length * 22,
-                        Object.keys(this.nodes[curNodeIndex].inputs).length * 22) + 50;
+                        Object.keys(this.nodes[id].outputs).length * 22,
+                        Object.keys(this.nodes[id].inputs).length * 22) + 50;
 
-                    $(`#node_${curNodeIndex}`).css('height', `${nodeHeight}px`);
-                    $(`#node_${curNodeIndex}`)
+                    $(`#node_${id}`).css('height', `${nodeHeight}px`);
+                    $(`#node_${id}`)
                         .find('.flowgraph-hidden-container')
                         .css('display', 'none');
-                    $(`#node_${curNodeIndex}`)
+                    $(`#node_${id}`)
                         .find('.flowgraph-expand-container')
                         .children('object')
                         .replaceWith('<object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>');
                 } else {
                     let nodeHeight = 50 + Math.max(
-                        Object.keys(this.nodes[curNodeIndex].outputs).length * 22,
-                        Object.keys(this.nodes[curNodeIndex].inputs).length * 22) + 50 + 300;
+                        Object.keys(this.nodes[id].outputs).length * 22,
+                        Object.keys(this.nodes[id].inputs).length * 22) + 50 + 300;
 
-                    $(`#node_${curNodeIndex}`).css('height', `${nodeHeight}px`);
-                    $(`#node_${curNodeIndex}`)
+                    $(`#node_${id}`).css('height', `${nodeHeight}px`);
+                    $(`#node_${id}`)
                         .find('.flowgraph-hidden-container')
                         .css('display', 'flex');
-                    $(`#node_${curNodeIndex}`)
+                    $(`#node_${id}`)
                         .find('.flowgraph-expand-container')
                         .children('object')
                         .replaceWith('<object data="images/angle-up.svg" width="16" height="16" style="pointer-events: none;"></object>');
                 }
-                this.nodes[curNodeIndex].expanded = !this.nodes[curNodeIndex].expanded;
+                this.nodes[id].expanded = !this.nodes[id].expanded;
             });
 
-        $(`#node_${this.nodeIndex}`).css('transform', `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
+        $(`#node_${id}`).css('transform', `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
 
-        this.nodes[this.nodeIndex] = {
-            "id": this.nodeIndex,
+        const size = this.nodes.push({
+            "id": id,
             "position": [x, y],
-            "inputs": inputsData,
-            "outputs": outputsData,
+            "inputs": inputs,
+            "outputs": outputs,
             "expanded": false
-        };
+        });
 
-        this.nodeIndex += 1;
-        return this.nodes[this.nodeIndex - 1];
+        this.nodesCache[id] = size - 1;
+    }
+
+    /**
+     * Add node to graph
+     * @param {int} x - X node position
+     * @param {int} y - Y node position
+     * @param {map} inputs - Input parameters
+     * @param {map} outputs - Output parameters
+     * @param {string} title - Title in plaintext
+     * @returns 
+     */
+    addNode(x, y, inputs, outputs, title) {
+        const id = this.lastCreatedId;
+        this.#internalAddNode(id, x, y, inputs, outputs, title);
+        this.lastCreatedId++;
+    }
+
+    importFromJSON(data) {
+        this.nodes = [];
+        this.nodesCache = {};
+        this.connections = [];
+        this.connectionsCache = {};
+
+        for (const sceneNode of Object.values(data["sceneNodes"])) {
+            let inputsData = [];
+
+            for (let i = 0; i < sceneNode.inputs.length; i++) {
+                inputsData.push({
+                    "name": sceneNode.inputs[i].socketName,
+                    "type": sceneNode.inputs[i].socketType
+                });
+            }
+
+            let outputsData = [];
+
+            for (let i = 0; i < sceneNode.outputs.length; i++) {
+                outputsData.push({
+                    "name": sceneNode.outputs[i].socketName,
+                    "type": sceneNode.outputs[i].socketType
+                });
+            }
+
+            this.#internalAddNode(
+                sceneNode.nodeID,
+                sceneNode.position[0],
+                sceneNode.position[1],
+                inputsData,
+                outputsData,
+                sceneNode.nodeName);
+        }
+
+        for (const sceneConnection of Object.values(data["sceneConnections"])) {
+
+            this.#internalAddConnection(
+                sceneConnection.connectionID,
+                sceneConnection.sourceNode,
+                sceneConnection.sourceIndex,
+                sceneConnection.destNode,
+                sceneConnection.destIndex);
+        }
+
+        const connectionsIds = Object.keys(this.connectionsCache).map(key => parseInt(key));
+        const nodesIds = Object.keys(this.nodesCache).map(key => parseInt(key));
+        
+        this.lastCreatedId = Math.max(connectionsIds, nodesIds) + 1;
     }
 }

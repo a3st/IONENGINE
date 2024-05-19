@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.26.0)
 
 add_executable(editor
+    components/texture2d.cpp
+    components/sampler2d.hpp
+    components/output.cpp
+    connection.cpp
+    node.cpp
+    scene.cpp
     main.cpp)
 
 target_include_directories(editor PRIVATE ${PROJECT_SOURCE_DIR})

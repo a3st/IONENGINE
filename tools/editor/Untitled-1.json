@@ -1,0 +1,25 @@
+{
+    "sceneName": "123",
+    "position": [],
+    "sceneNodes": [
+        {
+            "nodeID": 0,
+            "nodeName": "Texture2D",
+            "outputs": [
+                {
+                    "socketName": "Color",
+                    "socketType": "float4"
+                }
+            ]
+        }
+    ],
+    "sceneConnections": [
+        {
+            "connectionID": 0,
+            "sourceNode": 0,
+            "destNode": 1,
+            "sourceSocket": 0,
+            "destSocket": 1
+        }
+    ]
+}

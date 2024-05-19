@@ -79,44 +79,45 @@ export default {
         );
         graph.start();
 
-        let html = `<span style="color: white;">PBR Shader</span>`;
-        const pbr_node = graph.addNode(10, 10, [
+        webview.invoke('newTestScene').then(data => {
+            graph.importFromJSON(data);
+        });
+
+        /*const pbr_node = graph.addNode(10, 10, [
             { "name": "Albedo", "type": "float4" },
             { "name": "Normal", "type": "float3" },
             { "name": "Roughness", "type": "float3" },
             { "name": "Metalness", "type": "float3" }
         ], [
             { "name": "Color", "type": "float4" }
-        ], html);
+        ], "PBR Shader");
 
-        html = `<span style="color: white;">Texture2D</span>`;
-        const textureNode = graph.addNode(10, 10, [], [{ "name": "Color", "type": "float4" }], html);
+        const textureNode = graph.addNode(10, 10, [], [{ "name": "Color", "type": "float4" }], "Texture2D");
 
-        html = `<span style="color: white;">Split</span>`;
         const split_node = graph.addNode(500, 60, [
             { "name": "Source", "type": "float4" }
         ], [
             { "name": "RGB", "type": "float3" },
             { "name": "Alpha", "type": "float" }
-        ], html);
+        ], "Split");
 
         graph.addConnection(pbr_node.id, 0, split_node.id, 0);
 
-        html = `<span style="color: white;">Split</span>`;
         const final = graph.addNode(500, 60, [
             { "name": "Source", "type": "float4" }
         ], [
             { "name": "RGB", "type": "float3" },
             { "name": "Alpha", "type": "float" }
-        ], html);
+        ], "Split");
+        */
 
         this.flowgraph = graph;
 
-        requestAnimationFrame(() => {
+        /*requestAnimationFrame(() => {
             webview.invoke('requestRenderImage').then(data => {
                 $('#preview').css('background-image', `url(${data.image})`);
             })
-        });
+        });*/
     },
     methods: {
         onPanelResize() {

@@ -1,11 +1,16 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
+#include "components/texture2d.hpp"
+#include "components/sampler2d.hpp"
+#include "components/output.hpp"
 #include "precompiled.h"
+#include "scene.hpp"
 #include <base64pp/base64pp.h>
-#include <webview.hpp>
 #include <core/exception.hpp>
+#include <webview.hpp>
 
 using namespace ionengine;
+namespace editor = ionengine::tools::editor;
 /*
 using namespace ionengine;
 
@@ -60,8 +65,24 @@ auto main(int32_t argc, char** argv) -> int32_t
     try
     {
         libwebview::App app("ionengine", "Editor", 800, 600, true, true);
-        //auto engine = core::make_ref<project::MyEngine>(nullptr, app);
-        //engine->run();
+
+        editor::Scene scene;
+
+        app.bind("newTestScene", [&](libwebview::EventArgs const& e) {
+            auto textureNode = scene.createNode<editor::Texture2DNode>(10, 10);
+            auto samplerNode = scene.createNode<editor::Sampler2DNode>(400, 10);
+            auto outputNode = scene.createNode<editor::OutputNode>(600, 10);
+
+            scene.createConnection(textureNode, 0, samplerNode, 1);
+            scene.createConnection(samplerNode, 0, outputNode, 0);
+
+            scene.dfs();
+
+            app.result(e.index, true, scene.dump());
+        });
+
+        // auto engine = core::make_ref<project::MyEngine>(nullptr, app);
+        // engine->run();
         app.idle([&]() { /*engine->tick();*/ });
         if (!app.run("resources/index.html"))
         {
