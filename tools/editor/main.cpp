@@ -66,19 +66,23 @@ auto main(int32_t argc, char** argv) -> int32_t
     {
         libwebview::App app("ionengine", "Editor", 800, 600, true, true);
 
-        editor::Scene scene;
+        core::ref_ptr<editor::Scene> scene;
 
         app.bind("newTestScene", [&](libwebview::EventArgs const& e) {
-            auto outputNode = scene.createNode<editor::OutputNode>(600, 10);
-            auto textureNode = scene.createNode<editor::Texture2DNode>(10, 10);
-            auto samplerNode = scene.createNode<editor::Sampler2DNode>(400, 10);
+            scene = core::make_ref<editor::Scene>();
 
-            scene.createConnection(textureNode, 0, samplerNode, 1);
-            scene.createConnection(samplerNode, 0, outputNode, 0);
+            auto outputNode = scene->createNode<editor::OutputNode>(600, 10);
+            auto textureNode = scene->createNode<editor::Texture2DNode>(10, 10);
+            textureNode->defineOption("textureName", "simple");
+            auto samplerNode = scene->createNode<editor::Sampler2DNode>(400, 10);
+            samplerNode->defineOption("UV", "input.uv");
 
-            scene.dfs();
+            scene->createConnection(textureNode, 0, samplerNode, 1);
+            scene->createConnection(samplerNode, 0, outputNode, 0);
 
-            app.result(e.index, true, scene.dump());
+            scene->dfs();
+
+            app.result(e.index, true, scene->dump());
         });
 
         // auto engine = core::make_ref<project::MyEngine>(nullptr, app);

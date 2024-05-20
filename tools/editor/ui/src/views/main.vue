@@ -35,7 +35,7 @@ export default {
     },
     data() {
         return {
-            flowgraph: null
+            graph: null
         };
     },
     created() {
@@ -46,14 +46,14 @@ export default {
     },
     mounted() {
         const container = $('#graph-container');
-        const graph = new FlowGraph(container.children(0).get(0), container.width(), container.height());
+        let graph = new FlowGraph(container.children(0).get(0), container.width(), container.height());
 
         graph.addContextItem(
             'Math',
             'Multiply',
             (e) => {
                 const html = `<span style="color: white;">Multiply</span>`;
-                graph.addNode(e.positionX, e.positionY, [
+                this.graph.addNode(e.posX, e.posY, [
                     { "name": "A", "type": "float3" },
                     { "name": "B", "type": "float3" }
                 ], [
@@ -83,49 +83,15 @@ export default {
             graph.importFromJSON(data);
         });
 
-        /*const pbr_node = graph.addNode(10, 10, [
-            { "name": "Albedo", "type": "float4" },
-            { "name": "Normal", "type": "float3" },
-            { "name": "Roughness", "type": "float3" },
-            { "name": "Metalness", "type": "float3" }
-        ], [
-            { "name": "Color", "type": "float4" }
-        ], "PBR Shader");
-
-        const textureNode = graph.addNode(10, 10, [], [{ "name": "Color", "type": "float4" }], "Texture2D");
-
-        const split_node = graph.addNode(500, 60, [
-            { "name": "Source", "type": "float4" }
-        ], [
-            { "name": "RGB", "type": "float3" },
-            { "name": "Alpha", "type": "float" }
-        ], "Split");
-
-        graph.addConnection(pbr_node.id, 0, split_node.id, 0);
-
-        const final = graph.addNode(500, 60, [
-            { "name": "Source", "type": "float4" }
-        ], [
-            { "name": "RGB", "type": "float3" },
-            { "name": "Alpha", "type": "float" }
-        ], "Split");
-        */
-
-        this.flowgraph = graph;
-
-        /*requestAnimationFrame(() => {
-            webview.invoke('requestRenderImage').then(data => {
-                $('#preview').css('background-image', `url(${data.image})`);
-            })
-        });*/
+        this.graph = graph;
     },
     methods: {
         onPanelResize() {
             console.log("resize");
         },
-        graphResized(event) {
+        graphResized(e) {
             const container = $('#graph-container');
-            this.flowgraph.resize(container.width(), container.height());
+            this.graph.resize(container.width(), container.height());
         }
     }
 }

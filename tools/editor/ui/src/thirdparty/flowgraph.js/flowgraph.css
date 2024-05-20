@@ -149,7 +149,6 @@
     flex-direction: row;
     gap: 5px;
     background-color: rgb(245, 245, 245);
-    border-radius: 8px;
     border: 1px solid rgba(0, 0, 0, 0.395);
     padding: 5px;
     margin-bottom: 5px;
@@ -169,7 +168,6 @@
     max-height: calc(100% - 15px);
     overflow-y: auto;
     background-color: rgb(245, 245, 245);
-    border-radius: 8px;
     border: 1px solid rgba(0, 0, 0, 0.395);
 }
 
@@ -214,7 +212,6 @@
 .flowgraph-context-group button {
     outline: none;
     border: none;
-    border-radius: 4px;
     padding: 5px;
     text-align: left;
     text-indent: 15px;

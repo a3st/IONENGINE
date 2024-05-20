@@ -1,23 +1,11 @@
 import $ from 'jquery'
 
+const FLOWGRAPH_VERSION = "0.2.1";
+
 export class FlowGraphContextMenuEvent {
-    constructor(positionX, positionY) {
-        this.positionX = positionX;
-        this.positionY = positionY;
-    }
-};
-
-export class FlowGraphUpdatedNodeEvent {
-    constructor(event, nodeId) {
-        this.event = event;
-        this.nodeId = nodeId;
-    }
-};
-
-export class FlowGraphUpdatedConnectionEvent {
-    constructor(event, connectionId) {
-        this.event = event;
-        this.connectionId = connectionId;
+    constructor(posX, posY) {
+        this.posX = posX;
+        this.posY = posY;
     }
 };
 
@@ -30,7 +18,6 @@ export default class FlowGraph {
 
         this.nodes = [];
         this.nodesCache = {};
-
         this.connections = [];
         this.connectionsCache = {};
 
@@ -48,13 +35,6 @@ export default class FlowGraph {
         this.groups = {};
 
         this.lastCreatedId = 0;
-
-        this.updatedConnectionCallback = null;
-        this.updatedNodeCallback = null;
-    }
-
-    destructor() {
-
     }
 
     /**
@@ -130,11 +110,13 @@ export default class FlowGraph {
         });
         this.rootNode.addEventListener('mouseup', this.#dragNodeEndHandler.bind(this));
         this.rootNode.addEventListener('mousemove', this.#moveNodeHandler.bind(this));
-        //this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
+        this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
 
         document.addEventListener('keydown', this.#keyHandler.bind(this));
 
-        $(this.rootNode).children('.flowgraph-canvas').css('transform', `translate(${-this.relativeCanvasX}px, ${-this.relativeCanvasY}px)`);
+        $(this.rootNode)
+            .children('.flowgraph-canvas')
+            .css('transform', `translate(${-this.relativeCanvasX}px, ${-this.relativeCanvasY}px)`);
     }
 
     #renderContextMenu() {
@@ -155,7 +137,7 @@ export default class FlowGraph {
         } else {
             filteredGroups = Object.entries(this.groups).filter(
                 (key, value) => (
-                    Object.values(this.groups["Math"]).filter(
+                    Object.values(this.groups[searchPattern]).filter(
                         value => String(value.item).includes(searchPattern)
                     ).length > 0 | String(key).includes(searchPattern)
                 )
@@ -790,7 +772,7 @@ export default class FlowGraph {
         }
     }
 
-    #internalAddNode(id, x, y, inputs, outputs, nodeName, isExpand, expandHTML) {
+    #internalAddNode(id, x, y, inputs, outputs, nodeName, isExpanded, expandHTML, userData) {
         let inputsHTML = "";
         for (let i = 0; i < inputs.length; i++) {
             inputsHTML += `
@@ -828,14 +810,16 @@ export default class FlowGraph {
         }
 
         let footerHTML = "";
-        if (isExpand) {
+        if (isExpanded) {
             footerHTML += `
                 <div class="flowgraph-node-footer">
                     <div class="flowgraph-expand-container">
                         <object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>
                     </div>
                 </div>
-                <div class="flowgraph-hidden-container" style="display: none;"></div>
+                <div class="flowgraph-hidden-container" style="display: none;">
+                    ${expandHTML}
+                </div>
             `;
         }
 
@@ -859,7 +843,7 @@ export default class FlowGraph {
 
         let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
             $(`#node_${id}`).find('.flowgraph-node-main').outerHeight();
-        if (isExpand) {
+        if (isExpanded) {
             nodeHeight += $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
         }
 
@@ -902,32 +886,11 @@ export default class FlowGraph {
             "id": id,
             "position": [x, y],
             "inputs": inputs,
-            "outputs": outputs
+            "outputs": outputs,
+            "userData": userData
         });
 
         this.nodesCache[id] = size - 1;
-    }
-
-    /**
-     * Bind callbacks
-     * @param {int} eventName - UpdatedNode or UpdatedConnection
-     * @param {int} func - Binded callback
-     * @returns 
-     */
-    bind(eventName, func) {
-        switch(eventName) {
-            case "UpdatedNode": {
-                this.updatedNodeCallback = func;
-                break;
-            }
-            case "UpdatedConnection": {
-                this.updatedConnectionCallback = func;
-                break;
-            }
-            default: {
-                throw new Error("eventName is unknown");
-            }
-        }
     }
 
     /**
@@ -949,65 +912,45 @@ export default class FlowGraph {
 
     /**
      * Add node to graph
-     * @param {int} x - X node position
-     * @param {int} y - Y node position
+     * @param {int} posX - X node position
+     * @param {int} posY - Y node position
      * @param {map} inputs - Input parameters
      * @param {map} outputs - Output parameters
      * @param {string} nodeName - Title in plaintext
-     * @param {bool} isExpand - Expand node for additional information
+     * @param {bool} isExpanded - Expand node for additional information
      * @param {string} expandHTML - Expand body in HTML
+     * @param {string} userData - Optional user data
      * @returns 
      */
-    addNode(x, y, inputs, outputs, nodeName, isExpand, expandHTML) {
+    addNode(posX, posY, inputs, outputs, nodeName, isExpanded, expandHTML, userData = {}) {
         const id = this.lastCreatedId;
-        this.#internalAddNode(id, x, y, inputs, outputs, nodeName, isExpand, expandHTML);
+        this.#internalAddNode(id, posX, posY, inputs, outputs, nodeName, isExpanded, expandHTML, userData);
         this.lastCreatedId++;
     }
 
+    exportToJSON() {
+        data = {
+            "version": FLOWGRAPH_VERSION,
+            "sceneName": "exported",
+            "nodes": this.nodes,
+            "connections": this.connections
+        };
+        return JSON.stringify(data);
+    }
+
     importFromJSON(data) {
-        this.nodes = [];
-        this.nodesCache = {};
-        this.connections = [];
-        this.connectionsCache = {};
-
-        for (const sceneNode of Object.values(data["sceneNodes"])) {
-            let inputsData = [];
-
-            for (let i = 0; i < sceneNode.inputs.length; i++) {
-                inputsData.push({
-                    "name": sceneNode.inputs[i].socketName,
-                    "type": sceneNode.inputs[i].socketType
-                });
-            }
-
-            let outputsData = [];
-
-            for (let i = 0; i < sceneNode.outputs.length; i++) {
-                outputsData.push({
-                    "name": sceneNode.outputs[i].socketName,
-                    "type": sceneNode.outputs[i].socketType
-                });
-            }
-
-            this.#internalAddNode(
-                sceneNode.nodeID,
-                sceneNode.position[0],
-                sceneNode.position[1],
-                inputsData,
-                outputsData,
-                sceneNode.nodeName,
-                sceneNode.isExpand,
-                "");
+        if (data["version"] != FLOWGRAPH_VERSION) {
+            throw Error("Unsupported file format");
         }
 
-        for (const sceneConnection of Object.values(data["sceneConnections"])) {
+        for (const node of Object.values(data["nodes"])) {
+            this.#internalAddNode(node.id, node.position[0], node.position[1],
+                node.inputs, node.outputs, node.name, node.expanded, "", node.userData);
+        }
 
-            this.#internalAddConnection(
-                sceneConnection.connectionID,
-                sceneConnection.sourceNode,
-                sceneConnection.sourceIndex,
-                sceneConnection.destNode,
-                sceneConnection.destIndex);
+        for (const connection of Object.values(data["connections"])) {
+            this.#internalAddConnection(connection.id, connection.source,
+                connection.out, connection.dest, connection.in);
         }
 
         const connectionsIds = Object.keys(this.connectionsCache).map(key => parseInt(key));

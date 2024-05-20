@@ -8,7 +8,7 @@
 namespace ionengine::tools::editor
 {
 
-    class Scene
+    class Scene : public core::ref_counted_object
     {
       public:
         Scene();
