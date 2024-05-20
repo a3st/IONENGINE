@@ -43,7 +43,6 @@ button {
     outline: 0;
     background-color: rgb(247, 247, 247);
     padding: 10px 15px 10px 15px;
-    border-radius: 4px;
     font-size: 16px;
 }
 

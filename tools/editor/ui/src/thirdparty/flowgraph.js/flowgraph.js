@@ -110,7 +110,7 @@ export default class FlowGraph {
         });
         this.rootNode.addEventListener('mouseup', this.#dragNodeEndHandler.bind(this));
         this.rootNode.addEventListener('mousemove', this.#moveNodeHandler.bind(this));
-        this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
+        //this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
 
         document.addEventListener('keydown', this.#keyHandler.bind(this));
 
@@ -168,10 +168,10 @@ export default class FlowGraph {
         if (e.code == 'Backspace' || e.code == 'Delete') {
             if (this.focusedElement) {
                 if ($(this.focusedElement).closest('.flowgraph-node-container').length > 0) {
-                    const nodeId = this.focusedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                    const nodeId = this.focusedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                     this.removeNode(nodeId);
                 } else if ($(this.focusedElement).closest('.flowgraph-connection').length > 0) {
-                    const connectionId = this.focusedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                    const connectionId = this.focusedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                     this.removeConnection(connectionId);
                 }
             }
@@ -226,8 +226,8 @@ export default class FlowGraph {
                     .closest('.flowgraph-io')
                     .get(0);
 
-                const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
-                const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex))
+                const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
+                const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
 
                 if (connection) {
                     $(`#node_${destNode}_in_${inIndex}`)
@@ -255,7 +255,7 @@ export default class FlowGraph {
                     .closest('.flowgraph-io')
                     .get(0);
 
-                const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                 this.#addPreviewConnection(sourceNode, outIndex);
 
                 const elementMatrix = $(this.selectedElement)
@@ -299,21 +299,21 @@ export default class FlowGraph {
                 if ($(e.target).closest('.flowgraph-io').closest('.flowgraph-io-row.left').length > 0) {
                     let destElement = $(e.target).closest('.flowgraph-io')[0];
 
-                    const [destNode, inIndex] = destElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                    const [destNode, inIndex] = destElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                     let connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
 
                     if (connection) {
                         this.removeConnection(connection.id);
                     }
 
-                    const [selectedNode, selectedIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                    const [selectedNode, selectedIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                     connection = Object.values(this.connections).find(value => (value.dest == selectedNode && value.in == selectedIndex));
 
                     if (connection) {
                         this.#updateConnection(connection.id, connection.source, connection.out, destNode, inIndex);
                     }
                 } else {
-                    const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                    const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                     const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
 
                     if (connection) {
@@ -331,8 +331,8 @@ export default class FlowGraph {
                 if ($(e.target).closest('.flowgraph-io').closest('.flowgraph-io-row.left').length > 0) {
                     let destElement = $(e.target).closest('.flowgraph-io')[0];
 
-                    const [destNode, inIndex] = destElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
-                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                    const [destNode, inIndex] = destElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
+                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                     const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
 
                     if (connection) {
@@ -351,7 +351,7 @@ export default class FlowGraph {
                         try {
                             this.addConnection(sourceNode, outIndex, destNode, inIndex);
                         } catch (e) {
-                            const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                            const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
 
                             const connections = Object.values(this.connections).filter(
                                 value => (value.source == sourceNode && value.out == outIndex));
@@ -363,7 +363,7 @@ export default class FlowGraph {
                         }
                     }
                 } else {
-                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
 
                     const connections = Object.values(this.connections).filter(
                         value => (value.source == sourceNode && value.out == outIndex));
@@ -454,7 +454,7 @@ export default class FlowGraph {
 
                     $(this.selectedElement).css('transform', `translate(${posX}px, ${posY}px)`);
 
-                    const nodeId = Number(this.selectedElement.id.match(/-?[\d]/g)[0]);
+                    const nodeId = Number(this.selectedElement.id.match(/-?[\d]+/g)[0]);
                     const connections = Object.values(this.connections).filter(value => (value.source == nodeId || value.dest == nodeId));
 
                     for (const [_, value] of Object.entries(connections)) {
@@ -495,7 +495,7 @@ export default class FlowGraph {
                         .children('#drag-io-dummy')
                         .css('transform', `translate(${posX}px, ${posY}px)`);
 
-                    const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                    const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                     const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
 
                     if (connection) {
@@ -530,7 +530,7 @@ export default class FlowGraph {
                         .children('#drag-io-dummy')
                         .css('transform', `translate(${posX}px, ${posY}px)`);
 
-                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]/g).map((x) => (parseInt(x)));
+                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
 
                     const sourceElement = $(`#node_${sourceNode}_out_${outIndex}`).get(0);
                     const sourceMatrix = $(`#node_${sourceNode}`)
@@ -748,6 +748,7 @@ export default class FlowGraph {
         const id = this.lastCreatedId;
         this.#internalAddConnection(id, sourceNodeId, outIndex, destNodeId, inIndex);
         this.lastCreatedId++;
+        return id;
     }
 
     removeNode(nodeId) {
@@ -920,12 +921,13 @@ export default class FlowGraph {
      * @param {bool} isExpanded - Expand node for additional information
      * @param {string} expandHTML - Expand body in HTML
      * @param {string} userData - Optional user data
-     * @returns 
+     * @returns ID created node
      */
     addNode(posX, posY, inputs, outputs, nodeName, isExpanded, expandHTML, userData = {}) {
         const id = this.lastCreatedId;
         this.#internalAddNode(id, posX, posY, inputs, outputs, nodeName, isExpanded, expandHTML, userData);
         this.lastCreatedId++;
+        return id;
     }
 
     exportToJSON() {
