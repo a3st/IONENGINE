@@ -39,7 +39,7 @@ export default class FlowGraph {
 
     /**
      * Add new element to context menu
-     * @param {string} group - Group of element
+     * @param {string} group - Group of elements
      * @param {string} item - Function name
      * @param {*} callback - Function callback
      */
@@ -110,7 +110,7 @@ export default class FlowGraph {
         });
         this.rootNode.addEventListener('mouseup', this.#dragNodeEndHandler.bind(this));
         this.rootNode.addEventListener('mousemove', this.#moveNodeHandler.bind(this));
-        //this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
+        this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
 
         document.addEventListener('keydown', this.#keyHandler.bind(this));
 
@@ -346,6 +346,10 @@ export default class FlowGraph {
                             }
 
                             this.#updateConnection(connection.id, sourceNode, outIndex, destNode, inIndex);
+                        } else {
+                            $(`#node_${sourceNode}_out_${outIndex}`)
+                                .removeClass('connected')
+                                .get(0);
                         }
                     } else {
                         try {
@@ -456,6 +460,8 @@ export default class FlowGraph {
 
                     const nodeId = Number(this.selectedElement.id.match(/-?[\d]+/g)[0]);
                     const connections = Object.values(this.connections).filter(value => (value.source == nodeId || value.dest == nodeId));
+
+                    this.nodes[this.nodesCache[nodeId]].position = [posX - this.relativeCanvasX, posY - this.relativeCanvasY];
 
                     for (const [_, value] of Object.entries(connections)) {
                         const sourceElement = $(`#node_${this.connections[this.connectionsCache[value.id]].source}_out_${this.connections[this.connectionsCache[value.id]].out}`).get(0);
@@ -775,6 +781,7 @@ export default class FlowGraph {
 
     #internalAddNode(id, x, y, inputs, outputs, nodeName, isExpanded, expandHTML, userData) {
         let inputsHTML = "";
+        let inputMaxLength = 5;
         for (let i = 0; i < inputs.length; i++) {
             inputsHTML += `
                 <div class="flowgraph-io-row left">
@@ -782,9 +789,14 @@ export default class FlowGraph {
                     <span style="color: white;">${inputs[i].name} (${inputs[i].type})</span>
                 </div>
             `;
+            inputMaxLength = Math.max(inputs[i].name.length, inputMaxLength);
+        }
+        if(inputs.length == 0) {
+            inputMaxLength = 0;
         }
 
         let outputsHTML = "";
+        let outputMaxLength = 5;
         for (let i = 0; i < outputs.length; i++) {
             outputsHTML += `
                 <div class="flowgraph-io-row right">
@@ -792,6 +804,10 @@ export default class FlowGraph {
                     <div id="node_${id}_out_${i}" class="flowgraph-io circle"></div>
                 </div>
             `;
+            outputMaxLength = Math.max(outputs[i].name.length, outputMaxLength);
+        }
+        if(outputs.length == 0) {
+            outputMaxLength = 0;
         }
 
         let bodyHTML = "";
@@ -840,7 +856,7 @@ export default class FlowGraph {
             </div>
         `);
 
-        let nodeWidth = 110 + Math.min(1, outputs.length) * 120 + Math.min(1, inputs.length) * 120;
+        let nodeWidth = 110 + Math.min(1, outputs.length) * 20 * outputMaxLength + Math.min(1, inputs.length) * 20 * inputMaxLength;
 
         let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
             $(`#node_${id}`).find('.flowgraph-node-main').outerHeight();
@@ -909,6 +925,13 @@ export default class FlowGraph {
             .find(".flowgraph-node-header")
             .children('span')
             .html(title);
+    }
+
+    getNode(nodeId) {
+        if (this.nodesCache[nodeId] == null) {
+            throw new Error("Node with this ID does not exist");
+        }
+        return this.nodes[this.nodesCache[nodeId]];
     }
 
     /**

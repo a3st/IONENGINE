@@ -4,6 +4,7 @@ add_executable(editor
     components/texture2d.cpp
     components/sampler2d.hpp
     components/output.cpp
+    components/input.cpp
     connection.cpp
     node.cpp
     scene.cpp

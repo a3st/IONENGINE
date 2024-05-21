@@ -92,8 +92,7 @@ namespace ionengine::tools::editor
             stream << "{\"id\":" << connection->getConnectionID()
                    << ",\"source\":" << connection->getSourceNode()->getNodeID()
                    << ",\"dest\":" << connection->getDestNode()->getNodeID()
-                   << ",\"out\":" << connection->getSourceIndex()
-                   << ",\"in\":" << connection->getDestIndex() << "}";
+                   << ",\"out\":" << connection->getSourceIndex() << ",\"in\":" << connection->getDestIndex() << "}";
 
             isFirst = false;
         }
@@ -206,6 +205,7 @@ namespace ionengine::tools::editor
 
             for (auto const index : connectionsOfNodes[node->getNodeID()])
             {
+                bool isConnectionExpr = false;
                 uint64_t offset = 0;
                 bool isFailed = false;
                 while (offset != std::string::npos)
@@ -231,6 +231,10 @@ namespace ionengine::tools::editor
                         auto endShaderCode =
                             computeShaderCodes[node->getNodeID()].substr(expressionEndOffset + 2, std::string::npos);
                         computeShaderCodes[node->getNodeID()] = beginShaderCode + result->second + endShaderCode;
+                    }
+                    else if (expressionName.compare("__CONNECTION__") == 0)
+                    {
+                        isConnectionExpr = true;
                     }
                     else
                     {
@@ -280,6 +284,11 @@ namespace ionengine::tools::editor
                     }
 
                     remainingNodes.emplace(connections[index]->getDestNode());
+                }
+
+                if (isConnectionExpr)
+                {
+                    computeShaderCodes[node->getNodeID()] = node->generateComputeShaderCode();
                 }
             }
         }

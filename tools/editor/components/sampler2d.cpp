@@ -2,4 +2,3 @@
 
 #include "precompiled.h"
 #include "sampler2d.hpp"
-
