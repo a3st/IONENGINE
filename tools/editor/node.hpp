@@ -17,7 +17,7 @@ namespace ionengine::tools::editor
 
         Node(uint64_t const nodeID, std::string_view const nodeName, uint32_t const posX, uint32_t const posY,
              std::vector<NodeSocketInfo> const& inputs, std::vector<NodeSocketInfo> const& outputs,
-             bool const expanded);
+             bool const isStatic);
 
         auto getNodeID() const -> uint64_t;
 
@@ -29,7 +29,7 @@ namespace ionengine::tools::editor
 
         auto getPosition() const -> std::tuple<uint32_t, uint32_t>;
 
-        auto isExpanded() const -> bool;
+        auto isNodeStatic() const -> bool;
 
         auto defineOption(std::string_view const option, std::string_view const value) -> void;
 
@@ -48,7 +48,7 @@ namespace ionengine::tools::editor
         std::vector<NodeSocketInfo> outputs;
         uint32_t posX;
         uint32_t posY;
-        bool expanded;
+        bool nodeStatic;
         std::unordered_map<std::string, std::string> options;
     };
 } // namespace ionengine::tools::editor

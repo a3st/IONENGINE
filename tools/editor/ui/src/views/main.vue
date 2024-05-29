@@ -1,7 +1,41 @@
 <template>
     <toolbar></toolbar>
 
-    <div style="display: flex; flex-direction: row; width: 100%; height: calc(100% - 55px);">
+    <dynview ref="mainView">
+        <dyngr type="row">
+            <dyngr type="col">
+                <dynpan>
+                    <div style="display: flex; flex-direction: column; padding: 5px; width: 100%;">
+                        <div style="display: flex; flex-direction: row; height: 30px; background-color: rgb(50, 50, 50); width: 100%;">
+                            <button class="btn-tab" @click="onTabClick($event, 'details', 'tab-shader-graph')">
+                                <div style="display: inline-flex; justify-content: center; align-items: center; gap: 10px;">
+                                    <object data="images/diagram-project.svg" width="16" height="16"></object>
+                                    <span>Shader Graph</span>
+                                    <object data="images/xmark.svg" width="12" height="12"></object>
+                                </div>
+                            </button>
+                        </div>
+                        <div id="tab-shader-graph" class="tab-container" style="height: calc(100% - 30px);">
+                            <div style="background-color: rgb(45, 45, 45); height: 30px; display: inline-flex; align-items: center; padding: 0px 10px 0px 10px;">
+                                <div style="display: inline-flex; align-items: center; gap: 10px;">
+                                    <button class="btn-text">Compile</button>
+                                </div>
+                            </div>
+                            <div id="graph-container" style="height: calc(100% - 30px);">
+                                <div id="graph-root"></div>
+                            </div>
+                        </div>
+                    </div>
+                </dynpan>
+                <dynpan>
+                </dynpan>
+            </dyngr>
+            <dynpan>
+            </dynpan>
+        </dyngr>
+    </dynview>
+
+    <!--<div style="display: flex; flex-direction: row; width: 100%; height: calc(100% - 55px);">
         <div style="display: flex; flex-direction: column; width: 61%; height: 100%;">
             <div style="background-color: rgb(30, 30, 30); height: 30px; display: inline-flex; align-items: center; padding: 0px 10px 0px 10px;">
                 <div style="display: inline-flex; align-items: center; gap: 10px;">
@@ -14,7 +48,6 @@
             </div>
         </div>
         
-
         <div class="panel-resizer" style="display: block; width: 8px; height: 100%;" @mousedown="onPanelResize"></div>
 
         <div style="display: flex; flex-direction: column; height: 100%; width: calc(40% - 8px);">
@@ -80,7 +113,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div>-->
 
     <footbar></footbar>
 </template>
@@ -88,11 +121,8 @@
 <style>
 .tab-container {
     display: none;
-    flex-direction: column; 
-    padding: 15px; 
-    background-color: rgb(80, 80, 80); 
-    align-items: center; 
-    gap: 15px;
+    flex-direction: column;
+    background-color: rgb(80, 80, 80);
 }
 
 .btn-icon {
@@ -133,16 +163,22 @@
 </style>
 
 <script>
-import { toRaw } from 'vue'
+import { toRaw, createApp } from 'vue'
 import $ from 'jquery'
 import FlowGraph from '../thirdparty/flowgraph.js/flowgraph';
 import ToolbarComponent from '../components/toolbar.vue';
 import FootbarComponent from '../components/footbar.vue';
+import DynviewComponent from '../components/dynview.vue';
+import DynpanComponent from '../components/dynpan.vue';
+import DyngrComponent from '../components/dyngr.vue'
 
 export default {
     components: {
         'toolbar': ToolbarComponent,
-        'footbar': FootbarComponent
+        'footbar': FootbarComponent,
+        'dynview': DynviewComponent,
+        'dynpan': DynpanComponent,
+        'dyngr': DyngrComponent
     },
     data() {
         return {
@@ -185,116 +221,39 @@ export default {
             deep: true
         }
     },
+    setup() {
+
+    },
     created() {
-        window.addEventListener("resize", this.graphResized);
+        window.addEventListener("resize", this.onGraphResize);
     },
     destroyed() {
-        window.removeEventListener("resize", this.graphResized);
+        window.removeEventListener("resize", this.onGraphResize);
     },
     mounted() {
+        // const tempDiv = document.createElement('div');
+        // const instance = createApp(DynpanComponent).mount(tempDiv);
+        // $(this.$refs.mainView.$el).append(instance.$el);
+        
         const container = $('#graph-container');
+        console.log(container.width(), container.height());
         let graph = new FlowGraph(container.children(0).get(0), container.width(), container.height());
 
-        graph.addContextItem(
-            'Math',
-            'Multiply',
-            (e) => {
-                graph.addNode(e.posX, e.posY, [
-                    { "name": "A", "type": "float3" },
-                    { "name": "B", "type": "float3" }
-                ], [
-                    { "name": "Result", "type": "float3" }
-                ], "Multiply", true, "");
+        webview.invoke('addContextItems').then(data => {
+            for (const group of Object.values(data.groups)) {
+                for(const node of Object.values(group.nodes)) {
+                    graph.addContextItem(
+                        group.name,
+                        node.name,
+                        (e) => {
+                            graph.addNode(e.posX, e.posY, node.inputs, node.outputs, node.name, false, "");
+                        }
+                    );
+                }
             }
-        );
-
-        graph.addContextItem(
-            'Convert',
-            'Split (float4)',
-            (e) => {
-                graph.addNode(e.posX, e.posY, [
-                    { "name": "Source", "type": "float4" },
-                ], [
-                    { "name": "A", "type": "float3" },
-                    { "name": "B", "type": "float" }
-                ], "Split", true, "");
-            }
-        );
-
-        graph.addContextItem(
-            'Convert',
-            'Merge (float4)',
-            (e) => {
-                graph.addNode(e.posX, e.posY, [
-                    { "name": "A", "type": "float3" },
-                    { "name": "B", "type": "float" },
-                ], [
-                    { "name": "Result", "type": "float4" }
-                ], "Merge", true, "");
-            }
-        );
-
-        graph.addContextItem(
-            'Math',
-            'Divide',
-            (e) => {
-                
-            }
-        );
-
-        graph.addContextItem(
-            'Math',
-            'Minus',
-            (e) => {
-                
-            }
-        );
-
-        graph.addContextItem(
-            'Math',
-            'Substract',
-            (e) => {
-                
-            }
-        );
-
-        graph.addContextItem(
-            'Math',
-            'Add',
-            (e) => {
-                
-            }
-        );
-
-        graph.addContextItem(
-            'Convert',
-            'Mix',
-            (e) => {
-                
-            }
-        );
-
-        graph.addContextItem(
-            'Shader',
-            'PBR',
-            (e) => {
-                
-            }
-        );
-
-        graph.addContextItem(
-            'User',
-            'Test 1',
-            (e) => {
-                
-            }
-        );
+        })
 
         graph.start();
-
-        webview.invoke('newTestScene').then(data => {
-            graph.importFromJSON(data);
-        });
 
         this.graph = graph;
     },
@@ -302,7 +261,7 @@ export default {
         onPanelResize() {
             console.log("resize");
         },
-        graphResized(e) {
+        onGraphResize(e) {
             const container = $('#graph-container');
             toRaw(this.graph).resize(container.width(), container.height());
         },
@@ -331,12 +290,4 @@ export default {
 
 <style>
 @import url(../thirdparty/flowgraph.js/flowgraph.css);
-
-.panel-resizer {
-    background-color: transparent;
-}
-
-.panel-resizer:hover {
-    background-color: rgb(215, 215, 215);
-}
 </style>

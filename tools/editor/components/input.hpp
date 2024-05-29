@@ -11,7 +11,7 @@ namespace ionengine::tools::editor
       public:
         InputNode(uint64_t const nodeID, uint32_t const posX, uint32_t const posY,
                   std::vector<NodeSocketInfo> const& outputs)
-            : Node(nodeID, "Input Node", posX, posY, outputs, {}, false)
+            : Node(nodeID, "Input Node", posX, posY, outputs, {}, true)
         {
         }
 

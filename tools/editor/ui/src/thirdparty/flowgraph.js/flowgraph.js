@@ -1,6 +1,6 @@
-import $ from 'jquery'
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-const FLOWGRAPH_VERSION = "0.2.1";
+import $ from 'jquery'
 
 export class FlowGraphContextMenuEvent {
     constructor(posX, posY) {
@@ -169,7 +169,9 @@ export default class FlowGraph {
             if (this.focusedElement) {
                 if ($(this.focusedElement).closest('.flowgraph-node-container').length > 0) {
                     const nodeId = this.focusedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
-                    this.removeNode(nodeId);
+                    if (!this.nodes[this.nodesCache[nodeId]].fixed) {
+                        this.removeNode(nodeId);
+                    }
                 } else if ($(this.focusedElement).closest('.flowgraph-connection').length > 0) {
                     const connectionId = this.focusedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                     this.removeConnection(connectionId);
@@ -779,7 +781,7 @@ export default class FlowGraph {
         }
     }
 
-    #internalAddNode(id, x, y, inputs, outputs, nodeName, isExpanded, expandHTML, userData) {
+    #internalAddNode(id, x, y, inputs, outputs, nodeName, fixed, expandHTML, userData) {
         let inputsHTML = "";
         let inputMaxLength = 5;
         for (let i = 0; i < inputs.length; i++) {
@@ -791,7 +793,7 @@ export default class FlowGraph {
             `;
             inputMaxLength = Math.max(inputs[i].name.length, inputMaxLength);
         }
-        if(inputs.length == 0) {
+        if (inputs.length == 0) {
             inputMaxLength = 0;
         }
 
@@ -806,7 +808,7 @@ export default class FlowGraph {
             `;
             outputMaxLength = Math.max(outputs[i].name.length, outputMaxLength);
         }
-        if(outputs.length == 0) {
+        if (outputs.length == 0) {
             outputMaxLength = 0;
         }
 
@@ -827,7 +829,7 @@ export default class FlowGraph {
         }
 
         let footerHTML = "";
-        if (isExpanded) {
+        if (expandHTML.length > 0) {
             footerHTML += `
                 <div class="flowgraph-node-footer">
                     <div class="flowgraph-expand-container">
@@ -860,7 +862,7 @@ export default class FlowGraph {
 
         let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
             $(`#node_${id}`).find('.flowgraph-node-main').outerHeight();
-        if (isExpanded) {
+        if (expandHTML.length > 0) {
             nodeHeight += $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
         }
 
@@ -904,6 +906,7 @@ export default class FlowGraph {
             "position": [x, y],
             "inputs": inputs,
             "outputs": outputs,
+            "fixed": fixed,
             "userData": userData
         });
 
@@ -941,22 +944,20 @@ export default class FlowGraph {
      * @param {map} inputs - Input parameters
      * @param {map} outputs - Output parameters
      * @param {string} nodeName - Title in plaintext
-     * @param {bool} isExpanded - Expand node for additional information
+     * @param {bool} fixed - Ability to remove node via 'Remove Node'
      * @param {string} expandHTML - Expand body in HTML
      * @param {string} userData - Optional user data
      * @returns ID created node
      */
-    addNode(posX, posY, inputs, outputs, nodeName, isExpanded, expandHTML, userData = {}) {
+    addNode(posX, posY, inputs, outputs, nodeName, fixed, expandHTML, userData = {}) {
         const id = this.lastCreatedId;
-        this.#internalAddNode(id, posX, posY, inputs, outputs, nodeName, isExpanded, expandHTML, userData);
+        this.#internalAddNode(id, posX, posY, inputs, outputs, nodeName, fixed, expandHTML, userData);
         this.lastCreatedId++;
         return id;
     }
 
     exportToJSON() {
         data = {
-            "version": FLOWGRAPH_VERSION,
-            "sceneName": "exported",
             "nodes": this.nodes,
             "connections": this.connections
         };
@@ -964,16 +965,12 @@ export default class FlowGraph {
     }
 
     importFromJSON(data) {
-        if (data["version"] != FLOWGRAPH_VERSION) {
-            throw Error("Unsupported file format");
-        }
-
-        for (const node of Object.values(data["nodes"])) {
+        for (const node of Object.values(data.nodes)) {
             this.#internalAddNode(node.id, node.position[0], node.position[1],
-                node.inputs, node.outputs, node.name, node.expanded, "", node.userData);
+                node.inputs, node.outputs, node.name, node.fixed, "", node.userData);
         }
 
-        for (const connection of Object.values(data["connections"])) {
+        for (const connection of Object.values(data.connections)) {
             this.#internalAddConnection(connection.id, connection.source,
                 connection.out, connection.dest, connection.in);
         }

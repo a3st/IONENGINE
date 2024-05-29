@@ -17,7 +17,7 @@ namespace ionengine::tools::editor
     auto Scene::dump() -> std::string
     {
         std::stringstream stream;
-        stream << "{\"version\":\"0.2.1\",\"sceneName\":" << "\"Test\"," << "\"nodes\":[";
+        stream << "{\"nodes\":[";
 
         bool isFirst = true;
         for (auto const& node : nodes)
@@ -29,7 +29,7 @@ namespace ionengine::tools::editor
 
             stream << "{\"id\":" << node->getNodeID() << ",\"name\":\"" << node->getNodeName() << "\",\"position\":["
                    << std::to_string(std::get<0>(node->getPosition())) << ","
-                   << std::to_string(std::get<1>(node->getPosition())) << "],\"expanded\":" << node->isExpanded()
+                   << std::to_string(std::get<1>(node->getPosition())) << "],\"static\":" << node->isNodeStatic()
                    << ",\"inputs\":[";
 
             isFirst = true;

@@ -10,7 +10,7 @@ namespace ionengine::tools::editor
     {
       public:
         OutputNode(uint64_t const nodeID, uint32_t const posX, uint32_t const posY)
-            : Node(nodeID, "Output Image", posX, posY, {{"Color", "float4"}}, {}, false)
+            : Node(nodeID, "Output Image", posX, posY, {{"Color", "float4"}}, {}, true)
         {
         }
 

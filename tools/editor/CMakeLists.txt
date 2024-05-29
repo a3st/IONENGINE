@@ -5,7 +5,9 @@ add_executable(editor
     components/sampler2d.hpp
     components/output.cpp
     components/input.cpp
+    app.cpp
     connection.cpp
+    registry.cpp
     node.cpp
     scene.cpp
     main.cpp)

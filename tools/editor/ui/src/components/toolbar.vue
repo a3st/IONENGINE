@@ -1,12 +1,24 @@
 <template>
-    <div style="display: flex; flex-direction: row; gap: 20px; background-color: rgb(29, 29, 29); height: 30px; padding: 5px; gap: 10px;">
-        <button class="btn-text">File</button>
+    <div class="toolbar-container">
+        <button class="btn-text">Project</button>
         <button class="btn-text">Edit</button>
+        <button class="btn-text">Window</button>
         <button class="btn-text">Help</button>
     </div>
 </template>
 
 <style>
+
+.toolbar-container {
+    display: flex; 
+    flex-direction: row; 
+    gap: 20px; 
+    background-color: rgb(29, 29, 29); 
+    height: 35px; 
+    padding: 5px; 
+    gap: 10px;
+}
+
 .btn-text {
     color: white;
     background: none;

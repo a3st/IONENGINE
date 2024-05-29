@@ -7,9 +7,9 @@ namespace ionengine::tools::editor
 {
     Node::Node(uint64_t const nodeID, std::string_view const nodeName, uint32_t const posX, uint32_t const posY,
                std::vector<NodeSocketInfo> const& inputs, std::vector<NodeSocketInfo> const& outputs,
-               bool const expanded)
+               bool const isStatic)
         : nodeID(nodeID), nodeName(nodeName), posX(posX), posY(posY), inputs(inputs), outputs(outputs),
-          expanded(expanded)
+          nodeStatic(isStatic)
     {
     }
 
@@ -38,9 +38,9 @@ namespace ionengine::tools::editor
         return {posX, posY};
     }
 
-    auto Node::isExpanded() const -> bool
+    auto Node::isNodeStatic() const -> bool
     {
-        return expanded;
+        return nodeStatic;
     }
 
     auto Node::defineOption(std::string_view const option, std::string_view const value) -> void

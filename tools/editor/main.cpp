@@ -1,21 +1,44 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "components/texture2d.hpp"
-#include "components/sampler2d.hpp"
-#include "components/output.hpp"
+#include "app.hpp"
 #include "precompiled.h"
-#include "scene.hpp"
-#include <base64pp/base64pp.h>
 #include <core/exception.hpp>
-#include <webview.hpp>
 
 using namespace ionengine;
 namespace editor = ionengine::tools::editor;
-/*
-using namespace ionengine;
 
-namespace project
+auto main(int32_t argc, char** argv) -> int32_t
 {
+    try
+    {
+        editor::App app(argc, argv);
+        return app.run();
+    }
+    catch (core::Exception e)
+    {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
+/*
+    app.bind("newTestScene", [&](libwebview::EventArgs const& e) {
+            scene = core::make_ref<editor::Scene>();
+
+            auto outputNode = scene->createNode<editor::OutputNode>(600, 10);
+            auto textureNode = scene->createNode<editor::Texture2DNode>(10, 10);
+            textureNode->defineOption("textureName", "simple");
+            auto samplerNode = scene->createNode<editor::Sampler2DNode>(400, 10);
+            samplerNode->defineOption("UV", "input.uv");
+
+            scene->createConnection(textureNode, 0, samplerNode, 1);
+            scene->createConnection(samplerNode, 0, outputNode, 0);
+
+            scene->dfs();
+
+            app.result(e.index, true, scene->dump());
+        });
+
     class MyEngine : public ionengine::Engine
     {
       public:
@@ -58,45 +81,4 @@ namespace project
         core::ref_ptr<ionengine::Texture> base_color;
         core::ref_ptr<ionengine::Material> material;
     };
-} // namespace project*/
-
-auto main(int32_t argc, char** argv) -> int32_t
-{
-    try
-    {
-        libwebview::App app("ionengine", "Editor", 800, 600, true, true);
-
-        core::ref_ptr<editor::Scene> scene;
-
-        app.bind("newTestScene", [&](libwebview::EventArgs const& e) {
-            scene = core::make_ref<editor::Scene>();
-
-            auto outputNode = scene->createNode<editor::OutputNode>(600, 10);
-            auto textureNode = scene->createNode<editor::Texture2DNode>(10, 10);
-            textureNode->defineOption("textureName", "simple");
-            auto samplerNode = scene->createNode<editor::Sampler2DNode>(400, 10);
-            samplerNode->defineOption("UV", "input.uv");
-
-            scene->createConnection(textureNode, 0, samplerNode, 1);
-            scene->createConnection(samplerNode, 0, outputNode, 0);
-
-            scene->dfs();
-
-            app.result(e.index, true, scene->dump());
-        });
-
-        // auto engine = core::make_ref<project::MyEngine>(nullptr, app);
-        // engine->run();
-        app.idle([&]() { /*engine->tick();*/ });
-        if (!app.run("resources/index.html"))
-        {
-            throw core::Exception("An error occurred while creating the interface");
-        }
-        return EXIT_SUCCESS;
-    }
-    catch (core::Exception e)
-    {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-}
+*/

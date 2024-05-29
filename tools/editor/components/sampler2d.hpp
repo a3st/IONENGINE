@@ -9,9 +9,14 @@ namespace ionengine::tools::editor
     class Sampler2DNode : public Node
     {
       public:
+        Sampler2DNode()
+            : Node(0, "Sampler2D", 0, 0, {{"UV", "float2"}, {"Texture", "Texture2D"}}, {{"Color", "float4"}}, false)
+        {
+        }
+
         Sampler2DNode(uint64_t const nodeID, uint32_t const posX, uint32_t const posY)
             : Node(nodeID, "Sampler2D", posX, posY, {{"UV", "float2"}, {"Texture", "Texture2D"}}, {{"Color", "float4"}},
-                   true)
+                   false)
         {
         }
 
