@@ -17,6 +17,7 @@ export default {
 
 <style>
 .dyngr-container {
+    position: relative;
     display: flex;
     margin: 0;
     padding: 0;

@@ -1,21 +1,16 @@
 <template>
     <toolbar></toolbar>
 
-    <dynview ref="mainView">
+    <dynview ref="mainView" @resize="onDynviewResize">
         <dyngr type="row">
             <dyngr type="col">
                 <dynpan>
-                    <div style="display: flex; flex-direction: column; padding: 5px; width: 100%;">
-                        <div style="display: flex; flex-direction: row; height: 30px; background-color: rgb(50, 50, 50); width: 100%;">
-                            <button class="btn-tab" @click="onTabClick($event, 'details', 'tab-shader-graph')">
-                                <div style="display: inline-flex; justify-content: center; align-items: center; gap: 10px;">
-                                    <object data="images/diagram-project.svg" width="16" height="16"></object>
-                                    <span>Shader Graph</span>
-                                    <object data="images/xmark.svg" width="12" height="12"></object>
-                                </div>
-                            </button>
-                        </div>
-                        <div id="tab-shader-graph" class="tab-container" style="height: calc(100% - 30px);">
+                    <div class="pan-wrapper">
+                        <tabgr>
+                            <tabli title="Shader Graph" icon="images/diagram-project.svg" target="tab-shader-graph" fixed default></tabli>
+                        </tabgr>
+
+                        <tabpan id="tab-shader-graph">
                             <div style="background-color: rgb(45, 45, 45); height: 30px; display: inline-flex; align-items: center; padding: 0px 10px 0px 10px;">
                                 <div style="display: inline-flex; align-items: center; gap: 10px;">
                                     <button class="btn-text">Compile</button>
@@ -24,14 +19,37 @@
                             <div id="graph-container" style="height: calc(100% - 30px);">
                                 <div id="graph-root"></div>
                             </div>
-                        </div>
+                        </tabpan>
                     </div>
                 </dynpan>
                 <dynpan>
                 </dynpan>
             </dyngr>
-            <dynpan>
-            </dynpan>
+            <dyngr type="col">
+                <dynpan>
+                    <div class="pan-wrapper">
+                        <tabgr>
+                            <tabli title="Viewport (Preview)" icon="images/video.svg" target="tab-viewport" fixed default></tabli>
+                        </tabgr>
+
+                        <tabpan id="tab-viewport">
+
+                        </tabpan>
+                    </div>
+                </dynpan>
+                <dynpan>
+                    <div class="pan-wrapper">
+                        <tabgr>
+                            <tabli title="Resources" icon="images/dice-d6.svg" target="tab-resources" fixed default></tabli>
+                            <tabli title="Technique" icon="images/image.svg" target="tab-technique" fixed></tabli>
+                        </tabgr>
+
+                        <tabpan id="tab-details">
+
+                        </tabpan>
+                    </div>
+                </dynpan>
+            </dyngr>
         </dyngr>
     </dynview>
 
@@ -119,10 +137,12 @@
 </template>
 
 <style>
-.tab-container {
-    display: none;
-    flex-direction: column;
-    background-color: rgb(80, 80, 80);
+.pan-wrapper {
+    display: flex; 
+    flex-direction: column; 
+    padding: 5px; 
+    width: 100%;
+    height: 100%;
 }
 
 .btn-icon {
@@ -144,22 +164,6 @@
 .btn:hover {
     background-color: rgb(60, 60, 60);
 }
-
-.btn-tab {
-    border-radius: 0px;
-    font-size: 14px;
-    padding: 5px 10px 5px 10px;
-    background: none;
-    color: white;
-}
-
-.btn-tab.active {
-    background-color: rgb(80, 80, 80);
-}
-
-.btn-tab:hover {
-    background-color: rgb(80, 80, 80);
-}
 </style>
 
 <script>
@@ -170,7 +174,10 @@ import ToolbarComponent from '../components/toolbar.vue';
 import FootbarComponent from '../components/footbar.vue';
 import DynviewComponent from '../components/dynview.vue';
 import DynpanComponent from '../components/dynpan.vue';
-import DyngrComponent from '../components/dyngr.vue'
+import DyngrComponent from '../components/dyngr.vue';
+import TabgrComponent from '../components/tabgr.vue';
+import TabpanComponent from '../components/tabpan.vue';
+import TabliComponent from '../components/tabli.vue';
 
 export default {
     components: {
@@ -178,7 +185,10 @@ export default {
         'footbar': FootbarComponent,
         'dynview': DynviewComponent,
         'dynpan': DynpanComponent,
-        'dyngr': DyngrComponent
+        'dyngr': DyngrComponent,
+        'tabgr': TabgrComponent,
+        'tabli': TabliComponent,
+        'tabpan': TabpanComponent
     },
     data() {
         return {
@@ -258,8 +268,9 @@ export default {
         this.graph = graph;
     },
     methods: {
-        onPanelResize() {
-            console.log("resize");
+        onDynviewResize(target) {
+            const container = $('#graph-container');
+            toRaw(this.graph).resize(container.width(), container.height());
         },
         onGraphResize(e) {
             const container = $('#graph-container');

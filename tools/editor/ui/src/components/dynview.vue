@@ -8,6 +8,7 @@
 import $ from 'jquery'
 
 export default {
+    emits: ['resize'],
     data() {
         return {
             observer: null,
@@ -25,16 +26,32 @@ export default {
         this.observer = observer;
 
         $('.dyngr-container.col')
-            .children()
-            .each(function (index, element) {
-                if(index > 0) {
-                    $(element).append(`<div class="dynsize-bar col" style="width: ${$(element).width()}px;"></div>`);
-                }
+            .each((_, element) => {
+                $(element)
+                    .children()
+                    .each((index, element) => {
+                        if(index > 0) {
+                            // style="width: ${$(element).width()}px;"
+                            $(element).append(`<div class="dynsize-bar col"></div>`);
+                        }
+                    });
+            });
+
+        $('.dyngr-container.row')
+            .each((_, element) => {
+                $(element)
+                    .children()
+                    .each((index, element) => {
+                        if(index > 0) {
+                            // style="height: ${$(element).height()}px;"
+                            $(element).append(`<div class="dynsize-bar row"></div>`);
+                        }
+                    });
             });
 
         $('.dynsize-bar').bind('mousedown', e => {
             this.selectedMover = e.target;
-            this.isMoverVertical = true;
+            this.isMoverVertical = $(this.selectedMover).hasClass('row') ? false : true;
             this.moverPos = this.isMoverVertical ? e.offsetY : e.offsetX;
         });
 
@@ -50,8 +67,8 @@ export default {
                 const currentPanel = $(this.selectedMover).parent();
                 const previousPanel = $(this.selectedMover).parent().prev();
 
-                const updatedCurrentSize = currentPanel.height() + distance;
-                const updatedPreviousSize = previousPanel.height() - distance;
+                const updatedCurrentSize = (this.isMoverVertical ? currentPanel.height() : currentPanel.width()) + distance;
+                const updatedPreviousSize = (this.isMoverVertical ? previousPanel.height() : previousPanel.width()) - distance;
 
                 if(updatedCurrentSize < 100 || updatedPreviousSize < 100) {
                     return;
@@ -61,8 +78,15 @@ export default {
                     return;
                 }
 
-                currentPanel.css('height', `${updatedCurrentSize}px`);
-                previousPanel.css('height', `${updatedPreviousSize}px`);
+                if(this.isMoverVertical) {
+                    currentPanel.css('height', `${updatedCurrentSize}px`);
+                    previousPanel.css('height', `${updatedPreviousSize}px`);
+                } else {
+                    currentPanel.css('width', `${updatedCurrentSize}px`);
+                    previousPanel.css('width', `${updatedPreviousSize}px`);
+                }
+                
+                this.$emit('resize', this.selectedMover);
             }
         });
     },
@@ -94,11 +118,13 @@ export default {
 
 .dynsize-bar.col {
     height: 10px;
+    width: 100%;
     cursor: row-resize;
 }
 
 .dynsize-bar.row {
     width: 10px;
+    height: 100%;
     cursor: col-resize;
 }
 </style>
