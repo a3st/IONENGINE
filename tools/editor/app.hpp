@@ -3,6 +3,7 @@
 #pragma once
 
 #include "registry.hpp"
+#include "merger.hpp"
 #include <webview.hpp>
 
 namespace ionengine::tools::editor
@@ -17,6 +18,7 @@ namespace ionengine::tools::editor
       private:
         libwebview::App app;
         editor::ComponentRegistry registry;
+        editor::Merger merger;
 
         auto registerComponents() -> void;
     };

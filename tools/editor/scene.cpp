@@ -27,56 +27,7 @@ namespace ionengine::tools::editor
                 stream << ",";
             }
 
-            stream << "{\"id\":" << node->getNodeID() << ",\"name\":\"" << node->getNodeName() << "\",\"position\":["
-                   << std::to_string(std::get<0>(node->getPosition())) << ","
-                   << std::to_string(std::get<1>(node->getPosition())) << "],\"static\":" << node->isNodeStatic()
-                   << ",\"inputs\":[";
-
-            isFirst = true;
-            for (auto const& socket : node->getInputSockets())
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "{\"name\":\"" << socket.socketName << "\",\"type\":\"" << socket.socketType << "\"}";
-
-                isFirst = false;
-            }
-
-            stream << "],\"outputs\":[";
-
-            isFirst = true;
-            for (auto const& socket : node->getOutputSockets())
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "{\"name\":\"" << socket.socketName << "\",\"type\":\"" << socket.socketType << "\"}";
-
-                isFirst = false;
-            }
-
-            stream << "],\"userData\":{";
-
-            isFirst = true;
-            for (auto const& [key, value] : node->getOptions())
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "\"" << key << "\":\"" << value << "\"";
-
-                isFirst = false;
-            }
-
-            stream << "}}";
-
+            stream << node->dump();
             isFirst = false;
         }
         stream << "],\"connections\":[";

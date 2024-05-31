@@ -6,7 +6,7 @@
 
 <style>
 .tabpan-container {
-    display: flex;
+    display: none;
     flex-direction: column;
     background-color: rgb(50, 50, 50);
     width: 100%;

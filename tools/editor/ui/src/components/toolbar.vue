@@ -8,7 +8,6 @@
 </template>
 
 <style>
-
 .toolbar-container {
     display: flex; 
     flex-direction: row; 

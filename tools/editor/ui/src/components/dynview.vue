@@ -31,7 +31,6 @@ export default {
                     .children()
                     .each((index, element) => {
                         if(index > 0) {
-                            // style="width: ${$(element).width()}px;"
                             $(element).append(`<div class="dynsize-bar col"></div>`);
                         }
                     });
@@ -43,7 +42,6 @@ export default {
                     .children()
                     .each((index, element) => {
                         if(index > 0) {
-                            // style="height: ${$(element).height()}px;"
                             $(element).append(`<div class="dynsize-bar row"></div>`);
                         }
                     });
@@ -92,7 +90,7 @@ export default {
     },
     methods: {
         dynViewSlotsChanged(e) {
-            console.log(e)
+            console.log('dynViewSlotsChanged', e)
         }
     }
 }

@@ -35,6 +35,8 @@ namespace ionengine::tools::editor
 
         auto getOptions() const -> std::unordered_map<std::string, std::string> const&;
 
+        auto dump() const -> std::string;
+
         virtual auto generateInitialShaderCode() -> std::string = 0;
 
         virtual auto generateResourceShaderCode() -> std::string = 0;
