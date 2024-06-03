@@ -7,9 +7,6 @@
 [submodule "thirdparty/libpng"]
 	path = thirdparty/libpng
 	url = https://github.com/pnggroup/libpng.git
-[submodule "thirdparty/libwebview"]
-	path = thirdparty/libwebview
-	url = https://github.com/a3st/libwebview
 [submodule "thirdparty/base64pp"]
 	path = thirdparty/base64pp
 	url = https://github.com/matheusgomes28/base64pp
