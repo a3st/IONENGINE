@@ -14,8 +14,8 @@ namespace ionengine::rhi
         create_chunk(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
     }
 
-    auto DescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type, uint32_t const size)
-        -> DescriptorAllocation
+    auto DescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heap_type,
+                                       uint32_t const size) -> DescriptorAllocation
     {
         assert((chunks.find(heap_type) != chunks.end()) && "Required heap not found when allocating descriptor");
 
@@ -544,12 +544,12 @@ namespace ionengine::rhi
         }
     }
 
-    DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const vs_data,
-                           std::span<uint8_t const> const ps_data)
+    DX12Shader::DX12Shader(ID3D12Device4* device, std::span<VertexDeclarationInfo const> const vertexDeclarations,
+                           std::span<uint8_t const> const vertexShader, std::span<uint8_t const> const pixelShader)
     {
         using shader_stage_t = std::pair<D3D12_SHADER_TYPE, std::span<uint8_t const>>;
-        auto shaders =
-            std::vector<shader_stage_t>{{D3D12_SHADER_TYPE_VERTEX, vs_data}, {D3D12_SHADER_TYPE_PIXEL, ps_data}};
+        auto shaders = std::vector<shader_stage_t>{{D3D12_SHADER_TYPE_VERTEX, vertexShader},
+                                                   {D3D12_SHADER_TYPE_PIXEL, pixelShader}};
 
         XXHash64 hasher(0);
         for (auto const& shader : shaders)
@@ -570,16 +570,55 @@ namespace ionengine::rhi
             stages.emplace(shader.first, d3d12_shader_bytecode);
         }
         hash = hasher.hash();
+
+        std::vector<size_t> declarationIndices;
+        for (auto const& vertexDeclaration : vertexDeclarations)
+        {
+            declarationIndices.emplace_back(vertexDeclaration.index);
+        }
+
+        std::sort(declarationIndices.begin(), declarationIndices.end(), [&](auto const& lhs, auto const& rhs) {
+            return vertexDeclarations[lhs].index < vertexDeclarations[rhs].index;
+        });
+
+        for (auto const& declarationIndex : declarationIndices)
+        {
+            D3D12_INPUT_ELEMENT_DESC d3d12_input_element{};
+            uint32_t semanticIndex;
+            if (std::isdigit(vertexDeclarations[declarationIndex].semantic.back()) == 0)
+            {
+                inputAssembler.semanticNames.emplace_back(vertexDeclarations[declarationIndex].semantic);
+                semanticIndex = 0;
+            }
+            else
+            {
+                semanticIndex = static_cast<int32_t>(vertexDeclarations[declarationIndex].semantic.back()) - 48;
+                std::string const semanticName = vertexDeclarations[declarationIndex].semantic.substr(
+                    0, vertexDeclarations[declarationIndex].semantic.size() - 1);
+                inputAssembler.semanticNames.emplace_back(semanticName);
+            }
+
+            d3d12_input_element.SemanticName = inputAssembler.semanticNames.back().c_str();
+            d3d12_input_element.SemanticIndex = semanticIndex;
+            d3d12_input_element.Format = vertex_format_to_dxgi(vertexDeclarations[declarationIndex].format);
+            d3d12_input_element.InputSlot = 0;
+            d3d12_input_element.AlignedByteOffset = inputAssembler.inputSize;
+            d3d12_input_element.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+            d3d12_input_element.InstanceDataStepRate = 0;
+
+            inputAssembler.inputElements.emplace_back(d3d12_input_element);
+            inputAssembler.inputSize += vertex_format_size(vertexDeclarations[declarationIndex].format);
+        }
     }
 
-    DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const cs_data)
+    DX12Shader::DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const computeShader)
     {
         XXHash64 hasher(0);
 
         std::vector<uint8_t> buffer;
         {
-            buffer.resize(cs_data.size());
-            std::memcpy(buffer.data(), cs_data.data(), buffer.size());
+            buffer.resize(computeShader.size());
+            std::memcpy(buffer.data(), computeShader.data(), buffer.size());
         }
 
         hasher.add(buffer.data(), buffer.size());
@@ -602,6 +641,11 @@ namespace ionengine::rhi
     auto DX12Shader::get_hash() const -> uint64_t
     {
         return hash;
+    }
+
+    auto DX12Shader::getInputAssembler() const -> InputAssemblerInfo const&
+    {
+        return inputAssembler;
     }
 
     auto compare_op_to_d3d12(CompareOp const compare_op) -> D3D12_COMPARISON_FUNC
@@ -668,32 +712,14 @@ namespace ionengine::rhi
     }
 
     Pipeline::Pipeline(ID3D12Device4* device, ID3D12RootSignature* root_signature, DX12Shader& shader,
-                       std::span<VertexDeclarationInfo const> const vertex_declarations,
                        RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
                        std::optional<DepthStencilStageInfo> const depth_stencil,
                        std::span<DXGI_FORMAT const> const render_target_formats, DXGI_FORMAT const depth_stencil_format,
                        ID3DBlob* blob)
-        : root_signature(root_signature), vertex_stride_size(0)
+        : root_signature(root_signature)
     {
         auto d3d12_pipeline_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC{};
         d3d12_pipeline_desc.pRootSignature = root_signature;
-
-        std::vector<D3D12_INPUT_ELEMENT_DESC> d3d12_input_elements;
-
-        for (auto const& vertex_declaration : vertex_declarations)
-        {
-            auto d3d12_input_element = D3D12_INPUT_ELEMENT_DESC{};
-            d3d12_input_element.SemanticName = vertex_declaration.semantic.c_str();
-            d3d12_input_element.SemanticIndex = vertex_declaration.index;
-            d3d12_input_element.Format = vertex_format_to_dxgi(vertex_declaration.format);
-            d3d12_input_element.InputSlot = 0;
-            d3d12_input_element.AlignedByteOffset = vertex_declaration.offset;
-            d3d12_input_element.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
-            d3d12_input_element.InstanceDataStepRate = 0;
-
-            d3d12_input_elements.emplace_back(d3d12_input_element);
-            vertex_stride_size += vertex_format_size(vertex_declaration.format);
-        }
 
         for (auto const& [stage, data] : shader.get_stages())
         {
@@ -702,9 +728,10 @@ namespace ionengine::rhi
                 case D3D12_SHADER_TYPE_VERTEX: {
                     d3d12_pipeline_desc.VS = data;
 
-                    auto d3d12_input_layout = D3D12_INPUT_LAYOUT_DESC{};
-                    d3d12_input_layout.pInputElementDescs = d3d12_input_elements.data();
-                    d3d12_input_layout.NumElements = static_cast<uint32_t>(d3d12_input_elements.size());
+                    D3D12_INPUT_LAYOUT_DESC d3d12_input_layout{};
+                    d3d12_input_layout.pInputElementDescs = shader.getInputAssembler().inputElements.data();
+                    d3d12_input_layout.NumElements =
+                        static_cast<uint32_t>(shader.getInputAssembler().inputElements.size());
 
                     d3d12_pipeline_desc.InputLayout = d3d12_input_layout;
                     break;
@@ -723,7 +750,6 @@ namespace ionengine::rhi
                     d3d12_render_target_blend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
                     auto d3d12_blend = D3D12_BLEND_DESC{};
-                    uint32_t render_target_count = 0;
                     for (uint32_t const i : std::views::iota(0u, render_target_formats.size()))
                     {
                         if (render_target_formats[i] == DXGI_FORMAT_UNKNOWN)
@@ -733,8 +759,6 @@ namespace ionengine::rhi
 
                         d3d12_pipeline_desc.RTVFormats[i] = render_target_formats[i];
                         d3d12_blend.RenderTarget[i] = d3d12_render_target_blend;
-
-                        render_target_count++;
                     }
                     d3d12_pipeline_desc.NumRenderTargets = static_cast<uint32_t>(render_target_formats.size());
 
@@ -867,8 +891,7 @@ namespace ionengine::rhi
     }
 
     auto PipelineCache::get(
-        DX12Shader& shader, std::span<VertexDeclarationInfo const> const vertex_declarations,
-        RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
+        DX12Shader& shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
         std::optional<DepthStencilStageInfo> const depth_stencil,
         std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& render_target_formats,
         DXGI_FORMAT const depth_stencil_format) -> core::ref_ptr<Pipeline>
@@ -886,8 +909,8 @@ namespace ionengine::rhi
         {
             lock.unlock();
             auto pipeline =
-                core::make_ref<Pipeline>(device, root_signature.get(), shader, vertex_declarations, rasterizer, blend_color,
-                                         depth_stencil, render_target_formats, depth_stencil_format, nullptr);
+                core::make_ref<Pipeline>(device, root_signature.get(), shader, rasterizer, blend_color, depth_stencil,
+                                         render_target_formats, depth_stencil_format, nullptr);
 
             lock.lock();
             entries.emplace(entry, pipeline);
@@ -1009,13 +1032,11 @@ namespace ionengine::rhi
     }
 
     auto DX12GraphicsContext::set_graphics_pipeline_options(
-        core::ref_ptr<Shader> shader, std::span<VertexDeclarationInfo const> const vertex_declarations,
-        RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
+        core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
         std::optional<DepthStencilStageInfo> const depth_stencil) -> void
     {
-        auto pipeline = pipeline_cache->get(static_cast<DX12Shader&>(*shader), vertex_declarations, rasterizer,
-                                            blend_color, depth_stencil, render_target_formats, depth_stencil_format);
-        vertex_stride_size = pipeline->get_vertex_stride_size();
+        auto pipeline = pipeline_cache->get(static_cast<DX12Shader&>(*shader), rasterizer, blend_color, depth_stencil,
+                                            render_target_formats, depth_stencil_format);
 
         if (!is_root_signature_binded)
         {
@@ -1115,14 +1136,14 @@ namespace ionengine::rhi
         command_list->EndRenderPass();
     }
 
-    auto DX12GraphicsContext::bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
-        -> void
+    auto DX12GraphicsContext::bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
+                                                 size_t const size) -> void
     {
         auto d3d12_vertex_buffer_view = D3D12_VERTEX_BUFFER_VIEW{};
         d3d12_vertex_buffer_view.BufferLocation =
             static_cast<DX12Buffer*>(buffer.get())->get_resource()->GetGPUVirtualAddress() + offset;
         d3d12_vertex_buffer_view.SizeInBytes = static_cast<uint32_t>(size);
-        d3d12_vertex_buffer_view.StrideInBytes = vertex_stride_size;
+        d3d12_vertex_buffer_view.StrideInBytes = current_shader->getInputAssembler().inputSize;
 
         command_list->IASetVertexBuffers(0, 1, &d3d12_vertex_buffer_view);
     }
@@ -1322,8 +1343,8 @@ namespace ionengine::rhi
         return Future<Buffer>(dst, std::move(future_impl));
     }
 
-    auto DX12CopyContext::write_texture(core::ref_ptr<Texture> dst, std::vector<std::span<uint8_t const>> const& data)
-        -> Future<Texture>
+    auto DX12CopyContext::write_texture(core::ref_ptr<Texture> dst,
+                                        std::vector<std::span<uint8_t const>> const& data) -> Future<Texture>
     {
         size_t row_bytes = 0;
         uint32_t row_count = 0;
@@ -1665,29 +1686,26 @@ namespace ionengine::rhi
         ::CloseHandle(fence_event);
     }
 
-    auto DX12Device::create_shader(std::span<uint8_t const> const vs_data, std::span<uint8_t const> const ps_data)
-        -> core::ref_ptr<Shader>
+    auto DX12Device::createShader(std::span<VertexDeclarationInfo const> const vertexDeclarations,
+                                  std::span<uint8_t const> const vertexShader,
+                                  std::span<uint8_t const> const pixelShader) -> core::ref_ptr<Shader>
     {
         std::lock_guard lock(mutex);
-
-        auto shader = core::make_ref<DX12Shader>(device.get(), vs_data, ps_data);
-
+        auto shader = core::make_ref<DX12Shader>(device.get(), vertexDeclarations, vertexShader, pixelShader);
         return shader;
     }
 
-    auto DX12Device::create_shader(std::span<uint8_t const> const cs_data) -> core::ref_ptr<Shader>
+    auto DX12Device::createShader(std::span<uint8_t const> const computeShader) -> core::ref_ptr<Shader>
     {
         std::lock_guard lock(mutex);
-
-        auto shader = core::make_ref<DX12Shader>(device.get(), cs_data);
-
+        auto shader = core::make_ref<DX12Shader>(device.get(), computeShader);
         return shader;
     }
 
     auto DX12Device::create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
                                     uint32_t const mip_levels, TextureFormat const format,
-                                    TextureDimension const dimension, TextureUsageFlags const flags)
-        -> core::ref_ptr<Texture>
+                                    TextureDimension const dimension,
+                                    TextureUsageFlags const flags) -> core::ref_ptr<Texture>
     {
         std::lock_guard lock(mutex);
 
@@ -1697,8 +1715,8 @@ namespace ionengine::rhi
         return texture;
     }
 
-    auto DX12Device::create_buffer(size_t const size, size_t const element_stride, BufferUsageFlags const flags)
-        -> core::ref_ptr<Buffer>
+    auto DX12Device::create_buffer(size_t const size, size_t const element_stride,
+                                   BufferUsageFlags const flags) -> core::ref_ptr<Buffer>
     {
         std::lock_guard lock(mutex);
 
@@ -1756,5 +1774,10 @@ namespace ionengine::rhi
 
         graphics_info.fence_value++;
         THROW_IF_FAILED(graphics_info.queue->Signal(graphics_info.fence.get(), graphics_info.fence_value));
+    }
+
+    auto DX12Device::getBackendType() const -> std::string_view
+    {
+        return "D3D12";
     }
 } // namespace ionengine::rhi

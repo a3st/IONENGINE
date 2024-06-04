@@ -241,19 +241,29 @@ namespace ionengine::rhi
         D3D12_SHADER_TYPE_COMPUTE
     };
 
+    struct InputAssemblerInfo
+    {
+        std::vector<std::string> semanticNames;
+        std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
+        uint32_t inputSize;
+    };
+
     class DX12Shader final : public Shader
     {
       public:
-        DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const vs_data,
-                   std::span<uint8_t const> const ps_data);
+        DX12Shader(ID3D12Device4* device, std::span<VertexDeclarationInfo const> const vertexDeclarations,
+                   std::span<uint8_t const> const vertexShader, std::span<uint8_t const> const pixelShader);
 
-        DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const cs_data);
+        DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const computeShader);
 
         auto get_hash() const -> uint64_t;
 
         auto get_stages() const -> std::unordered_map<D3D12_SHADER_TYPE, D3D12_SHADER_BYTECODE> const&;
 
+        auto getInputAssembler() const -> InputAssemblerInfo const&;
+
       private:
+        InputAssemblerInfo inputAssembler;
         std::unordered_map<D3D12_SHADER_TYPE, D3D12_SHADER_BYTECODE> stages;
         std::vector<std::vector<uint8_t>> buffers;
         uint64_t hash;
@@ -269,7 +279,6 @@ namespace ionengine::rhi
     {
       public:
         Pipeline(ID3D12Device4* device, ID3D12RootSignature* root_signature, DX12Shader& shader,
-                 std::span<VertexDeclarationInfo const> const vertex_declarations,
                  RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
                  std::optional<DepthStencilStageInfo> const depth_stencil,
                  std::span<DXGI_FORMAT const> const render_target_formats, DXGI_FORMAT const depth_stencil_format,
@@ -285,15 +294,9 @@ namespace ionengine::rhi
             return root_signature;
         }
 
-        auto get_vertex_stride_size() const -> uint32_t
-        {
-            return vertex_stride_size;
-        }
-
       private:
         ID3D12RootSignature* root_signature;
         winrt::com_ptr<ID3D12PipelineState> pipeline_state;
-        uint32_t vertex_stride_size;
     };
 
     class PipelineCache final : public core::ref_counted_object
@@ -353,8 +356,7 @@ namespace ionengine::rhi
 
         PipelineCache(ID3D12Device4* device);
 
-        auto get(DX12Shader& shader, std::span<VertexDeclarationInfo const> const vertex_declarations,
-                 RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
+        auto get(DX12Shader& shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
                  std::optional<DepthStencilStageInfo> const depth_stencil,
                  std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& render_target_formats,
                  DXGI_FORMAT const depth_stencil_format) -> core::ref_ptr<Pipeline>;
@@ -387,9 +389,8 @@ namespace ionengine::rhi
 
         auto reset() -> void override;
 
-        auto set_graphics_pipeline_options(core::ref_ptr<Shader> shader,
-                                           std::span<VertexDeclarationInfo const> const vertex_declarations,
-                                           RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
+        auto set_graphics_pipeline_options(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
+                                           BlendColorInfo const& blend_color,
                                            std::optional<DepthStencilStageInfo> const depth_stencil) -> void override;
 
         auto bind_descriptor(uint32_t const index, uint32_t const descriptor) -> void override;
@@ -399,8 +400,8 @@ namespace ionengine::rhi
 
         auto end_render_pass() -> void override;
 
-        auto bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
-            -> void override;
+        auto bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
+                                size_t const size) -> void override;
 
         auto bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
                                IndexFormat const format) -> void override;
@@ -409,11 +410,11 @@ namespace ionengine::rhi
 
         auto draw(uint32_t const vertex_count, uint32_t const instance_count) -> void override;
 
-        auto set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height)
-            -> void override;
+        auto set_viewport(int32_t const x, int32_t const y, uint32_t const width,
+                          uint32_t const height) -> void override;
 
-        auto set_scissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom)
-            -> void override;
+        auto set_scissor(int32_t const left, int32_t const top, int32_t const right,
+                         int32_t const bottom) -> void override;
 
         auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst, ResourceState const before,
                      ResourceState const after) -> void override;
@@ -436,7 +437,6 @@ namespace ionengine::rhi
         std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> render_target_formats;
         DXGI_FORMAT depth_stencil_format;
         std::array<uint32_t, 16> bindings;
-        uint32_t vertex_stride_size;
     };
 
     inline uint32_t constexpr DX12_RESOURCE_MEMORY_ALIGNMENT = 256;
@@ -455,8 +455,8 @@ namespace ionengine::rhi
 
         auto write_buffer(core::ref_ptr<Buffer> dst, std::span<uint8_t const> const data) -> Future<Buffer> override;
 
-        auto write_texture(core::ref_ptr<Texture> dst, std::vector<std::span<uint8_t const>> const& data)
-            -> Future<Texture> override;
+        auto write_texture(core::ref_ptr<Texture> dst,
+                           std::vector<std::span<uint8_t const>> const& data) -> Future<Texture> override;
 
         auto read_buffer(core::ref_ptr<Buffer> dst, std::vector<uint8_t>& data) -> void override;
 
@@ -510,17 +510,18 @@ namespace ionengine::rhi
 
         ~DX12Device();
 
-        auto create_shader(std::span<uint8_t const> const vs_data, std::span<uint8_t const> const ps_data)
-            -> core::ref_ptr<Shader> override;
+        auto createShader(std::span<VertexDeclarationInfo const> const vertexDeclarations,
+                          std::span<uint8_t const> const vertexShader,
+                          std::span<uint8_t const> const pixelShader) -> core::ref_ptr<Shader> override;
 
-        auto create_shader(std::span<uint8_t const> const cs_data) -> core::ref_ptr<Shader> override;
+        auto createShader(std::span<uint8_t const> const computeShader) -> core::ref_ptr<Shader> override;
 
         auto create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
                             uint32_t const mip_levels, TextureFormat const format, TextureDimension const dimension,
                             TextureUsageFlags const flags) -> core::ref_ptr<Texture> override;
 
-        auto create_buffer(size_t const size, size_t const element_stride, BufferUsageFlags const flags)
-            -> core::ref_ptr<Buffer> override;
+        auto create_buffer(size_t const size, size_t const element_stride,
+                           BufferUsageFlags const flags) -> core::ref_ptr<Buffer> override;
 
         auto create_graphics_context() -> core::ref_ptr<GraphicsContext> override;
 
@@ -529,6 +530,8 @@ namespace ionengine::rhi
         auto request_back_buffer() -> core::ref_ptr<Texture> override;
 
         auto present_back_buffer() -> void override;
+
+        auto getBackendType() const -> std::string_view override;
 
       private:
         std::mutex mutex;

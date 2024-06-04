@@ -1,14 +1,19 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "renderer.hpp"
-#include "material.hpp"
-#include "model.hpp"
 #include "precompiled.h"
-#include "texture.hpp"
 
 namespace ionengine
 {
-    struct WorldData
+    /*auto Renderer::createTexture(uint32_t const width, uint32_t const height,
+                                 TextureUsage const usage) -> core::ref_ptr<Texture>
+    {
+        auto texture = core::make_ref<Texture>(device);
+        texture->create(width, height, usage);
+        return texture;
+    }*/
+
+    /*struct WorldData
     {
         math::Matrixf model;
         math::Matrixf view;
@@ -26,10 +31,10 @@ namespace ionengine
         device->get_graphics_context().set_viewport(0, 0, 752, 286);
         device->get_graphics_context().set_scissor(0, 0, 752, 286);
 
-        /*device->get_graphics_context().set_graphics_pipeline_options(
+        device->get_graphics_context().set_graphics_pipeline_options(
             mesh->material->get_shader(),
             rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid, .cull_mode = rhi::CullMode::Back},
-            rhi::BlendColorInfo::Opaque(), std::nullopt);*/
+            rhi::BlendColorInfo::Opaque(), std::nullopt);
 
         uint8_t* buffer = test_buffer->map_memory();
 
@@ -45,13 +50,13 @@ namespace ionengine
         // device->get_graphics_context().bind_descriptor("WorldData",
         // test_buffer->get_descriptor_offset(rhi::BufferUsage::ConstantBuffer));
 
-        /*auto material_buffer = mesh.material->get_buffer();
+        auto material_buffer = mesh.material->get_buffer();
 
         device->get_graphics_context().barrier(material_buffer, rhi::ResourceState::Common,
                                                rhi::ResourceState::AllShaderRead);
 
         device->get_graphics_context().bind_descriptor("MaterialData",
-                                                       material_buffer->get(rhi::BufferUsage::ConstantBuffer));*/
+                                                       material_buffer->get(rhi::BufferUsage::ConstantBuffer));
 
         // for (auto const& primitive : mesh->primitives)
         {
@@ -104,5 +109,5 @@ namespace ionengine
                                                    rhi::ResourceState::Common);
         }
         render_pass_color_textures.clear();
-    }
+    }*/
 } // namespace ionengine

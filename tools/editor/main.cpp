@@ -1,7 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "app.hpp"
 #include "precompiled.h"
+#include "view_model.hpp"
 #include <core/exception.hpp>
 
 using namespace ionengine;
@@ -11,34 +11,23 @@ auto main(int32_t argc, char** argv) -> int32_t
 {
     try
     {
-        editor::App app(argc, argv);
-        return app.run();
+        libwebview::App app("ionengine-tools", "IONENGINE Editor", 800, 600, true, true);
+
+        editor::ViewModel view(&app);
+        view.run();
+
+        app.setIdle([&]() { view.loop(); });
+        app.run("resources/index.html");
+        return EXIT_SUCCESS;
     }
     catch (core::Exception e)
     {
-        std::cerr << e.what() << std::endl;
+        libwebview::showMessageDialog("Crash", e.what(), libwebview::MessageDialogType::Error);
         return EXIT_FAILURE;
     }
 }
 
 /*
-    app.bind("newTestScene", [&](libwebview::EventArgs const& e) {
-            scene = core::make_ref<editor::Scene>();
-
-            auto outputNode = scene->createNode<editor::OutputNode>(600, 10);
-            auto textureNode = scene->createNode<editor::Texture2DNode>(10, 10);
-            textureNode->defineOption("textureName", "simple");
-            auto samplerNode = scene->createNode<editor::Sampler2DNode>(400, 10);
-            samplerNode->defineOption("UV", "input.uv");
-
-            scene->createConnection(textureNode, 0, samplerNode, 1);
-            scene->createConnection(samplerNode, 0, outputNode, 0);
-
-            scene->dfs();
-
-            app.result(e.index, true, scene->dump());
-        });
-
     class MyEngine : public ionengine::Engine
     {
       public:

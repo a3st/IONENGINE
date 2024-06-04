@@ -16,10 +16,10 @@ namespace ionengine
         DepthStencil
     };
 
-    class Texture : public Asset
+    class TextureAsset : public Asset
     {
       public:
-        Texture(LinkedDevice& device);
+        TextureAsset(LinkedDevice& device);
 
         auto create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> bool;
 

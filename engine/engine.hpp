@@ -11,6 +11,8 @@ namespace ionengine
         class Window;
     }
 
+    class ShaderAsset;
+
     class Engine : public core::ref_counted_object
     {
       public:
@@ -18,7 +20,9 @@ namespace ionengine
 
         auto tick() -> void;
 
-        auto run() -> int32_t;
+        auto loop() -> void;
+
+        auto run() -> void;
 
       private:
         platform::Window* window;
@@ -30,6 +34,8 @@ namespace ionengine
         virtual auto update(float const dt) -> void = 0;
 
         virtual auto render() -> void = 0;
+
+        auto createShaderAsset() -> core::ref_ptr<ShaderAsset>;
 
         /*auto create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)
             -> core::ref_ptr<Texture>;

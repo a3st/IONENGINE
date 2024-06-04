@@ -25,7 +25,7 @@ namespace ionengine::tools::editor
         auto createConnection(core::ref_ptr<Node> sourceNode, uint64_t const sourceIndex, core::ref_ptr<Node> destNode,
                               uint64_t const destIndex) -> core::ref_ptr<Connection>;
 
-        auto dfs() -> void;
+        auto dfs() -> std::string;
 
         auto dump() -> std::string;
 

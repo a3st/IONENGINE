@@ -714,6 +714,16 @@ namespace ionengine::tools::shaderc
                             shaderCode = beginShader + generatedShader.str() + endShader;
                             break;
                         }
+                        case rhi::fx::ShaderElementType::Texture2D: {
+                            auto beginShader = shaderCode.substr(0, nameOffset);
+                            auto endShader = shaderCode.substr(nameOffset + member.size(), std::string::npos);
+                            std::stringstream generatedShader;
+                            generatedShader << "Texture2D(ResourceDescriptorHeap[shaderData." << member << "])";
+
+                            offset = nameOffset + 1 + generatedShader.str().size();
+                            shaderCode = beginShader + generatedShader.str() + endShader;
+                            break;
+                        }
                         default: {
                             auto beginShader = shaderCode.substr(0, nameOffset);
                             auto endShader = shaderCode.substr(nameOffset + member.size(), std::string::npos);

@@ -3,19 +3,19 @@
 #pragma once
 
 #include "linked_device.hpp"
-#include "math/matrix.hpp"
+#include "texture.hpp"
+#include "shader.hpp"
 
 namespace ionengine
 {
-    class Texture;
-    class Mesh;
-
     class Renderer
     {
       public:
         Renderer(LinkedDevice& device);
 
-        auto add_point_light() -> void
+        auto registerShader(std::string_view const shaderName, core::ref_ptr<ShaderAsset> shaderAsset) -> bool;
+
+        /*auto add_point_light() -> void
         {
         }
 
@@ -34,11 +34,9 @@ namespace ionengine
         auto begin_draw(std::span<core::ref_ptr<Texture> const> const colors, core::ref_ptr<Texture> depth_stencil,
                         math::Color const& clear_color, float const clear_depth, uint8_t const clear_stencil) -> void;
 
-        auto end_draw() -> void;
+        auto end_draw() -> void;*/
 
       private:
         LinkedDevice* device;
-        std::vector<core::ref_ptr<rhi::Texture>> render_pass_color_textures;
-        core::ref_ptr<rhi::Buffer> test_buffer;
     };
 } // namespace ionengine

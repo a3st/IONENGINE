@@ -19,3 +19,6 @@
 [submodule "thirdparty/argh"]
 	path = thirdparty/argh
 	url = https://github.com/adishavit/argh
+[submodule "thirdparty/libwebview"]
+	path = thirdparty/libwebview
+	url = https://github.com/a3st/libwebview

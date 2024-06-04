@@ -42,6 +42,15 @@ namespace ionengine::rhi::fx
         Texture2D
     };
 
+    inline std::unordered_map<ShaderElementType, size_t> ShaderElementSize = {
+        {ShaderElementType::Float4x4, 64},      {ShaderElementType::Float3x3, 36},
+        {ShaderElementType::Float2x2, 16},      {ShaderElementType::Float4, 16},
+        {ShaderElementType::Float3, 12},        {ShaderElementType::Float2, 8},
+        {ShaderElementType::Float, 4},          {ShaderElementType::Bool, 4},
+        {ShaderElementType::Uint, 4},           {ShaderElementType::SamplerState, 4},
+        {ShaderElementType::ConstantBuffer, 4}, {ShaderElementType::StorageBuffer, 4},
+        {ShaderElementType::Texture2D, 4}};
+
     enum class ShaderStageType
     {
         Vertex,

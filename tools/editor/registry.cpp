@@ -5,6 +5,31 @@
 
 namespace ionengine::tools::editor
 {
+    auto DomainRegistry::addDomainToRegistry(std::string_view const domainType, core::ref_ptr<Node> node) -> void
+    {
+        domains.emplace(std::string(domainType), node);
+    }
+
+    auto DomainRegistry::dump() -> std::string
+    {
+        std::stringstream stream;
+        stream << "{\"domains\":[";
+
+        bool isFirst = true;
+        for (auto const& [domainName, domainNode] : domains)
+        {
+            if (!isFirst)
+            {
+                stream << ",";
+            }
+
+            stream << "{\"name\":\"" << domainName << "\",\"node\":" << domainNode->dump() << "}";
+            isFirst = false;
+        }
+        stream << "]}";
+        return stream.str();
+    }
+
     auto ComponentRegistry::addComponentToRegistry(std::string_view const group, core::ref_ptr<Node> node) -> void
     {
         groups.try_emplace(std::string(group));

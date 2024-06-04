@@ -7,11 +7,11 @@
 
 namespace ionengine
 {
-    Texture::Texture(LinkedDevice& device) : device(&device)
+    TextureAsset::TextureAsset(LinkedDevice& device) : device(&device)
     {
     }
 
-    auto Texture::create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> bool
+    auto TextureAsset::create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> bool
     {
         if (usage == TextureUsage::RenderTarget)
         {
@@ -34,12 +34,12 @@ namespace ionengine
         return true;
     }
 
-    auto Texture::getTexture() const -> core::ref_ptr<rhi::Texture>
+    auto TextureAsset::getTexture() const -> core::ref_ptr<rhi::Texture>
     {
         return texture;
     }
 
-    auto Texture::dump() -> std::vector<uint8_t>
+    auto TextureAsset::dump() -> std::vector<uint8_t>
     {
         png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
         png_infop png_info = png_create_info_struct(png);

@@ -286,7 +286,6 @@ namespace ionengine::rhi
         std::string semantic;
         uint32_t index;
         VertexFormat format;
-        uint32_t offset;
     };
 
     struct RasterizerStageInfo
@@ -391,12 +390,9 @@ namespace ionengine::rhi
       public:
         virtual auto reset() -> void = 0;
 
-        virtual auto set_graphics_pipeline_options(core::ref_ptr<Shader> shader,
-                                                   std::span<VertexDeclarationInfo const> const vertex_declarations,
-                                                   RasterizerStageInfo const& rasterizer,
-                                                   BlendColorInfo const& blend_color,
-                                                   std::optional<DepthStencilStageInfo> const depth_stencil)
-            -> void = 0;
+        virtual auto set_graphics_pipeline_options(
+            core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
+            std::optional<DepthStencilStageInfo> const depth_stencil) -> void = 0;
 
         virtual auto bind_descriptor(uint32_t const index, uint32_t const descriptor) -> void = 0;
 
@@ -405,8 +401,8 @@ namespace ionengine::rhi
 
         virtual auto end_render_pass() -> void = 0;
 
-        virtual auto bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
-            -> void = 0;
+        virtual auto bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
+                                        size_t const size) -> void = 0;
 
         virtual auto bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
                                        IndexFormat const format) -> void = 0;
@@ -415,11 +411,11 @@ namespace ionengine::rhi
 
         virtual auto draw(uint32_t const vertex_count, uint32_t const instance_count) -> void = 0;
 
-        virtual auto set_viewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height)
-            -> void = 0;
+        virtual auto set_viewport(int32_t const x, int32_t const y, uint32_t const width,
+                                  uint32_t const height) -> void = 0;
 
-        virtual auto set_scissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom)
-            -> void = 0;
+        virtual auto set_scissor(int32_t const left, int32_t const top, int32_t const right,
+                                 int32_t const bottom) -> void = 0;
 
         virtual auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst,
                              ResourceState const before, ResourceState const after) -> void = 0;
@@ -434,8 +430,8 @@ namespace ionengine::rhi
 
         virtual auto write_buffer(core::ref_ptr<Buffer> dst, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
 
-        virtual auto write_texture(core::ref_ptr<Texture> dst, std::vector<std::span<uint8_t const>> const& data)
-            -> Future<Texture> = 0;
+        virtual auto write_texture(core::ref_ptr<Texture> dst,
+                                   std::vector<std::span<uint8_t const>> const& data) -> Future<Texture> = 0;
 
         virtual auto read_buffer(core::ref_ptr<Buffer> dst, std::vector<uint8_t>& data) -> void = 0;
 
@@ -452,18 +448,19 @@ namespace ionengine::rhi
       public:
         static auto create(platform::Window* window) -> core::ref_ptr<Device>;
 
-        virtual auto create_shader(std::span<uint8_t const> const vs_data, std::span<uint8_t const> const ps_data)
-            -> core::ref_ptr<Shader> = 0;
+        virtual auto createShader(std::span<VertexDeclarationInfo const> const vertexDeclarations,
+                                  std::span<uint8_t const> const vertexShader,
+                                  std::span<uint8_t const> const pixelShader) -> core::ref_ptr<Shader> = 0;
 
-        virtual auto create_shader(std::span<uint8_t const> const cs_data) -> core::ref_ptr<Shader> = 0;
+        virtual auto createShader(std::span<uint8_t const> const computeShader) -> core::ref_ptr<Shader> = 0;
 
         virtual auto create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
                                     uint32_t const mip_levels, TextureFormat const format,
-                                    TextureDimension const dimension, TextureUsageFlags const flags)
-            -> core::ref_ptr<Texture> = 0;
+                                    TextureDimension const dimension,
+                                    TextureUsageFlags const flags) -> core::ref_ptr<Texture> = 0;
 
-        virtual auto create_buffer(size_t const size, size_t const element_stride, BufferUsageFlags const flags)
-            -> core::ref_ptr<Buffer> = 0;
+        virtual auto create_buffer(size_t const size, size_t const element_stride,
+                                   BufferUsageFlags const flags) -> core::ref_ptr<Buffer> = 0;
 
         virtual auto create_graphics_context() -> core::ref_ptr<GraphicsContext> = 0;
 
@@ -472,5 +469,7 @@ namespace ionengine::rhi
         virtual auto request_back_buffer() -> core::ref_ptr<Texture> = 0;
 
         virtual auto present_back_buffer() -> void = 0;
+
+        virtual auto getBackendType() const -> std::string_view = 0;
     };
 } // namespace ionengine::rhi

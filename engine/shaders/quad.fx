@@ -1,6 +1,6 @@
 
-export Texture2D fullscreenTexture;
-export SamplerState linearSampler;
+[[fx::shader_constant]] Texture2D fullscreenTexture;
+[[fx::shader_constant]] SamplerState linearSampler;
 
 struct VS_INPUT {
     uint id: SV_VertexID;
@@ -24,7 +24,7 @@ struct PS_OUTPUT {
 
 PS_OUTPUT ps_main(VS_OUTPUT input) {
     PS_OUTPUT output;
-    output.color = fullscreenTexture.Sample(linearSampler, input.uv);
+    output.color = fullscreenTexture.Sample(linearSampler, input.uv).rgba;
     return output;
 }
 

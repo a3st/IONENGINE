@@ -4,6 +4,7 @@
 #include "core/exception.hpp"
 #include "platform/window.hpp"
 #include "precompiled.h"
+#include "renderer/shader.hpp"
 
 namespace ionengine
 {
@@ -13,17 +14,22 @@ namespace ionengine
 
     auto Engine::tick() -> void
     {
-        update(0.0f);
+        this->update(0.0f);
         device.beginFrame();
-        render();
+        this->render();
         device.endFrame();
     }
 
-    auto Engine::run() -> int32_t
+    auto Engine::loop() -> void
+    {
+        this->tick();
+    }
+
+    auto Engine::run() -> void
     {
         try
         {
-            init();
+            this->init();
 
             if (window)
             {
@@ -37,19 +43,19 @@ namespace ionengine
                             [&](auto& data) { isRunning = false; });
                     }
 
-                    tick();
+                    this->tick();
                 }
-                return EXIT_SUCCESS;
-            }
-            else
-            {
-                return 0;
             }
         }
         catch (core::Exception e)
         {
             throw std::runtime_error(e.what());
         }
+    }
+
+    auto Engine::createShaderAsset() -> core::ref_ptr<ShaderAsset>
+    {
+        return core::make_ref<ShaderAsset>(device);
     }
 
     /*auto Engine::create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)

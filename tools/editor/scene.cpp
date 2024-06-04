@@ -65,7 +65,7 @@ namespace ionengine::tools::editor
         return connection;
     }
 
-    auto Scene::dfs() -> void
+    auto Scene::dfs() -> std::string
     {
         std::stack<core::ref_ptr<Node>> remainingNodes;
         std::unordered_map<uint64_t, std::string> computeShaderCodes;
@@ -251,6 +251,6 @@ namespace ionengine::tools::editor
         stream << initialShaderCode.str() << resourceShaderCode.str()
                << computeShaderCodes[retNode->get()->getNodeID()];
 
-        std::cout << stream.str() << std::endl;
+        return stream.str();
     }
 } // namespace ionengine::tools::editor

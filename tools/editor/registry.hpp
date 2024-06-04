@@ -6,6 +6,26 @@
 
 namespace ionengine::tools::editor
 {
+    class DomainRegistry
+    {
+      public:
+        DomainRegistry() = default;
+
+        template <typename Type>
+        auto registerDomain(std::string_view const domainType) -> void
+        {
+            auto node = core::make_ref<Type>();
+            addDomainToRegistry(domainType, node);
+        }
+
+        auto dump() -> std::string;
+
+      private:
+        std::unordered_map<std::string, core::ref_ptr<Node>> domains;
+
+        auto addDomainToRegistry(std::string_view const domainType, core::ref_ptr<Node> node) -> void;
+    };
+
     class ComponentRegistry
     {
       public:
