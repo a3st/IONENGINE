@@ -6,21 +6,15 @@
 
 namespace ionengine::tools::editor
 {
-    class SurfaceOutputNode : public Node
+    IONENGINE_NODE_COMPONENT_BEGIN(PostProcessOutput, "Output Node", false, std::nullopt, true)
+    auto setInputs() -> std::vector<Node::SocketInfo>
     {
-      public:
-        SurfaceOutputNode() : Node(0, "Output Image", 0, 0, {{"Color", "float4"}}, {}, true)
-        {
-        }
+        return {{"Color", "float4"}};
+    }
 
-        SurfaceOutputNode(uint64_t const nodeID, uint32_t const posX, uint32_t const posY)
-            : Node(nodeID, "Output Image", posX, posY, {{"Color", "float4"}}, {}, true)
-        {
-        }
-
-        auto generateInitialShaderCode() -> std::string override
-        {
-            return R"(
+    auto generateInitialShaderCode(Node const& node) -> std::string override
+    {
+        return R"(
                 struct VS_OUTPUT {
                     float4 position : SV_Position;
                     float3 normal : NORMAL;
@@ -31,66 +25,22 @@ namespace ionengine::tools::editor
                     float4 color : SV_Target0;
                 };
             )";
-        }
+    }
 
-        auto generateResourceShaderCode() -> std::string override
-        {
-            return "";
-        }
-
-        auto generateComputeShaderCode() -> std::string override
-        {
-            return R"(
-                PS_OUTPUT ps_main(VS_OUTPUT input) {
-                    PS_OUTPUT output;
-                    output.color = ##Color##;
-                    return output;
-                }
-            )";
-        }
-    };
-
-    class PostProcessOutputNode : public Node
+    auto generateResourceShaderCode(Node const& node) -> std::string override
     {
-      public:
-        PostProcessOutputNode() : Node(0, "Output Image", 0, 0, {{"Color", "float4"}}, {}, true)
-        {
-        }
+        return "";
+    }
 
-        PostProcessOutputNode(uint64_t const nodeID, uint32_t const posX, uint32_t const posY)
-            : Node(nodeID, "Output Image", posX, posY, {{"Color", "float4"}}, {}, true)
-        {
-        }
-
-        auto generateInitialShaderCode() -> std::string override
-        {
-            return R"(
-                struct VS_OUTPUT {
-                    float4 position : SV_Position;
-                    float3 normal : NORMAL;
-                    float2 uv : TEXCOORD0;
-                };
-
-                struct PS_OUTPUT {
-                    float4 color : SV_Target0;
-                };
-            )";
-        }
-
-        auto generateResourceShaderCode() -> std::string override
-        {
-            return "";
-        }
-
-        auto generateComputeShaderCode() -> std::string override
-        {
-            return R"(
+    auto generateComputeShaderCode(Node const& node) -> std::string override
+    {
+        return R"(
                 PS_OUTPUT ps_main(VS_OUTPUT input) {
                     PS_OUTPUT output;
                     output.color = ##Color##;
                     return output;
                 }
             )";
-        }
-    };
+    }
+    IONENGINE_NODE_COMPONENT_END
 } // namespace ionengine::tools::editor

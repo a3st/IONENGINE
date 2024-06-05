@@ -2,55 +2,107 @@
 
 #pragma once
 
+#include "core/crc32.hpp"
 #include "core/ref_ptr.hpp"
 
 namespace ionengine::tools::editor
 {
-    class Node : public core::ref_counted_object
+    struct Node : public core::ref_counted_object
     {
-      public:
-        struct NodeSocketInfo
+        struct SocketInfo
         {
             std::string socketName;
             std::string socketType;
         };
 
-        Node(uint64_t const nodeID, std::string_view const nodeName, uint32_t const posX, uint32_t const posY,
-             std::vector<NodeSocketInfo> const& inputs, std::vector<NodeSocketInfo> const& outputs,
-             bool const isStatic);
+        Node(std::string_view const nodeName, uint32_t const componentID);
 
-        auto getNodeID() const -> uint64_t;
+        auto dump() const -> std::string { return ""; }
 
-        auto getNodeName() const -> std::string_view;
-
-        auto getInputSockets() const -> std::span<NodeSocketInfo const> const;
-
-        auto getOutputSockets() const -> std::span<NodeSocketInfo const> const;
-
-        auto getPosition() const -> std::tuple<uint32_t, uint32_t>;
-
-        auto isNodeStatic() const -> bool;
-
-        auto defineOption(std::string_view const option, std::string_view const value) -> void;
-
-        auto getOptions() const -> std::unordered_map<std::string, std::string> const&;
-
-        auto dump() const -> std::string;
-
-        virtual auto generateInitialShaderCode() -> std::string = 0;
-
-        virtual auto generateResourceShaderCode() -> std::string = 0;
-
-        virtual auto generateComputeShaderCode() -> std::string = 0;
-
-      private:
         uint64_t nodeID;
         std::string nodeName;
-        std::vector<NodeSocketInfo> inputs;
-        std::vector<NodeSocketInfo> outputs;
         uint32_t posX;
         uint32_t posY;
-        bool nodeStatic;
+        std::vector<SocketInfo> inputs;
+        std::vector<SocketInfo> outputs;
         std::unordered_map<std::string, std::string> options;
+        uint32_t componentID;
     };
+
+    class NodeComponent : public core::ref_counted_object
+    {
+      public:
+        NodeComponent(std::string_view const componentName, bool const contextRegister,
+                      std::optional<std::string_view> const groupName, const bool fixed);
+
+        virtual auto create(uint64_t const nodeID, uint32_t const posX, uint32_t const posY) -> core::ref_ptr<Node> = 0;
+
+        virtual auto setInputs() -> std::vector<Node::SocketInfo>
+        {
+            return {};
+        }
+
+        virtual auto setOutputs() -> std::vector<Node::SocketInfo>
+        {
+            return {};
+        }
+
+        auto getName() const -> std::string_view;
+
+        auto getGroupName() const -> std::optional<std::string_view>;
+
+        auto isContextRegister() const -> bool;
+
+        auto isFixed() const -> bool;
+
+        virtual auto generateInitialShaderCode(Node const& node) -> std::string = 0;
+
+        virtual auto generateResourceShaderCode(Node const& node) -> std::string = 0;
+
+        virtual auto generateComputeShaderCode(Node const& node) -> std::string = 0;
+
+        uint32_t componentID;
+
+      private:
+        std::string componentName;
+        std::optional<std::string> groupName;
+        bool contextRegister;
+        bool fixed;
+    };
+
+#ifndef IONENGINE_NODE_COMPONENT_BEGIN
+#define IONENGINE_NODE_COMPONENT_BEGIN(ComponentClass, ComponentName, ContextRegister, GroupName, Fixed)               \
+    struct ComponentClass##_Node : public Node                                                                         \
+    {                                                                                                                  \
+        ComponentClass##_Node(uint64_t const nodeID, uint32_t const posX, uint32_t const posY)                         \
+            : Node(ComponentName, core::crc32(#ComponentClass))                                                        \
+        {                                                                                                              \
+            this->nodeID = nodeID;                                                                                     \
+            this->posX = posX;                                                                                         \
+            this->posY = posY;                                                                                         \
+        }                                                                                                              \
+    };                                                                                                                 \
+                                                                                                                       \
+    class ComponentClass##_NodeComponent : public NodeComponent                                                        \
+    {                                                                                                                  \
+      public:                                                                                                          \
+        ComponentClass##_NodeComponent() : NodeComponent(ComponentName, ContextRegister, GroupName, Fixed)             \
+        {                                                                                                              \
+            this->componentID = core::crc32(#ComponentClass);                                                          \
+        }                                                                                                              \
+                                                                                                                       \
+        auto create(uint64_t const nodeID, uint32_t const posX, uint32_t const posY) -> core::ref_ptr<Node> override   \
+        {                                                                                                              \
+            auto nodeInstance = core::make_ref<ComponentClass##_Node>(nodeID, posX, posY);                             \
+            nodeInstance->inputs = this->setInputs();                                                                  \
+            nodeInstance->outputs = this->setOutputs();                                                                \
+            return nodeInstance;                                                                                       \
+        }
+#endif
+
+#ifndef IONENGINE_NODE_COMPONENT_END
+#define IONENGINE_NODE_COMPONENT_END                                                                                   \
+    }                                                                                                                  \
+    ;
+#endif
 } // namespace ionengine::tools::editor

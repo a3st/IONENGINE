@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.26.0)
 
 add_executable(editor
-    components/sampler2d.hpp
+    components/convert.hpp
+    components/texture.hpp
     components/output.cpp
     components/input.cpp
     view_model.cpp

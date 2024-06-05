@@ -11,29 +11,4 @@ namespace ionengine::tools::editor
           destIndex(destIndex)
     {
     }
-
-    auto Connection::getConnectionID() const -> uint64_t
-    {
-        return connectionID;
-    }
-
-    auto Connection::getSourceNode() const -> core::ref_ptr<Node>
-    {
-        return sourceNode;
-    }
-
-    auto Connection::getSourceIndex() const -> uint64_t
-    {
-        return sourceIndex;
-    }
-
-    auto Connection::getDestNode() const -> core::ref_ptr<Node>
-    {
-        return destNode;
-    }
-
-    auto Connection::getDestIndex() const -> uint64_t
-    {
-        return destIndex;
-    }
 } // namespace ionengine::tools::editor

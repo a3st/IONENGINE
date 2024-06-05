@@ -6,43 +6,34 @@
 
 namespace ionengine::tools::editor
 {
-    class DomainRegistry
-    {
-      public:
-        DomainRegistry() = default;
-
-        template <typename Type>
-        auto registerDomain(std::string_view const domainType) -> void
-        {
-            auto node = core::make_ref<Type>();
-            addDomainToRegistry(domainType, node);
-        }
-
-        auto dump() -> std::string;
-
-      private:
-        std::unordered_map<std::string, core::ref_ptr<Node>> domains;
-
-        auto addDomainToRegistry(std::string_view const domainType, core::ref_ptr<Node> node) -> void;
-    };
-
     class ComponentRegistry
     {
       public:
         ComponentRegistry() = default;
 
-        template <typename Type>
-        auto registerComponent(std::string_view const group) -> void
+        template <typename Type = NodeComponent>
+        auto registerComponent() -> void
         {
-            auto node = core::make_ref<Type>();
-            addComponentToRegistry(group, node);
+            auto component = core::make_ref<Type>();
+            addComponentToRegistry(component);
         }
 
-        auto dump() -> std::string;
+        auto getComponents() -> std::unordered_map<uint32_t, core::ref_ptr<NodeComponent>> const&;
+
+        template <typename Type = NodeComponent>
+        auto getComponentByType() -> core::ref_ptr<NodeComponent>
+        {
+            std::string const fullClassName(typeid(Type).name());
+            std::string const className(fullClassName.begin() + fullClassName.find_last_of("::") + 1,
+                                        fullClassName.begin() + fullClassName.find("_"));
+            return getComponentFromRegistryByType(core::crc32(className));
+        }
 
       private:
-        std::unordered_map<std::string, std::vector<core::ref_ptr<Node>>> groups;
+        std::unordered_map<uint32_t, core::ref_ptr<NodeComponent>> components;
 
-        auto addComponentToRegistry(std::string_view const group, core::ref_ptr<Node> node) -> void;
+        auto addComponentToRegistry(core::ref_ptr<NodeComponent> component) -> void;
+
+        auto getComponentFromRegistryByType(uint32_t const componentID) -> core::ref_ptr<NodeComponent>;
     };
 } // namespace ionengine::tools::editor

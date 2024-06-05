@@ -516,7 +516,7 @@ namespace ionengine::rhi::fx
                     isFirst = false;
                 }
 
-                stream << "],\"sizeInBytes\":" << std::to_string(0) << "}";
+                stream << "],\"sizeInBytes\":" << std::to_string(structure.size) << "}";
 
                 isFirst = false;
             }

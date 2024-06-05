@@ -159,6 +159,7 @@
     width: 100%;
     border: none;
     background-color: rgb(245, 245, 245);
+    color: black;
 }
 
 .flowgraph-context-main {

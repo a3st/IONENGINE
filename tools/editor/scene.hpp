@@ -4,6 +4,7 @@
 
 #include "connection.hpp"
 #include "node.hpp"
+#include "registry.hpp"
 
 namespace ionengine::tools::editor
 {
@@ -11,7 +12,9 @@ namespace ionengine::tools::editor
     class Scene : public core::ref_counted_object
     {
       public:
-        Scene();
+        Scene(ComponentRegistry& componentRegistry);
+
+        auto loadFromSource(std::string_view const source) -> bool;
 
         template <typename Type>
         auto createNode(uint32_t const posX, uint32_t const posY) -> core::ref_ptr<Type>
@@ -30,6 +33,8 @@ namespace ionengine::tools::editor
         auto dump() -> std::string;
 
       private:
+        ComponentRegistry* componentRegistry;
+
         std::vector<core::ref_ptr<Node>> nodes;
         std::vector<core::ref_ptr<Connection>> connections;
         std::unordered_map<uint64_t, std::vector<size_t>> connectionsOfNodes;

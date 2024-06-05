@@ -5,8 +5,13 @@
 
 namespace ionengine::tools::editor
 {
-    Scene::Scene() : allocIDIndex(0)
+    Scene::Scene(ComponentRegistry& componentRegistry) : allocIDIndex(0), componentRegistry(&componentRegistry)
     {
+    }
+
+    auto Scene::loadFromSource(std::string_view const source) -> bool
+    {
+        return true;
     }
 
     auto Scene::addNodeToScene(core::ref_ptr<Node> node) -> void
@@ -40,10 +45,9 @@ namespace ionengine::tools::editor
                 stream << ",";
             }
 
-            stream << "{\"id\":" << connection->getConnectionID()
-                   << ",\"source\":" << connection->getSourceNode()->getNodeID()
-                   << ",\"dest\":" << connection->getDestNode()->getNodeID()
-                   << ",\"out\":" << connection->getSourceIndex() << ",\"in\":" << connection->getDestIndex() << "}";
+            stream << "{\"id\":" << connection->connectionID << ",\"source\":" << connection->sourceNode->nodeID
+                   << ",\"dest\":" << connection->destNode->nodeID << ",\"out\":" << connection->sourceIndex
+                   << ",\"in\":" << connection->destIndex << "}";
 
             isFirst = false;
         }
@@ -58,8 +62,8 @@ namespace ionengine::tools::editor
         auto connection = core::make_ref<Connection>(allocIDIndex, sourceNode, sourceIndex, destNode, destIndex);
         connections.emplace_back(connection);
 
-        connectionsOfNodes.try_emplace(sourceNode->getNodeID());
-        connectionsOfNodes[sourceNode->getNodeID()].emplace_back(connections.size() - 1);
+        connectionsOfNodes.try_emplace(sourceNode->nodeID);
+        connectionsOfNodes[sourceNode->nodeID].emplace_back(connections.size() - 1);
 
         allocIDIndex++;
         return connection;
@@ -75,15 +79,17 @@ namespace ionengine::tools::editor
 
         for (auto const& node : nodes)
         {
-            computeShaderCodes[node->getNodeID()] = node->generateComputeShaderCode();
+            computeShaderCodes[node->nodeID] =
+                componentRegistry->getComponents().at(node->componentID)->generateComputeShaderCode(*node);
 
-            auto result = connectionsOfNodes.find(node->getNodeID());
+            auto result = connectionsOfNodes.find(node->nodeID);
             if (result == connectionsOfNodes.end())
             {
                 continue;
             }
 
-            std::string shaderCode = node->generateResourceShaderCode();
+            std::string shaderCode =
+                componentRegistry->getComponents().at(node->componentID)->generateResourceShaderCode(*node);
             if (!shaderCode.empty())
             {
                 uint64_t offset = 0;
@@ -101,8 +107,8 @@ namespace ionengine::tools::editor
                     std::string const expressionName(shaderCode.begin() + expressionBeginOffset,
                                                      shaderCode.begin() + expressionEndOffset);
 
-                    auto result = node->getOptions().find(expressionName);
-                    if (result != node->getOptions().end())
+                    auto result = node->options.find(expressionName);
+                    if (result != node->options.end())
                     {
                         auto beginShaderCode = shaderCode.substr(0, offset);
                         auto endShaderCode = shaderCode.substr(expressionEndOffset + 2, std::string::npos);
@@ -120,11 +126,12 @@ namespace ionengine::tools::editor
             auto node = remainingNodes.top();
             remainingNodes.pop();
 
-            if (initialFlags.find(node->getNodeID()) == initialFlags.end())
+            if (initialFlags.find(node->nodeID) == initialFlags.end())
             {
-                initialFlags.emplace(node->getNodeID());
+                initialFlags.emplace(node->nodeID);
 
-                std::string shaderCode = node->generateInitialShaderCode();
+                std::string shaderCode =
+                    componentRegistry->getComponents().at(node->componentID)->generateInitialShaderCode(*node);
                 if (!shaderCode.empty())
                 {
                     uint64_t offset = 0;
@@ -142,8 +149,8 @@ namespace ionengine::tools::editor
                         std::string const expressionName(shaderCode.begin() + expressionBeginOffset,
                                                          shaderCode.begin() + expressionEndOffset);
 
-                        auto result = node->getOptions().find(expressionName);
-                        if (result != node->getOptions().end())
+                        auto result = node->options.find(expressionName);
+                        if (result != node->options.end())
                         {
                             auto beginShaderCode = shaderCode.substr(0, offset);
                             auto endShaderCode = shaderCode.substr(expressionEndOffset + 2, std::string::npos);
@@ -154,14 +161,14 @@ namespace ionengine::tools::editor
                 }
             }
 
-            for (auto const index : connectionsOfNodes[node->getNodeID()])
+            for (auto const index : connectionsOfNodes[node->nodeID])
             {
                 bool isConnectionExpr = false;
                 uint64_t offset = 0;
                 bool isFailed = false;
                 while (offset != std::string::npos)
                 {
-                    offset = computeShaderCodes[node->getNodeID()].find("##", offset);
+                    offset = computeShaderCodes[node->nodeID].find("##", offset);
                     if (offset == std::string::npos)
                     {
                         break;
@@ -169,19 +176,18 @@ namespace ionengine::tools::editor
 
                     uint64_t const expressionBeginOffset = offset + 2;
                     uint64_t const expressionEndOffset =
-                        computeShaderCodes[node->getNodeID()].find("##", expressionBeginOffset);
+                        computeShaderCodes[node->nodeID].find("##", expressionBeginOffset);
 
-                    std::string const expressionName(
-                        computeShaderCodes[node->getNodeID()].begin() + expressionBeginOffset,
-                        computeShaderCodes[node->getNodeID()].begin() + expressionEndOffset);
+                    std::string const expressionName(computeShaderCodes[node->nodeID].begin() + expressionBeginOffset,
+                                                     computeShaderCodes[node->nodeID].begin() + expressionEndOffset);
 
-                    auto result = node->getOptions().find(expressionName);
-                    if (result != node->getOptions().end())
+                    auto result = node->options.find(expressionName);
+                    if (result != node->options.end())
                     {
-                        auto beginShaderCode = computeShaderCodes[node->getNodeID()].substr(0, offset);
+                        auto beginShaderCode = computeShaderCodes[node->nodeID].substr(0, offset);
                         auto endShaderCode =
-                            computeShaderCodes[node->getNodeID()].substr(expressionEndOffset + 2, std::string::npos);
-                        computeShaderCodes[node->getNodeID()] = beginShaderCode + result->second + endShaderCode;
+                            computeShaderCodes[node->nodeID].substr(expressionEndOffset + 2, std::string::npos);
+                        computeShaderCodes[node->nodeID] = beginShaderCode + result->second + endShaderCode;
                     }
                     else if (expressionName.compare("__CONNECTION__") == 0)
                     {
@@ -189,7 +195,7 @@ namespace ionengine::tools::editor
                     }
                     else
                     {
-                        for (auto const& input : node->getInputSockets())
+                        for (auto const& input : node->inputs)
                         {
                             if (expressionName.compare(input.socketName) == 0)
                             {
@@ -207,7 +213,7 @@ namespace ionengine::tools::editor
                     offset = 0;
                     while (offset != std::string::npos)
                     {
-                        offset = computeShaderCodes[connections[index]->getDestNode()->getNodeID()].find("##", offset);
+                        offset = computeShaderCodes[connections[index]->destNode->nodeID].find("##", offset);
                         if (offset == std::string::npos)
                         {
                             break;
@@ -215,41 +221,38 @@ namespace ionengine::tools::editor
 
                         uint64_t const expressionBeginOffset = offset + 2;
                         uint64_t const expressionEndOffset =
-                            computeShaderCodes[connections[index]->getDestNode()->getNodeID()].find(
-                                "##", expressionBeginOffset);
+                            computeShaderCodes[connections[index]->destNode->nodeID].find("##", expressionBeginOffset);
 
                         std::string const expressionName(
-                            computeShaderCodes[connections[index]->getDestNode()->getNodeID()].begin() +
-                                expressionBeginOffset,
-                            computeShaderCodes[connections[index]->getDestNode()->getNodeID()].begin() +
-                                expressionEndOffset);
+                            computeShaderCodes[connections[index]->destNode->nodeID].begin() + expressionBeginOffset,
+                            computeShaderCodes[connections[index]->destNode->nodeID].begin() + expressionEndOffset);
 
                         auto beginShaderCode =
-                            computeShaderCodes[connections[index]->getDestNode()->getNodeID()].substr(0, offset);
-                        auto endShaderCode = computeShaderCodes[connections[index]->getDestNode()->getNodeID()].substr(
+                            computeShaderCodes[connections[index]->destNode->nodeID].substr(0, offset);
+                        auto endShaderCode = computeShaderCodes[connections[index]->destNode->nodeID].substr(
                             expressionEndOffset + 2, std::string::npos);
-                        computeShaderCodes[connections[index]->getDestNode()->getNodeID()] =
-                            beginShaderCode + computeShaderCodes[node->getNodeID()] + endShaderCode;
+                        computeShaderCodes[connections[index]->destNode->nodeID] =
+                            beginShaderCode + computeShaderCodes[node->nodeID] + endShaderCode;
 
-                        offset = expressionEndOffset + 1 + computeShaderCodes[node->getNodeID()].size();
+                        offset = expressionEndOffset + 1 + computeShaderCodes[node->nodeID].size();
                     }
 
-                    remainingNodes.emplace(connections[index]->getDestNode());
+                    remainingNodes.emplace(connections[index]->destNode);
                 }
 
                 if (isConnectionExpr)
                 {
-                    computeShaderCodes[node->getNodeID()] = node->generateComputeShaderCode();
+                    computeShaderCodes[node->nodeID] =
+                        componentRegistry->getComponents().at(node->componentID)->generateComputeShaderCode(*node);
                 }
             }
         }
 
         auto retNode = std::find_if(nodes.begin(), nodes.end(),
-                                    [](auto const& element) { return element->getNodeName() == "Output Image"; });
+                                    [](auto const& element) { return element->nodeName == "Output Image"; });
 
         std::stringstream stream;
-        stream << initialShaderCode.str() << resourceShaderCode.str()
-               << computeShaderCodes[retNode->get()->getNodeID()];
+        stream << initialShaderCode.str() << resourceShaderCode.str() << computeShaderCodes[retNode->get()->nodeID];
 
         return stream.str();
     }

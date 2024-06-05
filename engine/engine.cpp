@@ -8,15 +8,24 @@
 
 namespace ionengine
 {
-    Engine::Engine(platform::Window* window) : window(window), device(window)
+    Engine::Engine(platform::Window* window) : window(window), device(window), renderer(device)
     {
     }
 
     auto Engine::tick() -> void
     {
-        this->update(0.0f);
+        auto startUpdateTime = std::chrono::high_resolution_clock::now();
+        float deltaTime =
+            std::chrono::duration_cast<std::chrono::milliseconds>(startUpdateTime - lastUpdateTime).count() / 1000.0f;
+        lastUpdateTime = startUpdateTime;
+
+        this->update(deltaTime);
+
         device.beginFrame();
+        renderer.swapchainTexture = device.getBackBuffer();
+
         this->render();
+
         device.endFrame();
     }
 
@@ -30,6 +39,8 @@ namespace ionengine
         try
         {
             this->init();
+
+            lastUpdateTime = std::chrono::high_resolution_clock::now();
 
             if (window)
             {
@@ -58,18 +69,8 @@ namespace ionengine
         return core::make_ref<ShaderAsset>(device);
     }
 
-    /*auto Engine::create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)
-        -> core::ref_ptr<Texture>
+    auto Engine::createTextureAsset() -> core::ref_ptr<TextureAsset>
     {
-        auto texture = core::make_ref<Texture>(device);
-        texture->create(width, height, flags);
-        return texture;
+        return core::make_ref<TextureAsset>(device);
     }
-
-    auto Engine::create_material(std::string_view const shader_name) -> core::ref_ptr<Material>
-    {
-        auto material = core::make_ref<Material>(device, shader_manager);
-        material->create_using_shader(shader_name);
-        return material;
-    }*/
 } // namespace ionengine

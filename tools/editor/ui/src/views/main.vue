@@ -33,7 +33,7 @@
                         </tabgr>
 
                         <tabpan id="tab-viewport">
-
+                            <img v-bind:src="'data:image/png;base64,' + previewImageSource" width="100%" height="100%" />
                         </tabpan>
                     </div>
                 </dynpan>
@@ -115,7 +115,8 @@ export default {
             shaderDomains: [],
             domainNodes: [],
             shaderDomain: -1,
-            shaderDomainNodeId: -1
+            shaderDomainNodeId: -1,
+            previewImageSource: ""
         };
     },
     watch: {
@@ -160,6 +161,7 @@ export default {
     },
     created() {
         window.addEventListener("resize", this.onGraphResize);
+        window.requestAnimationFrame(this.onFrameUpdate);
     },
     destroyed() {
         window.removeEventListener("resize", this.onGraphResize);
@@ -169,16 +171,14 @@ export default {
         let graph = new FlowGraph(graphElement.children(0).get(0), graphElement.width(), graphElement.height());
 
         webview.invoke('addContextItems').then(data => {
-            for (const group of Object.values(data.groups)) {
-                for(const node of Object.values(group.nodes)) {
-                    graph.addContextItem(
-                        group.name,
-                        node.name,
-                        (e) => {
-                            graph.addNode(e.posX, e.posY, node.inputs, node.outputs, node.name, false, "");
-                        }
-                    );
-                }
+            for (const node of Object.values(data.items)) {
+                graph.addContextItem(
+                    node.group,
+                    node.name,
+                    e => {
+                        graph.addNode(e.posX, e.posY, node.inputs, node.outputs, node.name, false, "");
+                    }
+                );
             }
         });
 
@@ -198,7 +198,6 @@ export default {
         });
 
         graph.start();
-
         this.graph = graph;
     },
     methods: {
@@ -218,6 +217,12 @@ export default {
         },
         onDeleteResourceClick(e, index) {
             this.resources.splice(index, 1);
+        },
+        onFrameUpdate() {
+            webview.invoke('requestPreviewImage').then(data => {
+                this.previewImageSource = data;
+                window.requestAnimationFrame(this.onFrameUpdate);
+            });
         }
     }
 }

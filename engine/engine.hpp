@@ -3,6 +3,7 @@
 #pragma once
 
 #include "renderer/linked_device.hpp"
+#include "renderer/renderer.hpp"
 
 namespace ionengine
 {
@@ -28,6 +29,8 @@ namespace ionengine
         platform::Window* window;
         LinkedDevice device;
 
+        std::chrono::high_resolution_clock::time_point lastUpdateTime;
+
       protected:
         virtual auto init() -> void = 0;
 
@@ -37,13 +40,8 @@ namespace ionengine
 
         auto createShaderAsset() -> core::ref_ptr<ShaderAsset>;
 
-        /*auto create_texture(uint32_t const width, uint32_t const height, TextureFlags const flags)
-            -> core::ref_ptr<Texture>;
+        auto createTextureAsset() -> core::ref_ptr<TextureAsset>;
 
-        auto create_material(std::string_view const shader_name) -> core::ref_ptr<Material>;*/
-
-        //ShaderManager shader_manager;
-        //AssetLoader asset_loader;
-        //Renderer renderer;
+        Renderer renderer;
     };
 } // namespace ionengine

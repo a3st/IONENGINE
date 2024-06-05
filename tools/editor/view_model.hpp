@@ -14,6 +14,14 @@ namespace ionengine::tools::editor
       public:
         ViewModel(libwebview::App* app);
 
+        auto requestPreviewImage() -> std::string;
+
+        auto addContextItems() -> std::string;
+
+        auto addResourceTypes() -> std::string;
+
+        auto addShaderDomains() -> std::string;
+
       protected:
         auto init() -> void override;
 
@@ -24,6 +32,7 @@ namespace ionengine::tools::editor
       private:
         libwebview::App* app;
         editor::ComponentRegistry componentRegistry;
-        editor::DomainRegistry domainRegistry;
+
+        core::ref_ptr<TextureAsset> previewImage;
     };
 } // namespace ionengine::tools::editor

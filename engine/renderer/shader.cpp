@@ -177,4 +177,9 @@ namespace ionengine
         }
         return true;
     }
+
+    auto ShaderAsset::getOptions() const -> std::unordered_map<std::string, ShaderOption>
+    {
+        return options;
+    }
 } // namespace ionengine

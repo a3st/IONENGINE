@@ -2,12 +2,14 @@
 
 #pragma once
 
-#include "linked_device.hpp"
-#include "texture.hpp"
+#include "math/matrix.hpp"
 #include "shader.hpp"
+#include "texture.hpp"
 
 namespace ionengine
 {
+    class LinkedDevice;
+
     class Renderer
     {
       public:
@@ -15,28 +17,19 @@ namespace ionengine
 
         auto registerShader(std::string_view const shaderName, core::ref_ptr<ShaderAsset> shaderAsset) -> bool;
 
-        /*auto add_point_light() -> void
-        {
-        }
+        auto drawQuad(math::Matrixf const& viewProjection) -> void;
 
-        auto add_directional_light() -> void
-        {
-        }
+        auto beginDraw(std::span<core::ref_ptr<rhi::Texture>> colors, core::ref_ptr<rhi::Texture> depthStencil,
+                       std::optional<math::Color> const clearColor, std::optional<float> const clearDepth,
+                       std::optional<uint8_t> const clearStencil) -> void;
 
-        auto add_spot_light() -> void
-        {
-        }
+        auto endDraw() -> void;
 
-        auto draw_mesh(core::ref_ptr<Mesh> mesh) -> void;
-
-        auto draw_quad(math::Matrixf const& view_proj) -> void;
-
-        auto begin_draw(std::span<core::ref_ptr<Texture> const> const colors, core::ref_ptr<Texture> depth_stencil,
-                        math::Color const& clear_color, float const clear_depth, uint8_t const clear_stencil) -> void;
-
-        auto end_draw() -> void;*/
+        core::ref_ptr<rhi::Texture> swapchainTexture;
 
       private:
         LinkedDevice* device;
+
+        std::stack<core::ref_ptr<rhi::Texture>> colorBarriers;
     };
 } // namespace ionengine

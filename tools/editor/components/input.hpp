@@ -6,46 +6,38 @@
 
 namespace ionengine::tools::editor
 {
-    class InputNode : public Node
+    IONENGINE_NODE_COMPONENT_BEGIN(Input, "Input Node", false, std::nullopt, true)
+    auto generateInitialShaderCode(Node const& node) -> std::string override
     {
-      public:
-        InputNode(uint64_t const nodeID, uint32_t const posX, uint32_t const posY,
-                  std::vector<NodeSocketInfo> const& outputs)
-            : Node(nodeID, "Input Node", posX, posY, outputs, {}, true)
-        {
-        }
+        return "";
+    }
 
-        auto generateInitialShaderCode() -> std::string override
-        {
-            return "";
-        }
+    auto generateResourceShaderCode(Node const& node) -> std::string override
+    {
+        std::stringstream stream;
+        stream << "struct MaterialData {" << std::endl;
 
-        auto generateResourceShaderCode() -> std::string override
+        bool isFirst = true;
+        for (auto const& output : node.outputs)
         {
-            std::stringstream stream;
-            stream << "struct MaterialData {" << std::endl;
-
-            bool isFirst = true;
-            for (auto const& output : this->getOutputSockets())
+            if (!isFirst)
             {
-                if (!isFirst)
-                {
-                    stream << std::endl;
-                }
-                stream << "\t" << output.socketType << " " << output.socketName << ";";
-                isFirst = false;
+                stream << std::endl;
             }
-
-            stream << "};" << std::endl
-                   << std::endl
-                   << "[fx::shader_constant]" << std::endl
-                   << "MaterialData materialData;" << std::endl;
-            return stream.str();
+            stream << "\t" << output.socketType << " " << output.socketName << ";";
+            isFirst = false;
         }
 
-        auto generateComputeShaderCode() -> std::string override
-        {
-            return "materialData.##__CONNECTION__##";
-        }
-    };
+        stream << "};" << std::endl
+               << std::endl
+               << "[fx::shader_constant]" << std::endl
+               << "MaterialData materialData;" << std::endl;
+        return stream.str();
+    }
+
+    auto generateComputeShaderCode(Node const& node) -> std::string override
+    {
+        return "materialData.##__CONNECTION__##";
+    }
+    IONENGINE_NODE_COMPONENT_END
 } // namespace ionengine::tools::editor
