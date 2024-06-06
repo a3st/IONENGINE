@@ -260,6 +260,11 @@ namespace ionengine::tools::shaderc
                     brCloseOffset = shaderCode.find("};", offset);
                     uint64_t const dotOffset = shaderCode.find(";", offset);
 
+                    if (brCloseOffset < dotOffset)
+                    {
+                        break;
+                    }
+
                     std::string member(shaderCode.begin() + offset, shaderCode.begin() + dotOffset);
 
                     member.erase(member.begin(), std::find_if(member.begin(), member.end(),
@@ -303,6 +308,11 @@ namespace ionengine::tools::shaderc
                 {
                     brCloseOffset = shaderCode.find("};", offset);
                     uint64_t const dotOffset = shaderCode.find(";", offset);
+
+                    if (brCloseOffset < dotOffset)
+                    {
+                        break;
+                    }
 
                     std::string member(shaderCode.begin() + offset, shaderCode.begin() + dotOffset);
 

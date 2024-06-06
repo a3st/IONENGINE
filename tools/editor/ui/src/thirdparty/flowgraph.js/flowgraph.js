@@ -943,7 +943,7 @@ export default class FlowGraph {
      * @param {int} posY - Y node position
      * @param {map} inputs - Input parameters
      * @param {map} outputs - Output parameters
-     * @param {string} nodeName - Title in plaintext
+     * @param {string} nodeName - Name node
      * @param {bool} fixed - Ability to remove node via 'Remove Node'
      * @param {string} expandHTML - Expand body in HTML
      * @param {string} userData - Optional user data
@@ -956,15 +956,15 @@ export default class FlowGraph {
         return id;
     }
 
-    exportToJSON() {
-        data = {
+    export() {
+        const data = {
             "nodes": this.nodes,
             "connections": this.connections
         };
-        return JSON.stringify(data);
+        return data;
     }
 
-    importFromJSON(data) {
+    import(data) {
         for (const node of Object.values(data.nodes)) {
             this.#internalAddNode(node.id, node.position[0], node.position[1],
                 node.inputs, node.outputs, node.name, node.fixed, "", node.userData);

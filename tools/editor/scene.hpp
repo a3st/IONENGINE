@@ -8,29 +8,25 @@
 
 namespace ionengine::tools::editor
 {
-
     class Scene : public core::ref_counted_object
     {
       public:
         Scene(ComponentRegistry& componentRegistry);
 
-        auto loadFromSource(std::string_view const source) -> bool;
-
         template <typename Type>
-        auto createNode(uint32_t const posX, uint32_t const posY) -> core::ref_ptr<Type>
+        auto createNodeByType(uint64_t const nodeID) -> core::ref_ptr<Node>
         {
-            auto node = core::make_ref<Type>(allocIDIndex, posX, posY);
-            addNodeToScene(node);
-            allocIDIndex++;
-            return node;
+            auto createdNode = componentRegistry->getComponentByType<Type>()->create(nodeID);
+            addNodeToScene(createdNode);
+            return createdNode;
         }
 
-        auto createConnection(core::ref_ptr<Node> sourceNode, uint64_t const sourceIndex, core::ref_ptr<Node> destNode,
-                              uint64_t const destIndex) -> core::ref_ptr<Connection>;
+        auto createNodeByID(uint32_t const componentID, uint64_t const nodeID) -> core::ref_ptr<Node>;
 
-        auto dfs() -> std::string;
+        auto createConnection(uint64_t const connectionID, core::ref_ptr<Node> sourceNode, uint32_t const sourceIndex,
+                              core::ref_ptr<Node> destNode, uint32_t const destIndex) -> core::ref_ptr<Connection>;
 
-        auto dump() -> std::string;
+        auto dfs(std::stringstream& shaderCodeStream) -> bool;
 
       private:
         ComponentRegistry* componentRegistry;
@@ -38,7 +34,6 @@ namespace ionengine::tools::editor
         std::vector<core::ref_ptr<Node>> nodes;
         std::vector<core::ref_ptr<Connection>> connections;
         std::unordered_map<uint64_t, std::vector<size_t>> connectionsOfNodes;
-        uint64_t allocIDIndex;
 
         auto addNodeToScene(core::ref_ptr<Node> node) -> void;
     };

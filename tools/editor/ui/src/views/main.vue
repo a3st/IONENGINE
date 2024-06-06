@@ -13,7 +13,7 @@
                         <tabpan id="tab-shader-graph">
                             <div style="background-color: rgb(45, 45, 45); height: 30px; display: inline-flex; align-items: center; padding: 0px 10px 0px 10px;">
                                 <div style="display: inline-flex; align-items: center; gap: 10px;">
-                                    <button class="btn-text">Compile</button>
+                                    <button class="btn-text" @click="onCompileShaderClick($event)">Compile</button>
                                 </div>
                             </div>
                             <div id="graph-container" style="height: calc(100% - 30px);">
@@ -114,6 +114,7 @@ export default {
             resourceTypes: [],
             shaderDomains: [],
             domainNodes: [],
+            inputNode: {},
             shaderDomain: -1,
             shaderDomainNodeId: -1,
             previewImageSource: ""
@@ -139,7 +140,14 @@ export default {
                 }
                 
                 if(outputsData.length > 0) {
-                    this.resourceNodeId = toRaw(this.graph).addNode(posX, posY, [], outputsData, "Input Node", false, "");
+                    this.resourceNodeId = toRaw(this.graph).addNode(
+                        posX, posY, 
+                        this.inputNode.inputs, 
+                        outputsData, 
+                        this.inputNode.name, 
+                        this.inputNode.fixed, 
+                        "", 
+                        this.inputNode.userData);
                 }
             },
             deep: true
@@ -155,7 +163,14 @@ export default {
                 }
                 
                 const node = this.domainNodes[value];
-                this.shaderDomainNodeId = toRaw(this.graph).addNode(posX, posY, node.inputs, node.outputs, node.name, false, "");
+                this.shaderDomainNodeId = toRaw(this.graph).addNode(
+                    posX, posY, 
+                    node.inputs, 
+                    node.outputs, 
+                    node.name, 
+                    node.fixed, 
+                    "", 
+                    node.userData);
             }
         }
     },
@@ -176,7 +191,7 @@ export default {
                     node.group,
                     node.name,
                     e => {
-                        graph.addNode(e.posX, e.posY, node.inputs, node.outputs, node.name, false, "");
+                        graph.addNode(e.posX, e.posY, node.inputs, node.outputs, node.name, false, "", node.userData);
                     }
                 );
             }
@@ -193,8 +208,8 @@ export default {
                 this.shaderDomains.push(shaderDomain.name);
                 this.domainNodes.push(shaderDomain.node);
             }
-
             this.shaderDomain = 0;
+            this.inputNode = data.inputNode;
         });
 
         graph.start();
@@ -222,6 +237,11 @@ export default {
             webview.invoke('requestPreviewImage').then(data => {
                 this.previewImageSource = data;
                 window.requestAnimationFrame(this.onFrameUpdate);
+            });
+        },
+        onCompileShaderClick(e) {
+            webview.invoke('compileShader', toRaw(this.graph).export()).then(data => {
+                console.log(data);
             });
         }
     }

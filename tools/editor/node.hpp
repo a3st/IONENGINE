@@ -17,12 +17,8 @@ namespace ionengine::tools::editor
 
         Node(std::string_view const nodeName, uint32_t const componentID);
 
-        auto dump() const -> std::string { return ""; }
-
         uint64_t nodeID;
         std::string nodeName;
-        uint32_t posX;
-        uint32_t posY;
         std::vector<SocketInfo> inputs;
         std::vector<SocketInfo> outputs;
         std::unordered_map<std::string, std::string> options;
@@ -35,14 +31,19 @@ namespace ionengine::tools::editor
         NodeComponent(std::string_view const componentName, bool const contextRegister,
                       std::optional<std::string_view> const groupName, const bool fixed);
 
-        virtual auto create(uint64_t const nodeID, uint32_t const posX, uint32_t const posY) -> core::ref_ptr<Node> = 0;
+        virtual auto create(uint64_t const nodeID) -> core::ref_ptr<Node> = 0;
 
-        virtual auto setInputs() -> std::vector<Node::SocketInfo>
+        virtual auto setInputs() const -> std::vector<Node::SocketInfo>
         {
             return {};
         }
 
-        virtual auto setOutputs() -> std::vector<Node::SocketInfo>
+        virtual auto setOutputs() const -> std::vector<Node::SocketInfo>
+        {
+            return {};
+        }
+
+        virtual auto setOptions() const -> std::unordered_map<std::string, std::string>
         {
             return {};
         }
@@ -55,11 +56,20 @@ namespace ionengine::tools::editor
 
         auto isFixed() const -> bool;
 
-        virtual auto generateInitialShaderCode(Node const& node) -> std::string = 0;
+        virtual auto generateInitialShaderCode(Node const& node) const -> std::string
+        {
+            return "";
+        }
 
-        virtual auto generateResourceShaderCode(Node const& node) -> std::string = 0;
+        virtual auto generateResourceShaderCode(Node const& node) const -> std::string
+        {
+            return "";
+        }
 
-        virtual auto generateComputeShaderCode(Node const& node) -> std::string = 0;
+        virtual auto generateComputeShaderCode(Node const& node) const -> std::string
+        {
+            return "";
+        }
 
         uint32_t componentID;
 
@@ -74,12 +84,9 @@ namespace ionengine::tools::editor
 #define IONENGINE_NODE_COMPONENT_BEGIN(ComponentClass, ComponentName, ContextRegister, GroupName, Fixed)               \
     struct ComponentClass##_Node : public Node                                                                         \
     {                                                                                                                  \
-        ComponentClass##_Node(uint64_t const nodeID, uint32_t const posX, uint32_t const posY)                         \
-            : Node(ComponentName, core::crc32(#ComponentClass))                                                        \
+        ComponentClass##_Node(uint64_t const nodeID) : Node(ComponentName, core::crc32(#ComponentClass))               \
         {                                                                                                              \
             this->nodeID = nodeID;                                                                                     \
-            this->posX = posX;                                                                                         \
-            this->posY = posY;                                                                                         \
         }                                                                                                              \
     };                                                                                                                 \
                                                                                                                        \
@@ -91,11 +98,12 @@ namespace ionengine::tools::editor
             this->componentID = core::crc32(#ComponentClass);                                                          \
         }                                                                                                              \
                                                                                                                        \
-        auto create(uint64_t const nodeID, uint32_t const posX, uint32_t const posY) -> core::ref_ptr<Node> override   \
+        auto create(uint64_t const nodeID) -> core::ref_ptr<Node> override                                             \
         {                                                                                                              \
-            auto nodeInstance = core::make_ref<ComponentClass##_Node>(nodeID, posX, posY);                             \
+            auto nodeInstance = core::make_ref<ComponentClass##_Node>(nodeID);                                         \
             nodeInstance->inputs = this->setInputs();                                                                  \
             nodeInstance->outputs = this->setOutputs();                                                                \
+            nodeInstance->options = this->setOptions();                                                                \
             return nodeInstance;                                                                                       \
         }
 #endif

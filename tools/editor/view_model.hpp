@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "compositor.hpp"
 #include "engine/engine.hpp"
 #include "registry.hpp"
+#include "scene.hpp"
 #include <webview.hpp>
 
 namespace ionengine::tools::editor
@@ -22,6 +22,8 @@ namespace ionengine::tools::editor
 
         auto addShaderDomains() -> std::string;
 
+        auto compileShader(std::string sceneData) -> std::string;
+
       protected:
         auto init() -> void override;
 
@@ -34,5 +36,8 @@ namespace ionengine::tools::editor
         editor::ComponentRegistry componentRegistry;
 
         core::ref_ptr<TextureAsset> previewImage;
+        core::ref_ptr<Scene> shaderGraph;
+
+        auto compileShaderGraph() -> bool;
     };
 } // namespace ionengine::tools::editor

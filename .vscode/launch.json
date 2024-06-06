@@ -11,6 +11,21 @@
             "cwd": "${workspaceFolder}/build/tools",
             "environment": [],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "(Windows) Debug Shader Compiler",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tools/shaderc.exe",
+            "args": [
+                "sd14.0.fx",
+                "--target", "DXIL",
+                "--output", "3.bin"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/tools",
+            "environment": [],
+            "console": "integratedTerminal"
         }
     ]
 }

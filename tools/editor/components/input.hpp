@@ -7,12 +7,7 @@
 namespace ionengine::tools::editor
 {
     IONENGINE_NODE_COMPONENT_BEGIN(Input, "Input Node", false, std::nullopt, true)
-    auto generateInitialShaderCode(Node const& node) -> std::string override
-    {
-        return "";
-    }
-
-    auto generateResourceShaderCode(Node const& node) -> std::string override
+    auto generateResourceShaderCode(Node const& node) const -> std::string override
     {
         std::stringstream stream;
         stream << "struct MaterialData {" << std::endl;
@@ -28,14 +23,11 @@ namespace ionengine::tools::editor
             isFirst = false;
         }
 
-        stream << "};" << std::endl
-               << std::endl
-               << "[fx::shader_constant]" << std::endl
-               << "MaterialData materialData;" << std::endl;
+        stream << std::endl << "};" << std::endl << std::endl << "[[fx::shader_constant]] MaterialData materialData;";
         return stream.str();
     }
 
-    auto generateComputeShaderCode(Node const& node) -> std::string override
+    auto generateComputeShaderCode(Node const& node) const -> std::string override
     {
         return "materialData.##__CONNECTION__##";
     }

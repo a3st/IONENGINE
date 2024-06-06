@@ -10,7 +10,6 @@ add_executable(editor
     registry.cpp
     node.cpp
     scene.cpp
-    compositor.cpp
     main.cpp)
 
 target_include_directories(editor PRIVATE ${PROJECT_SOURCE_DIR})
