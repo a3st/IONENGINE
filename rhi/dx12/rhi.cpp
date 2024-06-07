@@ -728,12 +728,16 @@ namespace ionengine::rhi
                 case D3D12_SHADER_TYPE_VERTEX: {
                     d3d12_pipeline_desc.VS = data;
 
-                    D3D12_INPUT_LAYOUT_DESC d3d12_input_layout{};
-                    d3d12_input_layout.pInputElementDescs = shader.getInputAssembler().inputElements.data();
-                    d3d12_input_layout.NumElements =
-                        static_cast<uint32_t>(shader.getInputAssembler().inputElements.size());
+                    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
 
-                    d3d12_pipeline_desc.InputLayout = d3d12_input_layout;
+                    if (!shader.getInputAssembler().inputElements.empty())
+                    {
+                        inputLayoutDesc.pInputElementDescs = shader.getInputAssembler().inputElements.data();
+                        inputLayoutDesc.NumElements =
+                            static_cast<uint32_t>(shader.getInputAssembler().inputElements.size());
+                    }
+
+                    d3d12_pipeline_desc.InputLayout = inputLayoutDesc;
                     break;
                 }
                 case D3D12_SHADER_TYPE_PIXEL: {
