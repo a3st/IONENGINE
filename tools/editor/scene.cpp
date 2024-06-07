@@ -130,6 +130,7 @@ namespace ionengine::tools::editor
                 bool isConnectionExpr = false;
                 uint64_t offset = 0;
                 bool isFailed = false;
+                std::string tempShaderCode;
                 while (offset != std::string::npos)
                 {
                     offset = computeShaderCodes[node->nodeID].find("##", offset);
@@ -163,6 +164,7 @@ namespace ionengine::tools::editor
 
                         std::string const socketName = node->outputs[connections[index]->sourceIndex].socketName;
 
+                        tempShaderCode = computeShaderCodes[node->nodeID];
                         computeShaderCodes[node->nodeID] = beginShaderCode + socketName + endShaderCode;
 
                         isConnectionExpr = true;
@@ -178,6 +180,7 @@ namespace ionengine::tools::editor
                         std::transform(socketName.begin(), socketName.end(), socketName.begin(),
                                        [](auto const ch) { return std::tolower(ch); });
 
+                        tempShaderCode = computeShaderCodes[node->nodeID];
                         computeShaderCodes[node->nodeID] = beginShaderCode + socketName + endShaderCode;
 
                         isConnectionExpr = true;
@@ -190,6 +193,7 @@ namespace ionengine::tools::editor
                             if (expressionName.compare(input.socketName) == 0)
                             {
                                 isFailed = true;
+                                break;
                             }
                         }
 
@@ -239,8 +243,7 @@ namespace ionengine::tools::editor
 
                 if (isConnectionExpr)
                 {
-                    computeShaderCodes[node->nodeID] =
-                        componentRegistry->getComponents().at(node->componentID)->generateComputeShaderCode(*node);
+                    computeShaderCodes[node->nodeID] = tempShaderCode;
                 }
             }
         }

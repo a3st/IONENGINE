@@ -229,7 +229,7 @@ export default {
                             'options': {...node.userData.options}
                         };
 
-                        userData.options[e.detail.targetName] = hexToRgb(e.detail.value).join();
+                        userData.options[e.detail.targetName] = hexToRgb(e.detail.value).map(x => Number(x / 255).toFixed(3)).join();
                         node.userData = userData;
                         break;
                     }
@@ -274,6 +274,7 @@ export default {
             });
         },
         onCompileShaderClick(e) {
+            console.log(toRaw(this.graph).export())
             webview.invoke('compileShader', toRaw(this.graph).export()).then(data => {
                 // TODO!
             });
