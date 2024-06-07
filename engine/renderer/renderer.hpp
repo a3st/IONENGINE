@@ -27,11 +27,15 @@ namespace ionengine
 
         auto endDraw() -> void;
 
+        auto resize(uint32_t const width, uint32_t const height) -> void;
+
         core::ref_ptr<rhi::Texture> swapchainTexture;
 
       private:
         LinkedDevice* device;
         std::stack<core::ref_ptr<rhi::Texture>> colorBarriers;
         std::unordered_map<std::string, core::ref_ptr<ShaderAsset>> registeredShaders;
+        uint32_t rendererWidth;
+        uint32_t rendererHeight;
     };
 } // namespace ionengine

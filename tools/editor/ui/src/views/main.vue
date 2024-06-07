@@ -212,12 +212,9 @@ export default {
             this.inputNode = data.inputNode;
         });
 
-        graph.start();
-
-        this.graph = graph;
-    },
-    methods: {
-        onValueChanged(e) {
+        graph.start({
+            'valueChanged': e => {
+                const node = toRaw(this.graph).getNode(e.detail.nodeId);
                 switch(e.detail.targetType) {
                     case 'color': {
                         // https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
@@ -227,16 +224,32 @@ export default {
                                 .substring(1).match(/.{2}/g)
                                 .map(x => parseInt(x, 16));
 
-                        e.detail.node.userData.options[e.detail.targetName] = hexToRgb(e.detail.value).join();
+                        const userData = {
+                            'componentID': node.userData.componentID,
+                            'options': {...node.userData.options}
+                        };
+
+                        userData.options[e.detail.targetName] = hexToRgb(e.detail.value).join();
+                        node.userData = userData;
                         break;
                     }
                     default: {
-                        e.detail.node.userData.options[e.detail.targetName] = e.detail.value;
+                        const userData = {
+                            'componentID': node.userData.componentID,
+                            'options': {...node.userData.options}
+                        };
+
+                        userData.options[e.detail.targetName] = e.detail.value;
+                        node.userData = userData;
                         break;
                     }
                 }
-                console.log(toRaw(this.graph).export())
-        },
+            }
+        });
+
+        this.graph = graph;
+    },
+    methods: {
         onDynviewResize(target) {
             const graphElement = $('#graph-container');
             toRaw(this.graph).resize(graphElement.width(), graphElement.height());

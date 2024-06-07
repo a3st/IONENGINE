@@ -6,13 +6,13 @@
 
 namespace ionengine
 {
-    Renderer::Renderer(LinkedDevice& device) : device(&device)
+    Renderer::Renderer(LinkedDevice& device) : device(&device), rendererWidth(800), rendererHeight(600)
     {
     }
 
     auto Renderer::registerShader(std::string_view const shaderName, core::ref_ptr<ShaderAsset> shaderAsset) -> void
     {
-        registeredShaders.try_emplace(std::string(shaderName), shaderAsset);
+        registeredShaders[std::string(shaderName)] = shaderAsset;
     }
 
     auto Renderer::setShader(std::string_view const shaderName) -> void
@@ -28,6 +28,12 @@ namespace ionengine
     auto Renderer::drawQuad(math::Matrixf const& viewProjection) -> void
     {
         device->getGraphicsContext().draw(3, 1);
+    }
+
+    auto Renderer::resize(uint32_t const width, uint32_t const height) -> void
+    {
+        rendererWidth = width;
+        rendererHeight = height;
     }
 
     auto Renderer::beginDraw(std::span<core::ref_ptr<rhi::Texture>> colors, core::ref_ptr<rhi::Texture> depthStencil,
@@ -92,8 +98,8 @@ namespace ionengine
             device->getGraphicsContext().begin_render_pass(renderPassColorInfos, std::nullopt);
         }
 
-        device->getGraphicsContext().set_viewport(0, 0, 752, 286);
-        device->getGraphicsContext().set_scissor(0, 0, 752, 286);
+        device->getGraphicsContext().set_viewport(0, 0, rendererWidth, rendererHeight);
+        device->getGraphicsContext().set_scissor(0, 0, rendererWidth, rendererHeight);
     }
 
     auto Renderer::endDraw() -> void

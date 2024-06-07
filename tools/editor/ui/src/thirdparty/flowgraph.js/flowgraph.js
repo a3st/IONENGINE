@@ -2,22 +2,6 @@
 
 import $ from 'jquery'
 
-export class FlowGraphContextMenuEvent {
-    constructor(posX, posY) {
-        this.posX = posX;
-        this.posY = posY;
-    }
-};
-
-export class FlowGraphValueChangedEvent {
-    constructor(node, targetName, targetType, value) {
-        this.node = node;
-        this.targetName = targetName;
-        this.targetType = targetType;
-        this.value = value;
-    }
-};
-
 export default class FlowGraph {
     constructor(rootNode, width, height, canvasOptions = { "width": 8096, "height": 8096 }) {
         this.rootNode = rootNode;
@@ -127,11 +111,11 @@ export default class FlowGraph {
             .children('.flowgraph-canvas')
             .css('transform', `translate(${-this.relativeCanvasX}px, ${-this.relativeCanvasY}px)`);
 
-        /*if(options['valueChanged'] != null) {
-            this.rootNode.addEventListener("node-value-changed", options['valueChanged']);
+        if(options['valueChanged'] != null) {
+            this.rootNode.addEventListener("flowgraph:value-changed", options['valueChanged']);
         } else {
-            this.rootNode.addEventListener("node-value-changed", e => { });
-        }*/
+            this.rootNode.addEventListener("flowgraph:value-changed", e => { });
+        }
     }
 
     #renderContextMenu() {
@@ -170,7 +154,7 @@ export default class FlowGraph {
                 $('.flowgraph-context-group button')
                     .last()
                     .bind('click', e => {
-                        item.callback(new FlowGraphContextMenuEvent(posX, posY));
+                        item.callback({"posX": posX, "posY": posY});
                         $(this.rootNode).children('.flowgraph-context-container')
                             .css('display', 'none');
                     });
@@ -810,7 +794,7 @@ export default class FlowGraph {
                         <div class="flowgraph-io-row left">
                             <div style="display: inline-flex; gap: 5px; align-items: center;">
                                 <span style="color: white;">${inputs[i].name}:</span>
-                                <input type="number" placeholder="${inputs[i].type}" style="width: 80px;" />
+                                <input id="input_${id}_${i}" type="number" placeholder="${inputs[i].type}" style="width: 80px;" />
                             </div>
                         </div>
                     `;
@@ -821,7 +805,7 @@ export default class FlowGraph {
                         <div class="flowgraph-io-row left">
                             <div style="display: inline-flex; gap: 5px; align-items: center;">
                                 <span style="color: white;">${inputs[i].name}:</span>
-                                <input type="text" placeholder="${inputs[i].type}" style="width: 80px;" />
+                                <input id="input_${id}_${i}" type="text" placeholder="${inputs[i].type}" style="width: 80px;" />
                             </div>
                         </div>
                     `;
@@ -832,7 +816,7 @@ export default class FlowGraph {
                         <div class="flowgraph-io-row left">
                             <div style="display: inline-flex; gap: 5px; align-items: center;">
                                 <span style="color: white;">${inputs[i].name}:</span>
-                                <input type="color" placeholder="${inputs[i].type}" style="width: 50px;" />
+                                <input id="input_${id}_${i}" type="color" placeholder="${inputs[i].type}" style="width: 50px;" />
                             </div>
                         </div>
                     `;
@@ -922,34 +906,20 @@ export default class FlowGraph {
             </div>
         `);
 
-        if($(`#node_${id}`).find(':input').length > 0) {
-            $(`#node_${id}`).find(':input').get(0).addEventListener('change', e => {
-                let targetName = $(e.target).parent().children('span').text();
-                targetName = targetName.substring(0, targetName.length - 1);
-
-                this.nodes[this.nodesCache[id]].userData.options[targetName] = e.target.value;
-                console.log(this.nodes)
-            })
-        }
-
-        console.log($(`#node_${id}`).find(':input').get(0))
-        /*$(`#node_${id} :input`).get(0).addEventListener('onchange', e => {
-            let targetName = $(e.target).parent().children('span').text();
+        $(`#node_${id}`).find(":input").on('change', e => { 
+            let targetName = $(e.currentTarget).parent().children('span').text();
             targetName = targetName.substring(0, targetName.length - 1);
-
-            this.nodes[this.nodesCache[id]].userData.options[targetName] = e.target.value;
-            console.log(this.nodes)
-        });*/
-
-        /*$(`#node_${id}`).find(":input").on('change', e => { 
-            let targetName = $(e.target).parent().children('span').text();
-            targetName = targetName.substring(0, targetName.length - 1);
-
-            console.log(id);
 
             this.rootNode.dispatchEvent(
-                new CustomEvent("node-value-changed", { 'detail': new FlowGraphValueChangedEvent(this.getNode(id), targetName, e.target.type, e.target.value) }));
-        });*/
+                new CustomEvent("flowgraph:value-changed", 
+                    { 'detail': 
+                        { 'nodeId': id, 
+                          'targetName': targetName, 
+                          'targetType': e.currentTarget.type, 
+                          'value': e.currentTarget.value 
+                        } 
+                    }));
+        });
 
         let nodeWidth = 110 + Math.min(1, outputs.length) * 20 * outputMaxLength + Math.min(1, inputs.length) * 20 * inputMaxLength;
 
@@ -1034,27 +1004,26 @@ export default class FlowGraph {
      * Add node to graph
      * @param {int} posX - X node position
      * @param {int} posY - Y node position
-     * @param {map} inputs - Input parameters
-     * @param {map} outputs - Output parameters
+     * @param {Array} inputs - Input parameters
+     * @param {Array} outputs - Output parameters
      * @param {string} nodeName - Name node
      * @param {bool} fixed - Ability to remove node via 'Remove Node'
      * @param {string} expandHTML - Expand body in HTML
-     * @param {string} userData - Optional user data
+     * @param {Object} userData - Optional user data
      * @returns ID created node
      */
     addNode(posX, posY, inputs, outputs, nodeName, fixed, expandHTML, userData = {}) {
-        const id = this.lastCreatedId;
-        this.#internalAddNode(id, posX, posY, inputs, outputs, nodeName, fixed, expandHTML, userData);
+        const createdId = this.lastCreatedId;
+        this.#internalAddNode(createdId, posX, posY, inputs, outputs, nodeName, fixed, expandHTML, userData);
         this.lastCreatedId++;
-        return id;
+        return createdId;
     }
 
     export() {
-        const data = {
+        return {
             "nodes": this.nodes,
             "connections": this.connections
         };
-        return data;
     }
 
     import(data) {
