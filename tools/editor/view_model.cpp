@@ -9,6 +9,7 @@
 
 #include "components/convert.hpp"
 #include "components/input.hpp"
+#include "components/math.hpp"
 #include "components/output.hpp"
 #include "components/texture.hpp"
 
@@ -16,10 +17,14 @@ namespace ionengine::tools::editor
 {
     ViewModel::ViewModel(libwebview::App* app) : Engine(nullptr), app(app)
     {
-        componentRegistry.registerComponent<Sampler2D_NodeComponent>();
-        componentRegistry.registerComponent<Split_F4_F3F1_NodeComponent>();
-        componentRegistry.registerComponent<PostProcessOutput_NodeComponent>();
         componentRegistry.registerComponent<Input_NodeComponent>();
+        componentRegistry.registerComponent<PostProcessOutput_NodeComponent>();
+        componentRegistry.registerComponent<Sampler2D_NodeComponent>();
+        componentRegistry.registerComponent<Constant_Color_NodeComponent>();
+        componentRegistry.registerComponent<Constant_Float_NodeComponent>();
+        componentRegistry.registerComponent<Join_Float4_NodeComponent>();
+        componentRegistry.registerComponent<Split_Float4_NodeComponent>();
+        componentRegistry.registerComponent<Split_Float3_NodeComponent>();
 
         app->bind("addContextItems", [this]() -> std::string { return this->addContextItems(); });
         app->bind("addResourceTypes", [this]() -> std::string { return this->addResourceTypes(); });
@@ -31,15 +36,6 @@ namespace ionengine::tools::editor
 
     auto ViewModel::init() -> void
     {
-        core::ref_ptr<ShaderAsset> shaderAsset = this->createShaderAsset();
-        bool result = shaderAsset->loadFromFile("../assets/shaders/quad.bin");
-        std::cout << std::boolalpha << result << std::endl;
-
-        for (auto const [optionName, option] : shaderAsset->getOptions())
-        {
-            std::cout << std::format("{} {}", optionName, option.constantIndex) << std::endl;
-        }
-
         previewImage = this->createTextureAsset();
         previewImage->create(800, 600, TextureUsage::RenderTarget);
     }
@@ -53,6 +49,13 @@ namespace ionengine::tools::editor
         std::vector<core::ref_ptr<rhi::Texture>> colors = {previewImage->getTexture()};
 
         renderer.beginDraw(colors, nullptr, math::Color(0.2f, 0.3f, 0.4f, 1.0f), std::nullopt, std::nullopt);
+
+        if (previewShader)
+        {
+            renderer.setShader("genShader");
+            renderer.drawQuad({});
+        }
+
         renderer.endDraw();
     }
 
@@ -283,26 +286,23 @@ namespace ionengine::tools::editor
                 return "";
             }
 
-            if (createdNode->options.empty())
+            for (auto element : options)
             {
-                for (auto element : options)
+                std::string_view key;
+                element.unescaped_key().get(key);
+                if (error != simdjson::SUCCESS)
                 {
-                    std::string_view key;
-                    element.unescaped_key().get(key);
-                    if (error != simdjson::SUCCESS)
-                    {
-                        return "";
-                    }
-
-                    std::string_view value;
-                    error = element.value().get_string().get(value);
-                    if (error != simdjson::SUCCESS)
-                    {
-                        return "";
-                    }
-
-                    createdNode->options.emplace(std::string(key), std::string(value));
+                    return "";
                 }
+
+                std::string_view value;
+                error = element.value().get_string().get(value);
+                if (error != simdjson::SUCCESS)
+                {
+                    return "";
+                }
+
+                createdNode->options[std::string(key)] = std::string(value);
             }
 
             if (createdNode->inputs.empty())
@@ -404,10 +404,9 @@ namespace ionengine::tools::editor
     auto ViewModel::compileShaderGraph() -> bool
     {
         std::stringstream shaderCodeStream;
-        if (!shaderGraph->dfs(shaderCodeStream))
-        {
-            return false;
-        }
+        shaderGraph->dfs(shaderCodeStream);
+
+        std::cout << shaderCodeStream.str() << std::endl;
 
         std::filesystem::path const appDataPath = std::getenv("APPDATA");
 
@@ -421,26 +420,59 @@ namespace ionengine::tools::editor
 
         std::string const fileName = std::filesystem::path(std::tmpnam(nullptr)).filename().string();
 
-        std::fstream stream(appDataPath / "ionengine-tools" / "Cache" / fileName, std::ios::out);
-        if (!stream.is_open())
         {
-            throw core::Exception("");
+            std::fstream stream(appDataPath / "ionengine-tools" / "Cache" / fileName, std::ios::out);
+            if (!stream.is_open())
+            {
+                throw core::Exception("");
+            }
+            stream << shaderCodeStream.str();
         }
-        stream << shaderCodeStream.str();
 
         std::string const outputName = std::filesystem::path(std::tmpnam(nullptr)).filename().string();
 
-        std::vector<std::string> arguments = {
-            "shaderc.exe", "\"" + (appDataPath / "ionengine-tools" / "Cache" / fileName).generic_string() + "\"",
-            "--target",    "DXIL",
-            "--output",    outputName};
+        std::string const inputPath = (appDataPath / "ionengine-tools" / "Cache" / fileName).generic_string();
+        std::string const outputPath = (appDataPath / "ionengine-tools" / "Cache" / outputName).generic_string();
+
+        std::vector<std::string> arguments = {"shaderc.exe", "\"" + inputPath + "\"", "--target", "DXIL",
+                                              "--output",    "\"" + outputPath + "\""};
+
         auto result = core::subprocessExecute(arguments);
+
         if (result.has_value())
         {
-            auto message = std::move(result.value());
-            std::cout << std::string(reinterpret_cast<char*>(message.data()), message.size()) << std::endl;
-        }
+            auto buffer = std::move(result.value());
+            std::string const outputMessage(reinterpret_cast<char*>(buffer.data()), buffer.size());
 
-        return true;
+            if (outputMessage.contains(std::format("Out: {}", outputPath)))
+            {
+                previewShader = this->createShaderAsset();
+
+                if (previewShader->loadFromFile(outputPath))
+                {
+                    std::cout << "Shader Loaded" << std::endl;
+                    renderer.registerShader("genShader", previewShader);
+
+                    std::filesystem::remove(inputPath);
+                    std::filesystem::remove(outputPath);
+
+                    for (auto const [optionName, option] : previewShader->getOptions())
+                    {
+                        std::cout << std::format("{} {}", optionName, option.constantIndex) << std::endl;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                std::filesystem::remove(inputPath);
+                std::filesystem::remove(outputPath);
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
     }
 } // namespace ionengine::tools::editor

@@ -61,6 +61,11 @@ namespace ionengine
     {
     }
 
+    auto ShaderAsset::getShader() const -> core::ref_ptr<rhi::Shader>
+    {
+        return shaderProgram;
+    }
+
     auto ShaderAsset::loadFromFile(std::filesystem::path const& filePath) -> bool
     {
         auto result = rhi::fx::FXSL::loadFromFile(filePath);
@@ -171,7 +176,7 @@ namespace ionengine
                                            .offset = offset,
                                            .size = rhi::fx::ShaderElementSize[structureElement.elementType]};
 
-                    options.emplace(namespaceName + "." + optionName, std::move(option));
+                    options.emplace(namespaceName + "." + structureElement.name, std::move(option));
                 }
             }
         }

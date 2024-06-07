@@ -15,7 +15,9 @@ namespace ionengine
       public:
         Renderer(LinkedDevice& device);
 
-        auto registerShader(std::string_view const shaderName, core::ref_ptr<ShaderAsset> shaderAsset) -> bool;
+        auto registerShader(std::string_view const shaderName, core::ref_ptr<ShaderAsset> shaderAsset) -> void;
+
+        auto setShader(std::string_view const shaderName) -> void;
 
         auto drawQuad(math::Matrixf const& viewProjection) -> void;
 
@@ -29,7 +31,7 @@ namespace ionengine
 
       private:
         LinkedDevice* device;
-
         std::stack<core::ref_ptr<rhi::Texture>> colorBarriers;
+        std::unordered_map<std::string, core::ref_ptr<ShaderAsset>> registeredShaders;
     };
 } // namespace ionengine

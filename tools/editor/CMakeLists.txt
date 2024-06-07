@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.26.0)
 
 add_executable(editor
-    components/convert.hpp
-    components/texture.hpp
+    components/convert.cpp
+    components/texture.cpp
     components/output.cpp
     components/input.cpp
+    components/math.cpp
     view_model.cpp
     connection.cpp
     registry.cpp

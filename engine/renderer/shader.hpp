@@ -34,6 +34,8 @@ namespace ionengine
 
         auto getOptions() const -> std::unordered_map<std::string, ShaderOption>;
 
+        auto getShader() const -> core::ref_ptr<rhi::Shader>;
+
       private:
         LinkedDevice* device;
         core::ref_ptr<rhi::Shader> shaderProgram;

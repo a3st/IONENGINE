@@ -10,13 +10,24 @@ namespace ionengine
     {
     }
 
-    auto Renderer::registerShader(std::string_view const shaderName, core::ref_ptr<ShaderAsset> shaderAsset) -> bool
+    auto Renderer::registerShader(std::string_view const shaderName, core::ref_ptr<ShaderAsset> shaderAsset) -> void
     {
-        return true;
+        registeredShaders.try_emplace(std::string(shaderName), shaderAsset);
+    }
+
+    auto Renderer::setShader(std::string_view const shaderName) -> void
+    {
+        auto shaderAsset = registeredShaders[std::string(shaderName)];
+
+        device->getGraphicsContext().set_graphics_pipeline_options(
+            shaderAsset->getShader(),
+            rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid, .cull_mode = rhi::CullMode::Back},
+            rhi::BlendColorInfo::Opaque(), std::nullopt);
     }
 
     auto Renderer::drawQuad(math::Matrixf const& viewProjection) -> void
     {
+        device->getGraphicsContext().draw(3, 1);
     }
 
     auto Renderer::beginDraw(std::span<core::ref_ptr<rhi::Texture>> colors, core::ref_ptr<rhi::Texture> depthStencil,
@@ -80,6 +91,9 @@ namespace ionengine
         {
             device->getGraphicsContext().begin_render_pass(renderPassColorInfos, std::nullopt);
         }
+
+        device->getGraphicsContext().set_viewport(0, 0, 752, 286);
+        device->getGraphicsContext().set_scissor(0, 0, 752, 286);
     }
 
     auto Renderer::endDraw() -> void
@@ -97,9 +111,6 @@ namespace ionengine
     /*
     auto Renderer::draw_mesh(core::ref_ptr<Mesh> mesh) -> void
     {
-        device->get_graphics_context().set_viewport(0, 0, 752, 286);
-        device->get_graphics_context().set_scissor(0, 0, 752, 286);
-
         device->get_graphics_context().set_graphics_pipeline_options(
             mesh->material->get_shader(),
             rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid, .cull_mode = rhi::CullMode::Back},

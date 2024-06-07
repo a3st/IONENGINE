@@ -37,6 +37,7 @@ namespace ionengine::tools::editor
 
         core::ref_ptr<TextureAsset> previewImage;
         core::ref_ptr<Scene> shaderGraph;
+        core::ref_ptr<ShaderAsset> previewShader;
 
         auto compileShaderGraph() -> bool;
     };

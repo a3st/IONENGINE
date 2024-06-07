@@ -9,6 +9,15 @@ export class FlowGraphContextMenuEvent {
     }
 };
 
+export class FlowGraphValueChangedEvent {
+    constructor(node, targetName, targetType, value) {
+        this.node = node;
+        this.targetName = targetName;
+        this.targetType = targetType;
+        this.value = value;
+    }
+};
+
 export default class FlowGraph {
     constructor(rootNode, width, height, canvasOptions = { "width": 8096, "height": 8096 }) {
         this.rootNode = rootNode;
@@ -64,7 +73,7 @@ export default class FlowGraph {
         this.height = height;
     }
 
-    start() {
+    start(options = {}) {
         $(this.rootNode)
             .addClass('flowgraph-container')
             .css('width', this.width)
@@ -117,6 +126,12 @@ export default class FlowGraph {
         $(this.rootNode)
             .children('.flowgraph-canvas')
             .css('transform', `translate(${-this.relativeCanvasX}px, ${-this.relativeCanvasY}px)`);
+
+        /*if(options['valueChanged'] != null) {
+            this.rootNode.addEventListener("node-value-changed", options['valueChanged']);
+        } else {
+            this.rootNode.addEventListener("node-value-changed", e => { });
+        }*/
     }
 
     #renderContextMenu() {
@@ -167,6 +182,10 @@ export default class FlowGraph {
     #keyHandler(e) {
         if (e.code == 'Backspace' || e.code == 'Delete') {
             if (this.focusedElement) {
+                if($(document.activeElement).is(':input')) {
+                    return;
+                }
+
                 if ($(this.focusedElement).closest('.flowgraph-node-container').length > 0) {
                     const nodeId = this.focusedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
                     if (!this.nodes[this.nodesCache[nodeId]].fixed) {
@@ -785,14 +804,53 @@ export default class FlowGraph {
         let inputsHTML = "";
         let inputMaxLength = 5;
         for (let i = 0; i < inputs.length; i++) {
-            inputsHTML += `
-                <div class="flowgraph-io-row left">
-                    <div id="node_${id}_in_${i}" class="flowgraph-io circle"></div>
-                    <span style="color: white;">${inputs[i].name} (${inputs[i].type})</span>
-                </div>
-            `;
+            switch(inputs[i].type) {
+                case 'Number': {
+                    inputsHTML += `
+                        <div class="flowgraph-io-row left">
+                            <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                <span style="color: white;">${inputs[i].name}:</span>
+                                <input type="number" placeholder="${inputs[i].type}" style="width: 80px;" />
+                            </div>
+                        </div>
+                    `;
+                    break;
+                }
+                case 'String': {
+                    inputsHTML += `
+                        <div class="flowgraph-io-row left">
+                            <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                <span style="color: white;">${inputs[i].name}:</span>
+                                <input type="text" placeholder="${inputs[i].type}" style="width: 80px;" />
+                            </div>
+                        </div>
+                    `;
+                    break;
+                }
+                case 'Color': {
+                    inputsHTML += `
+                        <div class="flowgraph-io-row left">
+                            <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                <span style="color: white;">${inputs[i].name}:</span>
+                                <input type="color" placeholder="${inputs[i].type}" style="width: 50px;" />
+                            </div>
+                        </div>
+                    `;
+                    break;
+                }
+                default: {
+                    inputsHTML += `
+                        <div class="flowgraph-io-row left">
+                            <div id="node_${id}_in_${i}" class="flowgraph-io circle"></div>
+                            <span style="color: white;">${inputs[i].name} (${inputs[i].type})</span>
+                        </div>
+                    `;
+                    break;
+                }
+            }
             inputMaxLength = Math.max(inputs[i].name.length, inputMaxLength);
         }
+
         if (inputs.length == 0) {
             inputMaxLength = 0;
         }
@@ -808,21 +866,27 @@ export default class FlowGraph {
             `;
             outputMaxLength = Math.max(outputs[i].name.length, outputMaxLength);
         }
+
         if (outputs.length == 0) {
             outputMaxLength = 0;
+        }
+
+        let iolistWidth = 100;
+        if(inputs.length > 0 && outputs.length > 0) {
+            iolistWidth = 50;
         }
 
         let bodyHTML = "";
         if (inputsHTML.length > 0) {
             bodyHTML += `
-                <div class="flowgraph-io-list">
+                <div class="flowgraph-io-list" style="width: ${iolistWidth}%;">
                     ${inputsHTML}
                 </div>
             `;
         }
         if (outputsHTML.length > 0) {
             bodyHTML += `
-                <div class="flowgraph-io-list">
+                <div class="flowgraph-io-list" style="width: ${iolistWidth}%;">
                     ${outputsHTML}
                 </div>
             `;
@@ -857,6 +921,35 @@ export default class FlowGraph {
                 </div>
             </div>
         `);
+
+        if($(`#node_${id}`).find(':input').length > 0) {
+            $(`#node_${id}`).find(':input').get(0).addEventListener('change', e => {
+                let targetName = $(e.target).parent().children('span').text();
+                targetName = targetName.substring(0, targetName.length - 1);
+
+                this.nodes[this.nodesCache[id]].userData.options[targetName] = e.target.value;
+                console.log(this.nodes)
+            })
+        }
+
+        console.log($(`#node_${id}`).find(':input').get(0))
+        /*$(`#node_${id} :input`).get(0).addEventListener('onchange', e => {
+            let targetName = $(e.target).parent().children('span').text();
+            targetName = targetName.substring(0, targetName.length - 1);
+
+            this.nodes[this.nodesCache[id]].userData.options[targetName] = e.target.value;
+            console.log(this.nodes)
+        });*/
+
+        /*$(`#node_${id}`).find(":input").on('change', e => { 
+            let targetName = $(e.target).parent().children('span').text();
+            targetName = targetName.substring(0, targetName.length - 1);
+
+            console.log(id);
+
+            this.rootNode.dispatchEvent(
+                new CustomEvent("node-value-changed", { 'detail': new FlowGraphValueChangedEvent(this.getNode(id), targetName, e.target.type, e.target.value) }));
+        });*/
 
         let nodeWidth = 110 + Math.min(1, outputs.length) * 20 * outputMaxLength + Math.min(1, inputs.length) * 20 * inputMaxLength;
 

@@ -213,9 +213,30 @@ export default {
         });
 
         graph.start();
+
         this.graph = graph;
     },
     methods: {
+        onValueChanged(e) {
+                switch(e.detail.targetType) {
+                    case 'color': {
+                        // https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+                        const hexToRgb = hex =>
+                            hex.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i
+                                        ,(m, r, g, b) => '#' + r + r + g + g + b + b)
+                                .substring(1).match(/.{2}/g)
+                                .map(x => parseInt(x, 16));
+
+                        e.detail.node.userData.options[e.detail.targetName] = hexToRgb(e.detail.value).join();
+                        break;
+                    }
+                    default: {
+                        e.detail.node.userData.options[e.detail.targetName] = e.detail.value;
+                        break;
+                    }
+                }
+                console.log(toRaw(this.graph).export())
+        },
         onDynviewResize(target) {
             const graphElement = $('#graph-container');
             toRaw(this.graph).resize(graphElement.width(), graphElement.height());
@@ -241,7 +262,7 @@ export default {
         },
         onCompileShaderClick(e) {
             webview.invoke('compileShader', toRaw(this.graph).export()).then(data => {
-                console.log(data);
+                // TODO!
             });
         }
     }
