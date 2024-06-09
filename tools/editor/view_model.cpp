@@ -248,6 +248,8 @@ namespace ionengine::tools::editor
     {
         shaderGraph = core::make_ref<Scene>(componentRegistry);
 
+        std::cout << sceneData << std::endl;
+
         simdjson::ondemand::parser parser;
         auto document = parser.iterate(sceneData, sceneData.size() + simdjson::SIMDJSON_PADDING);
 

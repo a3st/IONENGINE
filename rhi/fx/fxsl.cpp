@@ -200,83 +200,7 @@ namespace ionengine::rhi::fx
         }
     }
 
-    auto FXSL::loadFromMemory(std::span<uint8_t const> const data) -> std::optional<ShaderEffect>
-    {
-        std::basic_spanstream<uint8_t> stream(std::span<uint8_t>(const_cast<uint8_t*>(data.data()), data.size()),
-                                              std::ios::binary | std::ios::in);
-
-        Header header;
-        stream.read((uint8_t*)&header, sizeof(Header));
-
-        if (std::memcmp(header.magic.data(), Magic.data(), Magic.size()) != 0)
-        {
-            return std::nullopt;
-        }
-
-        ChunkHeader chunkHeader;
-        stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
-
-        std::vector<uint8_t> chunkJsonData(chunkHeader.chunkLength);
-        stream.read(chunkJsonData.data(), chunkJsonData.size());
-
-        ShaderEffect effect = {};
-
-        if (!readJsonChunkData(effect, chunkJsonData))
-        {
-            return std::nullopt;
-        }
-
-        do
-        {
-            stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
-            std::vector<uint8_t> buffer(chunkHeader.chunkLength);
-            stream.read(buffer.data(), buffer.size());
-            effect.buffers.emplace_back(std::move(buffer));
-        } while (header.length > stream.tellg());
-        return effect;
-    }
-
-    auto FXSL::loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffect>
-    {
-        std::basic_fstream<uint8_t> stream(filePath, std::ios::binary | std::ios::in);
-
-        if (!stream.is_open())
-        {
-            return std::nullopt;
-        }
-
-        Header header;
-        stream.read((uint8_t*)&header, sizeof(Header));
-
-        if (std::memcmp(header.magic.data(), Magic.data(), Magic.size()) != 0)
-        {
-            return std::nullopt;
-        }
-
-        ChunkHeader chunkHeader;
-        stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
-
-        std::vector<uint8_t> chunkJsonData(chunkHeader.chunkLength);
-        stream.read(chunkJsonData.data(), chunkJsonData.size());
-
-        ShaderEffect effect = {};
-
-        if (!readJsonChunkData(effect, chunkJsonData))
-        {
-            return std::nullopt;
-        }
-
-        do
-        {
-            stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
-            std::vector<uint8_t> buffer(chunkHeader.chunkLength);
-            stream.read(buffer.data(), buffer.size());
-            effect.buffers.emplace_back(std::move(buffer));
-        } while (header.length > stream.tellg());
-        return effect;
-    }
-
-    auto FXSL::readJsonChunkData(ShaderEffect& object, std::vector<uint8_t>& data) -> bool
+    auto readJsonChunkData(ShaderEffect& object, std::vector<uint8_t>& data) -> bool
     {
         simdjson::ondemand::parser parser;
         auto document = parser.iterate(data.data(), data.size(), data.size() + simdjson::SIMDJSON_PADDING);
@@ -458,72 +382,144 @@ namespace ionengine::rhi::fx
         return true;
     }
 
-    auto FXSL::generateJsonChunkData(ShaderEffect const& object) -> std::string
+    auto generateJsonChunkData(ShaderEffect const& object) -> std::string
     {
-        std::string json;
+        std::stringstream stream(std::ios::out);
+        stream << "{\"technique\":{";
+        for (auto const& [stageType, stageInfo] : object.technique.stages)
         {
-            std::stringstream stream(std::ios::out);
-            stream << "{\"technique\":{";
-            for (auto const& [stageType, stageInfo] : object.technique.stages)
+            stream << "\"" + toString(stageType) + "\":{\"buffer\":" + std::to_string(stageInfo.buffer) +
+                          ",\"entryPoint\":\"" + stageInfo.entryPoint + "\"},";
+        }
+
+        stream << "\"depthWrite\":" << std::boolalpha << object.technique.depthWrite
+               << ",\"stencilWrite\":" << std::boolalpha << object.technique.stencilWrite
+               << ",\"cullSide\":" << "\"" + toString(object.technique.cullSide) + "\"},\"constants\":[";
+
+        bool isFirst = true;
+
+        for (auto const& constant : object.constants)
+        {
+            if (!isFirst)
             {
-                stream << "\"" + toString(stageType) + "\":{\"buffer\":" + std::to_string(stageInfo.buffer) +
-                              ",\"entryPoint\":\"" + stageInfo.entryPoint + "\"},";
+                stream << ",";
             }
 
-            stream << "\"depthWrite\":" << std::boolalpha << object.technique.depthWrite
-                   << ",\"stencilWrite\":" << std::boolalpha << object.technique.stencilWrite
-                   << ",\"cullSide\":" << "\"" + toString(object.technique.cullSide) + "\"},\"constants\":[";
+            stream << "{\"name\":\"" + constant.name + "\",\"type\":\"" + toString(constant.constantType) +
+                          "\",\"structure\":" + std::to_string(constant.structure) + "}";
 
-            bool isFirst = true;
+            isFirst = false;
+        }
+        stream << "],\"structures\":[";
 
-            for (auto const& constant : object.constants)
+        isFirst = true;
+
+        for (auto const& structure : object.structures)
+        {
+            if (!isFirst)
             {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "{\"name\":\"" + constant.name + "\",\"type\":\"" + toString(constant.constantType) +
-                              "\",\"structure\":" + std::to_string(constant.structure) + "}";
-
-                isFirst = false;
+                stream << ",";
             }
-            stream << "],\"structures\":[";
+
+            stream << "{\"name\":\"" + structure.name + "\",\"elements\":[";
 
             isFirst = true;
 
-            for (auto const& structure : object.structures)
+            for (auto const& element : structure.elements)
             {
                 if (!isFirst)
                 {
                     stream << ",";
                 }
 
-                stream << "{\"name\":\"" + structure.name + "\",\"elements\":[";
-
-                isFirst = true;
-
-                for (auto const& element : structure.elements)
-                {
-                    if (!isFirst)
-                    {
-                        stream << ",";
-                    }
-
-                    stream << "{\"name\":\"" + element.name + "\",\"type\":\"" + toString(element.elementType) +
-                                  "\",\"semantic\":\"" + element.semantic + "\"}";
-
-                    isFirst = false;
-                }
-
-                stream << "],\"sizeInBytes\":" << std::to_string(structure.size) << "}";
+                stream << "{\"name\":\"" + element.name + "\",\"type\":\"" + toString(element.elementType) +
+                              "\",\"semantic\":\"" + element.semantic + "\"}";
 
                 isFirst = false;
             }
-            stream << "]}";
-            json = stream.str();
+
+            stream << "],\"sizeInBytes\":" << std::to_string(structure.size) << "}";
+
+            isFirst = false;
         }
-        return json;
+        stream << "]}";
+        return stream.str();
+    }
+
+    auto FXSL::loadFromMemory(std::span<uint8_t const> const data) -> std::optional<ShaderEffect>
+    {
+        std::basic_spanstream<uint8_t> stream(std::span<uint8_t>(const_cast<uint8_t*>(data.data()), data.size()),
+                                              std::ios::binary | std::ios::in);
+
+        Header header;
+        stream.read((uint8_t*)&header, sizeof(Header));
+
+        if (std::memcmp(header.magic.data(), Magic.data(), Magic.size()) != 0)
+        {
+            return std::nullopt;
+        }
+
+        ChunkHeader chunkHeader;
+        stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
+
+        std::vector<uint8_t> chunkJsonData(chunkHeader.chunkLength);
+        stream.read(chunkJsonData.data(), chunkJsonData.size());
+
+        ShaderEffect effect = {};
+
+        if (!readJsonChunkData(effect, chunkJsonData))
+        {
+            return std::nullopt;
+        }
+
+        do
+        {
+            stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
+            std::vector<uint8_t> buffer(chunkHeader.chunkLength);
+            stream.read(buffer.data(), buffer.size());
+            effect.buffers.emplace_back(std::move(buffer));
+        } while (header.length > stream.tellg());
+        return effect;
+    }
+
+    auto FXSL::loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffect>
+    {
+        std::basic_fstream<uint8_t> stream(filePath, std::ios::binary | std::ios::in);
+
+        if (!stream.is_open())
+        {
+            return std::nullopt;
+        }
+
+        Header header;
+        stream.read((uint8_t*)&header, sizeof(Header));
+
+        if (std::memcmp(header.magic.data(), Magic.data(), Magic.size()) != 0)
+        {
+            return std::nullopt;
+        }
+
+        ChunkHeader chunkHeader;
+        stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
+
+        std::vector<uint8_t> chunkJsonData(chunkHeader.chunkLength);
+        stream.read(chunkJsonData.data(), chunkJsonData.size());
+
+        ShaderEffect effect = {};
+
+        if (!readJsonChunkData(effect, chunkJsonData))
+        {
+            return std::nullopt;
+        }
+
+        do
+        {
+            stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
+            std::vector<uint8_t> buffer(chunkHeader.chunkLength);
+            stream.read(buffer.data(), buffer.size());
+            effect.buffers.emplace_back(std::move(buffer));
+        } while (header.length > stream.tellg());
+        return effect;
     }
 
     auto FXSL::save(ShaderEffect const& object, std::filesystem::path const& filePath) -> bool

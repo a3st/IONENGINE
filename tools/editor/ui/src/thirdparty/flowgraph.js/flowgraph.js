@@ -82,7 +82,12 @@ export default class FlowGraph {
             </div>
         `);
         $('.flowgraph-context-search input').bind('input', e => { this.#renderContextMenu(); });
-        $(this.rootNode).append(`
+
+        $(this.rootNode)
+            .find('.flowgraph-bg-container')
+            .get(0).style.setProperty('--grid-size', `${this.zoomScale * 40}px`);
+        
+        /*$(this.rootNode).append(`
             <div class="flowgraph-info-container"
                 style="transform: translate(${this.rootNode.offsetWidth - 200}px, ${this.rootNode.offsetHeight - 60}px);">
                 
@@ -91,7 +96,7 @@ export default class FlowGraph {
                     <span>Zoom: ${this.zoomScale.toFixed(2)}</span>
                 </div>
             </div>
-        `)
+        `)*/
 
         this.rootNode.addEventListener('mousewheel', this.#zoomEventHandler.bind(this));
         this.rootNode.addEventListener('mousedown', event => {
@@ -187,9 +192,26 @@ export default class FlowGraph {
         if ($(e.target).closest('.flowgraph-context-container').length > 0) {
 
         } else {
-            $(this.rootNode).children('.flowgraph-context-container')
+            const contextWidth = 230;
+            const contextHeight = 200;
+
+            let spawnX = this.lastClientX;
+            let spawnY = this.lastClientY;
+            
+            // Prevent overflow by X
+            if(e.x + contextWidth > $(this.rootNode).width()) {
+                spawnX -= contextWidth - ($(this.rootNode).width() - e.x);
+            }
+            
+            // Prevent overflow by Y
+            if(e.y + contextHeight > $(this.rootNode).height()) {
+                spawnY -= contextHeight - ($(this.rootNode).height() - e.y);
+            }
+
+            $(this.rootNode)
+                .children('.flowgraph-context-container')
                 .css('display', 'block')
-                .css('transform', `translate(${this.lastClientX}px, ${this.lastClientY}px)`);
+                .css('transform', `translate(${spawnX}px, ${spawnY}px)`);
 
             this.#renderContextMenu();
         }
@@ -444,12 +466,13 @@ export default class FlowGraph {
                     .children('.flowgraph-canvas')
                     .css('transform', `translate(${posX}px, ${posY}px) scale(${this.zoomScale})`);
 
-                $('.flowgraph-info-main')
+                /*$('.flowgraph-info-main')
                     .empty()
                     .append(`
                         <span>X: ${-this.relativeCanvasX - posX} Y: ${-this.relativeCanvasX - posY}</span>
                         <span>Zoom: ${this.zoomScale.toFixed(2)}</span>
                     `);
+                */
                 break;
             }
             case "node": {
@@ -588,12 +611,16 @@ export default class FlowGraph {
                 .children('.flowgraph-canvas')
                 .css('transform', `translate(${posX}px, ${posY}px) scale(${this.zoomScale})`);
 
-            $('.flowgraph-info-main')
+            /*$('.flowgraph-info-main')
                 .empty()
                 .append(`
                     <span>X: ${-this.relativeCanvasX - posX} Y: ${-this.relativeCanvasX - posY}</span>
                     <span>Zoom: ${this.zoomScale.toFixed(2)}</span>
                 `);
+            */
+            $(this.rootNode)
+                .find('.flowgraph-bg-container')
+                .get(0).style.setProperty('--grid-size', `${this.zoomScale * 40}px`);
         }
     }
 

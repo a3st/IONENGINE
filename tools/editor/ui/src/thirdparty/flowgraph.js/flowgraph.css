@@ -23,7 +23,7 @@
     --grid-size: 30px;
     --grid-strength: 1px;
     --grid-dash: 10px;
-    --grid-gap: 5px;
+    --grid-gap: 10px;
     --grid-color: #6e6e6e;
     --paper-color: #353535;
 
@@ -142,6 +142,7 @@
     width: 230px;
     height: 200px;
     z-index: 1;
+    overflow: hidden;
 }
 
 .flowgraph-context-search {
@@ -166,7 +167,7 @@
     display: flex;
     flex-direction: column;
     padding: 5px;
-    max-height: calc(100% - 15px);
+    max-height: calc(100% - 25px);
     overflow-y: auto;
     background-color: rgb(245, 245, 245);
     border: 1px solid rgba(0, 0, 0, 0.395);
@@ -182,7 +183,6 @@
 
 .flowgraph-context-main::-webkit-scrollbar-thumb {
     background: #888;
-    border-radius: 2px;
 }
 
 .flowgraph-context-main::-webkit-scrollbar-thumb:hover {
@@ -224,6 +224,7 @@
     background-color: rgb(210, 210, 210);
 }
 
+/*
 .flowgraph-info-container {
     display: block;
     position: absolute;
@@ -246,3 +247,4 @@
     color: white;
     font-size: 22px;
 }
+*/

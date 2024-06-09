@@ -11,18 +11,25 @@
                         </tabgr>
 
                         <tabpan id="tab-shader-graph">
-                            <div style="background-color: rgb(45, 45, 45); height: 30px; display: inline-flex; align-items: center; padding: 0px 10px 0px 10px;">
-                                <div style="display: inline-flex; align-items: center; gap: 10px;">
+                            <div style="background-color: rgb(45, 45, 45); height: 30px; display: flex;">
+                                <div style="display: inline-flex; align-items: center; gap: 10px; height: 100%; padding: 0px 10px 0px 10px;">
                                     <button class="btn-text" @click="onCompileShaderClick($event)">Compile</button>
                                 </div>
                             </div>
-                            <div id="graph-container" style="height: calc(100% - 30px);">
-                                <div id="graph-root"></div>
-                            </div>
+                            <div id="graph-root"></div>
                         </tabpan>
                     </div>
                 </dynpan>
                 <dynpan>
+                    <div class="pan-wrapper">
+                        <tabgr>
+                            <tabli title="Asset Browser" icon="images/folder-tree.svg" target="tab-asset-browser" fixed default></tabli>
+                        </tabgr>
+
+                        <tabpan id="tab-asset-browser">
+                            <abrowser></abrowser>
+                        </tabpan>
+                    </div>
                 </dynpan>
             </dyngr>
             <dyngr type="col">
@@ -91,6 +98,7 @@ import TabliComponent from '../components/tabli.vue';
 import OptextComponent from '../components/optext.vue';
 import OptliComponent from '../components/optli.vue';
 import OptgrComponent from '../components/optgr.vue';
+import ABrowserComponent from '../components/abrowser.vue';
 
 export default {
     components: {
@@ -104,7 +112,8 @@ export default {
         'tabpan': TabpanComponent,
         'optext': OptextComponent,
         'optli': OptliComponent,
-        'optgr': OptgrComponent
+        'optgr': OptgrComponent,
+        'abrowser': ABrowserComponent
     },
     data() {
         return {
@@ -182,8 +191,8 @@ export default {
         window.removeEventListener("resize", this.onGraphResize);
     },
     mounted() {
-        const graphElement = $('#graph-container');
-        let graph = new FlowGraph(graphElement.children(0).get(0), graphElement.width(), graphElement.height());
+        const graphElement = $('#graph-root');
+        let graph = new FlowGraph(graphElement.get(0), graphElement.parent().width(), graphElement.parent().height() - 35);
 
         webview.invoke('addContextItems').then(data => {
             for (const node of Object.values(data.items)) {
@@ -251,12 +260,12 @@ export default {
     },
     methods: {
         onDynviewResize(target) {
-            const graphElement = $('#graph-container');
-            toRaw(this.graph).resize(graphElement.width(), graphElement.height());
+            const graphElement = $('#graph-root');
+            toRaw(this.graph).resize(graphElement.parent().width(), graphElement.parent().height() - 35);
         },
         onGraphResize(e) {
-            const graphElement = $('#graph-container');
-            toRaw(this.graph).resize(graphElement.width(), graphElement.height());
+            const graphElement = $('#graph-root');
+            toRaw(this.graph).resize(graphElement.parent().width(), graphElement.parent().height() - 35);
         },
         onAddResourceClick(e) {
             this.resources.push({

@@ -13,7 +13,6 @@ export default {
     props: {
         title: String,
         icon: String,
-        type: String,
         target: String,
         fixed: Boolean,
         default: Boolean

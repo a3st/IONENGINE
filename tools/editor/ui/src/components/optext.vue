@@ -34,8 +34,18 @@ export default {
             const bodyElement = $(this.$el).find('.optext-body-container');
             if (bodyElement.css('display') == 'none') {
                 bodyElement.css('display', 'flex');
+
+                $(this.$el)
+                    .find('.optext-header-right-container object')
+                    .first()
+                    .replaceWith(`<object data="images/angle-up.svg" width="16" height="16" style="pointer-events: none;"></object>`);
             } else {
                 bodyElement.css('display', 'none');
+
+                $(this.$el)
+                    .find('.optext-header-right-container object')
+                    .first()
+                    .replaceWith(`<object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>`);
             }
         }
     }

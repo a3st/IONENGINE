@@ -1,6 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "fx.hpp"
+#include "core/exception.hpp"
 #include "precompiled.h"
 
 namespace ionengine::tools::shaderc
@@ -25,13 +26,21 @@ namespace ionengine::tools::shaderc
             {"float", 4},     {"bool", 4},      {"uint", 4},      {"SamplerState", 4}, {"Texture2D", 4}};
     } // namespace hlslconv
 
+    auto throwIfFailed(HRESULT hr) -> void
+    {
+        if (FAILED(hr))
+        {
+            throw core::Exception(std::format("The program closed with an error {:04x}", hr));
+        }
+    }
+
     FXCompiler::FXCompiler()
     {
         inputAssemblerNames.emplace("VS_INPUT");
         inputAssemblerNames.emplace("VS_OUTPUT");
         inputAssemblerNames.emplace("PS_OUTPUT");
 
-        ::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void());
+        throwIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void()));
     }
 
     auto FXCompiler::addIncludePath(std::filesystem::path const& includePath) -> void
@@ -196,6 +205,8 @@ namespace ionengine::tools::shaderc
             std::string const includeFile(shaderCode.begin() + quoteOpenOffset + 1,
                                           shaderCode.begin() + qouteCloseOffset);
 
+            uint64_t nextOffset = qouteCloseOffset + 1;
+
             for (auto const& includePath : includePaths)
             {
                 if (std::filesystem::exists(includePath / includeFile))
@@ -213,11 +224,12 @@ namespace ionengine::tools::shaderc
                     auto beginShaderCode = shaderCode.substr(0, offset);
                     auto endShaderCode = shaderCode.substr(qouteCloseOffset + 1, std::string::npos);
                     shaderCode = beginShaderCode + includeShaderCode + endShaderCode;
+                    nextOffset = offset + 1 + includeShaderCode.size();
                     break;
                 }
             }
 
-            offset = qouteCloseOffset + 1;
+            offset = nextOffset;
         }
         return true;
     }

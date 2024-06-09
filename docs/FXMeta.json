@@ -14,23 +14,102 @@
     },
     "constants": [
         {
+            "name": "materialData",
+            "type": "CONST_BUFFER",
+            "structure": 2
+        },
+        {
             "name": "linearSampler",
-            "type": "SAMPLER_STATE"
+            "type": "SAMPLER_STATE",
+            "structure": -1
         },
         {
             "name": "worldData",
             "type": "CONST_BUFFER",
-            "structure": 2
+            "structure": 0
+        },
+        {
+            "name": "lightingData",
+            "type": "STORAGE_BUFFER",
+            "structure": 1
         }
     ],
     "structures": [
+        {
+            "name": "WorldData",
+            "elements": [
+                {
+                    "name": "model",
+                    "type": "FLOAT4x4",
+                    "semantic": ""
+                },
+                {
+                    "name": "view",
+                    "type": "FLOAT4x4",
+                    "semantic": ""
+                },
+                {
+                    "name": "projection",
+                    "type": "FLOAT4x4",
+                    "semantic": ""
+                }
+            ],
+            "sizeInBytes": 192
+        },
+        {
+            "name": "LightingData",
+            "elements": [
+                {
+                    "name": "distance",
+                    "type": "FLOAT",
+                    "semantic": ""
+                },
+                {
+                    "name": "position",
+                    "type": "FLOAT3",
+                    "semantic": ""
+                },
+                {
+                    "name": "direction",
+                    "type": "FLOAT3",
+                    "semantic": ""
+                },
+                {
+                    "name": "color",
+                    "type": "FLOAT3",
+                    "semantic": ""
+                }
+            ],
+            "sizeInBytes": 40
+        },
+        {
+            "name": "MaterialData",
+            "elements": [
+                {
+                    "name": "diffuse",
+                    "type": "TEXTURE_2D",
+                    "semantic": ""
+                },
+                {
+                    "name": "normal",
+                    "type": "TEXTURE_2D",
+                    "semantic": ""
+                },
+                {
+                    "name": "roughness",
+                    "type": "TEXTURE_2D",
+                    "semantic": ""
+                }
+            ],
+            "sizeInBytes": 12
+        },
         {
             "name": "VS_INPUT",
             "elements": [
                 {
                     "name": "position",
                     "type": "FLOAT3",
-                    "semantic": "POSITION0"
+                    "semantic": "POSITION"
                 },
                 {
                     "name": "normal",
@@ -43,7 +122,28 @@
                     "semantic": "TEXCOORD0"
                 }
             ],
-            "sizeInBytes": 22
+            "sizeInBytes": 32
+        },
+        {
+            "name": "VS_OUTPUT",
+            "elements": [
+                {
+                    "name": "position",
+                    "type": "FLOAT4",
+                    "semantic": "SV_Position"
+                },
+                {
+                    "name": "normal",
+                    "type": "FLOAT3",
+                    "semantic": "NORMAL"
+                },
+                {
+                    "name": "uv",
+                    "type": "FLOAT2",
+                    "semantic": "TEXCOORD0"
+                }
+            ],
+            "sizeInBytes": 36
         },
         {
             "name": "PS_OUTPUT",
@@ -55,27 +155,6 @@
                 }
             ],
             "sizeInBytes": 16
-        },
-        {
-            "name": "WorldData",
-            "elements": [
-                {
-                    "name": "model",
-                    "type": "FLOAT4x4",
-                    "semantic": null
-                },
-                {
-                    "name": "view",
-                    "type": "FLOAT4x4",
-                    "semantic": null
-                },
-                {
-                    "name": "projection",
-                    "type": "FLOAT4x4",
-                    "semantic": null
-                }
-            ],
-            "sizeInBytes": 192
         }
     ]
 }

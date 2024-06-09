@@ -48,18 +48,20 @@ export default {
             });
 
         $('.dynsize-bar').bind('mousedown', e => {
-            this.selectedMover = e.target;
-            this.isMoverVertical = $(this.selectedMover).hasClass('row') ? false : true;
-            this.moverPos = this.isMoverVertical ? e.offsetY : e.offsetX;
+            if(this.selectedMover == null) {
+                this.selectedMover = e.target;
+                this.isMoverVertical = $(this.selectedMover).hasClass('row') ? false : true;
+                this.moverPos = this.isMoverVertical ? e.offsetY : e.offsetX;
+            }
         });
 
-        $(window).bind('mouseup', e => {
+        $(document).bind('mouseup', e => {
             if(this.selectedMover) {
                 this.selectedMover = null;
             }
         });
 
-        $(window).bind('mousemove', e => {
+        $(document).bind('mousemove', e => {
             if(this.selectedMover) {
                 const distance = this.moverPos - (this.isMoverVertical ? e.offsetY : e.offsetX);
                 const currentPanel = $(this.selectedMover).parent();
@@ -68,11 +70,11 @@ export default {
                 const updatedCurrentSize = (this.isMoverVertical ? currentPanel.height() : currentPanel.width()) + distance;
                 const updatedPreviousSize = (this.isMoverVertical ? previousPanel.height() : previousPanel.width()) - distance;
 
-                if(updatedCurrentSize < 100 || updatedPreviousSize < 100) {
+                if(updatedCurrentSize < 150 || updatedPreviousSize < 150) {
                     return;
                 }
 
-                if(Math.abs(distance) > 10) {
+                if(Math.abs(distance) > 20) {
                     return;
                 }
 

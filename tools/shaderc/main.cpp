@@ -1,5 +1,6 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
+#include "core/exception.hpp"
 #include "fx.hpp"
 #include "precompiled.h"
 #include <argh.h>
@@ -44,31 +45,39 @@ auto main(int32_t argc, char** argv) -> int32_t
         output = (std::filesystem::path(input).parent_path() / std::filesystem::path(input).stem()).string() + ".bin";
     }
 
-    shaderc::FXCompiler fxCompiler;
-    fxCompiler.addIncludePath(std::filesystem::path(input).parent_path());
+    try
+    {
+        shaderc::FXCompiler fxCompiler;
+        fxCompiler.addIncludePath(std::filesystem::path(input).parent_path());
 
-    if (target.compare("DXIL") == 0)
-    {
-    }
-    else if (target.compare("SPIRV") == 0)
-    {
-        std::cout << "WARNING: This target is not currently supported by the compiler" << std::endl;
+        if (target.compare("DXIL") == 0)
+        {
+        }
+        else if (target.compare("SPIRV") == 0)
+        {
+            std::cout << "WARNING: This target is not currently supported by the compiler" << std::endl;
+            return EXIT_SUCCESS;
+        }
+        else
+        {
+            std::cerr << "ERROR: Invalid target parameter (see -help, --help)" << std::endl;
+            return EXIT_SUCCESS;
+        }
+
+        std::string errors;
+        if (fxCompiler.compile(input, output, errors))
+        {
+            std::cout << "Out: " << std::filesystem::path(output).generic_string() << std::endl;
+        }
+        else
+        {
+            std::cerr << "Compilation error: " << errors << std::endl;
+        }
         return EXIT_SUCCESS;
     }
-    else
+    catch (ionengine::core::Exception e)
     {
-        std::cerr << "ERROR: Invalid target parameter (see -help, --help)" << std::endl;
-        return EXIT_SUCCESS;
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
     }
-
-    std::string errors;
-    if (fxCompiler.compile(input, output, errors))
-    {
-        std::cout << "Out: " << std::filesystem::path(output).generic_string() << std::endl;
-    }
-    else
-    {
-        std::cerr << "Compilation error: " << errors << std::endl;
-    }
-    return EXIT_SUCCESS;
 }

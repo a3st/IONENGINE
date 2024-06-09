@@ -4,12 +4,6 @@
     </div>
 </template>
 
-<script>
-export default {
-
-}
-</script>
-
 <style>
 .dynpan-container {
     display: flex;
