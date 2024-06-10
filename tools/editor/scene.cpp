@@ -33,7 +33,7 @@ namespace ionengine::tools::editor
         return createdConnection;
     }
 
-    auto Scene::dfs(std::stringstream& shaderCodeStream) -> void
+    auto Scene::bfs(std::stringstream& shaderCodeStream) -> void
     {
         std::stack<core::ref_ptr<Node>> remainingNodes;
         std::unordered_map<uint64_t, std::string> computeShaderCodes;
@@ -41,19 +41,8 @@ namespace ionengine::tools::editor
         std::stringstream initialShaderCode;
         std::stringstream resourceShaderCode;
 
-        for (auto const& node : nodes)
-        {
-            computeShaderCodes[node->nodeID] =
-                componentRegistry->getComponents().at(node->componentID)->generateComputeShaderCode(*node);
-
-            auto result = connectionsOfNodes.find(node->nodeID);
-            if (result == connectionsOfNodes.end())
-            {
-                continue;
-            }
-
-            std::string shaderCode =
-                componentRegistry->getComponents().at(node->componentID)->generateResourceShaderCode(*node);
+        auto tryResolveShaderExpressions = [](std::string shaderCode, Node const& node,
+                                              std::stringstream& out) -> void {
             if (!shaderCode.empty())
             {
                 uint64_t offset = 0;
@@ -71,17 +60,33 @@ namespace ionengine::tools::editor
                     std::string const expressionName(shaderCode.begin() + expressionBeginOffset,
                                                      shaderCode.begin() + expressionEndOffset);
 
-                    auto result = node->options.find(expressionName);
-                    if (result != node->options.end())
+                    auto result = node.options.find(expressionName);
+                    if (result != node.options.end())
                     {
                         auto beginShaderCode = shaderCode.substr(0, offset);
                         auto endShaderCode = shaderCode.substr(expressionEndOffset + 2, std::string::npos);
                         shaderCode = beginShaderCode + result->second + endShaderCode;
+                        offset = offset + 1 + result->second.size();
                     }
                 }
-                resourceShaderCode << shaderCode;
+                out << shaderCode;
+            }
+        };
+
+        for (auto const& node : nodes)
+        {
+            computeShaderCodes[node->nodeID] =
+                componentRegistry->getComponents().at(node->componentID)->generateComputeShaderCode(*node);
+
+            auto result = connectionsOfNodes.find(node->nodeID);
+            if (result == connectionsOfNodes.end())
+            {
+                continue;
             }
 
+            tryResolveShaderExpressions(
+                componentRegistry->getComponents().at(node->componentID)->generateResourceShaderCode(*node), *node,
+                resourceShaderCode);
             remainingNodes.emplace(node);
         }
 
@@ -94,35 +99,9 @@ namespace ionengine::tools::editor
             {
                 initialFlags.emplace(node->nodeID);
 
-                std::string shaderCode =
-                    componentRegistry->getComponents().at(node->componentID)->generateInitialShaderCode(*node);
-                if (!shaderCode.empty())
-                {
-                    uint64_t offset = 0;
-                    while (offset != std::string::npos)
-                    {
-                        offset = shaderCode.find("##", offset);
-                        if (offset == std::string::npos)
-                        {
-                            break;
-                        }
-
-                        uint64_t const expressionBeginOffset = offset + 2;
-                        uint64_t const expressionEndOffset = shaderCode.find("##", expressionBeginOffset);
-
-                        std::string const expressionName(shaderCode.begin() + expressionBeginOffset,
-                                                         shaderCode.begin() + expressionEndOffset);
-
-                        auto result = node->options.find(expressionName);
-                        if (result != node->options.end())
-                        {
-                            auto beginShaderCode = shaderCode.substr(0, offset);
-                            auto endShaderCode = shaderCode.substr(expressionEndOffset + 2, std::string::npos);
-                            shaderCode = beginShaderCode + result->second + endShaderCode;
-                        }
-                    }
-                    initialShaderCode << shaderCode;
-                }
+                tryResolveShaderExpressions(
+                    componentRegistry->getComponents().at(node->componentID)->generateInitialShaderCode(*node), *node,
+                    initialShaderCode);
             }
 
             for (auto const index : connectionsOfNodes[node->nodeID])

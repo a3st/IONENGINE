@@ -26,7 +26,7 @@ namespace ionengine::tools::editor
         auto createConnection(uint64_t const connectionID, core::ref_ptr<Node> sourceNode, uint32_t const sourceIndex,
                               core::ref_ptr<Node> destNode, uint32_t const destIndex) -> core::ref_ptr<Connection>;
 
-        auto dfs(std::stringstream& shaderCodeStream) -> void;
+        auto bfs(std::stringstream& shaderCodeStream) -> void;
 
       private:
         ComponentRegistry* componentRegistry;

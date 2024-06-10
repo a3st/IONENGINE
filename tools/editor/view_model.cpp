@@ -406,7 +406,7 @@ namespace ionengine::tools::editor
     auto ViewModel::compileShaderGraph() -> bool
     {
         std::stringstream shaderCodeStream;
-        shaderGraph->dfs(shaderCodeStream);
+        shaderGraph->bfs(shaderCodeStream);
 
         std::cout << shaderCodeStream.str() << std::endl;
 
