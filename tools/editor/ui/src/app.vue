@@ -3,11 +3,20 @@
 </template>
 
 <style>
+@import url('fonts/Roboto/embed.css');
+
 * {
     box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+
+img {
+    user-select: none;
 }
 
 span {
+    display: inline-flex;
+    align-items: center;
     user-select: none;
 }
 
@@ -36,5 +45,21 @@ input {
     background: none;
     border: none;
     outline: none;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #5e5e5e;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #444444;
 }
 </style>

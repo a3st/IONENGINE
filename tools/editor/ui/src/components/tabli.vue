@@ -1,9 +1,9 @@
 <template>
     <button class="btn-tab">
         <div class="tab-inline-text-container">
-            <object v-bind:data="icon" width="16" height="16"></object>
+            <img v-bind:src="icon" width="16" height="16" />
                 <span>{{ title }}</span>
-                <object v-if="!fixed" data="images/xmark.svg" width="12" height="12"></object>
+                <img v-if="!fixed" src="images/xmark.svg" width="12" height="12" />
         </div>
     </button>
 </template>

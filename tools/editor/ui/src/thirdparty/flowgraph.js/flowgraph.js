@@ -908,7 +908,7 @@ export default class FlowGraph {
             footerHTML += `
                 <div class="flowgraph-node-footer">
                     <div class="flowgraph-expand-container">
-                        <object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>
+                        <img src="images/angle-down.svg" width="16" height="16" />
                     </div>
                 </div>
                 <div class="flowgraph-hidden-container" style="display: none;">

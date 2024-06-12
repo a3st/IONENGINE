@@ -77,6 +77,48 @@ export default {
                 if(Math.abs(distance) > 20) {
                     return;
                 }
+                
+                if(this.isMoverVertical) {
+                    $(currentPanel)
+                        .find('.dyngr-container.col')
+                        .find('.dynpan-container')
+                        .each(function(index) {
+                            const height = $(this).height();
+                            const parentHeight = $(this).parent().height();
+                            
+                            $(this).css('height', `${(100 * height / parentHeight).toFixed(2)}%`);
+                        });
+
+                    $(previousPanel)
+                        .find('.dyngr-container.col')
+                        .find('.dynpan-container')
+                        .each(function(index) {
+                            const height = $(this).height();
+                            const parentHeight = $(this).parent().height();
+
+                            $(this).css('height', `${(100 * height / parentHeight).toFixed(2)}%`);
+                        });
+                } else {
+                    $(currentPanel)
+                        .find('.dyngr-container.row')
+                        .find('.dynpan-container')
+                        .each(function(index) {
+                            const width = $(this).width();
+                            const parentWidth = $(this).parent().width();
+                            
+                            $(this).css('width', `${(100 * width / parentWidth).toFixed(2)}%`);
+                        });
+
+                    $(previousPanel)
+                        .find('.dyngr-container.row')
+                        .find('.dynpan-container')
+                        .each(function(index) {
+                            const width = $(this).width();
+                            const parentWidth = $(this).parent().width();
+
+                            $(this).css('width', `${(100 * width / parentWidth).toFixed(2)}%`);
+                        });
+                }
 
                 if(this.isMoverVertical) {
                     currentPanel.css('height', `${updatedCurrentSize}px`);

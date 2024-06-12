@@ -27,7 +27,7 @@
                         </tabgr>
 
                         <tabpan id="tab-asset-browser">
-                            <abrowser></abrowser>
+                            <abrowser cur-path="assets"></abrowser>
                         </tabpan>
                     </div>
                 </dynpan>
@@ -192,7 +192,7 @@ export default {
     },
     mounted() {
         const graphElement = $('#graph-root');
-        let graph = new FlowGraph(graphElement.get(0), graphElement.parent().width(), graphElement.parent().height() - 35);
+        let graph = new FlowGraph(graphElement.get(0), graphElement.parent().width(), graphElement.parent().height() - 30);
 
         webview.invoke('addContextItems').then(data => {
             for (const node of Object.values(data.items)) {
@@ -261,11 +261,11 @@ export default {
     methods: {
         onDynviewResize(target) {
             const graphElement = $('#graph-root');
-            toRaw(this.graph).resize(graphElement.parent().width(), graphElement.parent().height() - 35);
+            toRaw(this.graph).resize(graphElement.parent().width(), graphElement.parent().height() - 30);
         },
         onGraphResize(e) {
             const graphElement = $('#graph-root');
-            toRaw(this.graph).resize(graphElement.parent().width(), graphElement.parent().height() - 35);
+            toRaw(this.graph).resize(graphElement.parent().width(), graphElement.parent().height() - 30);
         },
         onAddResourceClick(e) {
             this.resources.push({
@@ -293,7 +293,7 @@ export default {
 </script>
 
 <style>
-@import url(../thirdparty/flowgraph.js/flowgraph.css);
+@import url('../thirdparty/flowgraph.js/flowgraph.css');
 
 .pan-wrapper {
     display: flex; 

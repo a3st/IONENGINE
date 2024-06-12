@@ -1,52 +1,40 @@
 <template>
     <div class="optext-container">
         <div class="optext-header-container">
-            <object v-bind:data="icon" width="16" height="16"></object>
+            <img v-bind:src="icon" width="16" height="16" />
             <slot name="header"></slot>
             <div class="optext-header-right-container">
                 <button class="btn-icon" @click="onExpandClick($event)">
-                    <object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>
+                    <img v-bind:src="shown ? 'images/angle-up.svg' : 'images/angle-down.svg'" width="16" height="16" />
                 </button>
                 <button class="btn-icon" @click="onRemoveClick($event)">
-                    <object data="images/trash-can.svg" width="16" height="16" style="pointer-events: none;"></object>
+                    <img src="images/trash-can.svg" width="16" height="16" />
                 </button>
             </div>
         </div>
-        <div class="optext-body-container">
+        <div class="optext-body-container" v-show="shown">
             <slot name="expand"></slot>
         </div>
     </div>
 </template>
 
 <script>
-import $ from 'jquery'
-
 export default {
     emits: ['remove'],
     props: {
         icon: String
+    },
+    data() {
+        return {
+            shown: false
+        }
     },
     methods: {
         onRemoveClick(e) {
             this.$emit('remove', e);
         },
         onExpandClick(e) {
-            const bodyElement = $(this.$el).find('.optext-body-container');
-            if (bodyElement.css('display') == 'none') {
-                bodyElement.css('display', 'flex');
-
-                $(this.$el)
-                    .find('.optext-header-right-container object')
-                    .first()
-                    .replaceWith(`<object data="images/angle-up.svg" width="16" height="16" style="pointer-events: none;"></object>`);
-            } else {
-                bodyElement.css('display', 'none');
-
-                $(this.$el)
-                    .find('.optext-header-right-container object')
-                    .first()
-                    .replaceWith(`<object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>`);
-            }
+            this.shown = !this.shown;
         }
     }
 }

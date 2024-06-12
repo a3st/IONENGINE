@@ -416,7 +416,7 @@ namespace ionengine::tools::editor
         {
             if (!std::filesystem::create_directory(appDataPath / "ionengine-tools" / "Cache"))
             {
-                throw core::Exception("");
+                throw core::Exception("An error occurred while creating the directory");
             }
         }
 
@@ -426,7 +426,7 @@ namespace ionengine::tools::editor
             std::fstream stream(appDataPath / "ionengine-tools" / "Cache" / fileName, std::ios::out);
             if (!stream.is_open())
             {
-                throw core::Exception("");
+                throw core::Exception("An error occurred while creating the file");
             }
             stream << shaderCodeStream.str();
         }
