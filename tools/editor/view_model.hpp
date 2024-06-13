@@ -6,6 +6,7 @@
 #include "registry.hpp"
 #include "scene.hpp"
 #include <webview.hpp>
+#include "asset_tree.hpp"
 
 namespace ionengine::tools::editor
 {
@@ -24,6 +25,8 @@ namespace ionengine::tools::editor
 
         auto compileShader(std::string sceneData) -> std::string;
 
+        auto getAssetTree() -> std::string;
+
       protected:
         auto init() -> void override;
 
@@ -40,5 +43,7 @@ namespace ionengine::tools::editor
         core::ref_ptr<ShaderAsset> previewShader;
 
         auto compileShaderGraph() -> bool;
+
+        AssetTree assetTree;
     };
 } // namespace ionengine::tools::editor

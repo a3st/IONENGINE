@@ -1,20 +1,28 @@
 <template>
-    <button class="asset-container" @click="onAssetClick($event)">
-        <img src="test/test.png" width="64" height="64" />
-        <span style="align-self: center;">{{ name }}</span>
+    <button class="btn-icon">
+        <div class="asset-container" @click="onAssetClick($event)">
+            <img style="object-fit: contain;"
+                v-bind:src="type == 'folder' ? 'images/folder.svg' : 'images/file.svg'" width="64" height="64" />
+            <span style="align-self: center;" :title="name">{{ smallName }}</span>
+        </div>
     </button>
 </template>
 
 <script>
 export default {
-    emits: ['open'],
+    emits: ['click'],
     props: {
         name: String,
         type: String
     },
+    computed: {
+        smallName() {
+            return this.name.length < 8 ? this.name : this.name.substring(0, 7) + "...";
+        }
+    },
     methods: {
         onAssetClick(e) {
-            this.$emit('open', e);
+            this.$emit('click', e);
         }
     }
 }
@@ -24,5 +32,6 @@ export default {
 .asset-container {
     display: flex;
     flex-direction: column;
+    color: white;
 }
 </style>

@@ -534,13 +534,13 @@ namespace ionengine::rhi::fx
 
         Header header = {.magic = Magic, .length = 0, .target = static_cast<uint32_t>(object.target)};
         stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
-        ChunkHeader json_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::Json),
+        ChunkHeader json_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::JSON),
                                   .chunkLength = static_cast<uint32_t>(json.size())};
         stream.write(reinterpret_cast<uint8_t const*>(&json_chunk), sizeof(ChunkHeader));
         stream.write(reinterpret_cast<uint8_t const*>(json.data()), json.size());
         for (auto& buffer : object.buffers)
         {
-            ChunkHeader binary_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::Binary),
+            ChunkHeader binary_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::BIN),
                                         .chunkLength = static_cast<uint32_t>(buffer.size())};
             stream.write(reinterpret_cast<uint8_t const*>(&binary_chunk), sizeof(ChunkHeader));
             stream.write(reinterpret_cast<uint8_t const*>(buffer.data()), buffer.size());
@@ -558,13 +558,13 @@ namespace ionengine::rhi::fx
 
         Header header = {.magic = Magic, .length = 0, .target = static_cast<uint32_t>(object.target)};
         stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
-        ChunkHeader json_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::Json),
+        ChunkHeader json_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::JSON),
                                   .chunkLength = static_cast<uint32_t>(json.size())};
         stream.write(reinterpret_cast<uint8_t const*>(&json_chunk), sizeof(ChunkHeader));
         stream.write(reinterpret_cast<uint8_t const*>(json.data()), json.size());
         for (auto& buffer : object.buffers)
         {
-            ChunkHeader binary_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::Binary),
+            ChunkHeader binary_chunk = {.chunkType = static_cast<uint32_t>(ChunkType::BIN),
                                         .chunkLength = static_cast<uint32_t>(buffer.size())};
             stream.write(reinterpret_cast<uint8_t const*>(&binary_chunk), sizeof(ChunkHeader));
             stream.write(reinterpret_cast<uint8_t const*>(buffer.data()), buffer.size());

@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.26.0)
 
 add_executable(editor
+    shader_graph.cpp
     components/convert.cpp
     components/texture.cpp
     components/output.cpp
     components/input.cpp
     components/math.cpp
     view_model.cpp
+    asset_tree.cpp
     connection.cpp
     registry.cpp
     node.cpp

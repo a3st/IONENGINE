@@ -15,7 +15,7 @@
 
 namespace ionengine::tools::editor
 {
-    ViewModel::ViewModel(libwebview::App* app) : Engine(nullptr), app(app)
+    ViewModel::ViewModel(libwebview::App* app) : Engine(nullptr), app(app), assetTree("../assets")
     {
         componentRegistry.registerComponent<Input_NodeComponent>();
         componentRegistry.registerComponent<PostProcessOutput_NodeComponent>();
@@ -32,6 +32,8 @@ namespace ionengine::tools::editor
         app->bind("requestPreviewImage", [this]() -> std::string { return this->requestPreviewImage(); });
         app->bind("compileShader",
                   [this](std::string sceneData) -> std::string { return this->compileShader(sceneData); });
+
+        app->bind("getAssetTree", [this]() -> std::string { return this->getAssetTree(); });
     }
 
     auto ViewModel::init() -> void
@@ -62,6 +64,53 @@ namespace ionengine::tools::editor
     auto ViewModel::requestPreviewImage() -> std::string
     {
         return base64pp::encode(previewImage->dump());
+    }
+
+    auto ViewModel::getAssetTree() -> std::string
+    {
+        std::stringstream stream;
+
+        auto internalLoop = [](this auto const& internalLoop, AssetStructInfo const* curStruct,
+                               std::stringstream& stream) -> void {
+            std::string assetType;
+            bool isFolder = false;
+            switch (curStruct->type)
+            {
+                case AssetType::Folder: {
+                    assetType = "folder";
+                    isFolder = true;
+                    break;
+                }
+                default: {
+                    assetType = "file/unknown";
+                    break;
+                }
+            }
+
+            stream << "{\"name\":\"" << curStruct->name << "\",\"type\":\"" << assetType << "\"";
+
+            if (isFolder)
+            {
+                stream << ",\"childrens\":[";
+                for (auto const i : std::views::iota(0u, curStruct->childrens.size()))
+                {
+                    internalLoop(curStruct->childrens[i].get(), stream);
+                }
+                stream << "]";
+            }
+
+            stream << "},";
+        };
+
+        internalLoop(&assetTree.fetch(), stream);
+
+        // Idk how realize algorithm through isFirst, !isFirst
+        std::regex const jsonCommaRemove("\\,\\]");
+
+        std::string jsonData = stream.str();
+        jsonData = jsonData.substr(0, jsonData.size() - 1);
+        
+        return std::regex_replace(jsonData, jsonCommaRemove, "]");
     }
 
     auto ViewModel::addContextItems() -> std::string

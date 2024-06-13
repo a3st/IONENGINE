@@ -15,8 +15,8 @@ namespace ionengine::rhi::fx
 
     enum class ChunkType : uint32_t
     {
-        Json,
-        Binary
+        JSON,
+        BIN
     };
 
     struct ChunkHeader

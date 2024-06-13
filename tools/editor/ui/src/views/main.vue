@@ -27,7 +27,7 @@
                         </tabgr>
 
                         <tabpan id="tab-asset-browser">
-                            <abrowser cur-path="assets"></abrowser>
+                            <abrowser ref="assetBrowser"></abrowser>
                         </tabpan>
                     </div>
                 </dynpan>
@@ -257,6 +257,10 @@ export default {
         });
 
         this.graph = graph;
+
+        webview.invoke('getAssetTree').then(data => {
+            this.$refs.assetBrowser.open(data);
+        });
     },
     methods: {
         onDynviewResize(target) {
