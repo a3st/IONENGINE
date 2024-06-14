@@ -287,7 +287,7 @@ export default {
             });
         },
         onCompileShaderClick(e) {
-            console.log(toRaw(this.graph).export())
+            console.log(JSON.stringify(toRaw(this.graph).export()))
             webview.invoke('compileShader', toRaw(this.graph).export()).then(data => {
                 // TODO!
             });

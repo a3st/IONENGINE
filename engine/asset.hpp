@@ -29,8 +29,6 @@ namespace ionengine
             uint32_t chunkType;
             uint32_t chunkLength;
         };
-
-        auto serializeToStream(std::basic_spanstream<uint8_t>& stream);
     } // namespace asset
 
     class Asset : public core::ref_counted_object

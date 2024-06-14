@@ -68,13 +68,13 @@ namespace ionengine
 
     auto ShaderAsset::loadFromFile(std::filesystem::path const& filePath) -> bool
     {
-        auto result = rhi::fx::FXSL::loadFromFile(filePath);
+        auto result = core::loadFromFile<rhi::fx::ShaderEffectData>(filePath);
         if (!result.has_value())
         {
             return false;
         }
 
-        rhi::fx::ShaderEffect shaderEffect = std::move(result.value());
+        rhi::fx::ShaderEffectData shaderEffect = std::move(result.value());
 
         std::string targetType;
         switch (shaderEffect.target)

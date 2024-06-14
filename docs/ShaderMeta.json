@@ -1,0 +1,122 @@
+{
+    "nodes": [
+        {
+            "id": 0,
+            "position": [
+                939,
+                86
+            ],
+            "inputs": [
+                {
+                    "name": "Color",
+                    "type": "float4"
+                }
+            ],
+            "outputs": [],
+            "fixed": true,
+            "userData": {
+                "componentID": 2074982064,
+                "options": {}
+            }
+        },
+        {
+            "id": 2,
+            "position": [
+                582,
+                85
+            ],
+            "inputs": [
+                {
+                    "name": "R",
+                    "type": "float"
+                },
+                {
+                    "name": "G",
+                    "type": "float"
+                },
+                {
+                    "name": "B",
+                    "type": "float"
+                },
+                {
+                    "name": "A",
+                    "type": "float"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Out",
+                    "type": "float4"
+                }
+            ],
+            "fixed": false,
+            "userData": {
+                "componentID": 1522847338,
+                "options": {}
+            }
+        },
+        {
+            "id": 5,
+            "position": [
+                129,
+                217
+            ],
+            "inputs": [
+                {
+                    "name": "Value",
+                    "type": "Number"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "Out",
+                    "type": "float"
+                }
+            ],
+            "fixed": false,
+            "userData": {
+                "componentID": 958522744,
+                "options": {
+                    "Value": "0.5"
+                }
+            }
+        }
+    ],
+    "connections": [
+        {
+            "id": 3,
+            "source": 2,
+            "out": 0,
+            "dest": 0,
+            "in": 0
+        },
+        {
+            "id": 6,
+            "source": 5,
+            "out": 0,
+            "dest": 2,
+            "in": 0
+        },
+        {
+            "id": 7,
+            "source": 5,
+            "out": 0,
+            "dest": 2,
+            "in": 1
+        },
+        {
+            "id": 8,
+            "source": 5,
+            "out": 0,
+            "dest": 2,
+            "in": 2
+        },
+        {
+            "id": 9,
+            "source": 5,
+            "out": 0,
+            "dest": 2,
+            "in": 3
+        }
+    ]
+}

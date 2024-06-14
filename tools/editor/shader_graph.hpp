@@ -6,7 +6,7 @@
 
 namespace ionengine::tools::editor
 {
-    std::array<uint8_t, 8> constexpr ShaderGraphFileType{'S', 'G', 'F', 'I', 'L', 'E', '1', '0'};
+    std::array<uint8_t, 8> constexpr ShaderGraphFileType{'S', 'G', 'F', 'I', 'L', 'E', '\0', '\0'};
 
     struct NodeData
     {
@@ -31,6 +31,13 @@ namespace ionengine::tools::editor
         std::vector<NodeData> nodes;
         std::vector<ConnectionData> connections;
     };
+
+    namespace internal
+    {
+        auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<ShaderGraphData>;
+
+        auto serialize(ShaderGraphData const& object, std::basic_ostream<uint8_t>& stream) -> size_t;
+    } // namespace internal
 } // namespace ionengine::tools::editor
 
 namespace ionengine::core
@@ -39,16 +46,15 @@ namespace ionengine::core
     class Serializable<tools::editor::ShaderGraphData>
     {
       public:
-        static auto loadFromMemory(std::span<uint8_t const> const data)
-            -> std::optional<tools::editor::ShaderGraphData>;
+        static auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<tools::editor::ShaderGraphData>
+        {
+            return ionengine::tools::editor::internal::deserialize(stream);
+        }
 
-        static auto loadFromFile(std::filesystem::path const& filePath)
-            -> std::optional<tools::editor::ShaderGraphData>;
-
-        static auto saveToFile(tools::editor::ShaderGraphData const& object,
-                               std::filesystem::path const& filePath) -> bool;
-
-        static auto saveToMemory(tools::editor::ShaderGraphData const& object,
-                                 std::basic_stringstream<uint8_t>& stream) -> bool;
+        static auto serialize(tools::editor::ShaderGraphData const& object,
+                              std::basic_ostream<uint8_t>& stream) -> size_t
+        {
+            return ionengine::tools::editor::internal::serialize(object, stream);
+        }
     };
 } // namespace ionengine::core

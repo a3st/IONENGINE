@@ -2,6 +2,7 @@
 
 #include "fx.hpp"
 #include "core/exception.hpp"
+#include "core/serializable.hpp"
 #include "precompiled.h"
 
 namespace ionengine::tools::shaderc
@@ -110,13 +111,13 @@ namespace ionengine::tools::shaderc
             }
         }
 
-        rhi::fx::ShaderEffect effect = {.target = rhi::fx::ShaderTargetType::DXIL,
+        rhi::fx::ShaderEffectData effect = {.target = rhi::fx::ShaderTargetType::DXIL,
                                         .technique = technique,
                                         .constants = constants,
                                         .structures = structures,
                                         .buffers = buffers};
 
-        return rhi::fx::FXSL::save(effect, outputPath);
+        return core::saveToFile<rhi::fx::ShaderEffectData>(effect, outputPath);
     }
 
     auto FXCompiler::compileShaderStage(std::string_view const shaderCode, std::string_view const entryPoint,

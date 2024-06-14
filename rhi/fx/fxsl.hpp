@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "core/serializable.hpp"
+
 namespace ionengine::rhi::fx
 {
     std::array<uint8_t, 4> constexpr Magic{'F', 'X', 'S', 'L'};
@@ -106,7 +108,7 @@ namespace ionengine::rhi::fx
         ShaderCullSide cullSide;
     };
 
-    struct ShaderEffect
+    struct ShaderEffectData
     {
         ShaderTargetType target;
         ShaderTechniqueData technique;
@@ -115,15 +117,28 @@ namespace ionengine::rhi::fx
         std::vector<std::vector<uint8_t>> buffers;
     };
 
-    class FXSL
+    namespace internal
+    {
+        auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<rhi::fx::ShaderEffectData>;
+
+        auto serialize(rhi::fx::ShaderEffectData const& object, std::basic_ostream<uint8_t>& stream) -> size_t;
+    } // namespace internal
+} // namespace ionengine::rhi::fx
+
+namespace ionengine::core
+{
+    template <>
+    class Serializable<rhi::fx::ShaderEffectData>
     {
       public:
-        static auto loadFromMemory(std::span<uint8_t const> const data) -> std::optional<ShaderEffect>;
+        static auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<rhi::fx::ShaderEffectData>
+        {
+            return rhi::fx::internal::deserialize(stream);
+        }
 
-        static auto loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffect>;
-
-        static auto save(ShaderEffect const& object, std::filesystem::path const& filePath) -> bool;
-
-        static auto save(ShaderEffect const& object, std::basic_stringstream<uint8_t>& stream) -> bool;
+        static auto serialize(rhi::fx::ShaderEffectData const& object, std::basic_ostream<uint8_t>& stream) -> size_t
+        {
+            return rhi::fx::internal::serialize(object, stream);
+        }
     };
-} // namespace ionengine::rhi::fx
+} // namespace ionengine::core

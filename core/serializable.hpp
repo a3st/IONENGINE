@@ -8,12 +8,30 @@ namespace ionengine::core
     class Serializable
     {
       public:
-        static auto loadFromMemory(std::span<uint8_t const> const data) -> std::optional<Type>;
+        static auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<Type>;
 
-        static auto loadFromFile(std::filesystem::path const& filePath) -> std::optional<Type>;
-
-        static auto saveToFile(Type const& object, std::filesystem::path const& filePath) -> bool;
-
-        static auto saveToMemory(Type const& object, std::basic_stringstream<uint8_t>& stream) -> bool;
+        static auto serialize(Type const& object, std::basic_ostream<uint8_t>& stream) -> size_t;
     };
+
+    template <typename Type>
+    auto loadFromFile(std::filesystem::path const& filePath) -> std::optional<Type>
+    {
+        std::basic_ifstream<uint8_t> stream(filePath, std::ios::binary);
+        if (!stream.is_open())
+        {
+            return std::nullopt;
+        }
+        return Serializable<Type>::deserialize(stream);
+    }
+
+    template <typename Type>
+    auto saveToFile(Type const& object, std::filesystem::path const& filePath) -> bool
+    {
+        std::basic_ofstream<uint8_t> stream(filePath, std::ios::binary);
+        if (!stream.is_open())
+        {
+            return false;
+        }
+        return Serializable<Type>::serialize(object, stream) > 0;
+    }
 } // namespace ionengine::core

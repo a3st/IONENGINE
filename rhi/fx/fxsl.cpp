@@ -200,7 +200,7 @@ namespace ionengine::rhi::fx
         }
     }
 
-    auto readJsonChunkData(ShaderEffect& object, std::vector<uint8_t>& data) -> bool
+    auto readJsonChunkData(ShaderEffectData& object, std::vector<uint8_t>& data) -> bool
     {
         simdjson::ondemand::parser parser;
         auto document = parser.iterate(data.data(), data.size(), data.size() + simdjson::SIMDJSON_PADDING);
@@ -382,10 +382,11 @@ namespace ionengine::rhi::fx
         return true;
     }
 
-    auto generateJsonChunkData(ShaderEffect const& object) -> std::string
+    auto generateJsonChunkData(ShaderEffectData const& object) -> std::string
     {
-        std::stringstream stream(std::ios::out);
+        std::stringstream stream;
         stream << "{\"technique\":{";
+        
         for (auto const& [stageType, stageInfo] : object.technique.stages)
         {
             stream << "\"" + toString(stageType) + "\":{\"buffer\":" + std::to_string(stageInfo.buffer) +
@@ -446,7 +447,8 @@ namespace ionengine::rhi::fx
         return stream.str();
     }
 
-    auto FXSL::loadFromMemory(std::span<uint8_t const> const data) -> std::optional<ShaderEffect>
+    /*
+    auto FXSL::loadFromMemory(std::span<uint8_t const> const data) -> std::optional<ShaderEffectData>
     {
         std::basic_spanstream<uint8_t> stream(std::span<uint8_t>(const_cast<uint8_t*>(data.data()), data.size()),
                                               std::ios::binary | std::ios::in);
@@ -482,7 +484,7 @@ namespace ionengine::rhi::fx
         return effect;
     }
 
-    auto FXSL::loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffect>
+    auto FXSL::loadFromFile(std::filesystem::path const& filePath) -> std::optional<ShaderEffectData>
     {
         std::basic_fstream<uint8_t> stream(filePath, std::ios::binary | std::ios::in);
 
@@ -505,7 +507,7 @@ namespace ionengine::rhi::fx
         std::vector<uint8_t> chunkJsonData(chunkHeader.chunkLength);
         stream.read(chunkJsonData.data(), chunkJsonData.size());
 
-        ShaderEffect effect = {};
+        ShaderEffectData effect = {};
 
         if (!readJsonChunkData(effect, chunkJsonData))
         {
@@ -522,7 +524,7 @@ namespace ionengine::rhi::fx
         return effect;
     }
 
-    auto FXSL::save(ShaderEffect const& object, std::filesystem::path const& filePath) -> bool
+    auto FXSL::save(ShaderEffectData const& object, std::filesystem::path const& filePath) -> bool
     {
         std::string const json = generateJsonChunkData(object);
 
@@ -552,7 +554,7 @@ namespace ionengine::rhi::fx
         return true;
     }
 
-    auto FXSL::save(ShaderEffect const& object, std::basic_stringstream<uint8_t>& stream) -> bool
+    auto FXSL::save(ShaderEffectData const& object, std::basic_stringstream<uint8_t>& stream) -> bool
     {
         std::string const json = generateJsonChunkData(object);
 
@@ -575,4 +577,66 @@ namespace ionengine::rhi::fx
         stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
         return true;
     }
+    */
+
+    namespace internal
+    {
+        auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<rhi::fx::ShaderEffectData>
+        {
+            Header header;
+            stream.read((uint8_t*)&header, sizeof(Header));
+
+            if (std::memcmp(header.magic.data(), Magic.data(), Magic.size()) != 0)
+            {
+                return std::nullopt;
+            }
+
+            ChunkHeader chunkHeader;
+            stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
+
+            std::vector<uint8_t> chunkJsonData(chunkHeader.chunkLength);
+            stream.read(chunkJsonData.data(), chunkJsonData.size());
+
+            ShaderEffectData effect = {};
+
+            if (!readJsonChunkData(effect, chunkJsonData))
+            {
+                return std::nullopt;
+            }
+
+            do
+            {
+                stream.read((uint8_t*)&chunkHeader, sizeof(ChunkHeader));
+                std::vector<uint8_t> buffer(chunkHeader.chunkLength);
+                stream.read(buffer.data(), buffer.size());
+                effect.buffers.emplace_back(std::move(buffer));
+            } while (header.length > stream.tellg());
+
+            return effect;
+        }
+
+        auto serialize(rhi::fx::ShaderEffectData const& object, std::basic_ostream<uint8_t>& stream) -> size_t
+        {
+            std::string const jsonData = generateJsonChunkData(object);
+
+            Header header = {.magic = Magic, .length = 0, .target = static_cast<uint32_t>(object.target)};
+            stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
+            ChunkHeader jsonChunkHeader = {.chunkType = static_cast<uint32_t>(ChunkType::JSON),
+                                           .chunkLength = static_cast<uint32_t>(jsonData.size())};
+            stream.write(reinterpret_cast<uint8_t const*>(&jsonChunkHeader), sizeof(ChunkHeader));
+            stream.write(reinterpret_cast<uint8_t const*>(jsonData.data()), jsonData.size());
+            for (auto& buffer : object.buffers)
+            {
+                ChunkHeader binaryChunkHeader = {.chunkType = static_cast<uint32_t>(ChunkType::BIN),
+                                                 .chunkLength = static_cast<uint32_t>(buffer.size())};
+                stream.write(reinterpret_cast<uint8_t const*>(&binaryChunkHeader), sizeof(ChunkHeader));
+                stream.write(reinterpret_cast<uint8_t const*>(buffer.data()), buffer.size());
+            }
+            uint64_t const offset = stream.tellp();
+            header.length = offset;
+            stream.seekp(0, std::ios::beg);
+            stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(Header));
+            return offset;
+        }
+    } // namespace internal
 } // namespace ionengine::rhi::fx
