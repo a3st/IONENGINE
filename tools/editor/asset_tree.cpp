@@ -24,6 +24,7 @@ namespace ionengine::tools::editor
                 {
                     auto folderStruct = std::make_unique<AssetStructInfo>();
                     folderStruct->name = dirEntry.path().filename().generic_string();
+                    folderStruct->path = dirEntry.path();
                     folderStruct->type = AssetType::Folder;
 
                     curStruct->childrens.emplace_back(std::move(folderStruct));
@@ -33,6 +34,7 @@ namespace ionengine::tools::editor
                 {
                     auto assetStruct = std::make_unique<AssetStructInfo>();
                     assetStruct->name = dirEntry.path().filename().generic_string();
+                    assetStruct->path = dirEntry.path();
 
                     if (dirEntry.path().extension().compare(".asset"))
                     {

@@ -3,8 +3,8 @@
 #pragma once
 
 #include "engine/engine.hpp"
-#include "registry.hpp"
-#include "scene.hpp"
+#include "graph/registry.hpp"
+#include "graph/scene.hpp"
 #include <webview.hpp>
 #include "asset_tree.hpp"
 

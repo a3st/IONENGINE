@@ -7,11 +7,13 @@
 #include "precompiled.h"
 #include <base64pp/base64pp.h>
 
-#include "components/convert.hpp"
-#include "components/input.hpp"
-#include "components/math.hpp"
-#include "components/output.hpp"
-#include "components/texture.hpp"
+#include "shader_graph/components/convert.hpp"
+#include "shader_graph/components/input.hpp"
+#include "shader_graph/components/math.hpp"
+#include "shader_graph/components/output.hpp"
+#include "shader_graph/components/texture.hpp"
+
+#include "shader_graph/shader_graph.hpp"
 
 namespace ionengine::tools::editor
 {
@@ -81,6 +83,28 @@ namespace ionengine::tools::editor
                     isFolder = true;
                     break;
                 }
+                case AssetType::Asset: {
+                    std::basic_ifstream<uint8_t> stream(curStruct->path, std::ios::binary);
+                    auto result = getAssetHeader(stream);
+                    if (result.has_value())
+                    {
+                        asset::Header header = std::move(result.value());
+                        if (std::memcmp(header.fileType.data(), ShaderGraphFileType.data(),
+                                        ShaderGraphFileType.size()) != 0)
+                        {
+                            assetType = "asset/shadergraph";
+                        }
+                        else
+                        {
+                            assetType = "asset/unknown";
+                        }
+                    }
+                    else
+                    {
+                        assetType = "file/unknown";
+                    }
+                    break;
+                }
                 default: {
                     assetType = "file/unknown";
                     break;
@@ -109,7 +133,7 @@ namespace ionengine::tools::editor
 
         std::string jsonData = stream.str();
         jsonData = jsonData.substr(0, jsonData.size() - 1);
-        
+
         return std::regex_replace(jsonData, jsonCommaRemove, "]");
     }
 
@@ -340,7 +364,7 @@ namespace ionengine::tools::editor
             for (auto element : options)
             {
                 std::string_view key;
-                element.unescaped_key().get(key);
+                error = element.unescaped_key().get(key);
                 if (error != simdjson::SUCCESS)
                 {
                     return "";

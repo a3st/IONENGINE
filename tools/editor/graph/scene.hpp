@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "connection.hpp"
-#include "node.hpp"
-#include "registry.hpp"
+#include "graph/connection.hpp"
+#include "graph/node.hpp"
+#include "graph/registry.hpp"
 
 namespace ionengine::tools::editor
 {

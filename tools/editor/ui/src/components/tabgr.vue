@@ -30,7 +30,7 @@ export default {
                     $(this.$el).find('.btn-tab').removeClass('active');
             
                     $(e.target)
-                        .closest('button')
+                        .closest('button.btn-tab')
                         .addClass('active');
 
                     $(`#${element.props.target}`).css('display', 'flex');
@@ -38,7 +38,7 @@ export default {
 
                 if('default' in element.props) {
                     $(this.$el).children().eq(index)
-                        .closest('button')
+                        .closest('button.btn-tab')
                         .addClass('active');
 
                     $(`#${element.props.target}`).css('display', 'flex');

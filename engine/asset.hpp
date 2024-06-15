@@ -31,6 +31,18 @@ namespace ionengine
         };
     } // namespace asset
 
+    inline auto getAssetHeader(std::basic_ifstream<uint8_t>& stream) -> std::optional<asset::Header>
+    {
+        asset::Header header;
+        stream.read((uint8_t*)&header, sizeof(asset::Header));
+
+        if (std::memcmp(header.magic.data(), asset::Magic.data(), asset::Magic.size()) != 0)
+        {
+            return std::nullopt;
+        }
+        return header;
+    }
+
     class Asset : public core::ref_counted_object
     {
     };

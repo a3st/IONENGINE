@@ -1,6 +1,6 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "registry.hpp"
+#include "graph/registry.hpp"
 #include "core/exception.hpp"
 #include "precompiled.h"
 

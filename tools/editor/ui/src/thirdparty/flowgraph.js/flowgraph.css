@@ -211,11 +211,12 @@
 }
 
 .flowgraph-context-group button {
+    display: flex;
+    align-items: center;
+    justify-content: start;
     outline: none;
     border: none;
     padding: 5px;
-    text-align: left;
-    text-indent: 15px;
     background-color: rgb(245, 245, 245);
     font-size: 14px;
 }

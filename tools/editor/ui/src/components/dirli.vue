@@ -8,7 +8,7 @@
 
             <div v-else style="width: 24px;"></div>
 
-            <button class="btn-icon" @click="onFolderOpenClick($event)">
+            <button class="btn-icon fixed" @click="onFolderOpenClick($event)">
                 <img v-bind:src="shown ? 'images/folder-open.svg' : 'images/folder.svg'" 
                     width="16" height="16" />
                 <span>{{ item.name }}</span>

@@ -28,6 +28,9 @@ body {
 }
 
 button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border: 0;
     outline: 0;
 }

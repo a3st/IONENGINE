@@ -135,6 +135,11 @@
         "UIDropDownMenu_AddButton",
         "UIDROPDOWNMENU_MENU_LEVEL",
         "FauxScrollFrame_GetOffset",
-        "UIDropDownMenu_CreateInfo"
+        "UIDropDownMenu_CreateInfo",
+        "HybridScrollFrame_OnLoad",
+        "HybridScrollFrame_CreateButtons",
+        "PLAYER_TITLE_NONE",
+        "HybridScrollFrame_Update",
+        "HybridScrollFrame_GetOffset"
     ]
 }

@@ -14,6 +14,7 @@ namespace ionengine::tools::editor
     struct AssetStructInfo
     {
         std::string name;
+        std::filesystem::path path;
         AssetType type;
         std::vector<std::unique_ptr<class AssetStructInfo>> childrens;
     };

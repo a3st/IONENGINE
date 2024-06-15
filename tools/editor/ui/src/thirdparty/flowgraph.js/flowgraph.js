@@ -948,7 +948,7 @@ export default class FlowGraph {
                     }));
         });
 
-        let nodeWidth = 110 + Math.min(1, outputs.length) * 20 * outputMaxLength + Math.min(1, inputs.length) * 20 * inputMaxLength;
+        let nodeWidth = 110 + Math.min(1, outputs.length) * 22 * outputMaxLength + Math.min(1, inputs.length) * 22 * inputMaxLength;
 
         let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
             $(`#node_${id}`).find('.flowgraph-node-main').outerHeight();

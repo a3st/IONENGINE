@@ -1,0 +1,22 @@
+
+.context-container {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    width: 230px;
+    height: 200px;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.context-container-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 5px;
+    background-color: rgb(40 40 40);
+    border: 1px solid rgb(239 239 239 / 40%);
+}

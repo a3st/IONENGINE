@@ -3,7 +3,9 @@
         <div class="tab-inline-text-container">
             <img v-bind:src="icon" width="16" height="16" />
                 <span>{{ title }}</span>
-                <img v-if="!fixed" src="images/xmark.svg" width="12" height="12" />
+                <button class="btn-icon">
+                    <img v-if="!fixed" src="images/xmark.svg" width="12" height="12" />
+                </button>
         </div>
     </button>
 </template>

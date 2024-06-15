@@ -7,7 +7,7 @@
                 <dynpan>
                     <div class="pan-wrapper">
                         <tabgr>
-                            <tabli title="Shader Graph" icon="images/diagram-project.svg" target="tab-shader-graph" fixed default></tabli>
+                            <tabli title="Shader Graph" icon="images/diagram-project.svg" target="tab-shader-graph" default></tabli>
                         </tabgr>
 
                         <tabpan id="tab-shader-graph">
@@ -86,6 +86,7 @@
 import { toRaw } from 'vue'
 import $ from 'jquery'
 import FlowGraph from '../thirdparty/flowgraph.js/flowgraph';
+import ContextMenu from '../thirdparty/context.js/context';
 
 import ToolbarComponent from '../components/toolbar.vue';
 import FootbarComponent from '../components/footbar.vue';
@@ -126,7 +127,8 @@ export default {
             inputNode: {},
             shaderDomain: -1,
             shaderDomainNodeId: -1,
-            previewImageSource: ""
+            previewImageSource: "",
+            assetBrowserCtxMenu: null
         };
     },
     watch: {
@@ -192,7 +194,7 @@ export default {
     },
     mounted() {
         const graphElement = $('#graph-root');
-        let graph = new FlowGraph(graphElement.get(0), graphElement.parent().width(), graphElement.parent().height() - 30);
+        const graph = new FlowGraph(graphElement.get(0), graphElement.parent().width(), graphElement.parent().height() - 30);
 
         webview.invoke('addContextItems').then(data => {
             for (const node of Object.values(data.items)) {
@@ -258,6 +260,24 @@ export default {
 
         this.graph = graph;
 
+        const assetBrowserCtxMenu = new ContextMenu($('.abrowser-asset-container').closest('.dynpan-container').get(0), "asset-browser-ctx",
+            [
+                {
+                    "items": [
+                        {
+                            "name": "Create Shader Graph",
+                            "shortcut": "",
+                            "action": e => {
+
+                            }
+                        }
+                    ]
+                }
+            ]
+        )
+
+        this.assetBrowserCtxMenu = assetBrowserCtxMenu;
+
         webview.invoke('getAssetTree').then(data => {
             this.$refs.assetBrowser.open(data);
         });
@@ -298,6 +318,7 @@ export default {
 
 <style>
 @import url('../thirdparty/flowgraph.js/flowgraph.css');
+@import url('../thirdparty/context.js/context.css');
 
 .pan-wrapper {
     display: flex; 
@@ -313,6 +334,14 @@ export default {
 
 .btn-icon:hover {
     background: none;
+}
+
+.btn-icon:hover > img {
+    filter: invert(25%) sepia(30%) saturate(0%) hue-rotate(273deg) brightness(92%) contrast(88%);
+}
+
+.btn-icon.fixed:hover > img {
+    filter: none;
 }
 
 .btn {

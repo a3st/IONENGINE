@@ -1,21 +1,25 @@
 cmake_minimum_required(VERSION 3.26.0)
 
 add_executable(editor
-    shader_graph.cpp
-    components/convert.cpp
-    components/texture.cpp
-    components/output.cpp
-    components/input.cpp
-    components/math.cpp
+    graph/connection.cpp
+    graph/registry.cpp
+    graph/node.cpp
+    graph/scene.cpp
+    
+    shader_graph/components/convert.cpp
+    shader_graph/components/texture.cpp
+    shader_graph/components/output.cpp
+    shader_graph/components/input.cpp
+    shader_graph/components/math.cpp
+    shader_graph/shader_graph.cpp
+
     view_model.cpp
     asset_tree.cpp
-    connection.cpp
-    registry.cpp
-    node.cpp
-    scene.cpp
     main.cpp)
 
-target_include_directories(editor PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(editor PRIVATE 
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/tools/editor)
 
 target_precompile_headers(editor PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 

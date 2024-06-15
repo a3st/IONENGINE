@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "node.hpp"
+#include "graph/node.hpp"
 
 namespace ionengine::tools::editor
 {
