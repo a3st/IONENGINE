@@ -5,6 +5,7 @@
 </template>
 
 <script>
+import { toRaw } from 'vue';
 import $ from 'jquery'
 import TabliComponent from '../components/tabli.vue';
 
@@ -26,34 +27,18 @@ export default {
     },
     methods: {
         updateTabSlots() {
-            $(this.$el).children().each((index, element) => {
-                if(element.__vueParentComponent.type == TabliComponent) {
-                    this.targets.push(element.__vueParentComponent.props.target);
+            this.targets.splice(0, this.targets.length);
 
-                    element.__vueParentComponent.emitsOptions.select = e => {
-                        for(const target of Object.values(this.targets)) {
-                            $(`#${target}`).css('display', 'none');
-                        }
+            $(this.$el).children().each((_, element) => {
+                if(element.__vueParentComponent.proxy.$.type == TabliComponent) {
+                    element.__vueParentComponent.proxy.$parent.$data.targets.push(element.__vueParentComponent.proxy.$props.target);
 
-                        $(this.$el).find('.btn-tab').removeClass('active');
-
-                        $(e.target)
-                            .closest('button.btn-tab')
-                            .addClass('active');
-
-                        $(`#${element.__vueParentComponent.props.target}`).css('display', 'flex');
-                    };
-
-                    element.__vueParentComponent.emitsOptions.remove = e => {
-                        this.$emit('remove', element);
-                    };
-
-                    if(element.__vueParentComponent.props.default) {
+                    if(element.__vueParentComponent.proxy.$props.default) {
                         $(element)
                             .closest('button.btn-tab')
                             .addClass('active');
 
-                        $(`#${element.__vueParentComponent.props.target}`).css('display', 'flex');
+                        $(`#${element.__vueParentComponent.proxy.$props.target}`).css('display', 'flex');
                     }
                 }
             });
@@ -70,7 +55,7 @@ export default {
                 .closest('button.btn-tab')
                 .addClass('active');
 
-            $(`#${target.get(0).__vueParentComponent.props.target}`).css('display', 'flex');
+            $(`#${target.get(0).__vueParentComponent.proxy.$props.target}`).css('display', 'flex');
         }
     }
 }

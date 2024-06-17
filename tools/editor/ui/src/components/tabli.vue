@@ -11,8 +11,9 @@
 </template>
 
 <script>
+import $ from 'jquery'
+
 export default {
-    emits: ['select', 'remove'],
     props: {
         title: String,
         icon: String,
@@ -22,10 +23,21 @@ export default {
     },
     methods: {
         onRemoveClick(e) {
-            this.$emit('remove', e);
+            this.$parent.$emit('remove', e);
         },
         onSelectClick(e) {
-            this.$emit('select', e);
+            for(const target of Object.values(this.$parent.$data.targets)) {
+                $(`#${target}`).css('display', 'none');
+            }
+
+            $(e.target).closest('.tabgr-container').find('.btn-tab')
+                .removeClass('active');
+
+            $(e.target)
+                .closest('button.btn-tab')
+                .addClass('active');
+
+            $(`#${this.target}`).css('display', 'flex');
         }
     }
 }

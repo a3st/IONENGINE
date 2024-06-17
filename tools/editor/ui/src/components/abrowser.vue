@@ -47,7 +47,7 @@ import DirliComponent from '../components/dirli.vue';
 import AssetComponent from '../components/asset.vue';
 
 export default {
-    emits: ['open'],
+    emits: ['open', 'create', 'delete', 'rename'],
     components: {
         'dynpan': DynpanComponent,
         'dyngr': DyngrComponent,
@@ -135,8 +135,8 @@ export default {
                                     {
                                         name: "Delete",
                                         shortcut: "Delete",
-                                        action() {
-
+                                        action: () => {
+                                            this.$emit('delete', item);
                                         }
                                     }
                                 ]
@@ -169,8 +169,8 @@ export default {
                                     {
                                         name: "Delete",
                                         shortcut: "Delete",
-                                        action() {
-
+                                        action: () => {
+                                            this.$emit('delete', item);
                                         }
                                     }
                                 ]
@@ -182,12 +182,19 @@ export default {
             }
         },
         onAssetRename(e, item) {
+            const renamedItem = {
+                name: e
+            };
             if(this.temporaryAsset.show) {
                 this.temporaryAsset.show = false;
-                this.temporaryAsset.type = 'file/unknown';
+                renamedItem['type'] = this.temporaryAsset.type;
+                renamedItem['path'] = this.curFolderItems.path;
             } else {
                 item.name = e;
+                renamedItem['type'] = item.type;
+                renamedItem['path'] = item.path;
             }
+            this.$emit('rename', e);
         },
         onAssetBrowserMouseDown(e) {
             if (e.which == 3) {
@@ -200,11 +207,10 @@ export default {
                                 shortcut: null,
                                 action: () => {
                                     this.temporaryAsset.show = true;
-                                    this.temporaryAsset.type = 'asset/shadergraph';
                                     this.temporaryAsset.name = 'NewFile';
+                                    this.temporaryAsset.type = 'asset/shadergraph';
 
-                                    webview.invoke('assetBrowserCreateFile', 
-                                        { 
+                                    this.$emit('create', { 
                                             'path': this.dirPaths.join('/'), 
                                             'name': this.temporaryAsset.name,
                                             'type': this.temporaryAsset.type

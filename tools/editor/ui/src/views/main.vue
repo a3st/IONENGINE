@@ -22,7 +22,7 @@
                         </tabgr>
 
                         <tabpan id="tab-asset-browser">
-                            <abrowser ref="assetBrowser" @open="onAssetBrowserOpenFile($event)"></abrowser>
+                            <abrowser ref="assetBrowser" @open="onAssetBrowserOpenFile($event)" @create="onAssetBrowserCreateFile($event)"></abrowser>
                         </tabpan>
                     </div>
                 </dynpan>
@@ -284,13 +284,18 @@ export default {
                 }
             }
         },
+        onAssetBrowserCreateFile(e) {
+            webview.invoke('assetBrowserCreateFile', e);
+        },
         onMainWorkspaceTabRemove(e) {
-            const index = this.mainWorkspaceTabs.findIndex(x => x.target == e.__vueParentComponent.props.target);
+            e.stopPropagation();
+            
+            const index = this.mainWorkspaceTabs.findIndex(x => x.target == e.target.__vueParentComponent.proxy.$props.target);
             this.mainWorkspaceTabs.splice(index, 1);
 
             if(this.mainWorkspaceTabs.length > 0) {
                 $(this.$refs.mainWorkspace.$el).find('.tabgr-container').get(0)
-                    .__vueParentComponent.ctx.setActiveTabByIndex(index == 0 ? 0 : index - 1);
+                    .__vueParentComponent.proxy.setActiveTabByIndex(index == 0 ? 0 : index - 1);
             }
         }
     }
