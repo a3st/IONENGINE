@@ -17,8 +17,8 @@ namespace ionengine::tools::editor
     {
         rootStruct->childrens.clear();
 
-        auto internalFetch = [](this auto const& internalFetch, AssetStructInfo* curStruct,
-                                std::filesystem::path const& rootPath) -> void {
+        auto internalFetch = [&](this auto const& internalFetch, AssetStructInfo* curStruct,
+                                 std::filesystem::path const& rootPath) -> void {
             for (auto const& dirEntry : std::filesystem::directory_iterator(rootPath))
             {
                 if (std::filesystem::is_directory(dirEntry.path()))
@@ -56,21 +56,20 @@ namespace ionengine::tools::editor
 
     auto AssetTree::createFile(std::filesystem::path const& filePath, std::basic_ofstream<uint8_t>& stream) -> bool
     {
-        // Resolve VFS path to real path
-        auto realPath = rootPath.parent_path() / filePath;
-
-        std::cout << realPath << std::endl;
-
-        stream.open(realPath, std::ios::binary);
-        if (!stream.is_open())
-        {
-            return false;
-        }
-        return true;
+        stream.open(filePath, std::ios::binary);
+        return stream.is_open();
     }
 
     auto AssetTree::deleteFile(std::filesystem::path const& filePath) -> bool
     {
-        return true;
+        return std::filesystem::remove(filePath);
+    }
+
+    auto AssetTree::renameFile(std::filesystem::path const& oldFilePath,
+                               std::filesystem::path const& newFilePath) -> bool
+    {
+        std::error_code error;
+        std::filesystem::rename(oldFilePath, newFilePath, error);
+        return !error;
     }
 } // namespace ionengine::tools::editor

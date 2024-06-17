@@ -30,6 +30,10 @@ namespace ionengine::tools::editor
 
         auto assetBrowserCreateFile(std::string fileData) -> std::string;
 
+        auto assetBrowserDeleteFile(std::string fileData) -> std::string;
+
+        auto assetBrowserRenameFile(std::string fileData) -> std::string;
+
       protected:
         auto init() -> void override;
 

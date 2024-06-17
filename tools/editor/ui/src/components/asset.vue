@@ -3,7 +3,7 @@
         <img style="object-fit: contain;"
             v-bind:src="type == 'folder' ? 'images/folder.svg' : 'images/file.svg'" width="64" height="64" />
         <input ref="editNameInput" v-if="edit" style="width: 64px; height: 15px;" 
-            @input="onEditNameInput($event)" :value="curName" @blur="onEditNameBlur($event)" @keydown="onEditKeydown($event)" />
+            :value="curName" @blur="onEditNameBlur($event)" @keydown="onEditKeydown($event)" />
         <span v-else style="align-self: center; height: 15px;" :title="curName">{{ smallName }}</span>
     </div>
 </template>
@@ -18,8 +18,7 @@ export default {
     data() {
         return {
             edit: false,
-            curName: this.name,
-            lastName: this.name
+            curName: this.name
         }
     },
     watch: {
@@ -51,10 +50,9 @@ export default {
             this.$emit('dblclick', e);
         },
         onEditNameBlur(e) {
-            if(this.curName.length == 0) {
-                this.curName = this.lastName;
+            if(this.curName.length != 0) {
+                this.$emit('rename', e.target.value);
             }
-            this.$emit('rename', this.curName);
             this.edit = false;
         },
         editName() {
@@ -64,19 +62,13 @@ export default {
                 this.$refs.editNameInput.select();
             });
         },
-        onEditNameInput(e) {
-            this.curName = e.target.value;
-        },
         onEditKeydown(e) {
             if(e.code == 'Enter') {
-                if(e.target.value.length == 0) {
-                    this.curName = this.lastName;
-                } else {
-                    this.curName = e.target.value;
+                if(e.target.value.length != 0) {
+                    this.$emit('rename', e.target.value);
                 }
                 this.edit = false;
             } else if(e.code == 'Escape') {
-                this.curName = this.lastName;
                 this.edit = false;
             }
         }

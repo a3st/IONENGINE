@@ -9,11 +9,16 @@
 
 namespace ionengine::tools::editor
 {
-    ViewModel::ViewModel(libwebview::App* app) : Engine(nullptr), app(app), assetTree("../assets")
+    ViewModel::ViewModel(libwebview::App* app)
+        : Engine(nullptr), app(app), assetTree("E:\\GitHub\\IONENGINE\\build\\assets")
     {
         app->bind("getAssetTree", [this]() -> std::string { return this->getAssetTree(); });
         app->bind("assetBrowserCreateFile",
                   [this](std::string fileData) -> std::string { return this->assetBrowserCreateFile(fileData); });
+        app->bind("assetBrowserDeleteFile",
+                  [this](std::string fileData) -> std::string { return this->assetBrowserDeleteFile(fileData); });
+        app->bind("assetBrowserRenameFile",
+                  [this](std::string fileData) -> std::string { return this->assetBrowserRenameFile(fileData); });
 
         app->bind("addContextItems", [this]() -> std::string { return this->addContextItems(); });
         app->bind("addResourceTypes", [this]() -> std::string { return this->addResourceTypes(); });
@@ -148,25 +153,133 @@ namespace ionengine::tools::editor
             return "{\"error\":0}";
         }
 
-        std::basic_ofstream<uint8_t> stream;
-        if (assetTree.createFile(
-                std::filesystem::path(filePath) / std::filesystem::path(std::string(fileName) + ".asset"), stream))
+        // Create File
+        auto createPath = std::filesystem::path(filePath).make_preferred();
         {
+            uint32_t i = 0;
+            std::filesystem::path initialGenPath = createPath;
+            while (std::filesystem::exists(initialGenPath))
+            {
+                initialGenPath = createPath.parent_path() /
+                                 std::filesystem::path(createPath.stem().generic_string() + "_Copy_" +
+                                                       std::to_string(i) + createPath.extension().generic_string());
+                ++i;
+            }
+            createPath = initialGenPath;
+
+            std::basic_ofstream<uint8_t> stream;
+            if (!assetTree.createFile(createPath, stream))
+            {
+            }
+
             if (fileType.compare("asset/shadergraph") == 0)
             {
                 shaderGraphEditor.create();
                 ShaderGraphData graphData = std::move(shaderGraphEditor.dump());
                 if (core::Serializable<ShaderGraphData>::serialize(graphData, stream) > 0)
                 {
-
                 }
                 else
                 {
                     return "{\"error\":0}";
                 }
             }
+        }
 
-            return "{}";
+        std::stringstream stream;
+        stream << "{\"name\":\"" << createPath.stem().generic_string() << "\",\"type\":\"" << fileType
+               << "\",\"path\":\"" << createPath.generic_string() << "\"}";
+        return stream.str();
+    }
+
+    auto ViewModel::assetBrowserDeleteFile(std::string fileData) -> std::string
+    {
+        simdjson::ondemand::parser parser;
+        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
+
+        std::string_view filePath;
+        auto error = document["path"].get_string().get(filePath);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        std::string_view fileName;
+        error = document["name"].get_string().get(fileName);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        std::string_view fileType;
+        error = document["type"].get_string().get(fileType);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        if (assetTree.deleteFile(std::filesystem::path(filePath).make_preferred()))
+        {
+            std::stringstream stream;
+            stream << "{\"name\":\"" << fileName << "\",\"type\":\"" << fileType << "\",\"path\":\"" << filePath
+                   << "\"}";
+            return stream.str();
+        }
+        else
+        {
+            return "{\"error\":0}";
+        }
+    }
+
+    auto ViewModel::assetBrowserRenameFile(std::string fileData) -> std::string
+    {
+        simdjson::ondemand::parser parser;
+        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
+
+        std::string_view oldFileName;
+        auto error = document["oldName"].get_string().get(oldFileName);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        std::string_view newFileName;
+        error = document["newName"].get_string().get(newFileName);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        std::string_view fileType;
+        error = document["type"].get_string().get(fileType);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        std::string_view oldFilePath;
+        error = document["oldPath"].get_string().get(oldFilePath);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        auto originalPath = std::filesystem::path(oldFilePath).make_preferred();
+        auto newPath = originalPath.parent_path() /
+                       std::filesystem::path(std::string(newFileName) + originalPath.extension().generic_string());
+
+        if (std::filesystem::exists(newPath))
+        {
+            return "{\"error\":0}";
+        }
+
+        if (assetTree.renameFile(originalPath, newPath))
+        {
+            std::stringstream stream;
+            stream << "{\"newName\":\"" << newFileName << "\",\"type\":\"" << fileType << "\",\"oldPath\":\""
+                   << originalPath.generic_string() << "\",\"newPath\":\"" << newPath.generic_string() << "\"}";
+
+            return stream.str();
         }
         else
         {

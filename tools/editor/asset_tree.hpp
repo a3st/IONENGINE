@@ -30,6 +30,8 @@ namespace ionengine::tools::editor
 
         auto deleteFile(std::filesystem::path const& filePath) -> bool;
 
+        auto renameFile(std::filesystem::path const& oldFilePath, std::filesystem::path const& newFilePath) -> bool;
+
       private:
         std::unique_ptr<AssetStructInfo> rootStruct;
         std::filesystem::path rootPath;

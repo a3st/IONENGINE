@@ -22,7 +22,12 @@
                         </tabgr>
 
                         <tabpan id="tab-asset-browser">
-                            <abrowser ref="assetBrowser" @open="onAssetBrowserOpenFile($event)" @create="onAssetBrowserCreateFile($event)"></abrowser>
+                            <abrowser ref="assetBrowser" 
+                                @open="onAssetBrowserOpenFile" 
+                                @create="onAssetBrowserCreateFile" 
+                                @delete="onAssetBrowserDeleteFile"
+                                @rename="onAssetBrowserRenameFile">
+                            </abrowser>
                         </tabpan>
                     </div>
                 </dynpan>
@@ -78,8 +83,8 @@
 </template>
 
 <script>
-import { toRaw, render, h } from 'vue'
-import $ from 'jquery'
+import { toRaw } from 'vue';
+import $ from 'jquery';
 
 import ToolbarComponent from '../components/toolbar.vue';
 import FootbarComponent from '../components/footbar.vue';
@@ -253,6 +258,9 @@ export default {
                 // TODO!
             });
         },
+        /*
+            Asset Browser Callbacks
+        */
         onAssetBrowserOpenFile(e) {
             switch(e.type) {
                 case 'asset/shadergraph': {
@@ -284,12 +292,42 @@ export default {
                 }
             }
         },
+        onAssetBrowserDeleteFile(e) {
+            webview.invoke('assetBrowserDeleteFile', e).then(
+                data => {
+                    if(!data.error) {
+                        this.$refs.assetBrowser.deleteFile(data);
+                    }
+                });
+        },
         onAssetBrowserCreateFile(e) {
-            webview.invoke('assetBrowserCreateFile', e);
+            webview.invoke('assetBrowserCreateFile', e).then(
+                data => {
+                    if(!data.error) {
+                        this.$refs.assetBrowser.createFile(data);
+                    }
+                });
+        },
+        onAssetBrowserRenameFile(e) {
+            webview.invoke('assetBrowserRenameFile', e).then(
+                data => {
+                    if(!data.error) {
+                        this.$refs.assetBrowser.renameFile({
+                                name: data.newName,
+                                type: data.type,
+                                path: data.newPath
+                            },
+                            {
+                                name: data.oldName,
+                                type: data.type,
+                                path: data.oldPath
+                            });
+                    }
+                });
         },
         onMainWorkspaceTabRemove(e) {
             e.stopPropagation();
-            
+
             const index = this.mainWorkspaceTabs.findIndex(x => x.target == e.target.__vueParentComponent.proxy.$props.target);
             this.mainWorkspaceTabs.splice(index, 1);
 

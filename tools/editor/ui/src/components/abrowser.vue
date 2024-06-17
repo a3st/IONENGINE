@@ -38,6 +38,7 @@
 </template>
 
 <script>
+import { toRaw } from 'vue';
 import $ from 'jquery';
 import contextMenu from '../thirdparty/context.js/context';
 
@@ -60,10 +61,14 @@ export default {
         },
         nextPaths() {
             return this.dirPaths.slice(1, this.dirPaths.length);
+        },
+        relativePath() {
+            return this.rootPath + (this.nextPaths.length > 0 ? '/' + this.nextPaths.join('/') : '');
         }
     },
     data() {
         return {
+            rootPath: "",
             dirPaths: [],
             curFolderItems: {},
             folderItems: {},
@@ -78,6 +83,7 @@ export default {
         open(folderItems) {
             this.folderItems = folderItems;
             this.curFolderItems = folderItems.childrens;
+            this.rootPath = folderItems.path;
             this.dirPaths.push(folderItems.name);
         },
         onFolderClick(e) {
@@ -88,7 +94,7 @@ export default {
 
             if(relativePath.length > 0) {
                 this.dirPaths.splice(1, this.dirPaths.length - 1);
-                this.dirPaths.push(relativePath);
+                this.dirPaths.push(...relativePath.split('/'));
             }
         },
         onAssetDblClick(e, item) {
@@ -182,19 +188,22 @@ export default {
             }
         },
         onAssetRename(e, item) {
-            const renamedItem = {
-                name: e
-            };
             if(this.temporaryAsset.show) {
                 this.temporaryAsset.show = false;
-                renamedItem['type'] = this.temporaryAsset.type;
-                renamedItem['path'] = this.curFolderItems.path;
+
+                this.$emit('create', {
+                    name: e,
+                    type: this.temporaryAsset.type,
+                    path: this.relativePath + '/' + e + '.asset'
+                });
             } else {
-                item.name = e;
-                renamedItem['type'] = item.type;
-                renamedItem['path'] = item.path;
+                this.$emit('rename', {
+                    newName: e,
+                    oldName: item.name,
+                    type: item.type,
+                    oldPath: item.path
+                });
             }
-            this.$emit('rename', e);
         },
         onAssetBrowserMouseDown(e) {
             if (e.which == 3) {
@@ -209,12 +218,6 @@ export default {
                                     this.temporaryAsset.show = true;
                                     this.temporaryAsset.name = 'NewFile';
                                     this.temporaryAsset.type = 'asset/shadergraph';
-
-                                    this.$emit('create', { 
-                                            'path': this.dirPaths.join('/'), 
-                                            'name': this.temporaryAsset.name,
-                                            'type': this.temporaryAsset.type
-                                        });
 
                                     this.$nextTick(() => {
                                         this.$refs.temporaryAsset.editName();
@@ -250,6 +253,69 @@ export default {
             if(index != this.dirPaths.length) {
                 this.dirPaths = this.dirPaths.slice(0, index + 1);
             }
+        },
+        deleteFile(fileItem) {
+            const removeElementByPath = (treeData, path) => {
+                return treeData.filter(x => x.path != path)
+                    .map(x => { 
+                        if(x.childrens) {
+                            return { ...x, childrens: removeElementByPath(x.childrens, path) };
+                        }
+                        return toRaw(x);
+                    });
+                };
+
+            this.folderItems.childrens = removeElementByPath(this.folderItems.childrens, fileItem.path);
+            
+            // Update folder content
+            const fs = path => {
+                let stack = [];
+                stack.push(this.folderItems);
+                while(stack.length > 0) {
+                    const item = stack.pop();
+                    if(item.path == path) {
+                        return item;
+                    } else {
+                        if(item.type == 'folder') {
+                            for(let i = 0; i < item.childrens.length; i++) {
+                                stack.push(item.childrens[i]);
+                            }
+                        }
+                    }
+                }
+                return null;
+            };
+
+            this.curFolderItems = fs(this.relativePath).childrens;
+        },
+        createFile(fileItem) {
+            this.curFolderItems.push(fileItem);
+        },
+        renameFile(newFileItem, oldFileItem) {
+            const fs = path => {
+                let stack = [];
+                stack.push(this.folderItems);
+                while(stack.length > 0) {
+                    const item = stack.pop();
+                    if(item.path == path) {
+                        return item;
+                    } else {
+                        if(item.type == 'folder') {
+                            for(let i = 0; i < item.childrens.length; i++) {
+                                stack.push(item.childrens[i]);
+                            }
+                        }
+                    }
+                }
+                return null;
+            };
+
+            const fileItem = fs(oldFileItem.path);
+            fileItem.name = newFileItem.name;
+            fileItem.type = newFileItem.type;
+            fileItem.path = newFileItem.path;
+
+            this.curFolderItems = fs(this.relativePath).childrens;
         }
     }
 }
