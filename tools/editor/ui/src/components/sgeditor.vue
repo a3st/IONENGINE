@@ -10,8 +10,8 @@
 </template>
 
 <script>
-import { toRaw } from 'vue'
-import $ from 'jquery'
+import { toRaw } from 'vue';
+import $ from 'jquery';
 import FlowGraph from '../thirdparty/flowgraph.js/flowgraph';
 
 export default {

@@ -33,45 +33,26 @@
                 </dynpan>
             </dyngr>
             <dyngr type="col">
-                <dynpan>
+                <dynpan ref="rightUpper">
                     <div class="pan-wrapper">
                         <tabgr>
-                            <tabli title="Viewport (Preview)" icon="images/video.svg" target="tab-viewport" fixed default></tabli>
+                            <tabli v-for="tab in rightUpperTabs" :title="tab.title" :icon="tab.icon" :target="tab.target" 
+                                :fixed="tab.fixed" :default="tab.default"></tabli>
                         </tabgr>
 
-                        <tabpan id="tab-viewport">
-                            <img v-bind:src="'data:image/png;base64,' + previewImageSource" width="100%" height="100%" />
+                        <tabpan v-for="tab in rightUpperTabs" :id="tab.target">
+                            <component :is="tab.component"></component>
                         </tabpan>
                     </div>
                 </dynpan>
-                <dynpan>
+                <dynpan ref="rightLower">
                     <div class="pan-wrapper">
                         <tabgr>
-                            <tabli title="Resources" icon="images/dice-d6.svg" target="tab-resources" fixed default></tabli>
-                            <tabli title="Shader" icon="images/images.svg" target="tab-shader" fixed></tabli>
+                            <tabli v-for="tab in rightLowerTabs" :title="tab.title" :icon="tab.icon" :target="tab.target"></tabli>
                         </tabgr>
 
-                        <tabpan id="tab-resources">
-                            <div class="pan-wrapper" style="gap: 10px;">
-                                <optext v-for="(resource, index) in resources" icon="images/buffer.svg" @remove="onDeleteResourceClick($event, index)">
-                                    <template #header>
-                                        <input type="text" placeholder="Type name" v-model="resource.name">
-                                    </template>
-                                    <template #expand>
-                                        <optli title="Type" type="select" v-model="resource.type" v-bind:content="resourceTypes"></optli>
-                                    </template>
-                                </optext>
-
-                                <button class="btn" @click="onAddResourceClick($event)">Add New Resource</button>
-                            </div>
-                        </tabpan>
-
-                        <tabpan id="tab-shader">
-                            <div class="pan-wrapper" style="gap: 10px;">
-                                <optgr>
-                                    <optli title="Shader Domain" type="select" v-model="shaderDomain" v-bind:content="shaderDomains"></optli>
-                                </optgr>
-                            </div>
+                        <tabpan v-for="tab in rightLowerTabs" :id="tab.target">
+                            <component :is="tab.component" v-bind="tab.props"></component>
                         </tabpan>
                     </div>
                 </dynpan>
@@ -99,6 +80,8 @@ import OptliComponent from '../components/optli.vue';
 import OptgrComponent from '../components/optgr.vue';
 import ABrowserComponent from '../components/abrowser.vue';
 import SGEditorComponent from '../components/sgeditor.vue';
+import ViewportComponent from '../components/viewport.vue';
+import SGDetailsComponent from '../components/sgdetails.vue';
 
 export default {
     components: {
@@ -114,11 +97,13 @@ export default {
         'optli': OptliComponent,
         'optgr': OptgrComponent,
         'abrowser': ABrowserComponent,
-        'sgeditor': SGEditorComponent
+        'sgeditor': SGEditorComponent,
+        'viewport': ViewportComponent,
+        'sgdetails': SGDetailsComponent
     },
     data() {
         return {
-            graph: null,
+            /*graph: null,
             resourceNodeId: -1,
             resources: [],
             resourceTypes: [],
@@ -127,14 +112,18 @@ export default {
             inputNode: {},
             shaderDomain: -1,
             shaderDomainNodeId: -1,
-            previewImageSource: "",
-            assetBrowserCtxMenu: null,
+            */
             mainWorkspaceTabs: [],
-            numMainTabs: 0
+            numMainWorkspaceTabs: 0,
+            rightUpperTabs: [],
+            numRightUpperTabs: 0,
+            rightLowerTabs: [],
+            numRightLowerTabs: 0,
+            editorModule: 'worldscene'
         };
     },
     watch: {
-        resources: {
+        /*resources: {
             handler(value, oldValue) {
                 let posX = 0;
                 let posY = 0;
@@ -185,17 +174,83 @@ export default {
                     "", 
                     node.userData);
             }
+        },*/
+        editorModule: {
+            handler(value, oldValue) {
+                switch(value) {
+                    case 'shadergraph': {
+                        let mainIndex = this.rightUpperTabs.push({
+                            id: `${this.numRightUpperTabs}`,
+                            title: 'Viewport (Preview)', 
+                            icon: 'images/video.svg',
+                            target: `tab-rightUpper-${this.numRightUpperTabs}`,
+                            fixed: true,
+                            default: true,
+                            component: 'viewport'
+                        });
+                        
+                        this.$nextTick(() => {
+                            $(this.$refs.rightUpper.$el).find('.tabgr-container').get(0)
+                                .__vueParentComponent.ctx.setActiveTabByIndex(mainIndex - 1);
+
+                            $(`#tab-rightUpper-${this.numRightUpperTabs}`).children().get(0)
+                                .__vueParentComponent.ctx.$forceUpdate();
+
+                            this.numRightUpperTabs++;
+                        });
+
+                        let rightIndex = this.rightLowerTabs.push({
+                            id: `${this.numRightLowerTabs}`,
+                            title: 'Resources', 
+                            icon: 'images/dice-d6.svg',
+                            target: `tab-rightLower-${this.numRightLowerTabs}`,
+                            fixed: true,
+                            default: true,
+                            component: 'sgdetails',
+                            props: {
+                                type: 'resources'
+                            }
+                        });
+
+                        rightIndex = this.rightLowerTabs.push({
+                            id: `${this.numRightLowerTabs}`,
+                            title: 'Shader', 
+                            icon: 'images/images.svg',
+                            target: `tab-rightLower-${this.numRightLowerTabs}`,
+                            fixed: true,
+                            default: false,
+                            component: 'sgdetails',
+                            props: {
+                                type: 'shader'
+                            }
+                        });
+
+                        this.$nextTick(() => {
+                            $(this.$refs.rightLower.$el).find('.tabgr-container').get(0)
+                                .__vueParentComponent.ctx.setActiveTabByIndex(rightIndex - 1);
+
+                            $(`#tab-rightUpper-${this.numRightLowerTabs}`).children().get(0)
+                                .__vueParentComponent.ctx.$forceUpdate();
+
+                            this.numRightLowerTabs++;
+                        });
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+            }
         }
     },
     created() {
-        window.requestAnimationFrame(this.onFrameUpdate);
+        //window.requestAnimationFrame(this.onFrameUpdate);
     },
     destroyed() {
 
     },
     mounted() {
         /*
-
         webview.invoke('addContextItems').then(data => {
             for (const node of Object.values(data.items)) {
                 graph.addContextItem(
@@ -207,13 +262,11 @@ export default {
                 );
             }
         });
-
         webview.invoke('addResourceTypes').then(data => {
             for(const resourceType of Object.values(data.types)) {  
                 this.resourceTypes.push(resourceType);
             }
         });
-
         webview.invoke('addShaderDomains').then(data => {
             for(const shaderDomain of Object.values(data.domains)) {
                 this.shaderDomains.push(shaderDomain.name);
@@ -222,7 +275,6 @@ export default {
             this.shaderDomain = 0;
             this.inputNode = data.inputNode;
         });
-
         */
 
         webview.invoke('getAssetTree').then(data => {
@@ -236,8 +288,8 @@ export default {
                     .__vueParentComponent.ctx.$forceUpdate();
             }
         },
-        
-        onAddResourceClick(e) {
+
+        /*onAddResourceClick(e) {
             this.resources.push({
                 'name': 'template',
                 'type': 0
@@ -257,7 +309,8 @@ export default {
             webview.invoke('compileShader', toRaw(this.graph).export()).then(data => {
                 // TODO!
             });
-        },
+        },*/
+
         /*
             Asset Browser Callbacks
         */
@@ -270,24 +323,26 @@ export default {
                             .__vueParentComponent.ctx.setActiveTabByIndex(index);
                     } else {
                         const size = this.mainWorkspaceTabs.push({
-                            id: `${this.numMainTabs}`,
+                            id: `${this.numMainWorkspaceTabs}`,
                             title: e.name, 
                             icon: 'images/diagram-project.svg',
-                            target: `tab-mainWorkspace-${this.numMainTabs}`,
+                            target: `tab-mainWorkspace-${this.numMainWorkspaceTabs}`,
                             component: 'sgeditor',
                             path: e.path
                         });
-
+                        
                         this.$nextTick(() => {
                             $(this.$refs.mainWorkspace.$el).find('.tabgr-container').get(0)
                                 .__vueParentComponent.ctx.setActiveTabByIndex(size - 1);
 
-                            $(`#tab-mainWorkspace-${this.numMainTabs}`).children().get(0)
+                            $(`#tab-mainWorkspace-${this.numMainWorkspaceTabs}`).children().get(0)
                                 .__vueParentComponent.ctx.$forceUpdate();
 
-                            this.numMainTabs++;
+                            this.numMainWorkspaceTabs++;
                         });
                     }
+
+                    this.editorModule = 'shadergraph';
                     break;
                 }
             }
