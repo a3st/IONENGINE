@@ -36,7 +36,7 @@ namespace ionengine::tools::editor
                     assetStruct->name = dirEntry.path().filename().generic_string();
                     assetStruct->path = dirEntry.path();
 
-                    if (dirEntry.path().extension().compare(".asset"))
+                    if (dirEntry.path().extension().compare(".asset") == 0)
                     {
                         assetStruct->type = AssetType::Asset;
                     }
@@ -51,5 +51,25 @@ namespace ionengine::tools::editor
 
         internalFetch(rootStruct.get(), rootPath);
         return *rootStruct;
+    }
+
+    auto AssetTree::createFile(std::filesystem::path const& filePath, std::basic_ofstream<uint8_t>& stream) -> bool
+    {
+        // Resolve VFS path to real path
+        auto realPath = rootPath.parent_path() / filePath;
+
+        std::cout << realPath << std::endl;
+
+        stream.open(realPath, std::ios::binary);
+        if (!stream.is_open())
+        {
+            return false;
+        }
+        return true;
+    }
+
+    auto AssetTree::deleteFile(std::filesystem::path const& filePath) -> bool
+    {
+        return true;
     }
 } // namespace ionengine::tools::editor

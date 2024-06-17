@@ -1,8 +1,16 @@
 <template>
-    <div class="tabpan-container">
+    <div class="tabpan-container" :id="id">
         <slot></slot>
     </div>
 </template>
+
+<script>
+export default {
+    props: {
+        id: String
+    }
+}
+</script>
 
 <style>
 .tabpan-container {

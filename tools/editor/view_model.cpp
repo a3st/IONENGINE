@@ -7,35 +7,20 @@
 #include "precompiled.h"
 #include <base64pp/base64pp.h>
 
-#include "shader_graph/components/convert.hpp"
-#include "shader_graph/components/input.hpp"
-#include "shader_graph/components/math.hpp"
-#include "shader_graph/components/output.hpp"
-#include "shader_graph/components/texture.hpp"
-
-#include "shader_graph/shader_graph.hpp"
-
 namespace ionengine::tools::editor
 {
     ViewModel::ViewModel(libwebview::App* app) : Engine(nullptr), app(app), assetTree("../assets")
     {
-        componentRegistry.registerComponent<Input_NodeComponent>();
-        componentRegistry.registerComponent<PostProcessOutput_NodeComponent>();
-        componentRegistry.registerComponent<Sampler2D_NodeComponent>();
-        componentRegistry.registerComponent<Constant_Color_NodeComponent>();
-        componentRegistry.registerComponent<Constant_Float_NodeComponent>();
-        componentRegistry.registerComponent<Join_Float4_NodeComponent>();
-        componentRegistry.registerComponent<Split_Float4_NodeComponent>();
-        componentRegistry.registerComponent<Split_Float3_NodeComponent>();
+        app->bind("getAssetTree", [this]() -> std::string { return this->getAssetTree(); });
+        app->bind("assetBrowserCreateFile",
+                  [this](std::string fileData) -> std::string { return this->assetBrowserCreateFile(fileData); });
 
         app->bind("addContextItems", [this]() -> std::string { return this->addContextItems(); });
         app->bind("addResourceTypes", [this]() -> std::string { return this->addResourceTypes(); });
-        app->bind("addShaderDomains", [this]() -> std::string { return this->addShaderDomains(); });
+        // app->bind("addShaderDomains", [this]() -> std::string { return this->addShaderDomains(); });
         app->bind("requestPreviewImage", [this]() -> std::string { return this->requestPreviewImage(); });
         app->bind("compileShader",
                   [this](std::string sceneData) -> std::string { return this->compileShader(sceneData); });
-
-        app->bind("getAssetTree", [this]() -> std::string { return this->getAssetTree(); });
     }
 
     auto ViewModel::init() -> void
@@ -71,7 +56,6 @@ namespace ionengine::tools::editor
     auto ViewModel::getAssetTree() -> std::string
     {
         std::stringstream stream;
-
         auto internalLoop = [](this auto const& internalLoop, AssetStructInfo const* curStruct,
                                std::stringstream& stream) -> void {
             std::string assetType;
@@ -90,7 +74,7 @@ namespace ionengine::tools::editor
                     {
                         asset::Header header = std::move(result.value());
                         if (std::memcmp(header.fileType.data(), ShaderGraphFileType.data(),
-                                        ShaderGraphFileType.size()) != 0)
+                                        ShaderGraphFileType.size()) == 0)
                         {
                             assetType = "asset/shadergraph";
                         }
@@ -111,7 +95,8 @@ namespace ionengine::tools::editor
                 }
             }
 
-            stream << "{\"name\":\"" << curStruct->name << "\",\"type\":\"" << assetType << "\"";
+            stream << "{\"name\":\"" << curStruct->name << "\",\"type\":\"" << assetType << "\",\"path\":\""
+                   << curStruct->path.generic_string() << "\"";
 
             if (isFolder)
             {
@@ -135,6 +120,58 @@ namespace ionengine::tools::editor
         jsonData = jsonData.substr(0, jsonData.size() - 1);
 
         return std::regex_replace(jsonData, jsonCommaRemove, "]");
+    }
+
+    auto ViewModel::assetBrowserCreateFile(std::string fileData) -> std::string
+    {
+        simdjson::ondemand::parser parser;
+        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
+
+        std::string_view filePath;
+        auto error = document["path"].get_string().get(filePath);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        std::string_view fileName;
+        error = document["name"].get_string().get(fileName);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        std::string_view fileType;
+        error = document["type"].get_string().get(fileType);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        std::basic_ofstream<uint8_t> stream;
+        if (assetTree.createFile(
+                std::filesystem::path(filePath) / std::filesystem::path(std::string(fileName) + ".asset"), stream))
+        {
+            if (fileType.compare("asset/shadergraph") == 0)
+            {
+                shaderGraphEditor.create();
+                ShaderGraphData graphData = std::move(shaderGraphEditor.dump());
+                if (core::Serializable<ShaderGraphData>::serialize(graphData, stream) > 0)
+                {
+
+                }
+                else
+                {
+                    return "{\"error\":0}";
+                }
+            }
+
+            return "{}";
+        }
+        else
+        {
+            return "{\"error\":0}";
+        }
     }
 
     auto ViewModel::addContextItems() -> std::string
@@ -237,7 +274,7 @@ namespace ionengine::tools::editor
         return stream.str();
     }
 
-    auto ViewModel::addShaderDomains() -> std::string
+    /*auto ViewModel::addShaderDomains() -> std::string
     {
         auto components = componentRegistry.getComponents() | std::views::filter([](auto const& element) {
                               return element.second->isFixed() && element.second->getName().compare("Output Node") == 0;
@@ -315,7 +352,7 @@ namespace ionengine::tools::editor
         stream << "],\"inputNode\":" << dumpNodeComponent(*componentRegistry.getComponentByType<Input_NodeComponent>())
                << "}";
         return stream.str();
-    }
+    }*/
 
     auto ViewModel::compileShader(std::string sceneData) -> std::string
     {

@@ -9,6 +9,7 @@ import $ from 'jquery'
 import TabliComponent from '../components/tabli.vue';
 
 export default {
+    emits: ['remove'],
     props: {
         type: String
     },
@@ -17,34 +18,60 @@ export default {
             targets: []
         }
     },
+    updated() {
+        this.updateTabSlots();
+    },
     mounted() {
-        this.$slots.default().forEach((element, index) => {
-            if(element.type == TabliComponent) {
-                this.targets.push(element.props.target);
+        this.updateTabSlots();
+    },
+    methods: {
+        updateTabSlots() {
+            $(this.$el).children().each((index, element) => {
+                if(element.__vueParentComponent.type == TabliComponent) {
+                    this.targets.push(element.__vueParentComponent.props.target);
 
-                $(this.$el).children().eq(index).bind('click', e => {
-                    for(const target of Object.values(this.targets)) {
-                        $(`#${target}`).css('display', 'none');
+                    element.addEventListener('click', e => {
+                        for(const target of Object.values(this.targets)) {
+                            $(`#${target}`).css('display', 'none');
+                        }
+
+                        $(this.$el).find('.btn-tab').removeClass('active');
+
+                        $(e.target)
+                            .closest('button.btn-tab')
+                            .addClass('active');
+
+                        $(`#${element.__vueParentComponent.props.target}`).css('display', 'flex');
+                    });
+
+                    element.__vueParentComponent.emitsOptions.remove = e => {
+                        this.$emit('remove', element);
+                    };
+
+                    if(element.__vueParentComponent.props.default) {
+                        $(element)
+                            .closest('button.btn-tab')
+                            .addClass('active');
+
+                        $(`#${element.__vueParentComponent.props.target}`).css('display', 'flex');
                     }
-
-                    $(this.$el).find('.btn-tab').removeClass('active');
-            
-                    $(e.target)
-                        .closest('button.btn-tab')
-                        .addClass('active');
-
-                    $(`#${element.props.target}`).css('display', 'flex');
-                });
-
-                if('default' in element.props) {
-                    $(this.$el).children().eq(index)
-                        .closest('button.btn-tab')
-                        .addClass('active');
-
-                    $(`#${element.props.target}`).css('display', 'flex');
                 }
+            });
+        },
+        setActiveTabByIndex(index) {
+            for(const target of Object.values(this.targets)) {
+                $(`#${target}`).css('display', 'none');
             }
-        });
+
+            $(this.$el).find('.btn-tab').removeClass('active');
+
+            const target = $(this.$el).children().eq(index);
+            target
+                .closest('button.btn-tab')
+                .addClass('active');
+
+            $(`#${target.get(0).__vueParentComponent.props.target}`).css('display', 'flex');
+        }
     }
 }
 </script>

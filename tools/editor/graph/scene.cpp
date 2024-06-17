@@ -33,6 +33,16 @@ namespace ionengine::tools::editor
         return createdConnection;
     }
 
+    auto Scene::getNodes() -> std::span<core::ref_ptr<Node>>
+    {
+        return nodes;
+    }
+
+    auto Scene::getConnections() -> std::span<core::ref_ptr<Connection>>
+    {
+        return connections;
+    }
+
     auto Scene::bfs(std::stringstream& shaderCodeStream) -> void
     {
         std::stack<core::ref_ptr<Node>> remainingNodes;

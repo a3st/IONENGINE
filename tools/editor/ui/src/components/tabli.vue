@@ -2,22 +2,28 @@
     <button class="btn-tab">
         <div class="tab-inline-text-container">
             <img v-bind:src="icon" width="16" height="16" />
-                <span>{{ title }}</span>
-                <button class="btn-icon">
-                    <img v-if="!fixed" src="images/xmark.svg" width="12" height="12" />
-                </button>
+            <span>{{ title }}</span>
+            <button v-if="!fixed" class="btn-icon" @click="onRemoveClick($event)">
+                <img src="images/xmark.svg" width="12" height="12" />
+            </button>
         </div>
     </button>
 </template>
 
 <script>
 export default {
+    emits: ['remove'],
     props: {
         title: String,
         icon: String,
         target: String,
         fixed: Boolean,
         default: Boolean
+    },
+    methods: {
+        onRemoveClick(e) {
+            this.$emit('remove', e);
+        }
     }
 }
 </script>

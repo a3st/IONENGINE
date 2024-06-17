@@ -19,6 +19,8 @@ namespace ionengine::tools::editor
 
         uint64_t nodeID;
         std::string nodeName;
+        int32_t posX;
+        int32_t posY;
         std::vector<SocketInfo> inputs;
         std::vector<SocketInfo> outputs;
         std::unordered_map<std::string, std::string> options;

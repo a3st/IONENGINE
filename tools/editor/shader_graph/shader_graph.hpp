@@ -3,6 +3,7 @@
 #pragma once
 
 #include "core/serializable.hpp"
+#include "graph/scene.hpp"
 
 namespace ionengine::tools::editor
 {
@@ -38,6 +39,28 @@ namespace ionengine::tools::editor
 
         auto serialize(ShaderGraphData const& object, std::basic_ostream<uint8_t>& stream) -> size_t;
     } // namespace internal
+
+    class ShaderGraphEditor
+    {
+      public:
+        ShaderGraphEditor();
+
+        auto create() -> void;
+
+        auto loadFromFile(std::filesystem::path const& filePath) -> bool;
+
+        auto loadFromBuffer(std::span<uint8_t const> const bufferData) -> bool;
+
+        auto dump() -> ShaderGraphData;
+
+        auto getScene() -> core::ref_ptr<Scene>;
+
+        auto getComponentRegistry() -> editor::ComponentRegistry&;
+
+      private:
+        editor::ComponentRegistry componentRegistry;
+        core::ref_ptr<Scene> sceneGraph;
+    };
 } // namespace ionengine::tools::editor
 
 namespace ionengine::core

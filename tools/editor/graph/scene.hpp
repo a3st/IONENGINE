@@ -28,6 +28,10 @@ namespace ionengine::tools::editor
 
         auto bfs(std::stringstream& shaderCodeStream) -> void;
 
+        auto getNodes() -> std::span<core::ref_ptr<Node>>;
+
+        auto getConnections() -> std::span<core::ref_ptr<Connection>>;
+
       private:
         ComponentRegistry* componentRegistry;
 

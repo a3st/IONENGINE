@@ -31,7 +31,7 @@ namespace ionengine
         };
     } // namespace asset
 
-    inline auto getAssetHeader(std::basic_ifstream<uint8_t>& stream) -> std::optional<asset::Header>
+    inline auto getAssetHeader(std::basic_istream<uint8_t>& stream) -> std::optional<asset::Header>
     {
         asset::Header header;
         stream.read((uint8_t*)&header, sizeof(asset::Header));

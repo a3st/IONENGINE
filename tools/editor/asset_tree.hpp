@@ -26,9 +26,12 @@ namespace ionengine::tools::editor
 
         auto fetch() -> AssetStructInfo const&;
 
+        auto createFile(std::filesystem::path const& filePath, std::basic_ofstream<uint8_t>& stream) -> bool;
+
+        auto deleteFile(std::filesystem::path const& filePath) -> bool;
+
       private:
         std::unique_ptr<AssetStructInfo> rootStruct;
         std::filesystem::path rootPath;
     };
-
 } // namespace ionengine::tools::editor

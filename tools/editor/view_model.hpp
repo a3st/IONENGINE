@@ -7,6 +7,7 @@
 #include "graph/scene.hpp"
 #include <webview.hpp>
 #include "asset_tree.hpp"
+#include "shader_graph/shader_graph.hpp"
 
 namespace ionengine::tools::editor
 {
@@ -27,6 +28,8 @@ namespace ionengine::tools::editor
 
         auto getAssetTree() -> std::string;
 
+        auto assetBrowserCreateFile(std::string fileData) -> std::string;
+
       protected:
         auto init() -> void override;
 
@@ -36,6 +39,9 @@ namespace ionengine::tools::editor
 
       private:
         libwebview::App* app;
+
+        ShaderGraphEditor shaderGraphEditor;
+
         editor::ComponentRegistry componentRegistry;
 
         core::ref_ptr<TextureAsset> previewImage;

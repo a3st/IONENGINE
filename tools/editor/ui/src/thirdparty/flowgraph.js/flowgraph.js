@@ -124,7 +124,7 @@ export default class FlowGraph {
     }
 
     #renderContextMenu() {
-        let contextMenuElement = $('.flowgraph-context-main')
+        const contextMenuElement = $('.flowgraph-context-main')
             .empty();
 
         const canvasMatrix = $('.flowgraph-canvas')
@@ -164,7 +164,6 @@ export default class FlowGraph {
                             .css('display', 'none');
                     });
             }
-            contextMenuElement.append(`</div>`);
         }
     }
 

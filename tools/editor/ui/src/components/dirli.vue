@@ -17,14 +17,14 @@
 
         <div v-if="isFolder" class="dirli-body-container" v-show="shown">
             <dirli v-for="(child, index) in filteredFolderItems" :item="child" :key="index" :empty="child.isFolder" 
-                @open="onChildFolderOpen($event)" @click="onChildFolderClick($event)"></dirli>
+                @click="onFolderOpenClick($event)"></dirli>
         </div>
     </div>
 </template>
 
 <script>
 export default {
-    emits: ['open', 'click'],
+    emits: ['click'],
     props: {
         empty: Boolean,
         item: Object
@@ -45,16 +45,9 @@ export default {
     methods: {
         onFolderOpenClick(e) {
             this.$emit('click', e);
-            this.$emit('open', this);
         },
         onFolderExpandClick(e) {
             this.shown = !this.shown;
-        },
-        onChildFolderOpen(e) {
-            this.$emit('open', e);
-        },
-        onChildFolderClick(e) {
-            this.$emit('click', e)
         }
     }
 }

@@ -5,6 +5,12 @@
 #include "precompiled.h"
 #include <simdjson.h>
 
+#include "shader_graph/components/convert.hpp"
+#include "shader_graph/components/input.hpp"
+#include "shader_graph/components/math.hpp"
+#include "shader_graph/components/output.hpp"
+#include "shader_graph/components/texture.hpp"
+
 namespace ionengine::tools::editor
 {
     auto readJsonChunkData(ShaderGraphData& object, std::vector<uint8_t>& data) -> bool
@@ -192,8 +198,24 @@ namespace ionengine::tools::editor
             stream << "}}";
             isFirst = false;
         }
+        stream << "],\"connections\":[";
 
+        isFirst = true;
+        for (auto const& connection : object.connections)
+        {
+            if (!isFirst)
+            {
+                stream << ",";
+            }
+
+            stream << "{\"id\":" << connection.connectionID << ",\"source\":" << connection.source
+                   << ",\"out\":" << connection.out << ",\"dest\":" << connection.dest << ",\"in\":" << connection.in
+                   << "}";
+
+            isFirst = false;
+        }
         stream << "]}";
+
         return stream.str();
     }
 
@@ -246,4 +268,51 @@ namespace ionengine::tools::editor
             return offset;
         }
     } // namespace internal
+
+    ShaderGraphEditor::ShaderGraphEditor()
+    {
+        componentRegistry.registerComponent<Input_NodeComponent>();
+        componentRegistry.registerComponent<PostProcessOutput_NodeComponent>();
+        componentRegistry.registerComponent<Sampler2D_NodeComponent>();
+        componentRegistry.registerComponent<Constant_Color_NodeComponent>();
+        componentRegistry.registerComponent<Constant_Float_NodeComponent>();
+        componentRegistry.registerComponent<Join_Float4_NodeComponent>();
+        componentRegistry.registerComponent<Split_Float4_NodeComponent>();
+        componentRegistry.registerComponent<Split_Float3_NodeComponent>();
+    }
+
+    auto ShaderGraphEditor::create() -> void
+    {
+        sceneGraph = core::make_ref<Scene>(componentRegistry);
+    }
+
+    auto ShaderGraphEditor::loadFromFile(std::filesystem::path const& filePath) -> bool
+    {
+        return true;
+    }
+
+    auto ShaderGraphEditor::loadFromBuffer(std::span<uint8_t const> const bufferData) -> bool
+    {
+        return true;
+    }
+
+    auto ShaderGraphEditor::getScene() -> core::ref_ptr<Scene>
+    {
+        return sceneGraph;
+    }
+
+    auto ShaderGraphEditor::getComponentRegistry() -> editor::ComponentRegistry&
+    {
+        return componentRegistry;
+    }
+
+    auto ShaderGraphEditor::dump() -> ShaderGraphData
+    {
+        ShaderGraphData shaderGraph = {};
+
+        for (auto const& node : sceneGraph->getNodes())
+        {
+        }
+        return shaderGraph;
+    }
 } // namespace ionengine::tools::editor
