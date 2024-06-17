@@ -30,7 +30,7 @@ export default {
                 if(element.__vueParentComponent.type == TabliComponent) {
                     this.targets.push(element.__vueParentComponent.props.target);
 
-                    element.addEventListener('click', e => {
+                    element.__vueParentComponent.emitsOptions.select = e => {
                         for(const target of Object.values(this.targets)) {
                             $(`#${target}`).css('display', 'none');
                         }
@@ -42,7 +42,7 @@ export default {
                             .addClass('active');
 
                         $(`#${element.__vueParentComponent.props.target}`).css('display', 'flex');
-                    });
+                    };
 
                     element.__vueParentComponent.emitsOptions.remove = e => {
                         this.$emit('remove', element);

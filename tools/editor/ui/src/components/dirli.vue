@@ -1,6 +1,6 @@
 <template>
     <div class="dirli-container">
-        <div class="dirli-header-container">
+        <div class="dirli-header-container" @mousedown="onFolderOpenClick($event)">
             <button v-if="isFolder" class="btn-icon" @click="onFolderExpandClick($event)">
                 <img v-bind:src="shown ? 'images/angle-up.svg' : 'images/angle-down.svg'" 
                     width="12" height="12" />
@@ -8,7 +8,7 @@
 
             <div v-else style="width: 24px;"></div>
 
-            <button class="btn-icon fixed" @click="onFolderOpenClick($event)">
+            <button class="btn-icon fixed">
                 <img v-bind:src="shown ? 'images/folder-open.svg' : 'images/folder.svg'" 
                     width="16" height="16" />
                 <span>{{ item.name }}</span>

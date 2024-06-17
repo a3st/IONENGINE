@@ -256,23 +256,30 @@ export default {
         onAssetBrowserOpenFile(e) {
             switch(e.type) {
                 case 'asset/shadergraph': {
-                    const size = this.mainWorkspaceTabs.push({
-                        id: `${this.numMainTabs}`,
-                        title: e.name, 
-                        icon: 'images/diagram-project.svg',
-                        target: `tab-mainWorkspace-${this.numMainTabs}`,
-                        component: 'sgeditor'
-                    });
-
-                    this.$nextTick(() => {
+                    const index = this.mainWorkspaceTabs.findIndex(x => x.path == e.path);
+                    if(index != -1) {
                         $(this.$refs.mainWorkspace.$el).find('.tabgr-container').get(0)
-                            .__vueParentComponent.ctx.setActiveTabByIndex(size - 1);
+                            .__vueParentComponent.ctx.setActiveTabByIndex(index);
+                    } else {
+                        const size = this.mainWorkspaceTabs.push({
+                            id: `${this.numMainTabs}`,
+                            title: e.name, 
+                            icon: 'images/diagram-project.svg',
+                            target: `tab-mainWorkspace-${this.numMainTabs}`,
+                            component: 'sgeditor',
+                            path: e.path
+                        });
 
-                        $(`#tab-mainWorkspace-${this.numMainTabs}`).children().get(0)
-                            .__vueParentComponent.ctx.$forceUpdate();
+                        this.$nextTick(() => {
+                            $(this.$refs.mainWorkspace.$el).find('.tabgr-container').get(0)
+                                .__vueParentComponent.ctx.setActiveTabByIndex(size - 1);
 
-                        this.numMainTabs++;
-                    });
+                            $(`#tab-mainWorkspace-${this.numMainTabs}`).children().get(0)
+                                .__vueParentComponent.ctx.$forceUpdate();
+
+                            this.numMainTabs++;
+                        });
+                    }
                     break;
                 }
             }
@@ -280,6 +287,11 @@ export default {
         onMainWorkspaceTabRemove(e) {
             const index = this.mainWorkspaceTabs.findIndex(x => x.target == e.__vueParentComponent.props.target);
             this.mainWorkspaceTabs.splice(index, 1);
+
+            if(this.mainWorkspaceTabs.length > 0) {
+                $(this.$refs.mainWorkspace.$el).find('.tabgr-container').get(0)
+                    .__vueParentComponent.ctx.setActiveTabByIndex(index == 0 ? 0 : index - 1);
+            }
         }
     }
 }

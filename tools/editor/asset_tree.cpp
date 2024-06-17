@@ -10,6 +10,7 @@ namespace ionengine::tools::editor
         rootStruct = std::make_unique<AssetStructInfo>();
         rootStruct->name = rootPath.filename().generic_string();
         rootStruct->type = AssetType::Folder;
+        rootStruct->path = rootPath;
     }
 
     auto AssetTree::fetch() -> AssetStructInfo const&
@@ -33,7 +34,7 @@ namespace ionengine::tools::editor
                 else
                 {
                     auto assetStruct = std::make_unique<AssetStructInfo>();
-                    assetStruct->name = dirEntry.path().filename().generic_string();
+                    assetStruct->name = dirEntry.path().stem().generic_string();
                     assetStruct->path = dirEntry.path();
 
                     if (dirEntry.path().extension().compare(".asset") == 0)

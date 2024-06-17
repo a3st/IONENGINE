@@ -1,5 +1,5 @@
 <template>
-    <button class="btn-tab">
+    <button class="btn-tab" @click="onSelectClick($event)">
         <div class="tab-inline-text-container">
             <img v-bind:src="icon" width="16" height="16" />
             <span>{{ title }}</span>
@@ -12,7 +12,7 @@
 
 <script>
 export default {
-    emits: ['remove'],
+    emits: ['select', 'remove'],
     props: {
         title: String,
         icon: String,
@@ -23,6 +23,9 @@ export default {
     methods: {
         onRemoveClick(e) {
             this.$emit('remove', e);
+        },
+        onSelectClick(e) {
+            this.$emit('select', e);
         }
     }
 }

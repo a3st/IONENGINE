@@ -16,7 +16,7 @@
                         <span>{{ basePath }}</span>
                     </button>
 
-                    <div v-for="(path, index) in nextPaths" style="display: flex; flex-direction: row; align-items: center; gap: 5px;">
+                    <div v-for="(path, index) in nextPaths" class="abrowser-btn-path-container">
                         <img src="images/angle-down.svg" width="12" height="12" style="transform: rotateZ(-90deg);" />
 
                         <button class="btn-text" @click="changeDirPathByIndex(index + 1)">
@@ -27,7 +27,10 @@
 
                 <div class="abrowser-asset-container">
                     <asset v-for="item in curFolderItems" :name="item.name" :type="item.type"
-                        @click="onAssetClick($event, item)" @rename="onAssetRename($event, item)"></asset>
+                        @click="onAssetClick($event, item)" @dblclick="onAssetDblClick($event, item)" @rename="onAssetRename($event, item)"></asset>
+
+                    <asset ref="temporaryAsset" v-if="temporaryAsset.show" :name="temporaryAsset.name" :type="temporaryAsset.type"
+                        @rename="onAssetRename($event, null)"></asset>
                 </div>
             </div>
         </dynpan>
@@ -35,7 +38,6 @@
 </template>
 
 <script>
-import { createApp } from 'vue';
 import $ from 'jquery';
 import contextMenu from '../thirdparty/context.js/context';
 
@@ -64,11 +66,13 @@ export default {
         return {
             dirPaths: [],
             curFolderItems: {},
-            folderItems: {}
+            folderItems: {},
+            temporaryAsset: {
+                show: false,
+                name: "NewFile",
+                type: "file/unknown"
+            }
         }
-    },
-    mounted() {
-
     },
     methods: {
         open(folderItems) {
@@ -79,14 +83,25 @@ export default {
         onFolderClick(e) {
             this.curFolderItems = e.target.__vueParentComponent.props.item.childrens;
 
-            let currentTarget = $(e.target).closest('.dirli-container');
-            
-            this.dirPaths.splice(0, this.dirPaths.length);            
-            this.dirPaths.unshift($(currentTarget).find('button').children('span').html());
+            const dirPath = e.target.__vueParentComponent.props.item.path;
+            const relativePath = dirPath.substring(this.folderItems.path.length + 1, dirPath.length);
 
-            while(!currentTarget.parent().hasClass('abrowser-folder-struct-container')) {
-                currentTarget = currentTarget.parent().closest('.dirli-container');
-                this.dirPaths.unshift($(currentTarget).find('button').children('span').html());
+            if(relativePath.length > 0) {
+                this.dirPaths.splice(1, this.dirPaths.length - 1);
+                this.dirPaths.push(relativePath);
+            }
+        },
+        onAssetDblClick(e, item) {
+            switch(item.type) {
+                case 'folder': {
+                    this.curFolderItems = item.childrens;
+                    this.dirPaths.push(item.name);
+                    break;
+                }
+                default: {
+                    this.$emit('open', item);
+                    break;
+                }
             }
         },
         onAssetClick(e, item) {
@@ -164,21 +179,15 @@ export default {
                         break;
                     }
                 }
-            } else {
-                switch(item.type) {
-                    case 'folder': {
-                        //this.curFolderItems = item.childrens;
-                        //this.dirPaths.push(item.name);
-                        break;
-                    }
-                    default: {
-                        break;
-                    }
-                }
             }
         },
         onAssetRename(e, item) {
-            item.name = e;
+            if(this.temporaryAsset.show) {
+                this.temporaryAsset.show = false;
+                this.temporaryAsset.type = 'file/unknown';
+            } else {
+                item.name = e;
+            }
         },
         onAssetBrowserMouseDown(e) {
             if (e.which == 3) {
@@ -190,25 +199,20 @@ export default {
                                 name: "New Shader Graph",
                                 shortcut: null,
                                 action: () => {
-                                    const mountElement = $('.abrowser-asset-container')
-                                        .append('<div></div>')
-                                        .children()
-                                        .last()
-                                        .get(0);
-
-                                    const app = createApp(AssetComponent, { 
-                                        name: 'NewFile', 
-                                        type: 'asset/shadergraph' 
-                                    }).mount(mountElement);
+                                    this.temporaryAsset.show = true;
+                                    this.temporaryAsset.type = 'asset/shadergraph';
+                                    this.temporaryAsset.name = 'NewFile';
 
                                     webview.invoke('assetBrowserCreateFile', 
                                         { 
                                             'path': this.dirPaths.join('/'), 
-                                            'name': 'NewFile',
-                                            'type': 'asset/shadergraph'
+                                            'name': this.temporaryAsset.name,
+                                            'type': this.temporaryAsset.type
                                         });
 
-                                    app.editName();
+                                    this.$nextTick(() => {
+                                        this.$refs.temporaryAsset.editName();
+                                    });
                                 }
                             }
                         ]
@@ -267,6 +271,13 @@ export default {
 .abrowser-folder-struct-container {
     display: flex; 
     flex-direction: column;
+    gap: 5px;
+}
+
+.abrowser-btn-path-container {
+    display: flex; 
+    flex-direction: row; 
+    align-items: center; 
     gap: 5px;
 }
 </style>
