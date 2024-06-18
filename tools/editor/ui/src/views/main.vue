@@ -4,20 +4,21 @@
     <dynview ref="mainView" @resize="onDynviewResize">
         <dyngr type="row">
             <dyngr type="col">
-                <dynpan ref="mainWorkspace">
+                <dynpan>
                     <div class="pan-wrapper">
-                        <tabgr @remove="onMainWorkspaceTabRemove">
-                            <tabli v-for="tab in mainWorkspaceTabs" :title="tab.title" :icon="tab.icon" :target="tab.target"></tabli>
+                        <tabgr @remove="onTabRemove">
+                            <tabli v-for="tab in tabs.workspace" :title="tab.title" :icon="tab.icon" :target="tab.target" 
+                                :fixed="tab.fixed" :default="tab.default"></tabli>
                         </tabgr>
 
-                        <tabpan v-for="tab in mainWorkspaceTabs" :id="tab.target">
+                        <tabpan v-for="tab in tabs.workspace" :id="tab.target">
                             <component :is="tab.component"></component>
                         </tabpan>
                     </div>
                 </dynpan>
                 <dynpan>
                     <div class="pan-wrapper">
-                        <tabgr>
+                        <tabgr @remove="onTabRemove">
                             <tabli title="Asset Browser" icon="images/folder-tree.svg" target="tab-asset-browser" fixed default></tabli>
                         </tabgr>
 
@@ -33,25 +34,26 @@
                 </dynpan>
             </dyngr>
             <dyngr type="col">
-                <dynpan ref="rightUpper">
+                <dynpan>
                     <div class="pan-wrapper">
-                        <tabgr>
-                            <tabli v-for="tab in rightUpperTabs" :title="tab.title" :icon="tab.icon" :target="tab.target" 
+                        <tabgr @remove="onTabRemove">
+                            <tabli v-for="tab in tabs.rightUpper" :title="tab.title" :icon="tab.icon" :target="tab.target" 
                                 :fixed="tab.fixed" :default="tab.default"></tabli>
                         </tabgr>
 
-                        <tabpan v-for="tab in rightUpperTabs" :id="tab.target">
+                        <tabpan v-for="tab in tabs.rightUpper" :id="tab.target">
                             <component :is="tab.component"></component>
                         </tabpan>
                     </div>
                 </dynpan>
-                <dynpan ref="rightLower">
+                <dynpan>
                     <div class="pan-wrapper">
-                        <tabgr>
-                            <tabli v-for="tab in rightLowerTabs" :title="tab.title" :icon="tab.icon" :target="tab.target"></tabli>
+                        <tabgr @remove="onTabRemove">
+                            <tabli v-for="tab in tabs.rightLower" :title="tab.title" :icon="tab.icon" :target="tab.target" 
+                                :fixed="tab.fixed" :default="tab.default"></tabli>
                         </tabgr>
 
-                        <tabpan v-for="tab in rightLowerTabs" :id="tab.target">
+                        <tabpan v-for="tab in tabs.rightLower" :id="tab.target">
                             <component :is="tab.component" v-bind="tab.props"></component>
                         </tabpan>
                     </div>
@@ -103,7 +105,8 @@ export default {
     },
     data() {
         return {
-            /*graph: null,
+            /*
+            graph: null,
             resourceNodeId: -1,
             resources: [],
             resourceTypes: [],
@@ -113,12 +116,12 @@ export default {
             shaderDomain: -1,
             shaderDomainNodeId: -1,
             */
-            mainWorkspaceTabs: [],
-            numMainWorkspaceTabs: 0,
-            rightUpperTabs: [],
-            numRightUpperTabs: 0,
-            rightLowerTabs: [],
-            numRightLowerTabs: 0,
+            tabs: {
+                'workspace': [],
+                'rightUpper': [],
+                'rightLower': []
+            },
+            numTabs: 0,
             editorModule: 'worldscene'
         };
     },
@@ -179,61 +182,37 @@ export default {
             handler(value, oldValue) {
                 switch(value) {
                     case 'shadergraph': {
-                        let mainIndex = this.rightUpperTabs.push({
-                            id: `${this.numRightUpperTabs}`,
+                        this.addTabToView({
                             title: 'Viewport (Preview)', 
                             icon: 'images/video.svg',
-                            target: `tab-rightUpper-${this.numRightUpperTabs}`,
                             fixed: true,
                             default: true,
                             component: 'viewport'
-                        });
-                        
-                        this.$nextTick(() => {
-                            $(this.$refs.rightUpper.$el).find('.tabgr-container').get(0)
-                                .__vueParentComponent.ctx.setActiveTabByIndex(mainIndex - 1);
+                        }, "rightUpper", true);
 
-                            $(`#tab-rightUpper-${this.numRightUpperTabs}`).children().get(0)
-                                .__vueParentComponent.ctx.$forceUpdate();
 
-                            this.numRightUpperTabs++;
-                        });
-
-                        let rightIndex = this.rightLowerTabs.push({
-                            id: `${this.numRightLowerTabs}`,
+                        this.addTabToView({
                             title: 'Resources', 
                             icon: 'images/dice-d6.svg',
-                            target: `tab-rightLower-${this.numRightLowerTabs}`,
                             fixed: true,
                             default: true,
                             component: 'sgdetails',
                             props: {
                                 type: 'resources'
                             }
-                        });
-
-                        rightIndex = this.rightLowerTabs.push({
+                        }, "rightLower", true);
+                    
+                        this.addTabToView({
                             id: `${this.numRightLowerTabs}`,
                             title: 'Shader', 
                             icon: 'images/images.svg',
-                            target: `tab-rightLower-${this.numRightLowerTabs}`,
                             fixed: true,
                             default: false,
                             component: 'sgdetails',
                             props: {
                                 type: 'shader'
                             }
-                        });
-
-                        this.$nextTick(() => {
-                            $(this.$refs.rightLower.$el).find('.tabgr-container').get(0)
-                                .__vueParentComponent.ctx.setActiveTabByIndex(rightIndex - 1);
-
-                            $(`#tab-rightUpper-${this.numRightLowerTabs}`).children().get(0)
-                                .__vueParentComponent.ctx.$forceUpdate();
-
-                            this.numRightLowerTabs++;
-                        });
+                        }, "rightLower", false);
                         break;
                     }
                     default: {
@@ -283,10 +262,28 @@ export default {
     },
     methods: {
         onDynviewResize(e) {
-            for(const tab of Object.values(this.mainWorkspaceTabs)) {
-                $(`#tab-mainWorkspace-${tab.id}`).children().get(0)
-                    .__vueParentComponent.ctx.$forceUpdate();
+            for(const group of Object.values(this.tabs)) {
+                for(const tab of Object.values(group)) {
+                    $(`#${tab.target}`).children().get(0)
+                        .__vueParentComponent.ctx.$forceUpdate();
+                }
             }
+        },
+        addTabToView(tabOptions, group, activeAfter) {
+            const index = this.tabs[group].push(tabOptions) - 1;
+            this.tabs[group][index]['target'] = `tab-${this.numTabs}`;
+            this.numTabs++;
+                        
+            this.$nextTick(() => {
+                if(activeAfter) {
+                    $(`#${this.tabs[group][index].target}`).parent().find('.tabgr-container').get(0)
+                        .__vueParentComponent.ctx.setActiveTabByIndex(index);
+                }
+
+                $(`#${this.tabs[group][index].target}`).children().get(0)
+                    .__vueParentComponent.ctx.$forceUpdate();
+            });
+            return this.tabs[group][index].target;
         },
 
         /*onAddResourceClick(e) {
@@ -317,29 +314,22 @@ export default {
         onAssetBrowserOpenFile(e) {
             switch(e.type) {
                 case 'asset/shadergraph': {
-                    const index = this.mainWorkspaceTabs.findIndex(x => x.path == e.path);
+                    const index = this.tabs['workspace'].findIndex(x => x.path == e.path);
                     if(index != -1) {
-                        $(this.$refs.mainWorkspace.$el).find('.tabgr-container').get(0)
+                        $(`${this.tabs['workspace'][index].target}`).find('.tabgr-container').get(0)
                             .__vueParentComponent.ctx.setActiveTabByIndex(index);
                     } else {
-                        const size = this.mainWorkspaceTabs.push({
-                            id: `${this.numMainWorkspaceTabs}`,
+                        this.addTabToView({
                             title: e.name, 
                             icon: 'images/diagram-project.svg',
-                            target: `tab-mainWorkspace-${this.numMainWorkspaceTabs}`,
+                            fixed: false,
+                            default: false,
                             component: 'sgeditor',
+                            props: {
+                                type: 'shader'
+                            },
                             path: e.path
-                        });
-                        
-                        this.$nextTick(() => {
-                            $(this.$refs.mainWorkspace.$el).find('.tabgr-container').get(0)
-                                .__vueParentComponent.ctx.setActiveTabByIndex(size - 1);
-
-                            $(`#tab-mainWorkspace-${this.numMainWorkspaceTabs}`).children().get(0)
-                                .__vueParentComponent.ctx.$forceUpdate();
-
-                            this.numMainWorkspaceTabs++;
-                        });
+                        }, "workspace", true);
                     }
 
                     this.editorModule = 'shadergraph';
@@ -380,15 +370,31 @@ export default {
                     }
                 });
         },
-        onMainWorkspaceTabRemove(e) {
+        onTabRemove(e) {
             e.stopPropagation();
 
-            const index = this.mainWorkspaceTabs.findIndex(x => x.target == e.target.__vueParentComponent.proxy.$props.target);
-            this.mainWorkspaceTabs.splice(index, 1);
+            const findElementByTarget = target => {
+                for(const [groupName, groupData] of Object.entries(this.tabs)) {
+                    let i = 0;
+                    for(const tab of Object.values(groupData)) {
+                        if(tab.target == target) {
+                            return {
+                                group: groupName,
+                                index: i
+                            };
+                        }
+                        i++;
+                    }
+                }
+                return null;
+            };
 
-            if(this.mainWorkspaceTabs.length > 0) {
-                $(this.$refs.mainWorkspace.$el).find('.tabgr-container').get(0)
-                    .__vueParentComponent.proxy.setActiveTabByIndex(index == 0 ? 0 : index - 1);
+            const result = findElementByTarget(e.target.__vueParentComponent.proxy.$props.target);
+            this.tabs[result.group].splice(result.index, 1);
+
+            if(this.tabs[result.group].length > 0) {
+                $(`#${e.target.__vueParentComponent.proxy.$props.target}`).parent().find('.tabgr-container').get(0)
+                    .__vueParentComponent.proxy.setActiveTabByIndex(result.index == 0 ? 0 : result.index - 1);
             }
         }
     }
