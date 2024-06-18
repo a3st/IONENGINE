@@ -12,4 +12,13 @@ export default {
         }
     }
 }
+
+/*
+onFrameUpdate() {
+            webview.invoke('requestPreviewImage').then(data => {
+                this.previewImageSource = data;
+                window.requestAnimationFrame(this.onFrameUpdate);
+            });
+        },
+*/
 </script>

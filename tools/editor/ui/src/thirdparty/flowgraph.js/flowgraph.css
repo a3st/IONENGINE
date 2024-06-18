@@ -224,28 +224,3 @@
 .flowgraph-context-group button:hover {
     background-color: rgb(210, 210, 210);
 }
-
-/*
-.flowgraph-info-container {
-    display: block;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: 0;
-    width: 200px;
-    height: 60px;
-    user-select: none;
-}
-
-.flowgraph-info-main {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.flowgraph-info-main span {
-    color: white;
-    font-size: 22px;
-}
-*/

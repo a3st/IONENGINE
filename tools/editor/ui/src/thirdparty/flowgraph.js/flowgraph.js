@@ -37,7 +37,7 @@ export default class FlowGraph {
      * @param {*} callback - Function callback
      */
     addContextItem(group, item, callback) {
-        if (this.groups[group] == null) {
+        if (!(group in this.groups)) {
             this.groups[group] = [];
         }
         this.groups[group].push({ 'item': item, 'callback': callback });
@@ -47,11 +47,9 @@ export default class FlowGraph {
         $(this.rootNode)
             .css('width', width)
             .css('height', height);
-        $('.flowgraph-bg-container')
+        $(this.rootNode).find('.flowgraph-bg-container')
             .css('width', width)
             .css('height', height);
-        $('.flowgraph-info-container')
-            .css('transform', `translate(${this.rootNode.offsetWidth - 200}px, ${this.rootNode.offsetHeight - 60}px)`);
 
         this.width = width;
         this.height = height;
@@ -86,17 +84,6 @@ export default class FlowGraph {
         $(this.rootNode)
             .find('.flowgraph-bg-container')
             .get(0).style.setProperty('--grid-size', `${this.zoomScale * 40}px`);
-        
-        /*$(this.rootNode).append(`
-            <div class="flowgraph-info-container"
-                style="transform: translate(${this.rootNode.offsetWidth - 200}px, ${this.rootNode.offsetHeight - 60}px);">
-                
-                <div class="flowgraph-info-main">
-                    <span>X: ${0} Y: ${0}</span>
-                    <span>Zoom: ${this.zoomScale.toFixed(2)}</span>
-                </div>
-            </div>
-        `)*/
 
         this.rootNode.addEventListener('mousewheel', this.#zoomEventHandler.bind(this));
         this.rootNode.addEventListener('mousedown', event => {
@@ -124,17 +111,17 @@ export default class FlowGraph {
     }
 
     #renderContextMenu() {
-        const contextMenuElement = $('.flowgraph-context-main')
+        const contextMenuElement = $(this.rootNode).find('.flowgraph-context-main')
             .empty();
 
-        const canvasMatrix = $('.flowgraph-canvas')
+        const canvasMatrix = $(this.rootNode).find('.flowgraph-canvas')
             .css('transform')
             .match(/-?[\d\.]+/g);
 
         const posX = this.lastClientX + (-this.relativeCanvasX - Number(canvasMatrix[4]));
         const posY = this.lastClientY + (-this.relativeCanvasY - Number(canvasMatrix[5]));
 
-        const searchPattern = $('.flowgraph-context-search input').get(0).value;
+        const searchPattern = $(this.rootNode).find('.flowgraph-context-search input').get(0).value;
         let filteredGroups;
         if (searchPattern.length == 0) {
             filteredGroups = Object.entries(this.groups);
@@ -153,10 +140,10 @@ export default class FlowGraph {
                 .append(`<label>${group}</label>`)
                 .append(`<div class="flowgraph-context-group"></div>`);
 
-            let groupMenuElement = $('.flowgraph-context-group').last();
+            let groupMenuElement = $(this.rootNode).find('.flowgraph-context-group').last();
             for (const item of data) {
                 groupMenuElement.append(`<button>${item.item}</button>`);
-                $('.flowgraph-context-group button')
+                $(this.rootNode).find('.flowgraph-context-group button')
                     .last()
                     .bind('click', e => {
                         item.callback({"posX": posX, "posY": posY});
@@ -256,7 +243,7 @@ export default class FlowGraph {
                 const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
 
                 if (connection) {
-                    $(`#node_${destNode}_in_${inIndex}`)
+                    $(this.rootNode).find(`#node_${destNode}_in_${inIndex}`)
                         .removeClass('connected')
                         .get(0);
                 }
@@ -366,14 +353,14 @@ export default class FlowGraph {
                             const connections = Object.values(this.connections).filter(
                                 value => (value.source == this.connections[this.connectionsCache[connection.id]].source && value.out == this.connections[this.connectionsCache[connection.id]].out));
                             if (connections.length == 1) {
-                                $(`#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`)
+                                $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`)
                                     .removeClass('connected')
                                     .get(0);
                             }
 
                             this.#updateConnection(connection.id, sourceNode, outIndex, destNode, inIndex);
                         } else {
-                            $(`#node_${sourceNode}_out_${outIndex}`)
+                            $(this.rootNode).find(`#node_${sourceNode}_out_${outIndex}`)
                                 .removeClass('connected')
                                 .get(0);
                         }
@@ -386,7 +373,7 @@ export default class FlowGraph {
                             const connections = Object.values(this.connections).filter(
                                 value => (value.source == sourceNode && value.out == outIndex));
                             if (connections.length == 0) {
-                                $(`#node_${sourceNode}_out_${outIndex}`)
+                                $(this.rootNode).find(`#node_${sourceNode}_out_${outIndex}`)
                                     .removeClass('connected')
                                     .get(0);
                             }
@@ -398,7 +385,7 @@ export default class FlowGraph {
                     const connections = Object.values(this.connections).filter(
                         value => (value.source == sourceNode && value.out == outIndex));
                     if (connections.length == 0) {
-                        $(`#node_${sourceNode}_out_${outIndex}`)
+                        $(this.rootNode).find(`#node_${sourceNode}_out_${outIndex}`)
                             .removeClass('connected')
                             .get(0);
                     }
@@ -464,14 +451,6 @@ export default class FlowGraph {
                 $(this.rootNode)
                     .children('.flowgraph-canvas')
                     .css('transform', `translate(${posX}px, ${posY}px) scale(${this.zoomScale})`);
-
-                /*$('.flowgraph-info-main')
-                    .empty()
-                    .append(`
-                        <span>X: ${-this.relativeCanvasX - posX} Y: ${-this.relativeCanvasX - posY}</span>
-                        <span>Zoom: ${this.zoomScale.toFixed(2)}</span>
-                    `);
-                */
                 break;
             }
             case "node": {
@@ -491,16 +470,16 @@ export default class FlowGraph {
                     this.nodes[this.nodesCache[nodeId]].position = [posX - this.relativeCanvasX, posY - this.relativeCanvasY];
 
                     for (const [_, value] of Object.entries(connections)) {
-                        const sourceElement = $(`#node_${this.connections[this.connectionsCache[value.id]].source}_out_${this.connections[this.connectionsCache[value.id]].out}`).get(0);
-                        const sourceMatrix = $(`#node_${this.connections[this.connectionsCache[value.id]].source}`)
+                        const sourceElement = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[value.id]].source}_out_${this.connections[this.connectionsCache[value.id]].out}`).get(0);
+                        const sourceMatrix = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[value.id]].source}`)
                             .css('transform')
                             .match(/-?[\d\.]+/g);
 
                         const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
                         const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
 
-                        const destElement = $(`#node_${this.connections[this.connectionsCache[value.id]].dest}_in_${this.connections[this.connectionsCache[value.id]].in}`).get(0);
-                        const destMatrix = $(`#node_${this.connections[this.connectionsCache[value.id]].dest}`)
+                        const destElement = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[value.id]].dest}_in_${this.connections[this.connectionsCache[value.id]].in}`).get(0);
+                        const destMatrix = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[value.id]].dest}`)
                             .css('transform')
                             .match(/-?[\d\.]+/g);
 
@@ -532,8 +511,8 @@ export default class FlowGraph {
                     const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
 
                     if (connection) {
-                        const sourceElement = $(`#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`).get(0);
-                        const sourceMatrix = $(`#node_${this.connections[this.connectionsCache[connection.id]].source}`)
+                        const sourceElement = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`).get(0);
+                        const sourceMatrix = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connection.id]].source}`)
                             .css('transform')
                             .match(/-?[\d\.]+/g);
 
@@ -565,8 +544,8 @@ export default class FlowGraph {
 
                     const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
 
-                    const sourceElement = $(`#node_${sourceNode}_out_${outIndex}`).get(0);
-                    const sourceMatrix = $(`#node_${sourceNode}`)
+                    const sourceElement = $(this.rootNode).find(`#node_${sourceNode}_out_${outIndex}`).get(0);
+                    const sourceMatrix = $(this.rootNode).find(`#node_${sourceNode}`)
                         .css('transform')
                         .match(/-?[\d\.]+/g);
 
@@ -631,12 +610,12 @@ export default class FlowGraph {
         const connections = Object.values(this.connections).filter(
             value => (value.source == this.connections[this.connectionsCache[connectionId]].source && value.out == this.connections[this.connectionsCache[connectionId]].out));
         if (connections.length == 1) {
-            $(`#node_${this.connections[this.connectionsCache[connectionId]].source}_out_${this.connections[this.connectionsCache[connectionId]].out}`)
+            $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connectionId]].source}_out_${this.connections[this.connectionsCache[connectionId]].out}`)
                 .removeClass('connected')
                 .get(0);
         }
 
-        $(`#node_${this.connections[this.connectionsCache[connectionId]].dest}_in_${this.connections[this.connectionsCache[connectionId]].in}`)
+        $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connectionId]].dest}_in_${this.connections[this.connectionsCache[connectionId]].in}`)
             .removeClass('connected')
             .get(0);
 
@@ -670,7 +649,7 @@ export default class FlowGraph {
     }
 
     #addPreviewConnection(sourceNode, outIndex) {
-        $(`#node_${sourceNode}_out_${outIndex}`)
+        $(this.rootNode).find(`#node_${sourceNode}_out_${outIndex}`)
             .addClass('connected')
             .get(0);
 
@@ -700,20 +679,20 @@ export default class FlowGraph {
     }
 
     #updateConnection(connectionId, sourceNodeId, outIndex, destNodeId, inIndex) {
-        const sourceElement = $(`#node_${sourceNodeId}_out_${outIndex}`)
+        const sourceElement = $(this.rootNode).find(`#node_${sourceNodeId}_out_${outIndex}`)
             .addClass('connected')
             .get(0);
-        const sourceMatrix = $(`#node_${sourceNodeId}`)
+        const sourceMatrix = $(this.rootNode).find(`#node_${sourceNodeId}`)
             .css('transform')
             .match(/-?[\d\.]+/g);
 
         const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
         const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
 
-        const destElement = $(`#node_${destNodeId}_in_${inIndex}`)
+        const destElement = $(this.rootNode).find(`#node_${destNodeId}_in_${inIndex}`)
             .addClass('connected')
             .get(0);
-        const destMatrix = $(`#node_${destNodeId}`)
+        const destMatrix = $(this.rootNode).find(`#node_${destNodeId}`)
             .css('transform')
             .match(/-?[\d\.]+/g);
 
@@ -736,20 +715,20 @@ export default class FlowGraph {
             throw new TypeError("Cannot join different data types");
         }
 
-        const sourceElement = $(`#node_${sourceNodeId}_out_${outIndex}`)
+        const sourceElement = $(this.rootNode).find(`#node_${sourceNodeId}_out_${outIndex}`)
             .addClass('connected')
             .get(0);
-        const sourceMatrix = $(`#node_${sourceNodeId}`)
+        const sourceMatrix = $(this.rootNode).find(`#node_${sourceNodeId}`)
             .css('transform')
             .match(/-?[\d\.]+/g);
 
         const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
         const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
 
-        const destElement = $(`#node_${destNodeId}_in_${inIndex}`)
+        const destElement = $(this.rootNode).find(`#node_${destNodeId}_in_${inIndex}`)
             .addClass('connected')
             .get(0);
-        const destMatrix = $(`#node_${destNodeId}`)
+        const destMatrix = $(this.rootNode).find(`#node_${destNodeId}`)
             .css('transform')
             .match(/-?[\d\.]+/g);
 
@@ -798,7 +777,7 @@ export default class FlowGraph {
             this.removeConnection(value.id);
         }
 
-        $(`#node_${nodeId}`)
+        $(this.rootNode).find(`#node_${nodeId}`)
             .get(0)
             .remove();
 
@@ -932,7 +911,7 @@ export default class FlowGraph {
             </div>
         `);
 
-        $(`#node_${id}`).find(":input").on('change', e => { 
+        $(this.rootNode).find(`#node_${id}`).find(":input").on('change', e => { 
             let targetName = $(e.currentTarget).parent().children('span').text();
             targetName = targetName.substring(0, targetName.length - 1);
 
@@ -949,17 +928,17 @@ export default class FlowGraph {
 
         let nodeWidth = 110 + Math.min(1, outputs.length) * 22 * outputMaxLength + Math.min(1, inputs.length) * 22 * inputMaxLength;
 
-        let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
-            $(`#node_${id}`).find('.flowgraph-node-main').outerHeight();
+        let nodeHeight = $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
+            $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-main').outerHeight();
         if (expandHTML.length > 0) {
             nodeHeight += $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
         }
 
-        $(`#node_${id}`)
+        $(this.rootNode).find(`#node_${id}`)
             .css('width', `${nodeWidth}px`)
             .css('height', `${nodeHeight}px`);
 
-        $(`#node_${id}`).find('.flowgraph-expand-container').bind(
+        $(this.rootNode).find(`#node_${id}`).find('.flowgraph-expand-container').bind(
             'click',
             e => {
                 let hiddenContainer = $(`#node_${id}`).find('.flowgraph-hidden-container')
@@ -988,7 +967,7 @@ export default class FlowGraph {
                 }
             });
 
-        $(`#node_${id}`).css('transform', `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
+        $(this.rootNode).find(`#node_${id}`).css('transform', `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
 
         const size = this.nodes.push({
             "id": id,
@@ -1013,7 +992,7 @@ export default class FlowGraph {
             throw new Error("Node with this ID does not exist");
         }
 
-        $(`#node_${nodeId}`)
+        $(this.rootNode).find(`#node_${nodeId}`)
             .find(".flowgraph-node-header")
             .children('span')
             .html(title);
