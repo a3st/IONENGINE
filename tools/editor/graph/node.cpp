@@ -6,7 +6,7 @@
 namespace ionengine::tools::editor
 {
     Node::Node(std::string_view const nodeName, uint32_t const componentID)
-        : nodeName(nodeName), componentID(componentID)
+        : nodeName(nodeName), componentID(componentID), posX(0), posY(0)
     {
     }
 

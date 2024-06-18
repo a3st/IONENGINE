@@ -6,19 +6,19 @@
             <dyngr type="col">
                 <dynpan>
                     <div class="pan-wrapper">
-                        <tabgr @remove="onTabRemove">
+                        <tabgr @remove="onTabRemove" @select="onTabSelect">
                             <tabli v-for="tab in tabs.workspace" :title="tab.title" :icon="tab.icon" :target="tab.target" 
                                 :fixed="tab.fixed" :default="tab.default"></tabli>
                         </tabgr>
 
                         <tabpan v-for="tab in tabs.workspace" :id="tab.target">
-                            <component :is="tab.component"></component>
+                            <component :is="tab.component" v-bind="tab.props"></component>
                         </tabpan>
                     </div>
                 </dynpan>
                 <dynpan>
                     <div class="pan-wrapper">
-                        <tabgr @remove="onTabRemove">
+                        <tabgr @remove="onTabRemove" @select="onTabSelect">
                             <tabli title="Asset Browser" icon="images/folder-tree.svg" target="tab-asset-browser" fixed default></tabli>
                         </tabgr>
 
@@ -36,19 +36,19 @@
             <dyngr type="col">
                 <dynpan>
                     <div class="pan-wrapper">
-                        <tabgr @remove="onTabRemove">
+                        <tabgr @remove="onTabRemove" @select="onTabSelect">
                             <tabli v-for="tab in tabs.rightUpper" :title="tab.title" :icon="tab.icon" :target="tab.target" 
                                 :fixed="tab.fixed" :default="tab.default"></tabli>
                         </tabgr>
 
                         <tabpan v-for="tab in tabs.rightUpper" :id="tab.target">
-                            <component :is="tab.component"></component>
+                            <component :is="tab.component" v-bind="tab.props"></component>
                         </tabpan>
                     </div>
                 </dynpan>
                 <dynpan>
                     <div class="pan-wrapper">
-                        <tabgr @remove="onTabRemove">
+                        <tabgr @remove="onTabRemove" @select="onTabSelect">
                             <tabli v-for="tab in tabs.rightLower" :title="tab.title" :icon="tab.icon" :target="tab.target" 
                                 :fixed="tab.fixed" :default="tab.default"></tabli>
                         </tabgr>
@@ -66,7 +66,6 @@
 </template>
 
 <script>
-import { toRaw } from 'vue';
 import $ from 'jquery';
 
 import ToolbarComponent from '../components/toolbar.vue';
@@ -77,9 +76,6 @@ import DyngrComponent from '../components/dyngr.vue';
 import TabgrComponent from '../components/tabgr.vue';
 import TabpanComponent from '../components/tabpan.vue';
 import TabliComponent from '../components/tabli.vue';
-import OptextComponent from '../components/optext.vue';
-import OptliComponent from '../components/optli.vue';
-import OptgrComponent from '../components/optgr.vue';
 import ABrowserComponent from '../components/abrowser.vue';
 import SGEditorComponent from '../components/sgeditor.vue';
 import ViewportComponent from '../components/viewport.vue';
@@ -95,9 +91,6 @@ export default {
         'tabgr': TabgrComponent,
         'tabli': TabliComponent,
         'tabpan': TabpanComponent,
-        'optext': OptextComponent,
-        'optli': OptliComponent,
-        'optgr': OptgrComponent,
         'abrowser': ABrowserComponent,
         'sgeditor': SGEditorComponent,
         'viewport': ViewportComponent,
@@ -105,79 +98,22 @@ export default {
     },
     data() {
         return {
-            /*
-            graph: null,
-            resourceNodeId: -1,
-            resources: [],
-            resourceTypes: [],
-            shaderDomains: [],
-            domainNodes: [],
-            inputNode: {},
-            shaderDomain: -1,
-            shaderDomainNodeId: -1,
-            */
             tabs: {
-                'workspace': [],
-                'rightUpper': [],
-                'rightLower': []
+                workspace: [],
+                rightUpper: [],
+                rightLower: []
             },
             numTabs: 0,
-            editorModule: 'worldscene'
+            editorModule: 'worldscene',
+            tabFileLinks: {},
+            curTabSelect: {
+                workspace: null,
+                rightUpper: null,
+                rightLower: null
+            }
         };
     },
     watch: {
-        /*resources: {
-            handler(value, oldValue) {
-                let posX = 0;
-                let posY = 0;
-                if(this.resourceNodeId != -1) {
-                    [posX, posY] = toRaw(this.graph).getNode(this.resourceNodeId).position;
-                    toRaw(this.graph).removeNode(this.resourceNodeId);
-                    this.resourceNodeId = -1;
-                }
-
-                let outputsData = [];
-                for(const resource of Object.values(value)) {
-                    outputsData.push({
-                        "name": resource.name,
-                        "type": this.resourceTypes[resource.type]
-                    });
-                }
-                
-                if(outputsData.length > 0) {
-                    this.resourceNodeId = toRaw(this.graph).addNode(
-                        posX, posY, 
-                        this.inputNode.inputs, 
-                        outputsData, 
-                        this.inputNode.name, 
-                        this.inputNode.fixed, 
-                        "", 
-                        this.inputNode.userData);
-                }
-            },
-            deep: true
-        },
-        shaderDomain: {
-            handler(value, oldValue) {
-                let posX = 0;
-                let posY = 0;
-                if(this.shaderDomainNodeId != -1) {
-                    [posX, posY] = toRaw(this.graph).getNode(this.shaderDomainNodeId).position;
-                    toRaw(this.graph).removeNode(this.shaderDomainNodeId);
-                    this.shaderDomainNodeId = -1;
-                }
-                
-                const node = this.domainNodes[value];
-                this.shaderDomainNodeId = toRaw(this.graph).addNode(
-                    posX, posY, 
-                    node.inputs, 
-                    node.outputs, 
-                    node.name, 
-                    node.fixed, 
-                    "", 
-                    node.userData);
-            }
-        },*/
         editorModule: {
             handler(value, oldValue) {
                 switch(value) {
@@ -229,33 +165,6 @@ export default {
 
     },
     mounted() {
-        /*
-        webview.invoke('addContextItems').then(data => {
-            for (const node of Object.values(data.items)) {
-                graph.addContextItem(
-                    node.group,
-                    node.name,
-                    e => {
-                        graph.addNode(e.posX, e.posY, node.inputs, node.outputs, node.name, false, "", node.userData);
-                    }
-                );
-            }
-        });
-        webview.invoke('addResourceTypes').then(data => {
-            for(const resourceType of Object.values(data.types)) {  
-                this.resourceTypes.push(resourceType);
-            }
-        });
-        webview.invoke('addShaderDomains').then(data => {
-            for(const shaderDomain of Object.values(data.domains)) {
-                this.shaderDomains.push(shaderDomain.name);
-                this.domainNodes.push(shaderDomain.node);
-            }
-            this.shaderDomain = 0;
-            this.inputNode = data.inputNode;
-        });
-        */
-
         webview.invoke('getAssetTree').then(data => {
             this.$refs.assetBrowser.open(data);
         });
@@ -273,6 +182,11 @@ export default {
             const index = this.tabs[group].push(tabOptions) - 1;
             this.tabs[group][index]['target'] = `tab-${this.numTabs}`;
             this.numTabs++;
+
+            let externalResolve;
+            const result = new Promise((resolve, _) => {
+                externalResolve = resolve;
+            });
                         
             this.$nextTick(() => {
                 if(activeAfter) {
@@ -282,66 +196,51 @@ export default {
 
                 $(`#${this.tabs[group][index].target}`).children().get(0)
                     .__vueParentComponent.ctx.$forceUpdate();
-            });
-            return this.tabs[group][index].target;
-        },
 
-        /*onAddResourceClick(e) {
-            this.resources.push({
-                'name': 'template',
-                'type': 0
+                externalResolve($(`#${this.tabs[group][index].target}`).get(0));
             });
+            return result;
         },
-        onDeleteResourceClick(e, index) {
-            this.resources.splice(index, 1);
-        },
-        onFrameUpdate() {
-            webview.invoke('requestPreviewImage').then(data => {
-                this.previewImageSource = data;
-                window.requestAnimationFrame(this.onFrameUpdate);
-            });
-        },
-        onCompileShaderClick(e) {
-            console.log(JSON.stringify(toRaw(this.graph).export()))
-            webview.invoke('compileShader', toRaw(this.graph).export()).then(data => {
-                // TODO!
-            });
-        },*/
-
         /*
             Asset Browser Callbacks
         */
         onAssetBrowserOpenFile(e) {
-            switch(e.type) {
-                case 'asset/shadergraph': {
-                    const index = this.tabs['workspace'].findIndex(x => x.path == e.path);
-                    if(index != -1) {
-                        $(`${this.tabs['workspace'][index].target}`).find('.tabgr-container').get(0)
-                            .__vueParentComponent.ctx.setActiveTabByIndex(index);
-                    } else {
-                        this.addTabToView({
-                            title: e.name, 
-                            icon: 'images/diagram-project.svg',
-                            fixed: false,
-                            default: false,
-                            component: 'sgeditor',
-                            props: {
-                                type: 'shader'
-                            },
-                            path: e.path
-                        }, "workspace", true);
-                    }
+            webview.invoke('assetBrowserOpenFile', e).then(
+                data => {
+                    if(!data.error) {
+                        switch(e.type) {
+                            case 'asset/shadergraph': {
+                                const index = this.tabs['workspace'].findIndex(x => x.path == e.path);
+                                if(index != -1) {
+                                    $(`#${this.tabs['workspace'][index].target}`).parent().find('.tabgr-container').get(0)
+                                        .__vueParentComponent.ctx.setActiveTabByIndex(index);
+                                } else {
+                                    this.addTabToView({
+                                        title: e.name, 
+                                        icon: 'images/diagram-project.svg',
+                                        fixed: false,
+                                        default: false,
+                                        component: 'sgeditor',
+                                        path: e.path
+                                    }, "workspace", true).then(element => {
+                                        this.tabFileLinks[e.path] = element;
+                                        element.children[0].__vueParentComponent.ctx.open(data.sceneData);
+                                    })
+                                }
 
-                    this.editorModule = 'shadergraph';
-                    break;
-                }
-            }
+                                this.editorModule = 'shadergraph';
+                                break;
+                            }
+                        }
+                    }
+                });
         },
         onAssetBrowserDeleteFile(e) {
             webview.invoke('assetBrowserDeleteFile', e).then(
                 data => {
                     if(!data.error) {
                         this.$refs.assetBrowser.deleteFile(data);
+                        this.closeTabByPath(e.path);
                     }
                 });
         },
@@ -390,11 +289,69 @@ export default {
             };
 
             const result = findElementByTarget(e.target.__vueParentComponent.proxy.$props.target);
+
+            if('path' in this.tabs[result.group][result.index]) {
+                if(this.tabs[result.group][result.index].path in this.tabFileLinks) {
+                    delete this.tabFileLinks[this.tabs[result.group][result.index].path];
+                }
+            }
+
+            let changeTab = false;
+            if(this.curTabSelect[result.group] == this.tabs[result.group][result.index]) {
+                changeTab = true;
+            }
+
             this.tabs[result.group].splice(result.index, 1);
 
-            if(this.tabs[result.group].length > 0) {
+            if(this.tabs[result.group].length > 0 && changeTab) {
                 $(`#${e.target.__vueParentComponent.proxy.$props.target}`).parent().find('.tabgr-container').get(0)
                     .__vueParentComponent.proxy.setActiveTabByIndex(result.index == 0 ? 0 : result.index - 1);
+            }
+        },
+        onTabSelect(e) {
+            const findElementByTarget = target => {
+                for(const [groupName, groupData] of Object.entries(this.tabs)) {
+                    let i = 0;
+                    for(const tab of Object.values(groupData)) {
+                        if(tab.target == target) {
+                            return {
+                                group: groupName,
+                                index: i
+                            };
+                        }
+                        i++;
+                    }
+                }
+                return null;
+            };
+
+            const result = findElementByTarget(e.__vueParentComponent.proxy.$props.target);
+            this.curTabSelect[result.group] = this.tabs[result.group][result.index];
+
+            $(`#${e.__vueParentComponent.proxy.$props.target}`).children().get(0)
+                .__vueParentComponent.ctx.$forceUpdate();
+        },
+        closeTabByPath(path) {
+            const findElementByPath = path => {
+                for(const [groupName, groupData] of Object.entries(this.tabs)) {
+                    let i = 0;
+                    for(const tab of Object.values(groupData)) {
+                        if(tab.path == path) {
+                            return {
+                                group: groupName,
+                                index: i
+                            };
+                        }
+                        i++;
+                    }
+                }
+                return null;
+            };
+
+            if(path in this.tabFileLinks) {
+                const result = findElementByPath(path);
+                this.tabs[result.group].splice(result.index, 1);
+                delete this.tabFileLinks[path];
             }
         }
     }

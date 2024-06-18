@@ -34,6 +34,18 @@ export default {
         const graphElement = $(this.$refs.graph);
         const graph = new FlowGraph(graphElement.get(0), graphElement.parent().width(), graphElement.parent().height() - 30);
 
+        webview.invoke('getShaderGraphComponents').then(data => {
+            for (const node of Object.values(data.items)) {
+                graph.addContextItem(
+                    node.group,
+                    node.name,
+                    e => {
+                        graph.addNode(e.posX, e.posY, node.inputs, node.outputs, node.name, false, "", node.userData);
+                    }
+                );
+            }
+        });
+
         graph.start({
             'valueChanged': e => {
                 const node = toRaw(this.graph).getNode(e.detail.nodeId);
@@ -81,4 +93,13 @@ export default {
         }
     }
 }
+
+/*,
+        
+        onCompileShaderClick(e) {
+            console.log(JSON.stringify(toRaw(this.graph).export()))
+            webview.invoke('compileShader', toRaw(this.graph).export()).then(data => {
+                // TODO!
+            });
+        },*/
 </script>

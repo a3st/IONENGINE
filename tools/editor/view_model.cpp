@@ -19,10 +19,11 @@ namespace ionengine::tools::editor
                   [this](std::string fileData) -> std::string { return this->assetBrowserDeleteFile(fileData); });
         app->bind("assetBrowserRenameFile",
                   [this](std::string fileData) -> std::string { return this->assetBrowserRenameFile(fileData); });
+        app->bind("assetBrowserOpenFile",
+                  [this](std::string fileData) -> std::string { return this->assetBrowserOpenFile(fileData); });
 
-        app->bind("addContextItems", [this]() -> std::string { return this->addContextItems(); });
-        app->bind("addResourceTypes", [this]() -> std::string { return this->addResourceTypes(); });
-        // app->bind("addShaderDomains", [this]() -> std::string { return this->addShaderDomains(); });
+        app->bind("getShaderGraphComponents", [this]() -> std::string { return this->getShaderGraphComponents(); });
+
         app->bind("requestPreviewImage", [this]() -> std::string { return this->requestPreviewImage(); });
         app->bind("compileShader",
                   [this](std::string sceneData) -> std::string { return this->compileShader(sceneData); });
@@ -154,6 +155,7 @@ namespace ionengine::tools::editor
         }
 
         // Create File
+        std::string assetType(fileType);
         auto createPath = std::filesystem::path(filePath).make_preferred();
         {
             uint32_t i = 0;
@@ -172,14 +174,16 @@ namespace ionengine::tools::editor
             {
             }
 
-            if (fileType.compare("asset/shadergraph") == 0)
+            if (fileType.compare("asset/shadergraph/unlit") == 0)
             {
-                shaderGraphEditor.create();
+                shaderGraphEditor.create(ShaderGraphType::Unlit);
+
+                // Change to general shadergraph type
+                // Shadergraph contains type in Output Node's 'userData' options
+                assetType = "asset/shadergraph";
+
                 ShaderGraphData graphData = std::move(shaderGraphEditor.dump());
-                if (core::Serializable<ShaderGraphData>::serialize(graphData, stream) > 0)
-                {
-                }
-                else
+                if (!(core::Serializable<ShaderGraphData>::serialize(graphData, stream) > 0))
                 {
                     return "{\"error\":0}";
                 }
@@ -187,7 +191,7 @@ namespace ionengine::tools::editor
         }
 
         std::stringstream stream;
-        stream << "{\"name\":\"" << createPath.stem().generic_string() << "\",\"type\":\"" << fileType
+        stream << "{\"name\":\"" << createPath.stem().generic_string() << "\",\"type\":\"" << assetType
                << "\",\"path\":\"" << createPath.generic_string() << "\"}";
         return stream.str();
     }
@@ -287,9 +291,49 @@ namespace ionengine::tools::editor
         }
     }
 
-    auto ViewModel::addContextItems() -> std::string
+    auto ViewModel::assetBrowserOpenFile(std::string fileData) -> std::string
     {
-        auto components = componentRegistry.getComponents() |
+        simdjson::ondemand::parser parser;
+        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
+
+        std::string_view filePath;
+        auto error = document["path"].get_string().get(filePath);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+
+        std::string_view fileName;
+        error = document["name"].get_string().get(fileName);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":1}";
+        }
+
+        std::string_view fileType;
+        error = document["type"].get_string().get(fileType);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":2}";
+        }
+
+        if (fileType.compare("asset/shadergraph") == 0)
+        {
+            if (!shaderGraphEditor.loadFromFile(std::filesystem::path(filePath).make_preferred()))
+            {
+                return "{\"error\":3}";
+            }
+            return shaderGraphDataToJSON(shaderGraphEditor.dump());
+        }
+        else
+        {
+            return "{\"error\":4}";
+        }
+    }
+
+    auto ViewModel::getShaderGraphComponents() -> std::string
+    {
+        auto components = shaderGraphEditor.getComponentRegistry().getComponents() |
                           std::views::filter([](auto const& element) { return element.second->isContextRegister(); });
 
         std::stringstream stream;
@@ -366,71 +410,69 @@ namespace ionengine::tools::editor
         return stream.str();
     }
 
-    auto ViewModel::addResourceTypes() -> std::string
+    auto ViewModel::shaderGraphDataToJSON(ShaderGraphData const& graphData) -> std::string
     {
         std::stringstream stream;
-        stream << "{\"types\":[";
+
+        std::string graphType;
+        switch (graphData.graphType)
+        {
+            case ShaderGraphType::Lit: {
+                graphType = "lit";
+                break;
+            }
+            case ShaderGraphType::Unlit: {
+                graphType = "unlit";
+                break;
+            }
+        }
+
+        stream << "{\"graphType\":\"" << graphType << "\",\"sceneData\":{\"nodes\":[";
 
         bool isFirst = true;
-        for (auto const& resourceType : {"Texture2D", "float4", "float3", "float2", "float", "bool"})
+        for (auto const& node : graphData.nodes)
         {
             if (!isFirst)
             {
                 stream << ",";
             }
 
-            stream << "\"" << resourceType << "\"";
-            isFirst = false;
-        }
+            auto const nodeComponent = shaderGraphEditor.getComponentRegistry().getComponents().at(node.componentID);
 
-        stream << "]}";
-        return stream.str();
-    }
-
-    /*auto ViewModel::addShaderDomains() -> std::string
-    {
-        auto components = componentRegistry.getComponents() | std::views::filter([](auto const& element) {
-                              return element.second->isFixed() && element.second->getName().compare("Output Node") == 0;
-                          });
-
-        std::unordered_map<uint32_t, std::string> shaderDomainNames = {
-            {componentRegistry.getComponentByType<PostProcessOutput_NodeComponent>()->componentID, "Post Process"}};
-
-        auto dumpNodeComponent = [](NodeComponent const& component) -> std::string {
-            std::stringstream stream;
-            stream << "{\"name\":\"" << component.getName() << "\",\"fixed\":" << std::boolalpha << component.isFixed()
+            stream << "{\"id\":" << node.nodeID << ",\"position\":[" << node.posX << "," << node.posY << "],\"name\":\""
+                   << nodeComponent->getName() << "\",\"fixed\":" << std::boolalpha << nodeComponent->isFixed()
                    << ",\"inputs\":[";
 
-            bool isFirst = true;
-            for (auto const& socket : component.setInputs())
+            isFirst = true;
+            for (auto const& input : node.inputs)
             {
                 if (!isFirst)
                 {
                     stream << ",";
                 }
 
-                stream << "{\"name\":\"" << socket.socketName << "\",\"type\":\"" << socket.socketType << "\"}";
+                stream << "{\"type\":\"" << input.socketType << "\",\"name\":\"" << input.socketName << "\"}";
                 isFirst = false;
             }
 
             stream << "],\"outputs\":[";
 
             isFirst = true;
-            for (auto const& socket : component.setOutputs())
+            for (auto const& output : node.outputs)
             {
                 if (!isFirst)
                 {
                     stream << ",";
                 }
 
-                stream << "{\"name\":\"" << socket.socketName << "\",\"type\":\"" << socket.socketType << "\"}";
+                stream << "{\"type\":\"" << output.socketType << "\",\"name\":\"" << output.socketName << "\"}";
                 isFirst = false;
             }
 
-            stream << "],\"userData\":{\"componentID\":" << component.componentID << ",\"options\":{";
+            stream << "],\"userData\":{\"componentID\":" << nodeComponent->componentID << ",\"options\":{";
 
             isFirst = true;
-            for (auto const& [key, value] : component.setOptions())
+            for (auto const& [key, value] : node.options)
             {
                 if (!isFirst)
                 {
@@ -442,34 +484,33 @@ namespace ionengine::tools::editor
             }
 
             stream << "}}}";
-            return stream.str();
-        };
+            isFirst = false;
+        }
 
-        std::stringstream stream;
-        stream << "{\"domains\":[";
+        stream << "],\"connections\":[";
 
-        bool isFirst = true;
-        for (auto const& [componentID, nodeComponent] : components)
+        isFirst = true;
+        for (auto const& connection : graphData.connections)
         {
             if (!isFirst)
             {
                 stream << ",";
             }
 
-            stream << "{\"name\":\"" << shaderDomainNames[componentID]
-                   << "\",\"node\":" << dumpNodeComponent(*nodeComponent) << "}";
+            stream << "{\"id\":" << connection.connectionID << ",\"source\":" << connection.source
+                   << ",\"out\":" << connection.out << ",\"dest\":" << connection.dest << ",\"in\":" << connection.in
+                   << "}";
 
             isFirst = false;
         }
 
-        stream << "],\"inputNode\":" << dumpNodeComponent(*componentRegistry.getComponentByType<Input_NodeComponent>())
-               << "}";
+        stream << "]}}";
         return stream.str();
-    }*/
+    }
 
     auto ViewModel::compileShader(std::string sceneData) -> std::string
     {
-        shaderGraph = core::make_ref<Scene>(componentRegistry);
+        shaderGraph = core::make_ref<Scene>(shaderGraphEditor.getComponentRegistry());
 
         std::cout << sceneData << std::endl;
 

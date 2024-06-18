@@ -39,7 +39,7 @@ namespace ionengine::tools::editor
             nodeData.nodeID = nodeID;
 
             simdjson::ondemand::array positions;
-            error = document["position"].get_array().get(positions);
+            error = node["position"].get_array().get(positions);
             if (error != simdjson::SUCCESS)
             {
                 return false;
@@ -63,7 +63,7 @@ namespace ionengine::tools::editor
             nodeData.posY = arrayOfPositions[1];
 
             simdjson::ondemand::object userData;
-            error = document["userData"].get_object().get(userData);
+            error = node["userData"].get_object().get(userData);
             if (error != simdjson::SUCCESS)
             {
                 return false;
@@ -195,7 +195,7 @@ namespace ionengine::tools::editor
                 stream << "\"" << key << "\":\"" << value << "\"";
                 isFirst = false;
             }
-            stream << "}}";
+            stream << "}}}";
             isFirst = false;
         }
         stream << "],\"connections\":[";
@@ -272,7 +272,7 @@ namespace ionengine::tools::editor
     ShaderGraphEditor::ShaderGraphEditor()
     {
         componentRegistry.registerComponent<Input_NodeComponent>();
-        componentRegistry.registerComponent<PostProcessOutput_NodeComponent>();
+        componentRegistry.registerComponent<UnlitOutput_NodeComponent>();
         componentRegistry.registerComponent<Sampler2D_NodeComponent>();
         componentRegistry.registerComponent<Constant_Color_NodeComponent>();
         componentRegistry.registerComponent<Constant_Float_NodeComponent>();
@@ -281,13 +281,64 @@ namespace ionengine::tools::editor
         componentRegistry.registerComponent<Split_Float3_NodeComponent>();
     }
 
-    auto ShaderGraphEditor::create() -> void
+    auto ShaderGraphEditor::create(ShaderGraphType const graphType) -> void
     {
         sceneGraph = core::make_ref<Scene>(componentRegistry);
+        if (graphType == ShaderGraphType::Unlit)
+        {
+            sceneGraph->createNodeByType<UnlitOutput_NodeComponent>(0);
+        }
+        this->graphType = graphType;
     }
 
     auto ShaderGraphEditor::loadFromFile(std::filesystem::path const& filePath) -> bool
     {
+        sceneGraph = core::make_ref<Scene>(componentRegistry);
+
+        auto result = core::loadFromFile<ShaderGraphData>(filePath);
+        if (!result.has_value())
+        {
+            return false;
+        }
+
+        ShaderGraphData graphData = std::move(result.value());
+        graphType = graphData.graphType;
+
+        std::unordered_map<uint64_t, core::ref_ptr<Node>> componentsOfNodes;
+
+        for (auto const& node : graphData.nodes)
+        {
+            auto createdNode = sceneGraph->createNodeByID(node.componentID, node.nodeID);
+            componentsOfNodes.emplace(node.nodeID, createdNode);
+
+            for (auto const& [key, value] : node.options)
+            {
+                createdNode->options[key] = value;
+            }
+
+            if (createdNode->inputs.empty())
+            {
+                for (auto const& input : node.inputs)
+                {
+                    Node::SocketInfo socketInfo = {.socketName = input.socketName, .socketType = input.socketType};
+                    createdNode->inputs.emplace_back(std::move(socketInfo));
+                }
+            }
+            if (createdNode->outputs.empty())
+            {
+                for (auto const& output : node.outputs)
+                {
+                    Node::SocketInfo socketInfo = {.socketName = output.socketName, .socketType = output.socketType};
+                    createdNode->inputs.emplace_back(std::move(socketInfo));
+                }
+            }
+        }
+
+        for (auto const& connection : graphData.connections)
+        {
+            sceneGraph->createConnection(connection.connectionID, componentsOfNodes[connection.source], connection.out,
+                                         componentsOfNodes[connection.dest], connection.in);
+        }
         return true;
     }
 
@@ -309,10 +360,48 @@ namespace ionengine::tools::editor
     auto ShaderGraphEditor::dump() -> ShaderGraphData
     {
         ShaderGraphData shaderGraph = {};
+        shaderGraph.graphType = graphType;
 
         for (auto const& node : sceneGraph->getNodes())
         {
+            NodeData nodeData = {};
+            nodeData.posX = node->posX;
+            nodeData.posY = node->posY;
+            nodeData.nodeID = node->nodeID;
+            nodeData.options = node->options;
+            nodeData.componentID = node->componentID;
+
+            for (auto const& input : node->inputs)
+            {
+                NodeSocketData socketData = {.socketName = input.socketName, .socketType = input.socketType};
+                nodeData.inputs.emplace_back(std::move(socketData));
+            }
+
+            for (auto const& output : node->outputs)
+            {
+                NodeSocketData socketData = {.socketName = output.socketName, .socketType = output.socketType};
+                nodeData.outputs.emplace_back(std::move(socketData));
+            }
+
+            shaderGraph.nodes.emplace_back(std::move(nodeData));
+        }
+
+        for (auto const& connection : sceneGraph->getConnections())
+        {
+            ConnectionData connectionData = {};
+            connectionData.connectionID = connection->connectionID;
+            connectionData.source = connection->sourceNode->nodeID;
+            connectionData.out = connection->sourceIndex;
+            connectionData.dest = connection->destNode->nodeID;
+            connectionData.in = connection->destIndex;
+
+            shaderGraph.connections.emplace_back(std::move(connectionData));
         }
         return shaderGraph;
+    }
+
+    auto ShaderGraphEditor::getGraphType() const -> ShaderGraphType
+    {
+        return graphType;
     }
 } // namespace ionengine::tools::editor

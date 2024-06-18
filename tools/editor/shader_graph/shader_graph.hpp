@@ -9,12 +9,26 @@ namespace ionengine::tools::editor
 {
     std::array<uint8_t, 8> constexpr ShaderGraphFileType{'S', 'G', 'F', 'I', 'L', 'E', '\0', '\0'};
 
+    enum class ShaderGraphType
+    {
+        Lit,
+        Unlit
+    };
+
+    struct NodeSocketData
+    {
+        std::string socketName;
+        std::string socketType;
+    };
+
     struct NodeData
     {
         uint64_t nodeID;
         int32_t posX;
         int32_t posY;
         uint32_t componentID;
+        std::vector<NodeSocketData> inputs;
+        std::vector<NodeSocketData> outputs;
         std::unordered_map<std::string, std::string> options;
     };
 
@@ -29,6 +43,7 @@ namespace ionengine::tools::editor
 
     struct ShaderGraphData
     {
+        ShaderGraphType graphType;
         std::vector<NodeData> nodes;
         std::vector<ConnectionData> connections;
     };
@@ -45,7 +60,7 @@ namespace ionengine::tools::editor
       public:
         ShaderGraphEditor();
 
-        auto create() -> void;
+        auto create(ShaderGraphType const graphType) -> void;
 
         auto loadFromFile(std::filesystem::path const& filePath) -> bool;
 
@@ -57,9 +72,12 @@ namespace ionengine::tools::editor
 
         auto getComponentRegistry() -> editor::ComponentRegistry&;
 
+        auto getGraphType() const -> ShaderGraphType;
+
       private:
         editor::ComponentRegistry componentRegistry;
         core::ref_ptr<Scene> sceneGraph;
+        ShaderGraphType graphType;
     };
 } // namespace ionengine::tools::editor
 

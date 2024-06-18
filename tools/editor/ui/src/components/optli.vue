@@ -1,10 +1,12 @@
 <template>
     <div class="optli-container">
-        <span style="display: flex; width: 50%;">{{ title }}</span>
-        <span style="display: flex; width: 50%;">
+        <span class="optli-body-container">{{ title }}</span>
+        <span class="optli-body-container">
             <select v-if="type == 'select'" v-bind:value="modelValue" @change="$emit('update:modelValue', Number($event.target.value))">
                 <option v-for="(type, index) in content" v-bind:value="index">{{ type }}</option>
             </select>
+            <input v-else-if="type == 'checkbox'" type="checkbox" v-bind:value="modelValue" 
+                @change="$emit('update:modelValue', Boolean($event.target.checked))" />
         </span>
     </div>
 </template>
@@ -27,5 +29,15 @@ export default {
     flex-direction: row; 
     width: 100%; 
     align-items: center;
+}
+
+.optli-body-container {
+    display: inline-flex; 
+    width: 50%;
+    align-items: center;
+}
+
+.optli-body-container.right {
+    justify-content: center;
 }
 </style>

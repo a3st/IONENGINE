@@ -95,6 +95,8 @@ export default {
             if(relativePath.length > 0) {
                 this.dirPaths.splice(1, this.dirPaths.length - 1);
                 this.dirPaths.push(...relativePath.split('/'));
+            } else {
+                this.dirPaths.splice(1, this.dirPaths.length - 1);
             }
         },
         onAssetDblClick(e, item) {
@@ -212,12 +214,12 @@ export default {
                     {
                         items: [
                             {
-                                name: "New Shader Graph",
+                                name: "New Shader Graph (Unlit)",
                                 shortcut: null,
                                 action: () => {
                                     this.temporaryAsset.show = true;
                                     this.temporaryAsset.name = 'NewFile';
-                                    this.temporaryAsset.type = 'asset/shadergraph';
+                                    this.temporaryAsset.type = 'asset/shadergraph/unlit';
 
                                     this.$nextTick(() => {
                                         this.$refs.temporaryAsset.editName();

@@ -12,7 +12,7 @@
                 </button>
             </div>
         </div>
-        <div class="optext-body-container" v-show="shown">
+        <div class="optext-body-container" v-if="shown">
             <slot name="expand"></slot>
         </div>
     </div>
@@ -49,7 +49,6 @@ export default {
 
 .optext-body-container {
     border-top: 1px solid #414141;
-    display: none;
     flex-direction: column; 
     width: 100%;
     padding: 10px;

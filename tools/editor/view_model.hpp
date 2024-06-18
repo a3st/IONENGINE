@@ -18,11 +18,7 @@ namespace ionengine::tools::editor
 
         auto requestPreviewImage() -> std::string;
 
-        auto addContextItems() -> std::string;
-
-        auto addResourceTypes() -> std::string;
-
-        auto addShaderDomains() -> std::string;
+        auto getShaderGraphComponents() -> std::string;
 
         auto compileShader(std::string sceneData) -> std::string;
 
@@ -34,6 +30,8 @@ namespace ionengine::tools::editor
 
         auto assetBrowserRenameFile(std::string fileData) -> std::string;
 
+        auto assetBrowserOpenFile(std::string fileData) -> std::string;
+
       protected:
         auto init() -> void override;
 
@@ -44,9 +42,9 @@ namespace ionengine::tools::editor
       private:
         libwebview::App* app;
 
-        ShaderGraphEditor shaderGraphEditor;
+        AssetTree assetTree;
 
-        editor::ComponentRegistry componentRegistry;
+        ShaderGraphEditor shaderGraphEditor;
 
         core::ref_ptr<TextureAsset> previewImage;
         core::ref_ptr<Scene> shaderGraph;
@@ -54,6 +52,6 @@ namespace ionengine::tools::editor
 
         auto compileShaderGraph() -> bool;
 
-        AssetTree assetTree;
+        auto shaderGraphDataToJSON(ShaderGraphData const& graphData) -> std::string;
     };
 } // namespace ionengine::tools::editor

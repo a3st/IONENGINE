@@ -6,7 +6,7 @@
 
 namespace ionengine::tools::editor
 {
-    IONENGINE_NODE_COMPONENT_BEGIN(PostProcessOutput, "Output Node", false, std::nullopt, true)
+    IONENGINE_NODE_COMPONENT_BEGIN(UnlitOutput, "Output Node", false, std::nullopt, true)
     auto setInputs() const -> std::vector<Node::SocketInfo>
     {
         return {{"Color", "float4"}};

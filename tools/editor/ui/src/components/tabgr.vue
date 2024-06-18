@@ -10,7 +10,7 @@ import $ from 'jquery'
 import TabliComponent from '../components/tabli.vue';
 
 export default {
-    emits: ['remove'],
+    emits: ['remove', 'select'],
     props: {
         type: String
     },
@@ -54,6 +54,8 @@ export default {
             target
                 .closest('button.btn-tab')
                 .addClass('active');
+
+            this.$emit('select', target.get(0));
 
             $(`#${target.get(0).__vueParentComponent.proxy.$props.target}`).css('display', 'flex');
         }

@@ -50,6 +50,11 @@ input {
     outline: none;
 }
 
+input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+}
+
 ::-webkit-scrollbar {
     width: 8px;
 }
