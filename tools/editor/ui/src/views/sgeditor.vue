@@ -141,6 +141,14 @@ export default {
         },
         onCompileClick(e) {
             webview
+                .invoke(
+                    "shaderGraphAssetSave",
+                    this.fileInfo,
+                    toRaw(this.graph).export()
+                )
+                .then((data) => console.log(data));
+
+            webview
                 .invoke("shaderGraphAssetCompile", this.fileInfo)
                 .then((data) => console.log(data));
         },

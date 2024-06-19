@@ -27,8 +27,7 @@ namespace ionengine
         core::ref_ptr<Surface> surface;
 
         core::ref_ptr<rhi::Shader> shader;
-        rhi::CullMode cullMode;
-        rhi::FillMode fillMode;
+        rhi::RasterizerStageInfo rasterizerStage;
         rhi::BlendColorInfo blendColor;
         std::optional<rhi::DepthStencilStageInfo> depthStencil;
 

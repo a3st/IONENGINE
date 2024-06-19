@@ -31,10 +31,13 @@ namespace ionengine
 
         auto getShader() const -> core::ref_ptr<rhi::Shader>;
 
+        auto getRasterizerStage() const -> rhi::RasterizerStageInfo const&;
+
       private:
         LinkedDevice* device;
         core::ref_ptr<rhi::Shader> shaderProgram;
         std::unordered_map<std::string, ShaderOption> options;
+        rhi::RasterizerStageInfo rasterizerStage;
 
         auto parseShaderEffectData(rhi::fx::ShaderEffectData const& shaderEffect) -> bool;
     };

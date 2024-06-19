@@ -51,6 +51,7 @@ namespace ionengine::tools::editor
 
         core::ref_ptr<TextureAsset> viewportTexture;
         core::ref_ptr<ShaderAsset> outputShader;
+        std::vector<RenderableData> renderableObjects;
 
         auto shaderGraphDataToJSON(ShaderGraphData const& graphData) -> std::string;
     };

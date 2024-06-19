@@ -47,6 +47,8 @@ namespace ionengine::tools::editor
 
         renderer.beginDraw(colors, nullptr, math::Color(0.0f, 0.0f, 0.0f, 1.0f), std::nullopt, std::nullopt);
 
+        renderer.render(renderableObjects);
+
         renderer.endDraw();
     }
 
@@ -707,6 +709,17 @@ namespace ionengine::tools::editor
         {
             return "{\"error\":3}";
         }
+
+        RenderableData renderableData = {
+            .renderableType = RenderableType::Quad,
+            .shader = outputShader->getShader(),
+            .rasterizerStage = outputShader->getRasterizerStage(),
+            .blendColor = rhi::BlendColorInfo::Opaque(),
+            .depthStencil = std::nullopt
+        };
+
+        renderableObjects.clear();
+        renderableObjects.emplace_back(std::move(renderableData));
         return "{\"ok\":0}";
     }
 } // namespace ionengine::tools::editor

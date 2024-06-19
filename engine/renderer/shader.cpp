@@ -99,6 +99,24 @@ namespace ionengine
                 shaderEffect.technique.stages.at(rhi::fx::ShaderStageType::Vertex).buffer;
             uint32_t const pixelBufferIndex = shaderEffect.technique.stages.at(rhi::fx::ShaderStageType::Pixel).buffer;
 
+            rasterizerStage.fill_mode = rhi::FillMode::Solid;
+
+            switch (shaderEffect.technique.cullSide)
+            {
+                case rhi::fx::ShaderCullSide::Back: {
+                    rasterizerStage.cull_mode = rhi::CullMode::Back;
+                    break;
+                }
+                case rhi::fx::ShaderCullSide::Front: {
+                    rasterizerStage.cull_mode = rhi::CullMode::Front;
+                    break;
+                }
+                case rhi::fx::ShaderCullSide::None: {
+                    rasterizerStage.cull_mode = rhi::CullMode::None;
+                    break;
+                }
+            }
+
             auto found = std::find_if(shaderEffect.structures.begin(), shaderEffect.structures.end(),
                                       [](auto const& element) { return element.name == "VS_INPUT"; });
             if (found == shaderEffect.structures.end())
@@ -198,5 +216,10 @@ namespace ionengine
     auto ShaderAsset::getOptions() const -> std::unordered_map<std::string, ShaderOption>
     {
         return options;
+    }
+
+    auto ShaderAsset::getRasterizerStage() const -> rhi::RasterizerStageInfo const&
+    {
+        return rasterizerStage;
     }
 } // namespace ionengine

@@ -97,6 +97,8 @@ namespace ionengine
             colorBarriers.pop();
             device->getGraphicsContext().barrier(texture, rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
         }
+        
+        currentShader = nullptr;
     }
 
     auto Renderer::render(std::span<RenderableData> const renderables) -> void
@@ -125,10 +127,8 @@ namespace ionengine
             if (currentShader != renderableData.shader)
             {
                 device->getGraphicsContext().set_graphics_pipeline_options(
-                    renderableData.shader,
-                    rhi::RasterizerStageInfo{.fill_mode = renderableData.fillMode,
-                                             .cull_mode = renderableData.cullMode},
-                    renderableData.blendColor, renderableData.depthStencil);
+                    renderableData.shader, renderableData.rasterizerStage, renderableData.blendColor,
+                    renderableData.depthStencil);
 
                 currentShader = renderableData.shader;
             }
