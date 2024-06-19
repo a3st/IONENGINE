@@ -545,7 +545,7 @@ namespace ionengine::tools::editor
                 return "{\"error\":2}";
             }
 
-            uint32_t i = 0;
+            int32_t i = 0;
             std::array<int32_t, 2> arrayOfPositions;
             for (auto position : positions)
             {
@@ -555,6 +555,7 @@ namespace ionengine::tools::editor
                 {
                     return "{\"error\":3}";
                 }
+
                 arrayOfPositions[i] = value;
                 ++i;
             }

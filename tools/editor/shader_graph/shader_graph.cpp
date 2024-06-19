@@ -45,7 +45,7 @@ namespace ionengine::tools::editor
                 return false;
             }
 
-            uint32_t i = 0;
+            int32_t i = 0;
             std::array<int32_t, 2> arrayOfPositions;
             for (auto position : positions)
             {

@@ -467,7 +467,7 @@ export default class FlowGraph {
                     const nodeId = Number(this.selectedElement.id.match(/-?[\d]+/g)[0]);
                     const connections = Object.values(this.connections).filter(value => (value.source == nodeId || value.dest == nodeId));
 
-                    this.nodes[this.nodesCache[nodeId]].position = [posX - this.relativeCanvasX, posY - this.relativeCanvasY];
+                    this.nodes[this.nodesCache[nodeId]].position = [Math.ceil(posX - this.relativeCanvasX), Math.ceil(posY - this.relativeCanvasY)];
 
                     for (const [_, value] of Object.entries(connections)) {
                         const sourceElement = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[value.id]].source}_out_${this.connections[this.connectionsCache[value.id]].out}`).get(0);
