@@ -48,7 +48,7 @@ auto main(int32_t argc, char** argv) -> int32_t
     try
     {
         shaderc::FXCompiler fxCompiler;
-        fxCompiler.addIncludePath(std::filesystem::path(input).parent_path());
+        fxCompiler.addIncludePath(std::filesystem::path(input).parent_path().make_preferred());
 
         if (target.compare("DXIL") == 0)
         {
@@ -65,7 +65,8 @@ auto main(int32_t argc, char** argv) -> int32_t
         }
 
         std::string errors;
-        if (fxCompiler.compile(input, output, errors))
+        if (fxCompiler.compile(std::filesystem::path(input).make_preferred(),
+                               std::filesystem::path(output).make_preferred(), errors))
         {
             std::cout << "Out: " << std::filesystem::path(output).generic_string() << std::endl;
         }

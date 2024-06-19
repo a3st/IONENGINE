@@ -9,12 +9,12 @@
 
 <style>
 .toolbar-container {
-    display: flex; 
-    flex-direction: row; 
-    gap: 20px; 
-    background-color: rgb(29, 29, 29); 
-    height: 35px; 
-    padding: 5px; 
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    background-color: rgb(29, 29, 29);
+    height: 35px;
+    padding: 5px;
     gap: 10px;
 }
 
@@ -30,11 +30,10 @@
 </style>
 
 <script>
-import { toRaw } from 'vue'
-import $ from 'jquery'
+import { toRaw } from "vue";
+import $ from "jquery";
 
 export default {
-    components: {
-    }
-}
+    components: {},
+};
 </script>

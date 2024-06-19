@@ -1,6 +1,6 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-import $ from 'jquery'
+import $ from 'jquery';
 
 class ContextMenu {
     constructor() {
@@ -39,14 +39,14 @@ class ContextMenu {
             .children('.context-container-body')
             .empty();
 
-        for(const group of Object.values(contextItems)) {
+        for (const group of Object.values(contextItems)) {
             const groupsSize = this.groups.push([]);
 
             contextMenuElement.append(`<div class="context-group-container"></div>`);
 
             const groupMenuElement = $('.context-group-container').last();
 
-            for(const item of Object.values(group.items)) {
+            for (const item of Object.values(group.items)) {
                 const itemsSize = this.items.push({
                     'name': item.name,
                     'action': item.action,
@@ -58,7 +58,7 @@ class ContextMenu {
                 // TODO! Shortcuts
 
                 let shortcutName;
-                if(item.shortcut) {
+                if (item.shortcut) {
                     shortcutName = item.shortcut;
                 } else {
                     shortcutName = "";
@@ -87,7 +87,7 @@ class ContextMenu {
 
         $('.context-container')
             .css('height', contextHeight);
-        
+
         event.target.addEventListener('contextmenu', e => {
             e.preventDefault();
         });

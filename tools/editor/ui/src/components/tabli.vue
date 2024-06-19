@@ -3,7 +3,11 @@
         <div class="tab-inline-text-container">
             <img v-bind:src="icon" width="16" height="16" />
             <span>{{ title }}</span>
-            <button v-if="!fixed" class="btn-icon" @click="onRemoveClick($event)">
+            <button
+                v-if="!fixed"
+                class="btn-icon"
+                @click="onRemoveClick($event)"
+            >
                 <img src="images/xmark.svg" width="12" height="12" />
             </button>
         </div>
@@ -11,44 +15,44 @@
 </template>
 
 <script>
-import $ from 'jquery'
+import $ from "jquery";
 
 export default {
     props: {
         title: String,
         icon: String,
         target: String,
-        fixed: Boolean
+        fixed: Boolean,
     },
     methods: {
         onRemoveClick(e) {
-            this.$parent.$emit('remove', e);
+            this.$parent.$emit("remove", e);
         },
         onSelectClick(e) {
-            for(const target of Object.values(this.$parent.$data.targets)) {
-                $(`#${target}`).css('display', 'none');
+            for (const target of Object.values(this.$parent.$data.targets)) {
+                $(`#${target}`).css("display", "none");
             }
 
-            $(e.target).closest('.tabgr-container').find('.btn-tab')
-                .removeClass('active');
-
             $(e.target)
-                .closest('button.btn-tab')
-                .addClass('active');
+                .closest(".tabgr-container")
+                .find(".btn-tab")
+                .removeClass("active");
 
-            this.$parent.$emit('select', e.target.closest('button.btn-tab'));
+            $(e.target).closest("button.btn-tab").addClass("active");
 
-            $(`#${this.target}`).css('display', 'flex');
-        }
-    }
-}
+            this.$parent.$emit("select", e.target.closest("button.btn-tab"));
+
+            $(`#${this.target}`).css("display", "flex");
+        },
+    },
+};
 </script>
 
 <style>
 .tab-inline-text-container {
-    display: inline-flex; 
-    justify-content: center; 
-    align-items: center; 
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     gap: 10px;
 }
 

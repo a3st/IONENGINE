@@ -10,22 +10,7 @@ namespace ionengine
     {
     }
 
-    auto Renderer::registerShader(std::string_view const shaderName, core::ref_ptr<ShaderAsset> shaderAsset) -> void
-    {
-        registeredShaders[std::string(shaderName)] = shaderAsset;
-    }
-
-    auto Renderer::setShader(std::string_view const shaderName) -> void
-    {
-        auto shaderAsset = registeredShaders[std::string(shaderName)];
-
-        device->getGraphicsContext().set_graphics_pipeline_options(
-            shaderAsset->getShader(),
-            rhi::RasterizerStageInfo{.fill_mode = rhi::FillMode::Solid, .cull_mode = rhi::CullMode::Back},
-            rhi::BlendColorInfo::Opaque(), std::nullopt);
-    }
-
-    auto Renderer::drawQuad(math::Matrixf const& viewProjection) -> void
+    auto Renderer::drawQuad() -> void
     {
         device->getGraphicsContext().draw(3, 1);
     }
@@ -114,6 +99,123 @@ namespace ionengine
         }
     }
 
+    auto Renderer::render(std::span<RenderableData> const renderables) -> void
+    {
+        std::vector<size_t> indices(renderables.size());
+        std::iota(indices.begin(), indices.end(), 0);
+
+        // Sort renderables by shader
+        std::sort(indices.begin(), indices.end(), [&](auto const lhs, auto const rhs) {
+            return renderables[lhs].shader->get_hash() < renderables[rhs].shader->get_hash();
+        });
+
+        // Apply sort to array
+        for (auto const i : std::views::iota(0u, renderables.size()))
+        {
+            renderables[i].shaderIndex = indices[i];
+        }
+
+        std::stack<rhi::BufferBindData> resolveBuffers;
+        std::stack<rhi::TextureBindData> resolveTextures;
+
+        for (auto const index : indices)
+        {
+            RenderableData const& renderableData = renderables[index];
+
+            if (currentShader != renderableData.shader)
+            {
+                device->getGraphicsContext().set_graphics_pipeline_options(
+                    renderableData.shader,
+                    rhi::RasterizerStageInfo{.fill_mode = renderableData.fillMode,
+                                             .cull_mode = renderableData.cullMode},
+                    renderableData.blendColor, renderableData.depthStencil);
+
+                currentShader = renderableData.shader;
+            }
+
+            for (auto const& [boundSlot, boundData] : renderableData.boundedBuffers)
+            {
+                if (!(boundData.resource->get_flags() & (rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite))
+                {
+                    rhi::ResourceState curResourceState;
+                    rhi::ResourceState nextResourceState;
+                    switch (boundData.usage)
+                    {
+                        case rhi::BufferUsage::ConstantBuffer: {
+                            curResourceState = rhi::ResourceState::Common;
+                            nextResourceState = rhi::ResourceState::AllShaderRead;
+                            break;
+                        }
+                        case rhi::BufferUsage::ShaderResource: {
+                            curResourceState = rhi::ResourceState::Common;
+                            nextResourceState = rhi::ResourceState::AllShaderRead;
+                            break;
+                        }
+                        case rhi::BufferUsage::UnorderedAccess: {
+                            curResourceState = rhi::ResourceState::Common;
+                            nextResourceState = rhi::ResourceState::UnorderedAccess;
+                            break;
+                        }
+                    }
+
+                    device->getGraphicsContext().barrier(boundData.resource, curResourceState, nextResourceState);
+                    resolveBuffers.push(boundData);
+                }
+
+                uint64_t const descriptorOffset = boundData.resource->get_descriptor_offset(boundData.usage);
+                device->getGraphicsContext().bind_descriptor(boundSlot, descriptorOffset);
+            }
+
+            switch (renderableData.renderableType)
+            {
+                case RenderableType::Quad: {
+                    this->drawQuad();
+                    break;
+                }
+                case RenderableType::Surface: {
+
+                    break;
+                }
+                case RenderableType::Compute: {
+
+                    break;
+                }
+            }
+
+            while (!resolveBuffers.empty())
+            {
+                auto boundData = std::move(resolveBuffers.top());
+                resolveBuffers.pop();
+
+                if (!(boundData.resource->get_flags() & (rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite))
+                {
+                    rhi::ResourceState curResourceState;
+                    rhi::ResourceState nextResourceState;
+                    switch (boundData.usage)
+                    {
+                        case rhi::BufferUsage::ConstantBuffer: {
+                            curResourceState = rhi::ResourceState::AllShaderRead;
+                            nextResourceState = rhi::ResourceState::Common;
+                            break;
+                        }
+                        case rhi::BufferUsage::ShaderResource: {
+                            curResourceState = rhi::ResourceState::AllShaderRead;
+                            nextResourceState = rhi::ResourceState::Common;
+                            break;
+                        }
+                        case rhi::BufferUsage::UnorderedAccess: {
+                            curResourceState = rhi::ResourceState::UnorderedAccess;
+                            nextResourceState = rhi::ResourceState::Common;
+                            break;
+                        }
+                    }
+
+                    device->getGraphicsContext().barrier(boundData.resource, curResourceState, nextResourceState);
+                }
+            }
+        }
+    }
+
     /*
     auto Renderer::draw_mesh(core::ref_ptr<Mesh> mesh) -> void
     {
@@ -147,7 +249,8 @@ namespace ionengine
         // for (auto const& primitive : mesh->primitives)
         {
             //    device->get_graphics_context().bind_vertex_buffer(primitive.vertices, 0,
-            //    primitive.vertices->get_size()); device->get_graphics_context().bind_index_buffer(primitive.indices,
+            //    primitive.vertices->get_size());
+    device->get_graphics_context().bind_index_buffer(primitive.indices,
             //    0, primitive.indices->get_size(),
             //                                                     rhi::IndexFormat::Uint32);
             //    device->get_graphics_context().draw_indexed(primitive.index_count, 1);

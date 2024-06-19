@@ -98,6 +98,8 @@ namespace ionengine::rhi
 
     class Shader : public core::ref_counted_object
     {
+      public:
+        virtual auto get_hash() const -> uint64_t = 0;
     };
 
     enum class RenderPassLoadOp

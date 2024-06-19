@@ -256,7 +256,7 @@ namespace ionengine::rhi
 
         DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const computeShader);
 
-        auto get_hash() const -> uint64_t;
+        auto get_hash() const -> uint64_t override;
 
         auto get_stages() const -> std::unordered_map<D3D12_SHADER_TYPE, D3D12_SHADER_BYTECODE> const&;
 

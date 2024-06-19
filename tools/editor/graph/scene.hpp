@@ -8,8 +8,17 @@
 
 namespace ionengine::tools::editor
 {
+    template <typename Result>
+    struct GraphCompute
+    {
+        auto operator()(class Scene const& scene) -> core::ref_ptr<Result>;
+    };
+
     class Scene : public core::ref_counted_object
     {
+        template <typename Result>
+        friend struct GraphCompute;
+
       public:
         Scene(ComponentRegistry& componentRegistry);
 
@@ -26,11 +35,16 @@ namespace ionengine::tools::editor
         auto createConnection(uint64_t const connectionID, core::ref_ptr<Node> sourceNode, uint32_t const sourceIndex,
                               core::ref_ptr<Node> destNode, uint32_t const destIndex) -> core::ref_ptr<Connection>;
 
-        auto bfs(std::stringstream& shaderCodeStream) -> void;
+        template <typename Result>
+        auto compute() -> core::ref_ptr<Result>
+        {
+            GraphCompute<Result> graphCompute;
+            return graphCompute.operator()(*this);
+        }
 
-        auto getNodes() -> std::span<core::ref_ptr<Node>>;
+        auto getNodes() const -> std::span<core::ref_ptr<Node> const>;
 
-        auto getConnections() -> std::span<core::ref_ptr<Connection>>;
+        auto getConnections() const -> std::span<core::ref_ptr<Connection> const>;
 
       private:
         ComponentRegistry* componentRegistry;

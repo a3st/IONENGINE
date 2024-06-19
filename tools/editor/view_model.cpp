@@ -2,7 +2,6 @@
 
 #include "view_model.hpp"
 #include "core/exception.hpp"
-#include "core/subprocess.hpp"
 #include "engine/renderer/shader.hpp"
 #include "precompiled.h"
 #include <base64pp/base64pp.h>
@@ -26,16 +25,16 @@ namespace ionengine::tools::editor
         app->bind("shaderGraphAssetSave", [this](std::string fileData, std::string sceneData) -> std::string {
             return this->shaderGraphAssetSave(fileData, sceneData);
         });
+        app->bind("shaderGraphAssetCompile",
+                  [this](std::string fileData) -> std::string { return this->shaderGraphAssetCompile(fileData); });
 
-        app->bind("requestPreviewImage", [this]() -> std::string { return this->requestPreviewImage(); });
-        app->bind("compileShader",
-                  [this](std::string sceneData) -> std::string { return this->compileShader(sceneData); });
+        app->bind("requestViewportTexture", [this]() -> std::string { return this->requestViewportTexture(); });
     }
 
     auto ViewModel::init() -> void
     {
-        previewImage = this->createTextureAsset();
-        previewImage->create(800, 600, TextureUsage::RenderTarget);
+        viewportTexture = this->createTextureAsset();
+        viewportTexture->create(800, 600, TextureUsage::RenderTarget);
     }
 
     auto ViewModel::update(float const dt) -> void
@@ -44,22 +43,16 @@ namespace ionengine::tools::editor
 
     auto ViewModel::render() -> void
     {
-        std::vector<core::ref_ptr<rhi::Texture>> colors = {previewImage->getTexture()};
+        std::vector<core::ref_ptr<rhi::Texture>> colors = {viewportTexture->getTexture()};
 
-        renderer.beginDraw(colors, nullptr, math::Color(0.2f, 0.3f, 0.4f, 1.0f), std::nullopt, std::nullopt);
-
-        if (previewShader)
-        {
-            renderer.setShader("genShader");
-            renderer.drawQuad({});
-        }
+        renderer.beginDraw(colors, nullptr, math::Color(0.0f, 0.0f, 0.0f, 1.0f), std::nullopt, std::nullopt);
 
         renderer.endDraw();
     }
 
-    auto ViewModel::requestPreviewImage() -> std::string
+    auto ViewModel::requestViewportTexture() -> std::string
     {
-        return base64pp::encode(previewImage->dump());
+        return base64pp::encode(viewportTexture->dump());
     }
 
     auto ViewModel::getAssetTree() -> std::string
@@ -686,88 +679,34 @@ namespace ionengine::tools::editor
         }
     }
 
-    auto ViewModel::compileShader(std::string sceneData) -> std::string
+    auto ViewModel::shaderGraphAssetCompile(std::string fileData) -> std::string
     {
-        shaderGraph = core::make_ref<Scene>(shaderGraphEditor.getComponentRegistry());
+        simdjson::ondemand::parser parser;
+        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
 
-        std::cout << sceneData << std::endl;
-
-        this->compileShaderGraph();
-        return "test";
-    }
-
-    auto ViewModel::compileShaderGraph() -> bool
-    {
-        std::stringstream shaderCodeStream;
-        shaderGraph->bfs(shaderCodeStream);
-
-        std::cout << shaderCodeStream.str() << std::endl;
-
-        std::filesystem::path const appDataPath = std::getenv("APPDATA");
-
-        if (!std::filesystem::exists(appDataPath / "ionengine-tools" / "Cache"))
+        std::string_view filePath;
+        auto error = document["path"].get_string().get(filePath);
+        if (error != simdjson::SUCCESS)
         {
-            if (!std::filesystem::create_directory(appDataPath / "ionengine-tools" / "Cache"))
-            {
-                throw core::Exception("An error occurred while creating the directory");
-            }
+            return "{\"error\":0}";
         }
 
-        std::string const fileName = std::filesystem::path(std::tmpnam(nullptr)).filename().string();
-
+        if (!shaderGraphEditor.loadFromFile(filePath))
         {
-            std::fstream stream(appDataPath / "ionengine-tools" / "Cache" / fileName, std::ios::out);
-            if (!stream.is_open())
-            {
-                throw core::Exception("An error occurred while creating the file");
-            }
-            stream << shaderCodeStream.str();
+            return "{\"error\":1}";
         }
 
-        std::string const outputName = std::filesystem::path(std::tmpnam(nullptr)).filename().string();
-
-        std::string const inputPath = (appDataPath / "ionengine-tools" / "Cache" / fileName).generic_string();
-        std::string const outputPath = (appDataPath / "ionengine-tools" / "Cache" / outputName).generic_string();
-
-        std::vector<std::string> arguments = {"shaderc.exe", "\"" + inputPath + "\"", "--target", "DXIL",
-                                              "--output",    "\"" + outputPath + "\""};
-
-        auto result = core::subprocessExecute(arguments);
-
-        if (result.has_value())
+        auto result = shaderGraphEditor.compile();
+        if (!result)
         {
-            auto buffer = std::move(result.value());
-            std::string const outputMessage(reinterpret_cast<char*>(buffer.data()), buffer.size());
-
-            if (outputMessage.contains(std::format("Out: {}", outputPath)))
-            {
-                previewShader = this->createShaderAsset();
-
-                if (previewShader->loadFromFile(outputPath))
-                {
-                    std::cout << "Shader Loaded" << std::endl;
-                    renderer.registerShader("genShader", previewShader);
-
-                    std::filesystem::remove(inputPath);
-                    std::filesystem::remove(outputPath);
-
-                    for (auto const [optionName, option] : previewShader->getOptions())
-                    {
-                        std::cout << std::format("{} {}", optionName, option.constantIndex) << std::endl;
-                    }
-                }
-                return true;
-            }
-            else
-            {
-                std::filesystem::remove(inputPath);
-                std::filesystem::remove(outputPath);
-                return false;
-            }
+            return "{\"error\":2}";
         }
-        else
+
+        outputShader = createShaderAsset();
+        if (!outputShader->loadFromBytes(result->outputShaderData))
         {
-            return false;
+            return "{\"error\":3}";
         }
+        return "{\"ok\":0}";
     }
 } // namespace ionengine::tools::editor

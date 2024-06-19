@@ -12,9 +12,9 @@ export default {
     methods: {
         onPanelCreate(e) {
             this.$parent.onPanelCreate(e);
-        }
-    }
-}
+        },
+    },
+};
 </script>
 
 <style>

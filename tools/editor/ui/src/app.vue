@@ -3,11 +3,11 @@
 </template>
 
 <style>
-@import url('fonts/Roboto.css');
+@import url("fonts/Roboto.css");
 
 * {
     box-sizing: border-box;
-    font-family: 'Roboto', sans-serif;
+    font-family: "Roboto", sans-serif;
 }
 
 img {
@@ -51,7 +51,7 @@ input {
     outline: none;
 }
 
-input[type='checkbox'] {
+input[type="checkbox"] {
     width: 18px;
     height: 18px;
 }

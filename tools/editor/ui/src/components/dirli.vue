@@ -1,58 +1,87 @@
 <template>
     <div class="dirli-container">
         <div class="dirli-header-container">
-            <button v-if="isFolder" class="btn-icon" @click="onFolderExpandClick">
-                <img v-bind:src="shown ? require('../images/angle-up.svg') : require('../images/angle-down.svg')" 
-                    width="12" height="12" />
+            <button
+                v-if="isFolder"
+                class="btn-icon"
+                @click="onFolderExpandClick"
+            >
+                <img
+                    v-bind:src="
+                        shown
+                            ? require('../images/angle-up.svg')
+                            : require('../images/angle-down.svg')
+                    "
+                    width="12"
+                    height="12"
+                />
             </button>
 
-            <div v-else style="width: 24px;"></div>
+            <div v-else style="width: 24px"></div>
 
-            <div style="display: inline-flex; width: 100%;" @mousedown="onFolderOpenClick">
-                <button class="btn-icon fixed" style="gap: 5px; padding: 5px;">
-                    <img v-bind:src="shown ? require('../images/folder-open.svg') : require('../images/folder.svg')" 
-                        width="16" height="16" />
+            <div
+                style="display: inline-flex; width: 100%"
+                @mousedown="onFolderOpenClick"
+            >
+                <button class="btn-icon fixed" style="gap: 5px; padding: 5px">
+                    <img
+                        v-bind:src="
+                            shown
+                                ? require('../images/folder-open.svg')
+                                : require('../images/folder.svg')
+                        "
+                        width="16"
+                        height="16"
+                    />
                     <span>{{ item.name }}</span>
                 </button>
             </div>
         </div>
 
         <div v-if="isFolder" class="dirli-body-container" v-show="shown">
-            <dirli v-for="(child, index) in filteredFolderItems" :item="child" :key="index" :empty="child.isFolder" 
-                @click="onFolderOpenClick"></dirli>
+            <dirli
+                v-for="(child, index) in filteredFolderItems"
+                :item="child"
+                :key="index"
+                :empty="child.isFolder"
+                @click="onFolderOpenClick"
+            ></dirli>
         </div>
     </div>
 </template>
 
 <script>
 export default {
-    emits: ['click'],
+    emits: ["click"],
     props: {
         empty: Boolean,
-        item: Object
+        item: Object,
     },
     data() {
         return {
-            shown: false
-        }
+            shown: false,
+        };
     },
     computed: {
         filteredFolderItems() {
-            return this.item.childrens.filter(x => x.type == 'folder');
+            return this.item.childrens.filter((x) => x.type == "folder");
         },
         isFolder() {
-            return this.item.type == 'folder' && this.filteredFolderItems.length > 0;
-        }
+            return (
+                this.item.type == "folder" &&
+                this.filteredFolderItems.length > 0
+            );
+        },
     },
     methods: {
         onFolderOpenClick(e) {
-            this.$emit('click', e);
+            this.$emit("click", e);
         },
         onFolderExpandClick(e) {
             this.shown = !this.shown;
-        }
-    }
-}
+        },
+    },
+};
 </script>
 
 <style>

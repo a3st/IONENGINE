@@ -14,6 +14,14 @@ namespace ionengine::core
     };
 
     template <typename Type>
+    auto loadFromBytes(std::span<uint8_t const> const dataBytes) -> std::optional<Type>
+    {
+        std::basic_ispanstream<uint8_t> stream(
+            std::span<uint8_t>(const_cast<uint8_t*>(dataBytes.data()), dataBytes.size()), std::ios::binary);
+        return Serializable<Type>::deserialize(stream);
+    }
+
+    template <typename Type>
     auto loadFromFile(std::filesystem::path const& filePath) -> std::optional<Type>
     {
         std::basic_ifstream<uint8_t> stream(filePath, std::ios::binary);

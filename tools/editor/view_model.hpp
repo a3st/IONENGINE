@@ -16,11 +16,13 @@ namespace ionengine::tools::editor
       public:
         ViewModel(libwebview::App* app);
 
-        auto requestPreviewImage() -> std::string;
+        auto requestViewportTexture() -> std::string;
 
         auto getShaderGraphComponents() -> std::string;
 
         auto shaderGraphAssetSave(std::string fileData, std::string sceneData) -> std::string;
+
+        auto shaderGraphAssetCompile(std::string fileData) -> std::string;
 
         auto compileShader(std::string sceneData) -> std::string;
 
@@ -45,14 +47,10 @@ namespace ionengine::tools::editor
         libwebview::App* app;
 
         AssetTree assetTree;
-
         ShaderGraphEditor shaderGraphEditor;
 
-        core::ref_ptr<TextureAsset> previewImage;
-        core::ref_ptr<Scene> shaderGraph;
-        core::ref_ptr<ShaderAsset> previewShader;
-
-        auto compileShaderGraph() -> bool;
+        core::ref_ptr<TextureAsset> viewportTexture;
+        core::ref_ptr<ShaderAsset> outputShader;
 
         auto shaderGraphDataToJSON(ShaderGraphData const& graphData) -> std::string;
     };

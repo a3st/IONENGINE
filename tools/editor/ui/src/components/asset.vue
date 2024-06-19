@@ -1,57 +1,82 @@
 <template>
-    <div class="asset-container" @mousedown="onAssetClick($event)" @dblclick="onAssetDblClick($event)">
-        <img style="object-fit: contain;"
-            v-bind:src="type == 'folder' ? require('../images/folder.svg') : require('../images/file.svg')" width="64" height="64" />
-        <input ref="editNameInput" v-if="edit" style="width: 64px; height: 15px;" 
-            :value="curName" @blur="onEditNameBlur($event)" @keydown="onEditKeydown($event)" />
-        <span v-else style="align-self: center; height: 15px;" :title="curName">{{ smallName }}</span>
+    <div
+        class="asset-container"
+        @mousedown="onAssetClick($event)"
+        @dblclick="onAssetDblClick($event)"
+    >
+        <img
+            style="object-fit: contain"
+            v-bind:src="
+                type == 'folder'
+                    ? require('../images/folder.svg')
+                    : require('../images/file.svg')
+            "
+            width="64"
+            height="64"
+        />
+        <input
+            ref="editNameInput"
+            v-if="edit"
+            style="width: 64px; height: 15px"
+            :value="curName"
+            @blur="onEditNameBlur($event)"
+            @keydown="onEditKeydown($event)"
+        />
+        <span
+            v-else
+            style="align-self: center; height: 15px"
+            :title="curName"
+            >{{ smallName }}</span
+        >
     </div>
 </template>
 
 <script>
 export default {
-    emits: ['dblclick', 'click', 'rename'],
+    emits: ["dblclick", "click", "rename"],
     props: {
         name: String,
-        type: String
+        type: String,
     },
     data() {
         return {
             edit: false,
-            curName: this.name
-        }
+            curName: this.name,
+        };
     },
     watch: {
         edit: {
             handler(value, oldValue) {
-                if(value) {
+                if (value) {
                     this.$nextTick(() => {
                         this.$refs.editNameInput.select();
                     });
                 }
-            }
+            },
         },
         name: {
             handler(value, oldValue) {
                 this.curName = this.lastName = value;
-            }
-        }
+            },
+        },
     },
     computed: {
         smallName() {
-            return this.curName.length < 8 ? this.curName : this.curName.substring(0, 5) + "...";
-        }
+            return this.curName.length < 8
+                ? this.curName
+                : this.curName.substring(0, 5) + "...";
+        },
     },
     methods: {
         onAssetClick(e) {
-            this.$emit('click', e);
+            this.$emit("click", e);
         },
         onAssetDblClick(e) {
-            this.$emit('dblclick', e);
+            this.$emit("dblclick", e);
         },
         onEditNameBlur(e) {
-            if(this.edit && this.curName.length != 0) {
-                this.$emit('rename', e.target.value);
+            if (this.edit && this.curName.length != 0) {
+                this.$emit("rename", e.target.value);
             }
             this.edit = false;
         },
@@ -63,17 +88,17 @@ export default {
             });
         },
         onEditKeydown(e) {
-            if(e.code == 'Enter') {
-                if(e.target.value.length != 0) {
+            if (e.code == "Enter") {
+                if (e.target.value.length != 0) {
                     e.target.blur();
                 }
                 this.edit = false;
-            } else if(e.code == 'Escape') {
+            } else if (e.code == "Escape") {
                 this.edit = false;
             }
-        }
-    }
-}
+        },
+    },
+};
 </script>
 
 <style>

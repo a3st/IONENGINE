@@ -3,6 +3,7 @@
 #pragma once
 
 #include "math/matrix.hpp"
+#include "renderable.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
 
@@ -15,11 +16,7 @@ namespace ionengine
       public:
         Renderer(LinkedDevice& device);
 
-        auto registerShader(std::string_view const shaderName, core::ref_ptr<ShaderAsset> shaderAsset) -> void;
-
-        auto setShader(std::string_view const shaderName) -> void;
-
-        auto drawQuad(math::Matrixf const& viewProjection) -> void;
+        auto drawQuad() -> void;
 
         auto beginDraw(std::span<core::ref_ptr<rhi::Texture>> colors, core::ref_ptr<rhi::Texture> depthStencil,
                        std::optional<math::Color> const clearColor, std::optional<float> const clearDepth,
@@ -29,13 +26,15 @@ namespace ionengine
 
         auto resize(uint32_t const width, uint32_t const height) -> void;
 
+        auto render(std::span<RenderableData> const renderables) -> void;
+
         core::ref_ptr<rhi::Texture> swapchainTexture;
 
       private:
         LinkedDevice* device;
         std::stack<core::ref_ptr<rhi::Texture>> colorBarriers;
-        std::unordered_map<std::string, core::ref_ptr<ShaderAsset>> registeredShaders;
         uint32_t rendererWidth;
         uint32_t rendererHeight;
+        core::ref_ptr<rhi::Shader> currentShader;
     };
 } // namespace ionengine

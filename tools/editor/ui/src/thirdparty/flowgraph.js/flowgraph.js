@@ -3,7 +3,10 @@
 import $ from 'jquery'
 
 export default class FlowGraph {
-    constructor(rootNode, width, height, canvasOptions = { "width": 8096, "height": 8096 }) {
+    constructor(rootNode, width, height, canvasOptions = {
+        "width": 8096,
+        "height": 8096
+    }) {
         this.rootNode = rootNode;
         this.width = width;
         this.height = height;
@@ -40,7 +43,10 @@ export default class FlowGraph {
         if (!(group in this.groups)) {
             this.groups[group] = [];
         }
-        this.groups[group].push({ 'item': item, 'callback': callback });
+        this.groups[group].push({
+            'item': item,
+            'callback': callback
+        });
     }
 
     resize(width, height) {
@@ -79,7 +85,9 @@ export default class FlowGraph {
                 <div class="flowgraph-context-main"></div>
             </div>
         `);
-        $('.flowgraph-context-search input').bind('input', e => { this.#renderContextMenu(); });
+        $('.flowgraph-context-search input').bind('input', e => {
+            this.#renderContextMenu();
+        });
 
         $(this.rootNode)
             .find('.flowgraph-bg-container')
@@ -103,10 +111,10 @@ export default class FlowGraph {
             .children('.flowgraph-canvas')
             .css('transform', `translate(${-this.relativeCanvasX}px, ${-this.relativeCanvasY}px)`);
 
-        if(options['valueChanged'] != null) {
+        if (options['valueChanged'] != null) {
             this.rootNode.addEventListener("flowgraph:value-changed", options['valueChanged']);
         } else {
-            this.rootNode.addEventListener("flowgraph:value-changed", e => { });
+            this.rootNode.addEventListener("flowgraph:value-changed", e => {});
         }
     }
 
@@ -146,7 +154,10 @@ export default class FlowGraph {
                 $(this.rootNode).find('.flowgraph-context-group button')
                     .last()
                     .bind('click', e => {
-                        item.callback({"posX": posX, "posY": posY});
+                        item.callback({
+                            "posX": posX,
+                            "posY": posY
+                        });
                         $(this.rootNode).children('.flowgraph-context-container')
                             .css('display', 'none');
                     });
@@ -157,7 +168,7 @@ export default class FlowGraph {
     #keyHandler(e) {
         if (e.code == 'Backspace' || e.code == 'Delete') {
             if (this.focusedElement) {
-                if($(document.activeElement).is(':input')) {
+                if ($(document.activeElement).is(':input')) {
                     return;
                 }
 
@@ -167,7 +178,8 @@ export default class FlowGraph {
                         this.removeNode(nodeId);
                     }
                 } else if ($(this.focusedElement).closest('.flowgraph-connection').length > 0) {
-                    const connectionId = this.focusedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
+                    const connectionId = this.focusedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(
+                        x)));
                     this.removeConnection(connectionId);
                 }
             }
@@ -183,14 +195,14 @@ export default class FlowGraph {
 
             let spawnX = this.lastClientX;
             let spawnY = this.lastClientY;
-            
+
             // Prevent overflow by X
-            if(e.x + contextWidth > $(this.rootNode).width()) {
+            if (e.x + contextWidth > $(this.rootNode).width()) {
                 spawnX -= contextWidth - ($(this.rootNode).width() - e.x);
             }
-            
+
             // Prevent overflow by Y
-            if(e.y + contextHeight > $(this.rootNode).height()) {
+            if (e.y + contextHeight > $(this.rootNode).height()) {
                 spawnY -= contextHeight - ($(this.rootNode).height() - e.y);
             }
 
@@ -239,8 +251,10 @@ export default class FlowGraph {
                     .closest('.flowgraph-io')
                     .get(0);
 
-                const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
-                const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
+                const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (
+                    parseInt(x)));
+                const connection = Object.values(this.connections).find(value => (value.dest ==
+                    destNode && value.in == inIndex));
 
                 if (connection) {
                     $(this.rootNode).find(`#node_${destNode}_in_${inIndex}`)
@@ -268,7 +282,8 @@ export default class FlowGraph {
                     .closest('.flowgraph-io')
                     .get(0);
 
-                const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
+                const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (
+                    parseInt(x)));
                 this.#addPreviewConnection(sourceNode, outIndex);
 
                 const elementMatrix = $(this.selectedElement)
@@ -312,22 +327,29 @@ export default class FlowGraph {
                 if ($(e.target).closest('.flowgraph-io').closest('.flowgraph-io-row.left').length > 0) {
                     let destElement = $(e.target).closest('.flowgraph-io')[0];
 
-                    const [destNode, inIndex] = destElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
-                    let connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
+                    const [destNode, inIndex] = destElement.id.match(/-?[\d]+/g).map((x) => (parseInt(
+                    x)));
+                    let connection = Object.values(this.connections).find(value => (value.dest ==
+                        destNode && value.in == inIndex));
 
                     if (connection) {
                         this.removeConnection(connection.id);
                     }
 
-                    const [selectedNode, selectedIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
-                    connection = Object.values(this.connections).find(value => (value.dest == selectedNode && value.in == selectedIndex));
+                    const [selectedNode, selectedIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((
+                        x) => (parseInt(x)));
+                    connection = Object.values(this.connections).find(value => (value.dest ==
+                        selectedNode && value.in == selectedIndex));
 
                     if (connection) {
-                        this.#updateConnection(connection.id, connection.source, connection.out, destNode, inIndex);
+                        this.#updateConnection(connection.id, connection.source, connection.out, destNode,
+                            inIndex);
                     }
                 } else {
-                    const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
-                    const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
+                    const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (
+                        parseInt(x)));
+                    const connection = Object.values(this.connections).find(value => (value.dest ==
+                        destNode && value.in == inIndex));
 
                     if (connection) {
                         this.removeConnection(connection.id);
@@ -344,21 +366,29 @@ export default class FlowGraph {
                 if ($(e.target).closest('.flowgraph-io').closest('.flowgraph-io-row.left').length > 0) {
                     let destElement = $(e.target).closest('.flowgraph-io')[0];
 
-                    const [destNode, inIndex] = destElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
-                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
-                    const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
+                    const [destNode, inIndex] = destElement.id.match(/-?[\d]+/g).map((x) => (parseInt(
+                    x)));
+                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (
+                        parseInt(x)));
+                    const connection = Object.values(this.connections).find(value => (value.dest ==
+                        destNode && value.in == inIndex));
 
                     if (connection) {
                         if (this.#nodeInputTypeCheck(sourceNode, outIndex, destNode, inIndex)) {
                             const connections = Object.values(this.connections).filter(
-                                value => (value.source == this.connections[this.connectionsCache[connection.id]].source && value.out == this.connections[this.connectionsCache[connection.id]].out));
+                                value => (value.source == this.connections[this.connectionsCache[
+                                    connection.id]].source && value.out == this.connections[this
+                                    .connectionsCache[connection.id]].out));
                             if (connections.length == 1) {
-                                $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`)
+                                $(this.rootNode).find(
+                                        `#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`
+                                        )
                                     .removeClass('connected')
                                     .get(0);
                             }
 
-                            this.#updateConnection(connection.id, sourceNode, outIndex, destNode, inIndex);
+                            this.#updateConnection(connection.id, sourceNode, outIndex, destNode,
+                            inIndex);
                         } else {
                             $(this.rootNode).find(`#node_${sourceNode}_out_${outIndex}`)
                                 .removeClass('connected')
@@ -368,7 +398,8 @@ export default class FlowGraph {
                         try {
                             this.addConnection(sourceNode, outIndex, destNode, inIndex);
                         } catch (e) {
-                            const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
+                            const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((
+                                x) => (parseInt(x)));
 
                             const connections = Object.values(this.connections).filter(
                                 value => (value.source == sourceNode && value.out == outIndex));
@@ -380,7 +411,8 @@ export default class FlowGraph {
                         }
                     }
                 } else {
-                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
+                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (
+                        parseInt(x)));
 
                     const connections = Object.values(this.connections).filter(
                         value => (value.source == sourceNode && value.out == outIndex));
@@ -429,7 +461,8 @@ export default class FlowGraph {
     }
 
     #nodeInputTypeCheck(sourceNode, outIndex, destNode, inIndex) {
-        return this.nodes[this.nodesCache[sourceNode]].outputs[outIndex].type == this.nodes[this.nodesCache[destNode]].inputs[inIndex].type;
+        return this.nodes[this.nodesCache[sourceNode]].outputs[outIndex].type == this.nodes[this
+            .nodesCache[destNode]].inputs[inIndex].type;
     }
 
     #moveNodeHandler(e) {
@@ -465,26 +498,39 @@ export default class FlowGraph {
                     $(this.selectedElement).css('transform', `translate(${posX}px, ${posY}px)`);
 
                     const nodeId = Number(this.selectedElement.id.match(/-?[\d]+/g)[0]);
-                    const connections = Object.values(this.connections).filter(value => (value.source == nodeId || value.dest == nodeId));
+                    const connections = Object.values(this.connections).filter(value => (value.source ==
+                        nodeId || value.dest == nodeId));
 
-                    this.nodes[this.nodesCache[nodeId]].position = [Math.ceil(posX - this.relativeCanvasX), Math.ceil(posY - this.relativeCanvasY)];
+                    this.nodes[this.nodesCache[nodeId]].position = [Math.ceil(posX - this
+                        .relativeCanvasX), Math.ceil(posY - this.relativeCanvasY)
+                    ];
 
                     for (const [_, value] of Object.entries(connections)) {
-                        const sourceElement = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[value.id]].source}_out_${this.connections[this.connectionsCache[value.id]].out}`).get(0);
-                        const sourceMatrix = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[value.id]].source}`)
+                        const sourceElement = $(this.rootNode).find(
+                            `#node_${this.connections[this.connectionsCache[value.id]].source}_out_${this.connections[this.connectionsCache[value.id]].out}`
+                            ).get(0);
+                        const sourceMatrix = $(this.rootNode).find(
+                                `#node_${this.connections[this.connectionsCache[value.id]].source}`)
                             .css('transform')
                             .match(/-?[\d\.]+/g);
 
-                        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
-                        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
+                        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement
+                            .offsetWidth / 2;
+                        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement
+                            .offsetHeight / 2;
 
-                        const destElement = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[value.id]].dest}_in_${this.connections[this.connectionsCache[value.id]].in}`).get(0);
-                        const destMatrix = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[value.id]].dest}`)
+                        const destElement = $(this.rootNode).find(
+                            `#node_${this.connections[this.connectionsCache[value.id]].dest}_in_${this.connections[this.connectionsCache[value.id]].in}`
+                            ).get(0);
+                        const destMatrix = $(this.rootNode).find(
+                                `#node_${this.connections[this.connectionsCache[value.id]].dest}`)
                             .css('transform')
                             .match(/-?[\d\.]+/g);
 
-                        const destX = Number(destMatrix[4]) + destElement.offsetLeft + destElement.offsetWidth / 2;
-                        const destY = Number(destMatrix[5]) + destElement.offsetTop + destElement.offsetHeight / 2;
+                        const destX = Number(destMatrix[4]) + destElement.offsetLeft + destElement
+                            .offsetWidth / 2;
+                        const destY = Number(destMatrix[5]) + destElement.offsetTop + destElement
+                            .offsetHeight / 2;
 
                         this.#updateConnectionPosition(value.id, sourceX, sourceY, destX, destY);
                     }
@@ -507,17 +553,24 @@ export default class FlowGraph {
                         .children('#drag-io-dummy')
                         .css('transform', `translate(${posX}px, ${posY}px)`);
 
-                    const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
-                    const connection = Object.values(this.connections).find(value => (value.dest == destNode && value.in == inIndex));
+                    const [destNode, inIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (
+                        parseInt(x)));
+                    const connection = Object.values(this.connections).find(value => (value.dest ==
+                        destNode && value.in == inIndex));
 
                     if (connection) {
-                        const sourceElement = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`).get(0);
-                        const sourceMatrix = $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connection.id]].source}`)
+                        const sourceElement = $(this.rootNode).find(
+                            `#node_${this.connections[this.connectionsCache[connection.id]].source}_out_${this.connections[this.connectionsCache[connection.id]].out}`
+                            ).get(0);
+                        const sourceMatrix = $(this.rootNode).find(
+                                `#node_${this.connections[this.connectionsCache[connection.id]].source}`)
                             .css('transform')
                             .match(/-?[\d\.]+/g);
 
-                        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
-                        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
+                        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement
+                            .offsetWidth / 2;
+                        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement
+                            .offsetHeight / 2;
                         const destX = posX;
                         const destY = posY;
 
@@ -542,15 +595,19 @@ export default class FlowGraph {
                         .children('#drag-io-dummy')
                         .css('transform', `translate(${posX}px, ${posY}px)`);
 
-                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (parseInt(x)));
+                    const [sourceNode, outIndex] = this.selectedElement.id.match(/-?[\d]+/g).map((x) => (
+                        parseInt(x)));
 
-                    const sourceElement = $(this.rootNode).find(`#node_${sourceNode}_out_${outIndex}`).get(0);
+                    const sourceElement = $(this.rootNode).find(`#node_${sourceNode}_out_${outIndex}`)
+                        .get(0);
                     const sourceMatrix = $(this.rootNode).find(`#node_${sourceNode}`)
                         .css('transform')
                         .match(/-?[\d\.]+/g);
 
-                    const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
-                    const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
+                    const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement
+                        .offsetWidth / 2;
+                    const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement
+                        .offsetHeight / 2;
                     const destX = posX;
                     const destY = posY;
 
@@ -608,14 +665,19 @@ export default class FlowGraph {
         }
 
         const connections = Object.values(this.connections).filter(
-            value => (value.source == this.connections[this.connectionsCache[connectionId]].source && value.out == this.connections[this.connectionsCache[connectionId]].out));
+            value => (value.source == this.connections[this.connectionsCache[connectionId]].source &&
+                value.out == this.connections[this.connectionsCache[connectionId]].out));
         if (connections.length == 1) {
-            $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connectionId]].source}_out_${this.connections[this.connectionsCache[connectionId]].out}`)
+            $(this.rootNode).find(
+                    `#node_${this.connections[this.connectionsCache[connectionId]].source}_out_${this.connections[this.connectionsCache[connectionId]].out}`
+                    )
                 .removeClass('connected')
                 .get(0);
         }
 
-        $(this.rootNode).find(`#node_${this.connections[this.connectionsCache[connectionId]].dest}_in_${this.connections[this.connectionsCache[connectionId]].in}`)
+        $(this.rootNode).find(
+                `#node_${this.connections[this.connectionsCache[connectionId]].dest}_in_${this.connections[this.connectionsCache[connectionId]].in}`
+                )
             .removeClass('connected')
             .get(0);
 
@@ -645,7 +707,8 @@ export default class FlowGraph {
             .get(0);
 
         let svgElement = vectorLayer.getElementById(`connection_${connectionId}`);
-        svgElement.setAttribute('d', `M ${sourceX} ${sourceY} Q ${controlX} ${controlY} ${destX} ${destY}`);
+        svgElement.setAttribute('d',
+            `M ${sourceX} ${sourceY} Q ${controlX} ${controlY} ${destX} ${destY}`);
     }
 
     #addPreviewConnection(sourceNode, outIndex) {
@@ -675,7 +738,8 @@ export default class FlowGraph {
             .children('.flowgraph-vectorlayer')
             .get(0);
         let svgElement = vectorLayer.getElementById(`connection_preview`);
-        svgElement.setAttribute('d', `M ${sourceX} ${sourceY} Q ${controlX} ${controlY} ${destX} ${destY}`);
+        svgElement.setAttribute('d',
+            `M ${sourceX} ${sourceY} Q ${controlX} ${controlY} ${destX} ${destY}`);
     }
 
     #updateConnection(connectionId, sourceNodeId, outIndex, destNodeId, inIndex) {
@@ -686,8 +750,10 @@ export default class FlowGraph {
             .css('transform')
             .match(/-?[\d\.]+/g);
 
-        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
-        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
+        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth /
+        2;
+        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight /
+        2;
 
         const destElement = $(this.rootNode).find(`#node_${destNodeId}_in_${inIndex}`)
             .addClass('connected')
@@ -722,8 +788,10 @@ export default class FlowGraph {
             .css('transform')
             .match(/-?[\d\.]+/g);
 
-        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth / 2;
-        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight / 2;
+        const sourceX = Number(sourceMatrix[4]) + sourceElement.offsetLeft + sourceElement.offsetWidth /
+        2;
+        const sourceY = Number(sourceMatrix[5]) + sourceElement.offsetTop + sourceElement.offsetHeight /
+        2;
 
         const destElement = $(this.rootNode).find(`#node_${destNodeId}_in_${inIndex}`)
             .addClass('connected')
@@ -772,7 +840,8 @@ export default class FlowGraph {
             throw new Error("Node with this ID does not exist");
         }
 
-        const connections = Object.values(this.connections).filter(value => (value.source == nodeId || value.dest == nodeId));
+        const connections = Object.values(this.connections).filter(value => (value.source == nodeId ||
+            value.dest == nodeId));
         for (const value of Object.values(connections)) {
             this.removeConnection(value.id);
         }
@@ -793,7 +862,7 @@ export default class FlowGraph {
         let inputsHTML = "";
         let inputMaxLength = 5;
         for (let i = 0; i < inputs.length; i++) {
-            switch(inputs[i].type) {
+            switch (inputs[i].type) {
                 case 'Number': {
                     const numberValue = parseFloat(userData.options[inputs[i].name]);
 
@@ -826,8 +895,9 @@ export default class FlowGraph {
                         return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
                     };
 
-                    const colorValue = userData.options[inputs[i].name].split(',').map(x => Math.ceil(parseFloat(x) * 255));
-                    
+                    const colorValue = userData.options[inputs[i].name].split(',').map(x => Math.ceil(
+                        parseFloat(x) * 255));
+
                     inputsHTML += `
                         <div class="flowgraph-io-row left">
                             <div style="display: inline-flex; gap: 5px; align-items: center;">
@@ -872,7 +942,7 @@ export default class FlowGraph {
         }
 
         let iolistWidth = 100;
-        if(inputs.length > 0 && outputs.length > 0) {
+        if (inputs.length > 0 && outputs.length > 0) {
             iolistWidth = 50;
         }
 
@@ -922,24 +992,26 @@ export default class FlowGraph {
             </div>
         `);
 
-        $(this.rootNode).find(`#node_${id}`).find(":input").on('change', e => { 
+        $(this.rootNode).find(`#node_${id}`).find(":input").on('change', e => {
             let targetName = $(e.currentTarget).parent().children('span').text();
             targetName = targetName.substring(0, targetName.length - 1);
 
             this.rootNode.dispatchEvent(
-                new CustomEvent("flowgraph:value-changed", 
-                    { 'detail': 
-                        { 'nodeId': id, 
-                          'targetName': targetName, 
-                          'targetType': e.currentTarget.type, 
-                          'value': e.currentTarget.value 
-                        } 
-                    }));
+                new CustomEvent("flowgraph:value-changed", {
+                    'detail': {
+                        'nodeId': id,
+                        'targetName': targetName,
+                        'targetType': e.currentTarget.type,
+                        'value': e.currentTarget.value
+                    }
+                }));
         });
 
-        let nodeWidth = 110 + Math.min(1, outputs.length) * 22 * outputMaxLength + Math.min(1, inputs.length) * 22 * inputMaxLength;
+        let nodeWidth = 110 + Math.min(1, outputs.length) * 22 * outputMaxLength + Math.min(1, inputs
+            .length) * 22 * inputMaxLength;
 
-        let nodeHeight = $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
+        let nodeHeight = $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-header')
+        .outerHeight() +
             $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-main').outerHeight();
         if (expandHTML.length > 0) {
             nodeHeight += $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
@@ -963,7 +1035,9 @@ export default class FlowGraph {
                     $(`#node_${id}`)
                         .find('.flowgraph-expand-container')
                         .children('object')
-                        .replaceWith('<object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>');
+                        .replaceWith(
+                            '<object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>'
+                            );
                 } else {
                     let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
                         $(`#node_${id}`).find('.flowgraph-node-main').outerHeight() +
@@ -974,11 +1048,14 @@ export default class FlowGraph {
                     $(`#node_${id}`)
                         .find('.flowgraph-expand-container')
                         .children('object')
-                        .replaceWith('<object data="images/angle-up.svg" width="16" height="16" style="pointer-events: none;"></object>');
+                        .replaceWith(
+                            '<object data="images/angle-up.svg" width="16" height="16" style="pointer-events: none;"></object>'
+                            );
                 }
             });
 
-        $(this.rootNode).find(`#node_${id}`).css('transform', `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
+        $(this.rootNode).find(`#node_${id}`).css('transform',
+            `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
 
         const size = this.nodes.push({
             "id": id,
@@ -1030,12 +1107,13 @@ export default class FlowGraph {
      */
     addNode(posX, posY, inputs, outputs, nodeName, fixed, expandHTML, userData = {}) {
         const createdId = this.lastCreatedId;
-        this.#internalAddNode(createdId, posX, posY, inputs, outputs, nodeName, fixed, expandHTML, userData);
+        this.#internalAddNode(createdId, posX, posY, inputs, outputs, nodeName, fixed, expandHTML,
+            userData);
         this.lastCreatedId++;
         return createdId;
     }
 
-    export() {
+    export () {
         return {
             "nodes": this.nodes,
             "connections": this.connections

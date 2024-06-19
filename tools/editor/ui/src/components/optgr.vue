@@ -8,7 +8,7 @@
 .optgr-container {
     border-top: 1px solid #414141;
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
     width: 100%;
     padding: 10px;
     gap: 10px;

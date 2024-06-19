@@ -4,7 +4,7 @@
 
 namespace ionengine::core
 {
-    inline auto subprocessExecute(std::span<std::string> const arguments) -> std::optional<std::vector<uint8_t>>
+    inline auto subprocessExecute(std::span<std::string const> const arguments) -> std::optional<std::vector<uint8_t>>
     {
         std::array<uint8_t, 256> buffer;
         std::vector<uint8_t> result;

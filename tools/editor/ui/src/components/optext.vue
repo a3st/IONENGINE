@@ -5,10 +5,22 @@
             <slot name="header"></slot>
             <div class="optext-header-right-container">
                 <button class="btn-icon" @click="onExpandClick($event)">
-                    <img :src="shown ? require('../images/angle-up.svg') : require('../images/angle-down.svg')" width="16" height="16" />
+                    <img
+                        :src="
+                            shown
+                                ? require('../images/angle-up.svg')
+                                : require('../images/angle-down.svg')
+                        "
+                        width="16"
+                        height="16"
+                    />
                 </button>
                 <button class="btn-icon" @click="onRemoveClick($event)">
-                    <img :src="require('../images/trash-can.svg')" width="16" height="16" />
+                    <img
+                        :src="require('../images/trash-can.svg')"
+                        width="16"
+                        height="16"
+                    />
                 </button>
             </div>
         </div>
@@ -20,36 +32,36 @@
 
 <script>
 export default {
-    emits: ['remove'],
+    emits: ["remove"],
     props: {
-        icon: String
+        icon: String,
     },
     data() {
         return {
-            shown: false
-        }
+            shown: false,
+        };
     },
     methods: {
         onRemoveClick(e) {
-            this.$emit('remove', e);
+            this.$emit("remove", e);
         },
         onExpandClick(e) {
             this.shown = !this.shown;
-        }
-    }
-}
+        },
+    },
+};
 </script>
 
 <style>
 .optext-container {
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
     width: 100%;
 }
 
 .optext-body-container {
     border-top: 1px solid #414141;
-    flex-direction: column; 
+    flex-direction: column;
     width: 100%;
     padding: 10px;
     gap: 10px;
@@ -57,8 +69,8 @@ export default {
 }
 
 .optext-header-container {
-    display: flex; 
-    flex-direction: row; 
+    display: flex;
+    flex-direction: row;
     width: 100%;
     padding: 10px;
     gap: 10px;
@@ -67,10 +79,10 @@ export default {
 }
 
 .optext-header-right-container {
-    display: flex; 
-    flex-direction: row; 
-    gap: 10px; 
-    align-items: center; 
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
     margin-left: auto;
 }
 </style>

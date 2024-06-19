@@ -21,7 +21,7 @@ namespace ionengine
       public:
         TextureAsset(LinkedDevice& device);
 
-        auto create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> bool;
+        auto create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> void;
 
         auto getTexture() const -> core::ref_ptr<rhi::Texture>;
 

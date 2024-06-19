@@ -7,9 +7,9 @@
 <script>
 export default {
     props: {
-        id: String
-    }
-}
+        id: String,
+    },
+};
 </script>
 
 <style>

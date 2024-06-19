@@ -10,8 +10,6 @@ add_library(engine SHARED
     ../platform/windows/window.cpp
     ../platform/window.cpp
 
-    importers/glb.cpp
-
     renderer/linked_device.cpp
     renderer/texture.cpp
     renderer/shader.cpp

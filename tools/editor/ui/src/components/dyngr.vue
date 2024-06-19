@@ -2,7 +2,7 @@
     <div v-if="this.type == 'row'" class="dyngr-container row">
         <slot></slot>
     </div>
-    <div v-if="this.type == 'col'" class="dyngr-container col">
+    <div v-else-if="this.type == 'col'" class="dyngr-container col">
         <slot></slot>
     </div>
 </template>
@@ -10,18 +10,18 @@
 <script>
 export default {
     props: {
-        type: String
+        type: String,
     },
     methods: {
         onPanelCreate(e) {
             let requiredParent = this.$parent;
-            while(!requiredParent.onPanelCreate) {
+            while (!requiredParent.onPanelCreate) {
                 requiredParent = requiredParent.$parent;
             }
             requiredParent.onPanelCreate(e);
-        }
-    }
-}
+        },
+    },
+};
 </script>
 
 <style>

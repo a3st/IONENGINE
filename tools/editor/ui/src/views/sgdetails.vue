@@ -1,68 +1,97 @@
 <template>
-    <div v-if="type == 'resources'" class="pan-wrapper" style="background-color: #2f2f2f; gap: 10px;">
-        <optext v-for="(resource, index) in resources" :icon="require('../images/buffer.svg')"
-            @remove="onResourceDeleteClick($event, index)">
+    <div
+        v-if="type == 'resources'"
+        class="pan-wrapper"
+        style="background-color: #2f2f2f; gap: 10px"
+    >
+        <optext
+            v-for="(resource, index) in resources"
+            :key="resource.name"
+            :icon="require('../images/buffer.svg')"
+            @remove="onResourceDeleteClick($event, index)"
+        >
             <template #header>
-                <input type="text" placeholder="Type name" v-model="resource.name">
+                <input
+                    type="text"
+                    placeholder="Type name"
+                    v-model="resource.name"
+                />
             </template>
             <template #expand>
-                <optli title="Type" type="select" v-model="resource.type" v-bind:content="resourceTypes"></optli>
+                <optli
+                    title="Type"
+                    type="select"
+                    v-model="resource.type"
+                    v-bind:content="resourceTypes"
+                ></optli>
             </template>
         </optext>
 
-        <button class="btn" @click="onResourceAddClick($event)">Add New Resource</button>
+        <button class="btn" @click="onResourceAddClick($event)">
+            Add New Resource
+        </button>
     </div>
 
-    <div v-else-if="type == 'shader'" class="pan-wrapper" style="background-color: #2f2f2f; gap: 10px;">
+    <div
+        v-else-if="type == 'shader'"
+        class="pan-wrapper"
+        style="background-color: #2f2f2f; gap: 10px"
+    >
         <optgr v-if="domain == 'unlit'">
-            <optli title="Surface" type="select" v-model="shaderDomain" v-bind:content="shaderDomains"></optli>
+            <optli
+                title="Surface"
+                type="select"
+                v-model="shaderDomain"
+                v-bind:content="shaderDomains"
+            ></optli>
             <optli title="Blend" type="select"></optli>
             <optli title="Double Sided" type="checkbox"></optli>
         </optgr>
-        <optgr v-else="domain == 'lit'">
-
-        </optgr>
+        <optgr v-else-if="domain == 'lit'"> </optgr>
     </div>
 </template>
 
 <script>
-import OptextComponent from '../components/optext.vue';
-import OptliComponent from '../components/optli.vue';
-import OptgrComponent from '../components/optgr.vue';
+import OptextComponent from "../components/optext.vue";
+import OptliComponent from "../components/optli.vue";
+import OptgrComponent from "../components/optgr.vue";
 
 export default {
     components: {
-        'optext': OptextComponent,
-        'optli': OptliComponent,
-        'optgr': OptgrComponent,
+        optext: OptextComponent,
+        optli: OptliComponent,
+        optgr: OptgrComponent,
     },
     props: {
-        type: String
+        type: String,
     },
     data() {
         return {
             resourceTypes: [
-                "Texture2D", "float4", "float3", "float2", "float", "bool"
+                "Texture2D",
+                "float4",
+                "float3",
+                "float2",
+                "float",
+                "bool",
             ],
             resources: [],
-            domain: null
-        }
+            domain: null,
+        };
     },
-    mounted() {
-
-    },
+    mounted() {},
     methods: {
         onResourceAddClick(e) {
             this.resources.push({
-                'name': 'newResource',
-                'type': 0
+                name: "newResource",
+                type: 0,
             });
         },
         onResourceDeleteClick(e, index) {
             this.resources.splice(index, 1);
-        }
-    }
-}
+        },
+    },
+};
 
 /*resources: {
             handler(value, oldValue) {

@@ -11,7 +11,7 @@ namespace ionengine
     {
     }
 
-    auto TextureAsset::create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> bool
+    auto TextureAsset::create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> void
     {
         if (usage == TextureUsage::RenderTarget)
         {
@@ -31,7 +31,6 @@ namespace ionengine
                                                          rhi::TextureDimension::_2D,
                                                          (rhi::TextureUsageFlags)rhi::TextureUsage::ShaderResource);
         }
-        return true;
     }
 
     auto TextureAsset::getTexture() const -> core::ref_ptr<rhi::Texture>

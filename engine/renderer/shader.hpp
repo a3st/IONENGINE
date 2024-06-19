@@ -9,7 +9,6 @@
 namespace ionengine
 {
     class LinkedDevice;
-    class Renderer;
 
     class ShaderAsset : public Asset
     {
@@ -26,11 +25,7 @@ namespace ionengine
 
         auto loadFromFile(std::filesystem::path const& filePath) -> bool;
 
-        template <typename Type>
-        auto setOptions(std::string_view const option, Type value, Renderer& renderer) -> void
-        {
-            
-        }
+        auto loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool;
 
         auto getOptions() const -> std::unordered_map<std::string, ShaderOption>;
 
@@ -40,5 +35,7 @@ namespace ionengine
         LinkedDevice* device;
         core::ref_ptr<rhi::Shader> shaderProgram;
         std::unordered_map<std::string, ShaderOption> options;
+
+        auto parseShaderEffectData(rhi::fx::ShaderEffectData const& shaderEffect) -> bool;
     };
 } // namespace ionengine

@@ -3,6 +3,8 @@
 #pragma once
 
 #include "core/serializable.hpp"
+#include "engine/engine.hpp"
+#include "generator.hpp"
 #include "graph/scene.hpp"
 
 namespace ionengine::tools::editor
@@ -55,6 +57,11 @@ namespace ionengine::tools::editor
         auto serialize(ShaderGraphData const& object, std::basic_ostream<uint8_t>& stream) -> size_t;
     } // namespace internal
 
+    struct ShaderGraphResult : public core::ref_counted_object
+    {
+        std::vector<uint8_t> outputShaderData;
+    };
+
     class ShaderGraphEditor
     {
       public:
@@ -64,8 +71,6 @@ namespace ionengine::tools::editor
 
         auto loadFromFile(std::filesystem::path const& filePath) -> bool;
 
-        auto loadFromBuffer(std::span<uint8_t const> const bufferData) -> bool;
-
         auto dump() -> ShaderGraphData;
 
         auto getScene() -> core::ref_ptr<Scene>;
@@ -73,6 +78,8 @@ namespace ionengine::tools::editor
         auto getComponentRegistry() -> editor::ComponentRegistry&;
 
         auto getGraphType() const -> ShaderGraphType;
+
+        auto compile() -> core::ref_ptr<ShaderGraphResult>;
 
       private:
         editor::ComponentRegistry componentRegistry;

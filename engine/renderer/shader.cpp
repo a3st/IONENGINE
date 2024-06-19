@@ -6,7 +6,7 @@
 
 namespace ionengine
 {
-    inline auto fxShaderElementToRHI(rhi::fx::ShaderElementType const format) -> rhi::VertexFormat
+    auto fxShaderElementToRHI(rhi::fx::ShaderElementType const format) -> rhi::VertexFormat
     {
         switch (format)
         {
@@ -37,7 +37,7 @@ namespace ionengine
         }
     }
 
-    inline auto isSemanticVertexDeclaration(std::string_view const semantic) -> bool
+    auto isSemanticVertexDeclaration(std::string_view const semantic) -> bool
     {
         if (semantic.contains("POSITION"))
         {
@@ -66,16 +66,8 @@ namespace ionengine
         return shaderProgram;
     }
 
-    auto ShaderAsset::loadFromFile(std::filesystem::path const& filePath) -> bool
+    auto ShaderAsset::parseShaderEffectData(rhi::fx::ShaderEffectData const& shaderEffect) -> bool
     {
-        auto result = core::loadFromFile<rhi::fx::ShaderEffectData>(filePath);
-        if (!result.has_value())
-        {
-            return false;
-        }
-
-        rhi::fx::ShaderEffectData shaderEffect = std::move(result.value());
-
         std::string targetType;
         switch (shaderEffect.target)
         {
@@ -91,32 +83,28 @@ namespace ionengine
 
         if (targetType != device->getDevice().getBackendType())
         {
-            std::cerr << std::format("[Renderer] ShaderAsset {} has a different shader backend",
-                                     filePath.generic_string())
-                      << std::endl;
+            std::cerr << "[Renderer] ShaderAsset {} has a different shader backend" << std::endl;
             return false;
         }
 
         if (shaderEffect.technique.stages.find(rhi::fx::ShaderStageType::Compute) !=
             shaderEffect.technique.stages.end())
         {
-            uint32_t const bufferIndex = shaderEffect.technique.stages[rhi::fx::ShaderStageType::Compute].buffer;
+            uint32_t const bufferIndex = shaderEffect.technique.stages.at(rhi::fx::ShaderStageType::Compute).buffer;
             shaderProgram = device->getDevice().createShader(shaderEffect.buffers[bufferIndex]);
         }
         else
         {
-            uint32_t const vertexBufferIndex = shaderEffect.technique.stages[rhi::fx::ShaderStageType::Vertex].buffer;
-            uint32_t const pixelBufferIndex = shaderEffect.technique.stages[rhi::fx::ShaderStageType::Pixel].buffer;
+            uint32_t const vertexBufferIndex =
+                shaderEffect.technique.stages.at(rhi::fx::ShaderStageType::Vertex).buffer;
+            uint32_t const pixelBufferIndex = shaderEffect.technique.stages.at(rhi::fx::ShaderStageType::Pixel).buffer;
 
             auto found = std::find_if(shaderEffect.structures.begin(), shaderEffect.structures.end(),
                                       [](auto const& element) { return element.name == "VS_INPUT"; });
             if (found == shaderEffect.structures.end())
             {
-                std::cerr
-                    << std::format(
-                           "[Renderer] ShaderAsset {} hasn't input assembler and cannot be used as a vertex shader",
-                           filePath.generic_string())
-                    << std::endl;
+                std::cerr << "[Renderer] ShaderAsset {} hasn't input assembler and cannot be used as a vertex shader"
+                          << std::endl;
                 return false;
             }
 
@@ -181,6 +169,30 @@ namespace ionengine
             }
         }
         return true;
+    }
+
+    auto ShaderAsset::loadFromFile(std::filesystem::path const& filePath) -> bool
+    {
+        auto result = core::loadFromFile<rhi::fx::ShaderEffectData>(filePath);
+        if (!result.has_value())
+        {
+            return false;
+        }
+
+        rhi::fx::ShaderEffectData shaderEffect = std::move(result.value());
+        return this->parseShaderEffectData(shaderEffect);
+    }
+
+    auto ShaderAsset::loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool
+    {
+        auto result = core::loadFromBytes<rhi::fx::ShaderEffectData>(dataBytes);
+        if (!result.has_value())
+        {
+            return false;
+        }
+
+        rhi::fx::ShaderEffectData shaderEffect = std::move(result.value());
+        return this->parseShaderEffectData(shaderEffect);
     }
 
     auto ShaderAsset::getOptions() const -> std::unordered_map<std::string, ShaderOption>
