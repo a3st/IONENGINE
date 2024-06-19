@@ -1,6 +1,7 @@
-const path = require('path')
-const { VueLoaderPlugin } = require('vue-loader')
-const FileManagerPlugin = require('filemanager-webpack-plugin')
+const path = require('path');
+
+const { VueLoaderPlugin } = require('vue-loader');
+const FileManagerPlugin = require('filemanager-webpack-plugin');
 
 module.exports = {
     entry: './src/index.js',
@@ -16,12 +17,15 @@ module.exports = {
                 onEnd: {
                     copy: [
                         {
-                            source: path.join(__dirname, 'dist'),
-                            destination: path.join(__dirname, '../../../build/tools/resources')
+                            source: path.resolve(__dirname, 'dist'),
+                            destination: path.resolve(__dirname, '..', '..', '..', 'build', 'tools', 'resources')
                         },
+                        /* 
+                            FlowGraph.js content 
+                        */
                         {
-                            source: path.join(__dirname, 'src', 'thirdparty', 'flowgraph.js', 'images'),
-                            destination: path.join(__dirname, '..', '..', '..', 'build', 'tools', 'resources', 'images')
+                            source: path.resolve(__dirname, 'src', 'thirdparty', 'flowgraph.js', 'images'),
+                            destination: path.resolve(__dirname, '..', '..', '..', 'build', 'tools', 'resources', 'images')
                         }
                     ]
                 }
@@ -29,12 +33,7 @@ module.exports = {
         })
     ],
     resolve: {
-        extensions: [ '.tsx', '.ts', '.js', '.vue' ],
-        alias: {
-            'vue': '/node_modules/vue/dist/vue.esm-browser.js',
-            'vue-router': '/node_modules/vue-router/dist/vue-router.esm-browser.js',
-            'marked': '/node_modules/marked/lib/marked.esm.js'
-        }
+        extensions: ['.tsx', '.ts', '.js', '.vue']
     },
     module: {
         rules: [
@@ -50,17 +49,23 @@ module.exports = {
             {
                 test: /\.css$/,
                 use: [
-                  'vue-style-loader',
-                  'css-loader'
+                    'vue-style-loader',
+                    'css-loader'
                 ]
             },
             {
-                test: /\.(png|svg|jpg|jpeg|gif)$/i,
+                test: /\.(png|svg|jpg|jpeg|gif|svg)$/i,
                 type: 'asset/resource',
+                generator: {
+                    filename: '[hash][ext][query]'
+                }
             },
             {
-               test: /\.(woff|woff2|eot|ttf|otf)$/i,
-               type: 'asset/resource',
+                test: /\.(woff|woff2|eot|ttf|otf)$/i,
+                type: 'asset/resource',
+                generator: {
+                    filename: '[hash][ext][query]'
+                }
             }
         ]
     }

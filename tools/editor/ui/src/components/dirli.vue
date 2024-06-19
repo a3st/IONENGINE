@@ -1,23 +1,25 @@
 <template>
     <div class="dirli-container">
-        <div class="dirli-header-container" @mousedown="onFolderOpenClick($event)">
-            <button v-if="isFolder" class="btn-icon" @click="onFolderExpandClick($event)">
-                <img v-bind:src="shown ? 'images/angle-up.svg' : 'images/angle-down.svg'" 
+        <div class="dirli-header-container">
+            <button v-if="isFolder" class="btn-icon" @click="onFolderExpandClick">
+                <img v-bind:src="shown ? require('../images/angle-up.svg') : require('../images/angle-down.svg')" 
                     width="12" height="12" />
             </button>
 
             <div v-else style="width: 24px;"></div>
 
-            <button class="btn-icon fixed">
-                <img v-bind:src="shown ? 'images/folder-open.svg' : 'images/folder.svg'" 
-                    width="16" height="16" />
-                <span>{{ item.name }}</span>
-            </button>
+            <div style="display: inline-flex; width: 100%;" @mousedown="onFolderOpenClick">
+                <button class="btn-icon fixed" style="gap: 5px; padding: 5px;">
+                    <img v-bind:src="shown ? require('../images/folder-open.svg') : require('../images/folder.svg')" 
+                        width="16" height="16" />
+                    <span>{{ item.name }}</span>
+                </button>
+            </div>
         </div>
 
         <div v-if="isFolder" class="dirli-body-container" v-show="shown">
             <dirli v-for="(child, index) in filteredFolderItems" :item="child" :key="index" :empty="child.isFolder" 
-                @click="onFolderOpenClick($event)"></dirli>
+                @click="onFolderOpenClick"></dirli>
         </div>
     </div>
 </template>
@@ -63,13 +65,6 @@ export default {
 .dirli-header-container {
     display: inline-flex;
     align-items: center;
-}
-
-.dirli-header-container > .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: white;
 }
 
 .dirli-header-container:hover {

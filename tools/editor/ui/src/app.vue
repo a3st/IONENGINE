@@ -3,7 +3,7 @@
 </template>
 
 <style>
-@import url('fonts/Roboto/embed.css');
+@import url('fonts/Roboto.css');
 
 * {
     box-sizing: border-box;
@@ -33,13 +33,14 @@ button {
     justify-content: center;
     border: 0;
     outline: 0;
+    color: white;
 }
 
 select {
-    width: 100%; 
+    width: 100%;
     padding: 5px;
-    background-color: rgb(60, 60, 60); 
-    color: white; 
+    background-color: rgb(60, 60, 60);
+    color: white;
     border: none;
 }
 

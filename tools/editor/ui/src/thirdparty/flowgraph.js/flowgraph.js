@@ -795,33 +795,44 @@ export default class FlowGraph {
         for (let i = 0; i < inputs.length; i++) {
             switch(inputs[i].type) {
                 case 'Number': {
+                    const numberValue = parseFloat(userData.options[inputs[i].name]);
+
                     inputsHTML += `
                         <div class="flowgraph-io-row left">
                             <div style="display: inline-flex; gap: 5px; align-items: center;">
                                 <span style="color: white;">${inputs[i].name}:</span>
-                                <input id="input_${id}_${i}" type="number" placeholder="${inputs[i].type}" style="width: 80px;" />
+                                <input id="input_${id}_${i}" type="number" value="${numberValue}" placeholder="${inputs[i].type}" style="width: 80px;" />
                             </div>
                         </div>
                     `;
                     break;
                 }
                 case 'String': {
+                    const stringValue = userData.options[inputs[i].name];
+
                     inputsHTML += `
                         <div class="flowgraph-io-row left">
                             <div style="display: inline-flex; gap: 5px; align-items: center;">
                                 <span style="color: white;">${inputs[i].name}:</span>
-                                <input id="input_${id}_${i}" type="text" placeholder="${inputs[i].type}" style="width: 80px;" />
+                                <input id="input_${id}_${i}" type="text" value="${stringValue}" placeholder="${inputs[i].type}" style="width: 80px;" />
                             </div>
                         </div>
                     `;
                     break;
                 }
                 case 'Color': {
+                    // https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+                    const hexToRgb = (r, g, b) => {
+                        return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
+                    };
+
+                    const colorValue = userData.options[inputs[i].name].split(',').map(x => Math.ceil(parseFloat(x) * 255));
+                    
                     inputsHTML += `
                         <div class="flowgraph-io-row left">
                             <div style="display: inline-flex; gap: 5px; align-items: center;">
                                 <span style="color: white;">${inputs[i].name}:</span>
-                                <input id="input_${id}_${i}" type="color" placeholder="${inputs[i].type}" style="width: 50px;" />
+                                <input id="input_${id}_${i}" type="color" value="${hexToRgb(...colorValue)}" placeholder="${inputs[i].type}" style="width: 50px;" />
                             </div>
                         </div>
                     `;

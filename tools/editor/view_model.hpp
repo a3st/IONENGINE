@@ -20,6 +20,8 @@ namespace ionengine::tools::editor
 
         auto getShaderGraphComponents() -> std::string;
 
+        auto shaderGraphAssetSave(std::string fileData, std::string sceneData) -> std::string;
+
         auto compileShader(std::string sceneData) -> std::string;
 
         auto getAssetTree() -> std::string;

@@ -1,6 +1,7 @@
 <template>
-    <div v-if="type == 'resources'" class="pan-wrapper" style="gap: 10px;">
-        <optext v-for="(resource, index) in resources" icon="images/buffer.svg" @remove="onResourceDeleteClick($event, index)">
+    <div v-if="type == 'resources'" class="pan-wrapper" style="background-color: #2f2f2f; gap: 10px;">
+        <optext v-for="(resource, index) in resources" :icon="require('../images/buffer.svg')"
+            @remove="onResourceDeleteClick($event, index)">
             <template #header>
                 <input type="text" placeholder="Type name" v-model="resource.name">
             </template>
@@ -11,8 +12,8 @@
 
         <button class="btn" @click="onResourceAddClick($event)">Add New Resource</button>
     </div>
-    
-    <div v-else-if="type == 'shader'" class="pan-wrapper" style="gap: 10px;">
+
+    <div v-else-if="type == 'shader'" class="pan-wrapper" style="background-color: #2f2f2f; gap: 10px;">
         <optgr v-if="domain == 'unlit'">
             <optli title="Surface" type="select" v-model="shaderDomain" v-bind:content="shaderDomains"></optli>
             <optli title="Blend" type="select"></optli>

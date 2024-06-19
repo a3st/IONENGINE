@@ -1,7 +1,7 @@
 <template>
     <div class="asset-container" @mousedown="onAssetClick($event)" @dblclick="onAssetDblClick($event)">
         <img style="object-fit: contain;"
-            v-bind:src="type == 'folder' ? 'images/folder.svg' : 'images/file.svg'" width="64" height="64" />
+            v-bind:src="type == 'folder' ? require('../images/folder.svg') : require('../images/file.svg')" width="64" height="64" />
         <input ref="editNameInput" v-if="edit" style="width: 64px; height: 15px;" 
             :value="curName" @blur="onEditNameBlur($event)" @keydown="onEditKeydown($event)" />
         <span v-else style="align-self: center; height: 15px;" :title="curName">{{ smallName }}</span>
@@ -50,7 +50,7 @@ export default {
             this.$emit('dblclick', e);
         },
         onEditNameBlur(e) {
-            if(this.curName.length != 0) {
+            if(this.edit && this.curName.length != 0) {
                 this.$emit('rename', e.target.value);
             }
             this.edit = false;
@@ -65,7 +65,7 @@ export default {
         onEditKeydown(e) {
             if(e.code == 'Enter') {
                 if(e.target.value.length != 0) {
-                    this.$emit('rename', e.target.value);
+                    e.target.blur();
                 }
                 this.edit = false;
             } else if(e.code == 'Escape') {

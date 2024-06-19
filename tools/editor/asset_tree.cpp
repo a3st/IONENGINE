@@ -53,23 +53,4 @@ namespace ionengine::tools::editor
         internalFetch(rootStruct.get(), rootPath);
         return *rootStruct;
     }
-
-    auto AssetTree::createFile(std::filesystem::path const& filePath, std::basic_ofstream<uint8_t>& stream) -> bool
-    {
-        stream.open(filePath, std::ios::binary);
-        return stream.is_open();
-    }
-
-    auto AssetTree::deleteFile(std::filesystem::path const& filePath) -> bool
-    {
-        return std::filesystem::remove(filePath);
-    }
-
-    auto AssetTree::renameFile(std::filesystem::path const& oldFilePath,
-                               std::filesystem::path const& newFilePath) -> bool
-    {
-        std::error_code error;
-        std::filesystem::rename(oldFilePath, newFilePath, error);
-        return !error;
-    }
 } // namespace ionengine::tools::editor

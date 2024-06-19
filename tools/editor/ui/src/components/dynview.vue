@@ -5,64 +5,28 @@
 </template>
 
 <script>
-import $ from 'jquery'
+import $ from 'jquery';
 
 export default {
     emits: ['resize'],
     data() {
         return {
-            observer: null,
             selectedMover: null,
             moverPos: 0,
             isMoverVertical: false
         };
     },
     mounted() {
-        const observer = new MutationObserver(this.dynViewSlotsChanged);
-        observer.observe(this.$el, {
-            childList: true,
-            subtree: false
-        });
-        this.observer = observer;
+        this.createResizeBars();
 
-        $('.dyngr-container.col')
-            .each((_, element) => {
-                $(element)
-                    .children()
-                    .each((index, element) => {
-                        if(index > 0) {
-                            $(element).append(`<div class="dynsize-bar col"></div>`);
-                        }
-                    });
-            });
-
-        $('.dyngr-container.row')
-            .each((_, element) => {
-                $(element)
-                    .children()
-                    .each((index, element) => {
-                        if(index > 0) {
-                            $(element).append(`<div class="dynsize-bar row"></div>`);
-                        }
-                    });
-            });
-
-        $('.dynsize-bar').bind('mousedown', e => {
-            if(this.selectedMover == null) {
-                this.selectedMover = e.target;
-                this.isMoverVertical = $(this.selectedMover).hasClass('row') ? false : true;
-                this.moverPos = this.isMoverVertical ? e.offsetY : e.offsetX;
-            }
-        });
-
-        $(document).bind('mouseup', e => {
-            if(this.selectedMover) {
+        document.addEventListener('mouseup', e => {
+            if (this.selectedMover) {
                 this.selectedMover = null;
             }
         });
 
-        $(document).bind('mousemove', e => {
-            if(this.selectedMover) {
+        document.addEventListener('mousemove', e => {
+            if (this.selectedMover) {
                 const distance = this.moverPos - (this.isMoverVertical ? e.offsetY : e.offsetX);
                 const currentPanel = $(this.selectedMover).parent();
                 const previousPanel = $(this.selectedMover).parent().prev();
@@ -70,29 +34,29 @@ export default {
                 const updatedCurrentSize = (this.isMoverVertical ? currentPanel.height() : currentPanel.width()) + distance;
                 const updatedPreviousSize = (this.isMoverVertical ? previousPanel.height() : previousPanel.width()) - distance;
 
-                if(updatedCurrentSize < 150 || updatedPreviousSize < 150) {
+                if (updatedCurrentSize < 150 || updatedPreviousSize < 150) {
                     return;
                 }
 
-                if(Math.abs(distance) > 20) {
+                if (Math.abs(distance) > 20) {
                     return;
                 }
-                
-                if(this.isMoverVertical) {
+
+                if (this.isMoverVertical) {
                     $(currentPanel)
                         .find('.dyngr-container.col')
                         .find('.dynpan-container')
-                        .each(function(index) {
+                        .each(function (index) {
                             const height = $(this).height();
                             const parentHeight = $(this).parent().height();
-                            
+
                             $(this).css('height', `${(100 * height / parentHeight).toFixed(2)}%`);
                         });
 
                     $(previousPanel)
                         .find('.dyngr-container.col')
                         .find('.dynpan-container')
-                        .each(function(index) {
+                        .each(function (index) {
                             const height = $(this).height();
                             const parentHeight = $(this).parent().height();
 
@@ -102,17 +66,17 @@ export default {
                     $(currentPanel)
                         .find('.dyngr-container.row')
                         .find('.dynpan-container')
-                        .each(function(index) {
+                        .each(function (index) {
                             const width = $(this).width();
                             const parentWidth = $(this).parent().width();
-                            
+
                             $(this).css('width', `${(100 * width / parentWidth).toFixed(2)}%`);
                         });
 
                     $(previousPanel)
                         .find('.dyngr-container.row')
                         .find('.dynpan-container')
-                        .each(function(index) {
+                        .each(function (index) {
                             const width = $(this).width();
                             const parentWidth = $(this).parent().width();
 
@@ -120,21 +84,54 @@ export default {
                         });
                 }
 
-                if(this.isMoverVertical) {
+                if (this.isMoverVertical) {
                     currentPanel.css('height', `${updatedCurrentSize}px`);
                     previousPanel.css('height', `${updatedPreviousSize}px`);
                 } else {
                     currentPanel.css('width', `${updatedCurrentSize}px`);
                     previousPanel.css('width', `${updatedPreviousSize}px`);
                 }
-                
+
                 this.$emit('resize', this.selectedMover);
             }
         });
     },
     methods: {
-        dynViewSlotsChanged(e) {
-            console.log('dynViewSlotsChanged', e)
+        onPanelCreate(e) {
+            this.createResizeBars();
+        },
+        createResizeBars() {
+            $('.dynsize-bar').remove();
+
+            $('.dyngr-container.col')
+                .each((_, element) => {
+                    $(element)
+                        .children()
+                        .each((index, element) => {
+                            if (index > 0) {
+                                $(element).append(`<div class="dynsize-bar col"></div>`);
+                            }
+                        });
+                });
+
+            $('.dyngr-container.row')
+                .each((_, element) => {
+                    $(element)
+                        .children()
+                        .each((index, element) => {
+                            if (index > 0) {
+                                $(element).append(`<div class="dynsize-bar row"></div>`);
+                            }
+                        });
+                });
+
+            $('.dynsize-bar').on('mousedown', e => {
+                if (this.selectedMover == null) {
+                    this.selectedMover = e.target;
+                    this.isMoverVertical = $(this.selectedMover).hasClass('row') ? false : true;
+                    this.moverPos = this.isMoverVertical ? e.offsetY : e.offsetX;
+                }
+            });
         }
     }
 }

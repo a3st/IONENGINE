@@ -136,6 +136,15 @@ namespace ionengine::tools::editor
 
             connectionData.source = sourceNodeID;
 
+            uint64_t sourceIndex;
+            error = connection["out"].get_uint64().get(sourceIndex);
+            if (error != simdjson::SUCCESS)
+            {
+                return false;
+            }
+
+            connectionData.out = sourceIndex;
+
             uint64_t destNodeID;
             error = connection["dest"].get_uint64().get(destNodeID);
             if (error != simdjson::SUCCESS)
@@ -145,15 +154,6 @@ namespace ionengine::tools::editor
 
             connectionData.dest = destNodeID;
 
-            uint64_t sourceIndex;
-            error = connection["out"].get_uint64().get(sourceIndex);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            connectionData.source = sourceIndex;
-
             uint64_t destIndex;
             error = connection["in"].get_uint64().get(destIndex);
             if (error != simdjson::SUCCESS)
@@ -161,7 +161,7 @@ namespace ionengine::tools::editor
                 return false;
             }
 
-            connectionData.dest = destIndex;
+            connectionData.in = destIndex;
 
             object.connections.emplace_back(std::move(connectionData));
         }
@@ -310,6 +310,9 @@ namespace ionengine::tools::editor
         {
             auto createdNode = sceneGraph->createNodeByID(node.componentID, node.nodeID);
             componentsOfNodes.emplace(node.nodeID, createdNode);
+
+            createdNode->posX = node.posX;
+            createdNode->posY = node.posY;
 
             for (auto const& [key, value] : node.options)
             {

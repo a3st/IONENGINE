@@ -219,6 +219,7 @@
     padding: 5px;
     background-color: rgb(245, 245, 245);
     font-size: 14px;
+    color: black;
 }
 
 .flowgraph-context-group button:hover {

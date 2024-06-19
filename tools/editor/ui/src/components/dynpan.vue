@@ -4,6 +4,19 @@
     </div>
 </template>
 
+<script>
+export default {
+    mounted() {
+        this.onPanelCreate(this.$el);
+    },
+    methods: {
+        onPanelCreate(e) {
+            this.$parent.onPanelCreate(e);
+        }
+    }
+}
+</script>
+
 <style>
 .dynpan-container {
     display: flex;

@@ -1,14 +1,14 @@
 <template>
     <div class="optext-container">
         <div class="optext-header-container">
-            <img v-bind:src="icon" width="16" height="16" />
+            <img :src="icon" width="16" height="16" />
             <slot name="header"></slot>
             <div class="optext-header-right-container">
                 <button class="btn-icon" @click="onExpandClick($event)">
-                    <img v-bind:src="shown ? 'images/angle-up.svg' : 'images/angle-down.svg'" width="16" height="16" />
+                    <img :src="shown ? require('../images/angle-up.svg') : require('../images/angle-down.svg')" width="16" height="16" />
                 </button>
                 <button class="btn-icon" @click="onRemoveClick($event)">
-                    <img src="images/trash-can.svg" width="16" height="16" />
+                    <img :src="require('../images/trash-can.svg')" width="16" height="16" />
                 </button>
             </div>
         </div>
@@ -53,7 +53,7 @@ export default {
     width: 100%;
     padding: 10px;
     gap: 10px;
-    background-color: rgb(45, 45, 45);
+    background-color: rgb(55, 55, 55);
 }
 
 .optext-header-container {
@@ -63,7 +63,7 @@ export default {
     padding: 10px;
     gap: 10px;
     align-items: center;
-    background-color: rgb(45, 45, 45);
+    background-color: rgb(55, 55, 55);
 }
 
 .optext-header-right-container {

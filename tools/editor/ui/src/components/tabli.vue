@@ -18,8 +18,7 @@ export default {
         title: String,
         icon: String,
         target: String,
-        fixed: Boolean,
-        default: Boolean
+        fixed: Boolean
     },
     methods: {
         onRemoveClick(e) {

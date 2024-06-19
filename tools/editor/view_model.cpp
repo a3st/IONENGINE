@@ -23,6 +23,9 @@ namespace ionengine::tools::editor
                   [this](std::string fileData) -> std::string { return this->assetBrowserOpenFile(fileData); });
 
         app->bind("getShaderGraphComponents", [this]() -> std::string { return this->getShaderGraphComponents(); });
+        app->bind("shaderGraphAssetSave", [this](std::string fileData, std::string sceneData) -> std::string {
+            return this->shaderGraphAssetSave(fileData, sceneData);
+        });
 
         app->bind("requestPreviewImage", [this]() -> std::string { return this->requestPreviewImage(); });
         app->bind("compileShader",
@@ -169,9 +172,10 @@ namespace ionengine::tools::editor
             }
             createPath = initialGenPath;
 
-            std::basic_ofstream<uint8_t> stream;
-            if (!assetTree.createFile(createPath, stream))
+            std::basic_ofstream<uint8_t> stream(createPath, std::ios::binary);
+            if (!stream.is_open())
             {
+                return "{\"error\":0}";
             }
 
             if (fileType.compare("asset/shadergraph/unlit") == 0)
@@ -222,7 +226,7 @@ namespace ionengine::tools::editor
             return "{\"error\":0}";
         }
 
-        if (assetTree.deleteFile(std::filesystem::path(filePath).make_preferred()))
+        if (std::filesystem::remove(std::filesystem::path(filePath).make_preferred()))
         {
             std::stringstream stream;
             stream << "{\"name\":\"" << fileName << "\",\"type\":\"" << fileType << "\",\"path\":\"" << filePath
@@ -272,23 +276,22 @@ namespace ionengine::tools::editor
         auto newPath = originalPath.parent_path() /
                        std::filesystem::path(std::string(newFileName) + originalPath.extension().generic_string());
 
+        std::cout << originalPath << std::endl;
+        std::cout << newPath << std::endl;
+
         if (std::filesystem::exists(newPath))
         {
-            return "{\"error\":0}";
+            return "{\"error\":23}";
         }
 
-        if (assetTree.renameFile(originalPath, newPath))
-        {
-            std::stringstream stream;
-            stream << "{\"newName\":\"" << newFileName << "\",\"type\":\"" << fileType << "\",\"oldPath\":\""
-                   << originalPath.generic_string() << "\",\"newPath\":\"" << newPath.generic_string() << "\"}";
+        std::filesystem::rename(originalPath, newPath);
 
-            return stream.str();
-        }
-        else
-        {
-            return "{\"error\":0}";
-        }
+        std::stringstream stream;
+        stream << "{\"newName\":\"" << newFileName << "\",\"type\":\"" << fileType << "\",\"oldPath\":\""
+               << originalPath.generic_string() << "\",\"oldName\":\"" << oldFileName << "\",\"newPath\":\""
+               << newPath.generic_string() << "\"}";
+
+        return stream.str();
     }
 
     auto ViewModel::assetBrowserOpenFile(std::string fileData) -> std::string
@@ -508,48 +511,78 @@ namespace ionengine::tools::editor
         return stream.str();
     }
 
-    auto ViewModel::compileShader(std::string sceneData) -> std::string
+    auto ViewModel::shaderGraphAssetSave(std::string fileData, std::string sceneData) -> std::string
     {
-        shaderGraph = core::make_ref<Scene>(shaderGraphEditor.getComponentRegistry());
-
-        std::cout << sceneData << std::endl;
-
         simdjson::ondemand::parser parser;
         auto document = parser.iterate(sceneData, sceneData.size() + simdjson::SIMDJSON_PADDING);
 
-        std::unordered_map<uint64_t, core::ref_ptr<Node>> componentsOfNodes;
+        ShaderGraphData graphData = {};
 
-        for (auto node : document["nodes"])
+        simdjson::ondemand::array nodes;
+        auto error = document["nodes"].get_array().get(nodes);
+        if (error != simdjson::SUCCESS)
         {
+            return "{\"error\":0}";
+        }
+
+        for (auto node : nodes)
+        {
+            NodeData nodeData = {};
+
             uint64_t nodeID;
-            auto error = node["id"].get_uint64().get(nodeID);
+            error = node["id"].get_uint64().get(nodeID);
             if (error != simdjson::SUCCESS)
             {
-                return "";
+                return "{\"error\":1}";
             }
+
+            nodeData.nodeID = nodeID;
+
+            simdjson::ondemand::array positions;
+            error = node["position"].get_array().get(positions);
+            if (error != simdjson::SUCCESS)
+            {
+                return "{\"error\":2}";
+            }
+
+            uint32_t i = 0;
+            std::array<int32_t, 2> arrayOfPositions;
+            for (auto position : positions)
+            {
+                int64_t value;
+                error = position.get_int64().get(value);
+                if (error != simdjson::SUCCESS)
+                {
+                    return "{\"error\":3}";
+                }
+                arrayOfPositions[i] = value;
+                ++i;
+            }
+
+            nodeData.posX = arrayOfPositions[0];
+            nodeData.posY = arrayOfPositions[1];
 
             simdjson::ondemand::object userData;
             error = node["userData"].get_object().get(userData);
             if (error != simdjson::SUCCESS)
             {
-                return "";
+                return "{\"error\":4}";
             }
 
             uint64_t componentID;
             error = userData["componentID"].get_uint64().get(componentID);
             if (error != simdjson::SUCCESS)
             {
-                return "";
+                return "{\"error\":5}";
             }
 
-            auto createdNode = shaderGraph->createNodeByID(componentID, nodeID);
-            componentsOfNodes.emplace(nodeID, createdNode);
+            nodeData.componentID = componentID;
 
             simdjson::ondemand::object options;
             userData["options"].get_object().get(options);
             if (error != simdjson::SUCCESS)
             {
-                return "";
+                return "{\"error\":6}";
             }
 
             for (auto element : options)
@@ -558,110 +591,105 @@ namespace ionengine::tools::editor
                 error = element.unescaped_key().get(key);
                 if (error != simdjson::SUCCESS)
                 {
-                    return "";
+                    return "{\"error\":7}";
                 }
 
                 std::string_view value;
                 error = element.value().get_string().get(value);
                 if (error != simdjson::SUCCESS)
                 {
-                    return "";
+                    return "{\"error\":8}";
                 }
 
-                createdNode->options[std::string(key)] = std::string(value);
+                nodeData.options[std::string(key)] = std::string(value);
             }
 
-            if (createdNode->inputs.empty())
-            {
-                for (auto input : node["inputs"])
-                {
-                    std::string_view socketType;
-                    error = input["type"].get_string().get(socketType);
-                    if (error != simdjson::SUCCESS)
-                    {
-                        return "";
-                    }
-
-                    std::string_view socketName;
-                    error = input["name"].get_string().get(socketName);
-                    if (error != simdjson::SUCCESS)
-                    {
-                        return "";
-                    }
-
-                    Node::SocketInfo socketInfo = {.socketName = std::string(socketName),
-                                                   .socketType = std::string(socketType)};
-
-                    createdNode->inputs.emplace_back(std::move(socketInfo));
-                }
-            }
-
-            if (createdNode->outputs.empty())
-            {
-                for (auto output : node["outputs"])
-                {
-                    std::string_view socketType;
-                    error = output["type"].get_string().get(socketType);
-                    if (error != simdjson::SUCCESS)
-                    {
-                        return "";
-                    }
-
-                    std::string_view socketName;
-                    error = output["name"].get_string().get(socketName);
-                    if (error != simdjson::SUCCESS)
-                    {
-                        return "";
-                    }
-
-                    Node::SocketInfo socketInfo = {.socketName = std::string(socketName),
-                                                   .socketType = std::string(socketType)};
-
-                    createdNode->outputs.emplace_back(std::move(socketInfo));
-                }
-            }
+            graphData.nodes.emplace_back(std::move(nodeData));
         }
 
-        for (auto connection : document["connections"])
+        simdjson::ondemand::array connections;
+        error = document["connections"].get_array().get(connections);
+        if (error != simdjson::SUCCESS)
         {
+            return "{\"error\":9}";
+        }
+
+        for (auto connection : connections)
+        {
+            ConnectionData connectionData = {};
+
             uint64_t connectionID;
             auto error = connection["id"].get_uint64().get(connectionID);
             if (error != simdjson::SUCCESS)
             {
-                return "";
+                return "{\"error\":10}";
             }
+
+            connectionData.connectionID = connectionID;
 
             uint64_t sourceNodeID;
             error = connection["source"].get_uint64().get(sourceNodeID);
             if (error != simdjson::SUCCESS)
             {
-                return "";
+                return "{\"error\":11}";
             }
 
-            uint64_t destNodeID;
-            error = connection["dest"].get_uint64().get(destNodeID);
-            if (error != simdjson::SUCCESS)
-            {
-                return "";
-            }
+            connectionData.source = sourceNodeID;
 
             uint64_t sourceIndex;
             error = connection["out"].get_uint64().get(sourceIndex);
             if (error != simdjson::SUCCESS)
             {
-                return "";
+                return "{\"error\":13}";
             }
+
+            connectionData.out = sourceIndex;
+
+            uint64_t destNodeID;
+            error = connection["dest"].get_uint64().get(destNodeID);
+            if (error != simdjson::SUCCESS)
+            {
+                return "{\"error\":12}";
+            }
+
+            connectionData.dest = destNodeID;
 
             uint64_t destIndex;
             error = connection["in"].get_uint64().get(destIndex);
             if (error != simdjson::SUCCESS)
             {
-                return "";
+                return "{\"error\":14}";
             }
 
-            shaderGraph->createConnection(connectionID, componentsOfNodes[sourceNodeID], sourceIndex,
-                                          componentsOfNodes[destNodeID], destIndex);
+            connectionData.in = destIndex;
+
+            graphData.connections.emplace_back(std::move(connectionData));
         }
+
+        document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
+
+        std::string_view filePath;
+        error = document["path"].get_string().get(filePath);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":15}";
+        }
+
+        if (core::saveToFile<ShaderGraphData>(graphData, std::filesystem::path(filePath).make_preferred()))
+        {
+            return fileData;
+        }
+        else
+        {
+            return "{\"error\":16}";
+        }
+    }
+
+    auto ViewModel::compileShader(std::string sceneData) -> std::string
+    {
+        shaderGraph = core::make_ref<Scene>(shaderGraphEditor.getComponentRegistry());
+
+        std::cout << sceneData << std::endl;
 
         this->compileShaderGraph();
         return "test";

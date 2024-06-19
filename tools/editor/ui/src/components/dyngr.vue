@@ -11,6 +11,15 @@
 export default {
     props: {
         type: String
+    },
+    methods: {
+        onPanelCreate(e) {
+            let requiredParent = this.$parent;
+            while(!requiredParent.onPanelCreate) {
+                requiredParent = requiredParent.$parent;
+            }
+            requiredParent.onPanelCreate(e);
+        }
     }
 }
 </script>
