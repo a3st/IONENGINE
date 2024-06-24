@@ -18,6 +18,8 @@ namespace ionengine::core
     {
         class InputJSON;
         class OutputJSON;
+        class InputArchive;
+        class OutputArchive;
 
         namespace internal
         {
@@ -31,12 +33,35 @@ namespace ionengine::core
             {
             };
 
+            template <typename>
+            struct is_std_unique_ptr : std::false_type
+            {
+            };
+
+            template <typename T, typename A>
+            struct is_std_unique_ptr<std::unique_ptr<T, A>> : std::true_type
+            {
+            };
+
+            template <typename>
+            struct is_std_array : std::false_type
+            {
+            };
+
+            template <typename T, std::size_t N>
+            struct is_std_array<std::array<T, N>> : std::true_type
+            {
+            };
+
             template <typename Type>
             auto propertyResolveFromJSON(InputJSON& inputJSON, simdjson::ondemand::value it, Type& element) -> void;
 
             template <typename Type>
             auto propertyResolveToJSON(OutputJSON& outputJSON, std::string_view const jsonName,
                                        Type const& element) -> void;
+
+            template <typename Type>
+            auto propertyResolveToBinary(OutputArchive outputArchive, Type const& element) -> void;
         } // namespace internal
 
         class InputJSON
@@ -167,6 +192,33 @@ namespace ionengine::core
                         ++i;
                     }
                 }
+                else if constexpr (is_std_array<Type>::value)
+                {
+                    simdjson::ondemand::array elements;
+                    auto error = it.get_array().get(elements);
+                    if (error != simdjson::SUCCESS)
+                    {
+                        throw core::Exception("An error occurred while deserializing a field");
+                    }
+
+                    auto constexpr arraySize = std::tuple_size<Type>::value;
+
+                    uint32_t i = 0;
+                    for (auto e : elements)
+                    {
+                        if (i >= arraySize)
+                        {
+                            throw core::Exception("An error occurred while deserializing a field");
+                        }
+                        propertyResolveFromJSON(inputJSON, e.value(), element[i]);
+                        ++i;
+                    }
+                }
+                else if constexpr (is_std_unique_ptr<Type>::value)
+                {
+                    element = std::make_unique<typename Type::element_type>();
+                    propertyResolveFromJSON(inputJSON, it, *element);
+                }
                 else if constexpr (std::is_same_v<
                                        Type,
                                        std::unordered_map<
@@ -289,6 +341,35 @@ namespace ionengine::core
                     }
                     outputJSON.jsonChunk << "],";
                 }
+                else if constexpr (is_std_array<Type>::value)
+                {
+                    outputJSON.jsonChunk << "\"" << jsonName << "\":[";
+                    bool isFirst = true;
+
+                    auto constexpr arraySize = std::tuple_size<Type>::value;
+
+                    uint32_t i = 0;
+                    for (auto const& e : element)
+                    {
+                        if (i >= arraySize)
+                        {
+                            throw core::Exception("An error occurred while serializing a field");
+                        }
+
+                        if (!isFirst)
+                        {
+                            outputJSON.jsonChunk << ",";
+                        }
+                        propertyResolveToJSON(outputJSON, "", e);
+                        isFirst = false;
+                        ++i;
+                    }
+                    outputJSON.jsonChunk << "],";
+                }
+                else if constexpr (is_std_unique_ptr<Type>::value)
+                {
+                    propertyResolveToJSON(outputJSON, jsonName, *element);
+                }
                 else if constexpr (std::is_same_v<
                                        Type,
                                        std::unordered_map<
@@ -337,7 +418,7 @@ namespace ionengine::core
                         auto result = outputJSON.enumFields.find(static_cast<uint32_t>(element));
                         if (result == outputJSON.enumFields.end())
                         {
-                            throw core::Exception("An error occurred while deserializing a field");
+                            throw core::Exception("An error occurred while serializing a field");
                         }
 
                         outputJSON.jsonChunk << "\"" << result->second << "\"";
@@ -364,11 +445,72 @@ namespace ionengine::core
 
         class InputArchive
         {
+          public:
+            InputArchive(std::basic_istream<uint8_t>& stream) : stream(&stream)
+            {
+            }
+
+          private:
+            std::basic_istream<uint8_t>* stream;
         };
 
         class OutputArchive
         {
+            template <typename Type>
+            friend auto internal::propertyResolveToBinary(OutputArchive outputArchive, Type const& element) -> void;
+
+          public:
+            OutputArchive(std::basic_ostream<uint8_t>& stream) : stream(&stream)
+            {
+            }
+
+            template <typename Type>
+            auto property(Type const& element) -> void
+            {
+                internal::propertyResolveToBinary(*this, element);
+            }
+
+            template <typename OutputArchive, typename InputArchive, typename Type>
+            auto with(Type const& element) -> void
+            {
+                std::cout << "with" << std::endl;
+            }
+
+            template <typename Type>
+            auto operator()(Type const& object) -> size_t
+            {
+                const_cast<Type&>(object)(*this);
+
+                /*std::string rawJSON = jsonChunk.str();
+                rawJSON = rawJSON.substr(0, rawJSON.size() - 1) + "}";
+
+                stream->write(reinterpret_cast<uint8_t const*>(rawJSON.data()), rawJSON.size());*/
+                return stream->tellp();
+            }
+
+          private:
+            std::basic_ostream<uint8_t>* stream;
         };
+
+        namespace internal
+        {
+            template <typename Type>
+            auto propertyResolveToBinary(OutputArchive outputArchive, Type const& element) -> void
+            {
+                if constexpr (is_std_vector<Type>::value)
+                {
+                }
+                else
+                {
+                    if constexpr (std::is_integral_v<Type> && !std::is_same_v<Type, bool> ||
+                                  std::is_floating_point_v<Type>)
+                    {
+                        uint32_t value = element;
+                        outputArchive.stream->write(reinterpret_cast<uint8_t*>(&value), sizeof(uint32_t));
+                    }
+                }
+            }
+        } // namespace internal
     }; // namespace serialize
 
     template <typename Type, typename Archive = serialize::OutputArchive>

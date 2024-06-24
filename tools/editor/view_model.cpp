@@ -8,6 +8,85 @@
 
 namespace ionengine::tools::editor
 {
+    struct AssetOpenFileInfo
+    {
+        std::string assetName;
+        std::string assetType;
+        std::string assetPath;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(assetName, "name");
+            archive.property(assetType, "type");
+            archive.property(assetPath, "path");
+        }
+    };
+
+    struct AssetCreateFileInfo
+    {
+        std::string assetName;
+        std::string assetType;
+        std::string assetPath;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(assetName, "name");
+            archive.property(assetType, "type");
+            archive.property(assetPath, "path");
+        }
+    };
+
+    struct AssetSaveFileInfo
+    {
+        std::string assetName;
+        std::string assetType;
+        std::string assetPath;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(assetName, "name");
+            archive.property(assetType, "type");
+            archive.property(assetPath, "path");
+        }
+    };
+
+    struct AssetDeleteFileInfo
+    {
+        std::string assetName;
+        std::string assetType;
+        std::string assetPath;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(assetName, "name");
+            archive.property(assetType, "type");
+            archive.property(assetPath, "path");
+        }
+    };
+
+    struct AssetRenameFileInfo
+    {
+        std::string assetNewName;
+        std::string assetNewPath;
+        std::string assetOldName;
+        std::string assetOldPath;
+        std::string assetType;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(assetNewName, "newName");
+            archive.property(assetNewPath, "newPath");
+            archive.property(assetOldName, "oldName");
+            archive.property(assetOldPath, "oldPath");
+            archive.property(assetType, "type");
+        }
+    };
+
     ViewModel::ViewModel(libwebview::App* app)
         : Engine(nullptr), app(app), assetTree("E:\\GitHub\\IONENGINE\\build\\assets")
     {
@@ -59,109 +138,23 @@ namespace ionengine::tools::editor
 
     auto ViewModel::getAssetTree() -> std::string
     {
-        /*std::stringstream stream;
-        auto internalLoop = [](this auto const& internalLoop, AssetStructInfo const* curStruct,
-                               std::stringstream& stream) -> void {
-            std::string assetType;
-            bool isFolder = false;
-            switch (curStruct->assetType)
-            {
-                case AssetType::Folder: {
-                    assetType = "folder";
-                    isFolder = true;
-                    break;
-                }
-                case AssetType::Asset: {
-                    std::basic_ifstream<uint8_t> stream(curStruct->path, std::ios::binary);
-                    auto result = getAssetHeader(stream);
-                    if (result.has_value())
-                    {
-                        asset::Header header = std::move(result.value());
-                        if (std::memcmp(header.fileType.data(), ShaderGraphFileType.data(),
-                                        ShaderGraphFileType.size()) == 0)
-                        {
-                            assetType = "asset/shadergraph";
-                        }
-                        else
-                        {
-                            assetType = "asset/unknown";
-                        }
-                    }
-                    else
-                    {
-                        assetType = "file/unknown";
-                    }
-                    break;
-                }
-                default: {
-                    assetType = "file/unknown";
-                    break;
-                }
-            }
-
-            stream << "{\"name\":\"" << curStruct->name << "\",\"type\":\"" << assetType << "\",\"path\":\""
-                   << curStruct->path.generic_string() << "\"";
-
-            if (isFolder)
-            {
-                stream << ",\"childrens\":[";
-                for (auto const i : std::views::iota(0u, curStruct->childrens.size()))
-                {
-                    internalLoop(curStruct->childrens[i].get(), stream);
-                }
-                stream << "]";
-            }
-
-            stream << "},";
-        };
-
-        internalLoop(&assetTree.fetch(), stream);
-
-        // Idk how realize algorithm through isFirst, !isFirst
-        std::regex const jsonCommaRemove("\\,\\]");
-
-        std::string jsonData = stream.str();
-        jsonData = jsonData.substr(0, jsonData.size() - 1);*/
-
-        auto result = core::saveToBytes<AssetStructInfo, core::serialize::OutputJSON>(assetTree.fetch());
-        if (!result.has_value())
-        {
-        }
-
-        auto buffer = result.value();
-        std::cout << std::string(reinterpret_cast<char*>(buffer.data()), buffer.size()) << std::endl;
+        auto buffer = core::saveToBytes<AssetStructInfo, core::serialize::OutputJSON>(assetTree.fetch()).value();
         return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
     }
 
     auto ViewModel::assetBrowserCreateFile(std::string fileData) -> std::string
     {
-        simdjson::ondemand::parser parser;
-        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
-
-        std::string_view filePath;
-        auto error = document["path"].get_string().get(filePath);
-        if (error != simdjson::SUCCESS)
+        auto result = core::loadFromBytes<AssetCreateFileInfo, core::serialize::InputJSON>(
+            std::span<uint8_t>(reinterpret_cast<uint8_t*>(fileData.data()), fileData.size()));
+        if (!result.has_value())
         {
             return "{\"error\":0}";
         }
 
-        std::string_view fileName;
-        error = document["name"].get_string().get(fileName);
-        if (error != simdjson::SUCCESS)
-        {
-            return "{\"error\":0}";
-        }
-
-        std::string_view fileType;
-        error = document["type"].get_string().get(fileType);
-        if (error != simdjson::SUCCESS)
-        {
-            return "{\"error\":0}";
-        }
+        AssetCreateFileInfo fileInfo = std::move(result.value());
 
         // Create File
-        std::string assetType(fileType);
-        auto createPath = std::filesystem::path(filePath).make_preferred();
+        auto createPath = std::filesystem::path(fileInfo.assetPath).make_preferred();
         {
             uint32_t i = 0;
             std::filesystem::path initialGenPath = createPath;
@@ -180,13 +173,13 @@ namespace ionengine::tools::editor
                 return "{\"error\":0}";
             }
 
-            if (fileType.compare("asset/shadergraph/unlit") == 0)
+            if (fileInfo.assetType.compare("asset/shadergraph/unlit") == 0)
             {
                 shaderGraphEditor.create(ShaderGraphType::Unlit);
 
                 // Change to general shadergraph type
                 // Shadergraph contains type in Output Node's 'userData' options
-                assetType = "asset/shadergraph";
+                fileInfo.assetType = "asset/shadergraph";
 
                 ShaderGraphData graphData = std::move(shaderGraphEditor.dump());
                 if (!(core::Serializable<ShaderGraphData>::serialize(graphData, stream) > 0))
@@ -195,145 +188,87 @@ namespace ionengine::tools::editor
                 }
             }
         }
+        fileInfo.assetName = createPath.stem().generic_string();
+        fileInfo.assetPath = createPath.generic_string();
 
-        std::stringstream stream;
-        stream << "{\"name\":\"" << createPath.stem().generic_string() << "\",\"type\":\"" << assetType
-               << "\",\"path\":\"" << createPath.generic_string() << "\"}";
-        return stream.str();
+        auto buffer = core::saveToBytes<AssetCreateFileInfo, core::serialize::OutputJSON>(fileInfo).value();
+        return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
     }
 
     auto ViewModel::assetBrowserDeleteFile(std::string fileData) -> std::string
     {
-        simdjson::ondemand::parser parser;
-        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
-
-        std::string_view filePath;
-        auto error = document["path"].get_string().get(filePath);
-        if (error != simdjson::SUCCESS)
+        auto result = core::loadFromBytes<AssetDeleteFileInfo, core::serialize::InputJSON>(
+            std::span<uint8_t>(reinterpret_cast<uint8_t*>(fileData.data()), fileData.size()));
+        if (!result.has_value())
         {
             return "{\"error\":0}";
         }
 
-        std::string_view fileName;
-        error = document["name"].get_string().get(fileName);
-        if (error != simdjson::SUCCESS)
-        {
-            return "{\"error\":0}";
-        }
+        AssetDeleteFileInfo fileInfo = std::move(result.value());
 
-        std::string_view fileType;
-        error = document["type"].get_string().get(fileType);
-        if (error != simdjson::SUCCESS)
+        if (std::filesystem::remove(std::filesystem::path(fileInfo.assetPath).make_preferred()))
         {
-            return "{\"error\":0}";
-        }
-
-        if (std::filesystem::remove(std::filesystem::path(filePath).make_preferred()))
-        {
-            std::stringstream stream;
-            stream << "{\"name\":\"" << fileName << "\",\"type\":\"" << fileType << "\",\"path\":\"" << filePath
-                   << "\"}";
-            return stream.str();
+            auto buffer = core::saveToBytes<AssetDeleteFileInfo, core::serialize::OutputJSON>(fileInfo).value();
+            return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
         }
         else
         {
-            return "{\"error\":0}";
+            return "{\"error\":1}";
         }
     }
 
     auto ViewModel::assetBrowserRenameFile(std::string fileData) -> std::string
     {
-        simdjson::ondemand::parser parser;
-        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
-
-        std::string_view oldFileName;
-        auto error = document["oldName"].get_string().get(oldFileName);
-        if (error != simdjson::SUCCESS)
+        auto result = core::loadFromBytes<AssetRenameFileInfo, core::serialize::InputJSON>(
+            std::span<uint8_t>(reinterpret_cast<uint8_t*>(fileData.data()), fileData.size()));
+        if (!result.has_value())
         {
             return "{\"error\":0}";
         }
 
-        std::string_view newFileName;
-        error = document["newName"].get_string().get(newFileName);
-        if (error != simdjson::SUCCESS)
-        {
-            return "{\"error\":0}";
-        }
+        AssetRenameFileInfo fileInfo = std::move(result.value());
 
-        std::string_view fileType;
-        error = document["type"].get_string().get(fileType);
-        if (error != simdjson::SUCCESS)
-        {
-            return "{\"error\":0}";
-        }
-
-        std::string_view oldFilePath;
-        error = document["oldPath"].get_string().get(oldFilePath);
-        if (error != simdjson::SUCCESS)
-        {
-            return "{\"error\":0}";
-        }
-
-        auto originalPath = std::filesystem::path(oldFilePath).make_preferred();
-        auto newPath = originalPath.parent_path() /
-                       std::filesystem::path(std::string(newFileName) + originalPath.extension().generic_string());
-
-        std::cout << originalPath << std::endl;
-        std::cout << newPath << std::endl;
+        auto originalPath = std::filesystem::path(fileInfo.assetOldPath).make_preferred();
+        auto newPath = originalPath.parent_path() / std::filesystem::path(std::string(fileInfo.assetNewName) +
+                                                                          originalPath.extension().generic_string());
 
         if (std::filesystem::exists(newPath))
-        {
-            return "{\"error\":23}";
-        }
-
-        std::filesystem::rename(originalPath, newPath);
-
-        std::stringstream stream;
-        stream << "{\"newName\":\"" << newFileName << "\",\"type\":\"" << fileType << "\",\"oldPath\":\""
-               << originalPath.generic_string() << "\",\"oldName\":\"" << oldFileName << "\",\"newPath\":\""
-               << newPath.generic_string() << "\"}";
-
-        return stream.str();
-    }
-
-    auto ViewModel::assetBrowserOpenFile(std::string fileData) -> std::string
-    {
-        simdjson::ondemand::parser parser;
-        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
-
-        std::string_view filePath;
-        auto error = document["path"].get_string().get(filePath);
-        if (error != simdjson::SUCCESS)
-        {
-            return "{\"error\":0}";
-        }
-
-        std::string_view fileName;
-        error = document["name"].get_string().get(fileName);
-        if (error != simdjson::SUCCESS)
         {
             return "{\"error\":1}";
         }
 
-        std::string_view fileType;
-        error = document["type"].get_string().get(fileType);
-        if (error != simdjson::SUCCESS)
+        std::filesystem::rename(originalPath, newPath);
+        fileInfo.assetNewPath = newPath.generic_string();
+
+        auto buffer = core::saveToBytes<AssetRenameFileInfo, core::serialize::OutputJSON>(fileInfo).value();
+        return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
+    }
+
+    auto ViewModel::assetBrowserOpenFile(std::string fileData) -> std::string
+    {
+        auto result = core::loadFromBytes<AssetOpenFileInfo, core::serialize::InputJSON>(
+            std::span<uint8_t>(reinterpret_cast<uint8_t*>(fileData.data()), fileData.size()));
+        if (!result.has_value())
         {
-            return "{\"error\":2}";
+            return "{\"error\":0}";
         }
 
-        if (fileType.compare("asset/shadergraph") == 0)
+        AssetOpenFileInfo fileInfo = std::move(result.value());
+
+        if (fileInfo.assetType.compare("asset/shadergraph") == 0)
         {
-            if (!shaderGraphEditor.loadFromFile(std::filesystem::path(filePath).make_preferred()))
+            if (!shaderGraphEditor.loadFromFile(std::filesystem::path(fileInfo.assetPath).make_preferred()))
             {
-                std::cout << 1 << std::endl;
-                return "{\"error\":3}";
+                return "{\"error\":1}";
             }
-            return shaderGraphDataToJSON(shaderGraphEditor.dump());
+
+            auto buffer =
+                core::saveToBytes<ShaderGraphData, core::serialize::OutputJSON>(shaderGraphEditor.dump()).value();
+            return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
         }
         else
         {
-            return "{\"error\":4}";
+            return "{\"error\":2}";
         }
     }
 
@@ -416,94 +351,17 @@ namespace ionengine::tools::editor
         return stream.str();
     }
 
-    auto ViewModel::shaderGraphDataToJSON(ShaderGraphData const& graphData) -> std::string
-    {
-        std::stringstream stream;
-        stream << "{\"graphType\":" << static_cast<uint32_t>(graphData.graphType) << ",\"sceneData\":{\"nodes\":[";
-
-        bool isFirst = true;
-        for (auto const& node : graphData.nodes)
-        {
-            if (!isFirst)
-            {
-                stream << ",";
-            }
-
-            auto const nodeComponent = shaderGraphEditor.getComponentRegistry().getComponents().at(node.componentID);
-
-            stream << "{\"id\":" << node.nodeID << ",\"position\":[" << node.posX << "," << node.posY << "],\"name\":\""
-                   << nodeComponent->getName() << "\",\"fixed\":" << std::boolalpha << nodeComponent->isFixed()
-                   << ",\"inputs\":[";
-
-            isFirst = true;
-            for (auto const& input : node.inputs)
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "{\"type\":\"" << input.socketType << "\",\"name\":\"" << input.socketName << "\"}";
-                isFirst = false;
-            }
-
-            stream << "],\"outputs\":[";
-
-            isFirst = true;
-            for (auto const& output : node.outputs)
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "{\"type\":\"" << output.socketType << "\",\"name\":\"" << output.socketName << "\"}";
-                isFirst = false;
-            }
-
-            stream << "],\"userData\":{\"componentID\":" << nodeComponent->componentID << ",\"options\":{";
-
-            isFirst = true;
-            for (auto const& [key, value] : node.options)
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "\"" << key << "\":\"" << value << "\"";
-                isFirst = false;
-            }
-
-            stream << "}}}";
-            isFirst = false;
-        }
-
-        stream << "],\"connections\":[";
-
-        isFirst = true;
-        for (auto const& connection : graphData.connections)
-        {
-            if (!isFirst)
-            {
-                stream << ",";
-            }
-
-            stream << "{\"id\":" << connection.connectionID << ",\"source\":" << connection.source
-                   << ",\"out\":" << connection.out << ",\"dest\":" << connection.dest << ",\"in\":" << connection.in
-                   << "}";
-
-            isFirst = false;
-        }
-
-        stream << "]}}";
-
-        std::cout << stream.str() << std::endl;
-        return stream.str();
-    }
-
     auto ViewModel::shaderGraphAssetSave(std::string fileData, std::string sceneData) -> std::string
     {
+        auto result = core::loadFromBytes<AssetSaveFileInfo, core::serialize::InputJSON>(
+            std::span<uint8_t>(reinterpret_cast<uint8_t*>(fileData.data()), fileData.size()));
+        if (!result.has_value())
+        {
+            return "{\"error\":0}";
+        }
+
+        AssetSaveFileInfo fileInfo = std::move(result.value());
+
         simdjson::ondemand::parser parser;
         auto document = parser.iterate(sceneData, sceneData.size() + simdjson::SIMDJSON_PADDING);
 
@@ -725,18 +583,10 @@ namespace ionengine::tools::editor
             graphData.connections.emplace_back(std::move(connectionData));
         }
 
-        document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
-
-        std::string_view filePath;
-        error = document["path"].get_string().get(filePath);
-        if (error != simdjson::SUCCESS)
+        if (core::saveToFile<ShaderGraphData>(graphData, std::filesystem::path(fileInfo.assetPath).make_preferred()))
         {
-            return "{\"error\":15}";
-        }
-
-        if (core::saveToFile<ShaderGraphData>(graphData, std::filesystem::path(filePath).make_preferred()))
-        {
-            return fileData;
+            auto buffer = core::saveToBytes<AssetSaveFileInfo, core::serialize::OutputJSON>(fileInfo).value();
+            return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
         }
         else
         {
@@ -746,29 +596,28 @@ namespace ionengine::tools::editor
 
     auto ViewModel::shaderGraphAssetCompile(std::string fileData) -> std::string
     {
-        simdjson::ondemand::parser parser;
-        auto document = parser.iterate(fileData, fileData.size() + simdjson::SIMDJSON_PADDING);
-
-        std::string_view filePath;
-        auto error = document["path"].get_string().get(filePath);
-        if (error != simdjson::SUCCESS)
+        auto result = core::loadFromBytes<AssetOpenFileInfo, core::serialize::InputJSON>(
+            std::span<uint8_t>(reinterpret_cast<uint8_t*>(fileData.data()), fileData.size()));
+        if (!result.has_value())
         {
             return "{\"error\":0}";
         }
 
-        if (!shaderGraphEditor.loadFromFile(filePath))
+        AssetOpenFileInfo fileInfo = std::move(result.value());
+
+        if (!shaderGraphEditor.loadFromFile(fileInfo.assetPath))
         {
             return "{\"error\":1}";
         }
 
-        auto result = shaderGraphEditor.compile();
-        if (!result)
+        auto compileResult = shaderGraphEditor.compile();
+        if (!compileResult)
         {
             return "{\"error\":2}";
         }
 
         outputShader = createShaderAsset();
-        if (!outputShader->loadFromBytes(result->outputShaderData))
+        if (!outputShader->loadFromBytes(compileResult->outputShaderData))
         {
             return "{\"error\":3}";
         }

@@ -244,6 +244,7 @@ export default {
                     oldName: item.name,
                     type: item.type,
                     oldPath: item.path,
+                    newPath: ""
                 });
             }
         },

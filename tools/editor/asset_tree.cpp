@@ -17,7 +17,7 @@ namespace ionengine::tools::editor
 
     auto AssetTree::fetch() -> AssetStructInfo const&
     {
-        //rootStruct->childrens.clear();
+        rootStruct->childrens.clear();
 
         auto internalFetch = [&](this auto const& internalFetch, AssetStructInfo* curStruct,
                                  std::filesystem::path const& rootPath) -> void {
@@ -30,8 +30,8 @@ namespace ionengine::tools::editor
                     folderStruct->assetPath = dirEntry.path().generic_string();
                     folderStruct->assetType = AssetType::Folder;
 
-                    //curStruct->childrens.emplace_back(std::move(folderStruct));
-                    //internalFetch(curStruct->childrens.back().get(), dirEntry.path());
+                    curStruct->childrens.emplace_back(std::move(folderStruct));
+                    internalFetch(curStruct->childrens.back().get(), dirEntry.path());
                 }
                 else
                 {
@@ -42,7 +42,7 @@ namespace ionengine::tools::editor
                     if (dirEntry.path().extension().compare(".asset") == 0)
                     {
                         std::basic_ifstream<uint8_t> stream(
-                            std::filesystem::path(curStruct->assetPath).make_preferred(), std::ios::binary);
+                            std::filesystem::path(assetStruct->assetPath).make_preferred(), std::ios::binary);
                         auto result = getAssetHeader(stream);
                         if (result.has_value())
                         {
@@ -66,7 +66,7 @@ namespace ionengine::tools::editor
                     {
                         assetStruct->assetType = AssetType::Unknown;
                     }
-                    //curStruct->childrens.emplace_back(std::move(assetStruct));
+                    curStruct->childrens.emplace_back(std::move(assetStruct));
                 }
             }
         };

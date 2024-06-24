@@ -15,305 +15,6 @@
 
 namespace ionengine::tools::editor
 {
-    auto readJsonChunkData(ShaderGraphData& object, std::vector<uint8_t>& data) -> bool
-    {
-        simdjson::ondemand::parser parser;
-        auto document = parser.iterate(data.data(), data.size(), data.size() + simdjson::SIMDJSON_PADDING);
-
-        uint64_t graphType;
-        auto error = document["graphType"].get_uint64().get(graphType);
-        if (error != simdjson::SUCCESS)
-        {
-            return false;
-        }
-
-        object.graphType = static_cast<ShaderGraphType>(graphType);
-
-        simdjson::ondemand::array nodes;
-        error = document["nodes"].get_array().get(nodes);
-        if (error != simdjson::SUCCESS)
-        {
-            return false;
-        }
-
-        for (auto node : nodes)
-        {
-            NodeData nodeData = {};
-
-            uint64_t nodeID;
-            error = node["id"].get_uint64().get(nodeID);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            nodeData.nodeID = nodeID;
-
-            simdjson::ondemand::array positions;
-            error = node["position"].get_array().get(positions);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            int32_t i = 0;
-            std::array<int32_t, 2> arrayOfPositions;
-            for (auto position : positions)
-            {
-                int64_t value;
-                error = position.get_int64().get(value);
-                if (error != simdjson::SUCCESS)
-                {
-                    return false;
-                }
-                arrayOfPositions[i] = value;
-                ++i;
-            }
-
-            nodeData.posX = arrayOfPositions[0];
-            nodeData.posY = arrayOfPositions[1];
-
-            simdjson::ondemand::object userData;
-            error = node["userData"].get_object().get(userData);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            uint64_t componentID;
-            error = userData["componentID"].get_uint64().get(componentID);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            nodeData.componentID = componentID;
-
-            simdjson::ondemand::object options;
-            userData["options"].get_object().get(options);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            for (auto element : options)
-            {
-                std::string_view key;
-                error = element.unescaped_key().get(key);
-                if (error != simdjson::SUCCESS)
-                {
-                    return false;
-                }
-
-                std::string_view value;
-                error = element.value().get_string().get(value);
-                if (error != simdjson::SUCCESS)
-                {
-                    return false;
-                }
-
-                nodeData.options[std::string(key)] = std::string(value);
-            }
-
-            simdjson::ondemand::array inputs;
-            error = node["inputs"].get_array().get(inputs);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            for (auto input : inputs)
-            {
-                std::string_view socketName;
-                error = input["name"].get_string().get(socketName);
-                if (error != simdjson::SUCCESS)
-                {
-                    return false;
-                }
-
-                std::string_view socketType;
-                error = input["type"].get_string().get(socketType);
-                if (error != simdjson::SUCCESS)
-                {
-                    return false;
-                }
-
-                NodeSocketData socketData = {.socketName = std::string(socketName),
-                                             .socketType = std::string(socketType)};
-                nodeData.inputs.emplace_back(std::move(socketData));
-            }
-
-            simdjson::ondemand::array outputs;
-            error = node["outputs"].get_array().get(outputs);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            for (auto output : outputs)
-            {
-                std::string_view socketName;
-                error = output["name"].get_string().get(socketName);
-                if (error != simdjson::SUCCESS)
-                {
-                    return false;
-                }
-
-                std::string_view socketType;
-                error = output["type"].get_string().get(socketType);
-                if (error != simdjson::SUCCESS)
-                {
-                    return false;
-                }
-
-                NodeSocketData socketData = {.socketName = std::string(socketName),
-                                             .socketType = std::string(socketType)};
-                nodeData.outputs.emplace_back(std::move(socketData));
-            }
-
-            object.nodes.emplace_back(std::move(nodeData));
-        }
-
-        simdjson::ondemand::array connections;
-        error = document["connections"].get_array().get(connections);
-        if (error != simdjson::SUCCESS)
-        {
-            return false;
-        }
-
-        for (auto connection : connections)
-        {
-            ConnectionData connectionData = {};
-
-            uint64_t connectionID;
-            auto error = connection["id"].get_uint64().get(connectionID);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            connectionData.connectionID = connectionID;
-
-            uint64_t sourceNodeID;
-            error = connection["source"].get_uint64().get(sourceNodeID);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            connectionData.source = sourceNodeID;
-
-            uint64_t sourceIndex;
-            error = connection["out"].get_uint64().get(sourceIndex);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            connectionData.out = sourceIndex;
-
-            uint64_t destNodeID;
-            error = connection["dest"].get_uint64().get(destNodeID);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            connectionData.dest = destNodeID;
-
-            uint64_t destIndex;
-            error = connection["in"].get_uint64().get(destIndex);
-            if (error != simdjson::SUCCESS)
-            {
-                return false;
-            }
-
-            connectionData.in = destIndex;
-
-            object.connections.emplace_back(std::move(connectionData));
-        }
-        return true;
-    }
-
-    auto generateJsonChunkData(ShaderGraphData const& object) -> std::string
-    {
-        std::stringstream stream;
-        stream << "{\"graphType\":" << static_cast<uint32_t>(object.graphType) << ",\"nodes\":[";
-
-        bool isFirst = true;
-        for (auto const& node : object.nodes)
-        {
-            if (!isFirst)
-            {
-                stream << ",";
-            }
-
-            stream << "{\"id\":" << node.nodeID << ",\"position\":[" << node.posX << "," << node.posY
-                   << "],\"inputs\":[";
-
-            isFirst = true;
-            for (auto const& input : node.inputs)
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "{\"name\":\"" << input.socketName << "\",\"type\":\"" << input.socketType << "\"}";
-                isFirst = false;
-            }
-
-            stream << "],\"outputs\":[";
-
-            isFirst = true;
-            for (auto const& output : node.outputs)
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "{\"name\":\"" << output.socketName << "\",\"type\":\"" << output.socketType << "\"}";
-                isFirst = false;
-            }
-
-            stream << "],\"userData\":{\"componentID\":" << node.componentID << ",\"options\":{";
-
-            isFirst = true;
-            for (auto const [key, value] : node.options)
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "\"" << key << "\":\"" << value << "\"";
-                isFirst = false;
-            }
-            stream << "}}}";
-            isFirst = false;
-        }
-        stream << "],\"connections\":[";
-
-        isFirst = true;
-        for (auto const& connection : object.connections)
-        {
-            if (!isFirst)
-            {
-                stream << ",";
-            }
-
-            stream << "{\"id\":" << connection.connectionID << ",\"source\":" << connection.source
-                   << ",\"out\":" << connection.out << ",\"dest\":" << connection.dest << ",\"in\":" << connection.in
-                   << "}";
-
-            isFirst = false;
-        }
-        stream << "]}";
-
-        return stream.str();
-    }
-
     namespace internal
     {
         auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<ShaderGraphData>
@@ -469,42 +170,42 @@ namespace ionengine::tools::editor
         for (auto const& node : sceneGraph->getNodes())
         {
             NodeData nodeData = {};
-            nodeData.posX = node->posX;
-            nodeData.posY = node->posY;
+            nodeData.nodePosition[0] = node->posX;
+            nodeData.nodePosition[1] = node->posY;
             nodeData.nodeID = node->nodeID;
-            nodeData.options = node->options;
-            nodeData.componentID = node->componentID;
+            nodeData.nodeUserData.nodeComponentID = node->componentID;
+            nodeData.nodeUserData.nodeOptions = node->options;
 
             for (auto const& input : node->inputs)
             {
                 NodeSocketData socketData = {.socketName = input.socketName, .socketType = input.socketType};
-                nodeData.inputs.emplace_back(std::move(socketData));
+                nodeData.nodeInputs.emplace_back(std::move(socketData));
             }
 
             for (auto const& output : node->outputs)
             {
                 NodeSocketData socketData = {.socketName = output.socketName, .socketType = output.socketType};
-                nodeData.outputs.emplace_back(std::move(socketData));
+                nodeData.nodeOutputs.emplace_back(std::move(socketData));
             }
 
             for (auto const& [key, value] : node->options)
             {
-                nodeData.options[key] = value;
+                nodeData.nodeUserData.nodeOptions[key] = value;
             }
 
-            shaderGraph.nodes.emplace_back(std::move(nodeData));
+            shaderGraph.sceneData.nodes.emplace_back(std::move(nodeData));
         }
 
         for (auto const& connection : sceneGraph->getConnections())
         {
             ConnectionData connectionData = {};
             connectionData.connectionID = connection->connectionID;
-            connectionData.source = connection->sourceNode->nodeID;
-            connectionData.out = connection->sourceIndex;
-            connectionData.dest = connection->destNode->nodeID;
-            connectionData.in = connection->destIndex;
+            connectionData.sourceNodeID = connection->sourceNode->nodeID;
+            connectionData.sourceIndex = connection->sourceIndex;
+            connectionData.destNodeID = connection->destNode->nodeID;
+            connectionData.destIndex = connection->destIndex;
 
-            shaderGraph.connections.emplace_back(std::move(connectionData));
+            shaderGraph.sceneData.connections.emplace_back(std::move(connectionData));
         }
         return shaderGraph;
     }

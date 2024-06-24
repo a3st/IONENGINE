@@ -18,12 +18,14 @@ namespace ionengine
             std::array<uint8_t, 16> hash;
             std::array<uint8_t, 8> fileType;
 
-            /*template<typename Archive>
+            template <typename Archive>
             auto operator()(Archive& archive)
             {
-                archive.headerProperty(magic);
-                archive.headerProperty(fileType);
-            }*/
+                archive.property(magic);
+                archive.property(length);
+                archive.property(hash);
+                archive.property(fileType);
+            }
         };
 
         enum class ChunkType : uint32_t

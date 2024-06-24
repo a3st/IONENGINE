@@ -21,33 +21,104 @@ namespace ionengine::tools::editor
     {
         std::string socketName;
         std::string socketType;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(socketName, "name");
+            archive.property(socketType, "type");
+        }
+    };
+
+    struct NodeUserData
+    {
+        uint32_t nodeComponentID;
+        std::unordered_map<std::string, std::string> nodeOptions;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(nodeComponentID, "componentID");
+            archive.property(nodeOptions, "options");
+        }
     };
 
     struct NodeData
     {
         uint64_t nodeID;
-        int32_t posX;
-        int32_t posY;
-        uint32_t componentID;
-        std::vector<NodeSocketData> inputs;
-        std::vector<NodeSocketData> outputs;
-        std::unordered_map<std::string, std::string> options;
+        std::string nodeName;
+        std::array<int32_t, 2> nodePosition;
+        std::vector<NodeSocketData> nodeInputs;
+        std::vector<NodeSocketData> nodeOutputs;
+        NodeUserData nodeUserData;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(nodeID, "id");
+            archive.property(nodePosition, "position");
+            archive.property(nodeInputs, "inputs");
+            archive.property(nodeOutputs, "outputs");
+            archive.property(nodeUserData, "userData");
+        }
     };
 
     struct ConnectionData
     {
         uint64_t connectionID;
-        uint64_t source;
-        uint32_t out;
-        uint64_t dest;
-        uint32_t in;
+        uint64_t sourceNodeID;
+        uint32_t sourceIndex;
+        uint64_t destNodeID;
+        uint32_t destIndex;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(connectionID, "id");
+            archive.property(sourceNodeID, "source");
+            archive.property(sourceIndex, "out");
+            archive.property(destNodeID, "dest");
+            archive.property(destIndex, "in");
+        }
+    };
+
+    struct SceneData
+    {
+        std::vector<NodeData> nodes;
+        std::vector<ConnectionData> connections;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(nodes, "nodes");
+            archive.property(connections, "connections");
+        }
     };
 
     struct ShaderGraphData
     {
         ShaderGraphType graphType;
-        std::vector<NodeData> nodes;
-        std::vector<ConnectionData> connections;
+        SceneData sceneData;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(graphType, "graphType");
+            archive.property(sceneData, "sceneData");
+        }
+    };
+
+    struct ShaderGraphFile
+    {
+        asset::Header fileHeader;
+        ShaderGraphData graphData;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(fileHeader);
+            archive.with<core::serialize::OutputJSON, core::serialize::InputJSON>(graphData);
+        }
     };
 
     namespace internal
@@ -103,6 +174,20 @@ namespace ionengine::core
                               std::basic_ostream<uint8_t>& stream) -> size_t
         {
             return ionengine::tools::editor::internal::serialize(object, stream);
+        }
+    };
+} // namespace ionengine::core
+
+namespace ionengine::core
+{
+    template <>
+    struct SerializableEnum<tools::editor::ShaderGraphType>
+    {
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.field(tools::editor::ShaderGraphType::Lit, "shader/lit");
+            archive.field(tools::editor::ShaderGraphType::Unlit, "shader/unlit");
         }
     };
 } // namespace ionengine::core

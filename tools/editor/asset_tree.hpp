@@ -18,7 +18,7 @@ namespace ionengine::tools::editor
         std::string assetName;
         std::string assetPath;
         AssetType assetType;
-        //std::vector<std::unique_ptr<class AssetStructInfo>> childrens;
+        std::vector<std::unique_ptr<class AssetStructInfo>> childrens;
 
         template <typename Archive>
         auto operator()(Archive& archive)
@@ -26,7 +26,7 @@ namespace ionengine::tools::editor
             archive.property(assetName, "name");
             archive.property(assetType, "type");
             archive.property(assetPath, "path");
-            //archive.property(childrens, "childrens");
+            archive.property(childrens, "childrens");
         }
     };
 
