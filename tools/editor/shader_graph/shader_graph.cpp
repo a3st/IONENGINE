@@ -20,8 +20,17 @@ namespace ionengine::tools::editor
         simdjson::ondemand::parser parser;
         auto document = parser.iterate(data.data(), data.size(), data.size() + simdjson::SIMDJSON_PADDING);
 
+        uint64_t graphType;
+        auto error = document["graphType"].get_uint64().get(graphType);
+        if (error != simdjson::SUCCESS)
+        {
+            return false;
+        }
+
+        object.graphType = static_cast<ShaderGraphType>(graphType);
+
         simdjson::ondemand::array nodes;
-        auto error = document["nodes"].get_array().get(nodes);
+        error = document["nodes"].get_array().get(nodes);
         if (error != simdjson::SUCCESS)
         {
             return false;
@@ -106,6 +115,62 @@ namespace ionengine::tools::editor
                 nodeData.options[std::string(key)] = std::string(value);
             }
 
+            simdjson::ondemand::array inputs;
+            error = node["inputs"].get_array().get(inputs);
+            if (error != simdjson::SUCCESS)
+            {
+                return false;
+            }
+
+            for (auto input : inputs)
+            {
+                std::string_view socketName;
+                error = input["name"].get_string().get(socketName);
+                if (error != simdjson::SUCCESS)
+                {
+                    return false;
+                }
+
+                std::string_view socketType;
+                error = input["type"].get_string().get(socketType);
+                if (error != simdjson::SUCCESS)
+                {
+                    return false;
+                }
+
+                NodeSocketData socketData = {.socketName = std::string(socketName),
+                                             .socketType = std::string(socketType)};
+                nodeData.inputs.emplace_back(std::move(socketData));
+            }
+
+            simdjson::ondemand::array outputs;
+            error = node["outputs"].get_array().get(outputs);
+            if (error != simdjson::SUCCESS)
+            {
+                return false;
+            }
+
+            for (auto output : outputs)
+            {
+                std::string_view socketName;
+                error = output["name"].get_string().get(socketName);
+                if (error != simdjson::SUCCESS)
+                {
+                    return false;
+                }
+
+                std::string_view socketType;
+                error = output["type"].get_string().get(socketType);
+                if (error != simdjson::SUCCESS)
+                {
+                    return false;
+                }
+
+                NodeSocketData socketData = {.socketName = std::string(socketName),
+                                             .socketType = std::string(socketType)};
+                nodeData.outputs.emplace_back(std::move(socketData));
+            }
+
             object.nodes.emplace_back(std::move(nodeData));
         }
 
@@ -173,7 +238,7 @@ namespace ionengine::tools::editor
     auto generateJsonChunkData(ShaderGraphData const& object) -> std::string
     {
         std::stringstream stream;
-        stream << "{\"nodes\":[";
+        stream << "{\"graphType\":" << static_cast<uint32_t>(object.graphType) << ",\"nodes\":[";
 
         bool isFirst = true;
         for (auto const& node : object.nodes)
@@ -184,7 +249,35 @@ namespace ionengine::tools::editor
             }
 
             stream << "{\"id\":" << node.nodeID << ",\"position\":[" << node.posX << "," << node.posY
-                   << "],\"userData\":{\"componentID\":" << node.componentID << ",\"options\":{";
+                   << "],\"inputs\":[";
+
+            isFirst = true;
+            for (auto const& input : node.inputs)
+            {
+                if (!isFirst)
+                {
+                    stream << ",";
+                }
+
+                stream << "{\"name\":\"" << input.socketName << "\",\"type\":\"" << input.socketType << "\"}";
+                isFirst = false;
+            }
+
+            stream << "],\"outputs\":[";
+
+            isFirst = true;
+            for (auto const& output : node.outputs)
+            {
+                if (!isFirst)
+                {
+                    stream << ",";
+                }
+
+                stream << "{\"name\":\"" << output.socketName << "\",\"type\":\"" << output.socketType << "\"}";
+                isFirst = false;
+            }
+
+            stream << "],\"userData\":{\"componentID\":" << node.componentID << ",\"options\":{";
 
             isFirst = true;
             for (auto const [key, value] : node.options)
@@ -293,6 +386,10 @@ namespace ionengine::tools::editor
             createdNode->posY = 80;
         }
         this->graphType = graphType;
+
+        auto createdNode = sceneGraph->createNodeByType<Input_NodeComponent>(1);
+        createdNode->posX = 10;
+        createdNode->posY = 80;
     }
 
     auto ShaderGraphEditor::loadFromFile(std::filesystem::path const& filePath) -> bool
@@ -323,16 +420,21 @@ namespace ionengine::tools::editor
                 createdNode->options[key] = value;
             }
 
-            if (createdNode->inputs.empty())
+            if (!node.inputs.empty())
             {
+                createdNode->inputs.clear();
+
                 for (auto const& input : node.inputs)
                 {
                     Node::SocketInfo socketInfo = {.socketName = input.socketName, .socketType = input.socketType};
                     createdNode->inputs.emplace_back(std::move(socketInfo));
                 }
             }
-            if (createdNode->outputs.empty())
+
+            if (!node.outputs.empty())
             {
+                createdNode->outputs.clear();
+
                 for (auto const& output : node.outputs)
                 {
                     Node::SocketInfo socketInfo = {.socketName = output.socketName, .socketType = output.socketType};
@@ -383,6 +485,11 @@ namespace ionengine::tools::editor
             {
                 NodeSocketData socketData = {.socketName = output.socketName, .socketType = output.socketType};
                 nodeData.outputs.emplace_back(std::move(socketData));
+            }
+
+            for (auto const& [key, value] : node->options)
+            {
+                nodeData.options[key] = value;
             }
 
             shaderGraph.nodes.emplace_back(std::move(nodeData));
@@ -469,13 +576,13 @@ namespace ionengine::tools::editor
                     output->outputShaderData.resize(offset);
                     stream.read(output->outputShaderData.data(), output->outputShaderData.size());
                 }
-                std::filesystem::remove(inputPath);
+                // std::filesystem::remove(inputPath);
                 std::filesystem::remove(outputPath);
                 return output;
             }
             else
             {
-                std::filesystem::remove(inputPath);
+                // std::filesystem::remove(inputPath);
                 std::filesystem::remove(outputPath);
                 return nullptr;
             }

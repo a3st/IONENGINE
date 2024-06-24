@@ -7,9 +7,14 @@
 namespace ionengine::tools::editor
 {
     IONENGINE_NODE_COMPONENT_BEGIN(UnlitOutput, "Output Node", false, std::nullopt, true)
-    auto setInputs() const -> std::vector<Node::SocketInfo>
+    auto setInputs() const -> std::vector<Node::SocketInfo> override
     {
-        return {{"Color", "float4"}};
+        return {{"Color", "float3"}};
+    }
+
+    auto setOptions() const -> std::unordered_map<std::string, std::string> override
+    {
+        return {{"CullSide", "back"}};
     }
 
     auto generateInitialShaderCode(Node const& node) const -> std::string override
@@ -32,17 +37,32 @@ namespace ionengine::tools::editor
 
     auto generateComputeShaderCode(Node const& node) const -> std::string override
     {
-        return R"(
+        auto inputColor = std::find_if(
+            node.inputs.begin(), node.inputs.end(), [](auto const& element) { return element.socketName.compare("Color") == 0; });
+
+        std::stringstream stream;
+        stream << R"(
             VS_OUTPUT vs_main(VS_INPUT input) {
                 VS_OUTPUT output;
                 output.uv = float2((input.id << 1) & 2, input.id & 2);
-                output.position = float4(output.uv * 2.0f + -1.0f, 0.0f, 1.0f);
+                output.position = float4(output.uv * 2.0 + -1.0, 0.0, 1.0);
                 return output;
             }
 
             PS_OUTPUT ps_main(VS_OUTPUT input) {
                 PS_OUTPUT output;
-                output.color = ##Color##;
+        )";
+
+        if (inputColor->socketType.compare("float4") == 0)
+        {
+            stream << "\noutput.color = ##Color##;\n";
+        }
+        else
+        {
+            stream << "\noutput.color = float4(##Color##, 1.0);\n";
+        }
+
+        stream << R"(
                 return output;
             }
 
@@ -50,12 +70,13 @@ namespace ionengine::tools::editor
                 pass {
                     vertexShader = vs_main();
                     pixelShader = ps_main();
-                    cullSide = "back";
+                    cullSide = "##CullSide##";
                     depthWrite = false;
                     stencilWrite = false;
                 }
             }
         )";
+        return stream.str();
     }
     IONENGINE_NODE_COMPONENT_END
 } // namespace ionengine::tools::editor

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "core/ref_ptr.hpp"
+#include "core/serializable.hpp"
 
 namespace ionengine
 {
@@ -16,6 +17,13 @@ namespace ionengine
             uint64_t length;
             std::array<uint8_t, 16> hash;
             std::array<uint8_t, 8> fileType;
+
+            /*template<typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.headerProperty(magic);
+                archive.headerProperty(fileType);
+            }*/
         };
 
         enum class ChunkType : uint32_t

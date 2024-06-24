@@ -34,8 +34,6 @@ set_target_properties(editor PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tools
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tools)
 
-message(WARNING ${CMAKE_CURRENT_BINARY_DIR}/engine.dll)
-
 add_custom_command(TARGET editor POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/engine/engine.dll ${CMAKE_CURRENT_BINARY_DIR}/../engine.dll
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/engine/engine.pdb ${CMAKE_CURRENT_BINARY_DIR}/../engine.pdb)

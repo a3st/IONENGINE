@@ -40,3 +40,4 @@ endif()
 
 add_subdirectory(tools)
 add_subdirectory(engine)
+add_subdirectory(tests)

@@ -49,6 +49,10 @@ namespace ionengine::tools::editor
                             shaderCode = beginShaderCode + result->second + endShaderCode;
                             offset = offset + 1 + result->second.size();
                         }
+                        else
+                        {
+                            offset = offset + 1;
+                        }
                     }
                     out << shaderCode;
                 }
@@ -191,6 +195,7 @@ namespace ionengine::tools::editor
                                 computeShaderCodes[nextNode->nodeID].begin() + expressionBeginOffset,
                                 computeShaderCodes[nextNode->nodeID].begin() + expressionEndOffset);
 
+                            auto result = nextNode->options.find(expressionName);
                             if (nextNode->inputs[scene.connections[index]->destIndex].socketName.compare(
                                     expressionName) == 0)
                             {
@@ -201,6 +206,15 @@ namespace ionengine::tools::editor
                                     beginShaderCode + computeShaderCodes[node->nodeID] + endShaderCode;
 
                                 offset = offset + 1 + computeShaderCodes[node->nodeID].size();
+                            }
+                            else if (result != nextNode->options.end())
+                            {
+                                auto beginShaderCode = computeShaderCodes[nextNode->nodeID].substr(0, offset);
+                                auto endShaderCode = computeShaderCodes[nextNode->nodeID].substr(
+                                    expressionEndOffset + 2, std::string::npos);
+                                computeShaderCodes[nextNode->nodeID] = beginShaderCode + result->second + endShaderCode;
+
+                                offset = offset + 1 + result->second.size();
                             }
                             else
                             {

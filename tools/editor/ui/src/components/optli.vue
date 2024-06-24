@@ -1,7 +1,7 @@
 <template>
     <div class="optli-container">
-        <span class="optli-body-container">{{ title }}</span>
-        <span class="optli-body-container">
+        <div class="optli-body-container">{{ title }}</div>
+        <div class="optli-body-container">
             <select
                 v-if="type == 'select'"
                 v-bind:value="modelValue"
@@ -21,7 +21,7 @@
                     $emit('update:modelValue', Boolean($event.target.checked))
                 "
             />
-        </span>
+        </div>
     </div>
 </template>
 
@@ -43,15 +43,13 @@ export default {
     flex-direction: row;
     width: 100%;
     align-items: center;
+    user-select: none;
 }
 
 .optli-body-container {
     display: inline-flex;
     width: 50%;
+    font-size: 14px;
     align-items: center;
-}
-
-.optli-body-container.right {
-    justify-content: center;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-    <div style="width: 100%; height: 100%;">
+    <div style="width: 100%; height: 100%">
         <toolbar></toolbar>
 
         <dynview ref="mainView" @resize="onDynviewResize">
@@ -185,7 +185,7 @@ export default {
                     case "shadergraph": {
                         this.addTabToView(
                             {
-                                ref: 'viewport',
+                                ref: "viewport",
                                 title: "Viewport (Preview)",
                                 icon: require("../images/video.svg"),
                                 fixed: true,
@@ -197,6 +197,7 @@ export default {
 
                         this.addTabToView(
                             {
+                                ref: "resources",
                                 title: "Resources",
                                 icon: require("../images/dice-d6.svg"),
                                 fixed: true,
@@ -211,6 +212,7 @@ export default {
 
                         this.addTabToView(
                             {
+                                ref: "shader",
                                 id: `${this.numRightLowerTabs}`,
                                 title: "Shader",
                                 icon: require("../images/images.svg"),
@@ -259,8 +261,8 @@ export default {
     },
     methods: {
         onFrameUpdate() {
-            webview.invoke('requestViewportTexture').then(data => {
-                if('viewport' in this.$refs) {
+            webview.invoke("requestViewportTexture").then((data) => {
+                if ("viewport" in this.$refs) {
                     this.$refs.viewport[0].setViewportImage(data);
                 }
                 window.requestAnimationFrame(this.onFrameUpdate);
@@ -313,6 +315,8 @@ export default {
                 } else {
                     switch (e.type) {
                         case "asset/shadergraph": {
+                            this.editorModule = "shadergraph";
+
                             const index = this.tabs["workspace"].findIndex(
                                 (x) => x.path == e.path
                             );
@@ -338,13 +342,22 @@ export default {
                                 ).then((element) => {
                                     this.tabFileLinks[e.path] = element;
                                     element.children[0].__vueParentComponent.ctx.open(
-                                        data.sceneData,
+                                        data,
                                         e
+                                    );
+
+                                    this.$refs.shader[0].refresh(
+                                        element.children[0]
+                                            .__vueParentComponent,
+                                        data.graphType
+                                    );
+                                    this.$refs.resources[0].refresh(
+                                        element.children[0]
+                                            .__vueParentComponent,
+                                        data.graphType
                                     );
                                 });
                             }
-
-                            this.editorModule = "shadergraph";
                             break;
                         }
                     }

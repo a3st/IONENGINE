@@ -103,7 +103,7 @@ export default class FlowGraph {
         });
         this.rootNode.addEventListener('mouseup', this.#dragNodeEndHandler.bind(this));
         this.rootNode.addEventListener('mousemove', this.#moveNodeHandler.bind(this));
-        this.rootNode.addEventListener('contextmenu', event => event.preventDefault());
+        this.rootNode.addEventListener('contextmenu', e => e.preventDefault());
 
         document.addEventListener('keydown', this.#keyHandler.bind(this));
 
@@ -846,9 +846,7 @@ export default class FlowGraph {
             this.removeConnection(value.id);
         }
 
-        $(this.rootNode).find(`#node_${nodeId}`)
-            .get(0)
-            .remove();
+        $(this.rootNode).find(`#node_${nodeId}`).remove();
 
         this.nodes.splice(this.nodesCache[nodeId], 1)
 
@@ -858,207 +856,468 @@ export default class FlowGraph {
         }
     }
 
-    #internalAddNode(id, x, y, inputs, outputs, nodeName, fixed, expandHTML, userData) {
-        let inputsHTML = "";
-        let inputMaxLength = 5;
-        for (let i = 0; i < inputs.length; i++) {
-            switch (inputs[i].type) {
-                case 'Number': {
-                    const numberValue = parseFloat(userData.options[inputs[i].name]);
+    #internalUpdateNode(id, x, y, inputs, outputs, nodeName, fixed, expandHTML, userData) {
+        $(this.rootNode).find(`#node_${id}`).remove();
 
-                    inputsHTML += `
-                        <div class="flowgraph-io-row left">
-                            <div style="display: inline-flex; gap: 5px; align-items: center;">
-                                <span style="color: white;">${inputs[i].name}:</span>
-                                <input id="input_${id}_${i}" type="number" value="${numberValue}" placeholder="${inputs[i].type}" style="width: 80px;" />
+        let showNode = inputs.length > 0 || outputs.length > 0;
+
+        if (showNode) {
+            let inputsHTML = "";
+            let inputMaxLength = 5;
+            for (let i = 0; i < inputs.length; i++) {
+                switch (inputs[i].type) {
+                    case 'Number': {
+                        const numberValue = parseFloat(userData.options[inputs[i].name]);
+
+                        inputsHTML += `
+                            <div class="flowgraph-io-row left">
+                                <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                    <span style="color: white;">${inputs[i].name}:</span>
+                                    <input id="input_${id}_${i}" type="number" value="${numberValue}" placeholder="${inputs[i].type}" style="width: 80px;" />
+                                </div>
                             </div>
-                        </div>
-                    `;
-                    break;
-                }
-                case 'String': {
-                    const stringValue = userData.options[inputs[i].name];
-
-                    inputsHTML += `
-                        <div class="flowgraph-io-row left">
-                            <div style="display: inline-flex; gap: 5px; align-items: center;">
-                                <span style="color: white;">${inputs[i].name}:</span>
-                                <input id="input_${id}_${i}" type="text" value="${stringValue}" placeholder="${inputs[i].type}" style="width: 80px;" />
-                            </div>
-                        </div>
-                    `;
-                    break;
-                }
-                case 'Color': {
-                    // https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
-                    const hexToRgb = (r, g, b) => {
-                        return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
-                    };
-
-                    const colorValue = userData.options[inputs[i].name].split(',').map(x => Math.ceil(
-                        parseFloat(x) * 255));
-
-                    inputsHTML += `
-                        <div class="flowgraph-io-row left">
-                            <div style="display: inline-flex; gap: 5px; align-items: center;">
-                                <span style="color: white;">${inputs[i].name}:</span>
-                                <input id="input_${id}_${i}" type="color" value="${hexToRgb(...colorValue)}" placeholder="${inputs[i].type}" style="width: 50px;" />
-                            </div>
-                        </div>
-                    `;
-                    break;
-                }
-                default: {
-                    inputsHTML += `
-                        <div class="flowgraph-io-row left">
-                            <div id="node_${id}_in_${i}" class="flowgraph-io circle"></div>
-                            <span style="color: white;">${inputs[i].name} (${inputs[i].type})</span>
-                        </div>
-                    `;
-                    break;
-                }
-            }
-            inputMaxLength = Math.max(inputs[i].name.length, inputMaxLength);
-        }
-
-        if (inputs.length == 0) {
-            inputMaxLength = 0;
-        }
-
-        let outputsHTML = "";
-        let outputMaxLength = 5;
-        for (let i = 0; i < outputs.length; i++) {
-            outputsHTML += `
-                <div class="flowgraph-io-row right">
-                    <span style="color: white;">${outputs[i].name} (${outputs[i].type})</span>
-                    <div id="node_${id}_out_${i}" class="flowgraph-io circle"></div>
-                </div>
-            `;
-            outputMaxLength = Math.max(outputs[i].name.length, outputMaxLength);
-        }
-
-        if (outputs.length == 0) {
-            outputMaxLength = 0;
-        }
-
-        let iolistWidth = 100;
-        if (inputs.length > 0 && outputs.length > 0) {
-            iolistWidth = 50;
-        }
-
-        let bodyHTML = "";
-        if (inputsHTML.length > 0) {
-            bodyHTML += `
-                <div class="flowgraph-io-list" style="width: ${iolistWidth}%;">
-                    ${inputsHTML}
-                </div>
-            `;
-        }
-        if (outputsHTML.length > 0) {
-            bodyHTML += `
-                <div class="flowgraph-io-list" style="width: ${iolistWidth}%;">
-                    ${outputsHTML}
-                </div>
-            `;
-        }
-
-        let footerHTML = "";
-        if (expandHTML.length > 0) {
-            footerHTML += `
-                <div class="flowgraph-node-footer">
-                    <div class="flowgraph-expand-container">
-                        <img src="images/angle-down.svg" width="16" height="16" />
-                    </div>
-                </div>
-                <div class="flowgraph-hidden-container" style="display: none;">
-                    ${expandHTML}
-                </div>
-            `;
-        }
-
-        $(this.rootNode).children('.flowgraph-canvas').append(`
-            <div id="node_${id}" class="flowgraph-node-container"> 
-                <div class="flowgraph-node-root">
-                    <div class="flowgraph-node-header">
-                        <span style="color: white;">${nodeName}</span>
-                    </div>
-
-                    <div class="flowgraph-node-main">
-                        ${bodyHTML}
-                    </div>
-
-                    ${footerHTML}
-                </div>
-            </div>
-        `);
-
-        $(this.rootNode).find(`#node_${id}`).find(":input").on('change', e => {
-            let targetName = $(e.currentTarget).parent().children('span').text();
-            targetName = targetName.substring(0, targetName.length - 1);
-
-            this.rootNode.dispatchEvent(
-                new CustomEvent("flowgraph:value-changed", {
-                    'detail': {
-                        'nodeId': id,
-                        'targetName': targetName,
-                        'targetType': e.currentTarget.type,
-                        'value': e.currentTarget.value
+                        `;
+                        break;
                     }
-                }));
-        });
+                    case 'String': {
+                        const stringValue = userData.options[inputs[i].name];
 
-        let nodeWidth = 110 + Math.min(1, outputs.length) * 22 * outputMaxLength + Math.min(1, inputs
-            .length) * 22 * inputMaxLength;
+                        inputsHTML += `
+                            <div class="flowgraph-io-row left">
+                                <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                    <span style="color: white;">${inputs[i].name}:</span>
+                                    <input id="input_${id}_${i}" type="text" value="${stringValue}" placeholder="${inputs[i].type}" style="width: 80px;" />
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    }
+                    case 'Color': {
+                        // https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+                        const hexToRgb = (r, g, b) => {
+                            return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
+                        };
 
-        let nodeHeight = $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-header')
-        .outerHeight() +
-            $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-main').outerHeight();
-        if (expandHTML.length > 0) {
-            nodeHeight += $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
-        }
+                        const colorValue = userData.options[inputs[i].name].split(',').map(x => Math.ceil(
+                            parseFloat(x) * 255));
 
-        $(this.rootNode).find(`#node_${id}`)
-            .css('width', `${nodeWidth}px`)
-            .css('height', `${nodeHeight}px`);
-
-        $(this.rootNode).find(`#node_${id}`).find('.flowgraph-expand-container').bind(
-            'click',
-            e => {
-                let hiddenContainer = $(`#node_${id}`).find('.flowgraph-hidden-container')
-                if (hiddenContainer.css('display') == 'flex') {
-                    let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
-                        $(`#node_${id}`).find('.flowgraph-node-main').outerHeight() +
-                        $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
-
-                    $(`#node_${id}`).css('height', `${nodeHeight}px`);
-                    hiddenContainer.css('display', 'none');
-                    $(`#node_${id}`)
-                        .find('.flowgraph-expand-container')
-                        .children('object')
-                        .replaceWith(
-                            '<object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>'
-                            );
-                } else {
-                    let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
-                        $(`#node_${id}`).find('.flowgraph-node-main').outerHeight() +
-                        $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight() + 150;
-
-                    $(`#node_${id}`).css('height', `${nodeHeight}px`);
-                    hiddenContainer.css('display', 'flex');
-                    $(`#node_${id}`)
-                        .find('.flowgraph-expand-container')
-                        .children('object')
-                        .replaceWith(
-                            '<object data="images/angle-up.svg" width="16" height="16" style="pointer-events: none;"></object>'
-                            );
+                        inputsHTML += `
+                            <div class="flowgraph-io-row left">
+                                <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                    <span style="color: white;">${inputs[i].name}:</span>
+                                    <input id="input_${id}_${i}" type="color" value="${hexToRgb(...colorValue)}" placeholder="${inputs[i].type}" style="width: 50px;" />
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    }
+                    default: {
+                        inputsHTML += `
+                            <div class="flowgraph-io-row left">
+                                <div id="node_${id}_in_${i}" class="flowgraph-io circle"></div>
+                                <span style="color: white;">${inputs[i].name} (${inputs[i].type})</span>
+                            </div>
+                        `;
+                        break;
+                    }
                 }
+                inputMaxLength = Math.max(inputs[i].name.length, inputMaxLength);
+            }
+
+            if (inputs.length == 0) {
+                inputMaxLength = 0;
+            }
+
+            let outputsHTML = "";
+            let outputMaxLength = 5;
+            for (let i = 0; i < outputs.length; i++) {
+                outputsHTML += `
+                    <div class="flowgraph-io-row right">
+                        <span style="color: white;">${outputs[i].name} (${outputs[i].type})</span>
+                        <div id="node_${id}_out_${i}" class="flowgraph-io circle"></div>
+                    </div>
+                `;
+                outputMaxLength = Math.max(outputs[i].name.length, outputMaxLength);
+            }
+
+            if (outputs.length == 0) {
+                outputMaxLength = 0;
+            }
+
+            let iolistWidth = 100;
+            if (inputs.length > 0 && outputs.length > 0) {
+                iolistWidth = 50;
+            }
+
+            let bodyHTML = "";
+            if (inputsHTML.length > 0) {
+                bodyHTML += `
+                    <div class="flowgraph-io-list" style="width: ${iolistWidth}%;">
+                        ${inputsHTML}
+                    </div>
+                `;
+            }
+            if (outputsHTML.length > 0) {
+                bodyHTML += `
+                    <div class="flowgraph-io-list" style="width: ${iolistWidth}%;">
+                        ${outputsHTML}
+                    </div>
+                `;
+            }
+
+            /*let footerHTML = "";
+            if (expandHTML.length > 0) {
+                footerHTML += `
+                    <div class="flowgraph-node-footer">
+                        <div class="flowgraph-expand-container">
+                            <img src="images/angle-down.svg" width="16" height="16" />
+                        </div>
+                    </div>
+                    <div class="flowgraph-hidden-container" style="display: none;">
+                        ${expandHTML}
+                    </div>
+                `;
+            }*/
+
+            const hasNode = $(this.rootNode).find(`#node_${id}`).length > 0;
+
+            if(hasNode) {
+                $(this.rootNode).find(`#node_${id}`)
+                    .empty()
+                    .append(`
+                        <div id="node_${id}" class="flowgraph-node-container"> 
+                            <div class="flowgraph-node-root">
+                                <div class="flowgraph-node-header">
+                                    <span style="color: white;">${nodeName}</span>
+                                </div>
+    
+                                <div class="flowgraph-node-main">
+                                    ${bodyHTML}
+                                </div>
+                            </div>
+                        </div>
+                    `);
+            } else {
+                $(this.rootNode).find('.flowgraph-canvas').append(`
+                    <div id="node_${id}" class="flowgraph-node-container"> 
+                        <div class="flowgraph-node-root">
+                            <div class="flowgraph-node-header">
+                                <span style="color: white;">${nodeName}</span>
+                            </div>
+
+                            <div class="flowgraph-node-main">
+                                ${bodyHTML}
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
+            
+            $(this.rootNode).find(`#node_${id}`).find(":input").off().on('change', e => {
+                let targetName = $(e.currentTarget).parent().children('span').text();
+                targetName = targetName.substring(0, targetName.length - 1);
+
+                this.rootNode.dispatchEvent(
+                    new CustomEvent("flowgraph:value-changed", {
+                        'detail': {
+                            'nodeId': id,
+                            'targetName': targetName,
+                            'targetType': e.currentTarget.type,
+                            'value': e.currentTarget.value
+                        }
+                    }));
             });
 
-        $(this.rootNode).find(`#node_${id}`).css('transform',
-            `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
+            let nodeWidth = 110 + Math.min(1, outputs.length) * 22 * outputMaxLength + Math.min(1, inputs
+                .length) * 22 * inputMaxLength;
+
+            let nodeHeight = $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-header')
+            .outerHeight() +
+                $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-main').outerHeight();
+            if (expandHTML.length > 0) {
+                nodeHeight += $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
+            }
+
+            $(this.rootNode).find(`#node_${id}`)
+                .css('width', `${nodeWidth}px`)
+                .css('height', `${nodeHeight}px`);
+
+            /*
+            $(this.rootNode).find(`#node_${id}`).find('.flowgraph-expand-container').bind(
+                'click',
+                e => {
+                    let hiddenContainer = $(`#node_${id}`).find('.flowgraph-hidden-container')
+                    if (hiddenContainer.css('display') == 'flex') {
+                        let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
+                            $(`#node_${id}`).find('.flowgraph-node-main').outerHeight() +
+                            $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
+
+                        $(`#node_${id}`).css('height', `${nodeHeight}px`);
+                        hiddenContainer.css('display', 'none');
+                        $(`#node_${id}`)
+                            .find('.flowgraph-expand-container')
+                            .children('object')
+                            .replaceWith(
+                                '<object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>'
+                                );
+                    } else {
+                        let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
+                            $(`#node_${id}`).find('.flowgraph-node-main').outerHeight() +
+                            $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight() + 150;
+
+                        $(`#node_${id}`).css('height', `${nodeHeight}px`);
+                        hiddenContainer.css('display', 'flex');
+                        $(`#node_${id}`)
+                            .find('.flowgraph-expand-container')
+                            .children('object')
+                            .replaceWith(
+                                '<object data="images/angle-up.svg" width="16" height="16" style="pointer-events: none;"></object>'
+                                );
+                    }
+                });
+            */
+
+            $(this.rootNode).find(`#node_${id}`).css('transform',
+                `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
+        }
+
+        this.nodes[this.nodesCache[id]] = {
+            "id": id,
+            "name": nodeName,
+            "position": [x, y],
+            "inputs": inputs,
+            "outputs": outputs,
+            "fixed": fixed,
+            "userData": userData
+        };
+    }
+
+    #internalAddNode(id, x, y, inputs, outputs, nodeName, fixed, expandHTML, userData) {
+        let showNode = inputs.length > 0 || outputs.length > 0;
+
+        if (showNode) {
+            let inputsHTML = "";
+            let inputMaxLength = 5;
+            for (let i = 0; i < inputs.length; i++) {
+                switch (inputs[i].type) {
+                    case 'Number': {
+                        const numberValue = parseFloat(userData.options[inputs[i].name]);
+
+                        inputsHTML += `
+                            <div class="flowgraph-io-row left">
+                                <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                    <span style="color: white;">${inputs[i].name}:</span>
+                                    <input id="input_${id}_${i}" type="number" value="${numberValue}" placeholder="${inputs[i].type}" style="width: 80px;" />
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    }
+                    case 'String': {
+                        const stringValue = userData.options[inputs[i].name];
+
+                        inputsHTML += `
+                            <div class="flowgraph-io-row left">
+                                <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                    <span style="color: white;">${inputs[i].name}:</span>
+                                    <input id="input_${id}_${i}" type="text" value="${stringValue}" placeholder="${inputs[i].type}" style="width: 80px;" />
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    }
+                    case 'Color': {
+                        // https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+                        const hexToRgb = (r, g, b) => {
+                            return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
+                        };
+
+                        const colorValue = userData.options[inputs[i].name].split(',').map(x => Math.ceil(
+                            parseFloat(x) * 255));
+
+                        inputsHTML += `
+                            <div class="flowgraph-io-row left">
+                                <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                    <span style="color: white;">${inputs[i].name}:</span>
+                                    <input id="input_${id}_${i}" type="color" value="${hexToRgb(...colorValue)}" placeholder="${inputs[i].type}" style="width: 50px;" />
+                                </div>
+                            </div>
+                        `;
+                        break;
+                    }
+                    default: {
+                        inputsHTML += `
+                            <div class="flowgraph-io-row left">
+                                <div id="node_${id}_in_${i}" class="flowgraph-io circle"></div>
+                                <span style="color: white;">${inputs[i].name} (${inputs[i].type})</span>
+                            </div>
+                        `;
+                        break;
+                    }
+                }
+                inputMaxLength = Math.max(inputs[i].name.length, inputMaxLength);
+            }
+
+            if (inputs.length == 0) {
+                inputMaxLength = 0;
+            }
+
+            let outputsHTML = "";
+            let outputMaxLength = 5;
+            for (let i = 0; i < outputs.length; i++) {
+                outputsHTML += `
+                    <div class="flowgraph-io-row right">
+                        <span style="color: white;">${outputs[i].name} (${outputs[i].type})</span>
+                        <div id="node_${id}_out_${i}" class="flowgraph-io circle"></div>
+                    </div>
+                `;
+                outputMaxLength = Math.max(outputs[i].name.length, outputMaxLength);
+            }
+
+            if (outputs.length == 0) {
+                outputMaxLength = 0;
+            }
+
+            let iolistWidth = 100;
+            if (inputs.length > 0 && outputs.length > 0) {
+                iolistWidth = 50;
+            }
+
+            let bodyHTML = "";
+            if (inputsHTML.length > 0) {
+                bodyHTML += `
+                    <div class="flowgraph-io-list" style="width: ${iolistWidth}%;">
+                        ${inputsHTML}
+                    </div>
+                `;
+            }
+            if (outputsHTML.length > 0) {
+                bodyHTML += `
+                    <div class="flowgraph-io-list" style="width: ${iolistWidth}%;">
+                        ${outputsHTML}
+                    </div>
+                `;
+            }
+
+            /*let footerHTML = "";
+            if (expandHTML.length > 0) {
+                footerHTML += `
+                    <div class="flowgraph-node-footer">
+                        <div class="flowgraph-expand-container">
+                            <img src="images/angle-down.svg" width="16" height="16" />
+                        </div>
+                    </div>
+                    <div class="flowgraph-hidden-container" style="display: none;">
+                        ${expandHTML}
+                    </div>
+                `;
+            }*/
+
+            const hasNode = $(this.rootNode).find(`#node_${id}`).length > 0;
+
+            if(hasNode) {
+                $(this.rootNode).find(`#node_${id}`)
+                    .empty()
+                    .append(`
+                        <div id="node_${id}" class="flowgraph-node-container"> 
+                            <div class="flowgraph-node-root">
+                                <div class="flowgraph-node-header">
+                                    <span style="color: white;">${nodeName}</span>
+                                </div>
+    
+                                <div class="flowgraph-node-main">
+                                    ${bodyHTML}
+                                </div>
+                            </div>
+                        </div>
+                    `);
+            } else {
+                $(this.rootNode).find('.flowgraph-canvas').append(`
+                    <div id="node_${id}" class="flowgraph-node-container"> 
+                        <div class="flowgraph-node-root">
+                            <div class="flowgraph-node-header">
+                                <span style="color: white;">${nodeName}</span>
+                            </div>
+
+                            <div class="flowgraph-node-main">
+                                ${bodyHTML}
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
+            
+            $(this.rootNode).find(`#node_${id}`).find(":input").off().on('change', e => {
+                let targetName = $(e.currentTarget).parent().children('span').text();
+                targetName = targetName.substring(0, targetName.length - 1);
+
+                this.rootNode.dispatchEvent(
+                    new CustomEvent("flowgraph:value-changed", {
+                        'detail': {
+                            'nodeId': id,
+                            'targetName': targetName,
+                            'targetType': e.currentTarget.type,
+                            'value': e.currentTarget.value
+                        }
+                    }));
+            });
+
+            let nodeWidth = 110 + Math.min(1, outputs.length) * 22 * outputMaxLength + Math.min(1, inputs
+                .length) * 22 * inputMaxLength;
+
+            let nodeHeight = $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-header')
+            .outerHeight() +
+                $(this.rootNode).find(`#node_${id}`).find('.flowgraph-node-main').outerHeight();
+            if (expandHTML.length > 0) {
+                nodeHeight += $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
+            }
+
+            $(this.rootNode).find(`#node_${id}`)
+                .css('width', `${nodeWidth}px`)
+                .css('height', `${nodeHeight}px`);
+
+            /*
+            $(this.rootNode).find(`#node_${id}`).find('.flowgraph-expand-container').bind(
+                'click',
+                e => {
+                    let hiddenContainer = $(`#node_${id}`).find('.flowgraph-hidden-container')
+                    if (hiddenContainer.css('display') == 'flex') {
+                        let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
+                            $(`#node_${id}`).find('.flowgraph-node-main').outerHeight() +
+                            $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight();
+
+                        $(`#node_${id}`).css('height', `${nodeHeight}px`);
+                        hiddenContainer.css('display', 'none');
+                        $(`#node_${id}`)
+                            .find('.flowgraph-expand-container')
+                            .children('object')
+                            .replaceWith(
+                                '<object data="images/angle-down.svg" width="16" height="16" style="pointer-events: none;"></object>'
+                                );
+                    } else {
+                        let nodeHeight = $(`#node_${id}`).find('.flowgraph-node-header').outerHeight() +
+                            $(`#node_${id}`).find('.flowgraph-node-main').outerHeight() +
+                            $(`#node_${id}`).find('.flowgraph-node-footer').outerHeight() + 150;
+
+                        $(`#node_${id}`).css('height', `${nodeHeight}px`);
+                        hiddenContainer.css('display', 'flex');
+                        $(`#node_${id}`)
+                            .find('.flowgraph-expand-container')
+                            .children('object')
+                            .replaceWith(
+                                '<object data="images/angle-up.svg" width="16" height="16" style="pointer-events: none;"></object>'
+                                );
+                    }
+                });
+            */
+
+            $(this.rootNode).find(`#node_${id}`).css('transform',
+                `translate(${this.relativeCanvasX + x}px, ${this.relativeCanvasY + y}px)`);
+        }
 
         const size = this.nodes.push({
             "id": id,
+            "name": nodeName,
             "position": [x, y],
             "inputs": inputs,
             "outputs": outputs,
@@ -1086,11 +1345,21 @@ export default class FlowGraph {
             .html(title);
     }
 
+    getNodesByName(nodeName) {
+        return this.nodes.filter(value => value.name == nodeName);
+    }
+
     getNode(nodeId) {
         if (this.nodesCache[nodeId] == null) {
             throw new Error("Node with this ID does not exist");
         }
         return this.nodes[this.nodesCache[nodeId]];
+    }
+
+    updateNode(nodeId, posX, posY, inputs, outputs, nodeName, fixed, expandHTML, userData) {
+        this.#internalUpdateNode(nodeId, posX, posY, inputs, outputs, nodeName, fixed, expandHTML,
+            userData);
+        return nodeId;
     }
 
     /**

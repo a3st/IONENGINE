@@ -11,7 +11,7 @@ namespace ionengine::tools::editor
 {
     std::array<uint8_t, 8> constexpr ShaderGraphFileType{'S', 'G', 'F', 'I', 'L', 'E', '\0', '\0'};
 
-    enum class ShaderGraphType
+    enum class ShaderGraphType : uint32_t
     {
         Lit,
         Unlit

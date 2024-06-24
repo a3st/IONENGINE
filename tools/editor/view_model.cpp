@@ -59,12 +59,12 @@ namespace ionengine::tools::editor
 
     auto ViewModel::getAssetTree() -> std::string
     {
-        std::stringstream stream;
+        /*std::stringstream stream;
         auto internalLoop = [](this auto const& internalLoop, AssetStructInfo const* curStruct,
                                std::stringstream& stream) -> void {
             std::string assetType;
             bool isFolder = false;
-            switch (curStruct->type)
+            switch (curStruct->assetType)
             {
                 case AssetType::Folder: {
                     assetType = "folder";
@@ -121,9 +121,16 @@ namespace ionengine::tools::editor
         std::regex const jsonCommaRemove("\\,\\]");
 
         std::string jsonData = stream.str();
-        jsonData = jsonData.substr(0, jsonData.size() - 1);
+        jsonData = jsonData.substr(0, jsonData.size() - 1);*/
 
-        return std::regex_replace(jsonData, jsonCommaRemove, "]");
+        auto result = core::saveToBytes<AssetStructInfo, core::serialize::OutputJSON>(assetTree.fetch());
+        if (!result.has_value())
+        {
+        }
+
+        auto buffer = result.value();
+        std::cout << std::string(reinterpret_cast<char*>(buffer.data()), buffer.size()) << std::endl;
+        return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
     }
 
     auto ViewModel::assetBrowserCreateFile(std::string fileData) -> std::string
@@ -319,6 +326,7 @@ namespace ionengine::tools::editor
         {
             if (!shaderGraphEditor.loadFromFile(std::filesystem::path(filePath).make_preferred()))
             {
+                std::cout << 1 << std::endl;
                 return "{\"error\":3}";
             }
             return shaderGraphDataToJSON(shaderGraphEditor.dump());
@@ -411,21 +419,7 @@ namespace ionengine::tools::editor
     auto ViewModel::shaderGraphDataToJSON(ShaderGraphData const& graphData) -> std::string
     {
         std::stringstream stream;
-
-        std::string graphType;
-        switch (graphData.graphType)
-        {
-            case ShaderGraphType::Lit: {
-                graphType = "lit";
-                break;
-            }
-            case ShaderGraphType::Unlit: {
-                graphType = "unlit";
-                break;
-            }
-        }
-
-        stream << "{\"graphType\":\"" << graphType << "\",\"sceneData\":{\"nodes\":[";
+        stream << "{\"graphType\":" << static_cast<uint32_t>(graphData.graphType) << ",\"sceneData\":{\"nodes\":[";
 
         bool isFirst = true;
         for (auto const& node : graphData.nodes)
@@ -503,6 +497,8 @@ namespace ionengine::tools::editor
         }
 
         stream << "]}}";
+
+        std::cout << stream.str() << std::endl;
         return stream.str();
     }
 
@@ -513,8 +509,19 @@ namespace ionengine::tools::editor
 
         ShaderGraphData graphData = {};
 
+        uint64_t graphType;
+        auto error = document["graphType"].get_uint64().get(graphType);
+        if (error != simdjson::SUCCESS)
+        {
+            return "{\"error\":0}";
+        }
+        graphData.graphType = static_cast<ShaderGraphType>(graphType);
+
+        simdjson::ondemand::object sceneObject;
+        error = document["sceneData"].get_object().get(sceneObject);
+
         simdjson::ondemand::array nodes;
-        auto error = document["nodes"].get_array().get(nodes);
+        error = sceneObject["nodes"].get_array().get(nodes);
         if (error != simdjson::SUCCESS)
         {
             return "{\"error\":0}";
@@ -600,11 +607,67 @@ namespace ionengine::tools::editor
                 nodeData.options[std::string(key)] = std::string(value);
             }
 
+            simdjson::ondemand::array inputs;
+            error = node["inputs"].get_array().get(inputs);
+            if (error != simdjson::SUCCESS)
+            {
+                return "{\"error\":9}";
+            }
+
+            for (auto input : inputs)
+            {
+                std::string_view socketName;
+                error = input["name"].get_string().get(socketName);
+                if (error != simdjson::SUCCESS)
+                {
+                    return "{\"error\":9}";
+                }
+
+                std::string_view socketType;
+                error = input["type"].get_string().get(socketType);
+                if (error != simdjson::SUCCESS)
+                {
+                    return "{\"error\":9}";
+                }
+
+                NodeSocketData socketData = {.socketName = std::string(socketName),
+                                             .socketType = std::string(socketType)};
+                nodeData.inputs.emplace_back(std::move(socketData));
+            }
+
+            simdjson::ondemand::array outputs;
+            error = node["outputs"].get_array().get(outputs);
+            if (error != simdjson::SUCCESS)
+            {
+                return "{\"error\":10}";
+            }
+
+            for (auto output : outputs)
+            {
+                std::string_view socketName;
+                error = output["name"].get_string().get(socketName);
+                if (error != simdjson::SUCCESS)
+                {
+                    return "{\"error\":10}";
+                }
+
+                std::string_view socketType;
+                error = output["type"].get_string().get(socketType);
+                if (error != simdjson::SUCCESS)
+                {
+                    return "{\"error\":10}";
+                }
+
+                NodeSocketData socketData = {.socketName = std::string(socketName),
+                                             .socketType = std::string(socketType)};
+                nodeData.outputs.emplace_back(std::move(socketData));
+            }
+
             graphData.nodes.emplace_back(std::move(nodeData));
         }
 
         simdjson::ondemand::array connections;
-        error = document["connections"].get_array().get(connections);
+        error = sceneObject["connections"].get_array().get(connections);
         if (error != simdjson::SUCCESS)
         {
             return "{\"error\":9}";
@@ -710,13 +773,11 @@ namespace ionengine::tools::editor
             return "{\"error\":3}";
         }
 
-        RenderableData renderableData = {
-            .renderableType = RenderableType::Quad,
-            .shader = outputShader->getShader(),
-            .rasterizerStage = outputShader->getRasterizerStage(),
-            .blendColor = rhi::BlendColorInfo::Opaque(),
-            .depthStencil = std::nullopt
-        };
+        RenderableData renderableData = {.renderableType = RenderableType::Quad,
+                                         .shader = outputShader->getShader(),
+                                         .rasterizerStage = outputShader->getRasterizerStage(),
+                                         .blendColor = rhi::BlendColorInfo::Opaque(),
+                                         .depthStencil = std::nullopt};
 
         renderableObjects.clear();
         renderableObjects.emplace_back(std::move(renderableData));

@@ -31,6 +31,7 @@ import FlowGraph from "../thirdparty/flowgraph.js/flowgraph";
 export default {
     data() {
         return {
+            graphType: null,
             graph: null,
             fileInfo: {},
         };
@@ -127,25 +128,26 @@ export default {
             );
         },
         open(graphData, fileInfo) {
-            toRaw(this.graph).import(graphData);
+            console.log(graphData);
+            toRaw(this.graph).import(graphData.sceneData);
+            this.graphType = graphData.graphType;
             this.fileInfo = fileInfo;
         },
         onSaveClick(e) {
+            console.log(toRaw(this.graph).export())
             webview
-                .invoke(
-                    "shaderGraphAssetSave",
-                    this.fileInfo,
-                    toRaw(this.graph).export()
-                )
+                .invoke("shaderGraphAssetSave", this.fileInfo, {
+                    graphType: this.graphType,
+                    sceneData: toRaw(this.graph).export(),
+                })
                 .then((data) => console.log(data));
         },
         onCompileClick(e) {
             webview
-                .invoke(
-                    "shaderGraphAssetSave",
-                    this.fileInfo,
-                    toRaw(this.graph).export()
-                )
+                .invoke("shaderGraphAssetSave", this.fileInfo, {
+                    graphType: this.graphType,
+                    sceneData: toRaw(this.graph).export(),
+                })
                 .then((data) => console.log(data));
 
             webview

@@ -6,7 +6,7 @@
     >
         <optext
             v-for="(resource, index) in resources"
-            :key="resource.name"
+            :key="index"
             :icon="require('../images/buffer.svg')"
             @remove="onResourceDeleteClick($event, index)"
         >
@@ -37,21 +37,32 @@
         class="pan-wrapper"
         style="background-color: #2f2f2f; gap: 10px"
     >
-        <optgr v-if="domain == 'unlit'">
+        <optgr v-if="graphType == 1">
             <optli
                 title="Surface"
                 type="select"
-                v-model="shaderDomain"
-                v-bind:content="shaderDomains"
+                v-model="surface"
+                v-bind:content="surfaceTypes"
             ></optli>
-            <optli title="Blend" type="select"></optli>
-            <optli title="Double Sided" type="checkbox"></optli>
+            <optli
+                title="Blend"
+                type="select"
+                v-model="blend"
+                v-bind:content="blendTypes"
+            ></optli>
+            <optli
+                title="Double Sided"
+                type="checkbox"
+                v-model="doubleSide"
+            ></optli>
         </optgr>
-        <optgr v-else-if="domain == 'lit'"> </optgr>
+        <optgr v-else-if="graphType == 0"></optgr>
     </div>
 </template>
 
 <script>
+import { toRaw } from "vue";
+
 import OptextComponent from "../components/optext.vue";
 import OptliComponent from "../components/optli.vue";
 import OptgrComponent from "../components/optgr.vue";
@@ -65,6 +76,74 @@ export default {
     props: {
         type: String,
     },
+    watch: {
+        resources: {
+            handler(value, oldValue) {
+                let outputsData = [];
+                for (const resource of Object.values(value)) {
+                    outputsData.push({
+                        name: resource.name,
+                        type: this.resourceTypes[resource.type],
+                    });
+                }
+
+                const inputNode = toRaw(this.graph).getNode(
+                    this.cacheInputNodeId
+                );
+
+                this.cacheInputNodeId = toRaw(this.graph).updateNode(
+                    inputNode.id,
+                    inputNode.position[0],
+                    inputNode.position[1],
+                    inputNode.inputs,
+                    outputsData,
+                    inputNode.name,
+                    inputNode.fixed,
+                    "",
+                    inputNode.userData
+                );
+            },
+            deep: true,
+        },
+        surface: {
+            handler(value, oldValue) {
+                const outputNode = toRaw(this.graph).getNode(
+                    this.cacheOutputNodeId
+                );
+
+                const inputColorIndex = outputNode.inputs.findIndex(
+                    (element) => element.name == "Color"
+                );
+
+                const surfaceToTypes = {
+                    0: "float3",
+                    1: "float4",
+                };
+
+                if (
+                    outputNode.inputs[inputColorIndex].type !=
+                    surfaceToTypes[value]
+                ) {
+                    outputNode.inputs[inputColorIndex].type =
+                        surfaceToTypes[value];
+
+                    console.log(12222)
+
+                    this.cacheOutputNodeId = toRaw(this.graph).updateNode(
+                        outputNode.id,
+                        outputNode.position[0],
+                        outputNode.position[1],
+                        outputNode.inputs,
+                        outputNode.outputs,
+                        outputNode.name,
+                        outputNode.fixed,
+                        "",
+                        outputNode.userData
+                    );
+                }
+            },
+        },
+    },
     data() {
         return {
             resourceTypes: [
@@ -75,11 +154,18 @@ export default {
                 "float",
                 "bool",
             ],
+            surfaceTypes: ["Opaque", "Transparent"],
+            blendTypes: ["Opaque", "Add", "Mixed", "Alpha Blend"],
+            surface: 0,
+            blend: 0,
+            doubleSide: false,
             resources: [],
-            domain: null,
+            graphType: null,
+            graph: null,
+            cacheInputNodeId: null,
+            cacheOutputNodeId: null,
         };
     },
-    mounted() {},
     methods: {
         onResourceAddClick(e) {
             this.resources.push({
@@ -90,59 +176,35 @@ export default {
         onResourceDeleteClick(e, index) {
             this.resources.splice(index, 1);
         },
+        refresh(graphComponent, graphType) {
+            this.graph = graphComponent.proxy.$data.graph;
+            this.graphType = graphType;
+
+            this.cacheInputNodeId = toRaw(this.graph).getNodesByName(
+                "Input Node"
+            )[0].id;
+
+            console.log("1", toRaw(this.graph).nodes);
+
+            this.cacheOutputNodeId = toRaw(this.graph).getNodesByName(
+                "Output Node"
+            )[0].id;
+
+            const outputNode = toRaw(this.graph).getNode(
+                this.cacheOutputNodeId
+            );
+
+            const inputColorIndex = outputNode.inputs.findIndex(
+                (element) => element.name == "Color"
+            );
+
+            const typesToSurface = {
+                float3: 0,
+                float4: 1,
+            };
+            this.surface =
+                typesToSurface[outputNode.inputs[inputColorIndex].type];
+        },
     },
 };
-
-/*resources: {
-            handler(value, oldValue) {
-                let posX = 0;
-                let posY = 0;
-                if(this.resourceNodeId != -1) {
-                    [posX, posY] = toRaw(this.graph).getNode(this.resourceNodeId).position;
-                    toRaw(this.graph).removeNode(this.resourceNodeId);
-                    this.resourceNodeId = -1;
-                }
-
-                let outputsData = [];
-                for(const resource of Object.values(value)) {
-                    outputsData.push({
-                        "name": resource.name,
-                        "type": this.resourceTypes[resource.type]
-                    });
-                }
-                
-                if(outputsData.length > 0) {
-                    this.resourceNodeId = toRaw(this.graph).addNode(
-                        posX, posY, 
-                        this.inputNode.inputs, 
-                        outputsData, 
-                        this.inputNode.name, 
-                        this.inputNode.fixed, 
-                        "", 
-                        this.inputNode.userData);
-                }
-            },
-            deep: true
-        },
-        shaderDomain: {
-            handler(value, oldValue) {
-                let posX = 0;
-                let posY = 0;
-                if(this.shaderDomainNodeId != -1) {
-                    [posX, posY] = toRaw(this.graph).getNode(this.shaderDomainNodeId).position;
-                    toRaw(this.graph).removeNode(this.shaderDomainNodeId);
-                    this.shaderDomainNodeId = -1;
-                }
-                
-                const node = this.domainNodes[value];
-                this.shaderDomainNodeId = toRaw(this.graph).addNode(
-                    posX, posY, 
-                    node.inputs, 
-                    node.outputs, 
-                    node.name, 
-                    node.fixed, 
-                    "", 
-                    node.userData);
-            }
-        },*/
 </script>

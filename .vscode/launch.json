@@ -26,6 +26,17 @@
             "cwd": "${workspaceFolder}/build/tools",
             "environment": [],
             "console": "integratedTerminal"
+        },
+        {
+            "name": "(Windows) Debug Test",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tests/serializable_test.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/tests",
+            "environment": [],
+            "console": "integratedTerminal"
         }
     ]
 }

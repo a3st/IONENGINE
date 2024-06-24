@@ -2,21 +2,32 @@
 
 #pragma once
 
+#include "core/serializable.hpp"
+
 namespace ionengine::tools::editor
 {
     enum class AssetType
     {
         Unknown,
-        Asset,
+        ShaderGraph,
         Folder
     };
 
     struct AssetStructInfo
     {
-        std::string name;
-        std::filesystem::path path;
-        AssetType type;
-        std::vector<std::unique_ptr<class AssetStructInfo>> childrens;
+        std::string assetName;
+        std::string assetPath;
+        AssetType assetType;
+        //std::vector<std::unique_ptr<class AssetStructInfo>> childrens;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(assetName, "name");
+            archive.property(assetType, "type");
+            archive.property(assetPath, "path");
+            //archive.property(childrens, "childrens");
+        }
     };
 
     class AssetTree
@@ -31,3 +42,18 @@ namespace ionengine::tools::editor
         std::filesystem::path rootPath;
     };
 } // namespace ionengine::tools::editor
+
+namespace ionengine::core
+{
+    template <>
+    struct SerializableEnum<tools::editor::AssetType>
+    {
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.field(tools::editor::AssetType::Unknown, "file/unknown");
+            archive.field(tools::editor::AssetType::ShaderGraph, "asset/shadergraph");
+            archive.field(tools::editor::AssetType::Folder, "folder");
+        }
+    };
+} // namespace ionengine::core

@@ -1,21 +1,23 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "asset_tree.hpp"
+#include "engine/asset.hpp"
 #include "precompiled.h"
+#include "shader_graph/shader_graph.hpp"
 
 namespace ionengine::tools::editor
 {
     AssetTree::AssetTree(std::filesystem::path const& rootPath) : rootPath(rootPath)
     {
         rootStruct = std::make_unique<AssetStructInfo>();
-        rootStruct->name = rootPath.filename().generic_string();
-        rootStruct->type = AssetType::Folder;
-        rootStruct->path = rootPath;
+        rootStruct->assetName = rootPath.filename().generic_string();
+        rootStruct->assetType = AssetType::Folder;
+        rootStruct->assetPath = rootPath.generic_string();
     }
 
     auto AssetTree::fetch() -> AssetStructInfo const&
     {
-        rootStruct->childrens.clear();
+        //rootStruct->childrens.clear();
 
         auto internalFetch = [&](this auto const& internalFetch, AssetStructInfo* curStruct,
                                  std::filesystem::path const& rootPath) -> void {
@@ -24,28 +26,47 @@ namespace ionengine::tools::editor
                 if (std::filesystem::is_directory(dirEntry.path()))
                 {
                     auto folderStruct = std::make_unique<AssetStructInfo>();
-                    folderStruct->name = dirEntry.path().filename().generic_string();
-                    folderStruct->path = dirEntry.path();
-                    folderStruct->type = AssetType::Folder;
+                    folderStruct->assetName = dirEntry.path().filename().generic_string();
+                    folderStruct->assetPath = dirEntry.path().generic_string();
+                    folderStruct->assetType = AssetType::Folder;
 
-                    curStruct->childrens.emplace_back(std::move(folderStruct));
-                    internalFetch(curStruct->childrens.back().get(), dirEntry.path());
+                    //curStruct->childrens.emplace_back(std::move(folderStruct));
+                    //internalFetch(curStruct->childrens.back().get(), dirEntry.path());
                 }
                 else
                 {
                     auto assetStruct = std::make_unique<AssetStructInfo>();
-                    assetStruct->name = dirEntry.path().stem().generic_string();
-                    assetStruct->path = dirEntry.path();
+                    assetStruct->assetName = dirEntry.path().stem().generic_string();
+                    assetStruct->assetPath = dirEntry.path().generic_string();
 
                     if (dirEntry.path().extension().compare(".asset") == 0)
                     {
-                        assetStruct->type = AssetType::Asset;
+                        std::basic_ifstream<uint8_t> stream(
+                            std::filesystem::path(curStruct->assetPath).make_preferred(), std::ios::binary);
+                        auto result = getAssetHeader(stream);
+                        if (result.has_value())
+                        {
+                            asset::Header header = std::move(result.value());
+                            if (std::memcmp(header.fileType.data(), ShaderGraphFileType.data(),
+                                            ShaderGraphFileType.size()) == 0)
+                            {
+                                assetStruct->assetType = AssetType::ShaderGraph;
+                            }
+                            else
+                            {
+                                assetStruct->assetType = AssetType::Unknown;
+                            }
+                        }
+                        else
+                        {
+                            assetStruct->assetType = AssetType::Unknown;
+                        }
                     }
                     else
                     {
-                        assetStruct->type = AssetType::Unknown;
+                        assetStruct->assetType = AssetType::Unknown;
                     }
-                    curStruct->childrens.emplace_back(std::move(assetStruct));
+                    //curStruct->childrens.emplace_back(std::move(assetStruct));
                 }
             }
         };
