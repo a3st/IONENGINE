@@ -1,5 +1,6 @@
 #include "core/serializable.hpp"
 #include "precompiled.h"
+#include <gtest/gtest.h>
 
 using namespace ionengine;
 
@@ -37,7 +38,7 @@ struct InternalData
 
 struct ShaderData
 {
-    uint32_t shader;
+    uint32_t shaderInt;
     float shaderFloat;
     std::string name;
     std::vector<std::string> names;
@@ -51,7 +52,7 @@ struct ShaderData
     template <typename Archive>
     auto operator()(Archive& archive)
     {
-        archive.property(shader, "shader");
+        archive.property(shaderInt, "shaderInt");
         archive.property(shaderFloat, "shaderFloat");
         archive.property(name, "name");
         archive.property(names, "names");
@@ -67,74 +68,114 @@ struct ShaderData
 struct ShaderFile
 {
     uint32_t magic;
+    float shaderFloat;
+    std::string name;
+    std::vector<std::string> names;
+    std::array<uint32_t, 3> numArray;
     ShaderData shaderData;
 
     template <typename Archive>
     auto operator()(Archive& archive)
     {
         archive.property(magic);
+        archive.property(shaderFloat);
+        archive.property(name);
+        archive.property(names);
+        archive.property(numArray);
         archive.with<core::serialize::OutputJSON, core::serialize::InputJSON>(shaderData);
     }
 };
 
-auto main(int32_t argc, char** argv) -> int32_t
+TEST(Serialize, JSON_Test)
 {
-    auto internal2 = std::make_unique<InternalData>();
-    internal2->name = "bye!";
-    internal2->materialIndex = 3;
+    auto internalData = std::make_unique<InternalData>();
+    internalData->name = "bye!";
+    internalData->materialIndex = 3;
 
-    ShaderData data = {4,
-                       1.1f,
-                       "Hello world!",
-                       {"name1", "name2"},
-                       {{"keyName1", "keyValue1"}, {"keyName2", "keyValue2"}},
-                       true,
-                       {"hello!", 2},
-                       TestEnum::Second,
-                       std::move(internal2),
-                       {20, 30}};
+    ShaderData shaderData = {.shaderInt = 4,
+                             .shaderFloat = 1.1f,
+                             .name = "Hello world!",
+                             .names = {"name1", "name2"},
+                             .mapNames = {{"keyName1", "keyValue1"}, {"keyName2", "keyValue2"}},
+                             .shaderBool = true,
+                             .internalData = {"hello!", 2},
+                             .testEnum = TestEnum::Second,
+                             .internalData2 = std::move(internalData),
+                             .positions = {20, 30}};
 
-    auto result = core::saveToBytes<ShaderData, core::serialize::OutputJSON>(data);
-    auto buffer = result.value();
-    std::cout << "Input: " << std::string(reinterpret_cast<char*>(buffer.data()), buffer.size()) << std::endl;
+    auto result = core::saveToBytes<ShaderData, core::serialize::OutputJSON>(shaderData);
+    auto buffer = std::move(result.value());
 
     auto resultAfter = core::loadFromBytes<ShaderData, core::serialize::InputJSON>(buffer);
     auto object = std::move(resultAfter.value());
 
-    std::cout << object.shader << std::endl;
-    std::cout << object.shaderFloat << std::endl;
-    std::cout << object.name << std::endl;
+    ASSERT_EQ(object.shaderInt, shaderData.shaderInt);
+    ASSERT_EQ(object.shaderFloat, shaderData.shaderFloat);
+    ASSERT_EQ(object.name, shaderData.name);
+    ASSERT_EQ(object.names, shaderData.names);
+    ASSERT_EQ(object.mapNames, shaderData.mapNames);
+    ASSERT_EQ(object.shaderBool, shaderData.shaderBool);
+    ASSERT_EQ(object.internalData.name, shaderData.internalData.name);
+    ASSERT_EQ(object.internalData.materialIndex, shaderData.internalData.materialIndex);
+    ASSERT_EQ(object.testEnum, shaderData.testEnum);
+    ASSERT_EQ(object.internalData2->name, shaderData.internalData2->name);
+    ASSERT_EQ(object.internalData2->materialIndex, shaderData.internalData2->materialIndex);
+    ASSERT_EQ(object.positions, shaderData.positions);
+}
 
-    for (auto const& e : object.names)
-    {
-        std::cout << e << std::endl;
-    }
+TEST(Serialize, Archive_Test)
+{
+    auto internalData = std::make_unique<InternalData>();
+    internalData->name = "bye!";
+    internalData->materialIndex = 3;
 
-    for (auto const& [key, value] : object.mapNames)
-    {
-        std::cout << key << " : " << value << std::endl;
-    }
+    ShaderData shaderData = {4,
+                             1.1f,
+                             "Hello world!",
+                             {"name1", "name2"},
+                             {{"keyName1", "keyValue1"}, {"keyName2", "keyValue2"}},
+                             true,
+                             {"hello!", 2},
+                             TestEnum::Second,
+                             std::move(internalData),
+                             {20, 30}};
 
-    std::cout << std::boolalpha << object.shaderBool << std::endl;
+    ShaderFile shaderFile = {.magic = 2,
+                             .shaderFloat = 1.2f,
+                             .name = "Hello world!",
+                             .names = {"name1", "name2"},
+                             .numArray = {5, 3, 4},
+                             .shaderData = std::move(shaderData)};
 
-    std::cout << object.internalData.name << std::endl;
-    std::cout << object.internalData.materialIndex << std::endl;
-    std::cout << static_cast<uint32_t>(object.testEnum) << std::endl;
+    auto result = core::saveToBytes<ShaderFile, core::serialize::OutputArchive>(shaderFile);
+    auto buffer = std::move(result.value());
 
-    std::cout << object.internalData2->name << std::endl;
-    std::cout << object.internalData2->materialIndex << std::endl;
+    auto resultAfter = core::loadFromBytes<ShaderFile, core::serialize::InputArchive>(buffer);
+    auto object = std::move(resultAfter.value());
 
-    for (auto const& e : object.positions)
-    {
-        std::cout << e << std::endl;
-    }
+    ASSERT_EQ(object.magic, shaderFile.magic);
+    ASSERT_EQ(object.shaderFloat, shaderFile.shaderFloat);
+    ASSERT_EQ(object.name, shaderFile.name);
+    ASSERT_EQ(object.names, shaderFile.names);
+    ASSERT_EQ(object.numArray, shaderFile.numArray);
 
-    ShaderFile shaderFile = {
-        .magic = 0x1,
-        .shaderData = std::move(data)
-    };
+    // with object
+    ASSERT_EQ(object.shaderData.shaderInt, shaderFile.shaderData.shaderInt);
+    ASSERT_EQ(object.shaderData.shaderFloat, shaderFile.shaderData.shaderFloat);
+    ASSERT_EQ(object.shaderData.name, shaderFile.shaderData.name);
+    ASSERT_EQ(object.shaderData.names, shaderFile.shaderData.names);
+    ASSERT_EQ(object.shaderData.mapNames, shaderFile.shaderData.mapNames);
+    ASSERT_EQ(object.shaderData.shaderBool, shaderFile.shaderData.shaderBool);
+    ASSERT_EQ(object.shaderData.internalData.name, shaderFile.shaderData.internalData.name);
+    ASSERT_EQ(object.shaderData.internalData.materialIndex, shaderFile.shaderData.internalData.materialIndex);
+    ASSERT_EQ(object.shaderData.testEnum, shaderFile.shaderData.testEnum);
+    ASSERT_EQ(object.shaderData.internalData2->name, shaderFile.shaderData.internalData2->name);
+    ASSERT_EQ(object.shaderData.internalData2->materialIndex, shaderFile.shaderData.internalData2->materialIndex);
+    ASSERT_EQ(object.shaderData.positions, shaderFile.shaderData.positions);
+}
 
-    auto result5 = core::saveToFile<ShaderFile>(shaderFile, "testBinary.bin");
-    
-    return 0;
+auto main(int32_t argc, char** argv) -> int32_t
+{
+    testing::InitGoogleTest(&argc, argv);
+    return ::RUN_ALL_TESTS();
 }

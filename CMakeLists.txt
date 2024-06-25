@@ -30,7 +30,7 @@ if(NOT TARGET D3D12MemoryAllocator)
 add_subdirectory(thirdparty/d3d12ma)
 endif()
 
-if(NOT TARGET googletest)
+if(NOT TARGET gtest)
 add_subdirectory(thirdparty/googletest)
 endif()
 

@@ -14,6 +14,47 @@ namespace ionengine::core
         auto operator()(Archive& archive);
     };
 
+    template <typename Type, typename Archive = serialize::OutputArchive>
+    class Serializable
+    {
+      public:
+        static auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<Type>
+        {
+            Type object = {};
+            Archive archive(stream);
+            try
+            {
+                if (archive(object) > 0)
+                {
+                    return object;
+                }
+                else
+                {
+                    return std::nullopt;
+                }
+            }
+            catch (core::Exception e)
+            {
+                std::cerr << e.what() << std::endl;
+                return std::nullopt;
+            }
+        }
+
+        static auto serialize(Type const& object, std::basic_ostream<uint8_t>& stream) -> size_t
+        {
+            try
+            {
+                Archive archive(stream);
+                return archive(object);
+            }
+            catch (core::Exception e)
+            {
+                std::cerr << e.what() << std::endl;
+                return 0;
+            }
+        }
+    };
+
     namespace serialize
     {
         class InputJSON;
@@ -61,7 +102,10 @@ namespace ionengine::core
                                        Type const& element) -> void;
 
             template <typename Type>
-            auto propertyResolveToBinary(OutputArchive outputArchive, Type const& element) -> void;
+            auto propertyResolveFromBinary(InputArchive& inputArchive, Type& element) -> void;
+
+            template <typename Type>
+            auto propertyResolveToBinary(OutputArchive& outputArchive, Type const& element) -> void;
         } // namespace internal
 
         class InputJSON
@@ -351,7 +395,7 @@ namespace ionengine::core
                     uint32_t i = 0;
                     for (auto const& e : element)
                     {
-                        if (i >= arraySize)
+                        if (i > arraySize)
                         {
                             throw core::Exception("An error occurred while serializing a field");
                         }
@@ -445,19 +489,118 @@ namespace ionengine::core
 
         class InputArchive
         {
+            template <typename Type>
+            friend auto internal::propertyResolveFromBinary(InputArchive& inputArchive, Type& element) -> void;
+
           public:
             InputArchive(std::basic_istream<uint8_t>& stream) : stream(&stream)
             {
+            }
+
+            template <typename Type>
+            auto property(Type& element) -> void
+            {
+                internal::propertyResolveFromBinary(*this, element);
+            }
+
+            template <typename OutputArchive, typename InputArchive, typename Type>
+            auto with(Type& element) -> void
+            {
+                size_t bufferSize = 0;
+                stream->read(reinterpret_cast<uint8_t*>(&bufferSize), sizeof(size_t));
+
+                std::vector<uint8_t> buffer(bufferSize);
+                stream->read(buffer.data(), bufferSize);
+
+                std::basic_ispanstream<uint8_t> stream(
+                    std::span<uint8_t>(const_cast<uint8_t*>(buffer.data()), buffer.size()), std::ios::binary);
+                auto result = Serializable<Type, InputArchive>::deserialize(stream);
+                if (result.has_value())
+                {
+                    element = std::move(result.value());
+                }
+                else
+                {
+                    throw core::Exception("An error occurred while deserializing a field");
+                }
+            }
+
+            template <typename Type>
+            auto operator()(Type const& object) -> size_t
+            {
+                const_cast<Type&>(object)(*this);
+                return stream->tellg();
             }
 
           private:
             std::basic_istream<uint8_t>* stream;
         };
 
+        namespace internal
+        {
+            template <typename Type>
+            auto propertyResolveFromBinary(InputArchive& inputArchive, Type& element) -> void
+            {
+                if constexpr (std::is_integral_v<Type> || std::is_floating_point_v<Type>)
+                {
+                    inputArchive.stream->read(reinterpret_cast<uint8_t*>(&element), sizeof(Type));
+                }
+                else if constexpr (std::is_same_v<
+                                       Type, std::basic_string<char, std::char_traits<char>, std::allocator<char>>>)
+                {
+                    std::vector<uint8_t> buffer;
+                    uint8_t value = 0x1;
+                    while (static_cast<char>(value) != '\0')
+                    {
+                        if (inputArchive.stream->eof())
+                        {
+                            throw core::Exception("An error occurred while deserializing a field");
+                        }
+                        inputArchive.stream->read(&value, 1);
+                        if (static_cast<char>(value) != '\0')
+                        {
+                            buffer.emplace_back(value);
+                        }
+                    }
+
+                    element = std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
+                }
+                else if constexpr (is_std_vector<Type>::value)
+                {
+                    size_t numElements = 0;
+                    inputArchive.stream->read(reinterpret_cast<uint8_t*>(&numElements), sizeof(size_t));
+
+                    element.resize(numElements);
+
+                    for (size_t const i : std::views::iota(0u, numElements))
+                    {
+                        propertyResolveFromBinary(inputArchive, element[i]);
+                    }
+                }
+                else if constexpr (is_std_array<Type>::value)
+                {
+                    size_t numElements = 0;
+                    inputArchive.stream->read(reinterpret_cast<uint8_t*>(&numElements), sizeof(size_t));
+
+                    auto constexpr arraySize = std::tuple_size<Type>::value;
+
+                    if (numElements > arraySize)
+                    {
+                        throw core::Exception("An error occurred while deserializing a field");
+                    }
+
+                    for (size_t const i : std::views::iota(0u, numElements))
+                    {
+                        propertyResolveFromBinary(inputArchive, element[i]);
+                    }
+                }
+            }
+        } // namespace internal
+
         class OutputArchive
         {
             template <typename Type>
-            friend auto internal::propertyResolveToBinary(OutputArchive outputArchive, Type const& element) -> void;
+            friend auto internal::propertyResolveToBinary(OutputArchive& outputArchive, Type const& element) -> void;
 
           public:
             OutputArchive(std::basic_ostream<uint8_t>& stream) : stream(&stream)
@@ -473,18 +616,24 @@ namespace ionengine::core
             template <typename OutputArchive, typename InputArchive, typename Type>
             auto with(Type const& element) -> void
             {
-                std::cout << "with" << std::endl;
+                std::basic_stringstream<uint8_t> tempStream;
+                if (Serializable<Type, OutputArchive>::serialize(element, tempStream) > 0)
+                {
+                    std::vector<uint8_t> buffer(std::istreambuf_iterator<uint8_t>(tempStream.rdbuf()), {});
+                    size_t bufferSize = buffer.size();
+                    stream->write(reinterpret_cast<uint8_t const*>(&bufferSize), sizeof(size_t));
+                    stream->write(reinterpret_cast<uint8_t const*>(buffer.data()), bufferSize);
+                }
+                else
+                {
+                    throw core::Exception("An error occurred while serializing a field");
+                }
             }
 
             template <typename Type>
             auto operator()(Type const& object) -> size_t
             {
                 const_cast<Type&>(object)(*this);
-
-                /*std::string rawJSON = jsonChunk.str();
-                rawJSON = rawJSON.substr(0, rawJSON.size() - 1) + "}";
-
-                stream->write(reinterpret_cast<uint8_t const*>(rawJSON.data()), rawJSON.size());*/
                 return stream->tellp();
             }
 
@@ -495,58 +644,50 @@ namespace ionengine::core
         namespace internal
         {
             template <typename Type>
-            auto propertyResolveToBinary(OutputArchive outputArchive, Type const& element) -> void
+            auto propertyResolveToBinary(OutputArchive& outputArchive, Type const& element) -> void
             {
                 if constexpr (is_std_vector<Type>::value)
                 {
+                    size_t numElements = element.size();
+                    outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&numElements), sizeof(size_t));
+                    for (auto const& e : element)
+                    {
+                        propertyResolveToBinary(outputArchive, e);
+                    }
+                }
+                else if constexpr (is_std_array<Type>::value)
+                {
+                    auto constexpr arraySize = std::tuple_size<Type>::value;
+                    size_t numElements = element.size();
+                    if (numElements > arraySize)
+                    {
+                        throw core::Exception("An error occurred while serializing a field");
+                    }
+                    outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&numElements), sizeof(size_t));
+                    for (auto const& e : element)
+                    {
+                        propertyResolveToBinary(outputArchive, e);
+                    }
                 }
                 else
                 {
-                    if constexpr (std::is_integral_v<Type> && !std::is_same_v<Type, bool> ||
-                                  std::is_floating_point_v<Type>)
+                    if constexpr (std::is_integral_v<Type> || std::is_floating_point_v<Type>)
                     {
-                        uint32_t value = element;
-                        outputArchive.stream->write(reinterpret_cast<uint8_t*>(&value), sizeof(uint32_t));
+                        outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&element), sizeof(Type));
+                    }
+                    else if constexpr (std::is_same_v<
+                                           Type, std::basic_string<char, std::char_traits<char>, std::allocator<char>>>)
+                    {
+                        outputArchive.stream->write(reinterpret_cast<uint8_t const*>(element.data()), element.size());
+                        char endOfString = '\0';
+                        outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&endOfString), sizeof(char));
                     }
                 }
             }
         } // namespace internal
     }; // namespace serialize
 
-    template <typename Type, typename Archive = serialize::OutputArchive>
-    class Serializable
-    {
-      public:
-        static auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<Type>
-        {
-            Type object = {};
-            Archive archive(stream);
-            try
-            {
-                if (archive(object) > 0)
-                {
-                    return object;
-                }
-                else
-                {
-                    return std::nullopt;
-                }
-            }
-            catch (core::Exception e)
-            {
-                std::cerr << e.what() << std::endl;
-                return std::nullopt;
-            }
-        }
-
-        static auto serialize(Type const& object, std::basic_ostream<uint8_t>& stream) -> size_t
-        {
-            Archive archive(stream);
-            return archive(object);
-        }
-    };
-
-    template <typename Type, typename Archive = serialize::OutputArchive>
+    template <typename Type, typename Archive = serialize::InputArchive>
     auto loadFromBytes(std::span<uint8_t const> const dataBytes) -> std::optional<Type>
     {
         std::basic_ispanstream<uint8_t> stream(

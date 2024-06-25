@@ -7,7 +7,8 @@ target_include_directories(serializable_test PRIVATE
     ${PROJECT_SOURCE_DIR})
 
 target_link_libraries(serializable_test PUBLIC
-    simdjson)
+    simdjson
+    gtest)
 
 target_precompile_headers(serializable_test PRIVATE 
     ${PROJECT_SOURCE_DIR}/precompiled.h)
