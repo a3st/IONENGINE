@@ -94,6 +94,16 @@ namespace ionengine::core
             {
             };
 
+            template <typename>
+            struct is_std_unordered_map : std::false_type
+            {
+            };
+
+            template <typename T, typename A>
+            struct is_std_unordered_map<std::unordered_map<T, A>> : std::true_type
+            {
+            };
+
             template <typename Type>
             auto propertyResolveFromJSON(InputJSON& inputJSON, simdjson::ondemand::value it, Type& element) -> void;
 
@@ -263,11 +273,7 @@ namespace ionengine::core
                     element = std::make_unique<typename Type::element_type>();
                     propertyResolveFromJSON(inputJSON, it, *element);
                 }
-                else if constexpr (std::is_same_v<
-                                       Type,
-                                       std::unordered_map<
-                                           std::basic_string<char, std::char_traits<char>, std::allocator<char>>,
-                                           std::basic_string<char, std::char_traits<char>, std::allocator<char>>>>)
+                else if constexpr (is_std_unordered_map<Type>::value)
                 {
                     simdjson::ondemand::object elements;
                     auto error = it.get_object().get(elements);
@@ -285,14 +291,23 @@ namespace ionengine::core
                             throw core::Exception("An error occurred while deserializing a field");
                         }
 
-                        std::string_view value;
-                        error = e.value().get_string().get(value);
-                        if (error != simdjson::SUCCESS)
-                        {
-                            throw core::Exception("An error occurred while deserializing a field");
-                        }
+                        typename Type::mapped_type insertedValue;
+                        propertyResolveFromJSON(inputJSON, e.value(), insertedValue);
 
-                        element[std::string(key)] = std::string(value);
+                        if constexpr (std::is_integral_v<typename Type::key_type>)
+                        {
+                            element[static_cast<typename Type::key_type>(std::stoi(std::string(key)))] =
+                                std::move(insertedValue);
+                        }
+                        else if constexpr (std::is_scoped_enum_v<typename Type::key_type>)
+                        {
+                            element[static_cast<Type::key_type>(std::stoi(std::string(key)))] =
+                                std::move(insertedValue);
+                        }
+                        else
+                        {
+                            element[std::string(key)] = std::move(insertedValue);
+                        }
                     }
                 }
                 else
@@ -414,11 +429,7 @@ namespace ionengine::core
                 {
                     propertyResolveToJSON(outputJSON, jsonName, *element);
                 }
-                else if constexpr (std::is_same_v<
-                                       Type,
-                                       std::unordered_map<
-                                           std::basic_string<char, std::char_traits<char>, std::allocator<char>>,
-                                           std::basic_string<char, std::char_traits<char>, std::allocator<char>>>>)
+                else if constexpr (is_std_unordered_map<Type>::value)
                 {
                     outputJSON.jsonChunk << "\"" << jsonName << "\":{";
                     bool isFirst = true;
@@ -428,7 +439,22 @@ namespace ionengine::core
                         {
                             outputJSON.jsonChunk << ",";
                         }
-                        outputJSON.jsonChunk << "\"" << key << "\":\"" << value << "\"";
+
+                        if constexpr (std::is_integral_v<typename Type::key_type>)
+                        {
+                            outputJSON.jsonChunk << "\"" << std::to_string(key) << "\":\"" << value << "\"";
+                        }
+                        else if constexpr (std::is_scoped_enum_v<typename Type::key_type>)
+                        {
+                            outputJSON.jsonChunk
+                                << "\"" << static_cast<std::underlying_type_t<typename Type::key_type>>(key) << "\":";
+                            propertyResolveToJSON(outputJSON, "", value);
+                        }
+                        else
+                        {
+                            outputJSON.jsonChunk << "\"" << key << "\":";
+                            propertyResolveToJSON(outputJSON, "", value);
+                        }
                         isFirst = false;
                     }
                     outputJSON.jsonChunk << "},";
@@ -681,6 +707,11 @@ namespace ionengine::core
                         outputArchive.stream->write(reinterpret_cast<uint8_t const*>(element.data()), element.size());
                         char endOfString = '\0';
                         outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&endOfString), sizeof(char));
+                    }
+                    else if constexpr (std::is_scoped_enum_v<Type>)
+                    {
+                        auto value = static_cast<typename std::underlying_type_t<Type>>(element);
+                        outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&value), sizeof(Type));
                     }
                 }
             }

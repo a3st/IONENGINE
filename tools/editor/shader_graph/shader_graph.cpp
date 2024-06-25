@@ -3,9 +3,7 @@
 #include "shader_graph.hpp"
 #include "core/exception.hpp"
 #include "core/subprocess.hpp"
-#include "engine/asset.hpp"
 #include "precompiled.h"
-#include <simdjson.h>
 
 #include "shader_graph/components/convert.hpp"
 #include "shader_graph/components/input.hpp"
@@ -15,56 +13,6 @@
 
 namespace ionengine::tools::editor
 {
-    namespace internal
-    {
-        auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<ShaderGraphData>
-        {
-            asset::Header header;
-            stream.read((uint8_t*)&header, sizeof(asset::Header));
-
-            if (std::memcmp(header.magic.data(), asset::Magic.data(), asset::Magic.size()) != 0)
-            {
-                return std::nullopt;
-            }
-
-            if (std::memcmp(header.fileType.data(), ShaderGraphFileType.data(), ShaderGraphFileType.size()) != 0)
-            {
-                return std::nullopt;
-            }
-
-            asset::ChunkHeader chunkHeader;
-            stream.read((uint8_t*)&chunkHeader, sizeof(asset::ChunkHeader));
-
-            std::vector<uint8_t> chunkJsonData(chunkHeader.chunkLength);
-            stream.read(chunkJsonData.data(), chunkJsonData.size());
-
-            ShaderGraphData shaderGraph = {};
-
-            if (!readJsonChunkData(shaderGraph, chunkJsonData))
-            {
-                return std::nullopt;
-            }
-            return shaderGraph;
-        }
-
-        auto serialize(ShaderGraphData const& object, std::basic_ostream<uint8_t>& stream) -> size_t
-        {
-            std::string const jsonData = generateJsonChunkData(object);
-
-            asset::Header header = {.magic = asset::Magic, .length = 0, .fileType = ShaderGraphFileType};
-            stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(asset::Header));
-            asset::ChunkHeader jsonChunkHeader = {.chunkType = static_cast<uint32_t>(asset::ChunkType::JSON),
-                                                  .chunkLength = static_cast<uint32_t>(jsonData.size())};
-            stream.write(reinterpret_cast<uint8_t const*>(&jsonChunkHeader), sizeof(asset::ChunkHeader));
-            stream.write(reinterpret_cast<uint8_t const*>(jsonData.data()), jsonData.size());
-            uint64_t const offset = stream.tellp();
-            header.length = offset;
-            stream.seekp(0, std::ios::beg);
-            stream.write(reinterpret_cast<uint8_t*>(&header), sizeof(asset::Header));
-            return offset;
-        }
-    } // namespace internal
-
     ShaderGraphEditor::ShaderGraphEditor()
     {
         componentRegistry.registerComponent<Input_NodeComponent>();
@@ -95,59 +43,57 @@ namespace ionengine::tools::editor
 
     auto ShaderGraphEditor::loadFromFile(std::filesystem::path const& filePath) -> bool
     {
-        sceneGraph = core::make_ref<Scene>(componentRegistry);
-
-        auto result = core::loadFromFile<ShaderGraphData>(filePath);
+        auto result = core::loadFromFile<ShaderGraphFile>(filePath);
         if (!result.has_value())
         {
             return false;
         }
 
-        ShaderGraphData graphData = std::move(result.value());
-        graphType = graphData.graphType;
+        ShaderGraphFile shaderGraphFile = std::move(result.value());
+        graphType = shaderGraphFile.graphData.graphType;
 
+        sceneGraph = core::make_ref<Scene>(componentRegistry);
         std::unordered_map<uint64_t, core::ref_ptr<Node>> componentsOfNodes;
 
-        for (auto const& node : graphData.nodes)
+        for (auto const& node : shaderGraphFile.graphData.sceneData.nodes)
         {
-            auto createdNode = sceneGraph->createNodeByID(node.componentID, node.nodeID);
+            auto createdNode = sceneGraph->createNodeByID(node.nodeUserData.nodeComponentID, node.nodeID);
             componentsOfNodes.emplace(node.nodeID, createdNode);
 
-            createdNode->posX = node.posX;
-            createdNode->posY = node.posY;
+            createdNode->posX = node.nodePosition[0];
+            createdNode->posY = node.nodePosition[1];
 
-            for (auto const& [key, value] : node.options)
-            {
-                createdNode->options[key] = value;
-            }
-
-            if (!node.inputs.empty())
+            if (!node.nodeInputs.empty())
             {
                 createdNode->inputs.clear();
-
-                for (auto const& input : node.inputs)
+                for (auto const& input : node.nodeInputs)
                 {
                     Node::SocketInfo socketInfo = {.socketName = input.socketName, .socketType = input.socketType};
                     createdNode->inputs.emplace_back(std::move(socketInfo));
                 }
             }
 
-            if (!node.outputs.empty())
+            if (!node.nodeOutputs.empty())
             {
                 createdNode->outputs.clear();
-
-                for (auto const& output : node.outputs)
+                for (auto const& output : node.nodeOutputs)
                 {
                     Node::SocketInfo socketInfo = {.socketName = output.socketName, .socketType = output.socketType};
                     createdNode->outputs.emplace_back(std::move(socketInfo));
                 }
             }
+
+            for (auto const& [key, value] : node.nodeUserData.nodeOptions)
+            {
+                createdNode->options[key] = value;
+            }
         }
 
-        for (auto const& connection : graphData.connections)
+        for (auto const& connection : shaderGraphFile.graphData.sceneData.connections)
         {
-            sceneGraph->createConnection(connection.connectionID, componentsOfNodes[connection.source], connection.out,
-                                         componentsOfNodes[connection.dest], connection.in);
+            sceneGraph->createConnection(connection.connectionID, componentsOfNodes[connection.sourceNodeID],
+                                         connection.sourceIndex, componentsOfNodes[connection.destNodeID],
+                                         connection.destIndex);
         }
         return true;
     }

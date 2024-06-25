@@ -48,6 +48,7 @@ struct ShaderData
     TestEnum testEnum;
     std::unique_ptr<InternalData> internalData2;
     std::array<int32_t, 2> positions;
+    std::unordered_map<TestEnum, std::string> enumNames;
 
     template <typename Archive>
     auto operator()(Archive& archive)
@@ -62,6 +63,7 @@ struct ShaderData
         archive.property(testEnum, "testEnum");
         archive.property(internalData2, "internal2");
         archive.property(positions, "positions");
+        archive.property(enumNames, "enumNames");
     }
 };
 
@@ -101,7 +103,8 @@ TEST(Serialize, JSON_Test)
                              .internalData = {"hello!", 2},
                              .testEnum = TestEnum::Second,
                              .internalData2 = std::move(internalData),
-                             .positions = {20, 30}};
+                             .positions = {20, 30},
+                             .enumNames = {{TestEnum::First, "firstValue"}, {TestEnum::Second, "secondValue"}}};
 
     auto result = core::saveToBytes<ShaderData, core::serialize::OutputJSON>(shaderData);
     auto buffer = std::move(result.value());
@@ -121,6 +124,7 @@ TEST(Serialize, JSON_Test)
     ASSERT_EQ(object.internalData2->name, shaderData.internalData2->name);
     ASSERT_EQ(object.internalData2->materialIndex, shaderData.internalData2->materialIndex);
     ASSERT_EQ(object.positions, shaderData.positions);
+    ASSERT_EQ(object.enumNames, shaderData.enumNames);
 }
 
 TEST(Serialize, Archive_Test)

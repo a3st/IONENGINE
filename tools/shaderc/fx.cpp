@@ -111,13 +111,14 @@ namespace ionengine::tools::shaderc
             }
         }
 
-        rhi::fx::ShaderEffectData effect = {.target = rhi::fx::ShaderTargetType::DXIL,
-                                        .technique = technique,
-                                        .constants = constants,
-                                        .structures = structures,
-                                        .buffers = buffers};
+        rhi::fx::ShaderEffectFile effectFile = {.magic = rhi::fx::Magic,
+                                                .target = rhi::fx::ShaderTargetType::DXIL,
+                                                .effectData = {.technique = std::move(technique),
+                                                               .constants = std::move(constants),
+                                                               .structures = std::move(structures)},
+                                                .buffers = std::move(buffers)};
 
-        return core::saveToFile<rhi::fx::ShaderEffectData>(effect, outputPath);
+        return core::saveToFile<rhi::fx::ShaderEffectFile>(effectFile, outputPath);
     }
 
     auto FXCompiler::compileShaderStage(std::string_view const shaderCode, std::string_view const entryPoint,
@@ -252,21 +253,22 @@ namespace ionengine::tools::shaderc
             uint64_t const brOpenOffset = shaderCode.find("{", offset) + 1;
             uint64_t brCloseOffset = 0;
 
-            std::string structName(shaderCode.begin() + offset, shaderCode.begin() + brOpenOffset - 1);
+            std::string structureName(shaderCode.begin() + offset, shaderCode.begin() + brOpenOffset - 1);
 
-            structName.erase(structName.begin(), std::find_if(structName.begin(), structName.end(),
-                                                              [](unsigned char ch) { return !std::isspace(ch); }));
-            structName.erase(
-                std::find_if(structName.rbegin(), structName.rend(), [](unsigned char ch) { return !std::isspace(ch); })
-                    .base(),
-                structName.end());
+            structureName.erase(structureName.begin(),
+                                std::find_if(structureName.begin(), structureName.end(),
+                                             [](unsigned char ch) { return !std::isspace(ch); }));
+            structureName.erase(std::find_if(structureName.rbegin(), structureName.rend(),
+                                             [](unsigned char ch) { return !std::isspace(ch); })
+                                    .base(),
+                                structureName.end());
 
             offset = brOpenOffset + 1;
 
             std::vector<rhi::fx::ShaderStructureElementData> elements;
             uint32_t size = 0;
 
-            if (inputAssemblerNames.find(structName) != inputAssemblerNames.end())
+            if (inputAssemblerNames.find(structureName) != inputAssemblerNames.end())
             {
                 do
                 {
@@ -305,8 +307,9 @@ namespace ionengine::tools::shaderc
                                              .base(),
                                          memberSemantic.end());
 
-                    rhi::fx::ShaderStructureElementData elementData = {
-                        .name = memberName, .elementType = hlslconv::types[memberType], .semantic = memberSemantic};
+                    rhi::fx::ShaderStructureElementData elementData = {.elementName = memberName,
+                                                                       .elementType = hlslconv::types[memberType],
+                                                                       .semantic = memberSemantic};
 
                     elements.emplace_back(std::move(elementData));
                     size += hlslconv::sizes[memberType];
@@ -359,7 +362,7 @@ namespace ionengine::tools::shaderc
                         }
                     }
 
-                    rhi::fx::ShaderStructureElementData elementData = {.name = memberName,
+                    rhi::fx::ShaderStructureElementData elementData = {.elementName = memberName,
                                                                        .elementType = hlslconv::types[memberType]};
 
                     elements.emplace_back(std::move(elementData));
@@ -371,7 +374,7 @@ namespace ionengine::tools::shaderc
             }
 
             rhi::fx::ShaderStructureData structureData = {
-                .name = structName, .elements = std::move(elements), .size = size};
+                .structureName = structureName, .elements = std::move(elements), .size = size};
 
             structures.emplace_back(std::move(structureData));
         }
@@ -421,22 +424,24 @@ namespace ionengine::tools::shaderc
 
             if (hlslconv::types.find(constantType) != hlslconv::types.end())
             {
-                constantData = {.name = constantName, .constantType = hlslconv::types[constantType], .structure = -1};
+                constantData = {
+                    .constantName = constantName, .constantType = hlslconv::types[constantType], .structure = -1};
             }
             else
             {
                 if (constantName.ends_with("[]"))
                 {
-                    constantData = {.name = constantName.substr(0, constantName.size() - 2),
+                    constantData = {.constantName = constantName.substr(0, constantName.size() - 2),
                                     .constantType = rhi::fx::ShaderElementType::StorageBuffer};
                 }
                 else
                 {
-                    constantData = {.name = constantName, .constantType = rhi::fx::ShaderElementType::ConstantBuffer};
+                    constantData = {.constantName = constantName,
+                                    .constantType = rhi::fx::ShaderElementType::ConstantBuffer};
                 }
 
                 auto it = std::find_if(structures.begin(), structures.end(),
-                                       [&](auto const& element) { return element.name == constantType; });
+                                       [&](auto const& element) { return element.structureName == constantType; });
 
                 if (it != structures.end())
                 {
@@ -464,7 +469,7 @@ namespace ionengine::tools::shaderc
                 case rhi::fx::ShaderElementType::ConstantBuffer:
                 case rhi::fx::ShaderElementType::SamplerState:
                 case rhi::fx::ShaderElementType::StorageBuffer: {
-                    generatedShaderCode << "    " << "uint" << " " << constant.name << ";" << std::endl;
+                    generatedShaderCode << "    " << "uint" << " " << constant.constantName << ";" << std::endl;
                     break;
                 }
             }
@@ -613,7 +618,7 @@ namespace ionengine::tools::shaderc
 
             for (auto const& constant : constants)
             {
-                offset = shaderCode.find(constant.name, brOpenOffset);
+                offset = shaderCode.find(constant.constantName, brOpenOffset);
                 brCloseOffset = shaderCode.find("}", brOpenOffset);
 
                 if (offset == std::string::npos || offset >= brCloseOffset)
@@ -625,14 +630,14 @@ namespace ionengine::tools::shaderc
                 {
                     brCloseOffset = shaderCode.find("}", offset);
 
-                    uint64_t const nameOffset = shaderCode.find(constant.name, offset);
+                    uint64_t const nameOffset = shaderCode.find(constant.constantName, offset);
                     if (nameOffset == std::string::npos)
                     {
                         break;
                     }
 
                     std::string const member(shaderCode.begin() + nameOffset,
-                                             shaderCode.begin() + nameOffset + constant.name.size());
+                                             shaderCode.begin() + nameOffset + constant.constantName.size());
 
                     switch (constant.constantType)
                     {
@@ -650,7 +655,7 @@ namespace ionengine::tools::shaderc
                                 {
                                     constantMember = std::string(shaderCode.begin() + dotOffset + 1,
                                                                  shaderCode.begin() + constantMemberEndOffset);
-                                    if (element.name.compare(constantMember) == 0)
+                                    if (element.elementName.compare(constantMember) == 0)
                                     {
                                         isFound = true;
                                         break;
@@ -662,7 +667,7 @@ namespace ionengine::tools::shaderc
                                 {
                                     constantMember = std::string(shaderCode.begin() + dotOffset + 1,
                                                                  shaderCode.begin() + constantMemberEndOffset);
-                                    if (element.name.compare(constantMember) == 0)
+                                    if (element.elementName.compare(constantMember) == 0)
                                     {
                                         isFound = true;
                                         break;
@@ -674,7 +679,7 @@ namespace ionengine::tools::shaderc
                                 {
                                     constantMember = std::string(shaderCode.begin() + dotOffset + 1,
                                                                  shaderCode.begin() + constantMemberEndOffset);
-                                    if (element.name.compare(constantMember) == 0)
+                                    if (element.elementName.compare(constantMember) == 0)
                                     {
                                         isFound = true;
                                         break;
@@ -687,8 +692,9 @@ namespace ionengine::tools::shaderc
                                 return false;
                             }
 
-                            auto it = std::find_if(structure.elements.begin(), structure.elements.end(),
-                                                   [&](auto const& element) { return element.name == constantMember; });
+                            auto it = std::find_if(
+                                structure.elements.begin(), structure.elements.end(),
+                                [&](auto const& element) { return element.elementName == constantMember; });
 
                             if (it == structure.elements.end())
                             {
@@ -704,19 +710,19 @@ namespace ionengine::tools::shaderc
                                 case rhi::fx::ShaderElementType::Texture2D: {
                                     generatedShader
                                         << "Texture2D(ResourceDescriptorHeap[NonUniformResourceIndex(ConstantBuffer<"
-                                        << structure.name << ">(ResourceDescriptorHeap[shaderData." << member << "])."
-                                        << constantMember << ")])";
+                                        << structure.structureName << ">(ResourceDescriptorHeap[shaderData." << member
+                                        << "])." << constantMember << ")])";
                                     break;
                                 }
                                 case rhi::fx::ShaderElementType::SamplerState: {
                                     generatedShader
                                         << "SamplerState(SamplerDescriptorHeap[NonUniformResourceIndex(ConstantBuffer<"
-                                        << structure.name << ">(ResourceDescriptorHeap[shaderData." << member << "])."
-                                        << constantMember << ")])";
+                                        << structure.structureName << ">(ResourceDescriptorHeap[shaderData." << member
+                                        << "])." << constantMember << ")])";
                                     break;
                                 }
                                 default: {
-                                    generatedShader << "ConstantBuffer<" << structure.name
+                                    generatedShader << "ConstantBuffer<" << structure.structureName
                                                     << ">(ResourceDescriptorHeap[shaderData." << member << "])."
                                                     << constantMember;
                                     break;

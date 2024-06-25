@@ -121,13 +121,6 @@ namespace ionengine::tools::editor
         }
     };
 
-    namespace internal
-    {
-        auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<ShaderGraphData>;
-
-        auto serialize(ShaderGraphData const& object, std::basic_ostream<uint8_t>& stream) -> size_t;
-    } // namespace internal
-
     struct ShaderGraphResult : public core::ref_counted_object
     {
         std::vector<uint8_t> outputShaderData;
@@ -158,25 +151,6 @@ namespace ionengine::tools::editor
         ShaderGraphType graphType;
     };
 } // namespace ionengine::tools::editor
-
-namespace ionengine::core
-{
-    template <>
-    class Serializable<tools::editor::ShaderGraphData>
-    {
-      public:
-        static auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<tools::editor::ShaderGraphData>
-        {
-            return ionengine::tools::editor::internal::deserialize(stream);
-        }
-
-        static auto serialize(tools::editor::ShaderGraphData const& object,
-                              std::basic_ostream<uint8_t>& stream) -> size_t
-        {
-            return ionengine::tools::editor::internal::serialize(object, stream);
-        }
-    };
-} // namespace ionengine::core
 
 namespace ionengine::core
 {
