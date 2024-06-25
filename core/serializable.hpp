@@ -14,7 +14,7 @@ namespace ionengine::core
         auto operator()(Archive& archive);
     };
 
-    template <typename Type, typename Archive = serialize::OutputArchive>
+    template <typename Type, typename Archive>
     class Serializable
     {
       public:
@@ -260,7 +260,7 @@ namespace ionengine::core
                     uint32_t i = 0;
                     for (auto e : elements)
                     {
-                        if (i >= arraySize)
+                        if (i > arraySize)
                         {
                             throw core::Exception("An error occurred while deserializing a field");
                         }
@@ -301,8 +301,16 @@ namespace ionengine::core
                         }
                         else if constexpr (std::is_scoped_enum_v<typename Type::key_type>)
                         {
-                            element[static_cast<Type::key_type>(std::stoi(std::string(key)))] =
-                                std::move(insertedValue);
+                            SerializableEnum<typename Type::key_type> object;
+                            object(inputJSON);
+
+                            auto result = inputJSON.enumFields.find(std::string(key));
+                            if (result == inputJSON.enumFields.end())
+                            {
+                                throw core::Exception("An error occurred while deserializing a field");
+                            }
+
+                            element[static_cast<Type::key_type>(result->second)] = std::move(insertedValue);
                         }
                         else
                         {
@@ -404,24 +412,14 @@ namespace ionengine::core
                 {
                     outputJSON.jsonChunk << "\"" << jsonName << "\":[";
                     bool isFirst = true;
-
-                    auto constexpr arraySize = std::tuple_size<Type>::value;
-
-                    uint32_t i = 0;
                     for (auto const& e : element)
                     {
-                        if (i > arraySize)
-                        {
-                            throw core::Exception("An error occurred while serializing a field");
-                        }
-
                         if (!isFirst)
                         {
                             outputJSON.jsonChunk << ",";
                         }
                         propertyResolveToJSON(outputJSON, "", e);
                         isFirst = false;
-                        ++i;
                     }
                     outputJSON.jsonChunk << "],";
                 }
@@ -446,8 +444,16 @@ namespace ionengine::core
                         }
                         else if constexpr (std::is_scoped_enum_v<typename Type::key_type>)
                         {
-                            outputJSON.jsonChunk
-                                << "\"" << static_cast<std::underlying_type_t<typename Type::key_type>>(key) << "\":";
+                            SerializableEnum<typename Type::key_type> object;
+                            object(outputJSON);
+
+                            auto result = outputJSON.enumFields.find(static_cast<uint32_t>(key));
+                            if (result == outputJSON.enumFields.end())
+                            {
+                                throw core::Exception("An error occurred while serializing a field");
+                            }
+
+                            outputJSON.jsonChunk << "\"" << result->second << "\":";
                             propertyResolveToJSON(outputJSON, "", value);
                         }
                         else
@@ -605,19 +611,22 @@ namespace ionengine::core
                 }
                 else if constexpr (is_std_array<Type>::value)
                 {
-                    size_t numElements = 0;
-                    inputArchive.stream->read(reinterpret_cast<uint8_t*>(&numElements), sizeof(size_t));
-
-                    auto constexpr arraySize = std::tuple_size<Type>::value;
-
-                    if (numElements > arraySize)
-                    {
-                        throw core::Exception("An error occurred while deserializing a field");
-                    }
-
-                    for (size_t const i : std::views::iota(0u, numElements))
+                    for (size_t const i : std::views::iota(0u, element.size()))
                     {
                         propertyResolveFromBinary(inputArchive, element[i]);
+                    }
+                }
+                else if constexpr (std::is_scoped_enum_v<Type>)
+                {
+                    inputArchive.stream->read(reinterpret_cast<uint8_t*>(&element),
+                                              sizeof(typename std::underlying_type_t<Type>));
+                }
+                else
+                {
+                    InputArchive archive(*inputArchive.stream);
+                    if (!(archive(element) > 0))
+                    {
+                        throw core::Exception("An error occurred while deserializing a field");
                     }
                 }
             }
@@ -683,13 +692,6 @@ namespace ionengine::core
                 }
                 else if constexpr (is_std_array<Type>::value)
                 {
-                    auto constexpr arraySize = std::tuple_size<Type>::value;
-                    size_t numElements = element.size();
-                    if (numElements > arraySize)
-                    {
-                        throw core::Exception("An error occurred while serializing a field");
-                    }
-                    outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&numElements), sizeof(size_t));
                     for (auto const& e : element)
                     {
                         propertyResolveToBinary(outputArchive, e);
@@ -713,6 +715,14 @@ namespace ionengine::core
                         auto value = static_cast<typename std::underlying_type_t<Type>>(element);
                         outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&value), sizeof(Type));
                     }
+                    else
+                    {
+                        OutputArchive archive(*outputArchive.stream);
+                        if (!(archive(element) > 0))
+                        {
+                            throw core::Exception("An error occurred while serializing a field");
+                        }
+                    }
                 }
             }
         } // namespace internal
@@ -726,7 +736,7 @@ namespace ionengine::core
         return Serializable<Type, Archive>::deserialize(stream);
     }
 
-    template <typename Type>
+    template <typename Type, typename Archive = serialize::InputArchive>
     auto loadFromFile(std::filesystem::path const& filePath) -> std::optional<Type>
     {
         std::basic_ifstream<uint8_t> stream(filePath, std::ios::binary);
@@ -734,10 +744,10 @@ namespace ionengine::core
         {
             return std::nullopt;
         }
-        return Serializable<Type>::deserialize(stream);
+        return Serializable<Type, Archive>::deserialize(stream);
     }
 
-    template <typename Type>
+    template <typename Type, typename Archive = serialize::OutputArchive>
     auto saveToFile(Type const& object, std::filesystem::path const& filePath) -> bool
     {
         std::basic_ofstream<uint8_t> stream(filePath, std::ios::binary);
@@ -745,7 +755,7 @@ namespace ionengine::core
         {
             return false;
         }
-        return Serializable<Type>::serialize(object, stream) > 0;
+        return Serializable<Type, Archive>::serialize(object, stream) > 0;
     }
 
     template <typename Type, typename Archive = serialize::OutputArchive>

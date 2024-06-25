@@ -66,10 +66,10 @@ namespace ionengine
         return shaderProgram;
     }
 
-    auto ShaderAsset::parseShaderEffectData(rhi::fx::ShaderEffectData const& shaderEffect) -> bool
+    auto ShaderAsset::parseShaderEffectFile(rhi::fx::ShaderEffectFile const& shaderEffectFile) -> bool
     {
         std::string targetType;
-        switch (shaderEffect.target)
+        switch (shaderEffectFile.target)
         {
             case rhi::fx::ShaderTargetType::DXIL: {
                 targetType = "D3D12";
@@ -87,21 +87,23 @@ namespace ionengine
             return false;
         }
 
-        if (shaderEffect.technique.stages.find(rhi::fx::ShaderStageType::Compute) !=
-            shaderEffect.technique.stages.end())
+        if (shaderEffectFile.effectData.technique.stages.find(rhi::fx::ShaderStageType::Compute) !=
+            shaderEffectFile.effectData.technique.stages.end())
         {
-            uint32_t const bufferIndex = shaderEffect.technique.stages.at(rhi::fx::ShaderStageType::Compute).buffer;
-            shaderProgram = device->getDevice().createShader(shaderEffect.buffers[bufferIndex]);
+            uint32_t const bufferIndex =
+                shaderEffectFile.effectData.technique.stages.at(rhi::fx::ShaderStageType::Compute).buffer;
+            shaderProgram = device->getDevice().createShader(shaderEffectFile.buffers[bufferIndex]);
         }
         else
         {
             uint32_t const vertexBufferIndex =
-                shaderEffect.technique.stages.at(rhi::fx::ShaderStageType::Vertex).buffer;
-            uint32_t const pixelBufferIndex = shaderEffect.technique.stages.at(rhi::fx::ShaderStageType::Pixel).buffer;
+                shaderEffectFile.effectData.technique.stages.at(rhi::fx::ShaderStageType::Vertex).buffer;
+            uint32_t const pixelBufferIndex =
+                shaderEffectFile.effectData.technique.stages.at(rhi::fx::ShaderStageType::Pixel).buffer;
 
             rasterizerStage.fill_mode = rhi::FillMode::Solid;
 
-            switch (shaderEffect.technique.cullSide)
+            switch (shaderEffectFile.effectData.technique.cullSide)
             {
                 case rhi::fx::ShaderCullSide::Back: {
                     rasterizerStage.cull_mode = rhi::CullMode::Back;
@@ -117,9 +119,10 @@ namespace ionengine
                 }
             }
 
-            auto found = std::find_if(shaderEffect.structures.begin(), shaderEffect.structures.end(),
-                                      [](auto const& element) { return element.name == "VS_INPUT"; });
-            if (found == shaderEffect.structures.end())
+            auto found = std::find_if(shaderEffectFile.effectData.structures.begin(),
+                                      shaderEffectFile.effectData.structures.end(),
+                                      [](auto const& element) { return element.structureName == "VS_INPUT"; });
+            if (found == shaderEffectFile.effectData.structures.end())
             {
                 std::cerr << "[Renderer] ShaderAsset {} hasn't input assembler and cannot be used as a vertex shader"
                           << std::endl;
@@ -139,23 +142,24 @@ namespace ionengine
                 ++index;
             }
 
-            shaderProgram = device->getDevice().createShader(
-                vertexDeclarations, shaderEffect.buffers[vertexBufferIndex], shaderEffect.buffers[pixelBufferIndex]);
+            shaderProgram =
+                device->getDevice().createShader(vertexDeclarations, shaderEffectFile.buffers[vertexBufferIndex],
+                                                 shaderEffectFile.buffers[pixelBufferIndex]);
         }
 
-        for (uint32_t const i : std::views::iota(0u, shaderEffect.constants.size()))
+        for (uint32_t const i : std::views::iota(0u, shaderEffectFile.effectData.constants.size()))
         {
             std::string namespaceName;
             std::string optionName;
-            switch (shaderEffect.constants[i].constantType)
+            switch (shaderEffectFile.effectData.constants[i].constantType)
             {
                 case rhi::fx::ShaderElementType::StorageBuffer:
                 case rhi::fx::ShaderElementType::ConstantBuffer: {
-                    namespaceName = shaderEffect.constants[i].name;
+                    namespaceName = shaderEffectFile.effectData.constants[i].constantName;
                     break;
                 }
                 default: {
-                    optionName = shaderEffect.constants[i].name;
+                    optionName = shaderEffectFile.effectData.constants[i].constantName;
                     break;
                 }
             }
@@ -163,26 +167,27 @@ namespace ionengine
             // Option is SamplerState, Texture or values. No need namespace there
             if (namespaceName.empty())
             {
-                ShaderOption option = {.constantIndex = i,
-                                       .elementType = shaderEffect.constants[i].constantType,
-                                       .offset = 0,
-                                       .size = rhi::fx::ShaderElementSize[shaderEffect.constants[i].constantType]};
+                ShaderOption option = {
+                    .constantIndex = i,
+                    .elementType = shaderEffectFile.effectData.constants[i].constantType,
+                    .offset = 0,
+                    .size = rhi::fx::ShaderElementSize[shaderEffectFile.effectData.constants[i].constantType]};
 
                 options.emplace(optionName, std::move(option));
             }
             else
             {
-                uint32_t const structureIndex = shaderEffect.constants[i].structure;
+                uint32_t const structureIndex = shaderEffectFile.effectData.constants[i].structure;
 
                 uint64_t offset = 0;
-                for (auto const& structureElement : shaderEffect.structures[structureIndex].elements)
+                for (auto const& structureElement : shaderEffectFile.effectData.structures[structureIndex].elements)
                 {
                     ShaderOption option = {.constantIndex = i,
                                            .elementType = structureElement.elementType,
                                            .offset = offset,
                                            .size = rhi::fx::ShaderElementSize[structureElement.elementType]};
 
-                    options.emplace(namespaceName + "." + structureElement.name, std::move(option));
+                    options.emplace(namespaceName + "." + structureElement.elementName, std::move(option));
                 }
             }
         }
@@ -191,26 +196,26 @@ namespace ionengine
 
     auto ShaderAsset::loadFromFile(std::filesystem::path const& filePath) -> bool
     {
-        auto result = core::loadFromFile<rhi::fx::ShaderEffectData>(filePath);
+        auto result = core::loadFromFile<rhi::fx::ShaderEffectFile>(filePath);
         if (!result.has_value())
         {
             return false;
         }
 
-        rhi::fx::ShaderEffectData shaderEffect = std::move(result.value());
-        return this->parseShaderEffectData(shaderEffect);
+        rhi::fx::ShaderEffectFile shaderEffectFile = std::move(result.value());
+        return this->parseShaderEffectFile(shaderEffectFile);
     }
 
     auto ShaderAsset::loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool
     {
-        auto result = core::loadFromBytes<rhi::fx::ShaderEffectData>(dataBytes);
+        auto result = core::loadFromBytes<rhi::fx::ShaderEffectFile>(dataBytes);
         if (!result.has_value())
         {
             return false;
         }
 
-        rhi::fx::ShaderEffectData shaderEffect = std::move(result.value());
-        return this->parseShaderEffectData(shaderEffect);
+        rhi::fx::ShaderEffectFile shaderEffectFile = std::move(result.value());
+        return this->parseShaderEffectFile(shaderEffectFile);
     }
 
     auto ShaderAsset::getOptions() const -> std::unordered_map<std::string, ShaderOption>

@@ -23,9 +23,9 @@ namespace ionengine
 
         ShaderAsset(LinkedDevice& device);
 
-        auto loadFromFile(std::filesystem::path const& filePath) -> bool;
+        auto loadFromFile(std::filesystem::path const& filePath) -> bool override;
 
-        auto loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool;
+        auto loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool override;
 
         auto getOptions() const -> std::unordered_map<std::string, ShaderOption>;
 
@@ -39,6 +39,6 @@ namespace ionengine
         std::unordered_map<std::string, ShaderOption> options;
         rhi::RasterizerStageInfo rasterizerStage;
 
-        auto parseShaderEffectData(rhi::fx::ShaderEffectData const& shaderEffect) -> bool;
+        auto parseShaderEffectFile(rhi::fx::ShaderEffectFile const& shaderEffectFile) -> bool;
     };
 } // namespace ionengine

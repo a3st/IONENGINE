@@ -165,30 +165,23 @@ namespace ionengine::tools::editor
                                                        std::to_string(i) + createPath.extension().generic_string());
                 ++i;
             }
-            createPath = initialGenPath;
-
-            std::basic_ofstream<uint8_t> stream(createPath, std::ios::binary);
-            if (!stream.is_open())
-            {
-                return "{\"error\":0}";
-            }
+            createPath = initialGenPath.make_preferred();
 
             if (fileInfo.assetType.compare("asset/shadergraph/unlit") == 0)
             {
                 shaderGraphEditor.create(ShaderGraphType::Unlit);
 
                 // Change to general shadergraph type
-                // Shadergraph contains type in Output Node's 'userData' options
                 fileInfo.assetType = "asset/shadergraph";
 
                 ShaderGraphFile shaderGraphFile = {
                     .fileHeader = {.magic = asset::Magic, .fileType = ShaderGraphFileType},
                     .graphData = std::move(shaderGraphEditor.dump())};
 
-                /*if (!(core::Serializable<ShaderGraphFile>::serialize(shaderGraphFile, stream) > 0))
+                if (!core::saveToFile<ShaderGraphFile>(shaderGraphFile, createPath))
                 {
                     return "{\"error\":0}";
-                }*/
+                }
             }
         }
         fileInfo.assetName = createPath.stem().generic_string();
@@ -377,11 +370,11 @@ namespace ionengine::tools::editor
         ShaderGraphFile shaderGraphFile = {.fileHeader = {.magic = asset::Magic, .fileType = ShaderGraphFileType},
                                            .graphData = std::move(graphData)};
 
-        /*if (!core::saveToFile<ShaderGraphFile>(shaderGraphFile,
+        if (!core::saveToFile<ShaderGraphFile>(shaderGraphFile,
                                                std::filesystem::path(fileInfo.assetPath).make_preferred()))
         {
             return "{\"error\":16}";
-        }*/
+        }
 
         auto buffer = core::saveToBytes<AssetSaveFileInfo, core::serialize::OutputJSON>(fileInfo).value();
         return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());

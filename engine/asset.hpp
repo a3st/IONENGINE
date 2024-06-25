@@ -27,18 +27,6 @@ namespace ionengine
                 archive.property(fileType);
             }
         };
-
-        enum class ChunkType : uint32_t
-        {
-            JSON,
-            BIN
-        };
-
-        struct ChunkHeader
-        {
-            uint32_t chunkType;
-            uint32_t chunkLength;
-        };
     } // namespace asset
 
     inline auto getAssetHeader(std::basic_istream<uint8_t>& stream) -> std::optional<asset::Header>
@@ -55,5 +43,9 @@ namespace ionengine
 
     class Asset : public core::ref_counted_object
     {
+      public:
+        virtual auto loadFromFile(std::filesystem::path const& filePath) -> bool = 0;
+
+        virtual auto loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool = 0;
     };
 } // namespace ionengine
