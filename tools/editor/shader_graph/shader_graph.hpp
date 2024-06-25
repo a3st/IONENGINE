@@ -50,15 +50,18 @@ namespace ionengine::tools::editor
         std::array<int32_t, 2> nodePosition;
         std::vector<NodeSocketData> nodeInputs;
         std::vector<NodeSocketData> nodeOutputs;
+        bool nodeFixed;
         NodeUserData nodeUserData;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
             archive.property(nodeID, "id");
+            archive.property(nodeName, "name");
             archive.property(nodePosition, "position");
             archive.property(nodeInputs, "inputs");
             archive.property(nodeOutputs, "outputs");
+            archive.property(nodeFixed, "fixed");
             archive.property(nodeUserData, "userData");
         }
     };

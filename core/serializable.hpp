@@ -601,9 +601,7 @@ namespace ionengine::core
                 {
                     size_t numElements = 0;
                     inputArchive.stream->read(reinterpret_cast<uint8_t*>(&numElements), sizeof(size_t));
-
                     element.resize(numElements);
-
                     for (size_t const i : std::views::iota(0u, numElements))
                     {
                         propertyResolveFromBinary(inputArchive, element[i]);

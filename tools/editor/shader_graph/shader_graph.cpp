@@ -115,12 +115,12 @@ namespace ionengine::tools::editor
 
         for (auto const& node : sceneGraph->getNodes())
         {
-            NodeData nodeData = {};
-            nodeData.nodePosition[0] = node->posX;
-            nodeData.nodePosition[1] = node->posY;
-            nodeData.nodeID = node->nodeID;
-            nodeData.nodeUserData.nodeComponentID = node->componentID;
-            nodeData.nodeUserData.nodeOptions = node->options;
+            NodeData nodeData = {.nodeID = node->nodeID,
+                                 .nodeName =
+                                     std::string(componentRegistry.getComponents().at(node->componentID)->getName()),
+                                 .nodePosition = {node->posX, node->posY},
+                                 .nodeFixed = componentRegistry.getComponents().at(node->componentID)->isFixed(),
+                                 .nodeUserData = {.nodeComponentID = node->componentID, .nodeOptions = node->options}};
 
             for (auto const& input : node->inputs)
             {
@@ -134,22 +134,16 @@ namespace ionengine::tools::editor
                 nodeData.nodeOutputs.emplace_back(std::move(socketData));
             }
 
-            for (auto const& [key, value] : node->options)
-            {
-                nodeData.nodeUserData.nodeOptions[key] = value;
-            }
-
             shaderGraph.sceneData.nodes.emplace_back(std::move(nodeData));
         }
 
         for (auto const& connection : sceneGraph->getConnections())
         {
-            ConnectionData connectionData = {};
-            connectionData.connectionID = connection->connectionID;
-            connectionData.sourceNodeID = connection->sourceNode->nodeID;
-            connectionData.sourceIndex = connection->sourceIndex;
-            connectionData.destNodeID = connection->destNode->nodeID;
-            connectionData.destIndex = connection->destIndex;
+            ConnectionData connectionData = {.connectionID = connection->connectionID,
+                                             .sourceNodeID = connection->sourceNode->nodeID,
+                                             .sourceIndex = connection->sourceIndex,
+                                             .destNodeID = connection->destNode->nodeID,
+                                             .destIndex = connection->destIndex};
 
             shaderGraph.sceneData.connections.emplace_back(std::move(connectionData));
         }
@@ -224,13 +218,13 @@ namespace ionengine::tools::editor
                     stream.read(output->outputShaderData.data(), output->outputShaderData.size());
                 }
                 // std::filesystem::remove(inputPath);
-                std::filesystem::remove(outputPath);
+                //std::filesystem::remove(outputPath);
                 return output;
             }
             else
             {
                 // std::filesystem::remove(inputPath);
-                std::filesystem::remove(outputPath);
+                //std::filesystem::remove(outputPath);
                 return nullptr;
             }
         }
