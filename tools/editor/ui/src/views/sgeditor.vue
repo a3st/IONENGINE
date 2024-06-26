@@ -19,7 +19,8 @@
                 <span>Compile</span>
             </button>
         </div>
-        <div ref="graph"></div>
+        <div ref="graph" style="display: none;"></div>
+        <graphview></graphview>
     </div>
 </template>
 
@@ -28,7 +29,12 @@ import { toRaw } from "vue";
 import $ from "jquery";
 import FlowGraph from "../thirdparty/flowgraph.js/flowgraph";
 
+import GraphviewComponent from '../components/graph/graphview.vue';
+
 export default {
+    components: {
+        'graphview': GraphviewComponent
+    },
     data() {
         return {
             graphType: null,

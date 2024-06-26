@@ -1,6 +1,6 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-import $ from 'jquery'
+import $ from 'jquery';
 
 export default class FlowGraph {
     constructor(rootNode, width, height, canvasOptions = {
@@ -66,6 +66,7 @@ export default class FlowGraph {
             .addClass('flowgraph-container')
             .css('width', this.width)
             .css('height', this.height);
+
         $(this.rootNode).append(`
             <div class="flowgraph-bg-container" 
                 style="width: ${this.rootNode.style.width}; height: ${this.rootNode.style.height};"></div>
@@ -304,7 +305,8 @@ export default class FlowGraph {
             case "node": {
                 this.selectedElement = $(e.target)
                     .closest('.flowgraph-node-container')
-                    .get(0);
+                    .get(0)
+                console.log(this.selectedElement);
 
                 $(this.selectedElement).addClass('selected');
                 break;
