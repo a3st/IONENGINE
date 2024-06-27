@@ -1,5 +1,11 @@
 <template>
-    <div class="flowgraph-context-container">
+    <div
+        class="flowgraph-context-container"
+        v-show="showing"
+        :style="{
+            transform: 'translate(' + position[0] + 'px,' + position[1] + 'px)',
+        }"
+    >
         <div class="flowgraph-context-header-container">
             <img
                 :src="require('../../images/search.svg')"
@@ -29,19 +35,28 @@
 export default {
     data() {
         return {
-            groups: {
-                Texture: [
-                    {
-                        name: "Texture2D",
-                        action: (e) => {},
-                    },
-                    {
-                        name: "Texture3D",
-                        action: (e) => {},
-                    },
-                ],
-            },
+            groups: {},
+            showing: false,
+            position: [0, 0],
         };
+    },
+    methods: {
+        addContextItem(group, item, callback) {
+            if (!(group in this.groups)) {
+                this.groups[group] = [];
+            }
+            this.groups[group].push({
+                name: item,
+                action: callback,
+            });
+        },
+        show(e) {
+            this.showing = true;
+            this.position = [e.clientX, e.clientY - 100];
+        },
+        close() {
+            this.showing = false;
+        },
     },
 };
 </script>

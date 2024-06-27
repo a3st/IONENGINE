@@ -19,8 +19,8 @@
                 <span>Compile</span>
             </button>
         </div>
-        <div ref="graph" style="display: none;"></div>
-        <graphview></graphview>
+        <div ref="graph" style="display: none"></div>
+        <graphview ref="graphView"></graphview>
     </div>
 </template>
 
@@ -29,11 +29,11 @@ import { toRaw } from "vue";
 import $ from "jquery";
 import FlowGraph from "../thirdparty/flowgraph.js/flowgraph";
 
-import GraphviewComponent from '../components/graph/graphview.vue';
+import GraphviewComponent from "../components/graph/graphview.vue";
 
 export default {
     components: {
-        'graphview': GraphviewComponent
+        graphview: GraphviewComponent,
     },
     data() {
         return {
@@ -77,6 +77,23 @@ export default {
                         node.userData
                     );
                 });
+
+                this.$refs.graphView.$refs.ctxMenu.addContextItem(
+                    node.group,
+                    node.name,
+                    (e) => {
+                        /*graph.addNode(
+                            e.posX,
+                            e.posY,
+                            node.inputs,
+                            node.outputs,
+                            node.name,
+                            false,
+                            "",
+                            node.userData
+                        );*/
+                    }
+                );
             }
         });
 
@@ -140,7 +157,7 @@ export default {
             this.fileInfo = fileInfo;
         },
         onSaveClick(e) {
-            console.log(toRaw(this.graph).export())
+            console.log(toRaw(this.graph).export());
             webview
                 .invoke("shaderGraphAssetSave", this.fileInfo, {
                     graphType: this.graphType,

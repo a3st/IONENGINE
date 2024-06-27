@@ -7,7 +7,7 @@
                 height: canvasSize[1] + 'px',
             }"
         ></div>
-        <ctxmenu></ctxmenu>
+        <ctxmenu ref="ctxMenu"></ctxmenu>
         <div
             class="flowgraph-canvas"
             :style="{
@@ -51,7 +51,7 @@ import CtxMenuComponent from "../graph/ctxmenu.vue";
 export default {
     components: {
         node: NodeComponent,
-        ctxmenu: CtxMenuComponent
+        ctxmenu: CtxMenuComponent,
     },
     props: {},
     computed: {
@@ -75,9 +75,19 @@ export default {
             if (e.which == 1) {
                 this.dragNodeBeginHandler(e);
             } else if (e.which == 3) {
+                const ctxMenuElement = $(this.$refs.ctxMenu.$el);
+
+                const width = ctxMenuElement.width();
+                const height = ctxMenuElement.height();
+
+
+                this.$refs.ctxMenu.show(e);
+
                 //this.#rightClickHandler(e);
             }
         });
+
+        this.$el.addEventListener('contextmenu', e => e.preventDefault());
 
         this.$el.addEventListener("mousemove", (e) => {
             this.moveNodeHandler(e);
