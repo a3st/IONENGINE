@@ -21,7 +21,21 @@
                     <button
                         v-for="(item, index) in items"
                         :key="index"
-                        @click="item.action"
+                        @click="
+                            item.action({
+                                x:
+                                    $parent.lastPosition[0] +
+                                    (-$parent.startCanvasPosition[0] -
+                                        $parent.canvasPosition[0]) -
+                                    115,
+                                y:
+                                    $parent.lastPosition[1] +
+                                    (-$parent.startCanvasPosition[1] -
+                                        $parent.canvasPosition[1]) -
+                                    100,
+                            }),
+                                close()
+                        "
                     >
                         {{ item.name }}
                     </button>
@@ -32,6 +46,8 @@
 </template>
 
 <script>
+import $ from "jquery";
+
 export default {
     data() {
         return {
@@ -52,7 +68,10 @@ export default {
         },
         show(e) {
             this.showing = true;
-            this.position = [e.clientX, e.clientY - 100];
+            this.position = [
+                e.clientX,
+                e.clientY - $(".flowgraph-context-container").height() / 2,
+            ];
         },
         close() {
             this.showing = false;
@@ -73,6 +92,7 @@ export default {
     height: 200px;
     z-index: 1;
     overflow: hidden;
+    transform-origin: center;
 }
 
 .flowgraph-context-header-container {

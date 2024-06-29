@@ -2,12 +2,11 @@
 
 #pragma once
 
-#include "engine/engine.hpp"
-#include "graph/registry.hpp"
-#include "graph/scene.hpp"
-#include <webview.hpp>
 #include "asset_tree.hpp"
+#include "engine/engine.hpp"
+#include "shader_graph/editor.hpp"
 #include "shader_graph/shader_graph.hpp"
+#include <webview.hpp>
 
 namespace ionengine::tools::editor
 {
@@ -47,6 +46,7 @@ namespace ionengine::tools::editor
         libwebview::App* app;
 
         AssetTree assetTree;
+        ComponentRegistry shaderComponentRegistry;
         ShaderGraphEditor shaderGraphEditor;
 
         core::ref_ptr<TextureAsset> viewportTexture;

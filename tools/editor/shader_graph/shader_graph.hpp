@@ -4,11 +4,11 @@
 
 #include "core/serializable.hpp"
 #include "engine/engine.hpp"
-#include "generator.hpp"
-#include "graph/scene.hpp"
 
 namespace ionengine::tools::editor
 {
+    class ComponentRegistry;
+
     std::array<uint8_t, 8> constexpr ShaderGraphFileType{'S', 'G', 'F', 'I', 'L', 'E', '\0', '\0'};
 
     enum class ShaderGraphType : uint32_t
@@ -124,34 +124,22 @@ namespace ionengine::tools::editor
         }
     };
 
-    struct ShaderGraphResult : public core::ref_counted_object
-    {
-        std::vector<uint8_t> outputShaderData;
-    };
-
-    class ShaderGraphEditor
+    class ShaderGraphAsset : public Asset
     {
       public:
-        ShaderGraphEditor();
+        ShaderGraphAsset(ComponentRegistry& componentRegistry);
 
         auto create(ShaderGraphType const graphType) -> void;
 
-        auto loadFromFile(std::filesystem::path const& filePath) -> bool;
+        auto loadFromFile(std::filesystem::path const& filePath) -> bool override;
 
-        auto dump() -> ShaderGraphData;
+        auto loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool override;
 
-        auto getScene() -> core::ref_ptr<Scene>;
-
-        auto getComponentRegistry() -> editor::ComponentRegistry&;
-
-        auto getGraphType() const -> ShaderGraphType;
-
-        auto compile() -> core::ref_ptr<ShaderGraphResult>;
+        auto getGraphData() const -> ShaderGraphData const&;
 
       private:
-        editor::ComponentRegistry componentRegistry;
-        core::ref_ptr<Scene> sceneGraph;
-        ShaderGraphType graphType;
+        ComponentRegistry* componentRegistry;
+        ShaderGraphData graphData;
     };
 } // namespace ionengine::tools::editor
 

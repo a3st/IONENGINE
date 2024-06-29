@@ -19,13 +19,6 @@ module.exports = {
                         {
                             source: path.resolve(__dirname, 'dist'),
                             destination: path.resolve(__dirname, '..', '..', '..', 'build', 'tools', 'resources')
-                        },
-                        /* 
-                            FlowGraph.js content 
-                        */
-                        {
-                            source: path.resolve(__dirname, 'src', 'thirdparty', 'flowgraph.js', 'images'),
-                            destination: path.resolve(__dirname, '..', '..', '..', 'build', 'tools', 'resources', 'images')
                         }
                     ]
                 }

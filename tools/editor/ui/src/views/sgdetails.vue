@@ -37,7 +37,7 @@
         class="pan-wrapper"
         style="background-color: #2f2f2f; gap: 10px"
     >
-        <optgr v-if="graphType == 1">
+        <optgr v-if="graphType == 'shader/unlit'">
             <optli
                 title="Surface"
                 type="select"
@@ -87,11 +87,9 @@ export default {
                     });
                 }
 
-                const inputNode = toRaw(this.graph).getNode(
-                    this.cacheInputNodeId
-                );
+                const inputNode = this.graph.getNode(this.cacheInputNodeId);
 
-                this.cacheInputNodeId = toRaw(this.graph).updateNode(
+                this.graph.updateNode(
                     inputNode.id,
                     inputNode.position[0],
                     inputNode.position[1],
@@ -99,7 +97,6 @@ export default {
                     outputsData,
                     inputNode.name,
                     inputNode.fixed,
-                    "",
                     inputNode.userData
                 );
             },
@@ -107,9 +104,7 @@ export default {
         },
         surface: {
             handler(value, oldValue) {
-                const outputNode = toRaw(this.graph).getNode(
-                    this.cacheOutputNodeId
-                );
+                const outputNode = this.graph.getNode(this.cacheOutputNodeId);
 
                 const inputColorIndex = outputNode.inputs.findIndex(
                     (element) => element.name == "Color"
@@ -127,9 +122,7 @@ export default {
                     outputNode.inputs[inputColorIndex].type =
                         surfaceToTypes[value];
 
-                    console.log(12222)
-
-                    this.cacheOutputNodeId = toRaw(this.graph).updateNode(
+                    this.cacheOutputNodeId = this.graph.updateNode(
                         outputNode.id,
                         outputNode.position[0],
                         outputNode.position[1],
@@ -137,7 +130,6 @@ export default {
                         outputNode.outputs,
                         outputNode.name,
                         outputNode.fixed,
-                        "",
                         outputNode.userData
                     );
                 }
@@ -177,22 +169,16 @@ export default {
             this.resources.splice(index, 1);
         },
         refresh(graphComponent, graphType) {
-            this.graph = graphComponent.proxy.$data.graph;
+            this.graph = graphComponent;
             this.graphType = graphType;
 
-            this.cacheInputNodeId = toRaw(this.graph).getNodesByName(
-                "Input Node"
-            )[0].id;
+            this.cacheInputNodeId =
+                this.graph.getNodesByName("Input Node")[0].id;
 
-            console.log("1", toRaw(this.graph).nodes);
+            this.cacheOutputNodeId =
+                this.graph.getNodesByName("Output Node")[0].id;
 
-            this.cacheOutputNodeId = toRaw(this.graph).getNodesByName(
-                "Output Node"
-            )[0].id;
-
-            const outputNode = toRaw(this.graph).getNode(
-                this.cacheOutputNodeId
-            );
+            const outputNode = this.graph.getNode(this.cacheOutputNodeId);
 
             const inputColorIndex = outputNode.inputs.findIndex(
                 (element) => element.name == "Color"

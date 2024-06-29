@@ -12,6 +12,7 @@ add_executable(editor
     shader_graph/components/input.cpp
     shader_graph/components/math.cpp
     shader_graph/shader_graph.cpp
+    shader_graph/editor.cpp
 
     view_model.cpp
     asset_tree.cpp

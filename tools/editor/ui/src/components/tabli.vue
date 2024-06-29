@@ -8,7 +8,7 @@
                 class="btn-icon"
                 @click="onRemoveClick($event)"
             >
-                <img src="images/xmark.svg" width="12" height="12" />
+                <img :src="require('../images/xmark.svg')" width="12" height="12" />
             </button>
         </div>
     </button>

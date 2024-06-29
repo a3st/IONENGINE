@@ -347,13 +347,13 @@ export default {
                                     );
 
                                     this.$refs.shader[0].refresh(
-                                        element.children[0]
-                                            .__vueParentComponent,
+                                        element.children[0].__vueParentComponent
+                                            .proxy.$refs.graphView,
                                         data.graphType
                                     );
                                     this.$refs.resources[0].refresh(
-                                        element.children[0]
-                                            .__vueParentComponent,
+                                        element.children[0].__vueParentComponent
+                                            .proxy.$refs.graphView,
                                         data.graphType
                                     );
                                 });
@@ -516,7 +516,6 @@ export default {
 </script>
 
 <style>
-@import url("../thirdparty/flowgraph.js/flowgraph.css");
 @import url("../thirdparty/context.js/context.css");
 
 .pan-wrapper {
