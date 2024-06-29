@@ -46,7 +46,6 @@ namespace ionengine::tools::editor
         libwebview::App* app;
 
         AssetTree assetTree;
-        ComponentRegistry shaderComponentRegistry;
         ShaderGraphEditor shaderGraphEditor;
 
         core::ref_ptr<TextureAsset> viewportTexture;

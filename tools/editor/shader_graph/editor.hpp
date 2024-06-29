@@ -16,18 +16,22 @@ namespace ionengine::tools::editor
     class ShaderGraphEditor
     {
       public:
-        ShaderGraphEditor(ComponentRegistry& componentRegistry);
+        ShaderGraphEditor();
+
+        auto createAsset(ShaderGraphType const graphType) -> core::ref_ptr<ShaderGraphAsset>;
 
         auto loadAsset(core::ref_ptr<ShaderGraphAsset> asset) -> void;
 
-        auto getAsset() -> core::ref_ptr<ShaderGraphAsset>;
+        auto getLoadedAsset() -> core::ref_ptr<ShaderGraphAsset>;
 
         auto getScene() -> core::ref_ptr<Scene>;
 
         auto compile() -> core::ref_ptr<ShaderGraphResult>;
 
+        auto getComponentRegistry() const -> ComponentRegistry const&;
+
       private:
-        editor::ComponentRegistry* componentRegistry;
+        ComponentRegistry componentRegistry;
         core::ref_ptr<Scene> sceneGraph;
         core::ref_ptr<ShaderGraphAsset> loadedAsset;
     };

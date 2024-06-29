@@ -38,22 +38,24 @@ export default {
     },
     mounted() {
         webview.invoke("getShaderGraphComponents").then((data) => {
-            for (const node of Object.values(data.items)) {
-                this.$refs.graphView.$refs.ctxMenu.addContextItem(
-                    node.group,
-                    node.name,
-                    (e) => {
-                        this.$refs.graphView.addNode(
-                            e.x,
-                            e.y,
-                            node.inputs,
-                            node.outputs,
-                            node.name,
-                            false,
-                            node.userData
-                        );
-                    }
-                );
+            for (const [groupName, groupItems] of Object.entries(data.groups)) {
+                for (const item of Object.values(groupItems)) {
+                    this.$refs.graphView.$refs.ctxMenu.addContextItem(
+                        groupName,
+                        item.name,
+                        (e) => {
+                            this.$refs.graphView.addNode(
+                                e.x,
+                                e.y,
+                                item.inputs,
+                                item.outputs,
+                                item.name,
+                                false,
+                                item.userData
+                            );
+                        }
+                    );
+                }
             }
         });
     },

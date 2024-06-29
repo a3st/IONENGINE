@@ -12,6 +12,8 @@ namespace ionengine
 
     class ShaderAsset : public Asset
     {
+        friend class Renderer;
+
       public:
         struct ShaderOption
         {

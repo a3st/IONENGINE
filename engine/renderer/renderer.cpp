@@ -10,6 +10,20 @@ namespace ionengine
     {
     }
 
+    auto Renderer::createTextureAsset(uint32_t const width, uint32_t const height,
+                                      TextureUsage const usage) -> core::ref_ptr<TextureAsset>
+    {
+        auto createdAsset = core::make_ref<TextureAsset>(*device);
+        createdAsset->create(width, height, usage);
+        return createdAsset;
+    }
+
+    auto Renderer::createShaderAsset() -> core::ref_ptr<ShaderAsset>
+    {
+        auto createdAsset = core::make_ref<ShaderAsset>(*device);
+        return createdAsset;
+    }
+
     auto Renderer::drawQuad() -> void
     {
         device->getGraphicsContext().draw(3, 1);
@@ -97,7 +111,7 @@ namespace ionengine
             colorBarriers.pop();
             device->getGraphicsContext().barrier(texture, rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
         }
-        
+
         currentShader = nullptr;
     }
 

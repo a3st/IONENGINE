@@ -6,12 +6,6 @@
 #include "precompiled.h"
 #include <base64pp/base64pp.h>
 
-#include "shader_graph/components/convert.hpp"
-#include "shader_graph/components/input.hpp"
-#include "shader_graph/components/math.hpp"
-#include "shader_graph/components/output.hpp"
-#include "shader_graph/components/texture.hpp"
-
 namespace ionengine::tools::editor
 {
     struct AssetOpenFileInfo
@@ -93,9 +87,19 @@ namespace ionengine::tools::editor
         }
     };
 
+    struct ShaderGraphContextItemInfo
+    {
+        std::unordered_map<std::string, std::vector<NodeData>> groupItems;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(groupItems, "groups");
+        }
+    };
+
     ViewModel::ViewModel(libwebview::App* app)
-        : Engine(nullptr), app(app), assetTree("E:\\GitHub\\IONENGINE\\build\\assets"),
-          shaderGraphEditor(shaderComponentRegistry)
+        : Engine(nullptr), app(app), assetTree("E:\\GitHub\\IONENGINE\\build\\assets")
     {
         app->bind("getAssetTree", [this]() -> std::string { return this->getAssetTree(); });
         app->bind("assetBrowserCreateFile",
@@ -115,21 +119,11 @@ namespace ionengine::tools::editor
                   [this](std::string fileData) -> std::string { return this->shaderGraphAssetCompile(fileData); });
 
         app->bind("requestViewportTexture", [this]() -> std::string { return this->requestViewportTexture(); });
-
-        shaderComponentRegistry.registerComponent<Input_NodeComponent>();
-        shaderComponentRegistry.registerComponent<UnlitOutput_NodeComponent>();
-        shaderComponentRegistry.registerComponent<Sampler2D_NodeComponent>();
-        shaderComponentRegistry.registerComponent<Constant_Color_NodeComponent>();
-        shaderComponentRegistry.registerComponent<Constant_Float_NodeComponent>();
-        shaderComponentRegistry.registerComponent<Join_Float4_NodeComponent>();
-        shaderComponentRegistry.registerComponent<Split_Float4_NodeComponent>();
-        shaderComponentRegistry.registerComponent<Split_Float3_NodeComponent>();
     }
 
     auto ViewModel::init() -> void
     {
-        viewportTexture = this->createTextureAsset();
-        viewportTexture->create(800, 600, TextureUsage::RenderTarget);
+        viewportTexture = renderer.createTextureAsset(800, 600, TextureUsage::RenderTarget);
     }
 
     auto ViewModel::update(float const dt) -> void
@@ -185,8 +179,7 @@ namespace ionengine::tools::editor
 
             if (fileInfo.assetType.compare("asset/shadergraph/unlit") == 0)
             {
-                auto shaderGraphAsset = core::make_ref<ShaderGraphAsset>(shaderComponentRegistry);
-                shaderGraphAsset->create(ShaderGraphType::Unlit);
+                auto shaderGraphAsset = shaderGraphEditor.createAsset(ShaderGraphType::Unlit);
 
                 // Change to general shadergraph type
                 fileInfo.assetType = "asset/shadergraph";
@@ -270,7 +263,7 @@ namespace ionengine::tools::editor
 
         if (fileInfo.assetType.compare("asset/shadergraph") == 0)
         {
-            auto shaderGraphAsset = core::make_ref<ShaderGraphAsset>(shaderComponentRegistry);
+            auto shaderGraphAsset = shaderGraphEditor.createAsset(ShaderGraphType::Unlit);
             if (!shaderGraphAsset->loadFromFile(std::filesystem::path(fileInfo.assetPath).make_preferred()))
             {
                 return "{\"error\":1}";
@@ -279,7 +272,7 @@ namespace ionengine::tools::editor
             shaderGraphEditor.loadAsset(shaderGraphAsset);
 
             auto buffer = core::saveToBytes<ShaderGraphData, core::serialize::OutputJSON>(
-                              shaderGraphEditor.getAsset()->getGraphData())
+                              shaderGraphEditor.getLoadedAsset()->getGraphData())
                               .value();
             return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
         }
@@ -291,81 +284,36 @@ namespace ionengine::tools::editor
 
     auto ViewModel::getShaderGraphComponents() -> std::string
     {
-        auto components = shaderComponentRegistry.getComponents() |
+        auto components = shaderGraphEditor.getComponentRegistry().getComponents() |
                           std::views::filter([](auto const& element) { return element.second->isContextRegister(); });
 
-        std::stringstream stream;
-        stream << "{\"items\":[";
-
-        bool isFirst = true;
+        ShaderGraphContextItemInfo itemInfo = {};
         for (auto const& [componentID, nodeComponent] : components)
         {
-            if (!isFirst)
+            NodeData nodeData = {.nodeName = std::string(nodeComponent->getName()),
+                                 .nodeFixed = nodeComponent->isFixed(),
+                                 .nodeUserData = {.nodeComponentID = nodeComponent->componentID,
+                                                  .nodeOptions = nodeComponent->setOptions()}};
+
+            for (auto const& input : nodeComponent->setInputs())
             {
-                stream << ",";
+                NodeSocketData socketData = {.socketName = input.socketName, .socketType = input.socketType};
+                nodeData.nodeInputs.emplace_back(std::move(socketData));
             }
 
-            auto result = nodeComponent->getGroupName();
-            std::string groupName;
-            if (result.has_value())
+            for (auto const& output : nodeComponent->setInputs())
             {
-                groupName = std::move(result.value());
-            }
-            else
-            {
-                groupName = "Ungroup";
+                NodeSocketData socketData = {.socketName = output.socketName, .socketType = output.socketType};
+                nodeData.nodeOutputs.emplace_back(std::move(socketData));
             }
 
-            stream << "{\"name\":\"" << nodeComponent->getName() << "\",\"group\":\"" << groupName
-                   << "\",\"fixed\":" << nodeComponent->isFixed() << ",\"inputs\":[";
-
-            isFirst = true;
-            for (auto const& socket : nodeComponent->setInputs())
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "{\"name\":\"" << socket.socketName << "\",\"type\":\"" << socket.socketType << "\"}";
-                isFirst = false;
-            }
-
-            stream << "],\"outputs\":[";
-
-            isFirst = true;
-            for (auto const& socket : nodeComponent->setOutputs())
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "{\"name\":\"" << socket.socketName << "\",\"type\":\"" << socket.socketType << "\"}";
-                isFirst = false;
-            }
-
-            stream << "],\"userData\":{\"componentID\":" << nodeComponent->componentID << ",\"options\":{";
-
-            isFirst = true;
-            for (auto const& [key, value] : nodeComponent->setOptions())
-            {
-                if (!isFirst)
-                {
-                    stream << ",";
-                }
-
-                stream << "\"" << key << "\":\"" << value << "\"";
-                isFirst = false;
-            }
-
-            stream << "}}}";
-
-            isFirst = false;
+            auto [element, result] =
+                itemInfo.groupItems.try_emplace(std::string(nodeComponent->getGroupName().value_or("User")));
+            element->second.emplace_back(std::move(nodeData));
         }
 
-        stream << "]}";
-        return stream.str();
+        auto buffer = core::saveToBytes<ShaderGraphContextItemInfo, core::serialize::OutputJSON>(itemInfo).value();
+        return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
     }
 
     auto ViewModel::shaderGraphAssetSave(std::string fileData, std::string sceneData) -> std::string
@@ -412,7 +360,7 @@ namespace ionengine::tools::editor
 
         AssetOpenFileInfo fileInfo = std::move(result.value());
 
-        auto shaderGraphAsset = core::make_ref<ShaderGraphAsset>(shaderComponentRegistry);
+        auto shaderGraphAsset = shaderGraphEditor.createAsset(ShaderGraphType::Unlit);
         if (!shaderGraphAsset->loadFromFile(fileInfo.assetPath))
         {
             return "{\"error\":1}";
@@ -426,7 +374,7 @@ namespace ionengine::tools::editor
             return "{\"error\":2}";
         }
 
-        outputShader = createShaderAsset();
+        outputShader = renderer.createShaderAsset();
         if (!outputShader->loadFromBytes(compileResult->outputShaderData))
         {
             return "{\"error\":3}";

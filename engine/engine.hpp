@@ -38,10 +38,6 @@ namespace ionengine
 
         virtual auto render() -> void = 0;
 
-        auto createShaderAsset() -> core::ref_ptr<ShaderAsset>;
-
-        auto createTextureAsset() -> core::ref_ptr<TextureAsset>;
-
         Renderer renderer;
     };
 } // namespace ionengine

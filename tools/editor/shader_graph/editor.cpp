@@ -4,15 +4,40 @@
 #include "core/subprocess.hpp"
 #include "precompiled.h"
 
+#include "shader_graph/components/convert.hpp"
+#include "shader_graph/components/input.hpp"
+#include "shader_graph/components/math.hpp"
+#include "shader_graph/components/output.hpp"
+#include "shader_graph/components/texture.hpp"
+
 namespace ionengine::tools::editor
 {
-    ShaderGraphEditor::ShaderGraphEditor(ComponentRegistry& componentRegistry) : componentRegistry(&componentRegistry)
+    ShaderGraphEditor::ShaderGraphEditor()
     {
+        componentRegistry.registerComponent<Input_NodeComponent>();
+        componentRegistry.registerComponent<UnlitOutput_NodeComponent>();
+        componentRegistry.registerComponent<Sampler2D_NodeComponent>();
+        componentRegistry.registerComponent<Constant_Color_NodeComponent>();
+        componentRegistry.registerComponent<Constant_Float_NodeComponent>();
+        componentRegistry.registerComponent<Join_Float4_NodeComponent>();
+        componentRegistry.registerComponent<Split_Float4_NodeComponent>();
+        componentRegistry.registerComponent<Split_Float3_NodeComponent>();
+    }
+
+    auto ShaderGraphEditor::createAsset(ShaderGraphType const graphType) -> core::ref_ptr<ShaderGraphAsset> {
+        auto createdAsset = core::make_ref<ShaderGraphAsset>(componentRegistry);
+        createdAsset->create(graphType);
+        return std::move(createdAsset);
+    }
+
+    auto ShaderGraphEditor::getComponentRegistry() const -> ComponentRegistry const&
+    {
+        return componentRegistry;
     }
 
     auto ShaderGraphEditor::loadAsset(core::ref_ptr<ShaderGraphAsset> asset) -> void
     {
-        sceneGraph = core::make_ref<Scene>(*componentRegistry);
+        sceneGraph = core::make_ref<Scene>(componentRegistry);
 
         std::unordered_map<uint64_t, core::ref_ptr<Node>> componentsOfNodes;
 
@@ -60,7 +85,7 @@ namespace ionengine::tools::editor
         loadedAsset = asset;
     }
 
-    auto ShaderGraphEditor::getAsset() -> core::ref_ptr<ShaderGraphAsset>
+    auto ShaderGraphEditor::getLoadedAsset() -> core::ref_ptr<ShaderGraphAsset>
     {
         return loadedAsset;
     }

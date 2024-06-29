@@ -15,7 +15,7 @@ namespace ionengine::tools::editor
         components.emplace(component->componentID, component);
     }
 
-    auto ComponentRegistry::getComponents() -> std::unordered_map<uint32_t, core::ref_ptr<NodeComponent>> const&
+    auto ComponentRegistry::getComponents() const -> std::unordered_map<uint32_t, core::ref_ptr<NodeComponent>> const&
     {
         return components;
     }

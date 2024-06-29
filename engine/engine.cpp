@@ -63,14 +63,4 @@ namespace ionengine
             throw std::runtime_error(e.what());
         }
     }
-
-    auto Engine::createShaderAsset() -> core::ref_ptr<ShaderAsset>
-    {
-        return core::make_ref<ShaderAsset>(device);
-    }
-
-    auto Engine::createTextureAsset() -> core::ref_ptr<TextureAsset>
-    {
-        return core::make_ref<TextureAsset>(device);
-    }
 } // namespace ionengine

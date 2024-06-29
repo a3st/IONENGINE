@@ -18,10 +18,10 @@ namespace ionengine
 
     class TextureAsset : public Asset
     {
+        friend class Renderer;
+
       public:
         TextureAsset(LinkedDevice& device);
-
-        auto create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> void;
 
         auto loadFromFile(std::filesystem::path const& filePath) -> bool override
         {
@@ -40,5 +40,7 @@ namespace ionengine
       private:
         LinkedDevice* device;
         core::ref_ptr<rhi::Texture> texture;
+
+        auto create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> void;
     };
 } // namespace ionengine

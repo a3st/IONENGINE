@@ -126,10 +126,10 @@ namespace ionengine::tools::editor
 
     class ShaderGraphAsset : public Asset
     {
+        friend class ShaderGraphEditor;
+
       public:
         ShaderGraphAsset(ComponentRegistry& componentRegistry);
-
-        auto create(ShaderGraphType const graphType) -> void;
 
         auto loadFromFile(std::filesystem::path const& filePath) -> bool override;
 
@@ -140,6 +140,8 @@ namespace ionengine::tools::editor
       private:
         ComponentRegistry* componentRegistry;
         ShaderGraphData graphData;
+
+        auto create(ShaderGraphType const graphType) -> void;
     };
 } // namespace ionengine::tools::editor
 

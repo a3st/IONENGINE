@@ -18,7 +18,7 @@ namespace ionengine::tools::editor
             addComponentToRegistry(component);
         }
 
-        auto getComponents() -> std::unordered_map<uint32_t, core::ref_ptr<NodeComponent>> const&;
+        auto getComponents() const -> std::unordered_map<uint32_t, core::ref_ptr<NodeComponent>> const&;
 
         template <typename Type = NodeComponent>
         auto getComponentByType() -> core::ref_ptr<NodeComponent>

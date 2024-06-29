@@ -18,8 +18,7 @@ namespace ionengine::tools::editor
     {
         this->graphData.graphType = graphType;
 
-        auto createNode = [&]<typename Type>(uint64_t const nodeID, int32_t const posX,
-                                             int32_t const posY) -> NodeData {
+        auto createNode = [&]<typename Type>(uint64_t const nodeID, int32_t const posX, int32_t const posY) {
             auto const nodeComponent = componentRegistry->getComponentByType<Type>();
 
             NodeData nodeData = {.nodeID = nodeID,
@@ -40,13 +39,15 @@ namespace ionengine::tools::editor
                 NodeSocketData socketData = {.socketName = output.socketName, .socketType = output.socketType};
                 nodeData.nodeOutputs.emplace_back(std::move(socketData));
             }
-            return nodeData;
+
+            this->graphData.sceneData.nodes.emplace_back(std::move(nodeData));
         };
 
         if (graphType == ShaderGraphType::Unlit)
         {
             createNode.template operator()<UnlitOutput_NodeComponent>(0, 600, 80);
         }
+
         createNode.template operator()<Input_NodeComponent>(1, 10, 80);
     }
 
@@ -65,7 +66,15 @@ namespace ionengine::tools::editor
 
     auto ShaderGraphAsset::loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool
     {
-        return false;
+        auto result = core::loadFromBytes<ShaderGraphFile>(dataBytes);
+        if (!result.has_value())
+        {
+            return false;
+        }
+
+        ShaderGraphFile shaderGraphFile = std::move(result.value());
+        this->graphData = shaderGraphFile.graphData;
+        return true;
     }
 
     auto ShaderGraphAsset::getGraphData() const -> ShaderGraphData const&

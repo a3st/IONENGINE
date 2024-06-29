@@ -16,6 +16,11 @@ namespace ionengine
       public:
         Renderer(LinkedDevice& device);
 
+        auto createTextureAsset(uint32_t const width, uint32_t const height,
+                                TextureUsage const usage) -> core::ref_ptr<TextureAsset>;
+
+        auto createShaderAsset() -> core::ref_ptr<ShaderAsset>;
+
         auto drawQuad() -> void;
 
         auto beginDraw(std::span<core::ref_ptr<rhi::Texture>> colors, core::ref_ptr<rhi::Texture> depthStencil,

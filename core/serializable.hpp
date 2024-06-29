@@ -395,7 +395,12 @@ namespace ionengine::core
             {
                 if constexpr (is_std_vector<Type>::value)
                 {
-                    outputJSON.jsonChunk << "\"" << jsonName << "\":[";
+                    if (!jsonName.empty())
+                    {
+                        outputJSON.jsonChunk << "\"" << jsonName << "\":";
+                    }
+
+                    outputJSON.jsonChunk << "[";
                     bool isFirst = true;
                     for (auto const& e : element)
                     {
@@ -406,11 +411,21 @@ namespace ionengine::core
                         propertyResolveToJSON(outputJSON, "", e);
                         isFirst = false;
                     }
-                    outputJSON.jsonChunk << "],";
+                    outputJSON.jsonChunk << "]";
+
+                    if (!jsonName.empty())
+                    {
+                        outputJSON.jsonChunk << ",";
+                    }
                 }
                 else if constexpr (is_std_array<Type>::value)
                 {
-                    outputJSON.jsonChunk << "\"" << jsonName << "\":[";
+                    if (!jsonName.empty())
+                    {
+                        outputJSON.jsonChunk << "\"" << jsonName << "\":";
+                    }
+
+                    outputJSON.jsonChunk << "[";
                     bool isFirst = true;
                     for (auto const& e : element)
                     {
@@ -421,7 +436,12 @@ namespace ionengine::core
                         propertyResolveToJSON(outputJSON, "", e);
                         isFirst = false;
                     }
-                    outputJSON.jsonChunk << "],";
+                    outputJSON.jsonChunk << "]";
+
+                    if (!jsonName.empty())
+                    {
+                        outputJSON.jsonChunk << ",";
+                    }
                 }
                 else if constexpr (is_std_unique_ptr<Type>::value)
                 {
