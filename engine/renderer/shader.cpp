@@ -101,20 +101,20 @@ namespace ionengine
             uint32_t const pixelBufferIndex =
                 shaderEffectFile.effectData.technique.stages.at(rhi::fx::ShaderStageType::Pixel).buffer;
 
-            rasterizerStage.fill_mode = rhi::FillMode::Solid;
+            rasterizerStage.fillMode = rhi::FillMode::Solid;
 
             switch (shaderEffectFile.effectData.technique.cullSide)
             {
                 case rhi::fx::ShaderCullSide::Back: {
-                    rasterizerStage.cull_mode = rhi::CullMode::Back;
+                    rasterizerStage.cullMode = rhi::CullMode::Back;
                     break;
                 }
                 case rhi::fx::ShaderCullSide::Front: {
-                    rasterizerStage.cull_mode = rhi::CullMode::Front;
+                    rasterizerStage.cullMode = rhi::CullMode::Front;
                     break;
                 }
                 case rhi::fx::ShaderCullSide::None: {
-                    rasterizerStage.cull_mode = rhi::CullMode::None;
+                    rasterizerStage.cullMode = rhi::CullMode::None;
                     break;
                 }
             }

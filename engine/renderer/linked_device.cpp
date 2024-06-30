@@ -9,19 +9,25 @@ namespace ionengine
 {
     LinkedDevice::LinkedDevice(platform::Window* window)
     {
+        rhi::RHICreateInfo rhiCreateInfo = {.numStaticSamplers = 0};
+
         if (window)
         {
-            device = rhi::Device::create(window);
+            rhiCreateInfo.targetWindow = window->get_native_handle();
+            rhiCreateInfo.windowWidth = window->get_width();
+            rhiCreateInfo.windowHeight = window->get_height();
+
+            device = rhi::Device::create(rhiCreateInfo);
             isWindowedRendering = true;
         }
         else
         {
-            device = rhi::Device::create(nullptr);
+            device = rhi::Device::create(rhiCreateInfo);
             isWindowedRendering = false;
         }
 
-        graphicsContext = device->create_graphics_context();
-        copyContext = device->create_copy_context();
+        graphicsContext = device->createGraphicsContext();
+        copyContext = device->createCopyContext();
     }
 
     auto LinkedDevice::getDevice() -> rhi::Device&
@@ -50,7 +56,7 @@ namespace ionengine
 
         if (isWindowedRendering)
         {
-            backBuffer = device->request_back_buffer();
+            backBuffer = device->requestBackBuffer();
         }
     }
 
@@ -60,7 +66,7 @@ namespace ionengine
 
         if (isWindowedRendering)
         {
-            device->present_back_buffer();
+            device->presentBackBuffer();
         }
 
         graphics_future.wait();
@@ -80,7 +86,7 @@ namespace ionengine
     auto LinkedDevice::uploadBuffer(core::ref_ptr<rhi::Buffer> buffer, std::span<uint8_t const> const data) -> void
     {
         copyContext->barrier(buffer, rhi::ResourceState::Common, rhi::ResourceState::CopyDst);
-        copyContext->write_buffer(buffer, data);
+        copyContext->writeBuffer(buffer, data);
         copyContext->barrier(buffer, rhi::ResourceState::CopyDst, rhi::ResourceState::Common);
     }
 
@@ -88,14 +94,14 @@ namespace ionengine
                                      std::vector<std::span<uint8_t const>> const& data) -> void
     {
         copyContext->barrier(texture, rhi::ResourceState::Common, rhi::ResourceState::CopyDst);
-        copyContext->write_texture(texture, data);
+        copyContext->writeTexture(texture, data);
         copyContext->barrier(texture, rhi::ResourceState::CopyDst, rhi::ResourceState::Common);
     }
 
     auto LinkedDevice::readTexture(core::ref_ptr<rhi::Texture> texture, std::vector<std::vector<uint8_t>>& data) -> void
     {
         copyContext->barrier(texture, rhi::ResourceState::Common, rhi::ResourceState::CopySrc);
-        copyContext->read_texture(texture, data);
+        copyContext->readTexture(texture, data);
         copyContext->barrier(texture, rhi::ResourceState::CopySrc, rhi::ResourceState::Common);
     }
 } // namespace ionengine

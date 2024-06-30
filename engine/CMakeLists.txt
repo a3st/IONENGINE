@@ -5,7 +5,7 @@ add_library(engine SHARED
 
     ../rhi/dx12/rhi.cpp
     ../rhi/rhi.cpp
-    ../rhi/fx/fxsl.cpp
+    ../rhi/fx/fx.cpp
 
     ../platform/windows/window.cpp
     ../platform/window.cpp

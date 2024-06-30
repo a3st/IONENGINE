@@ -49,15 +49,14 @@ namespace ionengine
             if (clearColor.has_value())
             {
                 renderPassColorInfo = {.texture = color,
-                                       .load_op = rhi::RenderPassLoadOp::Clear,
-                                       .store_op = rhi::RenderPassStoreOp::Store,
-                                       .clear_color = clearColor.value()};
+                                       .loadOp = rhi::RenderPassLoadOp::Clear,
+                                       .storeOp = rhi::RenderPassStoreOp::Store,
+                                       .clearColor = clearColor.value()};
             }
             else
             {
-                renderPassColorInfo = {.texture = color,
-                                       .load_op = rhi::RenderPassLoadOp::Load,
-                                       .store_op = rhi::RenderPassStoreOp::Store};
+                renderPassColorInfo = {
+                    .texture = color, .loadOp = rhi::RenderPassLoadOp::Load, .storeOp = rhi::RenderPassStoreOp::Store};
             }
 
             renderPassColorInfos.emplace_back(renderPassColorInfo);
@@ -68,42 +67,42 @@ namespace ionengine
             rhi::RenderPassDepthStencilInfo renderPassDepthStencilInfo = {.texture = depthStencil};
             if (clearDepth.has_value())
             {
-                renderPassDepthStencilInfo.clear_depth = clearDepth.value();
-                renderPassDepthStencilInfo.depth_load_op = rhi::RenderPassLoadOp::Clear;
-                renderPassDepthStencilInfo.depth_store_op = rhi::RenderPassStoreOp::Store;
+                renderPassDepthStencilInfo.clearDepth = clearDepth.value();
+                renderPassDepthStencilInfo.depthLoadOp = rhi::RenderPassLoadOp::Clear;
+                renderPassDepthStencilInfo.depthStoreOp = rhi::RenderPassStoreOp::Store;
             }
             else
             {
-                renderPassDepthStencilInfo.depth_load_op = rhi::RenderPassLoadOp::Load;
-                renderPassDepthStencilInfo.depth_store_op = rhi::RenderPassStoreOp::Store;
+                renderPassDepthStencilInfo.depthLoadOp = rhi::RenderPassLoadOp::Load;
+                renderPassDepthStencilInfo.depthStoreOp = rhi::RenderPassStoreOp::Store;
             }
 
             if (clearStencil.has_value())
             {
-                renderPassDepthStencilInfo.clear_stencil = clearStencil.value();
-                renderPassDepthStencilInfo.stencil_load_op = rhi::RenderPassLoadOp::Clear;
-                renderPassDepthStencilInfo.stencil_store_op = rhi::RenderPassStoreOp::Store;
+                renderPassDepthStencilInfo.clearStencil = clearStencil.value();
+                renderPassDepthStencilInfo.stencilLoadOp = rhi::RenderPassLoadOp::Clear;
+                renderPassDepthStencilInfo.stencilStoreOp = rhi::RenderPassStoreOp::Store;
             }
             else
             {
-                renderPassDepthStencilInfo.stencil_load_op = rhi::RenderPassLoadOp::Load;
-                renderPassDepthStencilInfo.stencil_store_op = rhi::RenderPassStoreOp::Store;
+                renderPassDepthStencilInfo.stencilLoadOp = rhi::RenderPassLoadOp::Load;
+                renderPassDepthStencilInfo.stencilStoreOp = rhi::RenderPassStoreOp::Store;
             }
 
-            device->getGraphicsContext().begin_render_pass(renderPassColorInfos, renderPassDepthStencilInfo);
+            device->getGraphicsContext().beginRenderPass(renderPassColorInfos, renderPassDepthStencilInfo);
         }
         else
         {
-            device->getGraphicsContext().begin_render_pass(renderPassColorInfos, std::nullopt);
+            device->getGraphicsContext().beginRenderPass(renderPassColorInfos, std::nullopt);
         }
 
-        device->getGraphicsContext().set_viewport(0, 0, rendererWidth, rendererHeight);
-        device->getGraphicsContext().set_scissor(0, 0, rendererWidth, rendererHeight);
+        device->getGraphicsContext().setViewport(0, 0, rendererWidth, rendererHeight);
+        device->getGraphicsContext().setScissor(0, 0, rendererWidth, rendererHeight);
     }
 
     auto Renderer::endDraw() -> void
     {
-        device->getGraphicsContext().end_render_pass();
+        device->getGraphicsContext().endRenderPass();
 
         while (!colorBarriers.empty())
         {
@@ -122,7 +121,7 @@ namespace ionengine
 
         // Sort renderables by shader
         std::sort(indices.begin(), indices.end(), [&](auto const lhs, auto const rhs) {
-            return renderables[lhs].shader->get_hash() < renderables[rhs].shader->get_hash();
+            return renderables[lhs].shader->getHash() < renderables[rhs].shader->getHash();
         });
 
         // Apply sort to array
@@ -140,7 +139,7 @@ namespace ionengine
 
             if (currentShader != renderableData.shader)
             {
-                device->getGraphicsContext().set_graphics_pipeline_options(
+                device->getGraphicsContext().setGraphicsPipelineOptions(
                     renderableData.shader, renderableData.rasterizerStage, renderableData.blendColor,
                     renderableData.depthStencil);
 
@@ -149,7 +148,7 @@ namespace ionengine
 
             for (auto const& [boundSlot, boundData] : renderableData.boundedBuffers)
             {
-                if (!(boundData.resource->get_flags() & (rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite))
+                if (!(boundData.resource->getFlags() & (rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite))
                 {
                     rhi::ResourceState curResourceState;
                     rhi::ResourceState nextResourceState;
@@ -176,8 +175,8 @@ namespace ionengine
                     resolveBuffers.push(boundData);
                 }
 
-                uint64_t const descriptorOffset = boundData.resource->get_descriptor_offset(boundData.usage);
-                device->getGraphicsContext().bind_descriptor(boundSlot, descriptorOffset);
+                uint64_t const descriptorOffset = boundData.resource->getDescriptorOffset(boundData.usage);
+                device->getGraphicsContext().bindDescriptor(boundSlot, descriptorOffset);
             }
 
             switch (renderableData.renderableType)
@@ -201,7 +200,7 @@ namespace ionengine
                 auto boundData = std::move(resolveBuffers.top());
                 resolveBuffers.pop();
 
-                if (!(boundData.resource->get_flags() & (rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite))
+                if (!(boundData.resource->getFlags() & (rhi::BufferUsageFlags)rhi::BufferUsage::MapWrite))
                 {
                     rhi::ResourceState curResourceState;
                     rhi::ResourceState nextResourceState;

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.26.0)
 
 add_executable(shaderc
-    ../../rhi/fx/fxsl.cpp
+    ../../rhi/fx/fx.cpp
     fx.cpp
     main.cpp)
 

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "rhi/fx/fxsl.hpp"
+#include "rhi/fx/fx.hpp"
 #include <d3d12.h>
 #include <dxcapi.h>
 #include <dxgi1_4.h>

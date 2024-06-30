@@ -3,6 +3,7 @@
 #pragma once
 
 #include "core/ref_ptr.hpp"
+#include "core/utils.hpp"
 #include "math/color.hpp"
 
 namespace ionengine::platform
@@ -30,15 +31,15 @@ namespace ionengine::rhi
     class Buffer : public core::ref_counted_object
     {
       public:
-        virtual auto get_size() -> size_t = 0;
+        virtual auto getSize() -> size_t = 0;
 
-        virtual auto get_flags() -> BufferUsageFlags = 0;
+        virtual auto getFlags() -> BufferUsageFlags = 0;
 
-        virtual auto map_memory() -> uint8_t* = 0;
+        virtual auto mapMemory() -> uint8_t* = 0;
 
-        virtual auto unmap_memory() -> void = 0;
+        virtual auto unmapMemory() -> void = 0;
 
-        virtual auto get_descriptor_offset(BufferUsage const usage) const -> uint32_t = 0;
+        virtual auto getDescriptorOffset(BufferUsage const usage) const -> uint32_t = 0;
     };
 
     enum class TextureFormat
@@ -81,25 +82,25 @@ namespace ionengine::rhi
     class Texture : public core::ref_counted_object
     {
       public:
-        virtual auto get_width() const -> uint32_t = 0;
+        virtual auto getWidth() const -> uint32_t = 0;
 
-        virtual auto get_height() const -> uint32_t = 0;
+        virtual auto getHeight() const -> uint32_t = 0;
 
-        virtual auto get_depth() const -> uint32_t = 0;
+        virtual auto getDepth() const -> uint32_t = 0;
 
-        virtual auto get_mip_levels() const -> uint32_t = 0;
+        virtual auto getMipLevels() const -> uint32_t = 0;
 
-        virtual auto get_format() const -> TextureFormat = 0;
+        virtual auto getFormat() const -> TextureFormat = 0;
 
-        virtual auto get_flags() const -> TextureUsageFlags = 0;
+        virtual auto getFlags() const -> TextureUsageFlags = 0;
 
-        virtual auto get_descriptor_offset(TextureUsage const usage) const -> uint32_t = 0;
+        virtual auto getDescriptorOffset(TextureUsage const usage) const -> uint32_t = 0;
     };
 
     class Shader : public core::ref_counted_object
     {
       public:
-        virtual auto get_hash() const -> uint64_t = 0;
+        virtual auto getHash() const -> uint64_t = 0;
     };
 
     enum class RenderPassLoadOp
@@ -178,94 +179,159 @@ namespace ionengine::rhi
         CopySrc
     };
 
+    enum class Filter
+    {
+        Anisotropic,
+        MinMagMipLinear,
+        ComparisonMinMagMipLinear
+    };
+
+    enum class AddressMode
+    {
+        Wrap,
+        Clamp,
+        Mirror
+    };
+
+    struct SamplerCreateInfo
+    {
+        Filter filter;
+        AddressMode addressU;
+        AddressMode addressV;
+        AddressMode addressW;
+        CompareOp compareOp;
+        uint32_t anisotropic;
+    };
+
+    struct BufferCreateInfo
+    {
+        size_t bufferSize;
+        size_t elementStride;
+        BufferUsageFlags bufferFlags;
+    };
+
+    struct TextureCreateInfo
+    {
+        uint32_t width;
+        uint32_t height;
+        uint32_t depth;
+        uint32_t numMipLevels;
+        TextureFormat format;
+        TextureDimension dimension;
+        TextureUsageFlags textureFlags;
+    };
+
+    struct RHICreateInfo
+    {
+        void* targetWindow;
+        uint32_t windowWidth;
+        uint32_t windowHeight;
+        uint32_t numStaticSamplers;
+        std::span<SamplerCreateInfo> staticSamplers;
+    };
+
     struct RenderPassColorInfo
     {
         core::ref_ptr<Texture> texture;
-        RenderPassLoadOp load_op;
-        RenderPassStoreOp store_op;
-        math::Color clear_color;
+        RenderPassLoadOp loadOp;
+        RenderPassStoreOp storeOp;
+        math::Color clearColor;
     };
 
     struct RenderPassDepthStencilInfo
     {
         core::ref_ptr<Texture> texture;
-        RenderPassLoadOp depth_load_op;
-        RenderPassStoreOp depth_store_op;
-        RenderPassLoadOp stencil_load_op;
-        RenderPassStoreOp stencil_store_op;
-        float clear_depth;
-        uint8_t clear_stencil;
+        RenderPassLoadOp depthLoadOp;
+        RenderPassStoreOp depthStoreOp;
+        RenderPassLoadOp stencilLoadOp;
+        RenderPassStoreOp stencilStoreOp;
+        float clearDepth;
+        uint8_t clearStencil;
     };
 
     struct DepthStencilStageInfo
     {
-        CompareOp depth_func;
-        bool depth_write;
-        bool stencil_write;
+        CompareOp depthFunc;
+        bool depthWrite;
+        bool stencilWrite;
+
+        auto operator==(DepthStencilStageInfo const& other) const -> bool
+        {
+            return std::make_tuple(depthFunc, depthWrite, stencilWrite) ==
+                   std::make_tuple(other.depthFunc, other.depthWrite, other.stencilWrite);
+        }
 
         static auto Default() -> DepthStencilStageInfo const&
         {
             static const DepthStencilStageInfo instance = {
-                .depth_func = CompareOp::Never, .depth_write = false, .stencil_write = false};
+                .depthFunc = CompareOp::Never, .depthWrite = false, .stencilWrite = false};
             return instance;
         }
     };
 
     struct BlendColorInfo
     {
-        bool blend_enable;
-        Blend blend_src;
-        Blend blend_dst;
-        BlendOp blend_op;
-        Blend blend_src_alpha;
-        Blend blend_dst_alpha;
-        BlendOp blend_op_alpha;
+        bool blendEnable;
+        Blend blendSrc;
+        Blend blendDst;
+        BlendOp blendOp;
+        Blend blendSrcAlpha;
+        Blend blendDstAlpha;
+        BlendOp blendOpAlpha;
+
+        auto operator==(BlendColorInfo const& other) const -> bool
+        {
+            return std::make_tuple(blendEnable, blendSrc, blendDst, blendOp, blendSrcAlpha, blendDstAlpha,
+                                   blendOpAlpha) == std::make_tuple(other.blendEnable, other.blendSrc, other.blendDst,
+                                                                    other.blendOp, other.blendSrcAlpha,
+                                                                    other.blendDstAlpha, other.blendOpAlpha);
+        }
 
         static auto Opaque() -> BlendColorInfo const&
         {
-            static const BlendColorInfo instance = {.blend_enable = false,
-                                                    .blend_src = Blend::Zero,
-                                                    .blend_dst = Blend::Zero,
-                                                    .blend_op = BlendOp::Add,
-                                                    .blend_src_alpha = Blend::Zero,
-                                                    .blend_dst_alpha = Blend::Zero,
-                                                    .blend_op_alpha = BlendOp::Add};
+            static const BlendColorInfo instance = {.blendEnable = false,
+                                                    .blendSrc = Blend::Zero,
+                                                    .blendDst = Blend::Zero,
+                                                    .blendOp = BlendOp::Add,
+                                                    .blendSrcAlpha = Blend::Zero,
+                                                    .blendDstAlpha = Blend::Zero,
+                                                    .blendOpAlpha = BlendOp::Add};
             return instance;
         }
 
         static auto Add() -> BlendColorInfo const&
         {
-            static const BlendColorInfo instance = {.blend_enable = true,
-                                                    .blend_src = Blend::One,
-                                                    .blend_dst = Blend::One,
-                                                    .blend_op = BlendOp::Add,
-                                                    .blend_src_alpha = Blend::One,
-                                                    .blend_dst_alpha = Blend::Zero,
-                                                    .blend_op_alpha = BlendOp::Add};
+            static const BlendColorInfo instance = {.blendEnable = true,
+                                                    .blendSrc = Blend::One,
+                                                    .blendDst = Blend::One,
+                                                    .blendOp = BlendOp::Add,
+                                                    .blendSrcAlpha = Blend::One,
+                                                    .blendDstAlpha = Blend::Zero,
+                                                    .blendOpAlpha = BlendOp::Add};
             return instance;
         }
 
         static auto Mixed() -> BlendColorInfo const&
         {
-            static const BlendColorInfo instance = {.blend_enable = true,
-                                                    .blend_src = Blend::One,
-                                                    .blend_dst = Blend::InvSrcAlpha,
-                                                    .blend_op = BlendOp::Add,
-                                                    .blend_src_alpha = Blend::One,
-                                                    .blend_dst_alpha = Blend::Zero,
-                                                    .blend_op_alpha = BlendOp::Add};
+            static const BlendColorInfo instance = {.blendEnable = true,
+                                                    .blendSrc = Blend::One,
+                                                    .blendDst = Blend::InvSrcAlpha,
+                                                    .blendOp = BlendOp::Add,
+                                                    .blendSrcAlpha = Blend::One,
+                                                    .blendDstAlpha = Blend::Zero,
+                                                    .blendOpAlpha = BlendOp::Add};
             return instance;
         }
 
         static auto AlphaBlend() -> BlendColorInfo const&
         {
-            static const BlendColorInfo instance = {.blend_enable = true,
-                                                    .blend_src = Blend::SrcAlpha,
-                                                    .blend_dst = Blend::InvSrcAlpha,
-                                                    .blend_op = BlendOp::Add,
-                                                    .blend_src_alpha = Blend::One,
-                                                    .blend_dst_alpha = Blend::Zero,
-                                                    .blend_op_alpha = BlendOp::Add};
+            static const BlendColorInfo instance = {.blendEnable = true,
+                                                    .blendSrc = Blend::SrcAlpha,
+                                                    .blendDst = Blend::InvSrcAlpha,
+                                                    .blendOp = BlendOp::Add,
+                                                    .blendSrcAlpha = Blend::One,
+                                                    .blendDstAlpha = Blend::Zero,
+                                                    .blendOpAlpha = BlendOp::Add};
             return instance;
         }
     };
@@ -292,8 +358,13 @@ namespace ionengine::rhi
 
     struct RasterizerStageInfo
     {
-        FillMode fill_mode;
-        CullMode cull_mode;
+        FillMode fillMode;
+        CullMode cullMode;
+
+        auto operator==(RasterizerStageInfo const& other) const -> bool
+        {
+            return std::make_tuple(fillMode, cullMode) == std::make_tuple(other.fillMode, other.cullMode);
+        }
     };
 
     struct BufferBindData
@@ -311,7 +382,7 @@ namespace ionengine::rhi
     class FutureImpl
     {
       public:
-        virtual auto get_result() const -> bool = 0;
+        virtual auto getResult() const -> bool = 0;
 
         virtual auto wait() -> void = 0;
     };
@@ -359,9 +430,9 @@ namespace ionengine::rhi
 
         auto operator=(Future const&) -> Future& = delete;
 
-        auto get_result() const -> bool
+        auto getResult() const -> bool
         {
-            return impl->get_result();
+            return impl->getResult();
         }
 
         auto wait() -> void
@@ -371,7 +442,7 @@ namespace ionengine::rhi
 
         auto get() -> core::ref_ptr<Type>
         {
-            if (!get_result())
+            if (!getResult())
             {
                 wait();
             }
@@ -392,32 +463,32 @@ namespace ionengine::rhi
       public:
         virtual auto reset() -> void = 0;
 
-        virtual auto set_graphics_pipeline_options(
-            core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blend_color,
-            std::optional<DepthStencilStageInfo> const depth_stencil) -> void = 0;
+        virtual auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
+                                                BlendColorInfo const& blendColor,
+                                                std::optional<DepthStencilStageInfo> const depthStencil) -> void = 0;
 
-        virtual auto bind_descriptor(uint32_t const index, uint32_t const descriptor) -> void = 0;
+        virtual auto bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void = 0;
 
-        virtual auto begin_render_pass(std::span<RenderPassColorInfo> const colors,
-                                       std::optional<RenderPassDepthStencilInfo> depth_stencil) -> void = 0;
+        virtual auto beginRenderPass(std::span<RenderPassColorInfo> const colors,
+                                     std::optional<RenderPassDepthStencilInfo> depthStencil) -> void = 0;
 
-        virtual auto end_render_pass() -> void = 0;
+        virtual auto endRenderPass() -> void = 0;
 
-        virtual auto bind_vertex_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
-                                        size_t const size) -> void = 0;
+        virtual auto bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
+                                      size_t const size) -> void = 0;
 
-        virtual auto bind_index_buffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
-                                       IndexFormat const format) -> void = 0;
+        virtual auto bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
+                                     IndexFormat const format) -> void = 0;
 
-        virtual auto draw_indexed(uint32_t const index_count, uint32_t const instance_count) -> void = 0;
+        virtual auto drawIndexed(uint32_t const indexCount, uint32_t const instanceCount) -> void = 0;
 
-        virtual auto draw(uint32_t const vertex_count, uint32_t const instance_count) -> void = 0;
+        virtual auto draw(uint32_t const vertexCount, uint32_t const instanceCount) -> void = 0;
 
-        virtual auto set_viewport(int32_t const x, int32_t const y, uint32_t const width,
-                                  uint32_t const height) -> void = 0;
+        virtual auto setViewport(int32_t const x, int32_t const y, uint32_t const width,
+                                 uint32_t const height) -> void = 0;
 
-        virtual auto set_scissor(int32_t const left, int32_t const top, int32_t const right,
-                                 int32_t const bottom) -> void = 0;
+        virtual auto setScissor(int32_t const left, int32_t const top, int32_t const right,
+                                int32_t const bottom) -> void = 0;
 
         virtual auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst,
                              ResourceState const before, ResourceState const after) -> void = 0;
@@ -430,14 +501,14 @@ namespace ionengine::rhi
       public:
         virtual auto reset() -> void = 0;
 
-        virtual auto write_buffer(core::ref_ptr<Buffer> dst, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
+        virtual auto writeBuffer(core::ref_ptr<Buffer> dst, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
 
-        virtual auto write_texture(core::ref_ptr<Texture> dst,
-                                   std::vector<std::span<uint8_t const>> const& data) -> Future<Texture> = 0;
+        virtual auto writeTexture(core::ref_ptr<Texture> dst,
+                                  std::vector<std::span<uint8_t const>> const& data) -> Future<Texture> = 0;
 
-        virtual auto read_buffer(core::ref_ptr<Buffer> dst, std::vector<uint8_t>& data) -> void = 0;
+        virtual auto readBuffer(core::ref_ptr<Buffer> dst, std::vector<uint8_t>& data) -> void = 0;
 
-        virtual auto read_texture(core::ref_ptr<Texture> dst, std::vector<std::vector<uint8_t>>& data) -> void = 0;
+        virtual auto readTexture(core::ref_ptr<Texture> dst, std::vector<std::vector<uint8_t>>& data) -> void = 0;
 
         virtual auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst,
                              ResourceState const before, ResourceState const after) -> void = 0;
@@ -448,7 +519,7 @@ namespace ionengine::rhi
     class Device : public core::ref_counted_object
     {
       public:
-        static auto create(platform::Window* window) -> core::ref_ptr<Device>;
+        static auto create(RHICreateInfo const& createInfo) -> core::ref_ptr<Device>;
 
         virtual auto createShader(std::span<VertexDeclarationInfo const> const vertexDeclarations,
                                   std::span<uint8_t const> const vertexShader,
@@ -456,21 +527,17 @@ namespace ionengine::rhi
 
         virtual auto createShader(std::span<uint8_t const> const computeShader) -> core::ref_ptr<Shader> = 0;
 
-        virtual auto create_texture(uint32_t const width, uint32_t const height, uint32_t const depth,
-                                    uint32_t const mip_levels, TextureFormat const format,
-                                    TextureDimension const dimension,
-                                    TextureUsageFlags const flags) -> core::ref_ptr<Texture> = 0;
+        virtual auto createTexture(TextureCreateInfo const& createInfo) -> core::ref_ptr<Texture> = 0;
 
-        virtual auto create_buffer(size_t const size, size_t const element_stride,
-                                   BufferUsageFlags const flags) -> core::ref_ptr<Buffer> = 0;
+        virtual auto createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer> = 0;
 
-        virtual auto create_graphics_context() -> core::ref_ptr<GraphicsContext> = 0;
+        virtual auto createGraphicsContext() -> core::ref_ptr<GraphicsContext> = 0;
 
-        virtual auto create_copy_context() -> core::ref_ptr<CopyContext> = 0;
+        virtual auto createCopyContext() -> core::ref_ptr<CopyContext> = 0;
 
-        virtual auto request_back_buffer() -> core::ref_ptr<Texture> = 0;
+        virtual auto requestBackBuffer() -> core::ref_ptr<Texture> = 0;
 
-        virtual auto present_back_buffer() -> void = 0;
+        virtual auto presentBackBuffer() -> void = 0;
 
         virtual auto getBackendType() const -> std::string_view = 0;
     };

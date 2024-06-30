@@ -13,23 +13,31 @@ namespace ionengine
 
     auto TextureAsset::create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> void
     {
+        rhi::TextureCreateInfo textureCreateInfo = {
+            .width = width, .height = height, .depth = 1, .numMipLevels = 1, .dimension = rhi::TextureDimension::_2D};
+
         if (usage == TextureUsage::RenderTarget)
         {
-            texture = device->getDevice().create_texture(
-                width, height, 1, 1, rhi::TextureFormat::RGBA8_UNORM, rhi::TextureDimension::_2D,
-                (rhi::TextureUsageFlags)rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource);
+            textureCreateInfo.format = rhi::TextureFormat::RGBA8_UNORM;
+            textureCreateInfo.textureFlags =
+                (rhi::TextureUsageFlags)rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource;
+
+            texture = device->getDevice().createTexture(textureCreateInfo);
         }
         else if (usage == TextureUsage::DepthStencil)
         {
-            texture = device->getDevice().create_texture(
-                width, height, 1, 1, rhi::TextureFormat::D32_FLOAT, rhi::TextureDimension::_2D,
-                (rhi::TextureUsageFlags)rhi::TextureUsage::DepthStencil | rhi::TextureUsage::ShaderResource);
+            textureCreateInfo.format = rhi::TextureFormat::D32_FLOAT;
+            textureCreateInfo.textureFlags =
+                (rhi::TextureUsageFlags)rhi::TextureUsage::DepthStencil | rhi::TextureUsage::ShaderResource;
+
+            texture = device->getDevice().createTexture(textureCreateInfo);
         }
         else
         {
-            texture = device->getDevice().create_texture(width, height, 1, 1, rhi::TextureFormat::RGBA8_UNORM,
-                                                         rhi::TextureDimension::_2D,
-                                                         (rhi::TextureUsageFlags)rhi::TextureUsage::ShaderResource);
+            textureCreateInfo.format = rhi::TextureFormat::RGBA8_UNORM;
+            textureCreateInfo.textureFlags = (rhi::TextureUsageFlags)rhi::TextureUsage::ShaderResource;
+
+            texture = device->getDevice().createTexture(textureCreateInfo);
         }
     }
 
@@ -71,13 +79,13 @@ namespace ionengine
                 io->stream.flush();
             });
 
-        png_set_IHDR(png, png_info, texture->get_width(), texture->get_height(), 8, PNG_COLOR_TYPE_RGBA,
+        png_set_IHDR(png, png_info, texture->getWidth(), texture->getHeight(), 8, PNG_COLOR_TYPE_RGBA,
                      PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
-        std::vector<uint8_t*> rows(texture->get_height());
+        std::vector<uint8_t*> rows(texture->getHeight());
         for (uint32_t const i : std::views::iota(0u, rows.size()))
         {
-            rows[i] = data[0].data() + i * texture->get_width() * 4;
+            rows[i] = data[0].data() + i * texture->getWidth() * 4;
         }
 
         png_set_rows(png, png_info, rows.data());

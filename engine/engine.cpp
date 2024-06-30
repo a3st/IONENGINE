@@ -2,6 +2,7 @@
 
 #include "engine.hpp"
 #include "core/exception.hpp"
+#include "core/utils.hpp"
 #include "platform/window.hpp"
 #include "precompiled.h"
 #include "renderer/shader.hpp"
@@ -50,7 +51,7 @@ namespace ionengine
                 {
                     while (window->try_get_event(event))
                     {
-                        utils::variant_match(event).case_<platform::WindowEventData<platform::WindowEventType::Closed>>(
+                        core::variant_match(event).case_<platform::WindowEventData<platform::WindowEventType::Closed>>(
                             [&](auto& data) { isRunning = false; });
                     }
 

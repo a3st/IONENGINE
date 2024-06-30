@@ -3,7 +3,7 @@
 #pragma once
 
 #include "engine/asset.hpp"
-#include "rhi/fx/fxsl.hpp"
+#include "rhi/fx/fx.hpp"
 #include "rhi/rhi.hpp"
 
 namespace ionengine

@@ -2,5 +2,5 @@
 
 #pragma once
 
-#include "fxsl.hpp"
+#include "fx.hpp"
 #include "precompiled.h"
