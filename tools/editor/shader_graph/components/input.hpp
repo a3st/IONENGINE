@@ -10,20 +10,21 @@ namespace ionengine::tools::editor
     auto generateResourceShaderCode(Node const& node) const -> std::string override
     {
         std::stringstream stream;
-        stream << "struct MaterialData {" << std::endl;
+        stream << "struct MaterialData {\n";
 
         bool isFirst = true;
         for (auto const& output : node.outputs)
         {
             if (!isFirst)
             {
-                stream << std::endl;
+                stream << "\n";
             }
             stream << "\t" << output.socketType << " " << output.socketName << ";";
             isFirst = false;
         }
 
-        stream << std::endl << "};" << std::endl << std::endl << "[[fx::shader_constant]] MaterialData materialData;";
+        stream << "\n};\n\n"
+               << "[[fx::shader_constant]] MaterialData materialData;";
         return stream.str();
     }
 

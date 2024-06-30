@@ -24,9 +24,7 @@ namespace ionengine::tools::editor
 
     auto generateInitialShaderCode(Node const& node) const -> std::string override
     {
-        return R"(
-            [[fx::shader_constant]] SamplerState linearSampler;
-        )";
+        return "[[fx::shader_constant]] SamplerState linearSampler;";
     }
 
     auto generateComputeShaderCode(Node const& node) const -> std::string override

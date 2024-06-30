@@ -34,7 +34,7 @@ namespace ionengine::tools::editor
                 nodeData.nodeInputs.emplace_back(std::move(socketData));
             }
 
-            for (auto const& output : nodeComponent->setInputs())
+            for (auto const& output : nodeComponent->setOutputs())
             {
                 NodeSocketData socketData = {.socketName = output.socketName, .socketType = output.socketType};
                 nodeData.nodeOutputs.emplace_back(std::move(socketData));

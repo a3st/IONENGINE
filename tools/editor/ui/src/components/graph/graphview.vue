@@ -80,6 +80,7 @@
 
 <script>
 import $ from "jquery";
+import { toRaw } from "vue";
 import NodeComponent from "../graph/node.vue";
 import CtxMenuComponent from "../graph/ctxmenu.vue";
 import ConnectionComponent from "../graph/connection.vue";
@@ -254,7 +255,10 @@ export default {
                 inputs: inputs,
                 outputs: outputs,
                 fixed: nodeFixed,
-                userData: nodeUserData,
+                userData: {
+                    componentID: nodeUserData.componentID,
+                    options: { ...nodeUserData.options },
+                },
             });
 
             this.cacheNodes[createdID] = createdIndex - 1;

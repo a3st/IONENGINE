@@ -122,7 +122,7 @@ export default {
                     outputNode.inputs[inputColorIndex].type =
                         surfaceToTypes[value];
 
-                    this.cacheOutputNodeId = this.graph.updateNode(
+                    this.graph.updateNode(
                         outputNode.id,
                         outputNode.position[0],
                         outputNode.position[1],
