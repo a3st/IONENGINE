@@ -6,7 +6,7 @@
 
 namespace ionengine
 {
-    auto fxShaderElementToRHI(rhi::fx::ShaderElementType const format) -> rhi::VertexFormat
+    auto ShaderElementType_to_VertexFormat(rhi::fx::ShaderElementType const format) -> rhi::VertexFormat
     {
         switch (format)
         {
@@ -136,7 +136,7 @@ namespace ionengine
                 rhi::VertexDeclarationInfo vertexDeclarationInfo = {
                     .semantic = structureElement.semantic,
                     .index = index,
-                    .format = fxShaderElementToRHI(structureElement.elementType)};
+                    .format = ShaderElementType_to_VertexFormat(structureElement.elementType)};
 
                 vertexDeclarations.emplace_back(std::move(vertexDeclarationInfo));
                 ++index;

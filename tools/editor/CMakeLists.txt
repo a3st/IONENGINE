@@ -25,7 +25,6 @@ target_include_directories(editor PRIVATE
 target_precompile_headers(editor PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
 target_link_libraries(editor PUBLIC
-    base64pp
     argh
     libwebview_edge_static
     engine)

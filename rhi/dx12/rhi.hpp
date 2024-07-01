@@ -442,15 +442,3 @@ namespace ionengine::rhi
         std::vector<core::ref_ptr<Texture>> backBuffers;
     };
 } // namespace ionengine::rhi
-
-namespace ionengine::core
-{
-    template <>
-    struct CastableEnum<DXGI_FORMAT, rhi::TextureFormat>
-    {
-        auto operator()(auto const object) -> void
-        {
-            object.field(DXGI_FORMAT_UNKNOWN, rhi::TextureFormat::Unknown);
-        }
-    };
-} // namespace ionengine::core

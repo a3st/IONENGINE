@@ -21,11 +21,6 @@ FetchContent_Declare(
     BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/libwebview)
 
 FetchContent_Declare(
-    base64pp
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/base64pp
-    BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/base64pp)
-
-FetchContent_Declare(
     D3D12MemoryAllocator
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/d3d12ma
     BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/d3d12ma)
@@ -44,8 +39,7 @@ FetchContent_MakeAvailable(
     simdjson 
     tinygltf 
     libpng 
-    libwebview 
-    base64pp 
+    libwebview  
     D3D12MemoryAllocator 
     gtest 
     argh)

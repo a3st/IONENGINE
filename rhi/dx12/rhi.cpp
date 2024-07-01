@@ -6,7 +6,7 @@
 
 namespace ionengine::rhi
 {
-    auto resultToString(HRESULT const hr) -> std::string
+    auto HRESULT_to_string(HRESULT const hr) -> std::string
     {
         switch (hr)
         {
@@ -44,11 +44,11 @@ namespace ionengine::rhi
     {
         if (FAILED(hr))
         {
-            throw core::Exception(resultToString(hr));
+            throw core::Exception(HRESULT_to_string(hr));
         }
     }
 
-    auto dxgiToTextureFormat(DXGI_FORMAT const format) -> TextureFormat
+    auto DXGI_FORMAT_to_TextureFormat(DXGI_FORMAT const format) -> TextureFormat
     {
         switch (format)
         {
@@ -76,6 +76,217 @@ namespace ionengine::rhi
                 return TextureFormat::RGBA16_FLOAT;
             default:
                 return TextureFormat::Unknown;
+        }
+    }
+
+    auto TextureFormat_to_DXGI_FORMAT(TextureFormat const format) -> DXGI_FORMAT
+    {
+        switch (format)
+        {
+            case TextureFormat::Unknown:
+                return DXGI_FORMAT_UNKNOWN;
+            case TextureFormat::RGBA8_UNORM:
+                return DXGI_FORMAT_R8G8B8A8_UNORM;
+            case TextureFormat::BGRA8_UNORM:
+                return DXGI_FORMAT_B8G8R8A8_UNORM;
+            case TextureFormat::BGR8_UNORM:
+                return DXGI_FORMAT_B8G8R8X8_UNORM;
+            case TextureFormat::R8_UNORM:
+                return DXGI_FORMAT_R8_UNORM;
+            case TextureFormat::BC1:
+                return DXGI_FORMAT_BC1_UNORM;
+            case TextureFormat::BC3:
+                return DXGI_FORMAT_BC3_UNORM;
+            case TextureFormat::BC4:
+                return DXGI_FORMAT_BC4_UNORM;
+            case TextureFormat::BC5:
+                return DXGI_FORMAT_BC5_UNORM;
+            case TextureFormat::D32_FLOAT:
+                return DXGI_FORMAT_D32_FLOAT;
+            case TextureFormat::RGBA16_FLOAT:
+                return DXGI_FORMAT_R16G16B16A16_FLOAT;
+            default:
+                return DXGI_FORMAT_UNKNOWN;
+        }
+    }
+
+    auto CompareOp_to_D3D12_COMPARISON_FUNC(CompareOp const compareOp) -> D3D12_COMPARISON_FUNC
+    {
+        switch (compareOp)
+        {
+            case CompareOp::Always:
+                return D3D12_COMPARISON_FUNC_ALWAYS;
+            case CompareOp::Equal:
+                return D3D12_COMPARISON_FUNC_EQUAL;
+            case CompareOp::Greater:
+                return D3D12_COMPARISON_FUNC_GREATER;
+            case CompareOp::GreaterEqual:
+                return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+            case CompareOp::Less:
+                return D3D12_COMPARISON_FUNC_LESS;
+            case CompareOp::LessEqual:
+                return D3D12_COMPARISON_FUNC_LESS_EQUAL;
+            case CompareOp::Never:
+                return D3D12_COMPARISON_FUNC_NEVER;
+            case CompareOp::NotEqual:
+                return D3D12_COMPARISON_FUNC_NOT_EQUAL;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto Blend_to_D3D12_BLEND(Blend const blend) -> D3D12_BLEND
+    {
+        switch (blend)
+        {
+            case Blend::InvSrcAlpha:
+                return D3D12_BLEND_INV_SRC_ALPHA;
+            case Blend::One:
+                return D3D12_BLEND_ONE;
+            case Blend::SrcAlpha:
+                return D3D12_BLEND_SRC_ALPHA;
+            case Blend::Zero:
+                return D3D12_BLEND_ZERO;
+            case Blend::BlendFactor:
+                return D3D12_BLEND_BLEND_FACTOR;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto BlendOp_to_D3D12_BLEND_OP(BlendOp const blendOp) -> D3D12_BLEND_OP
+    {
+        switch (blendOp)
+        {
+            case BlendOp::Add:
+                return D3D12_BLEND_OP_ADD;
+            case BlendOp::Max:
+                return D3D12_BLEND_OP_MAX;
+            case BlendOp::Min:
+                return D3D12_BLEND_OP_MIN;
+            case BlendOp::RevSubtract:
+                return D3D12_BLEND_OP_REV_SUBTRACT;
+            case BlendOp::Subtract:
+                return D3D12_BLEND_OP_SUBTRACT;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto FillMode_to_D3D12_FILL_MODE(FillMode const fillMode) -> D3D12_FILL_MODE
+    {
+        switch (fillMode)
+        {
+            case FillMode::Solid:
+                return D3D12_FILL_MODE_SOLID;
+            case FillMode::Wireframe:
+                return D3D12_FILL_MODE_WIREFRAME;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto CullMode_to_D3D12_CULL_MODE(CullMode const cullMode) -> D3D12_CULL_MODE
+    {
+        switch (cullMode)
+        {
+            case CullMode::Back:
+                return D3D12_CULL_MODE_BACK;
+            case CullMode::Front:
+                return D3D12_CULL_MODE_FRONT;
+            case CullMode::None:
+                return D3D12_CULL_MODE_NONE;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto Filter_to_D3D12_FILTER(Filter const filter) -> D3D12_FILTER
+    {
+        switch (filter)
+        {
+            case Filter::MinMagMipLinear:
+                return D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+            case Filter::ComparisonMinMagMipLinear:
+                return D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+            case Filter::Anisotropic:
+                return D3D12_FILTER_COMPARISON_ANISOTROPIC;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(AddressMode const addressMode)
+    {
+        switch (addressMode)
+        {
+            case AddressMode::Clamp:
+                return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+            case AddressMode::Wrap:
+                return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+            case AddressMode::Mirror:
+                return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    };
+
+    auto RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(RenderPassLoadOp const loadOp)
+        -> D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE
+    {
+        switch (loadOp)
+        {
+            case RenderPassLoadOp::Clear:
+                return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
+            case RenderPassLoadOp::Load:
+                return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
+            case RenderPassLoadOp::DontCare:
+                return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(RenderPassStoreOp const storeOp)
+        -> D3D12_RENDER_PASS_ENDING_ACCESS_TYPE
+    {
+        switch (storeOp)
+        {
+            case RenderPassStoreOp::Store:
+                return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
+            case RenderPassStoreOp::DontCare:
+                return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto ResourceState_to_D3D12_RESOURCE_STATES(ResourceState const state) -> D3D12_RESOURCE_STATES
+    {
+        switch (state)
+        {
+            case ResourceState::Common:
+                return D3D12_RESOURCE_STATE_COMMON;
+            case ResourceState::DepthRead:
+                return D3D12_RESOURCE_STATE_DEPTH_READ;
+            case ResourceState::DepthWrite:
+                return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+            case ResourceState::RenderTarget:
+                return D3D12_RESOURCE_STATE_RENDER_TARGET;
+            case ResourceState::UnorderedAccess:
+                return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+            case ResourceState::PixelShaderRead:
+                return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            case ResourceState::NonPixelShaderRead:
+                return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+            case ResourceState::AllShaderRead:
+                return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
+            case ResourceState::CopySrc:
+                return D3D12_RESOURCE_STATE_COPY_SOURCE;
+            case ResourceState::CopyDst:
+                return D3D12_RESOURCE_STATE_COPY_DEST;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
         }
     }
 
@@ -362,37 +573,6 @@ namespace ionengine::rhi
         return descriptorAllocations.at(usage).offset;
     }
 
-    auto textureFormatToDXGI(TextureFormat const format) -> DXGI_FORMAT
-    {
-        switch (format)
-        {
-            case TextureFormat::Unknown:
-                return DXGI_FORMAT_UNKNOWN;
-            case TextureFormat::RGBA8_UNORM:
-                return DXGI_FORMAT_R8G8B8A8_UNORM;
-            case TextureFormat::BGRA8_UNORM:
-                return DXGI_FORMAT_B8G8R8A8_UNORM;
-            case TextureFormat::BGR8_UNORM:
-                return DXGI_FORMAT_B8G8R8X8_UNORM;
-            case TextureFormat::R8_UNORM:
-                return DXGI_FORMAT_R8_UNORM;
-            case TextureFormat::BC1:
-                return DXGI_FORMAT_BC1_UNORM;
-            case TextureFormat::BC3:
-                return DXGI_FORMAT_BC3_UNORM;
-            case TextureFormat::BC4:
-                return DXGI_FORMAT_BC4_UNORM;
-            case TextureFormat::BC5:
-                return DXGI_FORMAT_BC5_UNORM;
-            case TextureFormat::D32_FLOAT:
-                return DXGI_FORMAT_D32_FLOAT;
-            case TextureFormat::RGBA16_FLOAT:
-                return DXGI_FORMAT_R16G16B16A16_FLOAT;
-            default:
-                return DXGI_FORMAT_UNKNOWN;
-        }
-    }
-
     DX12Texture::DX12Texture(ID3D12Device1* device, D3D12MA::Allocator* memoryAllocator,
                              DescriptorAllocator& descriptorAllocator, TextureCreateInfo const& createInfo)
         : memoryAllocator(memoryAllocator), descriptorAllocator(&descriptorAllocator), width(createInfo.width),
@@ -423,7 +603,7 @@ namespace ionengine::rhi
         d3d12ResourceDesc.MipLevels = numMipLevels;
         d3d12ResourceDesc.DepthOrArraySize = depth;
         d3d12ResourceDesc.SampleDesc.Count = 1;
-        d3d12ResourceDesc.Format = textureFormatToDXGI(format);
+        d3d12ResourceDesc.Format = TextureFormat_to_DXGI_FORMAT(format);
         d3d12ResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
         D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
@@ -542,7 +722,7 @@ namespace ionengine::rhi
         height = d3d12ResourceDesc.Height;
         depth = d3d12ResourceDesc.DepthOrArraySize;
         numMipLevels = d3d12ResourceDesc.MipLevels;
-        format = dxgiToTextureFormat(d3d12ResourceDesc.Format);
+        format = DXGI_FORMAT_to_TextureFormat(d3d12ResourceDesc.Format);
 
         if (textureFlags & TextureUsage::RenderTarget)
         {
@@ -765,69 +945,6 @@ namespace ionengine::rhi
         return inputAssembler;
     }
 
-    auto compareOpToD3D12(CompareOp const compare_op) -> D3D12_COMPARISON_FUNC
-    {
-        switch (compare_op)
-        {
-            case CompareOp::Always:
-                return D3D12_COMPARISON_FUNC_ALWAYS;
-            case CompareOp::Equal:
-                return D3D12_COMPARISON_FUNC_EQUAL;
-            case CompareOp::Greater:
-                return D3D12_COMPARISON_FUNC_GREATER;
-            case CompareOp::GreaterEqual:
-                return D3D12_COMPARISON_FUNC_GREATER_EQUAL;
-            case CompareOp::Less:
-                return D3D12_COMPARISON_FUNC_LESS;
-            case CompareOp::LessEqual:
-                return D3D12_COMPARISON_FUNC_LESS_EQUAL;
-            case CompareOp::Never:
-                return D3D12_COMPARISON_FUNC_NEVER;
-            case CompareOp::NotEqual:
-                return D3D12_COMPARISON_FUNC_NOT_EQUAL;
-            default:
-                return D3D12_COMPARISON_FUNC_NEVER;
-        }
-    }
-
-    auto blendToD3D12(Blend const blend) -> D3D12_BLEND
-    {
-        switch (blend)
-        {
-            case Blend::InvSrcAlpha:
-                return D3D12_BLEND_INV_SRC_ALPHA;
-            case Blend::One:
-                return D3D12_BLEND_ONE;
-            case Blend::SrcAlpha:
-                return D3D12_BLEND_SRC_ALPHA;
-            case Blend::Zero:
-                return D3D12_BLEND_ZERO;
-            case Blend::BlendFactor:
-                return D3D12_BLEND_BLEND_FACTOR;
-            default:
-                return D3D12_BLEND_ZERO;
-        }
-    }
-
-    auto blendOpToD3D12(BlendOp const blendOp) -> D3D12_BLEND_OP
-    {
-        switch (blendOp)
-        {
-            case BlendOp::Add:
-                return D3D12_BLEND_OP_ADD;
-            case BlendOp::Max:
-                return D3D12_BLEND_OP_MAX;
-            case BlendOp::Min:
-                return D3D12_BLEND_OP_MIN;
-            case BlendOp::RevSubtract:
-                return D3D12_BLEND_OP_REV_SUBTRACT;
-            case BlendOp::Subtract:
-                return D3D12_BLEND_OP_SUBTRACT;
-            default:
-                return D3D12_BLEND_OP_ADD;
-        }
-    }
-
     Pipeline::Pipeline(ID3D12Device4* device, ID3D12RootSignature* rootSignature, DX12Shader& shader,
                        RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                        std::optional<DepthStencilStageInfo> const depthStencil,
@@ -838,12 +955,12 @@ namespace ionengine::rhi
         auto d3d12PipelineDesc = D3D12_GRAPHICS_PIPELINE_STATE_DESC{};
         d3d12PipelineDesc.pRootSignature = rootSignature;
 
-        for (auto const& [stage, data] : shader.getStages())
+        for (auto const& [stage, stageData] : shader.getStages())
         {
             switch (stage)
             {
                 case D3D12_SHADER_TYPE_VERTEX: {
-                    d3d12PipelineDesc.VS = data;
+                    d3d12PipelineDesc.VS = stageData;
 
                     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
 
@@ -858,16 +975,16 @@ namespace ionengine::rhi
                     break;
                 }
                 case D3D12_SHADER_TYPE_PIXEL: {
-                    d3d12PipelineDesc.PS = data;
+                    d3d12PipelineDesc.PS = stageData;
 
                     auto d3d12RenderTargetBlend = D3D12_RENDER_TARGET_BLEND_DESC{};
                     d3d12RenderTargetBlend.BlendEnable = blendColor.blendEnable;
-                    d3d12RenderTargetBlend.SrcBlend = blendToD3D12(blendColor.blendSrc);
-                    d3d12RenderTargetBlend.DestBlend = blendToD3D12(blendColor.blendDst);
-                    d3d12RenderTargetBlend.BlendOp = blendOpToD3D12(blendColor.blendOp);
-                    d3d12RenderTargetBlend.SrcBlendAlpha = blendToD3D12(blendColor.blendSrcAlpha);
-                    d3d12RenderTargetBlend.DestBlendAlpha = blendToD3D12(blendColor.blendDstAlpha);
-                    d3d12RenderTargetBlend.BlendOpAlpha = blendOpToD3D12(blendColor.blendOpAlpha);
+                    d3d12RenderTargetBlend.SrcBlend = Blend_to_D3D12_BLEND(blendColor.blendSrc);
+                    d3d12RenderTargetBlend.DestBlend = Blend_to_D3D12_BLEND(blendColor.blendDst);
+                    d3d12RenderTargetBlend.BlendOp = BlendOp_to_D3D12_BLEND_OP(blendColor.blendOp);
+                    d3d12RenderTargetBlend.SrcBlendAlpha = Blend_to_D3D12_BLEND(blendColor.blendSrcAlpha);
+                    d3d12RenderTargetBlend.DestBlendAlpha = Blend_to_D3D12_BLEND(blendColor.blendDstAlpha);
+                    d3d12RenderTargetBlend.BlendOpAlpha = BlendOp_to_D3D12_BLEND_OP(blendColor.blendOpAlpha);
                     d3d12RenderTargetBlend.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
                     auto d3d12Blend = D3D12_BLEND_DESC{};
@@ -890,32 +1007,8 @@ namespace ionengine::rhi
         }
 
         auto d3d12Rasterizer = D3D12_RASTERIZER_DESC{};
-        switch (rasterizer.fillMode)
-        {
-            case FillMode::Solid: {
-                d3d12Rasterizer.FillMode = D3D12_FILL_MODE_SOLID;
-                break;
-            }
-            case FillMode::Wireframe: {
-                d3d12Rasterizer.FillMode = D3D12_FILL_MODE_WIREFRAME;
-                break;
-            }
-        }
-        switch (rasterizer.cullMode)
-        {
-            case CullMode::Back: {
-                d3d12Rasterizer.CullMode = D3D12_CULL_MODE_BACK;
-                break;
-            }
-            case CullMode::Front: {
-                d3d12Rasterizer.CullMode = D3D12_CULL_MODE_FRONT;
-                break;
-            }
-            case CullMode::None: {
-                d3d12Rasterizer.CullMode = D3D12_CULL_MODE_NONE;
-                break;
-            }
-        }
+        d3d12Rasterizer.FillMode = FillMode_to_D3D12_FILL_MODE(rasterizer.fillMode);
+        d3d12Rasterizer.CullMode = CullMode_to_D3D12_CULL_MODE(rasterizer.cullMode);
         d3d12Rasterizer.FrontCounterClockwise = true;
         d3d12Rasterizer.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
         d3d12Rasterizer.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
@@ -940,7 +1033,7 @@ namespace ionengine::rhi
 
         auto d3d12DepthStencil = D3D12_DEPTH_STENCIL_DESC{};
         auto depthStencilValue = depthStencil.value_or(DepthStencilStageInfo::Default());
-        d3d12DepthStencil.DepthFunc = compareOpToD3D12(depthStencilValue.depthFunc);
+        d3d12DepthStencil.DepthFunc = CompareOp_to_D3D12_COMPARISON_FUNC(depthStencilValue.depthFunc);
         d3d12DepthStencil.DepthEnable = depthStencilValue.depthWrite;
         d3d12DepthStencil.StencilEnable = depthStencilValue.stencilWrite;
         d3d12DepthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
@@ -995,44 +1088,15 @@ namespace ionengine::rhi
         for (uint32_t const i : std::views::iota(0u, createInfo.numStaticSamplers))
         {
             auto d3d12StaticSampler = D3D12_STATIC_SAMPLER_DESC{};
-            switch (createInfo.staticSamplers[i].filter)
-            {
-                case Filter::MinMagMipLinear: {
-                    d3d12StaticSampler.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
-                    break;
-                }
-                case Filter::ComparisonMinMagMipLinear: {
-                    d3d12StaticSampler.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
-                    break;
-                }
-                case Filter::Anisotropic: {
-                    d3d12StaticSampler.Filter = D3D12_FILTER_COMPARISON_ANISOTROPIC;
-                    break;
-                }
-            }
-
-            auto toD3D12Address = [](AddressMode const addressMode) -> D3D12_TEXTURE_ADDRESS_MODE {
-                switch (addressMode)
-                {
-                    case AddressMode::Clamp: {
-                        return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-                    }
-                    case AddressMode::Wrap: {
-                        return D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-                    }
-                    case AddressMode::Mirror: {
-                        return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-                    }
-                    default: {
-                        return D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-                    }
-                }
-            };
-
-            d3d12StaticSampler.AddressU = toD3D12Address(createInfo.staticSamplers[i].addressU);
-            d3d12StaticSampler.AddressV = toD3D12Address(createInfo.staticSamplers[i].addressV);
-            d3d12StaticSampler.AddressW = toD3D12Address(createInfo.staticSamplers[i].addressW);
-            d3d12StaticSampler.ComparisonFunc = compareOpToD3D12(createInfo.staticSamplers[i].compareOp);
+            d3d12StaticSampler.Filter = Filter_to_D3D12_FILTER(createInfo.staticSamplers[i].filter);
+            d3d12StaticSampler.AddressU =
+                AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.staticSamplers[i].addressU);
+            d3d12StaticSampler.AddressV =
+                AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.staticSamplers[i].addressV);
+            d3d12StaticSampler.AddressW =
+                AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.staticSamplers[i].addressW);
+            d3d12StaticSampler.ComparisonFunc =
+                CompareOp_to_D3D12_COMPARISON_FUNC(createInfo.staticSamplers[i].compareOp);
             d3d12StaticSampler.MaxAnisotropy = createInfo.staticSamplers[i].anisotropic;
             d3d12StaticSampler.MaxLOD = D3D12_FLOAT32_MAX;
             d3d12StaticSampler.ShaderRegister = i;
@@ -1110,63 +1174,6 @@ namespace ionengine::rhi
         }
     }
 
-    auto renderPassLoadToD3D12(RenderPassLoadOp const loadOp) -> D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE
-    {
-        switch (loadOp)
-        {
-            case RenderPassLoadOp::Clear:
-                return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR;
-            case RenderPassLoadOp::Load:
-                return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
-            case RenderPassLoadOp::DontCare:
-                return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
-            default:
-                return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
-        }
-    }
-
-    auto renderPassStoreToD3D12(RenderPassStoreOp const storeOp) -> D3D12_RENDER_PASS_ENDING_ACCESS_TYPE
-    {
-        switch (storeOp)
-        {
-            case RenderPassStoreOp::Store:
-                return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
-            case RenderPassStoreOp::DontCare:
-                return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
-            default:
-                return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
-        }
-    }
-
-    auto resourceStateToD3D12(ResourceState const state) -> D3D12_RESOURCE_STATES
-    {
-        switch (state)
-        {
-            case ResourceState::Common:
-                return D3D12_RESOURCE_STATE_COMMON;
-            case ResourceState::DepthRead:
-                return D3D12_RESOURCE_STATE_DEPTH_READ;
-            case ResourceState::DepthWrite:
-                return D3D12_RESOURCE_STATE_DEPTH_WRITE;
-            case ResourceState::RenderTarget:
-                return D3D12_RESOURCE_STATE_RENDER_TARGET;
-            case ResourceState::UnorderedAccess:
-                return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-            case ResourceState::PixelShaderRead:
-                return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            case ResourceState::NonPixelShaderRead:
-                return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-            case ResourceState::AllShaderRead:
-                return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
-            case ResourceState::CopySrc:
-                return D3D12_RESOURCE_STATE_COPY_SOURCE;
-            case ResourceState::CopyDst:
-                return D3D12_RESOURCE_STATE_COPY_DEST;
-            default:
-                return D3D12_RESOURCE_STATE_COMMON;
-        }
-    }
-
     DX12GraphicsContext::DX12GraphicsContext(ID3D12Device4* device, PipelineCache& pipelineCache,
                                              DescriptorAllocator& descriptorAllocator, ID3D12CommandQueue* queue,
                                              ID3D12Fence* fence, HANDLE fenceEvent, uint64_t& fenceValue)
@@ -1233,16 +1240,16 @@ namespace ionengine::rhi
         for (uint32_t const i : std::views::iota(0u, colors.size()))
         {
             auto begin = D3D12_RENDER_PASS_BEGINNING_ACCESS{};
-            begin.Type = renderPassLoadToD3D12(colors[i].loadOp);
+            begin.Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(colors[i].loadOp);
 
-            begin.Clear.ClearValue.Format = textureFormatToDXGI(colors[i].texture->getFormat());
+            begin.Clear.ClearValue.Format = TextureFormat_to_DXGI_FORMAT(colors[i].texture->getFormat());
             begin.Clear.ClearValue.Color[0] = colors[i].clearColor.r;
             begin.Clear.ClearValue.Color[1] = colors[i].clearColor.g;
             begin.Clear.ClearValue.Color[2] = colors[i].clearColor.b;
             begin.Clear.ClearValue.Color[3] = colors[i].clearColor.a;
 
             auto end = D3D12_RENDER_PASS_ENDING_ACCESS{};
-            end.Type = renderPassStoreToD3D12(colors[i].storeOp);
+            end.Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(colors[i].storeOp);
 
             renderPassRenderTargets[i].BeginningAccess = begin;
             renderPassRenderTargets[i].EndingAccess = end;
@@ -1256,17 +1263,17 @@ namespace ionengine::rhi
         if (depthStencil.has_value())
         {
             auto value = depthStencil.value();
-            depthStencilFormat = textureFormatToDXGI(value.texture->getFormat());
+            depthStencilFormat = TextureFormat_to_DXGI_FORMAT(value.texture->getFormat());
 
             auto renderPassDepthStencil = D3D12_RENDER_PASS_DEPTH_STENCIL_DESC{};
             {
                 auto begin = D3D12_RENDER_PASS_BEGINNING_ACCESS{};
-                begin.Type = renderPassLoadToD3D12(value.depthLoadOp);
+                begin.Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(value.depthLoadOp);
                 begin.Clear.ClearValue.Format = depthStencilFormat;
                 begin.Clear.ClearValue.DepthStencil.Depth = value.clearDepth;
 
                 auto end = D3D12_RENDER_PASS_ENDING_ACCESS{};
-                end.Type = renderPassStoreToD3D12(value.depthStoreOp);
+                end.Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(value.depthStoreOp);
 
                 renderPassDepthStencil.DepthBeginningAccess = begin;
                 renderPassDepthStencil.DepthEndingAccess = end;
@@ -1274,12 +1281,12 @@ namespace ionengine::rhi
 
             {
                 auto begin = D3D12_RENDER_PASS_BEGINNING_ACCESS{};
-                begin.Type = renderPassLoadToD3D12(value.stencilLoadOp);
+                begin.Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(value.stencilLoadOp);
                 begin.Clear.ClearValue.Format = depthStencilFormat;
                 begin.Clear.ClearValue.DepthStencil.Depth = value.clearDepth;
 
                 auto end = D3D12_RENDER_PASS_ENDING_ACCESS{};
-                end.Type = renderPassStoreToD3D12(value.stencilStoreOp);
+                end.Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(value.stencilStoreOp);
 
                 renderPassDepthStencil.StencilBeginningAccess = begin;
                 renderPassDepthStencil.StencilEndingAccess = end;
@@ -1379,8 +1386,8 @@ namespace ionengine::rhi
     {
         auto d3d12ResourceBarrier = D3D12_RESOURCE_BARRIER{};
         d3d12ResourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        d3d12ResourceBarrier.Transition.StateBefore = resourceStateToD3D12(before);
-        d3d12ResourceBarrier.Transition.StateAfter = resourceStateToD3D12(after);
+        d3d12ResourceBarrier.Transition.StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before);
+        d3d12ResourceBarrier.Transition.StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after);
         d3d12ResourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
         core::variant_match(dst)
@@ -1673,8 +1680,8 @@ namespace ionengine::rhi
     {
         auto d3d12ResourceBarrier = D3D12_RESOURCE_BARRIER{};
         d3d12ResourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        d3d12ResourceBarrier.Transition.StateBefore = resourceStateToD3D12(before);
-        d3d12ResourceBarrier.Transition.StateAfter = resourceStateToD3D12(after);
+        d3d12ResourceBarrier.Transition.StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before);
+        d3d12ResourceBarrier.Transition.StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after);
         d3d12ResourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
         core::variant_match(dst)

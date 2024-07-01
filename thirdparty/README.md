@@ -8,5 +8,4 @@
 - [tinygltf](https://github.com/syoyo/tinygltf)
 - [googletest](https://github.com/google/googletest)
 - [argh](https://github.com/adishavit/argh)
-- [base64pp](https://github.com/matheusgomes28/base64pp)
 - [dxc](https://github.com/microsoft/DirectXShaderCompiler)

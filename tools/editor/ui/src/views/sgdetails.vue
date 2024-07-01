@@ -61,8 +61,6 @@
 </template>
 
 <script>
-import { toRaw } from "vue";
-
 import OptextComponent from "../components/optext.vue";
 import OptliComponent from "../components/optli.vue";
 import OptgrComponent from "../components/optgr.vue";

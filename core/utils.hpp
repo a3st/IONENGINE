@@ -31,36 +31,6 @@ namespace ionengine::core
     {
         return VariantMatcher(object);
     }
-
-    template <typename From, typename To>
-    class Enum
-    {
-      public:
-        auto field(From const from, To const to)
-        {
-            enumFields.emplace({from, to});
-        }
-
-        auto operator()() -> To
-        {
-            return enumFields[From];
-        }
-
-      private:
-        std::unordered_map<From, To> enumFields;
-    };
-
-    template <typename From, typename To>
-    struct CastableEnum
-    {
-        auto operator()(Enum<From, To>& object) -> void;
-    };
-
-    /*template <typename From, typename To>
-    inline auto cast_enum(From const value) -> std::to_underlying<
-    {
-        static std::unique_ptr<Enum<Cast, Type>
-    }*/
 } // namespace ionengine::core
 
 #ifndef DECLARE_ENUM_CLASS_BIT_FLAG

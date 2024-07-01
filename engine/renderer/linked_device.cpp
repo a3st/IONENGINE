@@ -83,25 +83,27 @@ namespace ionengine
         copyFuture.wait();
     }
 
-    auto LinkedDevice::uploadBuffer(core::ref_ptr<rhi::Buffer> buffer, std::span<uint8_t const> const data) -> void
+    auto LinkedDevice::uploadBufferFromBytes(core::ref_ptr<rhi::Buffer> buffer,
+                                             std::span<uint8_t const> const dataBytes) -> void
     {
         copyContext->barrier(buffer, rhi::ResourceState::Common, rhi::ResourceState::CopyDst);
-        copyContext->writeBuffer(buffer, data);
+        copyContext->writeBuffer(buffer, dataBytes);
         copyContext->barrier(buffer, rhi::ResourceState::CopyDst, rhi::ResourceState::Common);
     }
 
-    auto LinkedDevice::uploadTexture(core::ref_ptr<rhi::Texture> texture,
-                                     std::vector<std::span<uint8_t const>> const& data) -> void
+    auto LinkedDevice::uploadTextureFromBytes(core::ref_ptr<rhi::Texture> texture,
+                                              std::vector<std::span<uint8_t const>> const& dataBytes) -> void
     {
         copyContext->barrier(texture, rhi::ResourceState::Common, rhi::ResourceState::CopyDst);
-        copyContext->writeTexture(texture, data);
+        copyContext->writeTexture(texture, dataBytes);
         copyContext->barrier(texture, rhi::ResourceState::CopyDst, rhi::ResourceState::Common);
     }
 
-    auto LinkedDevice::readTexture(core::ref_ptr<rhi::Texture> texture, std::vector<std::vector<uint8_t>>& data) -> void
+    auto LinkedDevice::readTextureToBytes(core::ref_ptr<rhi::Texture> texture,
+                                          std::vector<std::vector<uint8_t>>& dataBytes) -> void
     {
         copyContext->barrier(texture, rhi::ResourceState::Common, rhi::ResourceState::CopySrc);
-        copyContext->readTexture(texture, data);
+        copyContext->readTexture(texture, dataBytes);
         copyContext->barrier(texture, rhi::ResourceState::CopySrc, rhi::ResourceState::Common);
     }
 } // namespace ionengine

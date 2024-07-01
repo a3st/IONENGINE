@@ -11,6 +11,16 @@ namespace ionengine
     {
     }
 
+    auto TextureAsset::loadFromFile(std::filesystem::path const& filePath) -> bool
+    {
+        return false;
+    }
+
+    auto TextureAsset::loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool
+    {
+        return false;
+    }
+
     auto TextureAsset::create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> void
     {
         rhi::TextureCreateInfo textureCreateInfo = {
@@ -49,7 +59,7 @@ namespace ionengine
     auto TextureAsset::dump() -> std::vector<uint8_t>
     {
         png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-        png_infop png_info = png_create_info_struct(png);
+        png_infop pngInfo = png_create_info_struct(png);
 
         struct PNGMemoryIO
         {
@@ -63,7 +73,7 @@ namespace ionengine
         std::vector<std::vector<uint8_t>> data;
 
         device->beginUpload();
-        device->readTexture(texture, data);
+        device->readTextureToBytes(texture, data);
         device->endUpload();
 
         PNGMemoryIO io(std::ios::out | std::ios::in);
@@ -79,7 +89,7 @@ namespace ionengine
                 io->stream.flush();
             });
 
-        png_set_IHDR(png, png_info, texture->getWidth(), texture->getHeight(), 8, PNG_COLOR_TYPE_RGBA,
+        png_set_IHDR(png, pngInfo, texture->getWidth(), texture->getHeight(), 8, PNG_COLOR_TYPE_RGBA,
                      PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
         std::vector<uint8_t*> rows(texture->getHeight());
@@ -88,9 +98,9 @@ namespace ionengine
             rows[i] = data[0].data() + i * texture->getWidth() * 4;
         }
 
-        png_set_rows(png, png_info, rows.data());
-        png_write_png(png, png_info, PNG_TRANSFORM_IDENTITY, nullptr);
-        png_write_end(png, png_info);
+        png_set_rows(png, pngInfo, rows.data());
+        png_write_png(png, pngInfo, PNG_TRANSFORM_IDENTITY, nullptr);
+        png_write_end(png, pngInfo);
         png_destroy_write_struct(&png, nullptr);
 
         return std::vector<uint8_t>(std::istreambuf_iterator<uint8_t>(io.stream), std::istreambuf_iterator<uint8_t>());

@@ -32,12 +32,13 @@ namespace ionengine
 
         auto endUpload() -> void;
 
-        auto uploadBuffer(core::ref_ptr<rhi::Buffer> buffer, std::span<uint8_t const> const data) -> void;
+        auto uploadBufferFromBytes(core::ref_ptr<rhi::Buffer> buffer, std::span<uint8_t const> const dataBytes) -> void;
 
-        auto uploadTexture(core::ref_ptr<rhi::Texture> texture,
-                           std::vector<std::span<uint8_t const>> const& data) -> void;
+        auto uploadTextureFromBytes(core::ref_ptr<rhi::Texture> texture,
+                                    std::vector<std::span<uint8_t const>> const& dataBytes) -> void;
 
-        auto readTexture(core::ref_ptr<rhi::Texture> texture, std::vector<std::vector<uint8_t>>& data) -> void;
+        auto readTextureToBytes(core::ref_ptr<rhi::Texture> texture,
+                                std::vector<std::vector<uint8_t>>& dataBytes) -> void;
 
       private:
         core::ref_ptr<rhi::Device> device;

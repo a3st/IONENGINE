@@ -4,7 +4,6 @@
 #include "core/exception.hpp"
 #include "engine/renderer/shader.hpp"
 #include "precompiled.h"
-#include <base64pp/base64pp.h>
 
 namespace ionengine::tools::editor
 {
@@ -98,6 +97,17 @@ namespace ionengine::tools::editor
         }
     };
 
+    struct ViewportInfo
+    {
+        std::vector<uint8_t> imageData;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(imageData, "image");
+        }
+    };
+
     ViewModel::ViewModel(libwebview::App* app)
         : Engine(nullptr), app(app), assetTree("E:\\GitHub\\IONENGINE\\build\\assets")
     {
@@ -135,15 +145,16 @@ namespace ionengine::tools::editor
         std::vector<core::ref_ptr<rhi::Texture>> colors = {viewportTexture->getTexture()};
 
         renderer.beginDraw(colors, nullptr, math::Color(0.0f, 0.0f, 0.0f, 1.0f), std::nullopt, std::nullopt);
-
         renderer.render(renderableObjects);
-
         renderer.endDraw();
     }
 
     auto ViewModel::requestViewportTexture() -> std::string
     {
-        return base64pp::encode(viewportTexture->dump());
+        ViewportInfo viewportInfo = {.imageData = std::move(viewportTexture->dump())};
+
+        auto buffer = core::saveToBytes<ViewportInfo, core::serialize::OutputJSON>(viewportInfo).value();
+        return std::string(reinterpret_cast<char*>(buffer.data()), buffer.size());
     }
 
     auto ViewModel::getAssetTree() -> std::string

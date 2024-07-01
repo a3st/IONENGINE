@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "core/base64.hpp"
 #include "core/exception.hpp"
 #include <simdjson.h>
 
@@ -230,20 +231,39 @@ namespace ionengine::core
                 }
                 else if constexpr (is_std_vector<Type>::value)
                 {
-                    simdjson::ondemand::array elements;
-                    auto error = it.get_array().get(elements);
-                    if (error != simdjson::SUCCESS)
+                    if constexpr (std::is_same_v<typename Type::value_type, uint8_t>)
                     {
-                        throw core::Exception("An error occurred while deserializing a field");
+                        std::string_view const value;
+                        auto error = it.get_string().get(value);
+                        if (error != simdjson::SUCCESS)
+                        {
+                            throw core::Exception("An error occurred while deserializing a field");
+                        }
+
+                        auto result = base64::decode(value);
+                        if (!result.has_value())
+                        {
+                            throw core::Exception("An error occurred while deserializing a field");
+                        }
+                        element = std::move(result.value());
                     }
-
-                    element.resize(elements.count_elements());
-
-                    uint32_t i = 0;
-                    for (auto e : elements)
+                    else
                     {
-                        propertyResolveFromJSON(inputJSON, e.value(), element[i]);
-                        ++i;
+                        simdjson::ondemand::array elements;
+                        auto error = it.get_array().get(elements);
+                        if (error != simdjson::SUCCESS)
+                        {
+                            throw core::Exception("An error occurred while deserializing a field");
+                        }
+
+                        element.resize(elements.count_elements());
+
+                        uint32_t i = 0;
+                        for (auto e : elements)
+                        {
+                            propertyResolveFromJSON(inputJSON, e.value(), element[i]);
+                            ++i;
+                        }
                     }
                 }
                 else if constexpr (is_std_array<Type>::value)
@@ -400,18 +420,26 @@ namespace ionengine::core
                         outputJSON.jsonChunk << "\"" << jsonName << "\":";
                     }
 
-                    outputJSON.jsonChunk << "[";
-                    bool isFirst = true;
-                    for (auto const& e : element)
+                    if constexpr (std::is_same_v<typename Type::value_type, uint8_t>)
                     {
-                        if (!isFirst)
-                        {
-                            outputJSON.jsonChunk << ",";
-                        }
-                        propertyResolveToJSON(outputJSON, "", e);
-                        isFirst = false;
+                        std::string const encodedString = base64::encode(element);
+                        outputJSON.jsonChunk << "\"" << encodedString << "\"";
                     }
-                    outputJSON.jsonChunk << "]";
+                    else
+                    {
+                        outputJSON.jsonChunk << "[";
+                        bool isFirst = true;
+                        for (auto const& e : element)
+                        {
+                            if (!isFirst)
+                            {
+                                outputJSON.jsonChunk << ",";
+                            }
+                            propertyResolveToJSON(outputJSON, "", e);
+                            isFirst = false;
+                        }
+                        outputJSON.jsonChunk << "]";
+                    }
 
                     if (!jsonName.empty())
                     {

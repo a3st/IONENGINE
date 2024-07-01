@@ -263,7 +263,7 @@ export default {
         onFrameUpdate() {
             webview.invoke("requestViewportTexture").then((data) => {
                 if ("viewport" in this.$refs) {
-                    this.$refs.viewport[0].setViewportImage(data);
+                    this.$refs.viewport[0].setViewportImage(data.image);
                 }
                 window.requestAnimationFrame(this.onFrameUpdate);
             });

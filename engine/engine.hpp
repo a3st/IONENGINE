@@ -12,8 +12,6 @@ namespace ionengine
         class Window;
     }
 
-    class ShaderAsset;
-
     class Engine : public core::ref_counted_object
     {
       public:
