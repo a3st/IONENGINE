@@ -108,8 +108,8 @@ namespace ionengine::tools::editor
         }
     };
 
-    ViewModel::ViewModel(libwebview::App* app)
-        : Engine(nullptr), app(app), assetTree("E:\\GitHub\\IONENGINE\\build\\assets")
+    ViewModel::ViewModel(libwebview::App* app, std::filesystem::path const& libraryDirPath)
+        : Engine(nullptr), app(app), assetTree(libraryDirPath)
     {
         app->bind("getAssetTree", [this]() -> std::string { return this->getAssetTree(); });
         app->bind("assetBrowserCreateFile",

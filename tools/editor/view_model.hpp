@@ -13,7 +13,7 @@ namespace ionengine::tools::editor
     class ViewModel : public Engine
     {
       public:
-        ViewModel(libwebview::App* app);
+        ViewModel(libwebview::App* app, std::filesystem::path const& libraryDirPath);
 
         auto requestViewportTexture() -> std::string;
 

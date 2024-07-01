@@ -11,16 +11,14 @@ auto main(int32_t argc, char** argv) -> int32_t
 {
     argh::parser commandLine(argc, argv, argh::parser::PREFER_PARAM_FOR_UNREG_OPTION);
 
-    std::cout << "Tools for IONENGINE > Shader Compiler" << std::endl;
-    std::cout << "Copyright (R) Dmitriy Lukovenko. All rights reserved." << std::endl;
-    std::cout << std::endl;
+    std::cout << "Tools for IONENGINE > Shader Compiler\n";
+    std::cout << "Copyright (R) Dmitriy Lukovenko. All rights reserved.\n" << std::endl;
 
     if (commandLine[{"-help", "--help"}])
     {
-        std::cout << "usage: shaderc <command> [arguments] input_file" << std::endl;
-        std::cout << std::endl;
-        std::cout << "-target (--target)" << "\t\t\t" << "Compilation target" << std::endl;
-        std::cout << "\t\t\t\t\t" << "Available parameters: SPIRV, DXIL" << std::endl << std::endl;
+        std::cout << "usage: shaderc <command> [arguments] input_file\n\n";
+        std::cout << "-target (--target)" << "\t\t\t" << "Compilation target\n";
+        std::cout << "\t\t\t\t\t" << "Available parameters: SPIRV, DXIL\n\n";
         std::cout << "-output (--output)" << "\t\t\t" << "Compilation output path (Optional)" << std::endl;
         return EXIT_SUCCESS;
     }

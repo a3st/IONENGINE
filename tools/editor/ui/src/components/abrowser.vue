@@ -399,6 +399,7 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 5px;
+    overflow-y: auto;
 }
 
 .abrowser-btn-path-container {

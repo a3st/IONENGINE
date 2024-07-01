@@ -10,9 +10,9 @@ namespace ionengine::tools::editor
     AssetTree::AssetTree(std::filesystem::path const& rootPath) : rootPath(rootPath)
     {
         rootStruct = std::make_unique<AssetStructInfo>();
-        rootStruct->assetName = rootPath.filename().generic_string();
+        rootStruct->assetName = std::filesystem::canonical(rootPath).filename().generic_string();
         rootStruct->assetType = AssetType::Folder;
-        rootStruct->assetPath = rootPath.generic_string();
+        rootStruct->assetPath = std::filesystem::canonical(rootPath).generic_string();
     }
 
     auto AssetTree::fetch() -> AssetStructInfo const&
