@@ -7,7 +7,7 @@
 
 namespace ionengine
 {
-    TextureAsset::TextureAsset(LinkedDevice& device) : device(&device)
+    TextureAsset::TextureAsset(LinkedDevice& device) : device(&device), textureData({})
     {
     }
 
@@ -23,13 +23,13 @@ namespace ionengine
 
     auto TextureAsset::create(uint32_t const width, uint32_t const height, TextureUsage const usage) -> void
     {
-        rhi::TextureCreateInfo textureCreateInfo = {
-            .width = width, .height = height, .depth = 1, .numMipLevels = 1, .dimension = rhi::TextureDimension::_2D};
+        rhi::TextureCreateInfo textureCreateInfo{
+            .width = width, .height = height, .depth = 1, .mipLevels = 1, .dimension = rhi::TextureDimension::_2D};
 
         if (usage == TextureUsage::RenderTarget)
         {
             textureCreateInfo.format = rhi::TextureFormat::RGBA8_UNORM;
-            textureCreateInfo.textureFlags =
+            textureCreateInfo.flags =
                 (rhi::TextureUsageFlags)rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource;
 
             texture = device->getDevice().createTexture(textureCreateInfo);
@@ -37,7 +37,7 @@ namespace ionengine
         else if (usage == TextureUsage::DepthStencil)
         {
             textureCreateInfo.format = rhi::TextureFormat::D32_FLOAT;
-            textureCreateInfo.textureFlags =
+            textureCreateInfo.flags =
                 (rhi::TextureUsageFlags)rhi::TextureUsage::DepthStencil | rhi::TextureUsage::ShaderResource;
 
             texture = device->getDevice().createTexture(textureCreateInfo);
@@ -45,7 +45,7 @@ namespace ionengine
         else
         {
             textureCreateInfo.format = rhi::TextureFormat::RGBA8_UNORM;
-            textureCreateInfo.textureFlags = (rhi::TextureUsageFlags)rhi::TextureUsage::ShaderResource;
+            textureCreateInfo.flags = (rhi::TextureUsageFlags)rhi::TextureUsage::ShaderResource;
 
             texture = device->getDevice().createTexture(textureCreateInfo);
         }
@@ -65,7 +65,7 @@ namespace ionengine
         {
             std::basic_stringstream<uint8_t> stream;
 
-            PNGMemoryIO(uint32_t const mode) : stream(std::ios::binary | mode)
+            PNGMemoryIO() : stream(std::ios::binary | std::ios::in | std::ios::out)
             {
             }
         };
@@ -76,7 +76,7 @@ namespace ionengine
         device->readTextureToBytes(texture, data);
         device->endUpload();
 
-        PNGMemoryIO io(std::ios::out | std::ios::in);
+        PNGMemoryIO io;
 
         png_set_write_fn(
             png, &io,
@@ -103,6 +103,6 @@ namespace ionengine
         png_write_end(png, pngInfo);
         png_destroy_write_struct(&png, nullptr);
 
-        return std::vector<uint8_t>(std::istreambuf_iterator<uint8_t>(io.stream), std::istreambuf_iterator<uint8_t>());
+        return std::vector<uint8_t>(std::istreambuf_iterator<uint8_t>(io.stream), {});
     }
 } // namespace ionengine

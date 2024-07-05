@@ -66,7 +66,7 @@ auto main(int32_t argc, char** argv) -> int32_t
         if (fxCompiler.compile(std::filesystem::path(input).make_preferred(),
                                std::filesystem::path(output).make_preferred(), errors))
         {
-            std::cout << "Out: " << std::filesystem::path(output).generic_string() << std::endl;
+            std::cout << "Out: " << std::filesystem::absolute(output).generic_string() << std::endl;
         }
         else
         {

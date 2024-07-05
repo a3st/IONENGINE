@@ -9,6 +9,8 @@ namespace ionengine
 {
     class LinkedDevice;
 
+    std::array<uint8_t, 8> constexpr TextureFileType{'T', 'E', 'X', 'F', 'I', 'L', 'E', '\0'};
+
     enum class TextureUsage
     {
         None,
@@ -34,7 +36,7 @@ namespace ionengine
         TextureDimension dimension;
         uint32_t width;
         uint32_t height;
-        uint32_t numMipLevels;
+        uint32_t mipLevels;
 
         template <typename Archive>
         auto operator()(Archive& archive)
@@ -43,7 +45,7 @@ namespace ionengine
             archive.property(dimension, "dimension");
             archive.property(width, "width");
             archive.property(height, "height");
-            archive.property(numMipLevels, "mipLevels");
+            archive.property(mipLevels, "mipLevels");
         }
     };
 
@@ -51,14 +53,14 @@ namespace ionengine
     {
         asset::Header fileHeader;
         TextureData textureData;
-        std::vector<std::vector<uint8_t>> textureBuffers;
+        std::vector<std::vector<uint8_t>> buffers;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
             archive.property(fileHeader);
             archive.with<core::serialize::OutputJSON, core::serialize::InputJSON>(textureData);
-            archive.property(textureBuffers);
+            archive.property(buffers);
         }
     };
 

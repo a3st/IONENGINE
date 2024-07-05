@@ -97,8 +97,8 @@ namespace ionengine::rhi
         winrt::com_ptr<ID3D12Resource> resource;
         winrt::com_ptr<D3D12MA::Allocation> memoryAllocation;
         std::unordered_map<BufferUsage, DescriptorAllocation> descriptorAllocations;
-        size_t bufferSize;
-        BufferUsageFlags bufferFlags;
+        size_t size;
+        BufferUsageFlags flags;
     };
 
     class DX12Texture final : public Texture
@@ -139,10 +139,10 @@ namespace ionengine::rhi
         uint32_t width;
         uint32_t height;
         uint32_t depth;
-        uint32_t numMipLevels;
+        uint32_t mipLevels;
         TextureFormat format;
         TextureDimension dimension;
-        TextureUsageFlags textureFlags;
+        TextureUsageFlags flags;
     };
 
     enum D3D12_SHADER_TYPE

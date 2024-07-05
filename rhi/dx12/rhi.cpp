@@ -410,20 +410,20 @@ namespace ionengine::rhi
 
     DX12Buffer::DX12Buffer(ID3D12Device1* device, D3D12MA::Allocator* memoryAllocator,
                            DescriptorAllocator* descriptorAllocator, BufferCreateInfo const& createInfo)
-        : memoryAllocator(memoryAllocator), descriptorAllocator(descriptorAllocator), bufferSize(createInfo.bufferSize),
-          bufferFlags(createInfo.bufferFlags)
+        : memoryAllocator(memoryAllocator), descriptorAllocator(descriptorAllocator), size(createInfo.size),
+          flags(createInfo.flags)
     {
         auto d3d12ResourceDesc = D3D12_RESOURCE_DESC{};
         d3d12ResourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-        if (bufferFlags & BufferUsage::ConstantBuffer)
+        if (flags & BufferUsage::ConstantBuffer)
         {
-            d3d12ResourceDesc.Width = static_cast<uint64_t>(
-                (static_cast<uint32_t>(bufferSize) + (DX12Buffer::ConstantBufferSizeAlignment - 1)) &
-                ~(DX12Buffer::ConstantBufferSizeAlignment - 1));
+            d3d12ResourceDesc.Width =
+                static_cast<uint64_t>((static_cast<uint32_t>(size) + (DX12Buffer::ConstantBufferSizeAlignment - 1)) &
+                                      ~(DX12Buffer::ConstantBufferSizeAlignment - 1));
         }
         else
         {
-            d3d12ResourceDesc.Width = bufferSize;
+            d3d12ResourceDesc.Width = size;
         }
         d3d12ResourceDesc.Height = 1;
         d3d12ResourceDesc.MipLevels = 1;
@@ -435,12 +435,12 @@ namespace ionengine::rhi
         D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
         D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
 
-        if (bufferFlags & BufferUsage::MapWrite)
+        if (flags & BufferUsage::MapWrite)
         {
             initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
             heapType = D3D12_HEAP_TYPE_UPLOAD;
         }
-        else if (bufferFlags & BufferUsage::MapRead)
+        else if (flags & BufferUsage::MapRead)
         {
             initialState = D3D12_RESOURCE_STATE_COPY_DEST;
             heapType = D3D12_HEAP_TYPE_READBACK;
@@ -453,7 +453,7 @@ namespace ionengine::rhi
                                                       memoryAllocation.put(), __uuidof(ID3D12Resource),
                                                       resource.put_void()));
 
-        if (bufferFlags & BufferUsage::ConstantBuffer)
+        if (flags & BufferUsage::ConstantBuffer)
         {
             assert(descriptorAllocator && "To create a buffer with views, you need to pass the allocator descriptor");
 
@@ -470,7 +470,7 @@ namespace ionengine::rhi
 
             device->CreateConstantBufferView(&d3d12ConstantBufferViewDesc, allocation.cpuHandle());
         }
-        if (bufferFlags & BufferUsage::ShaderResource)
+        if (flags & BufferUsage::ShaderResource)
         {
             assert(descriptorAllocator && "To create a buffer with views, you need to pass the allocator descriptor");
 
@@ -483,12 +483,12 @@ namespace ionengine::rhi
 
             auto d3d12ShaderResourceViewDesc = D3D12_SHADER_RESOURCE_VIEW_DESC{};
             d3d12ShaderResourceViewDesc.Buffer.FirstElement = 0;
-            d3d12ShaderResourceViewDesc.Buffer.NumElements = bufferSize / createInfo.elementStride;
+            d3d12ShaderResourceViewDesc.Buffer.NumElements = size / createInfo.elementStride;
             d3d12ShaderResourceViewDesc.Buffer.StructureByteStride = createInfo.elementStride;
 
             device->CreateShaderResourceView(resource.get(), &d3d12ShaderResourceViewDesc, allocation.cpuHandle());
         }
-        if (bufferFlags & BufferUsage::UnorderedAccess)
+        if (flags & BufferUsage::UnorderedAccess)
         {
             assert(descriptorAllocator && "To create a buffer with views, you need to pass the allocator descriptor");
 
@@ -501,7 +501,7 @@ namespace ionengine::rhi
 
             auto d3d12UnorderedAccessViewDesc = D3D12_UNORDERED_ACCESS_VIEW_DESC{};
             d3d12UnorderedAccessViewDesc.Buffer.FirstElement = 0;
-            d3d12UnorderedAccessViewDesc.Buffer.NumElements = bufferSize / createInfo.elementStride;
+            d3d12UnorderedAccessViewDesc.Buffer.NumElements = size / createInfo.elementStride;
             d3d12UnorderedAccessViewDesc.Buffer.StructureByteStride = createInfo.elementStride;
 
             device->CreateUnorderedAccessView(resource.get(), nullptr, &d3d12UnorderedAccessViewDesc,
@@ -523,13 +523,13 @@ namespace ionengine::rhi
     auto DX12Buffer::mapMemory() -> uint8_t*
     {
         uint8_t* mappedBytes;
-        if (bufferFlags & BufferUsage::MapWrite)
+        if (flags & BufferUsage::MapWrite)
         {
             throwIfFailed(resource->Map(0, nullptr, reinterpret_cast<void**>(&mappedBytes)));
         }
         else
         {
-            auto range = D3D12_RANGE{.Begin = 0, .End = bufferSize};
+            auto range = D3D12_RANGE{.Begin = 0, .End = size};
             throwIfFailed(resource->Map(0, &range, reinterpret_cast<void**>(&mappedBytes)));
         }
         return mappedBytes;
@@ -537,12 +537,12 @@ namespace ionengine::rhi
 
     auto DX12Buffer::unmapMemory() -> void
     {
-        if (bufferFlags & BufferUsage::MapWrite)
+        if (flags & BufferUsage::MapWrite)
         {
-            auto range = D3D12_RANGE{.Begin = 0, .End = bufferSize};
+            auto range = D3D12_RANGE{.Begin = 0, .End = size};
             resource->Unmap(0, &range);
         }
-        else if (bufferFlags & BufferUsage::MapRead)
+        else if (flags & BufferUsage::MapRead)
         {
             resource->Unmap(0, nullptr);
         }
@@ -550,12 +550,12 @@ namespace ionengine::rhi
 
     auto DX12Buffer::getSize() -> size_t
     {
-        return bufferSize;
+        return size;
     }
 
     auto DX12Buffer::getFlags() -> BufferUsageFlags
     {
-        return bufferFlags;
+        return flags;
     }
 
     auto DX12Buffer::getResource() -> ID3D12Resource*
@@ -576,8 +576,8 @@ namespace ionengine::rhi
     DX12Texture::DX12Texture(ID3D12Device1* device, D3D12MA::Allocator* memoryAllocator,
                              DescriptorAllocator& descriptorAllocator, TextureCreateInfo const& createInfo)
         : memoryAllocator(memoryAllocator), descriptorAllocator(&descriptorAllocator), width(createInfo.width),
-          height(createInfo.height), depth(createInfo.depth), numMipLevels(createInfo.numMipLevels),
-          format(createInfo.format), dimension(createInfo.dimension), textureFlags(createInfo.textureFlags)
+          height(createInfo.height), depth(createInfo.depth), mipLevels(createInfo.mipLevels),
+          format(createInfo.format), dimension(createInfo.dimension), flags(createInfo.flags)
     {
         auto d3d12ResourceDesc = D3D12_RESOURCE_DESC{};
         switch (dimension)
@@ -600,7 +600,7 @@ namespace ionengine::rhi
         }
         d3d12ResourceDesc.Width = width;
         d3d12ResourceDesc.Height = height;
-        d3d12ResourceDesc.MipLevels = numMipLevels;
+        d3d12ResourceDesc.MipLevels = mipLevels;
         d3d12ResourceDesc.DepthOrArraySize = depth;
         d3d12ResourceDesc.SampleDesc.Count = 1;
         d3d12ResourceDesc.Format = TextureFormat_to_DXGI_FORMAT(format);
@@ -609,16 +609,16 @@ namespace ionengine::rhi
         D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
         D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
 
-        if (textureFlags & TextureUsage::DepthStencil)
+        if (flags & TextureUsage::DepthStencil)
         {
             d3d12ResourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
             initialState = D3D12_RESOURCE_STATE_DEPTH_READ;
         }
-        if (textureFlags & TextureUsage::RenderTarget)
+        if (flags & TextureUsage::RenderTarget)
         {
             d3d12ResourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
         }
-        if (textureFlags & TextureUsage::UnorderedAccess)
+        if (flags & TextureUsage::UnorderedAccess)
         {
             d3d12ResourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
@@ -630,7 +630,7 @@ namespace ionengine::rhi
                                                       memoryAllocation.put(), __uuidof(ID3D12Resource),
                                                       resource.put_void()));
 
-        if (textureFlags & TextureUsage::RenderTarget)
+        if (flags & TextureUsage::RenderTarget)
         {
             auto allocation = descriptorAllocator.allocate(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
             if (allocation.size == 0)
@@ -646,7 +646,7 @@ namespace ionengine::rhi
             device->CreateRenderTargetView(resource.get(), &d3d12RenderTargetViewDesc, allocation.cpuHandle());
         }
 
-        if (textureFlags & TextureUsage::DepthStencil)
+        if (flags & TextureUsage::DepthStencil)
         {
             auto allocation = descriptorAllocator.allocate(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1);
             if (allocation.size == 0)
@@ -672,7 +672,7 @@ namespace ionengine::rhi
             device->CreateDepthStencilView(resource.get(), &d3d12DepthStencilView, allocation.cpuHandle());
         }
 
-        if (textureFlags & TextureUsage::ShaderResource)
+        if (flags & TextureUsage::ShaderResource)
         {
             auto allocation = descriptorAllocator.allocate(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1);
             if (allocation.size == 0)
@@ -688,22 +688,22 @@ namespace ionengine::rhi
             {
                 case TextureDimension::_1D: {
                     d3d12ShaderResourceView.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
-                    d3d12ShaderResourceView.Texture1D.MipLevels = numMipLevels;
+                    d3d12ShaderResourceView.Texture1D.MipLevels = mipLevels;
                     break;
                 }
                 case TextureDimension::_2D: {
                     d3d12ShaderResourceView.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-                    d3d12ShaderResourceView.Texture2D.MipLevels = numMipLevels;
+                    d3d12ShaderResourceView.Texture2D.MipLevels = mipLevels;
                     break;
                 }
                 case TextureDimension::_3D: {
                     d3d12ShaderResourceView.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
-                    d3d12ShaderResourceView.Texture3D.MipLevels = numMipLevels;
+                    d3d12ShaderResourceView.Texture3D.MipLevels = mipLevels;
                     break;
                 }
                 case TextureDimension::Cube: {
                     d3d12ShaderResourceView.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-                    d3d12ShaderResourceView.Texture3D.MipLevels = numMipLevels;
+                    d3d12ShaderResourceView.Texture3D.MipLevels = mipLevels;
                     break;
                 }
             }
@@ -715,16 +715,16 @@ namespace ionengine::rhi
     DX12Texture::DX12Texture(ID3D12Device1* device, winrt::com_ptr<ID3D12Resource> resource,
                              DescriptorAllocator& descriptorAllocator)
         : memoryAllocator(nullptr), descriptorAllocator(&descriptorAllocator), resource(resource),
-          textureFlags((TextureUsageFlags)TextureUsage::RenderTarget)
+          flags((TextureUsageFlags)TextureUsage::RenderTarget)
     {
         auto d3d12ResourceDesc = resource->GetDesc();
         width = static_cast<uint32_t>(d3d12ResourceDesc.Width);
         height = d3d12ResourceDesc.Height;
         depth = d3d12ResourceDesc.DepthOrArraySize;
-        numMipLevels = d3d12ResourceDesc.MipLevels;
+        mipLevels = d3d12ResourceDesc.MipLevels;
         format = DXGI_FORMAT_to_TextureFormat(d3d12ResourceDesc.Format);
 
-        if (textureFlags & TextureUsage::RenderTarget)
+        if (flags & TextureUsage::RenderTarget)
         {
             auto allocation = descriptorAllocator.allocate(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
             if (allocation.size == 0)
@@ -766,7 +766,7 @@ namespace ionengine::rhi
 
     auto DX12Texture::getMipLevels() const -> uint32_t
     {
-        return numMipLevels;
+        return mipLevels;
     }
 
     auto DX12Texture::getFormat() const -> TextureFormat
@@ -776,7 +776,7 @@ namespace ionengine::rhi
 
     auto DX12Texture::getFlags() const -> TextureUsageFlags
     {
-        return textureFlags;
+        return flags;
     }
 
     auto DX12Texture::getDescriptor(TextureUsage const usage) const -> DescriptorAllocation const&
@@ -1085,19 +1085,19 @@ namespace ionengine::rhi
         d3d12RootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
         std::vector<D3D12_STATIC_SAMPLER_DESC> d3d12StaticSamplerDescs;
-        for (uint32_t const i : std::views::iota(0u, createInfo.numStaticSamplers))
+        for (uint32_t const i : std::views::iota(0u, createInfo.staticSamplers))
         {
             auto d3d12StaticSampler = D3D12_STATIC_SAMPLER_DESC{};
-            d3d12StaticSampler.Filter = Filter_to_D3D12_FILTER(createInfo.staticSamplers[i].filter);
+            d3d12StaticSampler.Filter = Filter_to_D3D12_FILTER(createInfo.staticSamplerInfos[i].filter);
             d3d12StaticSampler.AddressU =
-                AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.staticSamplers[i].addressU);
+                AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.staticSamplerInfos[i].addressU);
             d3d12StaticSampler.AddressV =
-                AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.staticSamplers[i].addressV);
+                AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.staticSamplerInfos[i].addressV);
             d3d12StaticSampler.AddressW =
-                AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.staticSamplers[i].addressW);
+                AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.staticSamplerInfos[i].addressW);
             d3d12StaticSampler.ComparisonFunc =
-                CompareOp_to_D3D12_COMPARISON_FUNC(createInfo.staticSamplers[i].compareOp);
-            d3d12StaticSampler.MaxAnisotropy = createInfo.staticSamplers[i].anisotropic;
+                CompareOp_to_D3D12_COMPARISON_FUNC(createInfo.staticSamplerInfos[i].compareOp);
+            d3d12StaticSampler.MaxAnisotropy = createInfo.staticSamplerInfos[i].anisotropic;
             d3d12StaticSampler.MaxLOD = D3D12_FLOAT32_MAX;
             d3d12StaticSampler.ShaderRegister = i;
             d3d12StaticSampler.RegisterSpace = 0;
@@ -1466,16 +1466,16 @@ namespace ionengine::rhi
                                                  __uuidof(ID3D12GraphicsCommandList4), commandList.put_void()));
 
         {
-            BufferCreateInfo bufferCreateInfo = {.bufferSize = 16 * 1024 * 1024,
-                                                 .bufferFlags = (BufferUsageFlags)(BufferUsage::MapWrite)};
+            BufferCreateInfo bufferCreateInfo = {.size = 16 * 1024 * 1024,
+                                                 .flags = (BufferUsageFlags)(BufferUsage::MapWrite)};
 
             bufferWrite.buffer = core::make_ref<DX12Buffer>(device, memoryAllocator, nullptr, bufferCreateInfo);
             bufferWrite.offset = 0;
         }
 
         {
-            BufferCreateInfo bufferCreateInfo = {.bufferSize = 16 * 1024 * 1024,
-                                                 .bufferFlags = (BufferUsageFlags)(BufferUsage::MapRead)};
+            BufferCreateInfo bufferCreateInfo = {.size = 16 * 1024 * 1024,
+                                                 .flags = (BufferUsageFlags)(BufferUsage::MapRead)};
 
             bufferRead.buffer = core::make_ref<DX12Buffer>(device, memoryAllocator, nullptr, bufferCreateInfo);
             bufferRead.offset = 0;

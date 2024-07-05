@@ -205,9 +205,9 @@ namespace ionengine::rhi
 
     struct BufferCreateInfo
     {
-        size_t bufferSize;
+        size_t size;
         size_t elementStride;
-        BufferUsageFlags bufferFlags;
+        BufferUsageFlags flags;
     };
 
     struct TextureCreateInfo
@@ -215,10 +215,10 @@ namespace ionengine::rhi
         uint32_t width;
         uint32_t height;
         uint32_t depth;
-        uint32_t numMipLevels;
+        uint32_t mipLevels;
         TextureFormat format;
         TextureDimension dimension;
-        TextureUsageFlags textureFlags;
+        TextureUsageFlags flags;
     };
 
     struct RHICreateInfo
@@ -226,8 +226,8 @@ namespace ionengine::rhi
         void* targetWindow;
         uint32_t windowWidth;
         uint32_t windowHeight;
-        uint32_t numStaticSamplers;
-        std::span<SamplerCreateInfo> staticSamplers;
+        uint32_t staticSamplers;
+        std::span<SamplerCreateInfo> staticSamplerInfos;
     };
 
     struct RenderPassColorInfo

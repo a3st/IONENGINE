@@ -9,7 +9,7 @@ namespace ionengine
 {
     LinkedDevice::LinkedDevice(platform::Window* window)
     {
-        rhi::RHICreateInfo rhiCreateInfo = {.numStaticSamplers = 0};
+        rhi::RHICreateInfo rhiCreateInfo = {.staticSamplers = 0};
 
         if (window)
         {

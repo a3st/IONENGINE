@@ -5,6 +5,8 @@ add_executable(editor
     graph/registry.cpp
     graph/node.cpp
     graph/scene.cpp
+
+    conv/texture.cpp
     
     shader_graph/components/convert.cpp
     shader_graph/components/texture.cpp

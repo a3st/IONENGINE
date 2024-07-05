@@ -71,7 +71,7 @@ namespace ionengine::math
             return std::sqrt(x * x + y * y + z * z + w * w);
         }
 
-        Matrix<Type> to_matrix() const
+        Matrix<Type> toMatrix() const
         {
             Type xy = x * y;
             Type xz = x * z;
@@ -79,26 +79,26 @@ namespace ionengine::math
             Type yz = y * z;
             Type yw = y * w;
             Type zw = z * w;
-            Type x_squared = x * x;
-            Type y_squared = y * y;
-            Type z_squared = z * z;
+            Type xx = x * x;
+            Type yy = y * y;
+            Type zz = z * z;
 
             auto mat = Matrix<Type>::identity();
-            mat.m00 = 1.0f - 2.0f * (y_squared + z_squared);
+            mat.m00 = 1.0f - 2.0f * (yy + zz);
             mat.m01 = 2.0f * (xy - zw);
             mat.m02 = 2.0f * (xz + yw);
             mat.m03 = 0.0f;
             mat.m10 = 2.0f * (xy + zw);
-            mat.m11 = 1.0f - 2.0f * (x_squared + z_squared);
+            mat.m11 = 1.0f - 2.0f * (xx + zz);
             mat.m12 = 2.0f * (yz - xw);
             mat.m13 = 0.0f;
             mat.m20 = 2.0f * (xz - yw);
             mat.m21 = 2.0f * (yz + xw);
-            mat.m22 = 1.0f - 2.0f * (x_squared + y_squared);
+            mat.m22 = 1.0f - 2.0f * (xx + yy);
             return mat;
         }
 
-        void angle_axis(Type& angle, Vector3<Type>& axis) const
+        void angleAxis(Type& angle, Vector3<Type>& axis) const
         {
             Quaternion quat{};
             quat = *this;
@@ -125,18 +125,18 @@ namespace ionengine::math
             }
         }
 
-        static Quaternion<Type> angle_axis(Type const angle, Vector3<Type> const& axis)
+        static Quaternion<Type> fromAngleAxis(Type const angle, Vector3<Type> const& axis)
         {
             auto quat = Quaternion<Type>{};
 
-            Type rot_angle = static_cast<Type>(angle * std::numbers::pi / 180.0f);
-            Type rot_sin = std::sin(rot_angle / 2);
-            Vector3<Type> norm_axis = Vector3<Type>(axis).normalize();
+            Type rotAngle = static_cast<Type>(angle * std::numbers::pi / 180.0f);
+            Type rotSin = std::sin(rotAngle / 2);
+            Vector3<Type> normAxis = Vector3<Type>(axis).normalize();
 
-            quat.x = norm_axis.x * rot_sin;
-            quat.y = norm_axis.y * rot_sin;
-            quat.z = norm_axis.z * rot_sin;
-            quat.w = std::cos(rot_angle / 2);
+            quat.x = normAxis.x * rotSin;
+            quat.y = normAxis.y * rotSin;
+            quat.z = normAxis.z * rotSin;
+            quat.w = std::cos(rotAngle / 2);
             return quat;
         }
 

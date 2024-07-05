@@ -1,0 +1,16 @@
+{
+    "materialName": "Base Material",
+    "shaderPath": "editor/space/base.shader",
+    "domain": "SURFACE",
+    "blendMode": "OPAQUE",
+    "parameters": {
+        "color": {
+            "type": "SAMPLER2D",
+            "value": "textures/bird.ktx2"
+        },
+        "testValue": {
+            "type": "FLOAT",
+            "value": 0.4
+        }
+    }
+}
