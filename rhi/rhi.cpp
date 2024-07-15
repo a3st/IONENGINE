@@ -6,7 +6,9 @@
 #ifdef IONENGINE_RHI_DIRECTX12
 #include "rhi/dx12/rhi.hpp"
 #elif IONENGINE_RHI_VULKAN
-#include "rhi/vk/rhi.hpp"
+#include "rhi/vulkan/rhi.hpp"
+#elif IONENGINE_RHI_GL
+#include "rhi/gl/gl.hpp"
 #endif
 
 namespace ionengine::rhi
@@ -17,6 +19,11 @@ namespace ionengine::rhi
         return core::make_ref<DX12Device>(createInfo);
 #elif IONENGINE_RHI_VULKAN
         return core::make_ref<VKDevice>(createInfo);
+#elif IONENGINE_RHI_GL
+        return core::make_ref<GLDevice>(createInfo);
+#else
+#error rhi backend is not defined
+        return nullptr;
 #endif
     }
 } // namespace ionengine::rhi

@@ -7,6 +7,7 @@
 #include <exception>
 #include <filesystem>
 #include <format>
+#include <atomic>
 #include <fstream>
 #include <functional>
 #include <iostream>

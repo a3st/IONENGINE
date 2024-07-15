@@ -1,4 +1,4 @@
-#include "core/serializable.hpp"
+#include "core/serialize.hpp"
 #include "precompiled.h"
 #include <gtest/gtest.h>
 
@@ -84,7 +84,7 @@ struct ShaderFile
         archive.property(name);
         archive.property(names);
         archive.property(numArray);
-        archive.with<core::serialize::OutputJSON, core::serialize::InputJSON>(shaderData);
+        archive.template with<core::OutputJSON, core::InputJSON>(shaderData);
     }
 };
 
@@ -106,10 +106,10 @@ TEST(Serialize, JSON_Test)
                              .positions = {20, 30},
                              .enumNames = {{TestEnum::First, "firstValue"}, {TestEnum::Second, "secondValue"}}};
 
-    auto result = core::saveToBytes<ShaderData, core::serialize::OutputJSON>(shaderData);
+    auto result = core::saveToBytes<ShaderData, core::OutputJSON>(shaderData);
     auto buffer = std::move(result.value());
 
-    auto resultAfter = core::loadFromBytes<ShaderData, core::serialize::InputJSON>(buffer);
+    auto resultAfter = core::loadFromBytes<ShaderData, core::InputJSON>(buffer);
     auto object = std::move(resultAfter.value());
 
     ASSERT_EQ(object.shaderInt, shaderData.shaderInt);
@@ -151,10 +151,10 @@ TEST(Serialize, Archive_Test)
                              .numArray = {5, 3, 4},
                              .shaderData = std::move(shaderData)};
 
-    auto result = core::saveToBytes<ShaderFile, core::serialize::OutputArchive>(shaderFile);
+    auto result = core::saveToBytes<ShaderFile, core::OutputArchive>(shaderFile);
     auto buffer = std::move(result.value());
 
-    auto resultAfter = core::loadFromBytes<ShaderFile, core::serialize::InputArchive>(buffer);
+    auto resultAfter = core::loadFromBytes<ShaderFile, core::InputArchive>(buffer);
     auto object = std::move(resultAfter.value());
 
     ASSERT_EQ(object.magic, shaderFile.magic);

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.26.0)
+cmake_minimum_required(VERSION 3.25.1)
 include(FetchContent)
 
 FetchContent_Declare(simdjson

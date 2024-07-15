@@ -2,14 +2,9 @@
 
 #pragma once
 
+#include "core/bit.hpp"
 #include "core/ref_ptr.hpp"
-#include "core/utils.hpp"
 #include "math/color.hpp"
-
-namespace ionengine::platform
-{
-    class Window;
-}
 
 namespace ionengine::rhi
 {
@@ -31,6 +26,8 @@ namespace ionengine::rhi
     class Buffer : public core::ref_counted_object
     {
       public:
+        virtual ~Buffer() = default;
+
         virtual auto getSize() -> size_t = 0;
 
         virtual auto getFlags() -> BufferUsageFlags = 0;
@@ -82,6 +79,8 @@ namespace ionengine::rhi
     class Texture : public core::ref_counted_object
     {
       public:
+        virtual ~Texture() = default;
+
         virtual auto getWidth() const -> uint32_t = 0;
 
         virtual auto getHeight() const -> uint32_t = 0;
@@ -223,7 +222,8 @@ namespace ionengine::rhi
 
     struct RHICreateInfo
     {
-        void* targetWindow;
+        void* window;
+        void* instance;
         uint32_t windowWidth;
         uint32_t windowHeight;
         uint32_t staticSamplers;
@@ -356,6 +356,29 @@ namespace ionengine::rhi
         VertexFormat format;
     };
 
+    enum class PipelineType
+    {
+        Graphics,
+        Compute
+    };
+
+    struct ShaderCreateInfo
+    {
+        PipelineType pipelineType;
+        union {
+            struct
+            {
+                std::span<VertexDeclarationInfo const> vertexDeclarations;
+                std::span<uint8_t const> const vertexShader;
+                std::span<uint8_t const> const pixelShader;
+            } graphics;
+            struct
+            {
+                std::span<uint8_t const> shader;
+            } compute;
+        };
+    };
+
     struct RasterizerStageInfo
     {
         FillMode fillMode;
@@ -461,7 +484,17 @@ namespace ionengine::rhi
     class GraphicsContext : public core::ref_counted_object
     {
       public:
+        virtual ~GraphicsContext() = default;
+
         virtual auto reset() -> void = 0;
+
+        virtual auto execute() -> Future<Query> = 0;
+
+        virtual auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
+                             ResourceState const after) -> void = 0;
+
+        virtual auto barrier(core::ref_ptr<Texture> dest, ResourceState const before,
+                             ResourceState const after) -> void = 0;
 
         virtual auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
                                                 BlendColorInfo const& blendColor,
@@ -489,17 +522,16 @@ namespace ionengine::rhi
 
         virtual auto setScissor(int32_t const left, int32_t const top, int32_t const right,
                                 int32_t const bottom) -> void = 0;
-
-        virtual auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst,
-                             ResourceState const before, ResourceState const after) -> void = 0;
-
-        virtual auto execute() -> Future<Query> = 0;
     };
 
     class CopyContext : public core::ref_counted_object
     {
       public:
+        virtual ~CopyContext() = default;
+
         virtual auto reset() -> void = 0;
+
+        virtual auto execute() -> Future<Query> = 0;
 
         virtual auto writeBuffer(core::ref_ptr<Buffer> dst, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
 
@@ -509,23 +541,16 @@ namespace ionengine::rhi
         virtual auto readBuffer(core::ref_ptr<Buffer> dst, std::vector<uint8_t>& data) -> void = 0;
 
         virtual auto readTexture(core::ref_ptr<Texture> dst, std::vector<std::vector<uint8_t>>& data) -> void = 0;
-
-        virtual auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst,
-                             ResourceState const before, ResourceState const after) -> void = 0;
-
-        virtual auto execute() -> Future<Query> = 0;
     };
 
     class Device : public core::ref_counted_object
     {
       public:
+        virtual ~Device() = default;
+
         static auto create(RHICreateInfo const& createInfo) -> core::ref_ptr<Device>;
 
-        virtual auto createShader(std::span<VertexDeclarationInfo const> const vertexDeclarations,
-                                  std::span<uint8_t const> const vertexShader,
-                                  std::span<uint8_t const> const pixelShader) -> core::ref_ptr<Shader> = 0;
-
-        virtual auto createShader(std::span<uint8_t const> const computeShader) -> core::ref_ptr<Shader> = 0;
+        virtual auto createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader> = 0;
 
         virtual auto createTexture(TextureCreateInfo const& createInfo) -> core::ref_ptr<Texture> = 0;
 

@@ -290,6 +290,28 @@ namespace ionengine::rhi
         }
     }
 
+    auto VertexFormat_to_DXGI_FORMAT(VertexFormat const format) -> DXGI_FORMAT
+    {
+        switch (format)
+        {
+            case VertexFormat::Float4:
+            case VertexFormat::Float4x4:
+                return DXGI_FORMAT_R32G32B32A32_FLOAT;
+            case VertexFormat::Float3:
+            case VertexFormat::Float3x3:
+                return DXGI_FORMAT_R32G32B32_FLOAT;
+            case VertexFormat::Float2:
+            case VertexFormat::Float2x2:
+                return DXGI_FORMAT_R32G32_FLOAT;
+            case VertexFormat::Float:
+                return DXGI_FORMAT_R32_FLOAT;
+            case VertexFormat::Uint:
+                return DXGI_FORMAT_R32_UINT;
+            default:
+                return DXGI_FORMAT_UNKNOWN;
+        }
+    }
+
     DescriptorAllocator::DescriptorAllocator(ID3D12Device1* device) : device(device)
     {
         this->createChunk(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -794,29 +816,7 @@ namespace ionengine::rhi
         return descriptorAllocations.at(usage).offset;
     }
 
-    auto vertexFormatToDXGI(VertexFormat const format) -> DXGI_FORMAT
-    {
-        switch (format)
-        {
-            case VertexFormat::Float4:
-            case VertexFormat::Float4x4:
-                return DXGI_FORMAT_R32G32B32A32_FLOAT;
-            case VertexFormat::Float3:
-            case VertexFormat::Float3x3:
-                return DXGI_FORMAT_R32G32B32_FLOAT;
-            case VertexFormat::Float2:
-            case VertexFormat::Float2x2:
-                return DXGI_FORMAT_R32G32_FLOAT;
-            case VertexFormat::Float:
-                return DXGI_FORMAT_R32_FLOAT;
-            case VertexFormat::Uint:
-                return DXGI_FORMAT_R32_UINT;
-            default:
-                return DXGI_FORMAT_UNKNOWN;
-        }
-    }
-
-    auto vertexFormatSize(VertexFormat const format) -> uint32_t
+    auto sizeof_VertexFormat(VertexFormat const format) -> uint32_t
     {
         switch (format)
         {
@@ -839,6 +839,11 @@ namespace ionengine::rhi
             default:
                 return 0;
         }
+    }
+
+    DX12Shader::DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo)
+    {
+        
     }
 
     DX12Shader::DX12Shader(ID3D12Device4* device, std::span<VertexDeclarationInfo const> const vertexDeclarations,
@@ -1850,19 +1855,10 @@ namespace ionengine::rhi
         ::CloseHandle(fenceEvent);
     }
 
-    auto DX12Device::createShader(std::span<VertexDeclarationInfo const> const vertexDeclarations,
-                                  std::span<uint8_t const> const vertexShader,
-                                  std::span<uint8_t const> const pixelShader) -> core::ref_ptr<Shader>
+    auto DX12Device::createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader>
     {
         std::lock_guard lock(mutex);
         auto shader = core::make_ref<DX12Shader>(device.get(), vertexDeclarations, vertexShader, pixelShader);
-        return shader;
-    }
-
-    auto DX12Device::createShader(std::span<uint8_t const> const computeShader) -> core::ref_ptr<Shader>
-    {
-        std::lock_guard lock(mutex);
-        auto shader = core::make_ref<DX12Shader>(device.get(), computeShader);
         return shader;
     }
 

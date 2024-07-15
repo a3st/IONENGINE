@@ -7,6 +7,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 add_subdirectory(thirdparty)
+
+add_subdirectory(platform)
+add_subdirectory(rhi)
+
 add_subdirectory(tools)
 add_subdirectory(engine)
 add_subdirectory(tests)

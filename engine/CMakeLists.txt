@@ -7,9 +7,6 @@ add_library(engine SHARED
     ../rhi/rhi.cpp
     ../rhi/fx/fx.cpp
 
-    ../platform/windows/window.cpp
-    ../platform/window.cpp
-
     renderer/linked_device.cpp
     renderer/texture.cpp
     renderer/shader.cpp
@@ -24,16 +21,13 @@ target_include_directories(engine PRIVATE
 target_precompile_headers(engine PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
 target_link_libraries(engine PUBLIC
+    platform
     dxgi
     d3d12
     simdjson
     tinygltf
     png_static
     D3D12MemoryAllocator)
-
-target_compile_definitions(engine PUBLIC
-    IONENGINE_PLATFORM_WIN32
-    IONENGINE_RHI_DIRECTX12)
 
 set_target_properties(engine PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/engine

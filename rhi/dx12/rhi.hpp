@@ -162,6 +162,10 @@ namespace ionengine::rhi
     class DX12Shader final : public Shader
     {
       public:
+        virtual ~DX12Shader() = default;
+
+        DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo);
+
         DX12Shader(ID3D12Device4* device, std::span<VertexDeclarationInfo const> const vertexDeclarations,
                    std::span<uint8_t const> const vertexShader, std::span<uint8_t const> const pixelShader);
 
@@ -392,11 +396,7 @@ namespace ionengine::rhi
 
         ~DX12Device();
 
-        auto createShader(std::span<VertexDeclarationInfo const> const vertexDeclarations,
-                          std::span<uint8_t const> const vertexShader,
-                          std::span<uint8_t const> const pixelShader) -> core::ref_ptr<Shader> override;
-
-        auto createShader(std::span<uint8_t const> const computeShader) -> core::ref_ptr<Shader> override;
+        auto createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader> override;
 
         auto createTexture(TextureCreateInfo const& createInfo) -> core::ref_ptr<Texture> override;
 

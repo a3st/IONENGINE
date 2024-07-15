@@ -105,8 +105,8 @@ namespace ionengine::platform
     class Window : public core::ref_counted_object
     {
       public:
-        static auto create(std::string_view const label, uint32_t const width, uint32_t const height)
-            -> core::ref_ptr<Window>;
+        static auto create(std::string_view const label, uint32_t const width,
+                           uint32_t const height) -> core::ref_ptr<Window>;
 
         virtual auto get_width() const -> uint32_t = 0;
 
