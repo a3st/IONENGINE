@@ -19,3 +19,6 @@
 [submodule "thirdparty/libwebview"]
 	path = thirdparty/libwebview
 	url = https://github.com/a3st/libwebview
+[submodule "thirdparty/vma"]
+	path = thirdparty/vma
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
