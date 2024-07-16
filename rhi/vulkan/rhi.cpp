@@ -75,6 +75,34 @@ namespace ionengine::rhi
         }
     }
 
+    auto RenderPassLoadOp_to_VkAttachmentLoadOp(RenderPassLoadOp const loadOp) -> VkAttachmentLoadOp
+    {
+        switch (loadOp)
+        {
+            case RenderPassLoadOp::Clear:
+                return VK_ATTACHMENT_LOAD_OP_CLEAR;
+            case RenderPassLoadOp::Load:
+                return VK_ATTACHMENT_LOAD_OP_LOAD;
+            case RenderPassLoadOp::DontCare:
+                return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto RenderPassStoreOp_to_VkAttachmentStoreOp(RenderPassStoreOp const storeOp) -> VkAttachmentStoreOp
+    {
+        switch (storeOp)
+        {
+            case RenderPassStoreOp::Store:
+                return VK_ATTACHMENT_STORE_OP_STORE;
+            case RenderPassStoreOp::DontCare:
+                return VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
     auto throwIfFailed(VkResult const result) -> void
     {
         if (result != VK_SUCCESS)
@@ -94,9 +122,9 @@ namespace ionengine::rhi
     }
 
     VKTexture::VKTexture(VkDevice device, VmaAllocator memoryAllocator, TextureCreateInfo const& createInfo)
-        : memoryAllocator(memoryAllocator), width(createInfo.width), height(createInfo.height), depth(createInfo.depth),
-          mipLevels(createInfo.mipLevels), format(createInfo.format), dimension(createInfo.dimension),
-          flags(createInfo.flags)
+        : device(device), memoryAllocator(memoryAllocator), width(createInfo.width), height(createInfo.height),
+          depth(createInfo.depth), mipLevels(createInfo.mipLevels), format(createInfo.format),
+          dimension(createInfo.dimension), flags(createInfo.flags)
     {
         VkImageCreateInfo imageCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                           .imageType = TextureDimension_to_VkImageType(createInfo.dimension),
@@ -126,14 +154,31 @@ namespace ionengine::rhi
     }
 
     VKTexture::VKTexture(VkDevice device, VkImage image, TextureCreateInfo const& createInfo)
-        : memoryAllocator(nullptr), image(image), width(createInfo.width), height(createInfo.height),
+        : device(device), memoryAllocator(nullptr), image(image), width(createInfo.width), height(createInfo.height),
           depth(createInfo.depth), mipLevels(createInfo.mipLevels), format(createInfo.format),
           dimension(createInfo.dimension), flags(createInfo.flags)
     {
+        VkImageViewCreateInfo imageViewCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                                  .image = image,
+                                                  .viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
+                                                  .format = TextureFormat_to_VkFormat(format),
+                                                  .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                 .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                 .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                 .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+                                                  .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                       .baseMipLevel = 0,
+                                                                       .levelCount = mipLevels,
+                                                                       .baseArrayLayer = 0,
+                                                                       .layerCount = depth}};
+
+        throwIfFailed(::vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageView));
     }
 
     VKTexture::~VKTexture()
     {
+        ::vkDestroyImageView(device, imageView, nullptr);
+
         if (memoryAllocation)
         {
             ::vmaDestroyImage(memoryAllocator, image, memoryAllocation);
@@ -175,7 +220,36 @@ namespace ionengine::rhi
         return 0;
     }
 
-    VKGraphicsContext::VKGraphicsContext(VkDevice device, VkQueue queue, uint32_t queueFamilyIndex) : device(device)
+    auto VKTexture::getImageView() const -> VkImageView
+    {
+        return imageView;
+    }
+
+    VKFutureImpl::VKFutureImpl(VkDevice device, VkQueue queue, VkSemaphore semaphore, uint64_t const fenceValue)
+        : device(device), queue(queue), semaphore(semaphore), fenceValue(fenceValue)
+    {
+    }
+
+    auto VKFutureImpl::getResult() const -> bool
+    {
+        uint64_t counterValue;
+        throwIfFailed(::vkGetSemaphoreCounterValue(device, semaphore, &counterValue));
+        return counterValue >= fenceValue;
+    }
+
+    auto VKFutureImpl::wait() -> void
+    {
+        VkSemaphoreWaitInfo semaphoreWaitInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+                                              .semaphoreCount = 1,
+                                              .pSemaphores = &semaphore,
+                                              .pValues = &fenceValue};
+
+        throwIfFailed(::vkWaitSemaphores(device, &semaphoreWaitInfo, std::numeric_limits<uint64_t>::max()));
+    }
+
+    VKGraphicsContext::VKGraphicsContext(VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
+                                         VkSemaphore semaphore, uint64_t& fenceValue)
+        : device(device), queue(queue), semaphore(semaphore), fenceValue(&fenceValue)
     {
         VkCommandPoolCreateInfo commandPoolCreateInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                                                       .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
@@ -192,11 +266,39 @@ namespace ionengine::rhi
     auto VKGraphicsContext::reset() -> void
     {
         throwIfFailed(::vkResetCommandPool(device, commandPool, 0));
+
+        VkCommandBufferAllocateInfo commandBufferAllocInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                                                           .commandPool = commandPool,
+                                                           .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                                                           .commandBufferCount = 1};
+        throwIfFailed(::vkAllocateCommandBuffers(device, &commandBufferAllocInfo, &commandBuffer));
+
+        VkCommandBufferBeginInfo commandBufferBeginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                                                        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
+        throwIfFailed(::vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
     }
 
     auto VKGraphicsContext::execute() -> Future<Query>
     {
-        
+        throwIfFailed(::vkEndCommandBuffer(commandBuffer));
+
+        (*fenceValue)++;
+        VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+                                                          .signalSemaphoreValueCount = 1,
+                                                          .pSignalSemaphoreValues = fenceValue};
+
+        VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                .pNext = &semaphoreSubmitInfo,
+                                .commandBufferCount = 1,
+                                .pCommandBuffers = &commandBuffer,
+                                .signalSemaphoreCount = 1,
+                                .pSignalSemaphores = &semaphore};
+
+        throwIfFailed(::vkQueueSubmit(queue, 1, &submitInfo, nullptr));
+
+        auto query = core::make_ref<VKQuery>();
+        auto futureImpl = std::make_unique<VKFutureImpl>(device, queue, semaphore, *fenceValue);
+        return Future<Query>(query, std::move(futureImpl));
     }
 
     auto VKGraphicsContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
@@ -207,6 +309,10 @@ namespace ionengine::rhi
     auto VKGraphicsContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before,
                                     ResourceState const after) -> void
     {
+        VkImageMemoryBarrier imageMemoryBarrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+
+        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0,
+                             0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     }
 
     auto VKGraphicsContext::setGraphicsPipelineOptions(core::ref_ptr<Shader> shader,
@@ -223,10 +329,38 @@ namespace ionengine::rhi
     auto VKGraphicsContext::beginRenderPass(std::span<RenderPassColorInfo> const colors,
                                             std::optional<RenderPassDepthStencilInfo> depthStencil) -> void
     {
+        std::array<VkRenderingAttachmentInfo, 8> colorAttachmentInfos;
+        for (uint32_t const i : std::views::iota(0u, colors.size()))
+        {
+            VkClearColorValue clearColorValue{};
+            clearColorValue.float32[0] = colors[i].clearColor.r;
+            clearColorValue.float32[1] = colors[i].clearColor.g;
+            clearColorValue.float32[2] = colors[i].clearColor.b;
+            clearColorValue.float32[3] = colors[i].clearColor.a;
+
+            VkRenderingAttachmentInfo renderingAttachmentInfo{
+                .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .imageView = static_cast<VKTexture*>(colors[i].texture.get())->getImageView(),
+                .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                .loadOp = RenderPassLoadOp_to_VkAttachmentLoadOp(colors[i].loadOp),
+                .storeOp = RenderPassStoreOp_to_VkAttachmentStoreOp(colors[i].storeOp),
+                .clearValue = {.color = clearColorValue}};
+
+            colorAttachmentInfos[i] = std::move(renderingAttachmentInfo);
+        }
+
+        VkRenderingInfo renderingInfo{.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                                      .renderArea = renderArea,
+                                      .layerCount = 1,
+                                      .colorAttachmentCount = static_cast<uint32_t>(colors.size()),
+                                      .pColorAttachments = colorAttachmentInfos.data()};
+
+        ::vkCmdBeginRendering(commandBuffer, &renderingInfo);
     }
 
     auto VKGraphicsContext::endRenderPass() -> void
     {
+        ::vkCmdEndRendering(commandBuffer);
     }
 
     auto VKGraphicsContext::bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
@@ -250,11 +384,22 @@ namespace ionengine::rhi
     auto VKGraphicsContext::setViewport(int32_t const x, int32_t const y, uint32_t const width,
                                         uint32_t const height) -> void
     {
+        VkViewport viewport{.x = static_cast<float>(x),
+                            .y = static_cast<float>(y),
+                            .width = static_cast<float>(width),
+                            .height = static_cast<float>(height),
+                            .minDepth = 0.0f,
+                            .maxDepth = 1.0f};
+        ::vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     }
 
     auto VKGraphicsContext::setScissor(int32_t const left, int32_t const top, int32_t const right,
                                        int32_t const bottom) -> void
     {
+        VkRect2D rect{.offset = {.x = left, .y = top},
+                      .extent = {.width = static_cast<uint32_t>(right), .height = static_cast<uint32_t>(bottom)}};
+        ::vkCmdSetScissor(commandBuffer, 0, 1, &rect);
+        renderArea = rect;
     }
 
     VKDevice::VKDevice(RHICreateInfo const& createInfo)
@@ -264,11 +409,11 @@ namespace ionengine::rhi
                                           .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
                                           .pEngineName = "RHI",
                                           .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-                                          .apiVersion = VK_API_VERSION_1_2};
+                                          .apiVersion = VK_API_VERSION_1_3};
 #ifdef _DEBUG
-        std::array<char const*, 3> instanceExtensions = {
+        std::vector<char const*> instanceExtensions = {
             VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
-        std::array<char const*, 1> instanceLayers = {"VK_LAYER_KHRONOS_validation"};
+        std::vector<char const*> instanceLayers = {"VK_LAYER_KHRONOS_validation"};
 
         VkInstanceCreateInfo instanceCreateInfo{.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
                                                 .pApplicationInfo = &applicationInfo,
@@ -368,30 +513,65 @@ namespace ionengine::rhi
             queueCreateInfos.emplace_back(std::move(queueCreateInfo));
         }
 
-        std::array<char const*, 1> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        std::vector<char const*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                                                     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
 
+        VkPhysicalDeviceVulkan13Features deviceFeaturesExt{
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES, .dynamicRendering = true};
+        VkPhysicalDeviceVulkan12Features deviceFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+                                                        .pNext = &deviceFeaturesExt,
+                                                        .timelineSemaphore = true};
         VkDeviceCreateInfo deviceCreateInfo{.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+                                            .pNext = &deviceFeatures,
                                             .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
                                             .pQueueCreateInfos = queueCreateInfos.data(),
                                             .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
                                             .ppEnabledExtensionNames = deviceExtensions.data()};
         throwIfFailed(::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device));
 
-        ::vkGetDeviceQueue(device, graphicsQueueFamily, 0, &graphicsQueue.queue);
-        graphicsQueue.familyIndex = graphicsQueueFamily;
+        // Create Graphics Queue
+        {
+            ::vkGetDeviceQueue(device, graphicsQueueFamily, 0, &graphicsQueue.queue);
+            graphicsQueue.familyIndex = graphicsQueueFamily;
 
-        ::vkGetDeviceQueue(device, transferQueueFamily, 0, &transferQueue.queue);
-        transferQueue.familyIndex = transferQueueFamily;
+            VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+                                                              .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
 
-        ::vkGetDeviceQueue(device, computeQueueFamily, 0, &computeQueue.queue);
-        computeQueue.familyIndex = computeQueueFamily;
+            VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+                                                      .pNext = &semaphoreTypeCreateInfo};
+
+            throwIfFailed(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &graphicsQueue.semaphore));
+        }
+
+        // Create Transfer Queue
+        {
+            ::vkGetDeviceQueue(device, transferQueueFamily, 0, &transferQueue.queue);
+            transferQueue.familyIndex = transferQueueFamily;
+
+            VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+                                                              .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
+            VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+                                                      .pNext = &semaphoreTypeCreateInfo};
+            throwIfFailed(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &transferQueue.semaphore));
+        }
+
+        // Create Compute Queue
+        {
+            ::vkGetDeviceQueue(device, computeQueueFamily, 0, &computeQueue.queue);
+            computeQueue.familyIndex = computeQueueFamily;
+
+            VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+                                                              .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
+            VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+                                                      .pNext = &semaphoreTypeCreateInfo};
+            throwIfFailed(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &computeQueue.semaphore));
+        }
 
         if (createInfo.window)
         {
             VkXlibSurfaceCreateInfoKHR surfaceCreateInfo{.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
                                                          .dpy = reinterpret_cast<Display*>(createInfo.instance),
                                                          .window = reinterpret_cast<Window>(createInfo.window)};
-
             throwIfFailed(::vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface));
 
             VkSwapchainCreateInfoKHR swapchainCreateInfo{
@@ -410,6 +590,9 @@ namespace ionengine::rhi
 
             throwIfFailed(::vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain));
 
+            VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+            throwIfFailed(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &swapchainSemaphore));
+
             uint32_t numSwapchainImages;
             throwIfFailed(::vkGetSwapchainImagesKHR(device, swapchain, &numSwapchainImages, nullptr));
 
@@ -425,7 +608,6 @@ namespace ionengine::rhi
                                                     .format = TextureFormat::BGRA8_UNORM,
                                                     .dimension = TextureDimension::_2D,
                                                     .flags = (TextureUsageFlags)TextureUsage::RenderTarget};
-
                 auto texture = core::make_ref<VKTexture>(device, swapchainImage, textureCreateInfo);
                 backBuffers.emplace_back(std::move(texture));
             }
@@ -434,8 +616,16 @@ namespace ionengine::rhi
 
     VKDevice::~VKDevice()
     {
-        ::vkDestroySwapchainKHR(device, swapchain, nullptr);
-        ::vkDestroySurfaceKHR(instance, surface, nullptr);
+        backBuffers.clear();
+        ::vkDestroySemaphore(device, graphicsQueue.semaphore, nullptr);
+        ::vkDestroySemaphore(device, transferQueue.semaphore, nullptr);
+        ::vkDestroySemaphore(device, computeQueue.semaphore, nullptr);
+        if (swapchain)
+        {
+            ::vkDestroySemaphore(device, swapchainSemaphore, nullptr);
+            ::vkDestroySwapchainKHR(device, swapchain, nullptr);
+            ::vkDestroySurfaceKHR(instance, surface, nullptr);
+        }
         ::vkDestroyDevice(device, nullptr);
 #ifdef _DEBUG
         destroyDebugUtilsMessengerEXT(instance, debugUtilsMessenger, nullptr);
@@ -460,7 +650,8 @@ namespace ionengine::rhi
 
     auto VKDevice::createGraphicsContext() -> core::ref_ptr<GraphicsContext>
     {
-        return nullptr;
+        return core::make_ref<VKGraphicsContext>(device, graphicsQueue.queue, graphicsQueue.familyIndex,
+                                                 graphicsQueue.semaphore, graphicsQueue.fenceValue);
     }
 
     auto VKDevice::createCopyContext() -> core::ref_ptr<CopyContext>
@@ -470,11 +661,33 @@ namespace ionengine::rhi
 
     auto VKDevice::requestBackBuffer() -> core::ref_ptr<Texture>
     {
-        return nullptr;
+        if (!swapchain)
+        {
+            throw core::Exception("Swapchain is not found");
+        }
+
+        throwIfFailed(::vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<uint32_t>::max(),
+                                              swapchainSemaphore, nullptr, &nextImageIndex));
+        return backBuffers[nextImageIndex];
     }
 
     auto VKDevice::presentBackBuffer() -> void
     {
+        if (!swapchain)
+        {
+            throw core::Exception("Swapchain is not found");
+        }
+
+        VkPresentInfoKHR presentInfo{.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+                                     .swapchainCount = 1,
+                                     .pSwapchains = &swapchain,
+                                     .pImageIndices = &nextImageIndex};
+        throwIfFailed(::vkQueuePresentKHR(graphicsQueue.queue, &presentInfo));
+
+        VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                .signalSemaphoreCount = 1,
+                                .pSignalSemaphores = &swapchainSemaphore};
+        throwIfFailed(::vkQueueSubmit(graphicsQueue.queue, 1, &submitInfo, nullptr));
     }
 
     auto VKDevice::getBackendType() const -> std::string_view

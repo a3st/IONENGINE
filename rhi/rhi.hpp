@@ -405,6 +405,8 @@ namespace ionengine::rhi
     class FutureImpl
     {
       public:
+        virtual ~FutureImpl() = default;
+
         virtual auto getResult() const -> bool = 0;
 
         virtual auto wait() -> void = 0;

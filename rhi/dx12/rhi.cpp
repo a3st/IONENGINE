@@ -1172,11 +1172,8 @@ namespace ionengine::rhi
 
     auto DX12FutureImpl::wait() -> void
     {
-        if (fence->GetCompletedValue() < fenceValue)
-        {
-            throwIfFailed(fence->SetEventOnCompletion(fenceValue, fenceEvent));
-            ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
-        }
+        throwIfFailed(fence->SetEventOnCompletion(fenceValue, fenceEvent));
+        ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
     }
 
     DX12GraphicsContext::DX12GraphicsContext(ID3D12Device4* device, PipelineCache& pipelineCache,

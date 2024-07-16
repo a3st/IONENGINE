@@ -44,10 +44,14 @@ namespace ionengine::rhi
 
         auto getDescriptorOffset(TextureUsage const usage) const -> uint32_t override;
 
+        auto getImageView() const -> VkImageView;
+
       private:
+        VkDevice device;
         VmaAllocator memoryAllocator;
         VkImage image;
         VmaAllocation memoryAllocation;
+        VkImageView imageView;
         uint32_t width;
         uint32_t height;
         uint32_t depth;
@@ -57,10 +61,31 @@ namespace ionengine::rhi
         TextureUsageFlags flags;
     };
 
+    class VKFutureImpl final : public FutureImpl
+    {
+      public:
+        VKFutureImpl(VkDevice device, VkQueue queue, VkSemaphore semaphore, uint64_t const fenceValue);
+
+        auto getResult() const -> bool override;
+
+        auto wait() -> void override;
+
+      private:
+        VkDevice device;
+        VkQueue queue;
+        VkSemaphore semaphore;
+        uint64_t fenceValue;
+    };
+
+    class VKQuery final : public Query
+    {
+    };
+
     class VKGraphicsContext final : public GraphicsContext
     {
       public:
-        VKGraphicsContext(VkDevice device, VkQueue queue, uint32_t queueFamilyIndex);
+        VKGraphicsContext(VkDevice device, VkQueue queue, uint32_t queueFamilyIndex, VkSemaphore semaphore,
+                          uint64_t& fenceValue);
 
         ~VKGraphicsContext();
 
@@ -102,8 +127,12 @@ namespace ionengine::rhi
 
       private:
         VkDevice device;
+        VkQueue queue;
+        VkSemaphore semaphore;
+        uint64_t* fenceValue;
         VkCommandPool commandPool;
         VkCommandBuffer commandBuffer;
+        VkRect2D renderArea;
     };
 
     class VKDevice final : public Device
@@ -143,6 +172,7 @@ namespace ionengine::rhi
         struct QueueInfo
         {
             VkQueue queue;
+            VkSemaphore semaphore;
             uint32_t familyIndex;
             uint64_t fenceValue;
         };
@@ -152,6 +182,8 @@ namespace ionengine::rhi
 
         VkSurfaceKHR surface;
         VkSwapchainKHR swapchain;
+        VkSemaphore swapchainSemaphore;
+        uint32_t nextImageIndex;
 
         std::vector<core::ref_ptr<VKTexture>> backBuffers;
     };
