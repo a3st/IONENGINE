@@ -40,7 +40,7 @@ namespace ionengine::platform
         WM_DELETE_WINDOW = XInternAtom(display, "WM_DELETE_WINDOW", 0);
         ::XSetWMProtocols(display, window, &WM_DELETE_WINDOW, 1);
 
-        ::XSelectInput(display, window, KeyPressMask | KeyReleaseMask);
+        ::XSelectInput(display, window, KeyPressMask | KeyReleaseMask | StructureNotifyMask);
     }
 
     X11App::~X11App()
@@ -74,14 +74,25 @@ namespace ionengine::platform
 
                 switch (event.type)
                 {
+                    case ConfigureNotify: {
+                        WindowEvent windowEvent{.eventType = WindowEventType::Resize,
+                                                .size = {.width = static_cast<uint32_t>(event.xconfigure.width),
+                                                         .height = static_cast<uint32_t>(event.xconfigure.height)}};
+
+                        if (windowEventCallback)
+                        {
+                            windowEventCallback(windowEvent);
+                        }
+                        break;
+                    }
                     case ClientMessage: {
                         if (event.xclient.data.l[0] == WM_DELETE_WINDOW)
                         {
-                            WindowEvent event{.eventType = WindowEventType::Close};
+                            WindowEvent windowEvent{.eventType = WindowEventType::Close};
 
                             if (windowEventCallback)
                             {
-                                windowEventCallback(event);
+                                windowEventCallback(windowEvent);
                             }
 
                             running = false;

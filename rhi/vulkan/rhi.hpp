@@ -165,6 +165,8 @@ namespace ionengine::rhi
 
         auto presentBackBuffer() -> void override;
 
+        auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void override;
+
         auto getBackendType() const -> std::string_view override;
 
       private:
@@ -196,5 +198,7 @@ namespace ionengine::rhi
         uint32_t imageIndex;
 
         std::vector<core::ref_ptr<VKTexture>> backBuffers;
+
+        auto createSwapchain(uint32_t const width, uint32_t const height) -> void;
     };
 } // namespace ionengine::rhi

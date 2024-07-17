@@ -25,22 +25,21 @@ TEST(RHI, DeviceSwapchain_Test)
 
     auto graphicsContext = device->createGraphicsContext();
 
+    uint32_t width = 800;
+    uint32_t height = 600;
+
     platform->setIdleCallback([&]() {
         graphicsContext->reset();
 
         auto backBuffer = device->requestBackBuffer();
 
-        std::vector<rhi::RenderPassColorInfo> colors{
-            rhi::RenderPassColorInfo{
-                .texture = backBuffer,
-                .loadOp = rhi::RenderPassLoadOp::Clear,
-                .storeOp = rhi::RenderPassStoreOp::Store,
-                .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}
-            }
-        };
+        std::vector<rhi::RenderPassColorInfo> colors{rhi::RenderPassColorInfo{.texture = backBuffer,
+                                                                              .loadOp = rhi::RenderPassLoadOp::Clear,
+                                                                              .storeOp = rhi::RenderPassStoreOp::Store,
+                                                                              .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}}};
 
-        graphicsContext->setViewport(0, 0, 800, 600);
-        graphicsContext->setScissor(0, 0, 800, 600);
+        graphicsContext->setViewport(0, 0, width, height);
+        graphicsContext->setScissor(0, 0, width, height);
 
         graphicsContext->barrier(backBuffer, rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
         graphicsContext->beginRenderPass(colors, std::nullopt);
@@ -48,10 +47,24 @@ TEST(RHI, DeviceSwapchain_Test)
         graphicsContext->barrier(backBuffer, rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
 
         auto result = graphicsContext->execute();
-        
+
         device->presentBackBuffer();
 
         result.wait();
+    });
+    platform->setWindowEventCallback([&](platform::WindowEvent const& event) {
+        switch (event.eventType)
+        {
+            case platform::WindowEventType::Resize: {
+                device->resizeBackBuffers(event.size.width, event.size.height);
+                width = event.size.width;
+                height = event.size.height;
+                break;
+            }
+            default: {
+                break;
+            }
+        }
     });
     platform->run();
 }

@@ -564,6 +564,8 @@ namespace ionengine::rhi
 
         virtual auto presentBackBuffer() -> void = 0;
 
+        virtual auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void = 0;
+
         virtual auto getBackendType() const -> std::string_view = 0;
     };
 } // namespace ionengine::rhi
