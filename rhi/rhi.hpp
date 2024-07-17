@@ -167,7 +167,6 @@ namespace ionengine::rhi
     enum class ResourceState
     {
         Common,
-        Present,
         RenderTarget,
         DepthStencilRead,
         DepthStencilWrite,

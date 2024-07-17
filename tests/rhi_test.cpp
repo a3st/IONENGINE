@@ -45,7 +45,7 @@ TEST(RHI, DeviceSwapchain_Test)
         graphicsContext->barrier(backBuffer, rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
         graphicsContext->beginRenderPass(colors, std::nullopt);
         graphicsContext->endRenderPass();
-        graphicsContext->barrier(backBuffer, rhi::ResourceState::RenderTarget, rhi::ResourceState::Present);
+        graphicsContext->barrier(backBuffer, rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
 
         auto result = graphicsContext->execute();
         

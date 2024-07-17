@@ -26,7 +26,10 @@ namespace ionengine::rhi
       public:
         VKTexture(VkDevice device, VmaAllocator memoryAllocator, TextureCreateInfo const& createInfo);
 
-        VKTexture(VkDevice device, VkImage image, TextureCreateInfo const& createInfo);
+        /*!
+            @brief Constructor Swapchain Texture
+        */
+        VKTexture(VkDevice device, VkImage image, uint32_t const width, uint32_t const height);
 
         ~VKTexture();
 
@@ -48,12 +51,15 @@ namespace ionengine::rhi
 
         auto getImageView() const -> VkImageView;
 
+        auto getInitialLayout() const -> VkImageLayout;
+
       private:
         VkDevice device;
         VmaAllocator memoryAllocator;
         VkImage image;
         VmaAllocation memoryAllocation;
         VkImageView imageView;
+        VkImageLayout initialLayout;
         uint32_t width;
         uint32_t height;
         uint32_t depth;

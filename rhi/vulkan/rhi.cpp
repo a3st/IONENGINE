@@ -108,9 +108,7 @@ namespace ionengine::rhi
         switch (state)
         {
             case ResourceState::Common:
-                return VK_IMAGE_LAYOUT_UNDEFINED;
-            case ResourceState::Present:
-                return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                return VK_IMAGE_LAYOUT_GENERAL;
             case ResourceState::DepthStencilRead:
                 return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
             case ResourceState::DepthStencilWrite:
@@ -130,26 +128,26 @@ namespace ionengine::rhi
         }
     }
 
-    auto ResourceState_to_VkAccessFlags(ResourceState const state) -> VkAccessFlags
+    auto VkImageLayout_to_VkAccessFlags(VkImageLayout const layout) -> VkAccessFlags
     {
-        switch (state)
+        switch (layout)
         {
-            case ResourceState::Common:
-            case ResourceState::Present:
+            case VK_IMAGE_LAYOUT_UNDEFINED:
+            case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
                 return VK_ACCESS_NONE;
-            case ResourceState::DepthStencilRead:
+            case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
                 return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-            case ResourceState::DepthStencilWrite:
+            case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
                 return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            case ResourceState::RenderTarget:
+            case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
                 return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            case ResourceState::UnorderedAccess:
+            case VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL:
                 return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            case ResourceState::ShaderRead:
+            case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
                 return VK_ACCESS_SHADER_READ_BIT;
-            case ResourceState::CopySource:
+            case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
                 return VK_ACCESS_TRANSFER_READ_BIT;
-            case ResourceState::CopyDest:
+            case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
                 return VK_ACCESS_TRANSFER_WRITE_BIT;
             default:
                 throw std::invalid_argument("Invalid argument for conversion");
@@ -177,7 +175,7 @@ namespace ionengine::rhi
     VKTexture::VKTexture(VkDevice device, VmaAllocator memoryAllocator, TextureCreateInfo const& createInfo)
         : device(device), memoryAllocator(memoryAllocator), width(createInfo.width), height(createInfo.height),
           depth(createInfo.depth), mipLevels(createInfo.mipLevels), format(createInfo.format),
-          dimension(createInfo.dimension), flags(createInfo.flags)
+          dimension(createInfo.dimension), flags(createInfo.flags), initialLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
     {
         VkImageCreateInfo imageCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                           .imageType = TextureDimension_to_VkImageType(createInfo.dimension),
@@ -206,10 +204,10 @@ namespace ionengine::rhi
             ::vmaAllocateMemoryForImage(memoryAllocator, image, &vmaAllocCreateInfo, &memoryAllocation, nullptr));
     }
 
-    VKTexture::VKTexture(VkDevice device, VkImage image, TextureCreateInfo const& createInfo)
-        : device(device), memoryAllocator(nullptr), image(image), width(createInfo.width), height(createInfo.height),
-          depth(createInfo.depth), mipLevels(createInfo.mipLevels), format(createInfo.format),
-          dimension(createInfo.dimension), flags(createInfo.flags)
+    VKTexture::VKTexture(VkDevice device, VkImage image, uint32_t const width, uint32_t const height)
+        : device(device), memoryAllocator(nullptr), image(image), initialLayout(VK_IMAGE_LAYOUT_UNDEFINED),
+          width(width), height(height), depth(1), mipLevels(1), format(TextureFormat::BGRA8_UNORM),
+          dimension(TextureDimension::_2D), flags((TextureUsageFlags)TextureUsage::RenderTarget)
     {
         VkImageViewCreateInfo imageViewCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
                                                   .image = image,
@@ -225,12 +223,28 @@ namespace ionengine::rhi
                                                                        .baseArrayLayer = 0,
                                                                        .layerCount = depth}};
         throwIfFailed(::vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageView));
+
+        /*VkImageMemoryBarrier imageMemoryBarrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                .srcAccessMask = 0,
+                                                .dstAccessMask = VkImageLayout_to_VkAccessFlags(imageLayout),
+                                                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                                                .newLayout = imageLayout,
+                                                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                .image = image,
+                                                .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                     .baseMipLevel = 0,
+                                                                     .levelCount = 1,
+                                                                     .baseArrayLayer = 0,
+                                                                     .layerCount = 1}};
+        ::vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                               VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+        */
     }
 
     VKTexture::~VKTexture()
     {
         ::vkDestroyImageView(device, imageView, nullptr);
-
         if (memoryAllocation)
         {
             ::vmaDestroyImage(memoryAllocator, image, memoryAllocation);
@@ -280,6 +294,11 @@ namespace ionengine::rhi
     auto VKTexture::getImageView() const -> VkImageView
     {
         return imageView;
+    }
+
+    auto VKTexture::getInitialLayout() const -> VkImageLayout
+    {
+        return initialLayout;
     }
 
     VKFutureImpl::VKFutureImpl(VkDevice device, VkQueue queue, VkSemaphore semaphore, uint64_t const fenceValue)
@@ -363,11 +382,25 @@ namespace ionengine::rhi
     auto VKGraphicsContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before,
                                     ResourceState const after) -> void
     {
+        auto oldLayout = [&](ResourceState const state) -> VkImageLayout {
+            VkImageLayout const initialLayout = static_cast<VKTexture*>(dest.get())->getInitialLayout();
+            return state == ResourceState::Common && initialLayout == VK_IMAGE_LAYOUT_UNDEFINED
+                       ? initialLayout
+                       : ResourceState_to_VkImageLayout(state);
+        };
+
+        auto newLayout = [&](ResourceState const state) -> VkImageLayout {
+            VkImageLayout const initialLayout = static_cast<VKTexture*>(dest.get())->getInitialLayout();
+            return state == ResourceState::Common && initialLayout == VK_IMAGE_LAYOUT_UNDEFINED
+                       ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+                       : ResourceState_to_VkImageLayout(state);
+        };
+
         VkImageMemoryBarrier imageMemoryBarrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                .srcAccessMask = ResourceState_to_VkAccessFlags(before),
-                                                .dstAccessMask = ResourceState_to_VkAccessFlags(after),
-                                                .oldLayout = ResourceState_to_VkImageLayout(before),
-                                                .newLayout = ResourceState_to_VkImageLayout(after),
+                                                .srcAccessMask = VkImageLayout_to_VkAccessFlags(oldLayout(before)),
+                                                .dstAccessMask = VkImageLayout_to_VkAccessFlags(newLayout(after)),
+                                                .oldLayout = oldLayout(before),
+                                                .newLayout = newLayout(after),
                                                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                                                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                                                 .image = static_cast<VKTexture*>(dest.get())->getImage(),
@@ -376,8 +409,8 @@ namespace ionengine::rhi
                                                                      .levelCount = dest->getMipLevels(),
                                                                      .baseArrayLayer = 0,
                                                                      .layerCount = dest->getDepth()}};
-        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                             VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+        ::vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                               VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     }
 
     auto VKGraphicsContext::setGraphicsPipelineOptions(core::ref_ptr<Shader> shader,
@@ -572,7 +605,6 @@ namespace ionengine::rhi
                                                     .queueFamilyIndex = i,
                                                     .queueCount = 1,
                                                     .pQueuePriorities = &queuePriority};
-
             queueCreateInfos.emplace_back(std::move(queueCreateInfo));
         }
 
@@ -599,10 +631,8 @@ namespace ionengine::rhi
 
             VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
                                                               .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
-
             VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
                                                       .pNext = &semaphoreTypeCreateInfo};
-
             throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &graphicsQueue.semaphore));
         }
 
@@ -650,7 +680,6 @@ namespace ionengine::rhi
                 .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
                 .presentMode = VK_PRESENT_MODE_FIFO_KHR,
                 .clipped = true};
-
             throwIfFailed(::vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain));
 
             {
@@ -671,14 +700,8 @@ namespace ionengine::rhi
 
             for (auto const& swapchainImage : swapchainImages)
             {
-                TextureCreateInfo textureCreateInfo{.width = swapchainCreateInfo.imageExtent.width,
-                                                    .height = swapchainCreateInfo.imageExtent.height,
-                                                    .depth = 1,
-                                                    .mipLevels = 1,
-                                                    .format = TextureFormat::BGRA8_UNORM,
-                                                    .dimension = TextureDimension::_2D,
-                                                    .flags = (TextureUsageFlags)TextureUsage::RenderTarget};
-                auto texture = core::make_ref<VKTexture>(device, swapchainImage, textureCreateInfo);
+                auto texture = core::make_ref<VKTexture>(device, swapchainImage, swapchainCreateInfo.imageExtent.width,
+                                                         swapchainCreateInfo.imageExtent.height);
                 backBuffers.emplace_back(std::move(texture));
             }
         }
@@ -738,9 +761,9 @@ namespace ionengine::rhi
         }
 
         VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        /*VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
-                                                          .signalSemaphoreValueCount = 1,
-                                                          .pSignalSemaphoreValues = &graphicsQueue.fenceValue};
+        /*VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType =
+           VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR, .signalSemaphoreValueCount = 1, .pSignalSemaphoreValues
+           = &graphicsQueue.fenceValue};
         */
         throwIfFailed(::vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<uint32_t>::max(), acquireSemaphore,
                                               nullptr, &imageIndex));
@@ -750,8 +773,8 @@ namespace ionengine::rhi
                                 .waitSemaphoreCount = 1,
                                 .pWaitSemaphores = &acquireSemaphore,
                                 .pWaitDstStageMask = &waitDstStageMask};
-                                //.signalSemaphoreCount = 1,
-                                //.pSignalSemaphores = &graphicsQueue.semaphore};
+        //.signalSemaphoreCount = 1,
+        //.pSignalSemaphores = &graphicsQueue.semaphore};
         throwIfFailed(::vkQueueSubmit(graphicsQueue.queue, 1, &submitInfo, nullptr));
         return backBuffers[imageIndex];
     }
