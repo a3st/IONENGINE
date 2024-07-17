@@ -26,27 +26,32 @@ TEST(RHI, DeviceSwapchain_Test)
     auto graphicsContext = device->createGraphicsContext();
 
     platform->setIdleCallback([&]() {
-        auto backBuffer = device->requestBackBuffer();
         graphicsContext->reset();
+
+        auto backBuffer = device->requestBackBuffer();
 
         std::vector<rhi::RenderPassColorInfo> colors{
             rhi::RenderPassColorInfo{
                 .texture = backBuffer,
                 .loadOp = rhi::RenderPassLoadOp::Clear,
                 .storeOp = rhi::RenderPassStoreOp::Store,
-                .clearColor = {0.2f, 0.3f, 0.2f, 1.0f}
+                .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}
             }
         };
 
         graphicsContext->setViewport(0, 0, 800, 600);
         graphicsContext->setScissor(0, 0, 800, 600);
 
+        graphicsContext->barrier(backBuffer, rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
         graphicsContext->beginRenderPass(colors, std::nullopt);
         graphicsContext->endRenderPass();
+        graphicsContext->barrier(backBuffer, rhi::ResourceState::RenderTarget, rhi::ResourceState::Present);
 
         auto result = graphicsContext->execute();
         
         device->presentBackBuffer();
+
+        result.wait();
     });
     platform->run();
 }

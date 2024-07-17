@@ -167,15 +167,14 @@ namespace ionengine::rhi
     enum class ResourceState
     {
         Common,
+        Present,
         RenderTarget,
-        DepthRead,
-        DepthWrite,
-        NonPixelShaderRead,
-        PixelShaderRead,
-        AllShaderRead,
+        DepthStencilRead,
+        DepthStencilWrite,
+        ShaderRead,
         UnorderedAccess,
-        CopyDst,
-        CopySrc
+        CopyDest,
+        CopySource
     };
 
     enum class Filter

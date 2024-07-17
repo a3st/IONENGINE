@@ -44,6 +44,8 @@ namespace ionengine::rhi
 
         auto getDescriptorOffset(TextureUsage const usage) const -> uint32_t override;
 
+        auto getImage() const -> VkImage;
+
         auto getImageView() const -> VkImageView;
 
       private:
@@ -128,6 +130,7 @@ namespace ionengine::rhi
       private:
         VkDevice device;
         VkQueue queue;
+        uint32_t queueFamilyIndex;
         VkSemaphore semaphore;
         uint64_t* fenceValue;
         VkCommandPool commandPool;
@@ -182,8 +185,9 @@ namespace ionengine::rhi
 
         VkSurfaceKHR surface;
         VkSwapchainKHR swapchain;
-        VkSemaphore swapchainSemaphore;
-        uint32_t nextImageIndex;
+        VkSemaphore acquireSemaphore;
+        VkSemaphore presentSemaphore;
+        uint32_t imageIndex;
 
         std::vector<core::ref_ptr<VKTexture>> backBuffers;
     };

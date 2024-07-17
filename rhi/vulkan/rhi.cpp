@@ -103,6 +103,59 @@ namespace ionengine::rhi
         }
     }
 
+    auto ResourceState_to_VkImageLayout(ResourceState const state) -> VkImageLayout
+    {
+        switch (state)
+        {
+            case ResourceState::Common:
+                return VK_IMAGE_LAYOUT_UNDEFINED;
+            case ResourceState::Present:
+                return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            case ResourceState::DepthStencilRead:
+                return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+            case ResourceState::DepthStencilWrite:
+                return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            case ResourceState::RenderTarget:
+                return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            case ResourceState::UnorderedAccess:
+                return VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+            case ResourceState::ShaderRead:
+                return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            case ResourceState::CopySource:
+                return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            case ResourceState::CopyDest:
+                return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto ResourceState_to_VkAccessFlags(ResourceState const state) -> VkAccessFlags
+    {
+        switch (state)
+        {
+            case ResourceState::Common:
+            case ResourceState::Present:
+                return VK_ACCESS_NONE;
+            case ResourceState::DepthStencilRead:
+                return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+            case ResourceState::DepthStencilWrite:
+                return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            case ResourceState::RenderTarget:
+                return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            case ResourceState::UnorderedAccess:
+                return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            case ResourceState::ShaderRead:
+                return VK_ACCESS_SHADER_READ_BIT;
+            case ResourceState::CopySource:
+                return VK_ACCESS_TRANSFER_READ_BIT;
+            case ResourceState::CopyDest:
+                return VK_ACCESS_TRANSFER_WRITE_BIT;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
     auto throwIfFailed(VkResult const result) -> void
     {
         if (result != VK_SUCCESS)
@@ -171,7 +224,6 @@ namespace ionengine::rhi
                                                                        .levelCount = mipLevels,
                                                                        .baseArrayLayer = 0,
                                                                        .layerCount = depth}};
-
         throwIfFailed(::vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageView));
     }
 
@@ -220,6 +272,11 @@ namespace ionengine::rhi
         return 0;
     }
 
+    auto VKTexture::getImage() const -> VkImage
+    {
+        return image;
+    }
+
     auto VKTexture::getImageView() const -> VkImageView
     {
         return imageView;
@@ -243,18 +300,17 @@ namespace ionengine::rhi
                                               .semaphoreCount = 1,
                                               .pSemaphores = &semaphore,
                                               .pValues = &fenceValue};
-
         throwIfFailed(::vkWaitSemaphores(device, &semaphoreWaitInfo, std::numeric_limits<uint64_t>::max()));
     }
 
     VKGraphicsContext::VKGraphicsContext(VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
                                          VkSemaphore semaphore, uint64_t& fenceValue)
-        : device(device), queue(queue), semaphore(semaphore), fenceValue(&fenceValue)
+        : device(device), queue(queue), queueFamilyIndex(queueFamilyIndex), semaphore(semaphore),
+          fenceValue(&fenceValue)
     {
         VkCommandPoolCreateInfo commandPoolCreateInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
                                                       .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
                                                       .queueFamilyIndex = queueFamilyIndex};
-
         throwIfFailed(::vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool));
     }
 
@@ -286,14 +342,12 @@ namespace ionengine::rhi
         VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
                                                           .signalSemaphoreValueCount = 1,
                                                           .pSignalSemaphoreValues = fenceValue};
-
         VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
                                 .pNext = &semaphoreSubmitInfo,
                                 .commandBufferCount = 1,
                                 .pCommandBuffers = &commandBuffer,
                                 .signalSemaphoreCount = 1,
                                 .pSignalSemaphores = &semaphore};
-
         throwIfFailed(::vkQueueSubmit(queue, 1, &submitInfo, nullptr));
 
         auto query = core::make_ref<VKQuery>();
@@ -309,10 +363,21 @@ namespace ionengine::rhi
     auto VKGraphicsContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before,
                                     ResourceState const after) -> void
     {
-        VkImageMemoryBarrier imageMemoryBarrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-
-        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0,
-                             0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+        VkImageMemoryBarrier imageMemoryBarrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                .srcAccessMask = ResourceState_to_VkAccessFlags(before),
+                                                .dstAccessMask = ResourceState_to_VkAccessFlags(after),
+                                                .oldLayout = ResourceState_to_VkImageLayout(before),
+                                                .newLayout = ResourceState_to_VkImageLayout(after),
+                                                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                .image = static_cast<VKTexture*>(dest.get())->getImage(),
+                                                .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                     .baseMipLevel = 0,
+                                                                     .levelCount = dest->getMipLevels(),
+                                                                     .baseArrayLayer = 0,
+                                                                     .layerCount = dest->getDepth()}};
+        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                             VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     }
 
     auto VKGraphicsContext::setGraphicsPipelineOptions(core::ref_ptr<Shader> shader,
@@ -345,7 +410,6 @@ namespace ionengine::rhi
                 .loadOp = RenderPassLoadOp_to_VkAttachmentLoadOp(colors[i].loadOp),
                 .storeOp = RenderPassStoreOp_to_VkAttachmentStoreOp(colors[i].storeOp),
                 .clearValue = {.color = clearColorValue}};
-
             colorAttachmentInfos[i] = std::move(renderingAttachmentInfo);
         }
 
@@ -354,7 +418,6 @@ namespace ionengine::rhi
                                       .layerCount = 1,
                                       .colorAttachmentCount = static_cast<uint32_t>(colors.size()),
                                       .pColorAttachments = colorAttachmentInfos.data()};
-
         ::vkCmdBeginRendering(commandBuffer, &renderingInfo);
     }
 
@@ -402,7 +465,7 @@ namespace ionengine::rhi
         renderArea = rect;
     }
 
-    VKDevice::VKDevice(RHICreateInfo const& createInfo)
+    VKDevice::VKDevice(RHICreateInfo const& createInfo) : swapchain(nullptr)
     {
         VkApplicationInfo applicationInfo{.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
                                           .pApplicationName = "RHI",
@@ -540,7 +603,7 @@ namespace ionengine::rhi
             VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
                                                       .pNext = &semaphoreTypeCreateInfo};
 
-            throwIfFailed(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &graphicsQueue.semaphore));
+            throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &graphicsQueue.semaphore));
         }
 
         // Create Transfer Queue
@@ -552,7 +615,7 @@ namespace ionengine::rhi
                                                               .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
             VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
                                                       .pNext = &semaphoreTypeCreateInfo};
-            throwIfFailed(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &transferQueue.semaphore));
+            throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &transferQueue.semaphore));
         }
 
         // Create Compute Queue
@@ -564,7 +627,7 @@ namespace ionengine::rhi
                                                               .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
             VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
                                                       .pNext = &semaphoreTypeCreateInfo};
-            throwIfFailed(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &computeQueue.semaphore));
+            throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &computeQueue.semaphore));
         }
 
         if (createInfo.window)
@@ -590,8 +653,15 @@ namespace ionengine::rhi
 
             throwIfFailed(::vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain));
 
-            VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-            throwIfFailed(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &swapchainSemaphore));
+            {
+                VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+                throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &acquireSemaphore));
+            }
+
+            {
+                VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+                throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &presentSemaphore));
+            }
 
             uint32_t numSwapchainImages;
             throwIfFailed(::vkGetSwapchainImagesKHR(device, swapchain, &numSwapchainImages, nullptr));
@@ -622,7 +692,8 @@ namespace ionengine::rhi
         ::vkDestroySemaphore(device, computeQueue.semaphore, nullptr);
         if (swapchain)
         {
-            ::vkDestroySemaphore(device, swapchainSemaphore, nullptr);
+            ::vkDestroySemaphore(device, presentSemaphore, nullptr);
+            ::vkDestroySemaphore(device, acquireSemaphore, nullptr);
             ::vkDestroySwapchainKHR(device, swapchain, nullptr);
             ::vkDestroySurfaceKHR(instance, surface, nullptr);
         }
@@ -666,9 +737,23 @@ namespace ionengine::rhi
             throw core::Exception("Swapchain is not found");
         }
 
-        throwIfFailed(::vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<uint32_t>::max(),
-                                              swapchainSemaphore, nullptr, &nextImageIndex));
-        return backBuffers[nextImageIndex];
+        VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        /*VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+                                                          .signalSemaphoreValueCount = 1,
+                                                          .pSignalSemaphoreValues = &graphicsQueue.fenceValue};
+        */
+        throwIfFailed(::vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<uint32_t>::max(), acquireSemaphore,
+                                              nullptr, &imageIndex));
+
+        VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                //.pNext = &semaphoreSubmitInfo,
+                                .waitSemaphoreCount = 1,
+                                .pWaitSemaphores = &acquireSemaphore,
+                                .pWaitDstStageMask = &waitDstStageMask};
+                                //.signalSemaphoreCount = 1,
+                                //.pSignalSemaphores = &graphicsQueue.semaphore};
+        throwIfFailed(::vkQueueSubmit(graphicsQueue.queue, 1, &submitInfo, nullptr));
+        return backBuffers[imageIndex];
     }
 
     auto VKDevice::presentBackBuffer() -> void
@@ -678,16 +763,26 @@ namespace ionengine::rhi
             throw core::Exception("Swapchain is not found");
         }
 
+        VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+                                                          .waitSemaphoreValueCount = 1,
+                                                          .pWaitSemaphoreValues = &graphicsQueue.fenceValue};
+        VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                .pNext = &semaphoreSubmitInfo,
+                                .waitSemaphoreCount = 1,
+                                .pWaitSemaphores = &graphicsQueue.semaphore,
+                                .pWaitDstStageMask = &waitDstStageMask,
+                                .signalSemaphoreCount = 1,
+                                .pSignalSemaphores = &presentSemaphore};
+        throwIfFailed(::vkQueueSubmit(graphicsQueue.queue, 1, &submitInfo, nullptr));
+
         VkPresentInfoKHR presentInfo{.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+                                     .waitSemaphoreCount = 1,
+                                     .pWaitSemaphores = &presentSemaphore,
                                      .swapchainCount = 1,
                                      .pSwapchains = &swapchain,
-                                     .pImageIndices = &nextImageIndex};
+                                     .pImageIndices = &imageIndex};
         throwIfFailed(::vkQueuePresentKHR(graphicsQueue.queue, &presentInfo));
-
-        VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                .signalSemaphoreCount = 1,
-                                .pSignalSemaphores = &swapchainSemaphore};
-        throwIfFailed(::vkQueueSubmit(graphicsQueue.queue, 1, &submitInfo, nullptr));
     }
 
     auto VKDevice::getBackendType() const -> std::string_view

@@ -65,45 +65,49 @@ namespace ionengine::platform
 
         bool running = true;
         XEvent event;
+
         while (running)
         {
-            ::XNextEvent(display, &event);
-
-            switch (event.type)
+            while (::XPending(display) > 0)
             {
-                case ClientMessage: {
-                    if (event.xclient.data.l[0] == WM_DELETE_WINDOW)
-                    {
-                        WindowEvent event{.eventType = WindowEventType::Close};
+                ::XNextEvent(display, &event);
 
-                        if (windowEventCallback)
+                switch (event.type)
+                {
+                    case ClientMessage: {
+                        if (event.xclient.data.l[0] == WM_DELETE_WINDOW)
                         {
-                            windowEventCallback(event);
-                        }
+                            WindowEvent event{.eventType = WindowEventType::Close};
 
-                        running = false;
+                            if (windowEventCallback)
+                            {
+                                windowEventCallback(event);
+                            }
+
+                            running = false;
+                        }
+                        break;
                     }
-                    break;
-                }
-                case KeyPress: {
-                    auto result = keyCodes.find(event.xkey.keycode);
-                    if (result != keyCodes.end())
-                    {
-                        InputEvent event{.deviceType = InputDeviceType::Keyboard,
-                                         .state = InputState::Pressed,
-                                         .keyCode = result->second};
+                    case KeyPress: {
+                        auto result = keyCodes.find(event.xkey.keycode);
+                        if (result != keyCodes.end())
+                        {
+                            InputEvent event{.deviceType = InputDeviceType::Keyboard,
+                                             .state = InputState::Pressed,
+                                             .keyCode = result->second};
+                        }
+                        break;
                     }
-                    break;
-                }
-                case KeyRelease: {
-                    auto result = keyCodes.find(event.xkey.keycode);
-                    if (result != keyCodes.end())
-                    {
-                        InputEvent event{.deviceType = InputDeviceType::Keyboard,
-                                         .state = InputState::Released,
-                                         .keyCode = result->second};
+                    case KeyRelease: {
+                        auto result = keyCodes.find(event.xkey.keycode);
+                        if (result != keyCodes.end())
+                        {
+                            InputEvent event{.deviceType = InputDeviceType::Keyboard,
+                                             .state = InputState::Released,
+                                             .keyCode = result->second};
+                        }
+                        break;
                     }
-                    break;
                 }
             }
 
