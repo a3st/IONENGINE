@@ -13,6 +13,31 @@
 
 namespace ionengine::rhi
 {
+    auto sizeof_VertexFormat(VertexFormat const format) -> uint32_t
+    {
+        switch (format)
+        {
+            case VertexFormat::Float4:
+                return sizeof(float) * 4;
+            case VertexFormat::Float4x4:
+                return sizeof(float) * 16;
+            case VertexFormat::Float3:
+                return sizeof(float) * 3;
+            case VertexFormat::Float3x3:
+                return sizeof(float) * 9;
+            case VertexFormat::Float2:
+                return sizeof(float) * 2;
+            case VertexFormat::Float2x2:
+                return sizeof(float) * 4;
+            case VertexFormat::Float:
+                return sizeof(float);
+            case VertexFormat::Uint:
+                return sizeof(uint32_t);
+            default:
+                return 0;
+        }
+    }
+
     auto Device::create(RHICreateInfo const& createInfo) -> core::ref_ptr<Device>
     {
 #ifdef IONENGINE_RHI_DIRECTX12

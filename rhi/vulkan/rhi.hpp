@@ -6,6 +6,8 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
+#undef Always
+#undef None
 
 namespace ionengine::rhi
 {
@@ -17,8 +19,78 @@ namespace ionengine::rhi
       private:
     };
 
+    class VKVertexInput
+    {
+      public:
+        VKVertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations);
+
+        auto getPipelineVertexInputState() const -> VkPipelineVertexInputStateCreateInfo;
+
+      private:
+        VkVertexInputBindingDescription inputBinding;
+        std::vector<VkVertexInputAttributeDescription> inputAttributes;
+    };
+
+    struct VKShaderStage
+    {
+        std::string entryPoint;
+        VkShaderModule shaderModule;
+    };
+
+    class VKShader : public Shader
+    {
+      public:
+        VKShader(VkDevice device, ShaderCreateInfo const& createInfo);
+
+        ~VKShader();
+
+        auto getHash() const -> uint64_t override;
+
+        auto getPipelineType() const -> PipelineType override;
+
+        auto getStages() const -> std::unordered_map<VkShaderStageFlagBits, VKShaderStage> const&;
+
+        auto getVertexInput() const -> std::optional<VKVertexInput>;
+
+      private:
+        VkDevice device;
+        std::optional<VKVertexInput> vertexInput;
+        std::unordered_map<VkShaderStageFlagBits, VKShaderStage> stages;
+        uint64_t hash;
+        PipelineType pipelineType;
+    };
+
+    class Pipeline : public core::ref_counted_object
+    {
+      public:
+        Pipeline(VkDevice device, VKShader* shader, RasterizerStageInfo const& rasterizer,
+                 BlendColorInfo const& blendColor, std::optional<DepthStencilStageInfo> const depthStencil);
+
+      private:
+    };
+
     class PipelineCache : public core::ref_counted_object
     {
+    };
+
+    class VKBuffer final : public Buffer {
+        VKBuffer(VkDevice device, VmaAllocator memoryAllocator, BufferCreateInfo const& createInfo);
+
+        ~VKBuffer();
+
+        inline static uint32_t const ConstantBufferSizeAlignment = 256;
+
+        auto getSize() -> size_t override;
+
+        auto getFlags() -> BufferUsageFlags override;
+
+        auto mapMemory() -> uint8_t* override;
+
+        auto unmapMemory() -> void override;
+
+        auto getBuffer() const -> VkBuffer;
+
+        auto getDescriptorOffset(BufferUsage const usage) const -> uint32_t override;
     };
 
     class VKTexture final : public Texture

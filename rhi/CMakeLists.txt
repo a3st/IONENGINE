@@ -5,7 +5,8 @@ add_library(rhi STATIC rhi.cpp)
 
 target_include_directories(rhi PUBLIC
     ${PROJECT_SOURCE_DIR} 
-    ${PROJECT_SOURCE_DIR}/rhi)
+    ${PROJECT_SOURCE_DIR}/rhi
+    ${PROJECT_SOURCE_DIR}/thirdparty/xxhash/include)
 
 target_precompile_headers(rhi PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)
 

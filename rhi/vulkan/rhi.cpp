@@ -5,6 +5,7 @@
 #include "rhi.hpp"
 #include "core/exception.hpp"
 #include "precompiled.h"
+#include <xxhash/xxhash64.h>
 
 namespace ionengine::rhi
 {
@@ -154,6 +155,117 @@ namespace ionengine::rhi
         }
     }
 
+    auto VertexFormat_to_VkFormat(VertexFormat const format) -> VkFormat
+    {
+        switch (format)
+        {
+            case VertexFormat::Float4:
+            case VertexFormat::Float4x4:
+                return VK_FORMAT_R32G32B32A32_SFLOAT;
+            case VertexFormat::Float3:
+            case VertexFormat::Float3x3:
+                return VK_FORMAT_R32G32B32_SFLOAT;
+            case VertexFormat::Float2:
+            case VertexFormat::Float2x2:
+                return VK_FORMAT_R32G32_SFLOAT;
+            case VertexFormat::Float:
+                return VK_FORMAT_R32_SFLOAT;
+            case VertexFormat::Uint:
+                return VK_FORMAT_R32_UINT;
+            default:
+                return VK_FORMAT_UNDEFINED;
+        }
+    }
+
+    auto CullMode_to_VkCullModeFlags(CullMode const cullMode) -> VkCullModeFlags
+    {
+        switch (cullMode)
+        {
+            case CullMode::Back:
+                return VK_CULL_MODE_BACK_BIT;
+            case CullMode::Front:
+                return VK_CULL_MODE_FRONT_BIT;
+            case CullMode::None:
+                return VK_CULL_MODE_NONE;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto FillMode_to_VkPolygonMode(FillMode const fillMode) -> VkPolygonMode
+    {
+        switch (fillMode)
+        {
+            case FillMode::Solid:
+                return VK_POLYGON_MODE_FILL;
+            case FillMode::Wireframe:
+                return VK_POLYGON_MODE_LINE;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto CompareOp_to_VkCompareOp(CompareOp const compareOp) -> VkCompareOp
+    {
+        switch (compareOp)
+        {
+            case CompareOp::Always:
+                return VK_COMPARE_OP_ALWAYS;
+            case CompareOp::Equal:
+                return VK_COMPARE_OP_EQUAL;
+            case CompareOp::Greater:
+                return VK_COMPARE_OP_GREATER;
+            case CompareOp::GreaterEqual:
+                return VK_COMPARE_OP_GREATER_OR_EQUAL;
+            case CompareOp::Less:
+                return VK_COMPARE_OP_LESS;
+            case CompareOp::LessEqual:
+                return VK_COMPARE_OP_LESS_OR_EQUAL;
+            case CompareOp::Never:
+                return VK_COMPARE_OP_NEVER;
+            case CompareOp::NotEqual:
+                return VK_COMPARE_OP_NOT_EQUAL;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto Blend_to_VkBlendFactor(Blend const blend) -> VkBlendFactor
+    {
+        switch (blend)
+        {
+            case Blend::InvSrcAlpha:
+                return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            case Blend::One:
+                return VK_BLEND_FACTOR_ONE;
+            case Blend::SrcAlpha:
+                return VK_BLEND_FACTOR_SRC_ALPHA;
+            case Blend::Zero:
+                return VK_BLEND_FACTOR_ZERO;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
+    auto BlendOp_to_D3D12_VkBlendOp(BlendOp const blendOp) -> VkBlendOp
+    {
+        switch (blendOp)
+        {
+            case BlendOp::Add:
+                return VK_BLEND_OP_ADD;
+            case BlendOp::Max:
+                return VK_BLEND_OP_MAX;
+            case BlendOp::Min:
+                return VK_BLEND_OP_MIN;
+            case BlendOp::RevSubtract:
+                return VK_BLEND_OP_REVERSE_SUBTRACT;
+            case BlendOp::Subtract:
+                return VK_BLEND_OP_SUBTRACT;
+            default:
+                throw std::invalid_argument("Invalid argument for conversion");
+        }
+    }
+
     auto throwIfFailed(VkResult const result) -> void
     {
         if (result != VK_SUCCESS)
@@ -167,9 +279,232 @@ namespace ionengine::rhi
                                              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                              void* pUserData) -> VkBool32
     {
-
         std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl;
         return VK_FALSE;
+    }
+
+    VKVertexInput::VKVertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations)
+    {
+        std::vector<VkVertexInputAttributeDescription> inputAttributes;
+
+        uint32_t location = 0;
+        uint32_t offset = 0;
+
+        for (auto const& vertexDeclaration : vertexDeclarations)
+        {
+            VkVertexInputAttributeDescription inputAttribute{.location = location,
+                                                             .binding = 0,
+                                                             .format =
+                                                                 VertexFormat_to_VkFormat(vertexDeclaration.format),
+                                                             .offset = offset};
+
+            location++;
+            offset += sizeof_VertexFormat(vertexDeclaration.format);
+
+            inputAttributes.emplace_back(std::move(inputAttribute));
+        }
+
+        inputBinding =
+            VkVertexInputBindingDescription{.binding = 0, .stride = offset, .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
+    }
+
+    auto VKVertexInput::getPipelineVertexInputState() const -> VkPipelineVertexInputStateCreateInfo
+    {
+        return VkPipelineVertexInputStateCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+                                                    .vertexBindingDescriptionCount = 1,
+                                                    .pVertexBindingDescriptions = &inputBinding,
+                                                    .vertexAttributeDescriptionCount =
+                                                        static_cast<uint32_t>(inputAttributes.size()),
+                                                    .pVertexAttributeDescriptions = inputAttributes.data()};
+    }
+
+    VKShader::VKShader(VkDevice device, ShaderCreateInfo const& createInfo) : device(device)
+    {
+        if (createInfo.pipelineType == rhi::PipelineType::Graphics)
+        {
+            XXHash64 hasher(0);
+            {
+                VkShaderModuleCreateInfo shaderModuleCreateInfo{
+                    .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                    .pCode = reinterpret_cast<uint32_t const*>(createInfo.graphics.vertexStage.shader.data())};
+                VkShaderModule shaderModule;
+                throwIfFailed(::vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModule));
+
+                VKShaderStage shaderStage{.entryPoint = createInfo.graphics.vertexStage.entryPoint,
+                                          .shaderModule = shaderModule};
+                stages.emplace(VK_SHADER_STAGE_VERTEX_BIT, std::move(shaderStage));
+                hasher.add(createInfo.graphics.vertexStage.shader.data(),
+                           createInfo.graphics.vertexStage.shader.size());
+            }
+
+            {
+                VkShaderModuleCreateInfo shaderModuleCreateInfo{
+                    .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                    .pCode = reinterpret_cast<uint32_t const*>(createInfo.graphics.pixelStage.shader.data())};
+                VkShaderModule shaderModule;
+                throwIfFailed(::vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModule));
+
+                VKShaderStage shaderStage{.entryPoint = createInfo.graphics.pixelStage.entryPoint,
+                                          .shaderModule = shaderModule};
+                stages.emplace(VK_SHADER_STAGE_FRAGMENT_BIT, std::move(shaderStage));
+                hasher.add(createInfo.graphics.pixelStage.shader.data(), createInfo.graphics.pixelStage.shader.size());
+            }
+            hash = hasher.hash();
+
+            vertexInput.emplace(createInfo.graphics.vertexDeclarations);
+        }
+        else
+        {
+            XXHash64 hasher(0);
+            {
+                VkShaderModuleCreateInfo shaderModuleCreateInfo{
+                    .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                    .pCode = reinterpret_cast<uint32_t const*>(createInfo.compute.shader.data())};
+                VkShaderModule shaderModule;
+                throwIfFailed(::vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModule));
+
+                VKShaderStage shaderStage{.entryPoint = createInfo.compute.entryPoint, .shaderModule = shaderModule};
+                stages.emplace(VK_SHADER_STAGE_COMPUTE_BIT, std::move(shaderStage));
+                hasher.add(createInfo.compute.shader.data(), createInfo.compute.shader.size());
+            }
+            hash = hasher.hash();
+        }
+    }
+
+    VKShader::~VKShader()
+    {
+        for (auto const [stageFlags, shaderStage] : stages)
+        {
+            ::vkDestroyShaderModule(device, shaderStage.shaderModule, nullptr);
+        }
+    }
+
+    auto VKShader::getHash() const -> uint64_t
+    {
+        return hash;
+    }
+
+    auto VKShader::getPipelineType() const -> PipelineType
+    {
+        return pipelineType;
+    }
+
+    auto VKShader::getStages() const -> std::unordered_map<VkShaderStageFlagBits, VKShaderStage> const&
+    {
+        return stages;
+    }
+
+    auto VKShader::getVertexInput() const -> std::optional<VKVertexInput>
+    {
+        return vertexInput;
+    }
+
+    Pipeline::Pipeline(VkDevice device, VKShader* shader, RasterizerStageInfo const& rasterizer,
+                       BlendColorInfo const& blendColor, std::optional<DepthStencilStageInfo> const depthStencil)
+    {
+        if (shader->getPipelineType() == PipelineType::Graphics)
+        {
+            std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
+            for (auto const [stageFlags, shaderStage] : shader->getStages())
+            {
+                VkPipelineShaderStageCreateInfo shaderStageCreateInfo{
+                    .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                    .stage = stageFlags,
+                    .module = shaderStage.shaderModule,
+                    .pName = shaderStage.entryPoint.c_str()};
+
+                shaderStageCreateInfos.emplace_back(std::move(shaderStageCreateInfo));
+            }
+            VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+                .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
+            VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+                .depthClampEnable = true,
+                .polygonMode = FillMode_to_VkPolygonMode(rasterizer.fillMode),
+                .cullMode = CullMode_to_VkCullModeFlags(rasterizer.cullMode),
+                .frontFace = VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE,
+                .depthBiasEnable = true,
+                .depthBiasConstantFactor = 0.0f,
+                .depthBiasClamp = 0.0f,
+                .depthBiasSlopeFactor = 0.0f,
+                .lineWidth = 1.0f};
+            VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+
+            };
+
+            VkStencilOpState stencilOpState{.failOp = VK_STENCIL_OP_KEEP,
+                                            .passOp = VK_STENCIL_OP_KEEP,
+                                            .depthFailOp = VK_STENCIL_OP_KEEP,
+                                            .compareOp = VK_COMPARE_OP_ALWAYS,
+                                            .compareMask = 0xff,
+                                            .writeMask = 0xff};
+
+            auto depthStencilValue = depthStencil.value_or(DepthStencilStageInfo::Default());
+            VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+                .depthTestEnable = depthStencilValue.depthWrite,
+                .depthWriteEnable = depthStencilValue.depthWrite,
+                .depthCompareOp = CompareOp_to_VkCompareOp(depthStencilValue.depthFunc),
+                .depthBoundsTestEnable = depthStencilValue.depthWrite,
+                .stencilTestEnable = depthStencilValue.stencilWrite,
+                .front = stencilOpState,
+                .back = stencilOpState,
+                .minDepthBounds = 0.0f,
+                .maxDepthBounds = 1.0f};
+
+            VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            };
+
+            std::vector<VkDynamicState> dynamicStates{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+            VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+                .pDynamicStates = dynamicStates.data(),
+            };
+
+            VkGraphicsPipelineCreateInfo pipelineCreateInfo{.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+        }
+    }
+
+    VKBuffer::VKBuffer(VkDevice device, VmaAllocator memoryAllocator, BufferCreateInfo const& createInfo)
+    {
+    }
+
+    VKBuffer::~VKBuffer()
+    {
+    }
+
+    auto VKBuffer::getSize() -> size_t
+    {
+        return 0;
+    }
+
+    auto VKBuffer::getFlags() -> BufferUsageFlags
+    {
+        return 0;
+    }
+
+    auto VKBuffer::mapMemory() -> uint8_t*
+    {
+        return nullptr;
+    }
+
+    auto VKBuffer::unmapMemory() -> void
+    {
+    }
+
+    auto VKBuffer::getBuffer() const -> VkBuffer
+    {
+        return nullptr;
+    }
+
+    auto VKBuffer::getDescriptorOffset(BufferUsage const usage) const -> uint32_t
+    {
+        return 0;
     }
 
     VKTexture::VKTexture(VkDevice device, VmaAllocator memoryAllocator, TextureCreateInfo const& createInfo)
@@ -455,10 +790,12 @@ namespace ionengine::rhi
 
     auto VKGraphicsContext::drawIndexed(uint32_t const indexCount, uint32_t const instanceCount) -> void
     {
+        ::vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, 0, 0, 0);
     }
 
     auto VKGraphicsContext::draw(uint32_t const vertexCount, uint32_t const instanceCount) -> void
     {
+        ::vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, 0);
     }
 
     auto VKGraphicsContext::setViewport(int32_t const x, int32_t const y, uint32_t const width,

@@ -8,7 +8,7 @@ using namespace ionengine;
 TEST(RHI, DeviceOffRender_Test)
 {
     rhi::RHICreateInfo rhiCreateInfo{.window = nullptr};
-
+    
     auto device = rhi::Device::create(rhiCreateInfo);
 }
 

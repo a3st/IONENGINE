@@ -17,8 +17,8 @@ namespace ionengine::rhi
         UnorderedAccess = 1 << 4,
         MapWrite = 1 << 5,
         MapRead = 1 << 6,
-        CopySrc = 1 << 7,
-        CopyDst = 1 << 8
+        CopySource = 1 << 7,
+        CopyDest = 1 << 8
     };
 
     DECLARE_ENUM_CLASS_BIT_FLAG(BufferUsage)
@@ -70,8 +70,8 @@ namespace ionengine::rhi
         RenderTarget = 1 << 1,
         DepthStencil = 1 << 2,
         UnorderedAccess = 1 << 3,
-        CopySrc = 1 << 4,
-        CopyDst = 1 << 5
+        CopySource = 1 << 4,
+        CopyDest = 1 << 5
     };
 
     DECLARE_ENUM_CLASS_BIT_FLAG(TextureUsage)
@@ -96,10 +96,20 @@ namespace ionengine::rhi
         virtual auto getDescriptorOffset(TextureUsage const usage) const -> uint32_t = 0;
     };
 
+    enum class PipelineType
+    {
+        Graphics,
+        Compute
+    };
+
     class Shader : public core::ref_counted_object
     {
       public:
+        virtual ~Shader() = default;
+
         virtual auto getHash() const -> uint64_t = 0;
+
+        virtual auto getPipelineType() const -> PipelineType = 0;
     };
 
     enum class RenderPassLoadOp
@@ -347,17 +357,18 @@ namespace ionengine::rhi
         Bool
     };
 
+    auto sizeof_VertexFormat(VertexFormat const format) -> uint32_t;
+
     struct VertexDeclarationInfo
     {
         std::string semantic;
-        uint32_t index;
         VertexFormat format;
     };
 
-    enum class PipelineType
+    struct ShaderStageCreateInfo
     {
-        Graphics,
-        Compute
+        std::string entryPoint;
+        std::span<uint8_t const> shader;
     };
 
     struct ShaderCreateInfo
@@ -367,13 +378,10 @@ namespace ionengine::rhi
             struct
             {
                 std::span<VertexDeclarationInfo const> vertexDeclarations;
-                std::span<uint8_t const> const vertexShader;
-                std::span<uint8_t const> const pixelShader;
+                ShaderStageCreateInfo vertexStage;
+                ShaderStageCreateInfo pixelStage;
             } graphics;
-            struct
-            {
-                std::span<uint8_t const> shader;
-            } compute;
+            ShaderStageCreateInfo compute;
         };
     };
 
@@ -465,9 +473,9 @@ namespace ionengine::rhi
 
         auto get() -> core::ref_ptr<Type>
         {
-            if (!getResult())
+            if (!this->getResult())
             {
-                wait();
+                this->wait();
             }
             return ptr;
         }

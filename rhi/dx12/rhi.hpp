@@ -162,8 +162,6 @@ namespace ionengine::rhi
     class DX12Shader final : public Shader
     {
       public:
-        virtual ~DX12Shader() = default;
-
         DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo);
 
         DX12Shader(ID3D12Device4* device, std::span<VertexDeclarationInfo const> const vertexDeclarations,
