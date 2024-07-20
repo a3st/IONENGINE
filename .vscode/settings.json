@@ -120,7 +120,14 @@
         "complex": "cpp",
         "numbers": "cpp",
         "*.hpp11": "cpp",
-        "*.hlsl": "hlsl"
+        "*.hlsl": "hlsl",
+        "*.tcc": "cpp",
+        "codecvt": "cpp",
+        "cwctype": "cpp",
+        "expected": "cpp",
+        "memory_resource": "cpp",
+        "string_view": "cpp",
+        "text_encoding": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "disabled",
     "C_Cpp.default.compilerPath": "cl.exe",

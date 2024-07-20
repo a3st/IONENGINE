@@ -5,7 +5,6 @@
 #include "rhi.hpp"
 #include "core/exception.hpp"
 #include "precompiled.h"
-#include <xxhash/xxhash64.h>
 
 namespace ionengine::rhi
 {
@@ -399,8 +398,11 @@ namespace ionengine::rhi
         return vertexInput;
     }
 
-    Pipeline::Pipeline(VkDevice device, VKShader* shader, RasterizerStageInfo const& rasterizer,
-                       BlendColorInfo const& blendColor, std::optional<DepthStencilStageInfo> const depthStencil)
+    Pipeline::Pipeline(VkDevice device, VkPipelineLayout pipelineLayout, VKShader* shader,
+                       RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
+                       std::optional<DepthStencilStageInfo> const depthStencil,
+                       std::span<VkFormat const> const renderTargetFormats, VkFormat const depthStencilFormat,
+                       VkPipelineCache pipelineCache)
     {
         if (shader->getPipelineType() == PipelineType::Graphics)
         {
@@ -430,9 +432,7 @@ namespace ionengine::rhi
                 .depthBiasSlopeFactor = 0.0f,
                 .lineWidth = 1.0f};
             VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo{
-                .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-
-            };
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
 
             VkStencilOpState stencilOpState{.failOp = VK_STENCIL_OP_KEEP,
                                             .passOp = VK_STENCIL_OP_KEEP,
@@ -440,7 +440,6 @@ namespace ionengine::rhi
                                             .compareOp = VK_COMPARE_OP_ALWAYS,
                                             .compareMask = 0xff,
                                             .writeMask = 0xff};
-
             auto depthStencilValue = depthStencil.value_or(DepthStencilStageInfo::Default());
             VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -453,7 +452,6 @@ namespace ionengine::rhi
                 .back = stencilOpState,
                 .minDepthBounds = 0.0f,
                 .maxDepthBounds = 1.0f};
-
             VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
             };
@@ -463,11 +461,58 @@ namespace ionengine::rhi
             VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
                 .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
-                .pDynamicStates = dynamicStates.data(),
-            };
+                .pDynamicStates = dynamicStates.data()};
+            VkPipelineRenderingCreateInfoKHR renderingCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+                .colorAttachmentCount = static_cast<uint32_t>(renderTargetFormats.size()),
+                .pColorAttachmentFormats = renderTargetFormats.data(),
+                .depthAttachmentFormat = depthStencilFormat,
+                .stencilAttachmentFormat = depthStencilFormat};
 
-            VkGraphicsPipelineCreateInfo pipelineCreateInfo{.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+            auto inputStateCreateInfo = shader->getVertexInput().value().getPipelineVertexInputState();
+            VkGraphicsPipelineCreateInfo pipelineCreateInfo{.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+                                                            .pNext = &renderingCreateInfo,
+                                                            .stageCount =
+                                                                static_cast<uint32_t>(shaderStageCreateInfos.size()),
+                                                            .pStages = shaderStageCreateInfos.data(),
+                                                            .pVertexInputState = &inputStateCreateInfo,
+                                                            .pInputAssemblyState = &inputAssemblyCreateInfo,
+                                                            .pRasterizationState = &rasterizationStateCreateInfo,
+                                                            .pDepthStencilState = &depthStencilStateCreateInfo,
+                                                            .pColorBlendState = &colorBlendStateCreateInfo,
+                                                            .pDynamicState = &dynamicStateCreateInfo,
+                                                            .layout = pipelineLayout};
+            auto result =
+                ::vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline);
+            if (result != VK_SUCCESS)
+            {
+                throwIfFailed(::vkCreateGraphicsPipelines(device, nullptr, 1, &pipelineCreateInfo, nullptr, &pipeline));
+            }
         }
+    }
+
+    Pipeline::~Pipeline()
+    {
+    }
+
+    PipelineCache::PipelineCache(VkDevice device, RHICreateInfo const& createInfo) : device(device)
+    {
+    }
+
+    auto PipelineCache::get(VKShader* shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
+                            std::optional<DepthStencilStageInfo> const depthStencil,
+                            std::array<VkFormat, 8> const& renderTargetFormats,
+                            VkFormat const depthStencilFormat) -> core::ref_ptr<Pipeline>
+    {
+        return nullptr;
+    }
+
+    PipelineCache::~PipelineCache()
+    {
+    }
+
+    auto PipelineCache::reset() -> void
+    {
     }
 
     VKBuffer::VKBuffer(VkDevice device, VmaAllocator memoryAllocator, BufferCreateInfo const& createInfo)

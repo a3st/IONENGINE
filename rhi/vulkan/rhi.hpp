@@ -8,6 +8,7 @@
 #include <vulkan/vulkan.h>
 #undef Always
 #undef None
+#include <xxhash/xxhash64.h>
 
 namespace ionengine::rhi
 {
@@ -63,17 +64,83 @@ namespace ionengine::rhi
     class Pipeline : public core::ref_counted_object
     {
       public:
-        Pipeline(VkDevice device, VKShader* shader, RasterizerStageInfo const& rasterizer,
-                 BlendColorInfo const& blendColor, std::optional<DepthStencilStageInfo> const depthStencil);
+        Pipeline(VkDevice device, VkPipelineLayout pipelineLayout, VKShader* shader,
+                 RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
+                 std::optional<DepthStencilStageInfo> const depthStencil,
+                 std::span<VkFormat const> const renderTargetFormats, VkFormat const depthStencilFormat,
+                 VkPipelineCache pipelineCache);
+
+        ~Pipeline();
 
       private:
+        VkPipeline pipeline;
     };
 
-    class PipelineCache : public core::ref_counted_object
+    class PipelineCache final : public core::ref_counted_object
     {
+      public:
+        struct Entry
+        {
+            uint64_t shaderHash;
+            RasterizerStageInfo rasterizer;
+            BlendColorInfo blendColor;
+            std::optional<DepthStencilStageInfo> depthStencil;
+            std::array<VkFormat, 8> renderTargetFormats;
+            VkFormat depthStencilFormat;
+
+            auto operator==(Entry const& other) const -> bool
+            {
+                return std::make_tuple(shaderHash, rasterizer, blendColor,
+                                       depthStencil.value_or(DepthStencilStageInfo::Default()), renderTargetFormats,
+                                       depthStencilFormat) ==
+                       std::make_tuple(other.shaderHash, other.rasterizer, other.blendColor,
+                                       other.depthStencil.value_or(DepthStencilStageInfo::Default()),
+                                       other.renderTargetFormats, other.depthStencilFormat);
+            }
+        };
+
+        struct EntryHasher
+        {
+            auto operator()(const Entry& entry) const -> std::size_t
+            {
+                auto depthStencil = entry.depthStencil.value_or(DepthStencilStageInfo::Default());
+                return entry.shaderHash ^ XXHash64::hash(&entry.rasterizer.fillMode, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&entry.rasterizer.cullMode, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&entry.blendColor.blendDst, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&entry.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&entry.blendColor.blendEnable, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&entry.blendColor.blendOp, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&entry.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&entry.blendColor.blendSrc, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&entry.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
+                       XXHash64::hash(entry.renderTargetFormats.data(), entry.renderTargetFormats.size(), 0) ^
+                       XXHash64::hash(&entry.depthStencilFormat, sizeof(VkFormat), 0);
+            }
+        };
+
+        PipelineCache(VkDevice device, RHICreateInfo const& createInfo);
+
+        ~PipelineCache();
+
+        auto get(VKShader* shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
+                 std::optional<DepthStencilStageInfo> const depthStencil,
+                 std::array<VkFormat, 8> const& renderTargetFormats,
+                 VkFormat const depthStencilFormat) -> core::ref_ptr<Pipeline>;
+
+        auto reset() -> void;
+
+      private:
+        std::mutex mutex;
+        VkDevice device;
+        VkPipelineLayout pipelineLayout;
+        std::unordered_map<Entry, core::ref_ptr<Pipeline>, EntryHasher> entries;
     };
 
-    class VKBuffer final : public Buffer {
+    class VKBuffer final : public Buffer
+    {
         VKBuffer(VkDevice device, VmaAllocator memoryAllocator, BufferCreateInfo const& createInfo);
 
         ~VKBuffer();
