@@ -12,12 +12,53 @@
 
 namespace ionengine::rhi
 {
-    class DescriptorAllocator : public core::ref_counted_object
+    enum class DescriptorAllocatorLimits : uint32_t
+    {
+        Uniform = 16 * 1024,
+        Storage = 16 * 1024,
+        SampledImage = 16 * 1024,
+        Sampler = 128
+    };
+
+    VK_DEFINE_HANDLE(DescriptorAllocation);
+
+    class DescriptorAllocator;
+
+    struct DescriptorAllocation_T
+    {
+        VkDescriptorType descriptorType;
+        VkDescriptorSet descriptorSet;
+        uint32_t binding;
+        uint32_t arrayElement;
+    };
+
+    class DescriptorAllocator final : public core::ref_counted_object
     {
       public:
-        DescriptorAllocator();
+        DescriptorAllocator(VkDevice device);
+
+        ~DescriptorAllocator();
+
+        auto allocate(VkDescriptorType const descriptorType, DescriptorAllocation* allocation) -> VkResult;
+
+        auto deallocate(DescriptorAllocation allocation) -> void;
 
       private:
+        std::mutex mutex;
+        VkDevice device;
+        VkDescriptorSetLayout descriptorSetLayout;
+
+        struct Chunk
+        {
+            VkDescriptorSet descriptorSet;
+            uint32_t binding;
+            std::vector<uint8_t> free;
+            uint32_t offset;
+            uint32_t size;
+            std::vector<DescriptorAllocation_T> allocations;
+        };
+
+        std::unordered_map<VkDescriptorType, Chunk> chunks;
     };
 
     class VKVertexInput
@@ -73,6 +114,7 @@ namespace ionengine::rhi
         ~Pipeline();
 
       private:
+        VkDevice device;
         VkPipeline pipeline;
     };
 
@@ -158,6 +200,9 @@ namespace ionengine::rhi
         auto getBuffer() const -> VkBuffer;
 
         auto getDescriptorOffset(BufferUsage const usage) const -> uint32_t override;
+
+      private:
+        VkBuffer buffer;
     };
 
     class VKTexture final : public Texture
@@ -329,6 +374,8 @@ namespace ionengine::rhi
         QueueInfo graphicsQueue;
         QueueInfo transferQueue;
         QueueInfo computeQueue;
+
+        core::ref_ptr<DescriptorAllocator> descriptorAllocator;
 
         VkSurfaceKHR surface;
         VkSwapchainKHR swapchain;

@@ -282,6 +282,115 @@ namespace ionengine::rhi
         return VK_FALSE;
     }
 
+    DescriptorAllocator::DescriptorAllocator(VkDevice device) : device(device)
+    {
+        std::array<VkDescriptorType, 4> descriptorTypes{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_SAMPLER};
+        std::array<VkDescriptorBindingFlags, 4> bindingFlags{};
+        std::array<uint32_t, 4> descriptorLimits = {std::to_underlying(DescriptorAllocatorLimits::Uniform),
+                                                    std::to_underlying(DescriptorAllocatorLimits::Storage),
+                                                    std::to_underlying(DescriptorAllocatorLimits::SampledImage),
+                                                    std::to_underlying(DescriptorAllocatorLimits::Sampler)};
+
+        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+
+        for (uint32_t const i : std::views::iota(0u, 4u))
+        {
+            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding{.binding = i,
+                                                                    .descriptorType = descriptorTypes[i],
+                                                                    .descriptorCount = descriptorLimits[i],
+                                                                    .stageFlags = VK_SHADER_STAGE_ALL};
+            descriptorSetLayoutBindings.emplace_back(std::move(descriptorSetLayoutBinding));
+            bindingFlags[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+
+            std::vector<uint8_t> free(descriptorLimits[i]);
+            std::fill(free.begin(), free.end(), 0x0);
+
+            std::vector<DescriptorAllocation_T> allocations(descriptorLimits[i]);
+
+            Chunk chunk{.binding = i,
+                        .free = std::move(free),
+                        .size = descriptorLimits[i],
+                        .allocations = std::move(allocations)};
+            chunks.emplace(descriptorTypes[i], std::move(chunk));
+        }
+
+        VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            .bindingCount = static_cast<uint32_t>(bindingFlags.size()),
+            .pBindingFlags = bindingFlags.data()};
+
+        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .pNext = &bindingFlagsCreateInfo,
+            .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
+            .bindingCount = static_cast<uint32_t>(descriptorSetLayoutBindings.size()),
+            .pBindings = descriptorSetLayoutBindings.data()};
+        throwIfFailed(
+            ::vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
+    }
+
+    DescriptorAllocator::~DescriptorAllocator()
+    {
+        ::vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    }
+
+    auto DescriptorAllocator::allocate(VkDescriptorType const descriptorType,
+                                       DescriptorAllocation* allocation) -> VkResult
+    {
+        std::lock_guard lock(mutex);
+
+        Chunk& chunk = chunks[descriptorType];
+        if (1 > chunk.size - chunk.offset)
+        {
+            throw core::Exception("Required heap does not contain free descriptors");
+        }
+
+        bool success = false;
+        uint32_t allocOffset = 0;
+
+        for (uint32_t const i : std::views::iota(chunk.offset, chunk.size))
+        {
+            if (chunk.free[i] == 0x1)
+            {
+                continue;
+            }
+            else
+            {
+                allocOffset = i;
+                success = true;
+            }
+        }
+
+        if (success)
+        {
+            chunk.free[allocOffset] = 0x1;
+            chunk.offset = allocOffset + 1;
+
+            chunk.allocations[allocOffset] = {.descriptorType = descriptorType,
+                                              .descriptorSet = nullptr,
+                                              .binding = chunk.binding,
+                                              .arrayElement = allocOffset};
+
+            (*allocation) = &chunk.allocations[allocOffset];
+            return VK_SUCCESS;
+        }
+        else
+        {
+            return VK_ERROR_OUT_OF_POOL_MEMORY;
+        }
+    }
+
+    auto DescriptorAllocator::deallocate(DescriptorAllocation allocation) -> void
+    {
+        std::lock_guard lock(mutex);
+
+        Chunk& chunk = chunks[allocation->descriptorType];
+        chunk.free[allocation->arrayElement] = 0x0;
+        chunk.offset = allocation->arrayElement;
+    }
+
     VKVertexInput::VKVertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations)
     {
         std::vector<VkVertexInputAttributeDescription> inputAttributes;
@@ -403,6 +512,7 @@ namespace ionengine::rhi
                        std::optional<DepthStencilStageInfo> const depthStencil,
                        std::span<VkFormat const> const renderTargetFormats, VkFormat const depthStencilFormat,
                        VkPipelineCache pipelineCache)
+        : device(device)
     {
         if (shader->getPipelineType() == PipelineType::Graphics)
         {
@@ -493,10 +603,23 @@ namespace ionengine::rhi
 
     Pipeline::~Pipeline()
     {
+        ::vkDestroyPipeline(device, pipeline, nullptr);
     }
 
     PipelineCache::PipelineCache(VkDevice device, RHICreateInfo const& createInfo) : device(device)
     {
+        std::vector<VkPushConstantRange> pushContantRanges;
+        for (uint32_t const i : std::views::iota(0u, 16u))
+        {
+            VkPushConstantRange pushConstantRange{.stageFlags = VK_SHADER_STAGE_ALL, .offset = i * 4, .size = 4};
+            pushContantRanges.emplace_back(std::move(pushConstantRange));
+        }
+
+        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                                                            .pushConstantRangeCount =
+                                                                static_cast<uint32_t>(pushContantRanges.size()),
+                                                            .pPushConstantRanges = pushContantRanges.data()};
+        throwIfFailed(::vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
     }
 
     auto PipelineCache::get(VKShader* shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
@@ -504,15 +627,40 @@ namespace ionengine::rhi
                             std::array<VkFormat, 8> const& renderTargetFormats,
                             VkFormat const depthStencilFormat) -> core::ref_ptr<Pipeline>
     {
-        return nullptr;
+        Entry entry{.shaderHash = shader->getHash(),
+                    .rasterizer = rasterizer,
+                    .blendColor = blendColor,
+                    .depthStencil = depthStencil,
+                    .renderTargetFormats = renderTargetFormats,
+                    .depthStencilFormat = depthStencilFormat};
+
+        std::unique_lock lock(mutex);
+        auto result = entries.find(entry);
+        if (result != entries.end())
+        {
+            return result->second;
+        }
+        else
+        {
+            lock.unlock();
+            auto pipeline = core::make_ref<Pipeline>(device, pipelineLayout, shader, rasterizer, blendColor,
+                                                     depthStencil, renderTargetFormats, depthStencilFormat, nullptr);
+
+            lock.lock();
+            entries.emplace(entry, pipeline);
+            return pipeline;
+        }
     }
 
     PipelineCache::~PipelineCache()
     {
+        ::vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     }
 
     auto PipelineCache::reset() -> void
     {
+        std::lock_guard lock(mutex);
+        entries.clear();
     }
 
     VKBuffer::VKBuffer(VkDevice device, VmaAllocator memoryAllocator, BufferCreateInfo const& createInfo)
@@ -968,15 +1116,24 @@ namespace ionengine::rhi
         }
 
         std::vector<char const*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                                                     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
+                                                     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+                                                     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME};
 
-        VkPhysicalDeviceVulkan13Features deviceFeaturesExt{
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES, .dynamicRendering = true};
-        VkPhysicalDeviceVulkan12Features deviceFeatures{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-                                                        .pNext = &deviceFeaturesExt,
-                                                        .timelineSemaphore = true};
+        VkPhysicalDeviceVulkan12Features deviceFeatures12{.sType =
+                                                              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+                                                          .descriptorIndexing = true,
+                                                          .descriptorBindingUniformBufferUpdateAfterBind = true,
+                                                          .descriptorBindingSampledImageUpdateAfterBind = true,
+                                                          .descriptorBindingStorageImageUpdateAfterBind = true,
+                                                          .descriptorBindingStorageBufferUpdateAfterBind = true,
+                                                          .descriptorBindingPartiallyBound = true,
+                                                          .timelineSemaphore = true};
+        VkPhysicalDeviceVulkan13Features deviceFeatures13{.sType =
+                                                              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+                                                          .pNext = &deviceFeatures12,
+                                                          .dynamicRendering = true};
         VkDeviceCreateInfo deviceCreateInfo{.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                            .pNext = &deviceFeatures,
+                                            .pNext = &deviceFeatures13,
                                             .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
                                             .pQueueCreateInfos = queueCreateInfos.data(),
                                             .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
@@ -1019,6 +1176,8 @@ namespace ionengine::rhi
             throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &computeQueue.semaphore));
         }
 
+        descriptorAllocator = core::make_ref<DescriptorAllocator>(device);
+
         if (createInfo.window)
         {
             VkXlibSurfaceCreateInfoKHR surfaceCreateInfo{.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
@@ -1050,6 +1209,7 @@ namespace ionengine::rhi
             ::vkDestroySwapchainKHR(device, swapchain, nullptr);
             ::vkDestroySurfaceKHR(instance, surface, nullptr);
         }
+        descriptorAllocator = nullptr;
         ::vkDestroySemaphore(device, graphicsQueue.semaphore, nullptr);
         ::vkDestroySemaphore(device, transferQueue.semaphore, nullptr);
         ::vkDestroySemaphore(device, computeQueue.semaphore, nullptr);
