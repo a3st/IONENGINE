@@ -24,12 +24,7 @@ namespace ionengine::platform
 
       private:
         HWND window;
-        std::array<RAWINPUTDEVICE, 2> rawDevices;
-        uint32_t width;
-        uint32_t height;
-        bool cursor;
-        WindowEvent event;
 
-        static auto windowProcedure(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) -> LRESULT;
+        static auto wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT;
     };
 } // namespace ionengine::platform

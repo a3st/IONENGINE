@@ -30,7 +30,7 @@ namespace ionengine::platform
         display = ::XOpenDisplay(nullptr);
         if (!display)
         {
-            throw core::Exception("An error occurred while open display");
+            throw core::Exception("An error occurred while open the display");
         }
 
         window = ::XCreateSimpleWindow(display, RootWindow(display, XDefaultScreen(display)), 0, 0, 800, 600, 0, 0, 0);
@@ -103,7 +103,7 @@ namespace ionengine::platform
                         auto result = keyCodes.find(event.xkey.keycode);
                         if (result != keyCodes.end())
                         {
-                            InputEvent event{.deviceType = InputDeviceType::Keyboard,
+                            InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                              .state = InputState::Pressed,
                                              .keyCode = result->second};
                         }
@@ -113,7 +113,7 @@ namespace ionengine::platform
                         auto result = keyCodes.find(event.xkey.keycode);
                         if (result != keyCodes.end())
                         {
-                            InputEvent event{.deviceType = InputDeviceType::Keyboard,
+                            InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                              .state = InputState::Released,
                                              .keyCode = result->second};
                         }

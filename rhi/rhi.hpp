@@ -210,6 +210,14 @@ namespace ionengine::rhi
         uint32_t anisotropic;
     };
 
+    class Sampler : public core::ref_counted_object
+    {
+      public:
+        virtual ~Sampler() = default;
+
+        virtual auto getDescriptorOffset() const -> uint32_t = 0;
+    };
+
     struct BufferCreateInfo
     {
         size_t size;
@@ -234,8 +242,6 @@ namespace ionengine::rhi
         void* instance;
         uint32_t windowWidth;
         uint32_t windowHeight;
-        uint32_t staticSamplers;
-        std::span<SamplerCreateInfo> staticSamplerInfos;
     };
 
     struct RenderPassColorInfo
@@ -563,6 +569,8 @@ namespace ionengine::rhi
         virtual auto createTexture(TextureCreateInfo const& createInfo) -> core::ref_ptr<Texture> = 0;
 
         virtual auto createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer> = 0;
+
+        virtual auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> = 0;
 
         virtual auto createGraphicsContext() -> core::ref_ptr<GraphicsContext> = 0;
 

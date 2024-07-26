@@ -1,283 +1,219 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "window.hpp"
+#include "win32.hpp"
 #include "core/exception.hpp"
 #include "precompiled.h"
 
 namespace ionengine::platform
 {
-    WindowsWindow::WindowsWindow(std::string_view const label, uint32_t const width, uint32_t const height)
-        : width(width), height(height)
+    std::unordered_map<uint32_t, KeyCode> keyCodes = {
+        {81, KeyCode::Q},        {87, KeyCode::W},      {69, KeyCode::E},      {82, KeyCode::R},
+        {84, KeyCode::T},        {89, KeyCode::Y},      {85, KeyCode::U},      {73, KeyCode::I},
+        {73, KeyCode::O},        {80, KeyCode::P},      {65, KeyCode::A},      {83, KeyCode::S},
+        {68, KeyCode::D},        {70, KeyCode::F},      {71, KeyCode::G},      {72, KeyCode::H},
+        {74, KeyCode::J},        {75, KeyCode::K},      {76, KeyCode::L},      {90, KeyCode::Z},
+        {88, KeyCode::X},        {67, KeyCode::C},      {86, KeyCode::V},      {66, KeyCode::B},
+        {78, KeyCode::N},        {77, KeyCode::M},      {9, KeyCode::Tab},     {20, KeyCode::CapsLock},
+        {160, KeyCode::ShiftL},  {162, KeyCode::CtrlL}, {164, KeyCode::AltL},  {32, KeyCode::Space},
+        {164, KeyCode::AltR},    {39, KeyCode::CtrlR},  {38, KeyCode::ShiftR}, {13, KeyCode::Enter},
+        {8, KeyCode::Backspace}, {49, KeyCode::_1},     {50, KeyCode::_2},     {51, KeyCode::_3},
+        {52, KeyCode::_4},       {53, KeyCode::_5},     {54, KeyCode::_6},     {55, KeyCode::_7},
+        {56, KeyCode::_8},       {57, KeyCode::_9},     {48, KeyCode::_0},     {189, KeyCode::Minus},
+        {187, KeyCode::Plus},    {192, KeyCode::Quote}, {27, KeyCode::Escape}, {112, KeyCode::F1},
+        {113, KeyCode::F2},      {114, KeyCode::F3},    {115, KeyCode::F4},    {116, KeyCode::F5},
+        {117, KeyCode::F6},      {118, KeyCode::F7},    {119, KeyCode::F8},    {120, KeyCode::F9},
+        {121, KeyCode::F10},     {122, KeyCode::F11},   {123, KeyCode::F12},   {46, KeyCode::Delete},
+        {36, KeyCode::Home},     {35, KeyCode::End},    {33, KeyCode::PageUp}, {34, KeyCode::PageDown}};
+
+    namespace internal
     {
-        auto wnd_class = WNDCLASS{};
-        wnd_class.lpszClassName = TEXT("IONENGINE");
-        wnd_class.hInstance = GetModuleHandle(nullptr);
-        wnd_class.lpfnWndProc = reinterpret_cast<WNDPROC>(window_procedure);
-        wnd_class.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
-
-        if (!RegisterClass(&wnd_class))
+        auto toWString(std::string_view const source) -> std::wstring
         {
-            throw core::Exception("An error occurred while registering the window");
+            int32_t length =
+                ::MultiByteToWideChar(CP_UTF8, 0, source.data(), static_cast<int32_t>(source.size()), nullptr, 0);
+            std::wstring dest(length, '\0');
+            ::MultiByteToWideChar(CP_UTF8, 0, source.data(), static_cast<int32_t>(source.size()), dest.data(), length);
+            return dest;
         }
+    } // namespace internal
 
-        size_t length = strlen(reinterpret_cast<const char*>(label.data())) + 1;
-        size_t result = 0;
-
-        std::u16string out_str(length - 1, 0);
-
-        mbstowcs_s(&result, reinterpret_cast<wchar_t*>(out_str.data()), length,
-                   reinterpret_cast<const char*>(label.data()), length - 1);
-
-        window = CreateWindow(wnd_class.lpszClassName, reinterpret_cast<const wchar_t*>(out_str.c_str()),
-                              WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
-                              0, 0, width, height, nullptr, nullptr, wnd_class.hInstance, nullptr);
-
-        if (!window)
-        {
-            throw core::Exception("An error occurred while creating the window");
-        }
-
-        SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-        ::ShowWindow(window, SW_SHOWDEFAULT);
-
-        raw_devices[0].usUsagePage = 0x01;
-        raw_devices[0].usUsage = 0x06;
-        raw_devices[0].dwFlags = 0;
-        raw_devices[0].hwndTarget = window;
-
-        raw_devices[1].usUsagePage = 0x01;
-        raw_devices[1].usUsage = 0x02;
-        raw_devices[1].dwFlags = 0;
-        raw_devices[1].hwndTarget = window;
-
-        if (!::RegisterRawInputDevices(raw_devices.data(), static_cast<uint32_t>(raw_devices.size()),
-                                       sizeof(RAWINPUTDEVICE)))
-        {
-            throw core::Exception("An error occurred while registering raw input devices");
-        }
-
-        show_cursor(true);
-    }
-
-    WindowsWindow::~WindowsWindow()
+    auto Win32App::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT
     {
-        ::DestroyWindow(window);
-
-        raw_devices[0].usUsagePage = 0x01;
-        raw_devices[0].usUsage = 0x06;
-        raw_devices[0].dwFlags = RIDEV_REMOVE;
-        raw_devices[0].hwndTarget = nullptr;
-
-        raw_devices[1].usUsagePage = 0x01;
-        raw_devices[1].usUsage = 0x02;
-        raw_devices[1].dwFlags = RIDEV_REMOVE;
-        raw_devices[1].hwndTarget = nullptr;
-
-        ::RegisterRawInputDevices(raw_devices.data(), static_cast<uint32_t>(raw_devices.size()),
-                                  sizeof(RAWINPUTDEVICE));
-    }
-
-    auto WindowsWindow::set_label(std::string_view const label) -> void
-    {
-        size_t length = strlen(reinterpret_cast<const char*>(label.data())) + 1;
-        size_t result = 0;
-
-        std::u16string out_str(length - 1, 0);
-
-        mbstowcs_s(&result, reinterpret_cast<wchar_t*>(out_str.data()), length,
-                   reinterpret_cast<const char*>(label.data()), length - 1);
-
-        SetWindowText(window, reinterpret_cast<const wchar_t*>(out_str.c_str()));
-    }
-
-    auto WindowsWindow::try_get_event(WindowEvent& event) -> bool
-    {
-        auto msg = MSG{};
-        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+        auto platformInstance = reinterpret_cast<Win32App*>(::GetWindowLongPtr(hWnd, GWLP_USERDATA));
+        if (!platformInstance)
         {
-            ::TranslateMessage(&msg);
-            DispatchMessage(&msg);
-            event = this->event;
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    auto WindowsWindow::window_procedure(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) -> LRESULT
-    {
-        auto window_impl = reinterpret_cast<WindowsWindow*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-
-        if (!window_impl)
-        {
-            return DefWindowProc(hwnd, msg, wparam, lparam);
+            return ::DefWindowProc(hWnd, msg, wParam, lParam);
         }
 
         switch (msg)
         {
             case WM_CLOSE: {
-                window_impl->event = WindowEventFactory::Closed();
+                ::PostQuitMessage(0);
+
+                WindowEvent windowEvent{.eventType = WindowEventType::Close};
+                if (platformInstance->windowEventCallback)
+                {
+                    platformInstance->windowEventCallback(windowEvent);
+                }
                 break;
             }
             case WM_SIZE: {
-                if (wparam & SIZE_MINIMIZED)
+                uint32_t const width = LOWORD(lParam);
+                uint32_t const height = HIWORD(lParam);
+
+                WindowEvent windowEvent{
+                    .eventType = WindowEventType::Resize,
+                    .size = {.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height)}};
+                if (platformInstance->windowEventCallback)
                 {
-                    break;
-                }
-
-                WORD width = LOWORD(lparam);
-                WORD height = HIWORD(lparam);
-
-                RECT style_rect{};
-                ::AdjustWindowRect(
-                    &style_rect,
-                    WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX, false);
-
-                LONG style_width = style_rect.right - style_rect.left;
-                LONG style_height = style_rect.bottom - style_rect.top;
-
-                window_impl->width = std::max<uint32_t>(1, width - style_width);
-                window_impl->height = std::max<uint32_t>(1, height - style_height);
-
-                if (wparam & SIZE_MAXIMIZED)
-                {
-                    window_impl->event = WindowEventFactory::Sized(window_impl->width, window_impl->height);
+                    platformInstance->windowEventCallback(windowEvent);
                 }
                 break;
             }
-            case WM_EXITSIZEMOVE: {
-                window_impl->event = WindowEventFactory::Sized(window_impl->width, window_impl->height);
-                break;
-            }
-            case WM_MOUSEMOVE: {
-                if (!window_impl->cursor)
-                {
-                    ::SetCursor(NULL);
+            case WM_KEYDOWN: {
+                uint32_t const scanCode = (lParam & 0x00ff0000) >> 16;
+                uint32_t const virtualKey = ::MapVirtualKey(scanCode, MAPVK_VSC_TO_VK_EX);
 
-                    auto rect = RECT{};
-                    if (::GetClientRect(hwnd, &rect))
+                auto result = keyCodes.find(virtualKey);
+                if (result != keyCodes.end())
+                {
+                    InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
+                                          .state = InputState::Pressed,
+                                          .keyCode = result->second};
+                    if (platformInstance->inputEventCallback)
                     {
-                        auto point = POINT{.x = rect.right / 2, .y = rect.bottom / 2};
-
-                        if (::ClientToScreen(hwnd, &point))
-                        {
-                            ::SetCursorPos(point.x, point.y);
-                        }
+                        platformInstance->inputEventCallback(inputEvent);
                     }
-                }
-                else
-                {
-                    ::SetCursor(LoadCursor(0, IDC_ARROW));
                 }
                 break;
             }
-            case WM_INPUT: {
-                uint8_t buffer[48];
-                uint32_t size = 0;
+            case WM_KEYUP: {
+                uint32_t const scanCode = (lParam & 0x00ff0000) >> 16;
+                uint32_t const virtualKey = ::MapVirtualKey(scanCode, MAPVK_VSC_TO_VK_EX);
 
-                ::GetRawInputData(reinterpret_cast<HRAWINPUT>(lparam), RID_INPUT, nullptr, &size,
-                                  sizeof(RAWINPUTHEADER));
-                if (size <= 48)
+                auto result = keyCodes.find(virtualKey);
+                if (result != keyCodes.end())
                 {
-                    ::GetRawInputData(reinterpret_cast<HRAWINPUT>(lparam), RID_INPUT, buffer, &size,
-                                      sizeof(RAWINPUTHEADER));
+                    InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
+                                          .state = InputState::Released,
+                                          .keyCode = result->second};
+                    if (platformInstance->inputEventCallback)
+                    {
+                        platformInstance->inputEventCallback(inputEvent);
+                    }
                 }
+                break;
+            }
+            case WM_SYSKEYDOWN: {
+                uint32_t const scanCode = (lParam & 0x00ff0000) >> 16;
+                uint32_t const virtualKey = ::MapVirtualKey(scanCode, MAPVK_VSC_TO_VK_EX);
 
-                RAWINPUT* raw_input = reinterpret_cast<RAWINPUT*>(buffer);
-                DWORD device_type = raw_input->header.dwType;
-
-                if (device_type == RIM_TYPEKEYBOARD)
+                auto result = keyCodes.find(virtualKey);
+                if (result != keyCodes.end())
                 {
-                    auto window_event = WindowEvent{};
-
-                    USHORT key = raw_input->data.keyboard.VKey;
-                    USHORT flags = raw_input->data.keyboard.Flags;
-                    UINT msg = raw_input->data.keyboard.Message;
-
-                    switch (msg)
+                    InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
+                                          .state = InputState::Pressed,
+                                          .keyCode = result->second};
+                    if (platformInstance->inputEventCallback)
                     {
-                        case WM_KEYDOWN:
-                        case WM_SYSKEYDOWN: {
-                            window_event = WindowEventFactory::KeyboardInput(static_cast<uint32_t>(key), InputState::Pressed);
-                        }
-                        break;
-                        case WM_KEYUP:
-                        case WM_SYSKEYUP: {
-                            window_event = WindowEventFactory::KeyboardInput(static_cast<uint32_t>(key), InputState::Released);
-                        }
-                        break;
+                        platformInstance->inputEventCallback(inputEvent);
                     }
-
-                    window_impl->event = window_event;
                 }
-                else if (device_type == RIM_TYPEMOUSE)
+                break;
+            }
+            case WM_SYSKEYUP: {
+                uint32_t const scanCode = (lParam & 0x00ff0000) >> 16;
+                uint32_t const virtualKey = ::MapVirtualKey(scanCode, MAPVK_VSC_TO_VK_EX);
+
+                auto result = keyCodes.find(virtualKey);
+                if (result != keyCodes.end())
                 {
-                    LONG x = raw_input->data.mouse.lLastX;
-                    LONG y = raw_input->data.mouse.lLastY;
-                    ULONG buttons = raw_input->data.mouse.ulButtons;
-                    USHORT flags = raw_input->data.mouse.usFlags;
-                    USHORT button_flags = raw_input->data.mouse.usButtonFlags;
-                    USHORT button_data = raw_input->data.mouse.usButtonData;
-
-                    switch (buttons)
+                    InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
+                                          .state = InputState::Released,
+                                          .keyCode = result->second};
+                    if (platformInstance->inputEventCallback)
                     {
-                        case RI_MOUSE_LEFT_BUTTON_DOWN: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Left, InputState::Pressed);
-                            break;
-                        }
-                        case RI_MOUSE_RIGHT_BUTTON_DOWN: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Right, InputState::Pressed);
-                            break;
-                        }
-                        case RI_MOUSE_MIDDLE_BUTTON_DOWN: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Middle, InputState::Pressed);
-                            break;
-                        }
-                        case RI_MOUSE_BUTTON_4_DOWN: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Four, InputState::Pressed);
-                            break;
-                        }
-                        case RI_MOUSE_BUTTON_5_DOWN: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Five, InputState::Pressed);
-                            break;
-                        }
-                        case RI_MOUSE_LEFT_BUTTON_UP: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Left, InputState::Released);
-                            break;
-                        }
-                        case RI_MOUSE_RIGHT_BUTTON_UP: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Right, InputState::Released);
-                            break;
-                        }
-                        case RI_MOUSE_MIDDLE_BUTTON_UP: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Middle, InputState::Released);
-                            break;
-                        }
-                        case RI_MOUSE_BUTTON_4_UP: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Four, InputState::Released);
-                            break;
-                        }
-                        case RI_MOUSE_BUTTON_5_UP: {
-                            window_impl->event = WindowEventFactory::MouseInput(MouseButton::Five, InputState::Released);
-                            break;
-                        }
+                        platformInstance->inputEventCallback(inputEvent);
                     }
-
-                    auto cursor_point = POINT{};
-                    if (::GetCursorPos(&cursor_point))
-                    {
-                        ::ScreenToClient(window_impl->window, &cursor_point);
-                    }
-
-                    window_impl->event = WindowEventFactory::MouseMoved(static_cast<int32_t>(cursor_point.x),
-                                                                  static_cast<int32_t>(cursor_point.y),
-                                                                  static_cast<int32_t>(x), static_cast<int32_t>(y));
                 }
                 break;
             }
         }
-        return DefWindowProc(hwnd, msg, wparam, lparam);
+        return ::DefWindowProc(hWnd, msg, wParam, lParam);
+    }
+
+    Win32App::Win32App(std::string_view const title)
+    {
+        WNDCLASS wndClass{.lpfnWndProc = reinterpret_cast<WNDPROC>(wndProc),
+                          .hInstance = ::GetModuleHandle(nullptr),
+                          .hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)),
+                          .lpszClassName = L"Platform Win32"};
+
+        if (!::RegisterClass(&wndClass))
+        {
+            throw core::Exception("An error occurred while registering the window");
+        }
+
+        window =
+            ::CreateWindow(wndClass.lpszClassName, internal::toWString(title).c_str(),
+                           WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX, 0,
+                           0, 800, 600, nullptr, nullptr, wndClass.hInstance, nullptr);
+        if (!window)
+        {
+            throw core::Exception("An error occurred while creating the window");
+        }
+
+        ::SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        ::ShowWindow(window, SW_SHOWDEFAULT);
+    }
+
+    Win32App::~Win32App()
+    {
+        ::DestroyWindow(window);
+    }
+
+    auto Win32App::getWindowHandle() -> void*
+    {
+        return reinterpret_cast<void*>(window);
+    }
+
+    auto Win32App::getInstanceHandle() -> void*
+    {
+        return ::GetModuleHandle(nullptr);
+    }
+
+    auto Win32App::run() -> void
+    {
+        MSG msg;
+        bool running = true;
+
+        while (running)
+        {
+            if (::PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+            {
+                switch (msg.message)
+                {
+                    case WM_QUIT: {
+                        running = false;
+                        break;
+                    }
+                    default: {
+                        if (msg.hwnd)
+                        {
+                            ::TranslateMessage(&msg);
+                            ::DispatchMessage(&msg);
+                        }
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                if (idleCallback)
+                {
+                    idleCallback();
+                }
+            }
+        }
     }
 } // namespace ionengine::platform

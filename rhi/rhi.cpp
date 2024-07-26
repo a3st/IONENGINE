@@ -4,9 +4,9 @@
 #include "precompiled.h"
 
 #ifdef IONENGINE_RHI_DIRECTX12
-#include "rhi/dx12/rhi.hpp"
+#include "rhi/dx12/dx12.hpp"
 #elif IONENGINE_RHI_VULKAN
-#include "rhi/vulkan/rhi.hpp"
+#include "rhi/vulkan/vk.hpp"
 #elif IONENGINE_RHI_GL
 #include "rhi/gl/gl.hpp"
 #endif

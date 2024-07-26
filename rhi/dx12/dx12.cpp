@@ -1,7 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "rhi.hpp"
-#include "platform/window.hpp"
+#include "dx12.hpp"
+#include "core/exception.hpp"
 #include "precompiled.h"
 
 namespace ionengine::rhi
@@ -267,23 +267,19 @@ namespace ionengine::rhi
         {
             case ResourceState::Common:
                 return D3D12_RESOURCE_STATE_COMMON;
-            case ResourceState::DepthRead:
+            case ResourceState::DepthStencilRead:
                 return D3D12_RESOURCE_STATE_DEPTH_READ;
-            case ResourceState::DepthWrite:
+            case ResourceState::DepthStencilWrite:
                 return D3D12_RESOURCE_STATE_DEPTH_WRITE;
             case ResourceState::RenderTarget:
                 return D3D12_RESOURCE_STATE_RENDER_TARGET;
             case ResourceState::UnorderedAccess:
                 return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-            case ResourceState::PixelShaderRead:
-                return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            case ResourceState::NonPixelShaderRead:
-                return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-            case ResourceState::AllShaderRead:
+            case ResourceState::ShaderRead:
                 return D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
-            case ResourceState::CopySrc:
+            case ResourceState::CopySource:
                 return D3D12_RESOURCE_STATE_COPY_SOURCE;
-            case ResourceState::CopyDst:
+            case ResourceState::CopyDest:
                 return D3D12_RESOURCE_STATE_COPY_DEST;
             default:
                 throw std::invalid_argument("Invalid argument for conversion");
@@ -841,9 +837,23 @@ namespace ionengine::rhi
         }
     }
 
-    DX12Shader::DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo)
+    DX12VertexInput::DX12VertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations)
     {
         
+    }
+
+    auto DX12VertexInput::getInputElements() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>
+    {
+        return inputElements;
+    }
+
+    auto DX12VertexInput::getInputSize() const -> uint32_t
+    {
+        return inputSize;
+    }
+
+    DX12Shader::DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo)
+    {
     }
 
     DX12Shader::DX12Shader(ID3D12Device4* device, std::span<VertexDeclarationInfo const> const vertexDeclarations,
@@ -1875,6 +1885,11 @@ namespace ionengine::rhi
         auto buffer =
             core::make_ref<DX12Buffer>(device.get(), memoryAllocator.get(), descriptorAllocator.get(), createInfo);
         return buffer;
+    }
+
+    auto DX12Device::createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler>
+    {
+        return nullptr;
     }
 
     auto DX12Device::createGraphicsContext() -> core::ref_ptr<GraphicsContext>

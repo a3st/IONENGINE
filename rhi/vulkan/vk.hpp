@@ -341,6 +341,8 @@ namespace ionengine::rhi
 
         auto createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer> override;
 
+        auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> override;
+
         auto createGraphicsContext() -> core::ref_ptr<GraphicsContext> override;
 
         auto createCopyContext() -> core::ref_ptr<CopyContext> override;

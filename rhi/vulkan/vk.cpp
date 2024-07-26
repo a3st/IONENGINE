@@ -2,7 +2,7 @@
 
 #define VMA_IMPLEMENTATION
 
-#include "rhi.hpp"
+#include "vk.hpp"
 #include "core/exception.hpp"
 #include "precompiled.h"
 
@@ -1231,6 +1231,11 @@ namespace ionengine::rhi
     }
 
     auto VKDevice::createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer>
+    {
+        return nullptr;
+    }
+
+    auto VKDevice::createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler>
     {
         return nullptr;
     }

@@ -45,6 +45,6 @@ FetchContent_MakeAvailable(
     simdjson 
     tinygltf 
     libwebview  
-    D3D12MemoryAllocator 
+   # D3D12MemoryAllocator 
     gtest 
     argh)

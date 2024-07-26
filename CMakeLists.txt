@@ -6,11 +6,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+option(BUILD_TESTING "Enable build tests" TRUE)
+
 add_subdirectory(thirdparty)
 
 add_subdirectory(platform)
 add_subdirectory(rhi)
 
-add_subdirectory(tools)
-add_subdirectory(engine)
+#add_subdirectory(tools)
+#add_subdirectory(engine)
+
+if(BUILD_TESTING)
 add_subdirectory(tests)
+endif()

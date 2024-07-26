@@ -1,3 +1,5 @@
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+
 #include "platform/platform.hpp"
 #include "precompiled.h"
 #include "rhi/rhi.hpp"

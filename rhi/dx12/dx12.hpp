@@ -4,7 +4,7 @@
 
 #include "core/exception.hpp"
 #include "rhi/rhi.hpp"
-#include <xxhash/xxhash64.h>
+#include <xxhash.h>
 #define NOMINMAX
 #include <D3D12MemAlloc.h>
 #include <d3d12.h>
@@ -145,15 +145,23 @@ namespace ionengine::rhi
         TextureUsageFlags flags;
     };
 
-    enum D3D12_SHADER_TYPE
+    enum D3D12EX_SHADER_TYPE
     {
         D3D12_SHADER_TYPE_VERTEX,
         D3D12_SHADER_TYPE_PIXEL,
         D3D12_SHADER_TYPE_COMPUTE
     };
 
-    struct InputAssemblerInfo
+    class DX12VertexInput
     {
+      public:
+        DX12VertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations);
+
+        auto getInputElements() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
+
+        auto getInputSize() const -> uint32_t;
+
+      private:
         std::vector<std::string> semanticNames;
         std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
         uint32_t inputSize;
@@ -164,22 +172,20 @@ namespace ionengine::rhi
       public:
         DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo);
 
-        DX12Shader(ID3D12Device4* device, std::span<VertexDeclarationInfo const> const vertexDeclarations,
-                   std::span<uint8_t const> const vertexShader, std::span<uint8_t const> const pixelShader);
-
-        DX12Shader(ID3D12Device4* device, std::span<uint8_t const> const computeShader);
-
         auto getHash() const -> uint64_t override;
 
-        auto getStages() const -> std::unordered_map<D3D12_SHADER_TYPE, D3D12_SHADER_BYTECODE> const&;
+        auto getPipelineType() const -> PipelineType override;
 
-        auto getInputAssembler() const -> InputAssemblerInfo const&;
+        auto getStages() const -> std::unordered_map<D3D12EX_SHADER_TYPE, D3D12_SHADER_BYTECODE> const&;
+
+        auto getVertexInput() const -> std::optional<DX12VertexInput>;
 
       private:
-        InputAssemblerInfo inputAssembler;
-        std::unordered_map<D3D12_SHADER_TYPE, D3D12_SHADER_BYTECODE> stages;
+        std::optional<DX12VertexInput> vertexInput;
+        std::unordered_map<D3D12EX_SHADER_TYPE, D3D12_SHADER_BYTECODE> stages;
         std::vector<std::vector<uint8_t>> buffers;
         uint64_t hash;
+        PipelineType pipelineType;
     };
 
     class Pipeline final : public core::ref_counted_object
@@ -228,20 +234,20 @@ namespace ionengine::rhi
             auto operator()(const Entry& entry) const -> std::size_t
             {
                 auto depthStencil = entry.depthStencil.value_or(DepthStencilStageInfo::Default());
-                return entry.shaderHash ^ XXHash64::hash(&entry.rasterizer.fillMode, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.rasterizer.cullMode, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendDst, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendEnable, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendOp, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendSrc, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(entry.renderTargetFormats.data(), entry.renderTargetFormats.size(), 0) ^
-                       XXHash64::hash(&entry.depthStencilFormat, sizeof(DXGI_FORMAT), 0);
+                return entry.shaderHash ^ XXH64(&entry.rasterizer.fillMode, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.rasterizer.cullMode, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendDst, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendEnable, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendOp, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendSrc, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
+                       XXH64(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
+                       XXH64(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
+                       XXH64(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
+                       XXH64(entry.renderTargetFormats.data(), entry.renderTargetFormats.size(), 0) ^
+                       XXH64(&entry.depthStencilFormat, sizeof(DXGI_FORMAT), 0);
             }
         };
 
