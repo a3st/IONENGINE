@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.25.1)
 include(FetchContent)
 
+FetchContent_Declare(zlib
+    GIT_REPOSITORY https://github.com/madler/zlib.git
+    BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/zlib)
+
+FetchContent_Declare(
+    libpng
+    GIT_REPOSITORY https://github.com/pnggroup/libpng.git
+    BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/libpng)
+
 FetchContent_Declare(simdjson
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/simdjson
     BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/simdjson)
@@ -9,11 +18,6 @@ FetchContent_Declare(
     tinygltf
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/tinygltf
     BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/tinygltf)
-
-FetchContent_Declare(
-    libpng
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/libpng
-    BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/libpng)
 
 FetchContent_Declare(
     libwebview
@@ -36,9 +40,10 @@ FetchContent_Declare(
     BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/argh)
 
 FetchContent_MakeAvailable(
+    zlib
+    libpng
     simdjson 
     tinygltf 
-    libpng 
     libwebview  
     D3D12MemoryAllocator 
     gtest 
