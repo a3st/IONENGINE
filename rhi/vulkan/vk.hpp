@@ -211,7 +211,7 @@ namespace ionengine::rhi
         VKTexture(VkDevice device, VmaAllocator memoryAllocator, TextureCreateInfo const& createInfo);
 
         /*!
-            @brief Constructor Swapchain Texture
+            @brief Constructor for Swapchain Texture
         */
         VKTexture(VkDevice device, VkImage image, uint32_t const width, uint32_t const height);
 
@@ -353,11 +353,11 @@ namespace ionengine::rhi
 
         auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void override;
 
-        auto getBackendType() const -> std::string_view override;
+        auto getBackendName() const -> std::string_view override;
 
       private:
         VkInstance instance;
-#ifdef _DEBUG
+#ifndef DEBUG
         VkDebugUtilsMessengerEXT debugUtilsMessenger;
 
         PFN_vkCreateDebugUtilsMessengerEXT createDebugUtilsMessengerEXT;

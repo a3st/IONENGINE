@@ -360,6 +360,7 @@ namespace ionengine::rhi
             {
                 allocOffset = i;
                 success = true;
+                break;
             }
         }
 
@@ -393,8 +394,6 @@ namespace ionengine::rhi
 
     VKVertexInput::VKVertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations)
     {
-        std::vector<VkVertexInputAttributeDescription> inputAttributes;
-
         uint32_t location = 0;
         uint32_t offset = 0;
 
@@ -1020,7 +1019,7 @@ namespace ionengine::rhi
                                           .pEngineName = "RHI",
                                           .engineVersion = VK_MAKE_VERSION(1, 0, 0),
                                           .apiVersion = VK_API_VERSION_1_3};
-#ifdef _DEBUG
+#ifndef NDEBUG
         std::vector<char const*> instanceExtensions = {
             VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
         std::vector<char const*> instanceLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -1309,7 +1308,7 @@ namespace ionengine::rhi
         this->createSwapchain(width, height);
     }
 
-    auto VKDevice::getBackendType() const -> std::string_view
+    auto VKDevice::getBackendName() const -> std::string_view
     {
         return "Vulkan";
     }

@@ -221,7 +221,7 @@ namespace ionengine::rhi
     struct BufferCreateInfo
     {
         size_t size;
-        size_t elementStride;
+        uint32_t elementStride;
         BufferUsageFlags flags;
     };
 
@@ -389,6 +389,10 @@ namespace ionengine::rhi
             } graphics;
             ShaderStageCreateInfo compute;
         };
+
+        ~ShaderCreateInfo()
+        {
+        }
     };
 
     struct RasterizerStageInfo
@@ -547,14 +551,22 @@ namespace ionengine::rhi
 
         virtual auto execute() -> Future<Query> = 0;
 
-        virtual auto writeBuffer(core::ref_ptr<Buffer> dst, std::span<uint8_t const> const data) -> Future<Buffer> = 0;
+        virtual auto writeBuffer(core::ref_ptr<Buffer> dest,
+                                 std::span<uint8_t const> const dataBytes) -> Future<Buffer> = 0;
 
-        virtual auto writeTexture(core::ref_ptr<Texture> dst,
-                                  std::vector<std::span<uint8_t const>> const& data) -> Future<Texture> = 0;
+        virtual auto writeTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
+                                  std::span<uint8_t const> const dataBytes) -> Future<Texture> = 0;
 
-        virtual auto readBuffer(core::ref_ptr<Buffer> dst, std::vector<uint8_t>& data) -> void = 0;
+        virtual auto readBuffer(core::ref_ptr<Buffer> dest, uint8_t* dataBytes) -> size_t = 0;
 
-        virtual auto readTexture(core::ref_ptr<Texture> dst, std::vector<std::vector<uint8_t>>& data) -> void = 0;
+        virtual auto readTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
+                                 uint8_t* dataBytes) -> size_t = 0;
+
+        virtual auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
+                             ResourceState const after) -> void = 0;
+
+        virtual auto barrier(core::ref_ptr<Texture> dest, ResourceState const before,
+                             ResourceState const after) -> void = 0;
     };
 
     class Device : public core::ref_counted_object
@@ -582,6 +594,6 @@ namespace ionengine::rhi
 
         virtual auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void = 0;
 
-        virtual auto getBackendType() const -> std::string_view = 0;
+        virtual auto getBackendName() const -> std::string_view = 0;
     };
 } // namespace ionengine::rhi

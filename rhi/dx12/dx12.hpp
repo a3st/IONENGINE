@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "core/exception.hpp"
 #include "rhi/rhi.hpp"
 #include <xxhash.h>
 #define NOMINMAX
@@ -14,23 +13,39 @@
 
 namespace ionengine::rhi
 {
-    struct DescriptorAllocation
+    class DescriptorAllocator;
+
+    class DescriptorAllocation final : public IUnknown
     {
+        friend class DescriptorAllocator;
+
+      public:
+        HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override;
+
+        ULONG STDMETHODCALLTYPE AddRef() override;
+
+        ULONG STDMETHODCALLTYPE Release() override;
+
+        auto getCPUHandle() const -> D3D12_CPU_DESCRIPTOR_HANDLE;
+
+        auto getGPUHandle() const -> D3D12_GPU_DESCRIPTOR_HANDLE;
+
+        auto getOffset() const -> uint32_t;
+
+      private:
+        DescriptorAllocator* allocator;
         ID3D12DescriptorHeap* heap;
         D3D12_DESCRIPTOR_HEAP_TYPE heapType;
         uint32_t incrementSize;
         uint32_t offset;
-        uint32_t size;
 
-        auto cpuHandle(uint32_t const index = 0) const -> D3D12_CPU_DESCRIPTOR_HANDLE
-        {
-            return {.ptr = heap->GetCPUDescriptorHandleForHeapStart().ptr + incrementSize * offset + index};
-        }
+        DescriptorAllocation() = default;
 
-        auto gpuHandle(uint32_t const index = 0) const -> D3D12_GPU_DESCRIPTOR_HANDLE
-        {
-            return {.ptr = heap->GetGPUDescriptorHandleForHeapStart().ptr + incrementSize * offset + index};
-        }
+        auto initialize(DescriptorAllocator* allocator, ID3D12DescriptorHeap* heap,
+                        D3D12_DESCRIPTOR_HEAP_TYPE const heapType, uint32_t const incrementSize,
+                        uint32_t const offset) -> void;
+
+        std::atomic<uint32_t> refCount;
     };
 
     enum class DescriptorAllocatorLimits : uint32_t
@@ -41,30 +56,32 @@ namespace ionengine::rhi
         DSV = 32
     };
 
-    class DescriptorAllocator : public core::ref_counted_object
+    class DescriptorAllocator final : public core::ref_counted_object
     {
       public:
         DescriptorAllocator(ID3D12Device1* device);
 
-        auto allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heapType, uint32_t const allocSize) -> DescriptorAllocation;
+        auto allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heapType, DescriptorAllocation** allocation) -> HRESULT;
 
-        auto deallocate(DescriptorAllocation const& allocation) -> void;
+        auto deallocate(DescriptorAllocation* allocation) -> void;
 
-        auto getHeap(D3D12_DESCRIPTOR_HEAP_TYPE const heapType) -> ID3D12DescriptorHeap*;
+        auto getDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE const heapType) -> ID3D12DescriptorHeap*;
 
       private:
+        std::mutex mutex;
+        ID3D12Device1* device;
+
         struct Chunk
         {
             winrt::com_ptr<ID3D12DescriptorHeap> heap;
             std::vector<uint8_t> free;
             uint32_t offset;
             uint32_t size;
+            uint32_t incrementSize;
+            std::unique_ptr<DescriptorAllocation[]> allocations;
         };
 
-        ID3D12Device1* device;
         std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, Chunk> chunks;
-
-        auto createChunk(D3D12_DESCRIPTOR_HEAP_TYPE const heapType) -> void;
     };
 
     class DX12Buffer final : public Buffer
@@ -72,10 +89,6 @@ namespace ionengine::rhi
       public:
         DX12Buffer(ID3D12Device1* device, D3D12MA::Allocator* memoryAllocator, DescriptorAllocator* descriptorAllocator,
                    BufferCreateInfo const& createInfo);
-
-        ~DX12Buffer();
-
-        inline static uint32_t const ConstantBufferSizeAlignment = 256;
 
         auto getSize() -> size_t override;
 
@@ -85,18 +98,18 @@ namespace ionengine::rhi
 
         auto unmapMemory() -> void override;
 
+        auto getDescriptorOffset(BufferUsage const usage) const -> uint32_t override;
+
         auto getResource() -> ID3D12Resource*;
 
-        auto getDescriptor(BufferUsage const usage) const -> DescriptorAllocation const&;
-
-        auto getDescriptorOffset(BufferUsage const usage) const -> uint32_t override;
+        auto getDescriptor(BufferUsage const usage) const -> DescriptorAllocation*;
 
       private:
         D3D12MA::Allocator* memoryAllocator;
         DescriptorAllocator* descriptorAllocator;
         winrt::com_ptr<ID3D12Resource> resource;
         winrt::com_ptr<D3D12MA::Allocation> memoryAllocation;
-        std::unordered_map<BufferUsage, DescriptorAllocation> descriptorAllocations;
+        std::unordered_map<BufferUsage, winrt::com_ptr<DescriptorAllocation>> descriptorAllocations;
         size_t size;
         BufferUsageFlags flags;
     };
@@ -105,12 +118,13 @@ namespace ionengine::rhi
     {
       public:
         DX12Texture(ID3D12Device1* device, D3D12MA::Allocator* memoryAllocator,
-                    DescriptorAllocator& descriptorAllocator, TextureCreateInfo const& createInfo);
+                    DescriptorAllocator* descriptorAllocator, TextureCreateInfo const& createInfo);
 
-        DX12Texture(ID3D12Device1* device, winrt::com_ptr<ID3D12Resource> resource,
-                    DescriptorAllocator& descriptorAllocator);
-
-        ~DX12Texture();
+        /*!
+            @brief Constructor for Swapchain Texture
+        */
+        DX12Texture(ID3D12Device1* device, DescriptorAllocator* descriptorAllocator,
+                    winrt::com_ptr<ID3D12Resource> resource);
 
         auto getWidth() const -> uint32_t override;
 
@@ -124,18 +138,18 @@ namespace ionengine::rhi
 
         auto getFlags() const -> TextureUsageFlags override;
 
-        auto getDescriptor(TextureUsage const usage) const -> DescriptorAllocation const&;
+        auto getDescriptorOffset(TextureUsage const usage) const -> uint32_t override;
 
         auto getResource() -> ID3D12Resource*;
 
-        auto getDescriptorOffset(TextureUsage const usage) const -> uint32_t override;
+        auto getDescriptor(TextureUsage const usage) const -> DescriptorAllocation*;
 
       private:
         D3D12MA::Allocator* memoryAllocator;
         DescriptorAllocator* descriptorAllocator;
         winrt::com_ptr<ID3D12Resource> resource;
         winrt::com_ptr<D3D12MA::Allocation> memoryAllocation;
-        std::unordered_map<TextureUsage, DescriptorAllocation> descriptorAllocations;
+        std::unordered_map<TextureUsage, winrt::com_ptr<DescriptorAllocation>> descriptorAllocations;
         uint32_t width;
         uint32_t height;
         uint32_t depth;
@@ -145,11 +159,11 @@ namespace ionengine::rhi
         TextureUsageFlags flags;
     };
 
-    enum D3D12EX_SHADER_TYPE
+    enum class DX12ShaderStageType
     {
-        D3D12_SHADER_TYPE_VERTEX,
-        D3D12_SHADER_TYPE_PIXEL,
-        D3D12_SHADER_TYPE_COMPUTE
+        Vertex,
+        Pixel,
+        Compute
     };
 
     class DX12VertexInput
@@ -157,14 +171,20 @@ namespace ionengine::rhi
       public:
         DX12VertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations);
 
-        auto getInputElements() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
+        auto getInputElementDescs() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
 
         auto getInputSize() const -> uint32_t;
 
       private:
         std::vector<std::string> semanticNames;
-        std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
+        std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
         uint32_t inputSize;
+    };
+
+    struct DX12ShaderStage
+    {
+        std::vector<uint8_t> buffer;
+        D3D12_SHADER_BYTECODE shaderByteCode;
     };
 
     class DX12Shader final : public Shader
@@ -176,14 +196,13 @@ namespace ionengine::rhi
 
         auto getPipelineType() const -> PipelineType override;
 
-        auto getStages() const -> std::unordered_map<D3D12EX_SHADER_TYPE, D3D12_SHADER_BYTECODE> const&;
+        auto getStages() const -> std::unordered_map<DX12ShaderStageType, DX12ShaderStage> const&;
 
         auto getVertexInput() const -> std::optional<DX12VertexInput>;
 
       private:
         std::optional<DX12VertexInput> vertexInput;
-        std::unordered_map<D3D12EX_SHADER_TYPE, D3D12_SHADER_BYTECODE> stages;
-        std::vector<std::vector<uint8_t>> buffers;
+        std::unordered_map<DX12ShaderStageType, DX12ShaderStage> stages;
         uint64_t hash;
         PipelineType pipelineType;
     };
@@ -191,7 +210,7 @@ namespace ionengine::rhi
     class Pipeline final : public core::ref_counted_object
     {
       public:
-        Pipeline(ID3D12Device4* device, ID3D12RootSignature* rootSignature, DX12Shader& shader,
+        Pipeline(ID3D12Device4* device, ID3D12RootSignature* rootSignature, DX12Shader* shader,
                  RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                  std::optional<DepthStencilStageInfo> const depthStencil,
                  std::span<DXGI_FORMAT const> const renderTargetFormats, DXGI_FORMAT const depthStencilFormat,
@@ -253,7 +272,7 @@ namespace ionengine::rhi
 
         PipelineCache(ID3D12Device4* device, RHICreateInfo const& createInfo);
 
-        auto get(DX12Shader& shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
+        auto get(DX12Shader* shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                  std::optional<DepthStencilStageInfo> const depthStencil,
                  std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& renderTargetFormats,
                  DXGI_FORMAT const depthStencilFormat) -> core::ref_ptr<Pipeline>;
@@ -274,8 +293,8 @@ namespace ionengine::rhi
     class DX12GraphicsContext final : public GraphicsContext
     {
       public:
-        DX12GraphicsContext(ID3D12Device4* device, PipelineCache& pipelineCache,
-                            DescriptorAllocator& descriptorAllocator, ID3D12CommandQueue* queue, ID3D12Fence* fence,
+        DX12GraphicsContext(ID3D12Device4* device, PipelineCache* pipelineCache,
+                            DescriptorAllocator* descriptorAllocator, ID3D12CommandQueue* queue, ID3D12Fence* fence,
                             HANDLE fenceEvent, uint64_t& fenceValue);
 
         auto reset() -> void override;
@@ -306,21 +325,24 @@ namespace ionengine::rhi
         auto setScissor(int32_t const left, int32_t const top, int32_t const right,
                         int32_t const bottom) -> void override;
 
-        auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst, ResourceState const before,
+        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
+                     ResourceState const after) -> void override;
+
+        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before,
                      ResourceState const after) -> void override;
 
         auto execute() -> Future<Query> override;
 
       private:
-        winrt::com_ptr<ID3D12CommandAllocator> commandAllocator;
-        winrt::com_ptr<ID3D12GraphicsCommandList4> commandList;
-
+        ID3D12Device4* device;
         PipelineCache* pipelineCache;
         DescriptorAllocator* descriptorAllocator;
         ID3D12CommandQueue* queue;
         ID3D12Fence* fence;
         HANDLE fenceEvent;
         uint64_t* fenceValue;
+        winrt::com_ptr<ID3D12CommandAllocator> commandAllocator;
+        winrt::com_ptr<ID3D12GraphicsCommandList4> commandList;
 
         core::ref_ptr<DX12Shader> currentShader;
         bool isRootSignatureBinded;
@@ -337,32 +359,32 @@ namespace ionengine::rhi
 
         auto reset() -> void override;
 
-        auto writeBuffer(core::ref_ptr<Buffer> dst, std::span<uint8_t const> const data) -> Future<Buffer> override;
+        auto writeBuffer(core::ref_ptr<Buffer> dest,
+                         std::span<uint8_t const> const dataBytes) -> Future<Buffer> override;
 
-        auto writeTexture(core::ref_ptr<Texture> dst,
-                          std::vector<std::span<uint8_t const>> const& data) -> Future<Texture> override;
+        auto writeTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
+                          std::span<uint8_t const> const dataBytes) -> Future<Texture> override;
 
-        auto readBuffer(core::ref_ptr<Buffer> dst, std::vector<uint8_t>& data) -> void override;
+        auto readBuffer(core::ref_ptr<Buffer> dest, uint8_t* dataBytes) -> size_t override;
 
-        auto readTexture(core::ref_ptr<Texture> dst, std::vector<std::vector<uint8_t>>& data) -> void override;
+        auto readTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel, uint8_t* dataBytes) -> size_t override;
 
-        auto barrier(std::variant<core::ref_ptr<Buffer>, core::ref_ptr<Texture>> dst, ResourceState const before,
+        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
+                     ResourceState const after) -> void override;
+
+        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before,
                      ResourceState const after) -> void override;
 
         auto execute() -> Future<Query> override;
 
-        inline static uint32_t const ResourceMemoryAlignment = 256;
-        inline static uint32_t const TextureRowPithAlignment = 512;
-
       private:
         ID3D12Device4* device;
-        winrt::com_ptr<ID3D12CommandAllocator> commandAllocator;
-        winrt::com_ptr<ID3D12GraphicsCommandList4> commandList;
-
         ID3D12CommandQueue* queue;
         ID3D12Fence* fence;
         HANDLE fenceEvent;
         uint64_t* fenceValue;
+        winrt::com_ptr<ID3D12CommandAllocator> commandAllocator;
+        winrt::com_ptr<ID3D12GraphicsCommandList4> commandList;
 
         struct BufferInfo
         {
@@ -370,8 +392,8 @@ namespace ionengine::rhi
             uint64_t offset;
         };
 
-        BufferInfo bufferRead;
-        BufferInfo bufferWrite;
+        BufferInfo readStagingBuffer;
+        BufferInfo writeStagingBuffer;
 
         auto getSurfaceData(rhi::TextureFormat const format, uint32_t const width, uint32_t const height,
                             size_t& rowBytes, uint32_t& rowCount) -> void;
@@ -406,6 +428,8 @@ namespace ionengine::rhi
 
         auto createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer> override;
 
+        auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> override;
+
         auto createGraphicsContext() -> core::ref_ptr<GraphicsContext> override;
 
         auto createCopyContext() -> core::ref_ptr<CopyContext> override;
@@ -414,12 +438,14 @@ namespace ionengine::rhi
 
         auto presentBackBuffer() -> void override;
 
-        auto getBackendType() const -> std::string_view override;
+        auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void override;
+
+        auto getBackendName() const -> std::string_view override;
 
       private:
         std::mutex mutex;
 
-#ifdef _DEBUG
+#ifndef NDEBUG
         winrt::com_ptr<ID3D12Debug1> debug;
 #endif
         winrt::com_ptr<IDXGIFactory4> factory;
@@ -444,5 +470,7 @@ namespace ionengine::rhi
         core::ref_ptr<PipelineCache> pipelineCache;
 
         std::vector<core::ref_ptr<Texture>> backBuffers;
+
+        auto createSwapchainBuffers(uint32_t const width, uint32_t const height) -> void;
     };
 } // namespace ionengine::rhi
