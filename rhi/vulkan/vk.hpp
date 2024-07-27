@@ -3,12 +3,18 @@
 #pragma once
 
 #include "rhi/rhi.hpp"
+#ifdef IONENGINE_PLATFORM_WIN32
+#define VK_USE_PLATFORM_WIN32_KHR
+#elif IONENGINE_PLATFORM_X11
 #define VK_USE_PLATFORM_XLIB_KHR
+#endif
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 #undef Always
 #undef None
-#include <xxhash/xxhash64.h>
+#undef max
+#undef min
+#include <xxhash.h>
 
 namespace ionengine::rhi
 {
@@ -146,20 +152,20 @@ namespace ionengine::rhi
             auto operator()(const Entry& entry) const -> std::size_t
             {
                 auto depthStencil = entry.depthStencil.value_or(DepthStencilStageInfo::Default());
-                return entry.shaderHash ^ XXHash64::hash(&entry.rasterizer.fillMode, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.rasterizer.cullMode, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendDst, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendEnable, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendOp, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendSrc, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&entry.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
-                       XXHash64::hash(entry.renderTargetFormats.data(), entry.renderTargetFormats.size(), 0) ^
-                       XXHash64::hash(&entry.depthStencilFormat, sizeof(VkFormat), 0);
+                return entry.shaderHash ^ XXH64(&entry.rasterizer.fillMode, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.rasterizer.cullMode, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendDst, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendEnable, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendOp, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendSrc, sizeof(uint32_t), 0) ^
+                       XXH64(&entry.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
+                       XXH64(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
+                       XXH64(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
+                       XXH64(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
+                       XXH64(entry.renderTargetFormats.data(), entry.renderTargetFormats.size(), 0) ^
+                       XXH64(&entry.depthStencilFormat, sizeof(VkFormat), 0);
             }
         };
 
@@ -357,7 +363,7 @@ namespace ionengine::rhi
 
       private:
         VkInstance instance;
-#ifndef DEBUG
+#ifndef NDEBUG
         VkDebugUtilsMessengerEXT debugUtilsMessenger;
 
         PFN_vkCreateDebugUtilsMessengerEXT createDebugUtilsMessengerEXT;

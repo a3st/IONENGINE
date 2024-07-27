@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "core/serializable.hpp"
+#include "core/serialize.hpp"
 
 namespace ionengine::rhi::fx
 {

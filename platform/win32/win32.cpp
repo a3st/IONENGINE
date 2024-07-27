@@ -154,10 +154,15 @@ namespace ionengine::platform
             throw core::Exception("An error occurred while registering the window");
         }
 
-        window =
-            ::CreateWindow(wndClass.lpszClassName, internal::toWString(title).c_str(),
-                           WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX, 0,
-                           0, 800, 600, nullptr, nullptr, wndClass.hInstance, nullptr);
+        uint32_t windowStyle =
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+
+        RECT rect{.right = 800, .bottom = 600};
+        ::AdjustWindowRect(&rect, windowStyle, false);
+
+        window = ::CreateWindow(wndClass.lpszClassName, internal::toWString(title).c_str(), windowStyle, CW_USEDEFAULT,
+                                CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
+                                wndClass.hInstance, nullptr);
         if (!window)
         {
             throw core::Exception("An error occurred while creating the window");

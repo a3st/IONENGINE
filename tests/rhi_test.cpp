@@ -18,17 +18,17 @@ TEST(RHI, DeviceSwapchain_Test)
 {
     auto platform = platform::App::create("TestProject");
 
+    uint32_t width = 800;
+    uint32_t height = 600;
+
     rhi::RHICreateInfo rhiCreateInfo{.window = platform->getWindowHandle(),
                                      .instance = platform->getInstanceHandle(),
-                                     .windowWidth = 800,
-                                     .windowHeight = 600};
+                                     .windowWidth = width,
+                                     .windowHeight = height};
 
     auto device = rhi::Device::create(rhiCreateInfo);
 
     auto graphicsContext = device->createGraphicsContext();
-
-    uint32_t width = 800;
-    uint32_t height = 600;
 
     platform->setIdleCallback([&]() {
         graphicsContext->reset();

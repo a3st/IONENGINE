@@ -27,6 +27,14 @@ namespace ionengine::rhi
         }
     }
 
+    auto throwIfFailed(VkResult const result) -> void
+    {
+        if (result != VK_SUCCESS)
+        {
+            throw core::Exception(VkResult_to_string(result));
+        }
+    }
+
     auto TextureFormat_to_VkFormat(TextureFormat const format) -> VkFormat
     {
         switch (format)
@@ -265,14 +273,6 @@ namespace ionengine::rhi
         }
     }
 
-    auto throwIfFailed(VkResult const result) -> void
-    {
-        if (result != VK_SUCCESS)
-        {
-            throw core::Exception(VkResult_to_string(result));
-        }
-    }
-
     VKAPI_ATTR auto VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                              VkDebugUtilsMessageTypeFlagsEXT messageType,
                                              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -389,7 +389,7 @@ namespace ionengine::rhi
 
         Chunk& chunk = chunks[allocation->descriptorType];
         chunk.free[allocation->arrayElement] = 0x0;
-        chunk.offset = allocation->arrayElement;
+        chunk.offset = std::min(chunk.offset, allocation->arrayElement);
     }
 
     VKVertexInput::VKVertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations)
@@ -429,7 +429,7 @@ namespace ionengine::rhi
     {
         if (createInfo.pipelineType == rhi::PipelineType::Graphics)
         {
-            XXHash64 hasher(0);
+            XXH64_state_t* hasher = ::XXH64_createState();
             {
                 VkShaderModuleCreateInfo shaderModuleCreateInfo{
                     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -440,8 +440,9 @@ namespace ionengine::rhi
                 VKShaderStage shaderStage{.entryPoint = createInfo.graphics.vertexStage.entryPoint,
                                           .shaderModule = shaderModule};
                 stages.emplace(VK_SHADER_STAGE_VERTEX_BIT, std::move(shaderStage));
-                hasher.add(createInfo.graphics.vertexStage.shader.data(),
-                           createInfo.graphics.vertexStage.shader.size());
+
+                ::XXH64_update(hasher, createInfo.graphics.vertexStage.shader.data(),
+                               createInfo.graphics.vertexStage.shader.size());
             }
 
             {
@@ -454,15 +455,17 @@ namespace ionengine::rhi
                 VKShaderStage shaderStage{.entryPoint = createInfo.graphics.pixelStage.entryPoint,
                                           .shaderModule = shaderModule};
                 stages.emplace(VK_SHADER_STAGE_FRAGMENT_BIT, std::move(shaderStage));
-                hasher.add(createInfo.graphics.pixelStage.shader.data(), createInfo.graphics.pixelStage.shader.size());
+
+                ::XXH64_update(hasher, createInfo.graphics.pixelStage.shader.data(),
+                               createInfo.graphics.pixelStage.shader.size());
             }
-            hash = hasher.hash();
+            hash = ::XXH64_digest(hasher);
 
             vertexInput.emplace(createInfo.graphics.vertexDeclarations);
         }
         else
         {
-            XXHash64 hasher(0);
+            XXH64_state_t* hasher = ::XXH64_createState();
             {
                 VkShaderModuleCreateInfo shaderModuleCreateInfo{
                     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -472,9 +475,10 @@ namespace ionengine::rhi
 
                 VKShaderStage shaderStage{.entryPoint = createInfo.compute.entryPoint, .shaderModule = shaderModule};
                 stages.emplace(VK_SHADER_STAGE_COMPUTE_BIT, std::move(shaderStage));
-                hasher.add(createInfo.compute.shader.data(), createInfo.compute.shader.size());
+
+                ::XXH64_update(hasher, createInfo.compute.shader.data(), createInfo.compute.shader.size());
             }
-            hash = hasher.hash();
+            hash = ::XXH64_digest(hasher);
         }
     }
 
@@ -1019,20 +1023,33 @@ namespace ionengine::rhi
                                           .pEngineName = "RHI",
                                           .engineVersion = VK_MAKE_VERSION(1, 0, 0),
                                           .apiVersion = VK_API_VERSION_1_3};
-#ifndef NDEBUG
-        std::vector<char const*> instanceExtensions = {
-            VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_XLIB_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
-        std::vector<char const*> instanceLayers = {"VK_LAYER_KHRONOS_validation"};
 
         VkInstanceCreateInfo instanceCreateInfo{.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                                                .pApplicationInfo = &applicationInfo,
-                                                .enabledLayerCount = static_cast<uint32_t>(instanceLayers.size()),
-                                                .ppEnabledLayerNames = instanceLayers.data(),
-                                                .enabledExtensionCount =
-                                                    static_cast<uint32_t>(instanceExtensions.size()),
-                                                .ppEnabledExtensionNames = instanceExtensions.data()};
+                                                .pApplicationInfo = &applicationInfo};
+
+        std::vector<char const*> instanceExtensions{VK_KHR_SURFACE_EXTENSION_NAME};
+
+#ifdef IONENGINE_PLATFORM_WIN32
+        instanceExtensions.emplace_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#elif IONENGINE_PLATFORM_X11
+        instanceExtensions.emplace_back{VK_KHR_XLIB_SURFACE_EXTENSION_NAME};
+#endif
+
+#ifndef NDEBUG
+        instanceExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        std::vector<char const*> instanceLayers{"VK_LAYER_KHRONOS_validation"};
+
+        instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(instanceLayers.size());
+        instanceCreateInfo.ppEnabledLayerNames = instanceLayers.data();
+        instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensions.size());
+        instanceCreateInfo.ppEnabledExtensionNames = instanceExtensions.data();
+#else
+        instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
+        instanceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
+#endif
         throwIfFailed(::vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
 
+#ifndef NDEBUG
         VkDebugUtilsMessengerCreateInfoEXT messengerCreateInfo{
             .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
             .messageSeverity =
@@ -1043,23 +1060,12 @@ namespace ionengine::rhi
             .pfnUserCallback = debugCallback};
 
         createDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-            vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+            ::vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 
         destroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-            vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+            ::vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
 
         throwIfFailed(createDebugUtilsMessengerEXT(instance, &messengerCreateInfo, nullptr, &debugUtilsMessenger));
-#else
-        std::array<char const*, 3> enabledExtensions = {VK_KHR_SURFACE_EXTENSION_NAME,
-                                                        VK_KHR_XLIB_SURFACE_EXTENSION_NAME};
-
-        VkInstanceCreateInfo instanceCreateInfo{.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                                                .pApplicationInfo = &applicationInfo,
-                                                .enabledExtensionCount =
-                                                    static_cast<uint32_t>(enabledExtensions.size()),
-                                                .ppEnabledExtensionNames = enabledExtensions.data()};
-
-        throwIfFailed(::vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
 #endif
 
         uint32_t numPhysicalDevices;
@@ -1114,9 +1120,9 @@ namespace ionengine::rhi
             queueCreateInfos.emplace_back(std::move(queueCreateInfo));
         }
 
-        std::vector<char const*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                                                     VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-                                                     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME};
+        std::vector<char const*> deviceExtensions{VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                                                  VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+                                                  VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME};
 
         VkPhysicalDeviceVulkan12Features deviceFeatures12{.sType =
                                                               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
@@ -1149,6 +1155,7 @@ namespace ionengine::rhi
             VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
                                                       .pNext = &semaphoreTypeCreateInfo};
             throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &graphicsQueue.semaphore));
+            graphicsQueue.fenceValue = 0;
         }
 
         // Create Transfer Queue
@@ -1161,6 +1168,7 @@ namespace ionengine::rhi
             VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
                                                       .pNext = &semaphoreTypeCreateInfo};
             throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &transferQueue.semaphore));
+            transferQueue.fenceValue = 0;
         }
 
         // Create Compute Queue
@@ -1173,16 +1181,24 @@ namespace ionengine::rhi
             VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
                                                       .pNext = &semaphoreTypeCreateInfo};
             throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &computeQueue.semaphore));
+            computeQueue.fenceValue = 0;
         }
 
         descriptorAllocator = core::make_ref<DescriptorAllocator>(device);
 
         if (createInfo.window)
         {
+#ifdef IONENGINE_PLATFORM_WIN32
+            VkWin32SurfaceCreateInfoKHR surfaceCreateInfo{.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+                                                          .hinstance = reinterpret_cast<HINSTANCE>(createInfo.instance),
+                                                          .hwnd = reinterpret_cast<HWND>(createInfo.window)};
+            throwIfFailed(::vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface));
+#elif IONENGINE_PLATFORM_X11
             VkXlibSurfaceCreateInfoKHR surfaceCreateInfo{.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
                                                          .dpy = reinterpret_cast<Display*>(createInfo.instance),
                                                          .window = reinterpret_cast<Window>(createInfo.window)};
             throwIfFailed(::vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface));
+#endif
 
             {
                 VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
@@ -1213,7 +1229,7 @@ namespace ionengine::rhi
         ::vkDestroySemaphore(device, transferQueue.semaphore, nullptr);
         ::vkDestroySemaphore(device, computeQueue.semaphore, nullptr);
         ::vkDestroyDevice(device, nullptr);
-#ifdef _DEBUG
+#ifndef NDEBUG
         destroyDebugUtilsMessengerEXT(instance, debugUtilsMessenger, nullptr);
 #endif
         ::vkDestroyInstance(instance, nullptr);
@@ -1277,7 +1293,6 @@ namespace ionengine::rhi
         {
             throw core::Exception("Swapchain is not found");
         }
-
         VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
         VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
                                                           .waitSemaphoreValueCount = 1,
