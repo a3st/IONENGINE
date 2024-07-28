@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.25.1)
 include(FetchContent)
 
+FetchContent_Declare(dxc
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/dxc
+    BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/dxc)
+
 FetchContent_Declare(zlib
     GIT_REPOSITORY https://github.com/madler/zlib.git
     BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/zlib)
@@ -40,6 +44,7 @@ FetchContent_Declare(
     BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/argh)
 
 FetchContent_MakeAvailable(
+    dxc
     zlib
     libpng
     simdjson 

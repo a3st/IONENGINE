@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.25.1)
-include(FetchContent)
 
 set(RHI_TARGET_BACKEND "DX12" CACHE STRING "RHI target backend")
 

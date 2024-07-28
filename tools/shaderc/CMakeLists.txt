@@ -1,11 +1,13 @@
-cmake_minimum_required(VERSION 3.26.0)
+cmake_minimum_required(VERSION 3.25.1)
 
 add_executable(shaderc
     ../../rhi/fx/fx.cpp
     fx.cpp
     main.cpp)
 
-target_include_directories(shaderc PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(shaderc PRIVATE 
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/tools/shaderc)
 
 target_precompile_headers(shaderc PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
