@@ -2,7 +2,7 @@
 
 #include "fx.hpp"
 #include "core/exception.hpp"
-#include "core/serializable.hpp"
+#include "core/serialize.hpp"
 #include "precompiled.h"
 
 namespace ionengine::tools::shaderc

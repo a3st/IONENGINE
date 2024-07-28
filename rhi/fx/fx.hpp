@@ -149,7 +149,7 @@ namespace ionengine::rhi::fx
         {
             archive.property(magic);
             archive.property(target);
-            archive.with<core::serialize::OutputJSON, core::serialize::InputJSON>(effectData);
+            archive.with<core::OutputJSON, core::InputJSON>(effectData);
             archive.property(buffers);
         }
     };
