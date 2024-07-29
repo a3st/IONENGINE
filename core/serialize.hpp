@@ -3,25 +3,25 @@
 #pragma once
 
 #include "core/base64.hpp"
-#include "core/exception.hpp"
+#include "core/error.hpp"
 #include <simdjson.h>
 
 namespace ionengine::core
 {
     template <typename Type>
-    struct SerializableEnum
+    struct serializable_enum
     {
         template <typename Archive>
         auto operator()(Archive& archive);
     };
 
     template <typename Type, typename Archive>
-    class Serializable
+    class serializable_struct
     {
       public:
         static auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<Type>
         {
-            Type object = {};
+            Type object{};
             Archive archive(stream);
             try
             {
@@ -34,7 +34,7 @@ namespace ionengine::core
                     return std::nullopt;
                 }
             }
-            catch (core::Exception e)
+            catch (core::runtime_error e)
             {
                 std::cerr << e.what() << std::endl;
                 return std::nullopt;
@@ -48,7 +48,7 @@ namespace ionengine::core
                 Archive archive(stream);
                 return archive(object);
             }
-            catch (core::Exception e)
+            catch (core::runtime_error e)
             {
                 std::cerr << e.what() << std::endl;
                 return 0;
@@ -56,10 +56,10 @@ namespace ionengine::core
         }
     };
 
-    class InputJSON;
-    class OutputJSON;
-    class InputArchive;
-    class OutputArchive;
+    class serialize_ijson;
+    class serialize_ojson;
+    class serialize_iarchive;
+    class serialize_oarchive;
 
     namespace internal
     {
@@ -103,41 +103,51 @@ namespace ionengine::core
         {
         };
 
-        template <typename Type>
-        auto fromJSON(InputJSON& inputJSON, simdjson::ondemand::value it, Type& element) -> void;
+        template <typename>
+        struct is_std_optional : std::false_type
+        {
+        };
+
+        template <typename T>
+        struct is_std_optional<std::optional<T>> : std::true_type
+        {
+        };
 
         template <typename Type>
-        auto toJSON(OutputJSON& outputJSON, std::string_view const jsonName, Type const& element) -> void;
+        auto from_json(serialize_ijson& input, simdjson::ondemand::value it, Type& element) -> void;
 
         template <typename Type>
-        auto fromBinary(InputArchive& inputArchive, Type& element) -> void;
+        auto to_json(serialize_ojson& output, std::string_view const jsonName, Type const& element) -> void;
 
         template <typename Type>
-        auto toBinary(OutputArchive& outputArchive, Type const& element) -> void;
+        auto from_binary(serialize_iarchive& input, Type& element) -> void;
+
+        template <typename Type>
+        auto to_binary(serialize_oarchive& output, Type const& element) -> void;
     } // namespace internal
 
-    class InputJSON
+    class serialize_ijson
     {
         template <typename Type>
-        friend auto internal::fromJSON(InputJSON& inputJSON, simdjson::ondemand::value it, Type& element) -> void;
+        friend auto internal::from_json(serialize_ijson& input, simdjson::ondemand::value it, Type& element) -> void;
 
       public:
-        InputJSON(std::basic_istream<uint8_t>& stream) : stream(&stream)
+        serialize_ijson(std::basic_istream<uint8_t>& stream) : stream(&stream)
         {
-            jsonData = std::string(std::istreambuf_iterator<uint8_t>(stream.rdbuf()), {});
-            document = parser.iterate(jsonData, jsonData.size() + simdjson::SIMDJSON_PADDING);
+            json_data = std::string(std::istreambuf_iterator<uint8_t>(stream.rdbuf()), {});
+            document = parser.iterate(json_data, json_data.size() + simdjson::SIMDJSON_PADDING);
         }
 
         template <typename Type>
-        auto property(Type& element, std::string_view const jsonName) -> void
+        auto property(Type& element, std::string_view const json_name) -> void
         {
-            internal::fromJSON(*this, document[jsonName], element);
+            internal::from_json(*this, document[json_name], element);
         }
 
         template <typename Type>
-        auto field(Type const& element, std::string_view const jsonName) -> void
+        auto field(Type const& element, std::string_view const json_name) -> void
         {
-            enumFields[std::string(jsonName)] = static_cast<uint32_t>(element);
+            enum_fields[std::string(json_name)] = static_cast<uint32_t>(element);
         }
 
         template <typename Type>
@@ -148,17 +158,17 @@ namespace ionengine::core
         }
 
       private:
-        std::string jsonData;
+        std::string json_data;
         simdjson::ondemand::parser parser;
         simdjson::ondemand::document_stream::iterator::value_type document;
         std::basic_istream<uint8_t>* stream;
-        std::unordered_map<std::string, uint32_t> enumFields;
+        std::unordered_map<std::string, uint32_t> enum_fields;
     };
 
     namespace internal
     {
         template <typename Type>
-        auto fromJSON(InputJSON& inputJSON, simdjson::ondemand::value it, Type& element) -> void
+        auto from_json(serialize_ijson& input, simdjson::ondemand::value it, Type& element) -> void
         {
             if constexpr (std::is_integral_v<Type> && !std::is_same_v<Type, bool>)
             {
@@ -166,7 +176,7 @@ namespace ionengine::core
                 auto error = it.get_int64().get(value);
                 if (error != simdjson::SUCCESS)
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
                 element = value;
@@ -177,7 +187,7 @@ namespace ionengine::core
                 auto error = it.get_bool().get(value);
                 if (error != simdjson::SUCCESS)
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
                 element = value;
@@ -188,7 +198,7 @@ namespace ionengine::core
                 auto error = it.get_number().get(value);
                 if (error != simdjson::SUCCESS)
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
                 element = static_cast<Type>(value.get_double());
@@ -200,27 +210,27 @@ namespace ionengine::core
                 auto error = it.get_string().get(value);
                 if (error != simdjson::SUCCESS)
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
                 element = std::string(value);
             }
             else if constexpr (std::is_scoped_enum_v<Type>)
             {
-                SerializableEnum<Type> object;
-                object(inputJSON);
+                serializable_enum<Type> object;
+                object(input);
 
                 std::string_view value;
                 auto error = it.get_string().get(value);
                 if (error != simdjson::SUCCESS)
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
-                auto result = inputJSON.enumFields.find(std::string(value));
-                if (result == inputJSON.enumFields.end())
+                auto result = input.enum_fields.find(std::string(value));
+                if (result == input.enum_fields.end())
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
                 element = static_cast<Type>(result->second);
@@ -233,13 +243,13 @@ namespace ionengine::core
                     auto error = it.get_string().get(value);
                     if (error != simdjson::SUCCESS)
                     {
-                        throw core::Exception("An error occurred while deserializing a field");
+                        throw core::runtime_error("An error occurred while deserializing a field");
                     }
 
                     auto result = base64::decode(value);
                     if (!result.has_value())
                     {
-                        throw core::Exception("An error occurred while deserializing a field");
+                        throw core::runtime_error("An error occurred while deserializing a field");
                     }
                     element = std::move(result.value());
                 }
@@ -249,7 +259,7 @@ namespace ionengine::core
                     auto error = it.get_array().get(elements);
                     if (error != simdjson::SUCCESS)
                     {
-                        throw core::Exception("An error occurred while deserializing a field");
+                        throw core::runtime_error("An error occurred while deserializing a field");
                     }
 
                     element.resize(elements.count_elements());
@@ -257,7 +267,7 @@ namespace ionengine::core
                     uint32_t i = 0;
                     for (auto e : elements)
                     {
-                        fromJSON(inputJSON, e.value(), element[i]);
+                        from_json(input, e.value(), element[i]);
                         ++i;
                     }
                 }
@@ -268,7 +278,7 @@ namespace ionengine::core
                 auto error = it.get_array().get(elements);
                 if (error != simdjson::SUCCESS)
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
                 auto constexpr arraySize = std::tuple_size<Type>::value;
@@ -278,16 +288,16 @@ namespace ionengine::core
                 {
                     if (i > arraySize)
                     {
-                        throw core::Exception("An error occurred while deserializing a field");
+                        throw core::runtime_error("An error occurred while deserializing a field");
                     }
-                    fromJSON(inputJSON, e.value(), element[i]);
+                    from_json(input, e.value(), element[i]);
                     ++i;
                 }
             }
             else if constexpr (is_std_unique_ptr<Type>::value)
             {
                 element = std::make_unique<typename Type::element_type>();
-                fromJSON(inputJSON, it, *element);
+                from_json(input, it, *element);
             }
             else if constexpr (is_std_unordered_map<Type>::value)
             {
@@ -295,7 +305,7 @@ namespace ionengine::core
                 auto error = it.get_object().get(elements);
                 if (error != simdjson::SUCCESS)
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
                 for (auto e : elements)
@@ -304,34 +314,43 @@ namespace ionengine::core
                     error = e.unescaped_key().get(key);
                     if (error != simdjson::SUCCESS)
                     {
-                        throw core::Exception("An error occurred while deserializing a field");
+                        throw core::runtime_error("An error occurred while deserializing a field");
                     }
 
-                    typename Type::mapped_type insertedValue;
-                    fromJSON(inputJSON, e.value(), insertedValue);
+                    typename Type::mapped_type inserted_value;
+                    from_json(input, e.value(), inserted_value);
 
                     if constexpr (std::is_integral_v<typename Type::key_type>)
                     {
                         element[static_cast<typename Type::key_type>(std::stoi(std::string(key)))] =
-                            std::move(insertedValue);
+                            std::move(inserted_value);
                     }
                     else if constexpr (std::is_scoped_enum_v<typename Type::key_type>)
                     {
-                        SerializableEnum<typename Type::key_type> object;
-                        object(inputJSON);
+                        serializable_enum<typename Type::key_type> object;
+                        object(input);
 
-                        auto result = inputJSON.enumFields.find(std::string(key));
-                        if (result == inputJSON.enumFields.end())
+                        auto result = input.enum_fields.find(std::string(key));
+                        if (result == input.enum_fields.end())
                         {
-                            throw core::Exception("An error occurred while deserializing a field");
+                            throw core::runtime_error("An error occurred while deserializing a field");
                         }
 
-                        element[static_cast<Type::key_type>(result->second)] = std::move(insertedValue);
+                        element[static_cast<Type::key_type>(result->second)] = std::move(inserted_value);
                     }
                     else
                     {
-                        element[std::string(key)] = std::move(insertedValue);
+                        element[std::string(key)] = std::move(inserted_value);
                     }
+                }
+            }
+            else if constexpr (is_std_optional<Type>::value)
+            {
+                if (!it.is_null())
+                {
+                    typename Type::value_type inserted_value;
+                    from_json(input, it, inserted_value);
+                    element = std::move(inserted_value);
                 }
             }
             else
@@ -340,49 +359,49 @@ namespace ionengine::core
                 auto error = it.get_object().get(object);
                 if (error != simdjson::SUCCESS)
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
                 std::string_view value;
                 error = object.raw_json().get(value);
                 if (error != simdjson::SUCCESS)
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
 
-                std::basic_spanstream<uint8_t> tempInput(
+                std::basic_spanstream<uint8_t> temp_stream(
                     std::span<uint8_t>(reinterpret_cast<uint8_t*>(const_cast<char*>(value.data())), value.size()));
-                InputJSON archive(tempInput);
+                serialize_ijson archive(temp_stream);
                 if (!(archive(element) > 0))
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
             }
         }
     } // namespace internal
 
-    class OutputJSON
+    class serialize_ojson
     {
         template <typename Type>
-        friend auto internal::toJSON(OutputJSON& outputJSON, std::string_view const jsonName,
-                                     Type const& element) -> void;
+        friend auto internal::to_json(serialize_ojson& output, std::string_view const json_name,
+                                      Type const& element) -> void;
 
       public:
-        OutputJSON(std::basic_ostream<uint8_t>& stream) : stream(&stream)
+        serialize_ojson(std::basic_ostream<uint8_t>& stream) : stream(&stream)
         {
-            jsonChunk << "{";
+            json_chunk << "{";
         }
 
         template <typename Type>
-        auto property(Type const& element, std::string_view const jsonName) -> void
+        auto property(Type const& element, std::string_view const json_name) -> void
         {
-            internal::toJSON(*this, jsonName, element);
+            internal::to_json(*this, json_name, element);
         }
 
         template <typename Type>
-        auto field(Type const& element, std::string_view const jsonName) -> void
+        auto field(Type const& element, std::string_view const json_name) -> void
         {
-            enumFields[static_cast<uint32_t>(element)] = std::string(jsonName);
+            enum_fields[static_cast<uint32_t>(element)] = std::string(json_name);
         }
 
         template <typename Type>
@@ -390,212 +409,225 @@ namespace ionengine::core
         {
             const_cast<Type&>(object)(*this);
 
-            std::string rawJSON = jsonChunk.str();
-            rawJSON = rawJSON.substr(0, rawJSON.size() - 1) + "}";
+            std::string raw_json = json_chunk.str();
+            raw_json = raw_json.substr(0, raw_json.size() - 1) + "}";
 
-            stream->write(reinterpret_cast<uint8_t const*>(rawJSON.data()), rawJSON.size());
+            stream->write(reinterpret_cast<uint8_t const*>(raw_json.data()), raw_json.size());
             return stream->tellp();
         }
 
       private:
-        std::stringstream jsonChunk;
+        std::stringstream json_chunk;
         std::basic_ostream<uint8_t>* stream;
-        std::unordered_map<uint32_t, std::string> enumFields;
+        std::unordered_map<uint32_t, std::string> enum_fields;
     };
 
     namespace internal
     {
         template <typename Type>
-        auto toJSON(OutputJSON& outputJSON, std::string_view const jsonName, Type const& element) -> void
+        auto to_json(serialize_ojson& output, std::string_view const json_name, Type const& element) -> void
         {
             if constexpr (is_std_vector<Type>::value)
             {
-                if (!jsonName.empty())
+                if (!json_name.empty())
                 {
-                    outputJSON.jsonChunk << "\"" << jsonName << "\":";
+                    output.json_chunk << "\"" << json_name << "\":";
                 }
 
                 if constexpr (std::is_same_v<typename Type::value_type, uint8_t>)
                 {
-                    std::string const encodedString = base64::encode(element);
-                    outputJSON.jsonChunk << "\"" << encodedString << "\"";
+                    std::string const encoded_string = base64::encode(element);
+                    output.json_chunk << "\"" << encoded_string << "\"";
                 }
                 else
                 {
-                    outputJSON.jsonChunk << "[";
-                    bool isFirst = true;
+                    output.json_chunk << "[";
+                    bool is_first = true;
                     for (auto const& e : element)
                     {
-                        if (!isFirst)
+                        if (!is_first)
                         {
-                            outputJSON.jsonChunk << ",";
+                            output.json_chunk << ",";
                         }
-                        toJSON(outputJSON, "", e);
-                        isFirst = false;
+                        to_json(output, "", e);
+                        is_first = false;
                     }
-                    outputJSON.jsonChunk << "]";
+                    output.json_chunk << "]";
                 }
 
-                if (!jsonName.empty())
+                if (!json_name.empty())
                 {
-                    outputJSON.jsonChunk << ",";
+                    output.json_chunk << ",";
                 }
             }
             else if constexpr (is_std_array<Type>::value)
             {
-                if (!jsonName.empty())
+                if (!json_name.empty())
                 {
-                    outputJSON.jsonChunk << "\"" << jsonName << "\":";
+                    output.json_chunk << "\"" << json_name << "\":";
                 }
 
-                outputJSON.jsonChunk << "[";
-                bool isFirst = true;
+                output.json_chunk << "[";
+                bool is_first = true;
                 for (auto const& e : element)
                 {
-                    if (!isFirst)
+                    if (!is_first)
                     {
-                        outputJSON.jsonChunk << ",";
+                        output.json_chunk << ",";
                     }
-                    toJSON(outputJSON, "", e);
-                    isFirst = false;
+                    to_json(output, "", e);
+                    is_first = false;
                 }
-                outputJSON.jsonChunk << "]";
+                output.json_chunk << "]";
 
-                if (!jsonName.empty())
+                if (!json_name.empty())
                 {
-                    outputJSON.jsonChunk << ",";
+                    output.json_chunk << ",";
                 }
             }
             else if constexpr (is_std_unique_ptr<Type>::value)
             {
-                toJSON(outputJSON, jsonName, *element);
+                to_json(output, json_name, *element);
             }
             else if constexpr (is_std_unordered_map<Type>::value)
             {
-                outputJSON.jsonChunk << "\"" << jsonName << "\":{";
-                bool isFirst = true;
+                output.json_chunk << "\"" << json_name << "\":{";
+                bool is_first = true;
                 for (auto const& [key, value] : element)
                 {
-                    if (!isFirst)
+                    if (!is_first)
                     {
-                        outputJSON.jsonChunk << ",";
+                        output.json_chunk << ",";
                     }
 
                     if constexpr (std::is_integral_v<typename Type::key_type>)
                     {
-                        outputJSON.jsonChunk << "\"" << std::to_string(key) << "\":\"" << value << "\"";
+                        output.json_chunk << "\"" << std::to_string(key) << "\":\"" << value << "\"";
                     }
                     else if constexpr (std::is_scoped_enum_v<typename Type::key_type>)
                     {
-                        SerializableEnum<typename Type::key_type> object;
-                        object(outputJSON);
+                        serializable_enum<typename Type::key_type> object;
+                        object(output);
 
-                        auto result = outputJSON.enumFields.find(static_cast<uint32_t>(key));
-                        if (result == outputJSON.enumFields.end())
+                        auto result = output.enum_fields.find(static_cast<uint32_t>(key));
+                        if (result == output.enum_fields.end())
                         {
-                            throw core::Exception("An error occurred while serializing a field");
+                            throw core::runtime_error("An error occurred while serializing a field");
                         }
 
-                        outputJSON.jsonChunk << "\"" << result->second << "\":";
-                        toJSON(outputJSON, "", value);
+                        output.json_chunk << "\"" << result->second << "\":";
+                        to_json(output, "", value);
                     }
                     else
                     {
-                        outputJSON.jsonChunk << "\"" << key << "\":";
-                        toJSON(outputJSON, "", value);
+                        output.json_chunk << "\"" << key << "\":";
+                        to_json(output, "", value);
                     }
-                    isFirst = false;
+                    is_first = false;
                 }
-                outputJSON.jsonChunk << "},";
+                output.json_chunk << "},";
+            }
+            else if constexpr (is_std_optional<Type>::value)
+            {
+                output.json_chunk << "\"" << json_name << "\":";
+                if (element.has_value())
+                {
+                    to_json(output, "", element.value());
+                }
+                else
+                {
+                    output.json_chunk << "null";
+                }
+                output.json_chunk << ",";
             }
             else
             {
-                if (!jsonName.empty())
+                if (!json_name.empty())
                 {
-                    outputJSON.jsonChunk << "\"" << jsonName << "\":";
+                    output.json_chunk << "\"" << json_name << "\":";
                 }
 
                 if constexpr (std::is_integral_v<Type> && !std::is_same_v<Type, bool> || std::is_floating_point_v<Type>)
                 {
-                    outputJSON.jsonChunk << element;
+                    output.json_chunk << element;
                 }
                 else if constexpr (std::is_integral_v<Type> && std::is_same_v<Type, bool>)
                 {
-                    outputJSON.jsonChunk << std::boolalpha << element;
+                    output.json_chunk << std::boolalpha << element;
                 }
                 else if constexpr (std::is_same_v<
                                        Type, std::basic_string<char, std::char_traits<char>, std::allocator<char>>>)
                 {
-                    outputJSON.jsonChunk << "\"" << element << "\"";
+                    output.json_chunk << "\"" << element << "\"";
                 }
                 else if constexpr (std::is_scoped_enum_v<Type>)
                 {
-                    SerializableEnum<Type> object;
-                    object(outputJSON);
+                    serializable_enum<Type> object;
+                    object(output);
 
-                    auto result = outputJSON.enumFields.find(static_cast<uint32_t>(element));
-                    if (result == outputJSON.enumFields.end())
+                    auto result = output.enum_fields.find(static_cast<uint32_t>(element));
+                    if (result == output.enum_fields.end())
                     {
-                        throw core::Exception("An error occurred while serializing a field");
+                        throw core::runtime_error("An error occurred while serializing a field");
                     }
 
-                    outputJSON.jsonChunk << "\"" << result->second << "\"";
+                    output.json_chunk << "\"" << result->second << "\"";
                 }
                 else
                 {
-                    std::basic_stringstream<uint8_t> tempOutput;
-                    OutputJSON archive(tempOutput);
+                    std::basic_stringstream<uint8_t> temp_stream;
+                    serialize_ojson archive(temp_stream);
                     if (archive(element) > 0)
                     {
-                        std::basic_string<uint8_t> const rawJSON = tempOutput.str();
-                        outputJSON.jsonChunk
-                            << std::string_view(reinterpret_cast<char const*>(rawJSON.data()), rawJSON.size());
+                        std::basic_string<uint8_t> const raw_json = temp_stream.str();
+                        output.json_chunk
+                            << std::string_view(reinterpret_cast<char const*>(raw_json.data()), raw_json.size());
                     }
                 }
 
-                if (!jsonName.empty())
+                if (!json_name.empty())
                 {
-                    outputJSON.jsonChunk << ",";
+                    output.json_chunk << ",";
                 }
             }
         }
     } // namespace internal
 
-    class InputArchive
+    class serialize_iarchive
     {
         template <typename Type>
-        friend auto internal::fromBinary(InputArchive& inputArchive, Type& element) -> void;
+        friend auto internal::from_binary(serialize_iarchive& input, Type& element) -> void;
 
       public:
-        InputArchive(std::basic_istream<uint8_t>& stream) : stream(&stream)
+        serialize_iarchive(std::basic_istream<uint8_t>& stream) : stream(&stream)
         {
         }
 
         template <typename Type>
         auto property(Type& element) -> void
         {
-            internal::fromBinary(*this, element);
+            internal::from_binary(*this, element);
         }
 
         template <typename OutputArchive, typename InputArchive, typename Type>
         auto with(Type& element) -> void
         {
-            size_t bufferSize = 0;
-            stream->read(reinterpret_cast<uint8_t*>(&bufferSize), sizeof(size_t));
+            size_t buffer_size;
+            stream->read(reinterpret_cast<uint8_t*>(&buffer_size), sizeof(size_t));
 
-            std::vector<uint8_t> buffer(bufferSize);
-            stream->read(buffer.data(), bufferSize);
+            std::vector<uint8_t> buffer(buffer_size);
+            stream->read(buffer.data(), buffer_size);
 
             std::basic_ispanstream<uint8_t> stream(
                 std::span<uint8_t>(const_cast<uint8_t*>(buffer.data()), buffer.size()), std::ios::binary);
-            auto result = Serializable<Type, InputArchive>::deserialize(stream);
+            auto result = serializable_struct<Type, InputArchive>::deserialize(stream);
             if (result.has_value())
             {
                 element = std::move(result.value());
             }
             else
             {
-                throw core::Exception("An error occurred while deserializing a field");
+                throw core::runtime_error("An error occurred while deserializing a field");
             }
         }
 
@@ -613,11 +645,11 @@ namespace ionengine::core
     namespace internal
     {
         template <typename Type>
-        auto fromBinary(InputArchive& inputArchive, Type& element) -> void
+        auto from_binary(serialize_iarchive& input, Type& element) -> void
         {
             if constexpr (std::is_integral_v<Type> || std::is_floating_point_v<Type>)
             {
-                inputArchive.stream->read(reinterpret_cast<uint8_t*>(&element), sizeof(Type));
+                input.stream->read(reinterpret_cast<uint8_t*>(&element), sizeof(Type));
             }
             else if constexpr (std::is_same_v<Type,
                                               std::basic_string<char, std::char_traits<char>, std::allocator<char>>>)
@@ -626,11 +658,11 @@ namespace ionengine::core
                 uint8_t value = 0x1;
                 while (static_cast<char>(value) != '\0')
                 {
-                    if (inputArchive.stream->eof())
+                    if (input.stream->eof())
                     {
-                        throw core::Exception("An error occurred while deserializing a field");
+                        throw core::runtime_error("An error occurred while deserializing a field");
                     }
-                    inputArchive.stream->read(&value, 1);
+                    input.stream->read(&value, 1);
                     if (static_cast<char>(value) != '\0')
                     {
                         buffer.emplace_back(value);
@@ -641,67 +673,66 @@ namespace ionengine::core
             }
             else if constexpr (is_std_vector<Type>::value)
             {
-                size_t numElements = 0;
-                inputArchive.stream->read(reinterpret_cast<uint8_t*>(&numElements), sizeof(size_t));
-                element.resize(numElements);
-                for (size_t const i : std::views::iota(0u, numElements))
+                size_t num_elements = 0;
+                input.stream->read(reinterpret_cast<uint8_t*>(&num_elements), sizeof(size_t));
+                element.resize(num_elements);
+                for (size_t const i : std::views::iota(0u, num_elements))
                 {
-                    fromBinary(inputArchive, element[i]);
+                    from_binary(input, element[i]);
                 }
             }
             else if constexpr (is_std_array<Type>::value)
             {
                 for (size_t const i : std::views::iota(0u, element.size()))
                 {
-                    fromBinary(inputArchive, element[i]);
+                    from_binary(input, element[i]);
                 }
             }
             else if constexpr (std::is_scoped_enum_v<Type>)
             {
-                inputArchive.stream->read(reinterpret_cast<uint8_t*>(&element),
-                                          sizeof(typename std::underlying_type_t<Type>));
+                input.stream->read(reinterpret_cast<uint8_t*>(&element), sizeof(typename std::underlying_type_t<Type>));
             }
             else
             {
-                InputArchive archive(*inputArchive.stream);
+                serialize_iarchive archive(*input.stream);
                 if (!(archive(element) > 0))
                 {
-                    throw core::Exception("An error occurred while deserializing a field");
+                    throw core::runtime_error("An error occurred while deserializing a field");
                 }
             }
         }
     } // namespace internal
 
-    class OutputArchive
+    class serialize_oarchive
     {
         template <typename Type>
-        friend auto internal::toBinary(OutputArchive& outputArchive, Type const& element) -> void;
+        friend auto internal::to_binary(serialize_oarchive& output, Type const& element) -> void;
 
       public:
-        OutputArchive(std::basic_ostream<uint8_t>& stream) : stream(&stream)
+        serialize_oarchive(std::basic_ostream<uint8_t>& stream) : stream(&stream)
         {
         }
 
         template <typename Type>
         auto property(Type const& element) -> void
         {
-            internal::toBinary(*this, element);
+            internal::to_binary(*this, element);
         }
 
         template <typename OutputArchive, typename InputArchive, typename Type>
         auto with(Type const& element) -> void
         {
-            std::basic_stringstream<uint8_t> tempStream;
-            if (Serializable<Type, OutputArchive>::serialize(element, tempStream) > 0)
+            std::basic_stringstream<uint8_t> temp_stream;
+            if (serializable_struct<Type, OutputArchive>::serialize(element, temp_stream) > 0)
             {
-                std::vector<uint8_t> buffer(std::istreambuf_iterator<uint8_t>(tempStream.rdbuf()), {});
-                size_t bufferSize = buffer.size();
-                stream->write(reinterpret_cast<uint8_t const*>(&bufferSize), sizeof(size_t));
-                stream->write(reinterpret_cast<uint8_t const*>(buffer.data()), bufferSize);
+                std::vector<uint8_t> buffer(std::istreambuf_iterator<uint8_t>(temp_stream.rdbuf()), {});
+                size_t const buffer_size = buffer.size();
+                stream->write(reinterpret_cast<uint8_t const*>(&buffer_size), sizeof(size_t));
+                stream->write(reinterpret_cast<uint8_t const*>(buffer.data()), buffer_size);
             }
             else
             {
-                throw core::Exception("An error occurred while serializing a field");
+                throw core::runtime_error("An error occurred while serializing a field");
             }
         }
 
@@ -719,89 +750,89 @@ namespace ionengine::core
     namespace internal
     {
         template <typename Type>
-        auto toBinary(OutputArchive& outputArchive, Type const& element) -> void
+        auto to_binary(serialize_oarchive& output, Type const& element) -> void
         {
             if constexpr (is_std_vector<Type>::value)
             {
-                size_t numElements = element.size();
-                outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&numElements), sizeof(size_t));
+                size_t const num_elements = element.size();
+                output.stream->write(reinterpret_cast<uint8_t const*>(&num_elements), sizeof(size_t));
                 for (auto const& e : element)
                 {
-                    toBinary(outputArchive, e);
+                    to_binary(output, e);
                 }
             }
             else if constexpr (is_std_array<Type>::value)
             {
                 for (auto const& e : element)
                 {
-                    toBinary(outputArchive, e);
+                    to_binary(output, e);
                 }
             }
             else
             {
                 if constexpr (std::is_integral_v<Type> || std::is_floating_point_v<Type>)
                 {
-                    outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&element), sizeof(Type));
+                    output.stream->write(reinterpret_cast<uint8_t const*>(&element), sizeof(Type));
                 }
                 else if constexpr (std::is_same_v<
                                        Type, std::basic_string<char, std::char_traits<char>, std::allocator<char>>>)
                 {
-                    outputArchive.stream->write(reinterpret_cast<uint8_t const*>(element.data()), element.size());
-                    char endOfString = '\0';
-                    outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&endOfString), sizeof(char));
+                    output.stream->write(reinterpret_cast<uint8_t const*>(element.data()), element.size());
+                    char end_of_string = '\0';
+                    output.stream->write(reinterpret_cast<uint8_t const*>(&end_of_string), sizeof(char));
                 }
                 else if constexpr (std::is_scoped_enum_v<Type>)
                 {
                     auto value = static_cast<typename std::underlying_type_t<Type>>(element);
-                    outputArchive.stream->write(reinterpret_cast<uint8_t const*>(&value), sizeof(Type));
+                    output.stream->write(reinterpret_cast<uint8_t const*>(&value), sizeof(Type));
                 }
                 else
                 {
-                    OutputArchive archive(*outputArchive.stream);
+                    serialize_oarchive archive(*output.stream);
                     if (!(archive(element) > 0))
                     {
-                        throw core::Exception("An error occurred while serializing a field");
+                        throw core::runtime_error("An error occurred while serializing a field");
                     }
                 }
             }
         }
     } // namespace internal
 
-    template <typename Type, typename Archive = InputArchive>
-    auto loadFromBytes(std::span<uint8_t const> const dataBytes) -> std::optional<Type>
+    template <typename Type, typename Archive>
+    auto load_from_bytes(std::span<uint8_t const> const data_bytes) -> std::optional<Type>
     {
         std::basic_ispanstream<uint8_t> stream(
-            std::span<uint8_t>(const_cast<uint8_t*>(dataBytes.data()), dataBytes.size()), std::ios::binary);
-        return Serializable<Type, Archive>::deserialize(stream);
+            std::span<uint8_t>(const_cast<uint8_t*>(data_bytes.data()), data_bytes.size()), std::ios::binary);
+        return serializable_struct<Type, Archive>::deserialize(stream);
     }
 
-    template <typename Type, typename Archive = InputArchive>
-    auto loadFromFile(std::filesystem::path const& filePath) -> std::optional<Type>
+    template <typename Type, typename Archive>
+    auto load_from_file(std::filesystem::path const& file_path) -> std::optional<Type>
     {
-        std::basic_ifstream<uint8_t> stream(filePath, std::ios::binary);
+        std::basic_ifstream<uint8_t> stream(file_path, std::ios::binary);
         if (!stream.is_open())
         {
             return std::nullopt;
         }
-        return Serializable<Type, Archive>::deserialize(stream);
+        return serializable_struct<Type, Archive>::deserialize(stream);
     }
 
-    template <typename Type, typename Archive = OutputArchive>
-    auto saveToFile(Type const& object, std::filesystem::path const& filePath) -> bool
+    template <typename Type, typename Archive>
+    auto save_to_file(Type const& object, std::filesystem::path const& file_path) -> bool
     {
-        std::basic_ofstream<uint8_t> stream(filePath, std::ios::binary);
+        std::basic_ofstream<uint8_t> stream(file_path, std::ios::binary);
         if (!stream.is_open())
         {
             return false;
         }
-        return Serializable<Type, Archive>::serialize(object, stream) > 0;
+        return serializable_struct<Type, Archive>::serialize(object, stream) > 0;
     }
 
-    template <typename Type, typename Archive = OutputArchive>
-    auto saveToBytes(Type const& object) -> std::optional<std::vector<uint8_t>>
+    template <typename Type, typename Archive>
+    auto save_to_bytes(Type const& object) -> std::optional<std::vector<uint8_t>>
     {
         std::basic_stringstream<uint8_t> stream;
-        if (Serializable<Type, Archive>::serialize(object, stream) > 0)
+        if (serializable_struct<Type, Archive>::serialize(object, stream) > 0)
         {
             return std::vector<uint8_t>(std::istreambuf_iterator<uint8_t>(stream.rdbuf()), {});
         }

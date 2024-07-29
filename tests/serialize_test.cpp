@@ -14,7 +14,7 @@ enum class TestEnum
 };
 
 template <>
-struct core::SerializableEnum<TestEnum>
+struct core::serializable_enum<TestEnum>
 {
     template <typename Archive>
     auto operator()(Archive& archive)
@@ -51,6 +51,8 @@ struct ShaderData
     std::unique_ptr<InternalData> internalData2;
     std::array<int32_t, 2> positions;
     std::unordered_map<TestEnum, std::string> enumNames;
+    std::optional<uint32_t> optionalInt;
+    std::optional<float> optionalFloat;
 
     template <typename Archive>
     auto operator()(Archive& archive)
@@ -66,6 +68,8 @@ struct ShaderData
         archive.property(internalData2, "internal2");
         archive.property(positions, "positions");
         archive.property(enumNames, "enumNames");
+        archive.property(optionalInt, "optionalInt");
+        archive.property(optionalFloat, "optionalFloat");
     }
 };
 
@@ -86,7 +90,7 @@ struct ShaderFile
         archive.property(name);
         archive.property(names);
         archive.property(numArray);
-        archive.template with<core::OutputJSON, core::InputJSON>(shaderData);
+        archive.template with<core::serialize_ojson, core::serialize_ijson>(shaderData);
     }
 };
 
@@ -96,22 +100,23 @@ TEST(Serialize, JSON_Test)
     internalData->name = "bye!";
     internalData->materialIndex = 3;
 
-    ShaderData shaderData = {.shaderInt = 4,
-                             .shaderFloat = 1.1f,
-                             .name = "Hello world!",
-                             .names = {"name1", "name2"},
-                             .mapNames = {{"keyName1", "keyValue1"}, {"keyName2", "keyValue2"}},
-                             .shaderBool = true,
-                             .internalData = {"hello!", 2},
-                             .testEnum = TestEnum::Second,
-                             .internalData2 = std::move(internalData),
-                             .positions = {20, 30},
-                             .enumNames = {{TestEnum::First, "firstValue"}, {TestEnum::Second, "secondValue"}}};
+    ShaderData shaderData{.shaderInt = 4,
+                          .shaderFloat = 1.1f,
+                          .name = "Hello world!",
+                          .names = {"name1", "name2"},
+                          .mapNames = {{"keyName1", "keyValue1"}, {"keyName2", "keyValue2"}},
+                          .shaderBool = true,
+                          .internalData = {"hello!", 2},
+                          .testEnum = TestEnum::Second,
+                          .internalData2 = std::move(internalData),
+                          .positions = {20, 30},
+                          .enumNames = {{TestEnum::First, "firstValue"}, {TestEnum::Second, "secondValue"}},
+                          .optionalInt = 2};
 
-    auto result = core::saveToBytes<ShaderData, core::OutputJSON>(shaderData);
+    auto result = core::save_to_bytes<ShaderData, core::serialize_ojson>(shaderData);
     auto buffer = std::move(result.value());
 
-    auto resultAfter = core::loadFromBytes<ShaderData, core::InputJSON>(buffer);
+    auto resultAfter = core::load_from_bytes<ShaderData, core::serialize_ijson>(buffer);
     auto object = std::move(resultAfter.value());
 
     ASSERT_EQ(object.shaderInt, shaderData.shaderInt);
@@ -127,6 +132,8 @@ TEST(Serialize, JSON_Test)
     ASSERT_EQ(object.internalData2->materialIndex, shaderData.internalData2->materialIndex);
     ASSERT_EQ(object.positions, shaderData.positions);
     ASSERT_EQ(object.enumNames, shaderData.enumNames);
+    ASSERT_EQ(object.optionalInt, shaderData.optionalInt);
+    ASSERT_EQ(object.optionalFloat, shaderData.optionalFloat);
 }
 
 TEST(Serialize, Archive_Test)
@@ -135,28 +142,28 @@ TEST(Serialize, Archive_Test)
     internalData->name = "bye!";
     internalData->materialIndex = 3;
 
-    ShaderData shaderData = {4,
-                             1.1f,
-                             "Hello world!",
-                             {"name1", "name2"},
-                             {{"keyName1", "keyValue1"}, {"keyName2", "keyValue2"}},
-                             true,
-                             {"hello!", 2},
-                             TestEnum::Second,
-                             std::move(internalData),
-                             {20, 30}};
+    ShaderData shaderData{4,
+                          1.1f,
+                          "Hello world!",
+                          {"name1", "name2"},
+                          {{"keyName1", "keyValue1"}, {"keyName2", "keyValue2"}},
+                          true,
+                          {"hello!", 2},
+                          TestEnum::Second,
+                          std::move(internalData),
+                          {20, 30}};
 
-    ShaderFile shaderFile = {.magic = 2,
-                             .shaderFloat = 1.2f,
-                             .name = "Hello world!",
-                             .names = {"name1", "name2"},
-                             .numArray = {5, 3, 4},
-                             .shaderData = std::move(shaderData)};
+    ShaderFile shaderFile{.magic = 2,
+                          .shaderFloat = 1.2f,
+                          .name = "Hello world!",
+                          .names = {"name1", "name2"},
+                          .numArray = {5, 3, 4},
+                          .shaderData = std::move(shaderData)};
 
-    auto result = core::saveToBytes<ShaderFile, core::OutputArchive>(shaderFile);
+    auto result = core::save_to_bytes<ShaderFile, core::serialize_oarchive>(shaderFile);
     auto buffer = std::move(result.value());
 
-    auto resultAfter = core::loadFromBytes<ShaderFile, core::InputArchive>(buffer);
+    auto resultAfter = core::load_from_bytes<ShaderFile, core::serialize_iarchive>(buffer);
     auto object = std::move(resultAfter.value());
 
     ASSERT_EQ(object.magic, shaderFile.magic);

@@ -1,7 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "dx12.hpp"
-#include "core/exception.hpp"
+#include "core/error.hpp"
 #include "precompiled.h"
 
 namespace ionengine::rhi
@@ -44,7 +44,7 @@ namespace ionengine::rhi
     {
         if (FAILED(hr))
         {
-            throw core::Exception(HRESULT_to_string(hr));
+            throw core::runtime_error(HRESULT_to_string(hr));
         }
     }
 
@@ -418,7 +418,7 @@ namespace ionengine::rhi
         Chunk& chunk = chunks[heapType];
         if (1 > chunk.size - chunk.offset)
         {
-            throw core::Exception("Required heap does not contain free descriptors");
+            return E_OUTOFMEMORY;
         }
 
         bool success = false;
@@ -1781,7 +1781,7 @@ namespace ionengine::rhi
     {
         if (!swapchain)
         {
-            throw core::Exception("Swapchain is not found");
+            throw core::runtime_error("Swapchain is not found");
         }
 
         if (graphicsQueue.fence->GetCompletedValue() < graphicsQueue.fenceValue)
@@ -1796,7 +1796,7 @@ namespace ionengine::rhi
     {
         if (!swapchain)
         {
-            throw core::Exception("Swapchain is not found");
+            throw core::runtime_error("Swapchain is not found");
         }
 
         throwIfFailed(swapchain->Present(0, 0));

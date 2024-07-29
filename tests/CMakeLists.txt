@@ -1,13 +1,16 @@
 cmake_minimum_required(VERSION 3.25.1)
 
+find_package(simdjson CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
+
 # Serialize
 add_executable(serialize_test serialize_test.cpp)
 
 target_include_directories(serialize_test PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_link_libraries(serialize_test PRIVATE
-    simdjson
-    gtest)
+    simdjson::simdjson
+    GTest::gtest)
 
 target_precompile_headers(serialize_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
@@ -17,7 +20,7 @@ add_executable(base64_test base64_test.cpp)
 target_include_directories(base64_test PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_link_libraries(base64_test PRIVATE
-    gtest)
+    GTest::gtest)
 
 target_precompile_headers(base64_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
@@ -27,7 +30,7 @@ add_executable(platform_test platform_test.cpp)
 target_include_directories(platform_test PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_link_libraries(platform_test PRIVATE 
-    gtest
+    GTest::gtest
     platform)
 
 target_precompile_headers(platform_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
@@ -39,7 +42,7 @@ target_include_directories(rhi_test PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_link_libraries(rhi_test PRIVATE 
     platform
-    gtest
+    GTest::gtest
     rhi)
 
 target_precompile_headers(rhi_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)

@@ -1,7 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "x11.hpp"
-#include "core/exception.hpp"
+#include "core/error.hpp"
 #include "precompiled.h"
 
 namespace ionengine::platform
@@ -30,7 +30,7 @@ namespace ionengine::platform
         display = ::XOpenDisplay(nullptr);
         if (!display)
         {
-            throw core::Exception("An error occurred while open the display");
+            throw core::runtime_error("An error occurred while open the display");
         }
 
         window = ::XCreateSimpleWindow(display, RootWindow(display, XDefaultScreen(display)), 0, 0, 800, 600, 0, 0, 0);

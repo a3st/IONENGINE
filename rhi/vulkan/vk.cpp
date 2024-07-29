@@ -3,7 +3,7 @@
 #define VMA_IMPLEMENTATION
 
 #include "vk.hpp"
-#include "core/exception.hpp"
+#include "core/error.hpp"
 #include "precompiled.h"
 
 namespace ionengine::rhi
@@ -31,7 +31,7 @@ namespace ionengine::rhi
     {
         if (result != VK_SUCCESS)
         {
-            throw core::Exception(VkResult_to_string(result));
+            throw core::runtime_error(VkResult_to_string(result));
         }
     }
 
@@ -344,7 +344,7 @@ namespace ionengine::rhi
         Chunk& chunk = chunks[descriptorType];
         if (1 > chunk.size - chunk.offset)
         {
-            throw core::Exception("Required heap does not contain free descriptors");
+            return VK_ERROR_OUT_OF_POOL_MEMORY;
         }
 
         bool success = false;
@@ -1270,7 +1270,7 @@ namespace ionengine::rhi
     {
         if (!swapchain)
         {
-            throw core::Exception("Swapchain is not found");
+            throw core::runtime_error("Swapchain is not found");
         }
 
         VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
@@ -1291,7 +1291,7 @@ namespace ionengine::rhi
     {
         if (!swapchain)
         {
-            throw core::Exception("Swapchain is not found");
+            throw core::runtime_error("Swapchain is not found");
         }
         VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
         VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,

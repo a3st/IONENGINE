@@ -158,7 +158,7 @@ namespace ionengine::rhi::fx
 namespace ionengine::core
 {
     template <>
-    struct SerializableEnum<rhi::fx::ShaderElementType>
+    struct serializable_enum<rhi::fx::ShaderElementType>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
@@ -180,7 +180,7 @@ namespace ionengine::core
     };
 
     template <>
-    struct SerializableEnum<rhi::fx::ShaderStageType>
+    struct serializable_enum<rhi::fx::ShaderStageType>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
@@ -192,7 +192,7 @@ namespace ionengine::core
     };
 
     template <>
-    struct SerializableEnum<rhi::fx::ShaderCullSide>
+    struct serializable_enum<rhi::fx::ShaderCullSide>
     {
         template <typename Archive>
         auto operator()(Archive& archive)

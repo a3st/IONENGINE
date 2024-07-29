@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.25.1)
 include(FetchContent)
 
-FetchContent_Declare(dxc
-    SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/dxc
-    BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/dxc)
-
 #FetchContent_Declare(zlib
 #    GIT_REPOSITORY https://github.com/madler/zslib.git
 #    BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/zlib)
@@ -42,9 +38,6 @@ FetchContent_Declare(dxc
 #    argh
 #    SOURCE_DIR ${PROJECT_SOURCE_DIR}/thirdparty/argh
 #    BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/argh)
-
-FetchContent_MakeAvailable(
-    dxc)
 
 #FetchContent_MakeAvailable(
 #    dxc

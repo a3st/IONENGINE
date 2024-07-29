@@ -4,10 +4,10 @@
 
 namespace ionengine::core
 {
-    class Exception : public std::exception
+    class runtime_error : public std::exception
     {
       public:
-        Exception(std::string_view const error) : message(error)
+        runtime_error(std::string_view const error) : message(error)
         {
         }
 
