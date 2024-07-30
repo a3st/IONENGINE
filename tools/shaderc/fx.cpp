@@ -1,7 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "fx.hpp"
-#include "core/exception.hpp"
+#include "core/error.hpp"
 #include "core/serialize.hpp"
 #include "core/string.hpp"
 #include "precompiled.h"
@@ -10,7 +10,7 @@ namespace ionengine::tools::shaderc
 {
     namespace hlslconv
     {
-        std::unordered_map<std::string, rhi::fx::ShaderElementType> types = {
+        std::unordered_map<std::string, rhi::fx::ShaderElementType> types{
             {"float4x4", rhi::fx::ShaderElementType::Float4x4},
             {"float3x3", rhi::fx::ShaderElementType::Float3x3},
             {"float2x2", rhi::fx::ShaderElementType::Float2x2},
@@ -23,7 +23,7 @@ namespace ionengine::tools::shaderc
             {"SamplerState", rhi::fx::ShaderElementType::SamplerState},
             {"Texture2D", rhi::fx::ShaderElementType::Texture2D}};
 
-        std::unordered_map<std::string, size_t> sizes = {
+        std::unordered_map<std::string, size_t> sizes{
             {"float4x4", 64}, {"float3x3", 36}, {"float2x2", 16}, {"float4", 16},      {"float3", 12},  {"float2", 8},
             {"float", 4},     {"bool", 4},      {"uint", 4},      {"SamplerState", 4}, {"Texture2D", 4}};
     } // namespace hlslconv
@@ -32,7 +32,7 @@ namespace ionengine::tools::shaderc
     {
         if (FAILED(hr))
         {
-            throw core::Exception(std::format("The program closed with an error {:04x}", hr));
+            throw core::runtime_error(std::format("The program closed with an error {:04x}", hr));
         }
     }
 
@@ -118,7 +118,7 @@ namespace ionengine::tools::shaderc
                                                                .constants = std::move(constants),
                                                                .structures = std::move(structures)},
                                                 .buffers = std::move(buffers)};
-        return core::saveToFile<rhi::fx::ShaderEffectFile>(effectFile, outputPath);
+        return core::save_to_file<rhi::fx::ShaderEffectFile, core::serialize_oarchive>(effectFile, outputPath);
     }
 
     auto FXCompiler::compileShaderStage(std::string_view const shaderCode, std::string_view const entryPoint,
@@ -263,67 +263,41 @@ namespace ionengine::tools::shaderc
             std::vector<rhi::fx::ShaderStructureElementData> elements;
             uint32_t size = 0;
 
-            if (inputAssemblerNames.find(structureName) != inputAssemblerNames.end())
+            do
             {
-                do
+                brCloseOffset = shaderCode.find("};", offset);
+                uint64_t const dotOffset = shaderCode.find(";", offset);
+
+                if (brCloseOffset < dotOffset)
                 {
-                    brCloseOffset = shaderCode.find("};", offset);
-                    uint64_t const dotOffset = shaderCode.find(";", offset);
+                    break;
+                }
 
-                    if (brCloseOffset < dotOffset)
-                    {
-                        break;
-                    }
+                std::string member(shaderCode.begin() + offset, shaderCode.begin() + dotOffset);
+                core::trim(member, core::trim_mode::both);
 
-                    std::string member(shaderCode.begin() + offset, shaderCode.begin() + dotOffset);
-                    core::trim(member, core::trim_mode::beg);
+                std::string const memberType(member.begin(), member.begin() + member.find(" ", 0));
 
-                    std::string const memberType(member.begin(), member.begin() + member.find(" ", 0));
+                uint64_t const semanticOffset = member.find(":", 0);
 
-                    std::string memberName(member.begin() + member.find(" ", 0), member.begin() + member.find(":", 0));
-                    core::trim(member, core::trim_mode::both);
+                rhi::fx::ShaderStructureElementData elementData;
 
-                    std::string memberSemantic(member.begin() + member.find(":", 0) + 1, member.end());
+                if (semanticOffset != std::string::npos)
+                {
+                    std::string memberSemantic(member.begin() + semanticOffset + 1, member.end());
                     core::trim(memberSemantic, core::trim_mode::both);
 
-                    rhi::fx::ShaderStructureElementData elementData{.elementName = memberName,
-                                                                    .elementType = hlslconv::types[memberType],
-                                                                    .semantic = memberSemantic};
+                    std::string memberName(member.begin() + member.find(" ", 0), member.begin() + semanticOffset);
+                    core::trim(memberName, core::trim_mode::both);
 
-                    elements.emplace_back(std::move(elementData));
-                    size += hlslconv::sizes[memberType];
-
-                    offset = dotOffset + 1;
-
-                } while (offset < brCloseOffset - 1);
-            }
-            else
-            {
-                do
+                    elementData = {.elementName = memberName,
+                                   .elementType = hlslconv::types[memberType],
+                                   .semantic = memberSemantic};
+                }
+                else
                 {
-                    brCloseOffset = shaderCode.find("};", offset);
-                    uint64_t const dotOffset = shaderCode.find(";", offset);
-
-                    if (brCloseOffset < dotOffset)
-                    {
-                        break;
-                    }
-
-                    std::string member(shaderCode.begin() + offset, shaderCode.begin() + dotOffset);
-
-                    member.erase(member.begin(), std::find_if(member.begin(), member.end(),
-                                                              [](unsigned char ch) { return !std::isspace(ch); }));
-
-                    std::string const memberType(member.begin(), member.begin() + member.find(" ", 0));
-
                     std::string memberName(member.begin() + member.find(" ", 0), member.end());
-                    memberName.erase(memberName.begin(),
-                                     std::find_if(memberName.begin(), memberName.end(),
-                                                  [](unsigned char ch) { return !std::isspace(ch); }));
-                    memberName.erase(std::find_if(memberName.rbegin(), memberName.rend(),
-                                                  [](unsigned char ch) { return !std::isspace(ch); })
-                                         .base(),
-                                     memberName.end());
+                    core::trim(memberName, core::trim_mode::both);
 
                     switch (hlslconv::types[memberType])
                     {
@@ -339,22 +313,24 @@ namespace ionengine::tools::shaderc
                             shaderCode = beginShader + "uint " + endShader;
                             break;
                         }
+                        case rhi::fx::ShaderElementType::ConstantBuffer:
+                        case rhi::fx::ShaderElementType::StorageBuffer: {
+                            return false;
+                        }
                     }
 
-                    rhi::fx::ShaderStructureElementData elementData = {.elementName = memberName,
-                                                                       .elementType = hlslconv::types[memberType]};
+                    elementData = {.elementName = memberName, .elementType = hlslconv::types[memberType]};
+                }
 
-                    elements.emplace_back(std::move(elementData));
-                    size += hlslconv::sizes[memberType];
+                elements.emplace_back(std::move(elementData));
+                size += hlslconv::sizes[memberType];
 
-                    offset = dotOffset + 1;
+                offset = dotOffset + 1;
 
-                } while (offset < brCloseOffset - 1);
-            }
+            } while (offset < brCloseOffset - 1);
 
-            rhi::fx::ShaderStructureData structureData = {
+            rhi::fx::ShaderStructureData structureData{
                 .structureName = structureName, .elements = std::move(elements), .size = size};
-
             structures.emplace_back(std::move(structureData));
         }
         return true;
@@ -366,7 +342,8 @@ namespace ionengine::tools::shaderc
     {
         uint64_t offset = 0;
         uint64_t lastConstantOffset = 0;
-        while (offset != std::string::npos)
+
+        do
         {
             offset = shaderCode.find("[[fx::shader_constant]]", offset);
             if (offset == std::string::npos)
@@ -424,7 +401,7 @@ namespace ionengine::tools::shaderc
 
                 if (it != structures.end())
                 {
-                    constantData.structure = std::distance(structures.begin(), it);
+                    constantData.structure = static_cast<uint32_t>(std::distance(structures.begin(), it));
                 }
             }
 
@@ -433,13 +410,14 @@ namespace ionengine::tools::shaderc
             auto beginShaderCode = shaderCode.substr(0, offset);
             auto endShaderCode = shaderCode.substr(constantDotOffset + 2, std::string::npos);
             shaderCode = beginShaderCode + endShaderCode;
-        }
+
+        } while (offset != std::string::npos);
 
         auto beginShaderCode = shaderCode.substr(0, lastConstantOffset);
         auto endShaderCode = shaderCode.substr(lastConstantOffset, std::string::npos);
 
         std::stringstream generatedShaderCode;
-        generatedShaderCode << "struct SHADER_DATA {" << std::endl;
+        generatedShaderCode << "struct SHADER_DATA {\n";
         for (auto const& constant : constants)
         {
             switch (constant.constantType)
@@ -448,13 +426,12 @@ namespace ionengine::tools::shaderc
                 case rhi::fx::ShaderElementType::ConstantBuffer:
                 case rhi::fx::ShaderElementType::SamplerState:
                 case rhi::fx::ShaderElementType::StorageBuffer: {
-                    generatedShaderCode << "    " << "uint" << " " << constant.constantName << ";" << std::endl;
+                    generatedShaderCode << " uint " << constant.constantName << ";\n";
                     break;
                 }
             }
         }
-        generatedShaderCode << "};" << std::endl << std::endl;
-        generatedShaderCode << "ConstantBuffer<SHADER_DATA> shaderData : register(b0, space0);" << std::endl;
+        generatedShaderCode << "};\n\nConstantBuffer<SHADER_DATA> shaderData : register(b0, space0);\n";
 
         shaderCode = beginShaderCode + generatedShaderCode.str() + endShaderCode;
         return true;

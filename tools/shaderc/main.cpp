@@ -1,6 +1,6 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "core/exception.hpp"
+#include "core/error.hpp"
 #include "fx.hpp"
 #include "precompiled.h"
 #include <argh.h>
@@ -75,7 +75,7 @@ auto main(int32_t argc, char** argv) -> int32_t
         }
         return EXIT_SUCCESS;
     }
-    catch (ionengine::core::Exception e)
+    catch (ionengine::core::runtime_error e)
     {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

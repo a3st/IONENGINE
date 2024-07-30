@@ -46,3 +46,17 @@ target_link_libraries(rhi_test PRIVATE
     rhi)
 
 target_precompile_headers(rhi_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
+
+# shaderc
+add_executable(shaderc_test
+    ../rhi/fx/fx.cpp
+    ../tools/shaderc/lexer.cpp
+    ../tools/shaderc/parser.cpp
+    shaderc_test.cpp)
+
+target_include_directories(shaderc_test PRIVATE ${PROJECT_SOURCE_DIR})
+
+target_link_libraries(shaderc_test PRIVATE 
+    GTest::gtest)
+
+target_precompile_headers(shaderc_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)

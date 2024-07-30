@@ -1,24 +1,3 @@
-[submodule "thirdparty/simdjson"]
-	path = thirdparty/simdjson
-	url = https://github.com/simdjson/simdjson
-[submodule "thirdparty/tinygltf"]
-	path = thirdparty/tinygltf
-	url = https://github.com/syoyo/tinygltf
-[submodule "thirdparty/libpng"]
-	path = thirdparty/libpng
-	url = https://github.com/pnggroup/libpng.git
-[submodule "thirdparty/d3d12ma"]
-	path = thirdparty/d3d12ma
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator
-[submodule "thirdparty/googletest"]
-	path = thirdparty/googletest
-	url = https://github.com/google/googletest
-[submodule "thirdparty/argh"]
-	path = thirdparty/argh
-	url = https://github.com/adishavit/argh
 [submodule "thirdparty/libwebview"]
 	path = thirdparty/libwebview
 	url = https://github.com/a3st/libwebview
-[submodule "thirdparty/vma"]
-	path = thirdparty/vma
-	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator

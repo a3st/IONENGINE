@@ -7,8 +7,6 @@
 #include "rhi/dx12/dx12.hpp"
 #elif IONENGINE_RHI_VULKAN
 #include "rhi/vulkan/vk.hpp"
-#elif IONENGINE_RHI_GL
-#include "rhi/gl/gl.hpp"
 #endif
 
 namespace ionengine::rhi

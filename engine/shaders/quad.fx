@@ -1,39 +1,43 @@
+import = ( 
+    "engine",
+    "stdlib" 
+)
 
-[[fx::shader_constant]] Texture2D fullscreenTexture;
-[[fx::shader_constant]] SamplerState linearSampler;
+fullscreenTexture: Texture2D fx::constant(0);
+linearSampler: SamplerState fx::constant(1);
 
-struct VS_INPUT {
-    uint id: SV_VertexID;
-};
+VS_INPUT: struct = {
+    id: uint SV_VertexID;
+}
 
-struct VS_OUTPUT {
-    float4 position: SV_Position;
-    float2 uv : TEXCOORD0;
-};
+VS_OUTPUT: struct = {
+    position: float4 SV_Position;
+    uv: float2 TEXCOORD0;
+}
 
-VS_OUTPUT vs_main(VS_INPUT input) {
-    VS_OUTPUT output;
-    output.uv = float2((input.id << 1) & 2, input.id & 2);
-    output.position = float4(output.uv * 2.0f + -1.0f, 0.0f, 1.0f);
+vs_main: (input: VS_INPUT) -> VS_OUTPUT = {
+    output: VS_OUTPUT = (
+        float2((input.id << 1) & 2, input.id & 2),
+        float4(output.uv * 2.0f + -1.0f, 0.0f, 1.0f)
+    );
     return output;
 }
 
-struct PS_OUTPUT {
-    float4 color : SV_Target0;
-};
+PS_OUTPUT: struct = {
+    color: float4 SV_Target0;
+}
 
-PS_OUTPUT ps_main(VS_OUTPUT input) {
-    PS_OUTPUT output;
-    output.color = fullscreenTexture.Sample(linearSampler, input.uv).rgba;
+ps_main: (input: VS_OUTPUT) -> PS_OUTPUT {
+    output: PS_OUTPUT = (
+        fullscreenTexture.Sample(linearSampler, input.uv).rgba
+    );
     return output;
 }
 
-technique {
-    pass {
-        vertexShader = vs_main();
-        pixelShader = ps_main();
-        cullSide = "back";
-        depthWrite = false;
-        stencilWrite = false;
-    }
+technique = {
+    vertexShader = vs_main;
+    pixelShader = ps_main;
+    cullSide = "back";
+    depthWrite = false;
+    stencilWrite = false;
 }

@@ -51,7 +51,7 @@ namespace ionengine::rhi::fx
     {
         std::string constantName;
         ShaderElementType constantType;
-        int32_t structure;
+        std::optional<uint32_t> structure;
 
         template <typename Archive>
         auto operator()(Archive& archive)
@@ -66,7 +66,7 @@ namespace ionengine::rhi::fx
     {
         std::string elementName;
         ShaderElementType elementType;
-        std::string semantic;
+        std::optional<std::string> semantic;
 
         template <typename Archive>
         auto operator()(Archive& archive)
@@ -149,7 +149,7 @@ namespace ionengine::rhi::fx
         {
             archive.property(magic);
             archive.property(target);
-            archive.with<core::OutputJSON, core::InputJSON>(effectData);
+            archive.template with<core::serialize_ojson, core::serialize_ijson>(effectData);
             archive.property(buffers);
         }
     };
