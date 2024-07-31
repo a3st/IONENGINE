@@ -6,6 +6,7 @@ namespace ionengine::tools::shaderc
 {
     enum class Lexeme : uint8_t
     {
+        Unknown,
         Semicolon,
         Keyword,
         Identifier,

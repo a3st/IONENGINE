@@ -66,100 +66,62 @@ namespace ionengine::tools::shaderc
 
             std::string_view const line(buffer.data() + cur, buffer.data() + offset);
 
-            uint64_t tokenOffset = 0;
-            bool isTokenStart = false;
+            uint64_t offset = 0;
 
-            for (uint64_t const i : std::views::iota(0u, line.size()))
+            while (offset != line.size())
             {
-                if (line[i] == ' ')
+                Lexeme tokenLexeme = Lexeme::Unknown;
+                std::string_view tokenStr;
+
+                switch (line[offset])
                 {
-                    continue;
-                }
+                    case '{': {
+                        tokenLexeme = Lexeme::LeftBrace;
+                        break;
+                    }
+                    case '}': {
+                        tokenLexeme = Lexeme::RightBrace;
+                        break;
+                    }
+                    case '(': {
+                        tokenLexeme = Lexeme::LeftParen;
+                        break;
+                    }
+                    case ')': {
+                        tokenLexeme = Lexeme::RightParen;
+                        break;
+                    }
+                    case '=': {
+                        tokenLexeme = Lexeme::Assignment;
+                        break;
+                    }
+                    case '\"': {
+                        offset++;
 
-                if (!isTokenStart)
-                {
-                    switch (line[i])
-                    {
-                        case '=': {
-                            std::string_view const tokenExpr(line.data() + i, line.data() + i + 1);
+                        tokenLexeme = Lexeme::StringLiteral;
+                        uint64_t tokenStart = offset;
 
-                            Token token(tokenExpr, Lexeme::Assignment);
-                            tokens.emplace_back(std::move(token));
-                            break;
+                        while (line[offset] != '\"')
+                        {
+                            offset++;
                         }
-                        case '\"': {
-                            tokenOffset = i;
-                            isTokenStart = true;
-                            break;
-                        }
-                        case ',': {
-                            std::string_view const tokenExpr(line.data() + i, line.data() + i + 1);
 
-                            Token token(tokenExpr, Lexeme::Comma);
-                            tokens.emplace_back(std::move(token));
-                            break;
-                        }
-                        case '{': {
-                            std::string_view const tokenExpr(line.data() + i, line.data() + i + 1);
+                        tokenStr = std::string_view(line.data() + tokenStart, line.data() + offset);
 
-                            Token token(tokenExpr, Lexeme::LeftBrace);
-                            tokens.emplace_back(std::move(token));
-                            break;
-                        }
-                        case '(': {
-                            std::string_view const tokenExpr(line.data() + i, line.data() + i + 1);
-
-                            Token token(tokenExpr, Lexeme::LeftParen);
-                            tokens.emplace_back(std::move(token));
-                            break;
-                        }
-                        default: {
-                            std::string_view const tokenExpr(line.data() + tokenOffset, line.data() + i + 1);
-
-                            uint64_t foundOffset = 0;
-                            if ((foundOffset = tokenExpr.find("import")) != std::string::npos)
-                            {
-                                std::string_view const tokenExpr(line.data() + foundOffset, line.data() + i + 1);
-
-                                Token token(tokenExpr, Lexeme::StringLiteral);
-                                tokens.emplace_back(std::move(token));
-                                tokenOffset = i;
-
-                                std::cout << tokenExpr << std::endl;
-                            }
-                        }
+                        offset++;
+                        break;
                     }
                 }
-                else
+
+                if (tokenLexeme != Lexeme::Unknown)
                 {
-                    switch (line[i])
-                    {
-                        case '\"': {
-                            std::string_view const tokenExpr(line.data() + tokenOffset + 1, line.data() + i);
+                    Token token(tokenStr, tokenLexeme);
+                    tokens.emplace_back(std::move(token));
 
-                            Token token(tokenExpr, Lexeme::StringLiteral);
-                            tokens.emplace_back(std::move(token));
-                            isTokenStart = false;
-
-                            std::cout << tokenExpr << std::endl;
-                            break;
-                        }
-                        case '}': {
-                            std::string_view const tokenExpr(line.data() + i, line.data() + i + 1);
-
-                            Token token(tokenExpr, Lexeme::RightBrace);
-                            tokens.emplace_back(std::move(token));
-                            break;
-                        }
-                        case ')': {
-                            std::string_view const tokenExpr(line.data() + i, line.data() + i + 1);
-
-                            Token token(tokenExpr, Lexeme::RightParen);
-                            tokens.emplace_back(std::move(token));
-                            break;
-                        }
-                    }
+                    std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
                 }
+
+                offset++;
             }
 
             cur = stream.tellg();
