@@ -14,6 +14,22 @@ TEST(shaderc, Lexer_Test)
             "engine",
             "stdlib" 
         )
+
+        fullscreenTexture: Texture2D fx::constant(0);
+        linearSampler: SamplerState fx::constant(1);
+
+        VS_INPUT: struct = {
+            id: uint SV_VertexID;
+        }
+
+        VS_OUTPUT: struct = {
+            position: float4 SV_Position;
+            uv: float2 TEXCOORD0;
+        }
+
+        vs_main: (input: VS_INPUT) -> VS_OUTPUT = {
+            return output;
+        }
     )";
 
     std::string expectedShader = R"(

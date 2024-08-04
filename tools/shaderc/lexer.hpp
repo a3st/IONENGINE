@@ -16,7 +16,12 @@ namespace ionengine::tools::shaderc
         LeftParen,
         RightParen,
         Comma,
-        StringLiteral
+        Colon,
+        StringLiteral,
+        FloatLiteral,
+        FixedType,
+        Namespace,
+        Arrow
     };
 
     class Token
@@ -47,5 +52,15 @@ namespace ionengine::tools::shaderc
       private:
         std::string buffer;
         std::vector<Token> tokens;
+
+        std::locale locale;
+
+        auto isLetter(char c) const -> bool;
+
+        auto isNumeric(char c) const -> bool;
+
+        auto isType(std::string_view const str) -> bool;
+
+        auto isKeyword(std::string_view const str) -> bool;
     };
 } // namespace ionengine::tools::shaderc

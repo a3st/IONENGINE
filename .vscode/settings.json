@@ -128,7 +128,8 @@
         "memory_resource": "cpp",
         "string_view": "cpp",
         "text_encoding": "cpp",
-        "latch": "cpp"
+        "latch": "cpp",
+        "stdfloat": "cpp"
     },
     "C_Cpp.intelliSenseEngineFallback": "disabled",
     "C_Cpp.default.compilerPath": "cl.exe",

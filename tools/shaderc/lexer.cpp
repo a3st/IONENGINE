@@ -6,6 +6,11 @@
 
 namespace ionengine::tools::shaderc
 {
+    std::set<std::string> const types{"uint",     "bool",     "float",    "float2",    "float3",   "float4",
+                                      "float2x2", "float3x3", "float4x4", "Texture2D", "Texture3D"};
+
+    std::set<std::string> const keywords{"import", "struct", "technique", "return"};
+
     Token::Token(std::string_view const str, Lexeme const lexeme) : str(str), lexeme(lexeme)
     {
     }
@@ -32,7 +37,7 @@ namespace ionengine::tools::shaderc
         return *this;
     }
 
-    Lexer::Lexer(std::string_view const dataBytes) : buffer(dataBytes)
+    Lexer::Lexer(std::string_view const dataBytes) : buffer(dataBytes), locale("en_US.utf8")
     {
         std::basic_ispanstream<char> stream(std::span<char const>(buffer.data(), buffer.size()));
 
@@ -95,6 +100,27 @@ namespace ionengine::tools::shaderc
                         tokenLexeme = Lexeme::Assignment;
                         break;
                     }
+                    case ':': {
+                        tokenLexeme = Lexeme::Colon;
+                        if (line[offset + 1] == ':')
+                        {
+                            tokenLexeme = Lexeme::Namespace;
+                            offset++;
+                        }
+                        break;
+                    }
+                    case '-': {
+                        if (line[offset + 1] == '>')
+                        {
+                            tokenLexeme = Lexeme::Arrow;
+                            offset++;
+                        }
+                        break;
+                    }
+                    case ';': {
+                        tokenLexeme = Lexeme::Semicolon;
+                        break;
+                    }
                     case '\"': {
                         offset++;
 
@@ -109,6 +135,46 @@ namespace ionengine::tools::shaderc
                         tokenStr = std::string_view(line.data() + tokenStart, line.data() + offset);
 
                         offset++;
+                        break;
+                    }
+                    default: {
+                        if (this->isNumeric(line[offset]))
+                        {
+                            tokenLexeme = Lexeme::FloatLiteral;
+                            uint64_t tokenStart = offset;
+
+                            while (this->isNumeric(line[offset]))
+                            {
+                                offset++;
+                            }
+
+                            tokenStr = std::string_view(line.data() + tokenStart, line.data() + offset);
+
+                            offset--;
+                        }
+                        else if (this->isLetter(line[offset]))
+                        {
+                            tokenLexeme = Lexeme::Identifier;
+                            uint64_t tokenStart = offset;
+
+                            while (this->isLetter(line[offset]) || this->isNumeric(line[offset]))
+                            {
+                                offset++;
+                            }
+
+                            tokenStr = std::string_view(line.data() + tokenStart, line.data() + offset);
+
+                            if (this->isType(tokenStr))
+                            {
+                                tokenLexeme = Lexeme::FixedType;
+                            }
+                            else if (this->isKeyword(tokenStr))
+                            {
+                                tokenLexeme = Lexeme::Keyword;
+                            }
+
+                            offset--;
+                        }
                         break;
                     }
                 }
@@ -131,5 +197,25 @@ namespace ionengine::tools::shaderc
     auto Lexer::getTokens() const -> std::span<Token const>
     {
         return tokens;
+    }
+
+    auto Lexer::isLetter(char c) const -> bool
+    {
+        return std::isalpha(c, locale);
+    }
+
+    auto Lexer::isNumeric(char c) const -> bool
+    {
+        return std::isdigit(c, locale);
+    }
+
+    auto Lexer::isType(std::string_view const str) -> bool
+    {
+        return types.find(std::string(str)) != types.end();
+    }
+
+    auto Lexer::isKeyword(std::string_view const str) -> bool
+    {
+        return keywords.find(std::string(str)) != keywords.end();
     }
 } // namespace ionengine::tools::shaderc
