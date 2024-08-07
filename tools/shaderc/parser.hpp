@@ -9,6 +9,8 @@ namespace ionengine::tools::shaderc
     class Parser
     {
       public:
-        Parser() = default;
+        Parser(std::span<Token const> const tokens);
+
+
     };
 } // namespace ionengine::tools::shaderc

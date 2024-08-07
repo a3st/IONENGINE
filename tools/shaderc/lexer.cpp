@@ -37,6 +37,16 @@ namespace ionengine::tools::shaderc
         return *this;
     }
 
+    auto Token::getLexeme() const -> Lexeme
+    {
+        return lexeme;
+    }
+
+    auto Token::getContent() const -> std::string_view
+    {
+        return str;
+    }
+
     Lexer::Lexer(std::string_view const dataBytes) : buffer(dataBytes), locale("en_US.utf8")
     {
         std::basic_ispanstream<char> stream(std::span<char const>(buffer.data(), buffer.size()));
@@ -96,16 +106,102 @@ namespace ionengine::tools::shaderc
                         tokenLexeme = Lexeme::RightParen;
                         break;
                     }
+                    case '[': {
+                        tokenLexeme = Lexeme::LeftBracket;
+                        break;
+                    }
+                    case ']': {
+                        tokenLexeme = Lexeme::RightBracket;
+                        break;
+                    }
+                    case ',': {
+                        tokenLexeme = Lexeme::Comma;
+                        break;
+                    }
                     case '=': {
-                        tokenLexeme = Lexeme::Assignment;
+                        if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::Equal;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Assignment;
+                        }
                         break;
                     }
                     case ':': {
-                        tokenLexeme = Lexeme::Colon;
                         if (line[offset + 1] == ':')
                         {
                             tokenLexeme = Lexeme::Namespace;
                             offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Colon;
+                        }
+                        break;
+                    }
+                    case '|': {
+                        if (line[offset + 1] == '|')
+                        {
+                            tokenLexeme = Lexeme::Or;
+                            offset++;
+                        }
+                        else if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::PipeEqual;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Pipe;
+                        }
+                        break;
+                    }
+                    case '<': {
+                        if (line[offset + 1] == '<')
+                        {
+                            tokenLexeme = Lexeme::LeftShift;
+                            offset++;
+                        }
+                        else if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::LessEqual;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Less;
+                        }
+                        break;
+                    }
+                    case '>': {
+                        if (line[offset + 1] == '>')
+                        {
+                            tokenLexeme = Lexeme::RightShift;
+                            offset++;
+                        }
+                        else if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::GreaterEqual;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Greater;
+                        }
+                        break;
+                    }
+                    case '!': {
+                        if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::NotEqual;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Not;
                         }
                         break;
                     }
@@ -115,10 +211,72 @@ namespace ionengine::tools::shaderc
                             tokenLexeme = Lexeme::Arrow;
                             offset++;
                         }
+                        else if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::MinusEqual;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Minus;
+                        }
+                        break;
+                    }
+                    case '/': {
+                        if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::SlashEqual;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Slash;
+                        }
+                        break;
+                    }
+                    case '*': {
+                        if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::MultiplyEqual;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Multiply;
+                        }
                         break;
                     }
                     case ';': {
                         tokenLexeme = Lexeme::Semicolon;
+                        break;
+                    }
+                    case '&': {
+                        if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::AmpersandEqual;
+                            offset++;
+                        }
+                        else if (line[offset + 1] == '&')
+                        {
+                            tokenLexeme = Lexeme::And;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Ampersand;
+                        }
+                        break;
+                    }
+                    case '+': {
+                        if (line[offset + 1] == '=')
+                        {
+                            tokenLexeme = Lexeme::PlusEqual;
+                            offset++;
+                        }
+                        else
+                        {
+                            tokenLexeme = Lexeme::Plus;
+                        }
                         break;
                     }
                     case '\"': {
@@ -146,6 +304,16 @@ namespace ionengine::tools::shaderc
                             while (this->isNumeric(line[offset]))
                             {
                                 offset++;
+
+                                if (line[offset] == '.')
+                                {
+                                    offset++;
+
+                                    while (this->isNumeric(line[offset]))
+                                    {
+                                        offset++;
+                                    }
+                                }
                             }
 
                             tokenStr = std::string_view(line.data() + tokenStart, line.data() + offset);
@@ -183,8 +351,7 @@ namespace ionengine::tools::shaderc
                 {
                     Token token(tokenStr, tokenLexeme);
                     tokens.emplace_back(std::move(token));
-
-                    std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
+                    // std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
                 }
 
                 offset++;

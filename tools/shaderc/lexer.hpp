@@ -15,13 +15,38 @@ namespace ionengine::tools::shaderc
         RightBrace,
         LeftParen,
         RightParen,
+        LeftBracket,
+        RightBracket,
         Comma,
         Colon,
         StringLiteral,
         FloatLiteral,
         FixedType,
         Namespace,
-        Arrow
+        Arrow,
+        Plus,
+        PlusEqual,
+        Minus,
+        MinusEqual,
+        Multiply,
+        MultiplyEqual,
+        Slash,
+        SlashEqual,
+        Ampersand,
+        AmpersandEqual,
+        LeftShift,
+        RightShift,
+        Less,
+        LessEqual,
+        Greater,
+        GreaterEqual,
+        Not,
+        NotEqual,
+        Equal,
+        And,
+        Or,
+        Pipe,
+        PipeEqual
     };
 
     class Token
@@ -36,6 +61,10 @@ namespace ionengine::tools::shaderc
         auto operator=(Token const& other) -> Token&;
 
         auto operator=(Token&& other) -> Token&;
+
+        auto getLexeme() const -> Lexeme;
+
+        auto getContent() const -> std::string_view;
 
       private:
         std::string_view str;

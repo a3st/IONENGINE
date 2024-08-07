@@ -6,5 +6,7 @@
 
 namespace ionengine::tools::shaderc
 {
-    
+    Parser::Parser(std::span<Token const> const tokens)
+    {
+    }
 } // namespace ionengine::tools::shaderc
