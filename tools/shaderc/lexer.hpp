@@ -46,7 +46,8 @@ namespace ionengine::tools::shaderc
         And,
         Or,
         Pipe,
-        PipeEqual
+        PipeEqual,
+        Attribute
     };
 
     class Token
@@ -88,8 +89,10 @@ namespace ionengine::tools::shaderc
 
         auto isNumeric(char c) const -> bool;
 
-        auto isType(std::string_view const str) -> bool;
+        auto isType(std::string_view const str) const -> bool;
 
-        auto isKeyword(std::string_view const str) -> bool;
+        auto isKeyword(std::string_view const str) const -> bool;
+
+        auto isAttribute(std::string_view const str) const -> bool;
     };
 } // namespace ionengine::tools::shaderc

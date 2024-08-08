@@ -6,10 +6,12 @@
 
 namespace ionengine::tools::shaderc
 {
-    std::set<std::string> const types{"uint",     "bool",     "float",    "float2",    "float3",   "float4",
-                                      "float2x2", "float3x3", "float4x4", "Texture2D", "Texture3D"};
+    std::set<std::string> const types{"uint",     "bool",     "float",    "float2",    "float3",    "float4",
+                                      "float2x2", "float3x3", "float4x4", "Texture2D", "Texture3D", "SamplerState"};
 
-    std::set<std::string> const keywords{"import", "struct", "technique", "return"};
+    std::set<std::string> const keywords{"import", "struct", "technique", "return", "hlsl"};
+
+    std::set<std::string> const attributes{"register", "space", "constant", "semantic"};
 
     Token::Token(std::string_view const str, Lexeme const lexeme) : str(str), lexeme(lexeme)
     {
@@ -282,7 +284,6 @@ namespace ionengine::tools::shaderc
                     case '\"': {
                         offset++;
 
-                        tokenLexeme = Lexeme::StringLiteral;
                         uint64_t tokenStart = offset;
 
                         while (line[offset] != '\"')
@@ -290,6 +291,7 @@ namespace ionengine::tools::shaderc
                             offset++;
                         }
 
+                        tokenLexeme = Lexeme::StringLiteral;
                         tokenStr = std::string_view(line.data() + tokenStart, line.data() + offset);
 
                         offset++;
@@ -298,7 +300,6 @@ namespace ionengine::tools::shaderc
                     default: {
                         if (this->isNumeric(line[offset]))
                         {
-                            tokenLexeme = Lexeme::FloatLiteral;
                             uint64_t tokenStart = offset;
 
                             while (this->isNumeric(line[offset]))
@@ -316,16 +317,16 @@ namespace ionengine::tools::shaderc
                                 }
                             }
 
+                            tokenLexeme = Lexeme::FloatLiteral;
                             tokenStr = std::string_view(line.data() + tokenStart, line.data() + offset);
 
                             offset--;
                         }
                         else if (this->isLetter(line[offset]))
                         {
-                            tokenLexeme = Lexeme::Identifier;
                             uint64_t tokenStart = offset;
 
-                            while (this->isLetter(line[offset]) || this->isNumeric(line[offset]))
+                            while (this->isLetter(line[offset]) || this->isNumeric(line[offset]) || line[offset] == '_')
                             {
                                 offset++;
                             }
@@ -339,6 +340,14 @@ namespace ionengine::tools::shaderc
                             else if (this->isKeyword(tokenStr))
                             {
                                 tokenLexeme = Lexeme::Keyword;
+                            }
+                            else if (this->isAttribute(tokenStr))
+                            {
+                                tokenLexeme = Lexeme::Attribute;
+                            }
+                            else
+                            {
+                                tokenLexeme = Lexeme::Identifier;
                             }
 
                             offset--;
@@ -376,13 +385,18 @@ namespace ionengine::tools::shaderc
         return std::isdigit(c, locale);
     }
 
-    auto Lexer::isType(std::string_view const str) -> bool
+    auto Lexer::isType(std::string_view const str) const -> bool
     {
         return types.find(std::string(str)) != types.end();
     }
 
-    auto Lexer::isKeyword(std::string_view const str) -> bool
+    auto Lexer::isKeyword(std::string_view const str) const -> bool
     {
         return keywords.find(std::string(str)) != keywords.end();
+    }
+
+    auto Lexer::isAttribute(std::string_view const str) const -> bool
+    {
+        return attributes.find(std::string(str)) != attributes.end();
     }
 } // namespace ionengine::tools::shaderc
