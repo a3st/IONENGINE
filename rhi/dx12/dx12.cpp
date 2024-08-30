@@ -1669,10 +1669,10 @@ namespace ionengine::rhi
         throwIfFailed(
             ::D3D12CreateDevice(adapter.get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), device.put_void()));
 
-        fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+        fenceEvent = std::make_unique<UniqueHandle>(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
         if (!fenceEvent)
         {
-            throwIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+            throwIfFailed(::HRESULT_FROM_WIN32(GetLastError()));
         }
 
         // Create Direct Queue (Default Queue)
@@ -1737,11 +1737,6 @@ namespace ionengine::rhi
             }
             this->createSwapchainBuffers(createInfo.windowWidth, createInfo.windowHeight);
         }
-    }
-
-    DX12Device::~DX12Device()
-    {
-        ::CloseHandle(fenceEvent);
     }
 
     auto DX12Device::createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader>

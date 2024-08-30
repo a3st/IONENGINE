@@ -415,12 +415,23 @@ namespace ionengine::rhi
         uint64_t fenceValue;
     };
 
+    struct HANDLE_deleter
+    {
+        void operator()(HANDLE handle)
+        {
+            if (handle)
+            {
+                ::CloseHandle(handle);
+            }
+        }
+    };
+
+    using UniqueHandle = std::unique_ptr<HANDLE, HANDLE_deleter>;
+
     class DX12Device final : public Device
     {
       public:
         DX12Device(RHICreateInfo const& createInfo);
-
-        ~DX12Device();
 
         auto createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader> override;
 
@@ -464,7 +475,7 @@ namespace ionengine::rhi
         QueueInfo copyQueue;
         QueueInfo computeQueue;
 
-        HANDLE fenceEvent;
+        UniqueHandle fenceEvent;
 
         core::ref_ptr<DescriptorAllocator> descriptorAllocator;
         core::ref_ptr<PipelineCache> pipelineCache;

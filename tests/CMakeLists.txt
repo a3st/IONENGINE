@@ -52,6 +52,7 @@ add_executable(shaderc_test
     ../rhi/fx/fx.cpp
     ../tools/shaderc/lexer.cpp
     ../tools/shaderc/parser.cpp
+    ../tools/shaderc/ast.cpp
     shaderc_test.cpp)
 
 target_include_directories(shaderc_test PRIVATE ${PROJECT_SOURCE_DIR})

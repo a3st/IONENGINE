@@ -13,7 +13,8 @@ namespace ionengine::tools::shaderc
 
     std::set<std::string> const attributes{"register", "space", "constant", "semantic"};
 
-    Token::Token(std::string_view const str, Lexeme const lexeme) : str(str), lexeme(lexeme)
+    Token::Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine)
+        : str(str), lexeme(lexeme), numLine(numLine)
     {
     }
 
@@ -49,6 +50,11 @@ namespace ionengine::tools::shaderc
         return str;
     }
 
+    auto Token::getNumLine() const -> uint32_t
+    {
+        return numLine;
+    }
+
     Lexer::Lexer(std::string_view const dataBytes) : buffer(dataBytes), locale("en_US.utf8")
     {
         std::basic_ispanstream<char> stream(std::span<char const>(buffer.data(), buffer.size()));
@@ -73,17 +79,19 @@ namespace ionengine::tools::shaderc
 
         uint64_t cur = 0;
         uint64_t offset = 0;
+        uint32_t curLine = 0;
 
         while (stream)
         {
+            curLine++;
+
             if (!getEndOfLineOffset(stream, offset))
             {
                 break;
             }
 
             std::string_view const line(buffer.data() + cur, buffer.data() + offset);
-
-            uint64_t offset = 0;
+            offset = 0;
 
             while (offset != line.size())
             {
@@ -293,8 +301,6 @@ namespace ionengine::tools::shaderc
 
                         tokenLexeme = Lexeme::StringLiteral;
                         tokenStr = std::string_view(line.data() + tokenStart, line.data() + offset);
-
-                        offset++;
                         break;
                     }
                     default: {
@@ -358,7 +364,7 @@ namespace ionengine::tools::shaderc
 
                 if (tokenLexeme != Lexeme::Unknown)
                 {
-                    Token token(tokenStr, tokenLexeme);
+                    Token token(tokenStr, tokenLexeme, curLine);
                     tokens.emplace_back(std::move(token));
                     // std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
                 }
@@ -368,6 +374,11 @@ namespace ionengine::tools::shaderc
 
             cur = stream.tellg();
         }
+    }
+
+    auto Lexer::getFilePath() const -> std::filesystem::path const&
+    {
+        return filePath;
     }
 
     auto Lexer::getTokens() const -> std::span<Token const>

@@ -6,13 +6,14 @@
 
 namespace ionengine::tools::shaderc
 {
-    Parser::Parser(std::span<Token const> const tokens)
+    Parser::Parser(Lexer const& lexer)
     {
-        auto it = tokens.begin();
+        auto tokens = lexer.getTokens();
 
+        auto it = tokens.begin();
         while (it != tokens.end())
         {
-            it = this->parseModule(it);
+            it = this->parseModule(it, shaderModule);
         }
     }
 
@@ -20,19 +21,33 @@ namespace ionengine::tools::shaderc
     {
         if (it->getLexeme() != Lexeme::LeftParen)
         {
-            throw std::runtime_error("1");
+            throw parser_error(std::format(""));
         }
 
         it = std::next(it);
 
-        while (it->getLexeme() == Lexeme::Comma || it->getLexeme() != Lexeme::RightParen)
+        while (it->getLexeme() != Lexeme::RightParen)
         {
+            if (it->getLexeme() == Lexeme::Comma)
+            {
+                it = std::next(it);
+            }
+
             if (it->getLexeme() != Lexeme::StringLiteral)
             {
-                throw std::runtime_error("1");
+                throw parser_error("1444");
             }
 
             parseModules.emplace(it->getContent());
+
+            // Parse Module
+            std::string const fileName = std::string(it->getContent()) + ".fx";
+            if (!std::filesystem::exists(std::filesystem::current_path() / fileName))
+            {
+                throw parser_error("123");
+            }
+
+            // Lexer lexer()
 
             std::cout << "Parsed module " << it->getContent() << std::endl;
 
@@ -41,40 +56,52 @@ namespace ionengine::tools::shaderc
         return it;
     }
 
-    auto Parser::parseAttrExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    auto Parser::parseAttrExpr(std::span<Token const>::iterator it,
+                               std::unique_ptr<ASTAttribute>& attribute) -> std::span<Token const>::iterator
     {
         if (it->getLexeme() != Lexeme::Attribute)
         {
-            throw std::runtime_error("15");
+            throw parser_error("15");
         }
 
-        std::cout << it->getContent() << std::endl;
+        std::string_view const attributeName = it->getContent();
         it = std::next(it);
 
         if (it->getLexeme() != Lexeme::LeftParen)
         {
-            throw std::runtime_error("14");
+            throw parser_error("14");
         }
 
         it = std::next(it);
 
-        if (it->getLexeme() != Lexeme::Identifier && it->getLexeme() != Lexeme::FloatLiteral)
+        if (it->getLexeme() == Lexeme::StringLiteral)
         {
-            throw std::runtime_error("12");
+            auto stringLiteral = std::make_unique<ASTStringLiteral>(it->getContent());
+            attribute = std::make_unique<ASTAttribute>(attributeName, std::move(stringLiteral));
+
+            std::cout << it->getContent() << std::endl;
+        }
+        else if (it->getLexeme() == Lexeme::FloatLiteral)
+        {
+            auto floatLiteral = std::make_unique<ASTFloatLiteral>(core::ston<float>(it->getContent()));
+            attribute = std::make_unique<ASTAttribute>(attributeName, std::move(floatLiteral));
+        }
+        else
+        {
+            throw parser_error("12");
         }
 
-        std::cout << it->getContent() << std::endl;
         it = std::next(it);
 
         if (it->getLexeme() != Lexeme::RightParen)
         {
-            throw std::runtime_error("13");
+            throw parser_error("13");
         }
-
         return std::next(it);
     }
 
-    auto Parser::parseModule(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    auto Parser::parseModule(std::span<Token const>::iterator it,
+                             std::unique_ptr<ASTModule>& module) -> std::span<Token const>::iterator
     {
         switch (it->getLexeme())
         {
@@ -85,7 +112,7 @@ namespace ionengine::tools::shaderc
 
                     if (it->getLexeme() != Lexeme::Assignment)
                     {
-                        throw std::runtime_error("1");
+                        throw parser_error("1");
                     }
 
                     it = std::next(it);
@@ -96,28 +123,36 @@ namespace ionengine::tools::shaderc
 
             case Lexeme::Identifier: {
                 std::cout << it->getContent() << std::endl;
+                std::string_view const identifierName = it->getContent();
+
                 it = std::next(it);
 
                 if (it->getLexeme() != Lexeme::Colon)
                 {
-                    throw std::runtime_error("1");
+                    throw parser_error("1");
                 }
 
                 it = std::next(it);
 
                 if (it->getLexeme() == Lexeme::LeftParen)
                 {
+                    std::cout << 11111 << std::endl;
                 }
                 else if (it->getLexeme() == Lexeme::FixedType)
                 {
                     std::string_view const variableType = it->getContent();
+                    std::vector<std::unique_ptr<ASTAttribute>> attributes;
 
                     it = std::next(it);
 
                     while (it->getLexeme() != Lexeme::Semicolon)
                     {
-                        it = this->parseAttrExpr(it);
+                        std::unique_ptr<ASTAttribute> attribute;
+                        it = this->parseAttrExpr(it, attribute);
+                        attributes.emplace_back(std::move(attribute));
                     }
+
+                    auto variable = std::make_unique<ASTVariable>(identifierName, variableType, std::move(attributes));
                 }
                 else if (it->getLexeme() == Lexeme::Keyword)
                 {
@@ -125,7 +160,8 @@ namespace ionengine::tools::shaderc
                 }
                 else
                 {
-                    throw std::runtime_error("156");
+                    std::cout << it->getContent() << std::endl;
+                    throw parser_error("156");
                 }
             }
         }

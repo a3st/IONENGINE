@@ -53,7 +53,7 @@ namespace ionengine::tools::shaderc
     class Token
     {
       public:
-        Token(std::string_view const str, Lexeme const lexeme);
+        Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine);
 
         Token(Token const& other);
 
@@ -67,21 +67,29 @@ namespace ionengine::tools::shaderc
 
         auto getContent() const -> std::string_view;
 
+        auto getNumLine() const -> uint32_t;
+
       private:
         std::string_view str;
         Lexeme lexeme;
+        uint32_t numLine;
     };
 
     class Lexer
     {
       public:
+        Lexer(std::filesystem::path const& filePath);
+
         Lexer(std::string_view const dataBytes);
 
         auto getTokens() const -> std::span<Token const>;
 
+        auto getFilePath() const -> std::filesystem::path const&;
+
       private:
         std::string buffer;
         std::vector<Token> tokens;
+        std::filesystem::path filePath;
 
         std::locale locale;
 

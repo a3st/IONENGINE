@@ -11,8 +11,8 @@ VS_INPUT: struct = {
 }
 
 VS_OUTPUT: struct = {
-    position: float4 semantic(SV_Position);
-    uv: float2 semantic(TEXCOORD0);
+    position: float4 semantic("SV_Position");
+    uv: float2 semantic("TEXCOORD0");
 }
 
 vs_main: (input: VS_INPUT) -> VS_OUTPUT = {
@@ -24,12 +24,16 @@ vs_main: (input: VS_INPUT) -> VS_OUTPUT = {
 }
 
 PS_OUTPUT: struct = {
-    color: float4 semantic(SV_Target0);
+    color: float4 semantic("SV_Target0");
 }
 
 ps_main: (input: VS_OUTPUT) -> PS_OUTPUT {
+    color: float4 = hlsl {
+        return fullscreenTexture.Sample(linearSampler, input.uv).rgba;
+    }
+
     output: PS_OUTPUT = (
-        fullscreenTexture.Sample(linearSampler, input.uv).rgba
+        color
     );
     return output;
 }

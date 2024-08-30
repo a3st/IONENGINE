@@ -20,12 +20,12 @@ TEST(shaderc, Lexer_Test)
         linearSampler: SamplerState constant(1);
 
         VS_INPUT: struct = {
-            id: uint SV_VertexID;
+            id: uint semantic("SV_VertexID");
         }
 
         VS_OUTPUT: struct = {
-            position: float4 SV_Position;
-            uv: float2 TEXCOORD0;
+            position: float4 semantic("SV_Position");
+            uv: float2 semantic("TEXCOORD0");
         }
 
         vs_main: (input: VS_INPUT) -> VS_OUTPUT = {
@@ -39,7 +39,7 @@ TEST(shaderc, Lexer_Test)
 
     shaderc::Lexer lexer(basicShader);
 
-    ASSERT_EQ(lexer.getTokens().size(), 114);
+    ASSERT_EQ(lexer.getTokens().size(), 112);
 }
 
 TEST(shaderc, Parser_Test)
@@ -54,12 +54,12 @@ TEST(shaderc, Parser_Test)
         linearSampler: SamplerState constant(1);
 
         VS_INPUT: struct = {
-            id: uint semantic(SV_VertexID);
+            id: uint semantic("SV_VertexID");
         }
 
         VS_OUTPUT: struct = {
-            position: float4 semantic(SV_Position);
-            uv: float2 semantic(TEXCOORD0);
+            position: float4 semantic("SV_Position");
+            uv: float2 semantic("TEXCOORD0");
         }
 
         vs_main: (input: VS_INPUT) -> VS_OUTPUT = {
@@ -72,8 +72,7 @@ TEST(shaderc, Parser_Test)
     )";
 
     shaderc::Lexer lexer(basicShader);
-
-    shaderc::Parser parser(lexer.getTokens());
+    shaderc::Parser parser(lexer);
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

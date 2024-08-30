@@ -2,22 +2,35 @@
 
 #pragma once
 
+#include "ast.hpp"
+#include "core/error.hpp"
 #include "lexer.hpp"
 
 namespace ionengine::tools::shaderc
 {
+    class parser_error : public core::runtime_error
+    {
+      public:
+        parser_error(std::string_view const error) : core::runtime_error(error)
+        {
+        }
+    };
+
     class Parser
     {
       public:
-        Parser(std::span<Token const> const tokens);
+        Parser(Lexer const& lexer);
 
       private:
         std::set<std::string> parseModules;
+        std::unique_ptr<ASTModule> shaderModule;
 
         auto parseImportExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
 
-        auto parseModule(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+        auto parseModule(std::span<Token const>::iterator it,
+                         std::unique_ptr<ASTModule>& module) -> std::span<Token const>::iterator;
 
-        auto parseAttrExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+        auto parseAttrExpr(std::span<Token const>::iterator it,
+                           std::unique_ptr<ASTAttribute>& attribute) -> std::span<Token const>::iterator;
     };
 } // namespace ionengine::tools::shaderc

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "core/error.hpp"
+
 namespace ionengine::core
 {
     namespace trim_mode
@@ -25,5 +27,18 @@ namespace ionengine::core
                 std::find_if(source.rbegin(), source.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(),
                 source.end());
         }
+    }
+
+    template <typename Type>
+    inline auto ston(std::string_view const source) -> Type
+    {
+        Type out;
+        auto result = std::from_chars(source.data(), source.data() + source.size(), out);
+
+        if (result.ec == std::errc::invalid_argument)
+        {
+            throw core::runtime_error("An error occurred while converting a number");
+        }
+        return out;
     }
 } // namespace ionengine::core
