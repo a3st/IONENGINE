@@ -19,11 +19,14 @@ namespace ionengine::tools::shaderc
     class Parser
     {
       public:
-        Parser(Lexer const& lexer);
+        Parser(Lexer const& lexer, std::filesystem::path const& basePath);
 
       private:
         std::set<std::string> parseModules;
         std::unique_ptr<ASTModule> shaderModule;
+        std::filesystem::path basePath;
+
+        std::set<std::string> identifierCache;
 
         auto parseImportExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
 

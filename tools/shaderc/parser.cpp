@@ -6,7 +6,7 @@
 
 namespace ionengine::tools::shaderc
 {
-    Parser::Parser(Lexer const& lexer)
+    Parser::Parser(Lexer const& lexer, std::filesystem::path const& basePath) : basePath(basePath)
     {
         auto tokens = lexer.getTokens();
 
@@ -42,13 +42,13 @@ namespace ionengine::tools::shaderc
 
             // Parse Module
             std::string const fileName = std::string(it->getContent()) + ".fx";
-            if (!std::filesystem::exists(std::filesystem::current_path() / fileName))
+            if (!std::filesystem::exists(basePath / fileName))
             {
-                throw parser_error("123");
+                throw parser_error(
+                    std::format("{}: error {}: '{}' module not found", it->getFilePath(), 1, it->getContent()));
             }
 
             // Lexer lexer()
-
             std::cout << "Parsed module " << it->getContent() << std::endl;
 
             it = std::next(it);
@@ -141,18 +141,37 @@ namespace ionengine::tools::shaderc
                 else if (it->getLexeme() == Lexeme::FixedType)
                 {
                     std::string_view const variableType = it->getContent();
-                    std::vector<std::unique_ptr<ASTAttribute>> attributes;
 
-                    it = std::next(it);
-
-                    while (it->getLexeme() != Lexeme::Semicolon)
+                    if (variableType.compare("struct") == 0)
                     {
-                        std::unique_ptr<ASTAttribute> attribute;
-                        it = this->parseAttrExpr(it, attribute);
-                        attributes.emplace_back(std::move(attribute));
-                    }
+                        it = std::next(it);
 
-                    auto variable = std::make_unique<ASTVariable>(identifierName, variableType, std::move(attributes));
+                        while (it->getLexeme() != Lexeme::RightParen)
+                        {
+                            std::string_view const variableName = it->getContent();
+
+                            it = std::next(it);
+
+                            std::vector<std::unique_ptr<ASTAttribute>> attributes;
+
+                            it = std::next(it);
+
+                            while (it->getLexeme() != Lexeme::Semicolon)
+                            {
+                                std::unique_ptr<ASTAttribute> attribute;
+                                it = this->parseAttrExpr(it, attribute);
+                                attributes.emplace_back(std::move(attribute));
+                            }
+
+                            auto variable =
+                                std::make_unique<ASTVariable>(variableName, variableType, std::move(attributes));
+                        }
+
+                        identifierCache.emplace(identifierName);
+                    }
+                    else
+                    {
+                    }
                 }
                 else if (it->getLexeme() == Lexeme::Keyword)
                 {
@@ -160,8 +179,13 @@ namespace ionengine::tools::shaderc
                 }
                 else
                 {
-                    std::cout << it->getContent() << std::endl;
-                    throw parser_error("156");
+                    if (identifierCache.find(std::string(it->getContent())) == identifierCache.end())
+                    {
+                        throw parser_error(std::format("{}: error {}: '{}' undeclared identifier", it->getFilePath(), 2,
+                                                       it->getContent()));
+                    }
+
+                    std::cout << "OK" << std::endl;
                 }
             }
         }

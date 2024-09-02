@@ -13,16 +13,17 @@ namespace ionengine::tools::shaderc
 
     std::set<std::string> const attributes{"register", "space", "constant", "semantic"};
 
-    Token::Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine)
-        : str(str), lexeme(lexeme), numLine(numLine)
+    Token::Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine,
+                 std::string_view const filePath)
+        : str(str), lexeme(lexeme), numLine(numLine), filePath(filePath)
     {
     }
 
-    Token::Token(Token const& other) : str(other.str), lexeme(other.lexeme)
+    Token::Token(Token const& other) : str(other.str), lexeme(other.lexeme), filePath(other.filePath)
     {
     }
 
-    Token::Token(Token&& other) : str(other.str), lexeme(other.lexeme)
+    Token::Token(Token&& other) : str(other.str), lexeme(other.lexeme), filePath(other.filePath)
     {
     }
 
@@ -30,6 +31,7 @@ namespace ionengine::tools::shaderc
     {
         str = other.str;
         lexeme = other.lexeme;
+        filePath = other.filePath;
         return *this;
     }
 
@@ -37,6 +39,7 @@ namespace ionengine::tools::shaderc
     {
         str = other.str;
         lexeme = other.lexeme;
+        filePath = std::move(other.filePath);
         return *this;
     }
 
@@ -55,7 +58,28 @@ namespace ionengine::tools::shaderc
         return numLine;
     }
 
-    Lexer::Lexer(std::string_view const dataBytes) : buffer(dataBytes), locale("en_US.utf8")
+    auto Token::getFilePath() const -> std::string_view
+    {
+        return filePath;
+    }
+
+    Lexer::Lexer(std::istream& input, std::filesystem::path const& filePath)
+        : locale("en_US.utf8"), filePath(filePath.string())
+    {
+    }
+
+    Lexer::Lexer(std::string_view const input, std::filesystem::path const& filePath)
+        : buffer(input), locale("en_US.utf8"), filePath(filePath.string())
+    {
+        this->analyzeBuffer();
+    }
+
+    auto Lexer::getFilePath() const -> std::string_view
+    {
+        return filePath;
+    }
+
+    auto Lexer::analyzeBuffer() -> void
     {
         std::basic_ispanstream<char> stream(std::span<char const>(buffer.data(), buffer.size()));
 
@@ -364,7 +388,7 @@ namespace ionengine::tools::shaderc
 
                 if (tokenLexeme != Lexeme::Unknown)
                 {
-                    Token token(tokenStr, tokenLexeme, curLine);
+                    Token token(tokenStr, tokenLexeme, curLine, filePath);
                     tokens.emplace_back(std::move(token));
                     // std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
                 }
@@ -376,22 +400,17 @@ namespace ionengine::tools::shaderc
         }
     }
 
-    auto Lexer::getFilePath() const -> std::filesystem::path const&
-    {
-        return filePath;
-    }
-
     auto Lexer::getTokens() const -> std::span<Token const>
     {
         return tokens;
     }
 
-    auto Lexer::isLetter(char c) const -> bool
+    auto Lexer::isLetter(char const c) const -> bool
     {
         return std::isalpha(c, locale);
     }
 
-    auto Lexer::isNumeric(char c) const -> bool
+    auto Lexer::isNumeric(char const c) const -> bool
     {
         return std::isdigit(c, locale);
     }

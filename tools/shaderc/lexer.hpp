@@ -53,7 +53,7 @@ namespace ionengine::tools::shaderc
     class Token
     {
       public:
-        Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine);
+        Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine, std::string_view const filePath);
 
         Token(Token const& other);
 
@@ -69,33 +69,38 @@ namespace ionengine::tools::shaderc
 
         auto getNumLine() const -> uint32_t;
 
+        auto getFilePath() const -> std::string_view;
+
       private:
         std::string_view str;
         Lexeme lexeme;
         uint32_t numLine;
+        std::string_view filePath;
     };
 
     class Lexer
     {
       public:
-        Lexer(std::filesystem::path const& filePath);
+        Lexer(std::istream& input, std::filesystem::path const& filePath);
 
-        Lexer(std::string_view const dataBytes);
+        Lexer(std::string_view const input, std::filesystem::path const& filePath);
 
         auto getTokens() const -> std::span<Token const>;
 
-        auto getFilePath() const -> std::filesystem::path const&;
+        auto getFilePath() const -> std::string_view;
 
       private:
         std::string buffer;
         std::vector<Token> tokens;
-        std::filesystem::path filePath;
+        std::string filePath;
 
         std::locale locale;
 
-        auto isLetter(char c) const -> bool;
+        auto analyzeBuffer() -> void;
 
-        auto isNumeric(char c) const -> bool;
+        auto isLetter(char const c) const -> bool;
+
+        auto isNumeric(char const c) const -> bool;
 
         auto isType(std::string_view const str) const -> bool;
 

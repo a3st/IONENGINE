@@ -48,7 +48,7 @@ namespace ionengine::core
     };
 
     template <typename Type>
-    struct BaseDeleter
+    struct base_deleter
     {
         auto operator()(Type* ptr) -> void
         {
@@ -56,7 +56,7 @@ namespace ionengine::core
         }
     };
 
-    template <typename Type, typename Deleter = BaseDeleter<Type>>
+    template <typename Type, typename Deleter = base_deleter<Type>>
     class ref_ptr
     {
         template <typename Derived, typename DerivedDeleter>
@@ -168,7 +168,7 @@ namespace ionengine::core
         Type* ptr;
     };
 
-    template <typename Type, typename Deleter = BaseDeleter<Type>, typename... Args>
+    template <typename Type, typename Deleter = base_deleter<Type>, typename... Args>
     inline auto make_ref(Args&&... args) -> ref_ptr<Type, Deleter>
     {
         Type* ptr = new Type(std::forward<Args>(args)...);
