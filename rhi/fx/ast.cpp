@@ -2,7 +2,7 @@
 
 #include "ast.hpp"
 
-namespace ionengine::tools::shaderc
+namespace ionengine::rhi::fx
 {
     ASTStringLiteral::ASTStringLiteral(std::string_view const value) : value(value)
     {

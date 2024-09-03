@@ -7,3 +7,7 @@ sampleTexture: <Texture: type> (texture: Texture, samplerState: SamplerState, lo
         textureObject.Sample(samplerStateObject, location)
     }
 }
+
+GetTexture(GetUniform(buffer).fullscreenTexture)
+
+GetTexture(fullscreenTexture)

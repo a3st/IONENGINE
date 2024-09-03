@@ -4,7 +4,7 @@
 #include "core/string.hpp"
 #include "precompiled.h"
 
-namespace ionengine::tools::shaderc
+namespace ionengine::rhi::fx
 {
     Parser::Parser(Lexer const& lexer, std::filesystem::path const& basePath) : basePath(basePath)
     {
@@ -59,10 +59,7 @@ namespace ionengine::tools::shaderc
     auto Parser::parseAttrExpr(std::span<Token const>::iterator it,
                                std::unique_ptr<ASTAttribute>& attribute) -> std::span<Token const>::iterator
     {
-        if (it->getLexeme() != Lexeme::Attribute)
-        {
-            throw parser_error("15");
-        }
+        
 
         std::string_view const attributeName = it->getContent();
         it = std::next(it);
@@ -105,7 +102,7 @@ namespace ionengine::tools::shaderc
     {
         switch (it->getLexeme())
         {
-            case Lexeme::Keyword: {
+            /*case Lexeme::Keyword: {
                 if (it->getContent().compare("import") == 0)
                 {
                     it = std::next(it);
@@ -119,7 +116,7 @@ namespace ionengine::tools::shaderc
                     this->parseImportExpr(it);
                 }
                 break;
-            }
+            }*/
 
             case Lexeme::Identifier: {
                 std::cout << it->getContent() << std::endl;
@@ -173,10 +170,10 @@ namespace ionengine::tools::shaderc
                     {
                     }
                 }
-                else if (it->getLexeme() == Lexeme::Keyword)
+                /*else if (it->getLexeme() == Lexeme::Keyword)
                 {
                     std::cout << it->getContent() << std::endl;
-                }
+                }*/
                 else
                 {
                     if (identifierCache.find(std::string(it->getContent())) == identifierCache.end())

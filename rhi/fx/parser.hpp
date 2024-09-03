@@ -6,7 +6,7 @@
 #include "core/error.hpp"
 #include "lexer.hpp"
 
-namespace ionengine::tools::shaderc
+namespace ionengine::rhi::fx
 {
     class parser_error : public core::runtime_error
     {

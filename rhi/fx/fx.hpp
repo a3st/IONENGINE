@@ -8,10 +8,10 @@ namespace ionengine::rhi::fx
 {
     std::array<uint8_t, 4> constexpr Magic{'F', 'X', 'S', 'L'};
 
-    enum class ShaderTargetType : uint32_t
+    enum class ShaderAPIType : uint32_t
     {
-        DXIL,
-        SPIRV
+        D3D12,
+        Vulkan
     };
 
     enum class ShaderElementType
@@ -47,18 +47,20 @@ namespace ionengine::rhi::fx
         None
     };
 
-    struct ShaderConstantData
+    struct ShaderResourceData
     {
-        std::string constantName;
-        ShaderElementType constantType;
+        std::string resourceName;
+        ShaderElementType resourceType;
         std::optional<uint32_t> structure;
+        std::optional<std::string> defaultValue;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.property(constantName, "name");
-            archive.property(constantType, "type");
+            archive.property(resourceName, "name");
+            archive.property(resourceType, "type");
             archive.property(structure, "structure");
+            archive.property(defaultValue, "default");
         }
     };
 
@@ -125,7 +127,7 @@ namespace ionengine::rhi::fx
     struct ShaderEffectData
     {
         ShaderTechniqueData technique;
-        std::vector<ShaderConstantData> constants;
+        std::vector<ShaderResourceData> constants;
         std::vector<ShaderStructureData> structures;
 
         template <typename Archive>
@@ -140,7 +142,7 @@ namespace ionengine::rhi::fx
     struct ShaderEffectFile
     {
         std::array<uint8_t, Magic.size()> magic;
-        ShaderTargetType target;
+        ShaderAPIType apiType;
         ShaderEffectData effectData;
         std::vector<std::vector<uint8_t>> buffers;
 
@@ -148,7 +150,7 @@ namespace ionengine::rhi::fx
         auto operator()(Archive& archive)
         {
             archive.property(magic);
-            archive.property(target);
+            archive.property(apiType);
             archive.template with<core::serialize_ojson, core::serialize_ijson>(effectData);
             archive.property(buffers);
         }

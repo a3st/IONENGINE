@@ -2,13 +2,12 @@
 
 #pragma once
 
-namespace ionengine::tools::shaderc
+namespace ionengine::rhi::fx
 {
     enum class Lexeme : uint8_t
     {
         Unknown,
         Semicolon,
-        Keyword,
         Identifier,
         Assignment,
         LeftBrace,
@@ -22,32 +21,11 @@ namespace ionengine::tools::shaderc
         StringLiteral,
         FloatLiteral,
         FixedType,
-        Namespace,
-        Arrow,
         Plus,
-        PlusEqual,
         Minus,
-        MinusEqual,
         Multiply,
-        MultiplyEqual,
         Slash,
-        SlashEqual,
-        Ampersand,
-        AmpersandEqual,
-        LeftShift,
-        RightShift,
-        Less,
-        LessEqual,
-        Greater,
-        GreaterEqual,
-        Not,
-        NotEqual,
-        Equal,
-        And,
-        Or,
-        Pipe,
-        PipeEqual,
-        Attribute
+        ShaderCode
     };
 
     class Token
@@ -103,9 +81,5 @@ namespace ionengine::tools::shaderc
         auto isNumeric(char const c) const -> bool;
 
         auto isType(std::string_view const str) const -> bool;
-
-        auto isKeyword(std::string_view const str) const -> bool;
-
-        auto isAttribute(std::string_view const str) const -> bool;
     };
-} // namespace ionengine::tools::shaderc
+} // namespace ionengine::rhi::fx

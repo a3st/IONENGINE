@@ -50,9 +50,9 @@ target_precompile_headers(rhi_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 # shaderc
 add_executable(shaderc_test
     ../rhi/fx/fx.cpp
-    ../tools/shaderc/lexer.cpp
-    ../tools/shaderc/parser.cpp
-    ../tools/shaderc/ast.cpp
+    ../rhi/fx/lexer.cpp
+    ../rhi/fx/parser.cpp
+    ../rhi/fx/ast.cpp
     shaderc_test.cpp)
 
 target_include_directories(shaderc_test PRIVATE ${PROJECT_SOURCE_DIR})

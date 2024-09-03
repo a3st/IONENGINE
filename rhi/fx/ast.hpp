@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::tools::shaderc
+namespace ionengine::rhi::fx
 {
     class ASTNode
     {

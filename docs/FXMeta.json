@@ -12,7 +12,7 @@
         "stencilWrite": false,
         "cullSide": "back"
     },
-    "constants": [
+    "resources": [
         {
             "name": "materialData",
             "type": "CONST_BUFFER",
@@ -21,7 +21,7 @@
         {
             "name": "linearSampler",
             "type": "SAMPLER_STATE",
-            "structure": -1
+            "structure": null
         },
         {
             "name": "worldData",
@@ -41,17 +41,17 @@
                 {
                     "name": "model",
                     "type": "FLOAT4x4",
-                    "semantic": ""
+                    "semantic": null
                 },
                 {
                     "name": "view",
                     "type": "FLOAT4x4",
-                    "semantic": ""
+                    "semantic": null
                 },
                 {
                     "name": "projection",
                     "type": "FLOAT4x4",
-                    "semantic": ""
+                    "semantic": null
                 }
             ],
             "sizeInBytes": 192
@@ -62,22 +62,22 @@
                 {
                     "name": "distance",
                     "type": "FLOAT",
-                    "semantic": ""
+                    "semantic": null
                 },
                 {
                     "name": "position",
                     "type": "FLOAT3",
-                    "semantic": ""
+                    "semantic": null
                 },
                 {
                     "name": "direction",
                     "type": "FLOAT3",
-                    "semantic": ""
+                    "semantic": null
                 },
                 {
                     "name": "color",
                     "type": "FLOAT3",
-                    "semantic": ""
+                    "semantic": null
                 }
             ],
             "sizeInBytes": 40
@@ -88,17 +88,17 @@
                 {
                     "name": "diffuse",
                     "type": "TEXTURE_2D",
-                    "semantic": ""
+                    "semantic": null
                 },
                 {
                     "name": "normal",
                     "type": "TEXTURE_2D",
-                    "semantic": ""
+                    "semantic": null
                 },
                 {
                     "name": "roughness",
                     "type": "TEXTURE_2D",
-                    "semantic": ""
+                    "semantic": null
                 }
             ],
             "sizeInBytes": 12
