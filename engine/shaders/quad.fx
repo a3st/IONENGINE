@@ -1,47 +1,41 @@
-import = ( 
-    "engine",
-    "std" 
-)
+// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-fullscreenTexture: Texture2D constant(0);
-linearSampler: SamplerState constant(1);
-
-VS_INPUT: struct = {
-    id: uint SV_VertexID;
+HEADER {
+    Name = "Quad"
+    Description = "Quad Shader"
+    Domain = "Screen"
 }
 
-VS_OUTPUT: struct = {
-    position: float4 semantic("SV_Position");
-    uv: float2 semantic("TEXCOORD0");
+DATA {
+    Texture2D inputTexture;
 }
 
-vs_main: (input: VS_INPUT) -> VS_OUTPUT = {
-    output: VS_OUTPUT = (
-        float4(output.uv * 2.0 + -1.0, 0.0, 1.0),
-        float2((input.id << 1) & 2, input.id & 2)
-    );
-    return output;
-}
+VS {
+    #include "shared/common.hlsli"
 
-PS_OUTPUT: struct = {
-    color: float4 semantic("SV_Target0");
-}
-
-ps_main: (input: VS_OUTPUT) -> PS_OUTPUT {
-    color: float4 = hlsl {
-        return fullscreenTexture.Sample(linearSampler, input.uv).rgba;
+    VS_OUTPUT main(VS_INPUT input) {
+        VS_OUTPUT output;
+        output.position = float4(output.uv * 2.0 + -1.0, 0.0, 1.0);
+        output.uv = float2((input.id << 1) & 2, input.id & 2);
+        return output;
     }
-
-    output: PS_OUTPUT = (
-        color
-    );
-    return output;
 }
 
-technique = {
-    vertexShader = vs_main;
-    pixelShader = ps_main;
-    cullSide = "back";
-    depthWrite = false;
-    stencilWrite = false;
+PS {
+    #include "shared/common.hlsli"
+
+    PS_OUTPUT main(VS_OUTPUT input) {
+        Texture2D inputTexture = GetResource(material, inputTexture);
+        SamplerState linearSampler = GetSampler();
+
+        VS_OUTPUT output;
+        output.color = inputTexture.Sample(linearSampler, input.uv);
+        return output;
+    }
+}
+
+OUTPUT {
+    CullSide = "back";
+    DepthWrite = false;
+    StencilWrite = false;
 }

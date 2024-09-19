@@ -1,21 +1,20 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "precompiled.h"
-#include "rhi/fx/lexer.hpp"
-#include "rhi/fx/parser.hpp"
+//#include "rhi/fx/lexer.hpp"
+//#include "rhi/fx/parser.hpp"
 #include <gtest/gtest.h>
 
-using namespace ionengine;
-namespace shaderc = ionengine::rhi::fx;
+//using namespace ionengine;
+//namespace shaderc = ionengine::rhi::fx;
 
 TEST(shaderc, Lexer_Test)
 {
     std::string const basicShader = R"(
         Quad {
-            ShaderData {
+            Data {
                 fullscreenTexture: {
-                    type: Texture2D,
-                    default: "assets/debug-empty"
+                    type: Texture2D
                 },
 
                 linearSampler: {
@@ -82,9 +81,9 @@ TEST(shaderc, Lexer_Test)
         }
     )";
 
-    shaderc::Lexer lexer(basicShader, "basic.fx");
+    //shaderc::Lexer lexer(basicShader, "basic.fx");
 
-    std::cout << lexer.getTokens().size() << std::endl;
+    //std::cout << lexer.getTokens().size() << std::endl;
 
     // ASSERT_EQ(lexer.getTokens().size(), 112);
 }
@@ -93,10 +92,9 @@ TEST(shaderc, Parser_Test)
 {
     std::string const basicShader = R"(
         Quad {
-            ShaderData {
+            Data {
                 fullscreenTexture: {
-                    type: Texture2D,
-                    default: "assets/debug-empty"
+                    type: Texture2D
                 },
 
                 linearSampler: {
@@ -118,13 +116,11 @@ TEST(shaderc, Parser_Test)
                     }
                 }
             }
-
-
         }
     )";
 
-    // shaderc::Lexer lexer(basicShader, "basic.fx");
-    // shaderc::Parser parser(lexer, std::filesystem::current_path());
+    //shaderc::Lexer lexer(basicShader, "basic.fx");
+    //shaderc::Parser parser(lexer, std::filesystem::current_path());
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

@@ -11,13 +11,22 @@ namespace ionengine::rhi::fx
         auto tokens = lexer.getTokens();
 
         auto it = tokens.begin();
+
+        it = parseBlockExpr(it);
+
         while (it != tokens.end())
         {
-            it = this->parseModule(it, shaderModule);
+            
+            // it = this->parseModule(it, shaderModule);
         }
     }
 
-    auto Parser::parseImportExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    auto Parser::parseBlockExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    {
+
+    }
+
+    /*auto Parser::parseImportExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
     {
         if (it->getLexeme() != Lexeme::LeftParen)
         {
@@ -59,7 +68,7 @@ namespace ionengine::rhi::fx
     auto Parser::parseAttrExpr(std::span<Token const>::iterator it,
                                std::unique_ptr<ASTAttribute>& attribute) -> std::span<Token const>::iterator
     {
-        
+
 
         std::string_view const attributeName = it->getContent();
         it = std::next(it);
@@ -102,7 +111,7 @@ namespace ionengine::rhi::fx
     {
         switch (it->getLexeme())
         {
-            /*case Lexeme::Keyword: {
+            case Lexeme::Keyword: {
                 if (it->getContent().compare("import") == 0)
                 {
                     it = std::next(it);
@@ -116,7 +125,7 @@ namespace ionengine::rhi::fx
                     this->parseImportExpr(it);
                 }
                 break;
-            }*/
+            }
 
             case Lexeme::Identifier: {
                 std::cout << it->getContent() << std::endl;
@@ -170,10 +179,10 @@ namespace ionengine::rhi::fx
                     {
                     }
                 }
-                /*else if (it->getLexeme() == Lexeme::Keyword)
+                else if (it->getLexeme() == Lexeme::Keyword)
                 {
                     std::cout << it->getContent() << std::endl;
-                }*/
+                }
                 else
                 {
                     if (identifierCache.find(std::string(it->getContent())) == identifierCache.end())
@@ -187,5 +196,5 @@ namespace ionengine::rhi::fx
             }
         }
         return std::next(it);
-    }
-} // namespace ionengine::tools::shaderc
+    }*/
+} // namespace ionengine::rhi::fx

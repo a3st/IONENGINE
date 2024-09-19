@@ -6,7 +6,7 @@
 
 using namespace ionengine;
 
-TEST(App, Launch_Test)
+TEST(Platform, App_Launch_Test)
 {
     auto app = platform::App::create("TestProject");
     app->setInputEventCallback([](platform::InputEvent const& event) {

@@ -28,12 +28,16 @@ namespace ionengine::rhi::fx
 
         std::set<std::string> identifierCache;
 
-        auto parseImportExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+        std::string shaderName;
+
+        auto parseBlockExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+
+        /*auto parseImportExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
 
         auto parseModule(std::span<Token const>::iterator it,
                          std::unique_ptr<ASTModule>& module) -> std::span<Token const>::iterator;
 
         auto parseAttrExpr(std::span<Token const>::iterator it,
-                           std::unique_ptr<ASTAttribute>& attribute) -> std::span<Token const>::iterator;
+                           std::unique_ptr<ASTAttribute>& attribute) -> std::span<Token const>::iterator;*/
     };
 } // namespace ionengine::tools::shaderc

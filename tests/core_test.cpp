@@ -1,5 +1,6 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
+#include "core/base64.hpp"
 #include "core/serialize.hpp"
 #include "precompiled.h"
 #include <gtest/gtest.h>
@@ -94,7 +95,7 @@ struct ShaderFile
     }
 };
 
-TEST(Serialize, JSON_Test)
+TEST(Core, Serialize_JSON_Test)
 {
     auto internalData = std::make_unique<InternalData>();
     internalData->name = "bye!";
@@ -136,7 +137,7 @@ TEST(Serialize, JSON_Test)
     ASSERT_EQ(object.optionalFloat, shaderData.optionalFloat);
 }
 
-TEST(Serialize, Archive_Test)
+TEST(Core, Serialize_Archive_Test)
 {
     auto internalData = std::make_unique<InternalData>();
     internalData->name = "bye!";
@@ -185,6 +186,21 @@ TEST(Serialize, Archive_Test)
     ASSERT_EQ(object.shaderData.internalData2->name, shaderFile.shaderData.internalData2->name);
     ASSERT_EQ(object.shaderData.internalData2->materialIndex, shaderFile.shaderData.internalData2->materialIndex);
     ASSERT_EQ(object.shaderData.positions, shaderFile.shaderData.positions);
+}
+
+TEST(Core, Base64_Encode)
+{
+    std::string test = "Hello world!";
+    std::string encodedString =
+        core::base64::encode(std::span<uint8_t const>((uint8_t const*)test.data(), test.size()));
+    ASSERT_EQ(encodedString, "SGVsbG8gd29ybGQh");
+}
+
+TEST(Core, Base64_Decode)
+{
+    std::string test = "SGVsbG8gd29ybGQh";
+    auto buffer = core::base64::decode(test).value();
+    ASSERT_EQ(std::string(reinterpret_cast<char*>(buffer.data()), buffer.size()), "Hello world!");
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

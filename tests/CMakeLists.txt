@@ -3,26 +3,16 @@ cmake_minimum_required(VERSION 3.25.1)
 find_package(simdjson CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 
-# Serialize
-add_executable(serialize_test serialize_test.cpp)
+# Core
+add_executable(core_test core_test.cpp)
 
-target_include_directories(serialize_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(core_test PRIVATE ${PROJECT_SOURCE_DIR})
 
-target_link_libraries(serialize_test PRIVATE
+target_link_libraries(core_test PRIVATE
     simdjson::simdjson
     GTest::gtest)
 
-target_precompile_headers(serialize_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
-
-# Base64
-add_executable(base64_test base64_test.cpp)
-
-target_include_directories(base64_test PRIVATE ${PROJECT_SOURCE_DIR})
-
-target_link_libraries(base64_test PRIVATE
-    GTest::gtest)
-
-target_precompile_headers(base64_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
+target_precompile_headers(core_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
 # Platform
 add_executable(platform_test platform_test.cpp)
@@ -47,17 +37,16 @@ target_link_libraries(rhi_test PRIVATE
 
 target_precompile_headers(rhi_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
-# shaderc
-add_executable(shaderc_test
-    ../rhi/fx/fx.cpp
-    ../rhi/fx/lexer.cpp
-    ../rhi/fx/parser.cpp
-    ../rhi/fx/ast.cpp
-    shaderc_test.cpp)
+# Shader System
+add_executable(shadersys_test
+    #../rhi/fx/fx.cpp
+    #../rhi/fx/lexer.cpp
+    #../rhi/fx/parser.cpp
+    shadersys_test.cpp)
 
-target_include_directories(shaderc_test PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(shadersys_test PRIVATE ${PROJECT_SOURCE_DIR})
 
-target_link_libraries(shaderc_test PRIVATE 
+target_link_libraries(shadersys_test PRIVATE 
     GTest::gtest)
 
-target_precompile_headers(shaderc_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
+target_precompile_headers(shadersys_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
