@@ -32,11 +32,13 @@ The engine is under development
 
 ### RHI
 
-- [x] FX
-  - [x] Format
-  - [x] FXSL (Effect Shader Language)
 - [x] DirectX12
 - [ ] Vulkan
+
+### Shader System
+
+- [x] Shader
+- [x] FXSL (Effect Shader Language)
 
 ### Platform
 

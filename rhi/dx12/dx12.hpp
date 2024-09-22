@@ -454,8 +454,6 @@ namespace ionengine::rhi
         auto getBackendName() const -> std::string_view override;
 
       private:
-        std::mutex mutex;
-
 #ifndef NDEBUG
         winrt::com_ptr<ID3D12Debug1> debug;
 #endif

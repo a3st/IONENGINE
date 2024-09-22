@@ -38,15 +38,12 @@ target_link_libraries(rhi_test PRIVATE
 target_precompile_headers(rhi_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
 # Shader System
-add_executable(shadersys_test
-    #../rhi/fx/fx.cpp
-    #../rhi/fx/lexer.cpp
-    #../rhi/fx/parser.cpp
-    shadersys_test.cpp)
+add_executable(shadersys_test shadersys_test.cpp)
 
 target_include_directories(shadersys_test PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_link_libraries(shadersys_test PRIVATE 
+    shadersys
     GTest::gtest)
 
 target_precompile_headers(shadersys_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)

@@ -2,11 +2,12 @@
 
 #pragma once
 
-namespace ionengine::rhi::fx
+namespace ionengine::shadersys
 {
     enum class Lexeme : uint8_t
     {
         Unknown,
+        Commentary,
         Semicolon,
         Identifier,
         Assignment,
@@ -81,5 +82,7 @@ namespace ionengine::rhi::fx
         auto isNumeric(char const c) const -> bool;
 
         auto isType(std::string_view const str) const -> bool;
+
+        auto isShaderCode(std::string_view const str) const -> bool;
     };
-} // namespace ionengine::rhi::fx
+} // namespace ionengine::shadersys

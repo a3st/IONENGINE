@@ -4,7 +4,7 @@
 #include "core/string.hpp"
 #include "precompiled.h"
 
-namespace ionengine::rhi::fx
+namespace ionengine::shadersys
 {
     std::set<std::string> const types{"uint",     "bool",     "float",    "float2",    "float3",    "float4",
                                       "float2x2", "float3x3", "float4x4", "Texture2D", "Texture3D", "SamplerState"};
@@ -142,6 +142,21 @@ namespace ionengine::rhi::fx
                 }
                 case '/': {
                     tokenLexeme = Lexeme::Slash;
+
+                    if (buffer[offset + 1] == '/')
+                    {
+                        offset += 2;
+
+                        uint64_t const tokenStart = offset;
+
+                        while (buffer[offset] != '\n')
+                        {
+                            offset++;
+                        }
+
+                        tokenLexeme = Lexeme::Commentary;
+                        tokenStr = std::string_view(buffer.data() + tokenStart, buffer.data() + offset);
+                    }
                     break;
                 }
                 case '*': {
@@ -246,8 +261,7 @@ namespace ionengine::rhi::fx
                         }
                         else
                         {
-                            if (tokenStr.compare("VertexShader") == 0 || tokenStr.compare("PixelShader") == 0 ||
-                                tokenStr.compare("ComputeShader") == 0)
+                            if (this->isShaderCode(tokenStr))
                             {
                                 seqLexeme.emplace(Lexeme::ShaderCode);
                             }
@@ -291,4 +305,16 @@ namespace ionengine::rhi::fx
     {
         return types.find(std::string(str)) != types.end();
     }
-} // namespace ionengine::rhi::fx
+
+    auto Lexer::isShaderCode(std::string_view const str) const -> bool
+    {
+        if (str.compare("VS") == 0 || str.compare("PS") == 0 || str.compare("CS") == 0)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+} // namespace ionengine::shadersys
