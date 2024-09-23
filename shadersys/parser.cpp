@@ -4,197 +4,180 @@
 #include "core/string.hpp"
 #include "precompiled.h"
 
-namespace ionengine::rhi::fx
+namespace ionengine::shadersys
 {
-    Parser::Parser(Lexer const& lexer, std::filesystem::path const& basePath) : basePath(basePath)
+    auto Parser::parse(Lexer const& lexer, fx::ShaderHeaderData& headerData, fx::ShaderOutputData& outputData) -> bool
     {
         auto tokens = lexer.getTokens();
 
         auto it = tokens.begin();
-
-        it = parseBlockExpr(it);
-
         while (it != tokens.end())
         {
-            
-            // it = this->parseModule(it, shaderModule);
+            if (it->getLexeme() == Lexeme::Identifier)
+            {
+                if (it->getContent().compare("HEADER") == 0)
+                {
+                    auto region = it;
+                    it++;
+
+                    if (it->getLexeme() != Lexeme::LeftBrace)
+                    {
+                        throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getFilePath(), 1000, region->getContent()));
+                    }
+
+                    it++;
+
+                    while (it != tokens.end())
+                    {
+                        if (it->getLexeme() == Lexeme::Identifier)
+                        {
+                            auto variable = it;
+
+                            it++;
+
+                            if (it->getLexeme() != Lexeme::Assignment)
+                            {
+                                throw parser_error(
+                                    std::format("{}: error {}: Identifier '{}' missing assignment (=) operator",
+                                                variable->getFilePath(), 1001, variable->getContent()));
+                            }
+
+                            it++;
+
+                            std::string value;
+                            it = this->parseOptionValue(variable, it, value);
+
+                            if (value.compare("Name") == 0)
+                            {
+                                headerData.shaderName = value;
+                            }
+                            else if (value.compare("Description") == 0)
+                            {
+                                headerData.description = value;
+                            }
+                            else if (value.compare("Domain") == 0)
+                            {
+                                headerData.shaderDomain = value;
+                            }
+                        }
+                        else
+                        {
+                            it++;
+                        }
+                    }
+
+                    if (it->getLexeme() != Lexeme::RightBrace)
+                    {
+                        throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getFilePath(), 1000, region->getContent()));
+                    }
+
+                    it++;
+                }
+                else if (it->getContent().compare("OUTPUT") == 0)
+                {
+                    auto region = it;
+                    it++;
+
+                    if (it->getLexeme() != Lexeme::LeftBrace)
+                    {
+                        throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getFilePath(), 1000, region->getContent()));
+                    }
+
+                    it++;
+
+                    while (it != tokens.end())
+                    {
+                        if (it->getLexeme() == Lexeme::Identifier)
+                        {
+                            auto variable = it;
+
+                            it++;
+
+                            if (it->getLexeme() != Lexeme::Assignment)
+                            {
+                                throw parser_error(
+                                    std::format("{}: error {}: Identifier '{}' missing assignment (=) operator",
+                                                variable->getFilePath(), 1001, variable->getContent()));
+                            }
+
+                            it++;
+
+                            std::string value;
+                            it = this->parseOptionValue(variable, it, value);
+
+                            if (value.compare("DepthWrite") == 0)
+                            {
+                                
+                            }
+                            else if (value.compare("StencilWrite") == 0)
+                            {
+                                
+                            }
+                            else if (value.compare("CullSide") == 0)
+                            {
+                                
+                            }
+                        }
+                        else
+                        {
+                            it++;
+                        }
+                    }
+
+                    if (it->getLexeme() != Lexeme::RightBrace)
+                    {
+                        throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getFilePath(), 1000, region->getContent()));
+                    }
+
+                    it++;
+                }
+                else if (it->getContent().compare("VS") == 0 || it->getContent().compare("PS") == 0 ||
+                         it->getContent().compare("CS") == 0)
+                {
+                }
+            }
+            else
+            {
+                it++;
+            }
         }
+        return true;
     }
 
-    auto Parser::parseBlockExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    auto Parser::parseOutputBlockExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
     {
-
-    }
-
-    /*auto Parser::parseImportExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
-    {
-        if (it->getLexeme() != Lexeme::LeftParen)
-        {
-            throw parser_error(std::format(""));
-        }
-
-        it = std::next(it);
-
-        while (it->getLexeme() != Lexeme::RightParen)
-        {
-            if (it->getLexeme() == Lexeme::Comma)
-            {
-                it = std::next(it);
-            }
-
-            if (it->getLexeme() != Lexeme::StringLiteral)
-            {
-                throw parser_error("1444");
-            }
-
-            parseModules.emplace(it->getContent());
-
-            // Parse Module
-            std::string const fileName = std::string(it->getContent()) + ".fx";
-            if (!std::filesystem::exists(basePath / fileName))
-            {
-                throw parser_error(
-                    std::format("{}: error {}: '{}' module not found", it->getFilePath(), 1, it->getContent()));
-            }
-
-            // Lexer lexer()
-            std::cout << "Parsed module " << it->getContent() << std::endl;
-
-            it = std::next(it);
-        }
         return it;
     }
 
-    auto Parser::parseAttrExpr(std::span<Token const>::iterator it,
-                               std::unique_ptr<ASTAttribute>& attribute) -> std::span<Token const>::iterator
+    auto Parser::parseOptionValue(std::span<Token const>::iterator variable, std::span<Token const>::iterator it,
+                                  std::string& value) -> std::span<Token const>::iterator
     {
-
-
-        std::string_view const attributeName = it->getContent();
-        it = std::next(it);
-
-        if (it->getLexeme() != Lexeme::LeftParen)
+        if (it->getLexeme() == Lexeme::FloatLiteral)
         {
-            throw parser_error("14");
+            value = it->getContent();
         }
-
-        it = std::next(it);
-
-        if (it->getLexeme() == Lexeme::StringLiteral)
+        else if (it->getLexeme() == Lexeme::StringLiteral)
         {
-            auto stringLiteral = std::make_unique<ASTStringLiteral>(it->getContent());
-            attribute = std::make_unique<ASTAttribute>(attributeName, std::move(stringLiteral));
-
-            std::cout << it->getContent() << std::endl;
-        }
-        else if (it->getLexeme() == Lexeme::FloatLiteral)
-        {
-            auto floatLiteral = std::make_unique<ASTFloatLiteral>(core::ston<float>(it->getContent()));
-            attribute = std::make_unique<ASTAttribute>(attributeName, std::move(floatLiteral));
+            value = it->getContent();
         }
         else
         {
-            throw parser_error("12");
+            throw parser_error(std::format("{}: error {}: Identifier '{}' has undeclared value",
+                                           variable->getFilePath(), 1002, variable->getContent()));
         }
 
-        it = std::next(it);
+        it++;
 
-        if (it->getLexeme() != Lexeme::RightParen)
+        if (it->getLexeme() != Lexeme::Semicolon)
         {
-            throw parser_error("13");
+            throw parser_error(std::format("{}: error {}: missing ';' character", it->getFilePath(), 1003));
         }
-        return std::next(it);
+
+        it++;
+        return it;
     }
-
-    auto Parser::parseModule(std::span<Token const>::iterator it,
-                             std::unique_ptr<ASTModule>& module) -> std::span<Token const>::iterator
-    {
-        switch (it->getLexeme())
-        {
-            case Lexeme::Keyword: {
-                if (it->getContent().compare("import") == 0)
-                {
-                    it = std::next(it);
-
-                    if (it->getLexeme() != Lexeme::Assignment)
-                    {
-                        throw parser_error("1");
-                    }
-
-                    it = std::next(it);
-                    this->parseImportExpr(it);
-                }
-                break;
-            }
-
-            case Lexeme::Identifier: {
-                std::cout << it->getContent() << std::endl;
-                std::string_view const identifierName = it->getContent();
-
-                it = std::next(it);
-
-                if (it->getLexeme() != Lexeme::Colon)
-                {
-                    throw parser_error("1");
-                }
-
-                it = std::next(it);
-
-                if (it->getLexeme() == Lexeme::LeftParen)
-                {
-                    std::cout << 11111 << std::endl;
-                }
-                else if (it->getLexeme() == Lexeme::FixedType)
-                {
-                    std::string_view const variableType = it->getContent();
-
-                    if (variableType.compare("struct") == 0)
-                    {
-                        it = std::next(it);
-
-                        while (it->getLexeme() != Lexeme::RightParen)
-                        {
-                            std::string_view const variableName = it->getContent();
-
-                            it = std::next(it);
-
-                            std::vector<std::unique_ptr<ASTAttribute>> attributes;
-
-                            it = std::next(it);
-
-                            while (it->getLexeme() != Lexeme::Semicolon)
-                            {
-                                std::unique_ptr<ASTAttribute> attribute;
-                                it = this->parseAttrExpr(it, attribute);
-                                attributes.emplace_back(std::move(attribute));
-                            }
-
-                            auto variable =
-                                std::make_unique<ASTVariable>(variableName, variableType, std::move(attributes));
-                        }
-
-                        identifierCache.emplace(identifierName);
-                    }
-                    else
-                    {
-                    }
-                }
-                else if (it->getLexeme() == Lexeme::Keyword)
-                {
-                    std::cout << it->getContent() << std::endl;
-                }
-                else
-                {
-                    if (identifierCache.find(std::string(it->getContent())) == identifierCache.end())
-                    {
-                        throw parser_error(std::format("{}: error {}: '{}' undeclared identifier", it->getFilePath(), 2,
-                                                       it->getContent()));
-                    }
-
-                    std::cout << "OK" << std::endl;
-                }
-            }
-        }
-        return std::next(it);
-    }*/
-} // namespace ionengine::rhi::fx
+} // namespace ionengine::shadersys

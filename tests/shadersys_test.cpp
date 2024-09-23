@@ -2,6 +2,7 @@
 
 #include "precompiled.h"
 #include "shadersys/lexer.hpp"
+#include "shadersys/parser.hpp"
 #include <gtest/gtest.h>
 
 using namespace ionengine;
@@ -12,9 +13,9 @@ TEST(ShaderSystem, Lexer_Test)
         // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
         HEADER {
-            Name = "Quad"
-            Description = "Quad Shader"
-            Domain = "Screen"
+            Name = "Quad";
+            Description = "Quad Shader";
+            Domain = "Screen";
         }
 
         DATA {
@@ -58,11 +59,19 @@ TEST(ShaderSystem, Lexer_Test)
 TEST(ShaderSystem, Parser_Test)
 {
     std::string const quadShader = R"(
-        
+        HEADER {
+            Name = "Quad";
+            Description = "Quad Shader";
+            Domain = "Screen";
+        }
     )";
 
-    //shaderc::Lexer lexer(basicShader, "basic.fx");
-    //shaderc::Parser parser(lexer, std::filesystem::current_path());
+    shadersys::Lexer lexer(quadShader, "quad.fx");
+    shadersys::Parser parser;
+
+    shadersys::fx::ShaderHeaderData headerData;
+    shadersys::fx::ShaderOutputData outputData;
+    parser.parse(lexer, headerData, outputData);
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

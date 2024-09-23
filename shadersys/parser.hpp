@@ -2,11 +2,11 @@
 
 #pragma once
 
-#include "ast.hpp"
 #include "core/error.hpp"
+#include "fx.hpp"
 #include "lexer.hpp"
 
-namespace ionengine::rhi::fx
+namespace ionengine::shadersys
 {
     class parser_error : public core::runtime_error
     {
@@ -19,25 +19,14 @@ namespace ionengine::rhi::fx
     class Parser
     {
       public:
-        Parser(Lexer const& lexer, std::filesystem::path const& basePath);
+        Parser() = default;
+
+        auto parse(Lexer const& lexer, fx::ShaderHeaderData& headerData, fx::ShaderOutputData& outputData) -> bool;
 
       private:
-        std::set<std::string> parseModules;
-        std::unique_ptr<ASTModule> shaderModule;
-        std::filesystem::path basePath;
+        auto parseOptionValue(std::span<Token const>::iterator variable, std::span<Token const>::iterator it,
+                              std::string& value) -> std::span<Token const>::iterator;
 
-        std::set<std::string> identifierCache;
-
-        std::string shaderName;
-
-        auto parseBlockExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
-
-        /*auto parseImportExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
-
-        auto parseModule(std::span<Token const>::iterator it,
-                         std::unique_ptr<ASTModule>& module) -> std::span<Token const>::iterator;
-
-        auto parseAttrExpr(std::span<Token const>::iterator it,
-                           std::unique_ptr<ASTAttribute>& attribute) -> std::span<Token const>::iterator;*/
+        auto parseOutputBlockExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
     };
-} // namespace ionengine::tools::shaderc
+} // namespace ionengine::shadersys

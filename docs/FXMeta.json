@@ -1,37 +1,44 @@
 {
-    "technique": {
-        "vertexShader": {
-            "buffer": 0,
-            "entryPoint": "vs_main"
-        },
-        "pixelShader": {
-            "buffer": 1,
-            "entryPoint": "ps_main"
+    "header": {
+        "name": "Basic",
+        "description": "Basic description",
+        "domain": "Screen"
+    },
+    "output": {
+        "stages": {
+            "VS": {
+                "buffer": 0,
+                "entryPoint": "main"
+            },
+            "PS": {
+                "buffer": 1,
+                "entryPoint": "main"
+            }
         },
         "depthWrite": false,
         "stencilWrite": false,
         "cullSide": "back"
     },
-    "resources": [
+    "constants": [
         {
-            "name": "materialData",
+            "name": "worldBuffer",
+            "type": "CONST_BUFFER",
+            "structure": 1
+        },
+        {
+            "name": "lightingBuffer",
             "type": "CONST_BUFFER",
             "structure": 2
         },
         {
-            "name": "linearSampler",
-            "type": "SAMPLER_STATE",
-            "structure": null
-        },
-        {
-            "name": "worldData",
+            "name": "samplerBuffer",
             "type": "CONST_BUFFER",
-            "structure": 0
+            "structure": 3
         },
         {
-            "name": "lightingData",
-            "type": "STORAGE_BUFFER",
-            "structure": 1
+            "name": "materialBuffer",
+            "type": "CONST_BUFFER",
+            "structure": 4
         }
     ],
     "structures": [

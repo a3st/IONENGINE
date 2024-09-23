@@ -149,7 +149,7 @@ namespace ionengine::shadersys
 
                         uint64_t const tokenStart = offset;
 
-                        while (buffer[offset] != '\n')
+                        while (offset < buffer.size() && buffer[offset] != '\n')
                         {
                             offset++;
                         }
@@ -176,7 +176,7 @@ namespace ionengine::shadersys
 
                     uint64_t const tokenStart = offset;
 
-                    while (buffer[offset] != '\"')
+                    while (offset < buffer.size() && buffer[offset] != '\"')
                     {
                         offset++;
                     }

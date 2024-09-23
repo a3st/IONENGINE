@@ -5,7 +5,7 @@
 #include "fx.hpp"
 #include "precompiled.h"
 
-namespace ionengine::rhi::fx
+namespace ionengine::shadersys::fx
 {
     auto sizeof_ShaderElementType(ShaderElementType const elementType) -> size_t
     {

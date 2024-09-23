@@ -4,14 +4,14 @@
 
 #include "core/serialize.hpp"
 
-namespace ionengine::rhi::fx
+namespace ionengine::shadersys::fx
 {
-    std::array<uint8_t, 4> constexpr Magic{'F', 'X', 'S', 'L'};
+    std::array<uint8_t, 4> constexpr Magic{'F', 'X', '1', '0'};
 
     enum class ShaderAPIType : uint32_t
     {
-        D3D12,
-        Vulkan
+        DXIL,
+        SPIRV
     };
 
     enum class ShaderElementType
@@ -47,20 +47,18 @@ namespace ionengine::rhi::fx
         None
     };
 
-    struct ShaderResourceData
+    struct ShaderConstantData
     {
-        std::string resourceName;
-        ShaderElementType resourceType;
-        std::optional<uint32_t> structure;
-        std::optional<std::string> defaultValue;
+        std::string constantName;
+        ShaderElementType constantType;
+        uint32_t structure;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.property(resourceName, "name");
-            archive.property(resourceType, "type");
+            archive.property(constantName, "name");
+            archive.property(constantType, "type");
             archive.property(structure, "structure");
-            archive.property(defaultValue, "default");
         }
     };
 
@@ -107,7 +105,22 @@ namespace ionengine::rhi::fx
         }
     };
 
-    struct ShaderTechniqueData
+    struct ShaderHeaderData
+    {
+        std::string shaderName;
+        std::string description;
+        std::string shaderDomain;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(shaderName, "name");
+            archive.property(description, "description");
+            archive.property(shaderDomain, "domain");
+        }
+    };
+
+    struct ShaderOutputData
     {
         std::unordered_map<ShaderStageType, ShaderStageData> stages;
         bool depthWrite;
@@ -126,14 +139,16 @@ namespace ionengine::rhi::fx
 
     struct ShaderEffectData
     {
-        ShaderTechniqueData technique;
-        std::vector<ShaderResourceData> constants;
+        ShaderHeaderData header;
+        ShaderOutputData output;
+        std::vector<ShaderConstantData> constants;
         std::vector<ShaderStructureData> structures;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.property(technique, "technique");
+            archive.property(header, "header");
+            archive.property(output, "output");
             archive.property(constants, "constants");
             archive.property(structures, "structures");
         }
@@ -155,53 +170,53 @@ namespace ionengine::rhi::fx
             archive.property(buffers);
         }
     };
-} // namespace ionengine::rhi::fx
+} // namespace ionengine::shadersys::fx
 
 namespace ionengine::core
 {
     template <>
-    struct serializable_enum<rhi::fx::ShaderElementType>
+    struct serializable_enum<shadersys::fx::ShaderElementType>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(rhi::fx::ShaderElementType::Float4x4, "FLOAT4x4");
-            archive.field(rhi::fx::ShaderElementType::Float3x3, "FLOAT3x3");
-            archive.field(rhi::fx::ShaderElementType::Float2x2, "FLOAT2x2");
-            archive.field(rhi::fx::ShaderElementType::Float4, "FLOAT4");
-            archive.field(rhi::fx::ShaderElementType::Float3, "FLOAT3");
-            archive.field(rhi::fx::ShaderElementType::Float2, "FLOAT2");
-            archive.field(rhi::fx::ShaderElementType::Float, "FLOAT");
-            archive.field(rhi::fx::ShaderElementType::Uint, "UINT");
-            archive.field(rhi::fx::ShaderElementType::Bool, "BOOL");
-            archive.field(rhi::fx::ShaderElementType::SamplerState, "SAMPLER_STATE");
-            archive.field(rhi::fx::ShaderElementType::ConstantBuffer, "CONSTANT_BUFFER");
-            archive.field(rhi::fx::ShaderElementType::StorageBuffer, "STORAGE_BUFFER");
-            archive.field(rhi::fx::ShaderElementType::Texture2D, "TEXTURE2D");
+            archive.field(shadersys::fx::ShaderElementType::Float4x4, "FLOAT4x4");
+            archive.field(shadersys::fx::ShaderElementType::Float3x3, "FLOAT3x3");
+            archive.field(shadersys::fx::ShaderElementType::Float2x2, "FLOAT2x2");
+            archive.field(shadersys::fx::ShaderElementType::Float4, "FLOAT4");
+            archive.field(shadersys::fx::ShaderElementType::Float3, "FLOAT3");
+            archive.field(shadersys::fx::ShaderElementType::Float2, "FLOAT2");
+            archive.field(shadersys::fx::ShaderElementType::Float, "FLOAT");
+            archive.field(shadersys::fx::ShaderElementType::Uint, "UINT");
+            archive.field(shadersys::fx::ShaderElementType::Bool, "BOOL");
+            archive.field(shadersys::fx::ShaderElementType::SamplerState, "SAMPLER_STATE");
+            archive.field(shadersys::fx::ShaderElementType::ConstantBuffer, "CONSTANT_BUFFER");
+            archive.field(shadersys::fx::ShaderElementType::StorageBuffer, "STORAGE_BUFFER");
+            archive.field(shadersys::fx::ShaderElementType::Texture2D, "TEXTURE2D");
         }
     };
 
     template <>
-    struct serializable_enum<rhi::fx::ShaderStageType>
+    struct serializable_enum<shadersys::fx::ShaderStageType>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(rhi::fx::ShaderStageType::Vertex, "vertexShader");
-            archive.field(rhi::fx::ShaderStageType::Pixel, "pixelShader");
-            archive.field(rhi::fx::ShaderStageType::Compute, "computeShader");
+            archive.field(shadersys::fx::ShaderStageType::Vertex, "VS");
+            archive.field(shadersys::fx::ShaderStageType::Pixel, "PS");
+            archive.field(shadersys::fx::ShaderStageType::Compute, "CS");
         }
     };
 
     template <>
-    struct serializable_enum<rhi::fx::ShaderCullSide>
+    struct serializable_enum<shadersys::fx::ShaderCullSide>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(rhi::fx::ShaderCullSide::None, "none");
-            archive.field(rhi::fx::ShaderCullSide::Back, "back");
-            archive.field(rhi::fx::ShaderCullSide::Front, "front");
+            archive.field(shadersys::fx::ShaderCullSide::None, "none");
+            archive.field(shadersys::fx::ShaderCullSide::Back, "back");
+            archive.field(shadersys::fx::ShaderCullSide::Front, "front");
         }
     };
 } // namespace ionengine::core

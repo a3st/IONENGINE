@@ -1,9 +1,9 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 HEADER {
-    Name = "Quad"
-    Description = "Quad Shader"
-    Domain = "Screen"
+    Name = "Quad";
+    Description = "Quad Shader";
+    Domain = "Screen";
 }
 
 DATA {
