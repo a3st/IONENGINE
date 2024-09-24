@@ -15,11 +15,12 @@ namespace ionengine::shadersys
     {
     }
 
-    Token::Token(Token const& other) : str(other.str), lexeme(other.lexeme), filePath(other.filePath)
+    Token::Token(Token const& other)
+        : str(other.str), lexeme(other.lexeme), numLine(other.numLine), filePath(other.filePath)
     {
     }
 
-    Token::Token(Token&& other) : str(other.str), lexeme(other.lexeme), filePath(other.filePath)
+    Token::Token(Token&& other) : str(other.str), lexeme(other.lexeme), numLine(other.numLine), filePath(other.filePath)
     {
     }
 
@@ -218,6 +219,8 @@ namespace ionengine::shadersys
                             tokenStr = std::string_view(buffer.data() + tokenStart, buffer.data() + offset);
                             seqLexeme.pop();
                         }
+
+                        offset--;
                     }
                     else if (this->isNumeric(buffer[offset]))
                     {
@@ -259,7 +262,7 @@ namespace ionengine::shadersys
                         {
                             tokenLexeme = Lexeme::BoolLiteral;
                         }
-                        if (this->isType(tokenStr))
+                        else if (this->isType(tokenStr))
                         {
                             tokenLexeme = Lexeme::FixedType;
                         }

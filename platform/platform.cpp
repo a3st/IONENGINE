@@ -17,6 +17,8 @@ namespace ionengine::platform
         return core::make_ref<Win32App>(title);
 #elif IONENGINE_PLATFORM_X11
         return core::make_ref<X11App>(title);
+#else
+#error platform backend is not defined
 #endif
     }
 } // namespace ionengine::platform

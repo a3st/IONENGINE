@@ -8,6 +8,13 @@
 
 namespace ionengine::core
 {
+    template <typename Type>
+    struct serializable_enum
+    {
+        template <typename Archive>
+        auto operator()(Archive& archive);
+    };
+
     class serialize_oenum
     {
       public:
@@ -24,6 +31,9 @@ namespace ionengine::core
         template <typename Type>
         auto operator()(Type& object) -> size_t
         {
+            serializable_enum<Type> target;
+            target(*this);
+
             auto result = enum_fields.find(std::string(source));
             if (result != enum_fields.end())
             {
@@ -39,13 +49,6 @@ namespace ionengine::core
       private:
         std::string_view source;
         std::unordered_map<std::string, uint32_t> enum_fields;
-    };
-
-    template <typename Type>
-    struct serializable_enum
-    {
-        template <typename Archive>
-        auto operator()(Archive& archive);
     };
 
     template <typename Type, typename Archive>
