@@ -255,6 +255,10 @@ namespace ionengine::shadersys
 
                         tokenStr = std::string_view(buffer.data() + tokenStart, buffer.data() + offset);
 
+                        if (tokenStr.compare("false") == 0 || tokenStr.compare("true") == 0)
+                        {
+                            tokenLexeme = Lexeme::BoolLiteral;
+                        }
                         if (this->isType(tokenStr))
                         {
                             tokenLexeme = Lexeme::FixedType;

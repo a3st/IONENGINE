@@ -21,6 +21,7 @@ namespace ionengine::shadersys
         Colon,
         StringLiteral,
         FloatLiteral,
+        BoolLiteral,
         FixedType,
         Plus,
         Minus,

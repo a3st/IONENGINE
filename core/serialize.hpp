@@ -8,12 +8,68 @@
 
 namespace ionengine::core
 {
+    class serialize_oenum
+    {
+      public:
+        serialize_oenum(std::string_view const source) : source(source)
+        {
+        }
+
+        template <typename Type>
+        auto field(Type const& element, std::string_view const json_name) -> void
+        {
+            enum_fields[std::string(json_name)] = static_cast<uint32_t>(element);
+        }
+
+        template <typename Type>
+        auto operator()(Type& object) -> size_t
+        {
+            auto result = enum_fields.find(std::string(source));
+            if (result != enum_fields.end())
+            {
+                object = static_cast<Type>(result->second);
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+      private:
+        std::string_view source;
+        std::unordered_map<std::string, uint32_t> enum_fields;
+    };
+
     template <typename Type>
     struct serializable_enum
     {
         template <typename Archive>
         auto operator()(Archive& archive);
     };
+
+    template <typename Type, typename Archive>
+    static auto from_string(std::string_view const source) -> std::optional<Type>
+    {
+        Type object{};
+        Archive archive(source);
+        try
+        {
+            if (archive(object) > 0)
+            {
+                return object;
+            }
+            else
+            {
+                return std::nullopt;
+            }
+        }
+        catch (core::runtime_error e)
+        {
+            std::cerr << e.what() << std::endl;
+            return std::nullopt;
+        }
+    }
 
     template <typename Type, typename Archive>
     class serializable_struct

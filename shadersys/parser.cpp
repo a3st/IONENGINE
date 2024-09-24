@@ -23,12 +23,13 @@ namespace ionengine::shadersys
                     if (it->getLexeme() != Lexeme::LeftBrace)
                     {
                         throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
-                                                       region->getFilePath(), 1000, region->getContent()));
+                                                       region->getFilePath(), std::to_underlying(ErrorCode::EndOfScope),
+                                                       region->getContent()));
                     }
 
                     it++;
 
-                    while (it != tokens.end())
+                    while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
                     {
                         if (it->getLexeme() == Lexeme::Identifier)
                         {
@@ -40,25 +41,39 @@ namespace ionengine::shadersys
                             {
                                 throw parser_error(
                                     std::format("{}: error {}: Identifier '{}' missing assignment (=) operator",
-                                                variable->getFilePath(), 1001, variable->getContent()));
+                                                variable->getFilePath(), std::to_underlying(ErrorCode::Operator),
+                                                variable->getContent()));
                             }
 
                             it++;
 
-                            std::string value;
-                            it = this->parseOptionValue(variable, it, value);
+                            if (variable->getContent().compare("Name") == 0)
+                            {
+                                std::string value;
+                                it = this->parseOptionValue(variable, it, value);
 
-                            if (value.compare("Name") == 0)
-                            {
-                                headerData.shaderName = value;
+                                headerData.shaderName = std::move(value);
                             }
-                            else if (value.compare("Description") == 0)
+                            else if (variable->getContent().compare("Description") == 0)
                             {
-                                headerData.description = value;
+                                std::string value;
+                                it = this->parseOptionValue(variable, it, value);
+
+                                headerData.description = std::move(value);
                             }
-                            else if (value.compare("Domain") == 0)
+                            else if (variable->getContent().compare("Domain") == 0)
                             {
-                                headerData.shaderDomain = value;
+                                std::string value;
+                                it = this->parseOptionValue(variable, it, value);
+
+                                headerData.shaderDomain = std::move(value);
+                            }
+                            else
+                            {
+                                std::string value;
+                                it = this->parseOptionValue(variable, it, value);
+
+                                std::cout << "Unknown" << std::endl;
                             }
                         }
                         else
@@ -67,10 +82,11 @@ namespace ionengine::shadersys
                         }
                     }
 
-                    if (it->getLexeme() != Lexeme::RightBrace)
+                    if (it == tokens.end())
                     {
                         throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
-                                                       region->getFilePath(), 1000, region->getContent()));
+                                                       region->getFilePath(), std::to_underlying(ErrorCode::EndOfScope),
+                                                       region->getContent()));
                     }
 
                     it++;
@@ -83,12 +99,13 @@ namespace ionengine::shadersys
                     if (it->getLexeme() != Lexeme::LeftBrace)
                     {
                         throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
-                                                       region->getFilePath(), 1000, region->getContent()));
+                                                       region->getFilePath(), std::to_underlying(ErrorCode::EndOfScope),
+                                                       region->getContent()));
                     }
 
                     it++;
 
-                    while (it != tokens.end())
+                    while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
                     {
                         if (it->getLexeme() == Lexeme::Identifier)
                         {
@@ -100,25 +117,34 @@ namespace ionengine::shadersys
                             {
                                 throw parser_error(
                                     std::format("{}: error {}: Identifier '{}' missing assignment (=) operator",
-                                                variable->getFilePath(), 1001, variable->getContent()));
+                                                variable->getFilePath(), std::to_underlying(ErrorCode::Operator),
+                                                variable->getContent()));
                             }
 
                             it++;
 
-                            std::string value;
-                            it = this->parseOptionValue(variable, it, value);
+                            if (variable->getContent().compare("DepthWrite") == 0)
+                            {
+                                bool value;
+                                it = this->parseOptionValue(variable, it, value);
 
-                            if (value.compare("DepthWrite") == 0)
-                            {
-                                
+                                outputData.depthWrite = value;
                             }
-                            else if (value.compare("StencilWrite") == 0)
+                            else if (variable->getContent().compare("StencilWrite") == 0)
                             {
-                                
+                                bool value;
+                                it = this->parseOptionValue(variable, it, value);
+
+                                outputData.depthWrite = value;
                             }
-                            else if (value.compare("CullSide") == 0)
+                            else if (variable->getContent().compare("CullSide") == 0)
                             {
-                                
+                                std::string value;
+                                it = this->parseOptionValue(variable, it, value);
+
+                                outputData.cullSide =
+                                    core::from_string<fx::ShaderCullSide, core::serialize_oenum>(value).value_or(
+                                        fx::ShaderCullSide::None);
                             }
                         }
                         else
@@ -127,10 +153,11 @@ namespace ionengine::shadersys
                         }
                     }
 
-                    if (it->getLexeme() != Lexeme::RightBrace)
+                    if (it == tokens.end())
                     {
                         throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
-                                                       region->getFilePath(), 1000, region->getContent()));
+                                                       region->getFilePath(), std::to_underlying(ErrorCode::EndOfScope),
+                                                       region->getContent()));
                     }
 
                     it++;
@@ -150,34 +177,6 @@ namespace ionengine::shadersys
 
     auto Parser::parseOutputBlockExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
     {
-        return it;
-    }
-
-    auto Parser::parseOptionValue(std::span<Token const>::iterator variable, std::span<Token const>::iterator it,
-                                  std::string& value) -> std::span<Token const>::iterator
-    {
-        if (it->getLexeme() == Lexeme::FloatLiteral)
-        {
-            value = it->getContent();
-        }
-        else if (it->getLexeme() == Lexeme::StringLiteral)
-        {
-            value = it->getContent();
-        }
-        else
-        {
-            throw parser_error(std::format("{}: error {}: Identifier '{}' has undeclared value",
-                                           variable->getFilePath(), 1002, variable->getContent()));
-        }
-
-        it++;
-
-        if (it->getLexeme() != Lexeme::Semicolon)
-        {
-            throw parser_error(std::format("{}: error {}: missing ';' character", it->getFilePath(), 1003));
-        }
-
-        it++;
         return it;
     }
 } // namespace ionengine::shadersys

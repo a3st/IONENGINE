@@ -3,11 +3,21 @@
 #pragma once
 
 #include "core/error.hpp"
+#include "core/string.hpp"
 #include "fx.hpp"
 #include "lexer.hpp"
 
 namespace ionengine::shadersys
 {
+    enum class ErrorCode : uint32_t
+    {
+        EndOfScope = 1000,
+        Operator = 1001,
+        Character = 1002,
+        UnknownType = 1003,
+        OtherType = 1004
+    };
+
     class parser_error : public core::runtime_error
     {
       public:
@@ -24,8 +34,76 @@ namespace ionengine::shadersys
         auto parse(Lexer const& lexer, fx::ShaderHeaderData& headerData, fx::ShaderOutputData& outputData) -> bool;
 
       private:
+        template <typename Type>
         auto parseOptionValue(std::span<Token const>::iterator variable, std::span<Token const>::iterator it,
-                              std::string& value) -> std::span<Token const>::iterator;
+                              Type& value) -> std::span<Token const>::iterator
+        {
+            if constexpr (std::is_integral_v<Type> && !std::is_same_v<Type, bool>)
+            {
+                if (it->getLexeme() == Lexeme::FloatLiteral)
+                {
+                    try
+                    {
+                        value = core::ston<Type>(it->getContent());
+                    }
+                    catch (core::runtime_error e)
+                    {
+                        throw parser_error(
+                            std::format("{}: error {}: Identifier '{}' has unknown value type", variable->getFilePath(),
+                                        std::to_underlying(ErrorCode::UnknownType), variable->getContent()));
+                    }
+                }
+                else
+                {
+                    throw parser_error(std::format("{}: error {}: Identifier '{}' has other value type",
+                                                   variable->getFilePath(), std::to_underlying(ErrorCode::OtherType),
+                                                   variable->getContent()));
+                }
+            }
+            else if constexpr (std::is_same_v<Type,
+                                              std::basic_string<char, std::char_traits<char>, std::allocator<char>>>)
+            {
+                if (it->getLexeme() == Lexeme::StringLiteral)
+                {
+                    value = it->getContent();
+                }
+                else
+                {
+                    throw parser_error(std::format("{}: error {}: Identifier '{}' has other value type",
+                                                   variable->getFilePath(), std::to_underlying(ErrorCode::OtherType),
+                                                   variable->getContent()));
+                }
+            }
+            else if constexpr (std::is_integral_v<Type> && std::is_same_v<Type, bool>)
+            {
+                if (it->getLexeme() == Lexeme::BoolLiteral)
+                {
+                    value = it->getContent().compare("true") ? true
+                            : it->getContent().compare("false")
+                                ? false
+                                : throw parser_error(std::format(
+                                      "{}: error {}: Identifier '{}' has unknown value type", variable->getFilePath(),
+                                      std::to_underlying(ErrorCode::UnknownType), variable->getContent()));
+                }
+                else
+                {
+                    throw parser_error(std::format("{}: error {}: Identifier '{}' has other value type",
+                                                   variable->getFilePath(), std::to_underlying(ErrorCode::OtherType),
+                                                   variable->getContent()));
+                }
+            }
+
+            it++;
+
+            if (it->getLexeme() != Lexeme::Semicolon)
+            {
+                throw parser_error(std::format("{}: error {}: missing ';' character", it->getFilePath(),
+                                               std::to_underlying(ErrorCode::Character)));
+            }
+
+            it++;
+            return it;
+        }
 
         auto parseOutputBlockExpr(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
     };
