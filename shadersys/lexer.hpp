@@ -33,7 +33,7 @@ namespace ionengine::shadersys
     class Token
     {
       public:
-        Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine, std::string_view const filePath);
+        Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine);
 
         Token(Token const& other);
 
@@ -49,34 +49,27 @@ namespace ionengine::shadersys
 
         auto getNumLine() const -> uint32_t;
 
-        auto getFilePath() const -> std::string_view;
-
       private:
         std::string_view str;
         Lexeme lexeme;
         uint32_t numLine;
-        std::string_view filePath;
     };
 
     class Lexer
     {
       public:
-        Lexer(std::istream& input, std::filesystem::path const& filePath);
+        Lexer(std::istream& input);
 
-        Lexer(std::string_view const input, std::filesystem::path const& filePath);
+        Lexer(std::string_view const input);
 
         auto getTokens() const -> std::span<Token const>;
 
-        auto getFilePath() const -> std::string_view;
-
       private:
-        std::string buffer;
         std::vector<Token> tokens;
-        std::string filePath;
 
         std::locale locale;
 
-        auto analyzeBuffer() -> void;
+        auto analyzeBufferData(std::string_view const buffer) -> void;
 
         auto isLetter(char const c) const -> bool;
 

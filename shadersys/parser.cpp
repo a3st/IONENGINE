@@ -23,8 +23,8 @@ namespace ionengine::shadersys
 
                     if (it->getLexeme() != Lexeme::LeftBrace)
                     {
-                        throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
-                                                       region->getFilePath(), std::to_underlying(ErrorCode::EndOfScope),
+                        throw parser_error(std::format("line {}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
                                                        region->getContent()));
                     }
 
@@ -41,8 +41,8 @@ namespace ionengine::shadersys
                             if (it->getLexeme() != Lexeme::Assignment)
                             {
                                 throw parser_error(
-                                    std::format("{}: error {}: Identifier '{}' missing assignment (=) operator",
-                                                variable->getFilePath(), std::to_underlying(ErrorCode::Operator),
+                                    std::format("line {}: error {}: Identifier '{}' missing assignment (=) operator",
+                                                variable->getNumLine(), std::to_underlying(ErrorCode::Operator),
                                                 variable->getContent()));
                             }
 
@@ -85,8 +85,8 @@ namespace ionengine::shadersys
 
                     if (it == tokens.end())
                     {
-                        throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
-                                                       region->getFilePath(), std::to_underlying(ErrorCode::EndOfScope),
+                        throw parser_error(std::format("line {}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
                                                        region->getContent()));
                     }
 
@@ -99,8 +99,8 @@ namespace ionengine::shadersys
 
                     if (it->getLexeme() != Lexeme::LeftBrace)
                     {
-                        throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
-                                                       region->getFilePath(), std::to_underlying(ErrorCode::EndOfScope),
+                        throw parser_error(std::format("line {}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
                                                        region->getContent()));
                     }
 
@@ -117,8 +117,8 @@ namespace ionengine::shadersys
                             if (it->getLexeme() != Lexeme::Assignment)
                             {
                                 throw parser_error(
-                                    std::format("{}: error {}: Identifier '{}' missing assignment (=) operator",
-                                                variable->getFilePath(), std::to_underlying(ErrorCode::Operator),
+                                    std::format("line {}: error {}: Identifier '{}' missing assignment (=) operator",
+                                                variable->getNumLine(), std::to_underlying(ErrorCode::Operator),
                                                 variable->getContent()));
                             }
 
@@ -156,8 +156,8 @@ namespace ionengine::shadersys
 
                     if (it == tokens.end())
                     {
-                        throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
-                                                       region->getFilePath(), std::to_underlying(ErrorCode::EndOfScope),
+                        throw parser_error(std::format("line {}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
                                                        region->getContent()));
                     }
 
@@ -172,9 +172,9 @@ namespace ionengine::shadersys
 
                     if (it->getLexeme() != Lexeme::LeftBrace)
                     {
-                        throw parser_error(std::format(
-                            "{}({}): error {}: Identifier '{}' missing end of scope", region->getFilePath(),
-                            region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope), region->getContent()));
+                        throw parser_error(std::format("line {}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
+                                                       region->getContent()));
                     }
 
                     it++;
@@ -182,8 +182,8 @@ namespace ionengine::shadersys
                     if (it->getLexeme() != Lexeme::ShaderCode)
                     {
                         throw parser_error(std::format(
-                            "{}({}): error {}: Identifier '{}' missing shader code of any stage", region->getFilePath(),
-                            region->getNumLine(), std::to_underlying(ErrorCode::ShaderCode), region->getContent()));
+                            "line {}: error {}: Identifier '{}' missing shader code of any stage", region->getNumLine(),
+                            std::to_underlying(ErrorCode::ShaderCode), region->getContent()));
                     }
 
                     stageData[core::from_string<fx::ShaderStageType, core::serialize_oenum>(region->getContent())
@@ -193,8 +193,8 @@ namespace ionengine::shadersys
 
                     if (it->getLexeme() != Lexeme::RightBrace)
                     {
-                        throw parser_error(std::format("{}: error {}: Identifier '{}' missing end of scope",
-                                                       region->getFilePath(), std::to_underlying(ErrorCode::EndOfScope),
+                        throw parser_error(std::format("line {}: error {}: Identifier '{}' missing end of scope",
+                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
                                                        region->getContent()));
                     }
 
@@ -203,7 +203,7 @@ namespace ionengine::shadersys
             }
             else if (it->getLexeme() == Lexeme::RightBrace)
             {
-                throw parser_error(std::format("{}: error {}: File are missing end of scope", it->getFilePath(),
+                throw parser_error(std::format("line {}: error {}: File are missing end of scope", it->getNumLine(),
                                                std::to_underlying(ErrorCode::EndOfScope)));
             }
             else

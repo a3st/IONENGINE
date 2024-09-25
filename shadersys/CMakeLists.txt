@@ -10,7 +10,17 @@ add_library(shadersys STATIC
 
 target_include_directories(shadersys PRIVATE ${PROJECT_SOURCE_DIR})
 
-target_link_libraries(shadersys PUBLIC core)
+target_include_directories(shadersys PRIVATE 
+    ${PROJECT_SOURCE_DIR}/thirdparty/dxc/windows/include)
+
+target_link_directories(shadersys PUBLIC
+    ${PROJECT_SOURCE_DIR}/thirdparty/dxc/windows/lib/x64)
+
+target_link_libraries(shadersys PUBLIC 
+    core
+    dxgi
+    dxcompiler
+)
 
 target_compile_definitions(shadersys PUBLIC
     IONENGINE_SHADERSYS_DXC)

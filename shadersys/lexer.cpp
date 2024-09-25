@@ -9,18 +9,17 @@ namespace ionengine::shadersys
     std::set<std::string> const types{"uint",     "bool",     "float",    "float2",    "float3",    "float4",
                                       "float2x2", "float3x3", "float4x4", "Texture2D", "Texture3D", "SamplerState"};
 
-    Token::Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine,
-                 std::string_view const filePath)
-        : str(str), lexeme(lexeme), numLine(numLine), filePath(filePath)
+    Token::Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine)
+        : str(str), lexeme(lexeme), numLine(numLine)
     {
     }
 
     Token::Token(Token const& other)
-        : str(other.str), lexeme(other.lexeme), numLine(other.numLine), filePath(other.filePath)
+        : str(other.str), lexeme(other.lexeme), numLine(other.numLine)
     {
     }
 
-    Token::Token(Token&& other) : str(other.str), lexeme(other.lexeme), numLine(other.numLine), filePath(other.filePath)
+    Token::Token(Token&& other) : str(other.str), lexeme(other.lexeme), numLine(other.numLine)
     {
     }
 
@@ -28,7 +27,6 @@ namespace ionengine::shadersys
     {
         str = other.str;
         lexeme = other.lexeme;
-        filePath = other.filePath;
         return *this;
     }
 
@@ -36,7 +34,6 @@ namespace ionengine::shadersys
     {
         str = other.str;
         lexeme = other.lexeme;
-        filePath = std::move(other.filePath);
         return *this;
     }
 
@@ -55,28 +52,16 @@ namespace ionengine::shadersys
         return numLine;
     }
 
-    auto Token::getFilePath() const -> std::string_view
-    {
-        return filePath;
-    }
-
-    Lexer::Lexer(std::istream& input, std::filesystem::path const& filePath)
-        : locale("en_US.utf8"), filePath(filePath.string())
+    Lexer::Lexer(std::istream& input) : locale("en_US.utf8")
     {
     }
 
-    Lexer::Lexer(std::string_view const input, std::filesystem::path const& filePath)
-        : buffer(input), locale("en_US.utf8"), filePath(filePath.string())
+    Lexer::Lexer(std::string_view const input) : locale("en_US.utf8")
     {
-        this->analyzeBuffer();
+        this->analyzeBufferData(input);
     }
 
-    auto Lexer::getFilePath() const -> std::string_view
-    {
-        return filePath;
-    }
-
-    auto Lexer::analyzeBuffer() -> void
+    auto Lexer::analyzeBufferData(std::string_view const buffer) -> void
     {
         uint64_t offset = 0;
         uint32_t curLine = 1;
@@ -284,7 +269,7 @@ namespace ionengine::shadersys
 
             if (tokenLexeme != Lexeme::Unknown)
             {
-                Token token(tokenStr, tokenLexeme, curLine, filePath);
+                Token token(tokenStr, tokenLexeme, curLine);
                 tokens.emplace_back(std::move(token));
                 std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
             }

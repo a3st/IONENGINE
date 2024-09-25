@@ -53,7 +53,7 @@ TEST(ShaderSystem, Lexer_Test)
         }
     )";
 
-    shadersys::Lexer lexer(quadShader, "quad.fx");
+    shadersys::Lexer lexer(quadShader);
 }
 
 TEST(ShaderSystem, Parser_Test)
@@ -96,7 +96,7 @@ TEST(ShaderSystem, Parser_Test)
         }
     )";
 
-    shadersys::Lexer lexer(quadShader, "quad.fx");
+    shadersys::Lexer lexer(quadShader);
     shadersys::Parser parser;
 
     shadersys::fx::ShaderHeaderData headerData;
