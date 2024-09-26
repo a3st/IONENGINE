@@ -22,6 +22,8 @@ namespace ionengine::shadersys
 
       private:
         winrt::com_ptr<IDxcCompiler3> compiler;
+        winrt::com_ptr<IDxcUtils> utils;
+        winrt::com_ptr<IDxcIncludeHandler> includeHandler;
 
         auto compileBufferData(std::span<uint8_t const> const buffer) -> std::optional<fx::ShaderEffectFile>;
     };

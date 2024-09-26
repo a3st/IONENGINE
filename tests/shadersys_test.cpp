@@ -1,6 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "precompiled.h"
+#include "shadersys/compiler.hpp"
 #include "shadersys/lexer.hpp"
 #include "shadersys/parser.hpp"
 #include <gtest/gtest.h>
@@ -103,6 +104,12 @@ TEST(ShaderSystem, Parser_Test)
     shadersys::fx::ShaderOutputData outputData;
     std::unordered_map<shadersys::fx::ShaderStageType, std::string> stageData;
     parser.parse(lexer, headerData, outputData, stageData);
+}
+
+TEST(ShaderSystem, Compiler_Test)
+{
+    auto shaderCompiler = shadersys::ShaderCompiler::create(shadersys::fx::ShaderAPIType::DXIL);
+    shaderCompiler->compileFromFile("../../engine/shaders/quad.fx");
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

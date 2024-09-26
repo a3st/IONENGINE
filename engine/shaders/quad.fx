@@ -6,10 +6,6 @@ HEADER {
     Domain = "Screen";
 }
 
-DATA {
-    Texture2D inputTexture;
-}
-
 VS {
     #include "shared/common.hlsli"
 

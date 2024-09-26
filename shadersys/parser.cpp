@@ -7,7 +7,7 @@
 namespace ionengine::shadersys
 {
     auto Parser::parse(Lexer const& lexer, fx::ShaderHeaderData& headerData, fx::ShaderOutputData& outputData,
-                       std::unordered_map<fx::ShaderStageType, std::string>& stageData) -> bool
+                       std::unordered_map<fx::ShaderStageType, std::string>& stageData) -> void
     {
         auto tokens = lexer.getTokens();
 
@@ -200,6 +200,10 @@ namespace ionengine::shadersys
 
                     it++;
                 }
+                else
+                {
+                    it++;
+                }
             }
             else if (it->getLexeme() == Lexeme::RightBrace)
             {
@@ -211,6 +215,5 @@ namespace ionengine::shadersys
                 it++;
             }
         }
-        return true;
     }
 } // namespace ionengine::shadersys

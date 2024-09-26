@@ -18,6 +18,8 @@ namespace ionengine::shadersys
     DXCCompiler::DXCCompiler(fx::ShaderAPIType const apiType)
     {
         throwIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void()));
+        throwIfFailed(::DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), utils.put_void()));
+        throwIfFailed(utils->CreateDefaultIncludeHandler(includeHandler.put()));
     }
 
     auto DXCCompiler::compileFromBytes(std::span<uint8_t const> const dataBytes) -> std::optional<fx::ShaderEffectFile>
@@ -45,9 +47,28 @@ namespace ionengine::shadersys
         fx::ShaderHeaderData headerData;
         fx::ShaderOutputData outputData;
         std::unordered_map<shadersys::fx::ShaderStageType, std::string> stageData;
+
         parser.parse(lexer, headerData, outputData, stageData);
 
-        
+        for (auto const& [stageType, shaderCode] : stageData)
+        {
+            DxcBuffer dxcBuffer{.Ptr = shaderCode.data(), .Size = shaderCode.size(), .Encoding = DXC_CP_UTF8};
+
+            winrt::com_ptr<IDxcResult> result;
+            throwIfFailed(compiler->Compile(&dxcBuffer, nullptr, 0, includeHandler.get(), __uuidof(IDxcResult),
+                                            result.put_void()));
+
+            winrt::com_ptr<IDxcBlobUtf8> errorsBlob;
+            throwIfFailed(result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), errorsBlob.put_void(), nullptr));
+
+            if (errorsBlob && errorsBlob->GetStringLength() > 0)
+            {
+                std::cerr << "\n" + std::string(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()),
+                                                errorsBlob->GetBufferSize())
+                          << std::endl;
+                return std::nullopt;
+            }
+        }
 
         return std::nullopt;
     }
