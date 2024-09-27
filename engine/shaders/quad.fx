@@ -6,6 +6,10 @@ HEADER {
     Domain = "Screen";
 }
 
+DATA {
+    uint inputTexture;
+}
+
 VS {
     #include "shared/common.hlsli"
 
@@ -21,10 +25,10 @@ PS {
     #include "shared/common.hlsli"
 
     PS_OUTPUT main(VS_OUTPUT input) {
-        Texture2D inputTexture = GetResource(material, inputTexture);
+        Texture2D inputTexture = GetTexture(MATERIAL_DATA, materialBuffer, inputTexture);
         SamplerState linearSampler = GetSampler();
 
-        VS_OUTPUT output;
+        PS_OUTPUT output;
         output.color = inputTexture.Sample(linearSampler, input.uv);
         return output;
     }

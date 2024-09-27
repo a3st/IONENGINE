@@ -25,10 +25,6 @@ namespace ionengine::shadersys::fx
                 return sizeof(float) * 4;
             case ShaderElementType::Float:
                 return sizeof(float);
-            case ShaderElementType::ConstantBuffer:
-            case ShaderElementType::StorageBuffer:
-            case ShaderElementType::SamplerState:
-            case ShaderElementType::Texture2D:
             case ShaderElementType::Bool:
             case ShaderElementType::Uint:
                 return sizeof(uint32_t);
@@ -36,4 +32,4 @@ namespace ionengine::shadersys::fx
                 return 0;
         }
     }
-} // namespace ionengine::rhi::fx
+} // namespace ionengine::shadersys::fx

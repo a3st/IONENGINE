@@ -7,7 +7,6 @@ namespace ionengine::shadersys
     enum class Lexeme : uint8_t
     {
         Unknown,
-        Commentary,
         Semicolon,
         Identifier,
         Assignment,
@@ -58,8 +57,6 @@ namespace ionengine::shadersys
     class Lexer
     {
       public:
-        Lexer(std::istream& input);
-
         Lexer(std::string_view const input);
 
         auto getTokens() const -> std::span<Token const>;

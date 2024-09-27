@@ -51,13 +51,13 @@ namespace ionengine::shadersys
                     catch (core::runtime_error e)
                     {
                         throw parser_error(std::format(
-                            "line {}: error {}: Identifier '{}' has unknown value type", variable->getNumLine(),
+                            "line:{}: error {}: identifier '{}' has unknown value type", variable->getNumLine(),
                             std::to_underlying(ErrorCode::UnknownType), variable->getContent()));
                     }
                 }
                 else
                 {
-                    throw parser_error(std::format("line {}: error {}: Identifier '{}' has other value type",
+                    throw parser_error(std::format("line:{}: error {}: identifier '{}' has other value type",
                                                    variable->getNumLine(), std::to_underlying(ErrorCode::OtherType),
                                                    variable->getContent()));
                 }
@@ -71,7 +71,7 @@ namespace ionengine::shadersys
                 }
                 else
                 {
-                    throw parser_error(std::format("line {}: error {}: Identifier '{}' has other value type",
+                    throw parser_error(std::format("line:{}: error {}: identifier '{}' has other value type",
                                                    variable->getNumLine(), std::to_underlying(ErrorCode::OtherType),
                                                    variable->getContent()));
                 }
@@ -85,12 +85,12 @@ namespace ionengine::shadersys
                         : it->getContent().compare("false")
                             ? false
                             : throw parser_error(std::format(
-                                  "line {}: error {}: Identifier '{}' has unknown value type", variable->getNumLine(),
+                                  "line:{}: error {}: identifier '{}' has unknown value type", variable->getNumLine(),
                                   std::to_underlying(ErrorCode::UnknownType), variable->getContent()));
                 }
                 else
                 {
-                    throw parser_error(std::format("line {}: error {}: Identifier '{}' has other value type",
+                    throw parser_error(std::format("line:{}: error {}: identifier '{}' has other value type",
                                                    variable->getNumLine(), std::to_underlying(ErrorCode::OtherType),
                                                    variable->getContent()));
                 }
@@ -100,7 +100,7 @@ namespace ionengine::shadersys
 
             if (it->getLexeme() != Lexeme::Semicolon)
             {
-                throw parser_error(std::format("line {}: error {}: missing ';' character", variable->getNumLine(),
+                throw parser_error(std::format("line:{}: error {}: missing ';' character", variable->getNumLine(),
                                                std::to_underlying(ErrorCode::Character)));
             }
 

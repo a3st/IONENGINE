@@ -24,11 +24,7 @@ namespace ionengine::shadersys::fx
         Float2,
         Float,
         Uint,
-        Bool,
-        SamplerState,
-        ConstantBuffer,
-        StorageBuffer,
-        Texture2D
+        Bool
     };
 
     auto sizeof_ShaderElementType(ShaderElementType const elementType) -> size_t;

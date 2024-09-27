@@ -6,16 +6,15 @@
 
 namespace ionengine::shadersys
 {
-    std::set<std::string> const types{"uint",     "bool",     "float",    "float2",    "float3",    "float4",
-                                      "float2x2", "float3x3", "float4x4", "Texture2D", "Texture3D", "SamplerState"};
+    std::set<std::string> const types{"uint",   "bool",     "float",    "float2",  "float3",
+                                      "float4", "float2x2", "float3x3", "float4x4"};
 
     Token::Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine)
         : str(str), lexeme(lexeme), numLine(numLine)
     {
     }
 
-    Token::Token(Token const& other)
-        : str(other.str), lexeme(other.lexeme), numLine(other.numLine)
+    Token::Token(Token const& other) : str(other.str), lexeme(other.lexeme), numLine(other.numLine)
     {
     }
 
@@ -50,10 +49,6 @@ namespace ionengine::shadersys
     auto Token::getNumLine() const -> uint32_t
     {
         return numLine;
-    }
-
-    Lexer::Lexer(std::istream& input) : locale("en_US.utf8")
-    {
     }
 
     Lexer::Lexer(std::string_view const input) : locale("en_US.utf8")
@@ -132,16 +127,13 @@ namespace ionengine::shadersys
                     if (buffer[offset + 1] == '/')
                     {
                         offset += 2;
-
-                        uint64_t const tokenStart = offset;
-
+                        
                         while (offset < buffer.size() && buffer[offset] != '\n')
                         {
                             offset++;
                         }
 
-                        tokenLexeme = Lexeme::Commentary;
-                        tokenStr = std::string_view(buffer.data() + tokenStart, buffer.data() + offset);
+                        tokenLexeme = Lexeme::Unknown;
                     }
                     break;
                 }
@@ -271,7 +263,7 @@ namespace ionengine::shadersys
             {
                 Token token(tokenStr, tokenLexeme, curLine);
                 tokens.emplace_back(std::move(token));
-                std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
+                // std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
             }
 
             offset++;

@@ -11,11 +11,6 @@ struct VS_OUTPUT {
     float2 uv: TEXCOORD0;
 };
 
-struct VS_OUTPUT {
-    float4 position: SV_Position;
-    float2 uv: TEXCOORD0;
-};
-
 struct PS_OUTPUT {
     float4 color: SV_Target0;
 };
@@ -33,8 +28,14 @@ struct SHADER_DATA {
 
 ConstantBuffer<SHADER_DATA> __shaderData : register(b0, space0);
 
-#ifndef GetResource
-#ifdef GetResource(buffer, element) ResourceDescriptorHeap[__shaderData.##buffer##Buffer].##element
+#ifndef GetBuffer
+#define GetBuffer(type, buffer) ConstantBuffer<type>(ResourceDescriptorHeap[__shaderData. buffer])
 #endif
 
-#ifndef GetSampler() SamplerDescriptorHeap[__shaderData.samplerBuffer].linearSampler
+#ifndef GetTexture
+#define GetTexture(type, buffer, texture) ResourceDescriptorHeap[ConstantBuffer<type>(ResourceDescriptorHeap[__shaderData. buffer]). texture]
+#endif
+
+#ifndef GetSampler
+#define GetSampler() SamplerDescriptorHeap[ConstantBuffer<SAMPLER_DATA>(ResourceDescriptorHeap[__shaderData.samplerBuffer]).linearSampler]
+#endif
