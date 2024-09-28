@@ -6,8 +6,8 @@
 
 namespace ionengine::shadersys
 {
-    std::set<std::string> const types{"uint",   "bool",     "float",    "float2",  "float3",
-                                      "float4", "float2x2", "float3x3", "float4x4"};
+    std::set<std::string> const types{"uint",   "bool",     "float",    "float2",   "float3",
+                                      "float4", "float2x2", "float3x3", "float4x4", "texture2D_t"};
 
     Token::Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine)
         : str(str), lexeme(lexeme), numLine(numLine)
@@ -127,7 +127,7 @@ namespace ionengine::shadersys
                     if (buffer[offset + 1] == '/')
                     {
                         offset += 2;
-                        
+
                         while (offset < buffer.size() && buffer[offset] != '\n')
                         {
                             offset++;

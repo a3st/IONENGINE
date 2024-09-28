@@ -8,7 +8,24 @@
         "stages": {
             "VS": {
                 "buffer": 0,
-                "entryPoint": "main"
+                "entryPoint": "main",
+                "input": {
+                    "elements": [
+                        {
+                            "format": "RGB32_FLOAT",
+                            "semantic": "POSITION"
+                        },
+                        {
+                            "format": "RGB32_FLOAT",
+                            "semantic": "NORMAL"
+                        },
+                        {
+                            "format": "RG32_FLOAT",
+                            "semantic": "TEXCOORD0"
+                        }
+                    ],
+                    "sizeInBytes": 24
+                }
             },
             "PS": {
                 "buffer": 1,
@@ -22,146 +39,45 @@
     "constants": [
         {
             "name": "worldBuffer",
-            "type": "CONST_BUFFER",
-            "structure": 1
+            "type": "UINT"
         },
         {
             "name": "lightingBuffer",
-            "type": "CONST_BUFFER",
-            "structure": 2
+            "type": "UINT"
         },
         {
             "name": "samplerBuffer",
-            "type": "CONST_BUFFER",
-            "structure": 3
+            "type": "UINT"
         },
         {
             "name": "materialBuffer",
-            "type": "CONST_BUFFER",
-            "structure": 4
+            "type": "UINT"
         }
     ],
     "structures": [
         {
-            "name": "WorldData",
+            "name": "MATERIAL_DATA",
             "elements": [
                 {
                     "name": "model",
-                    "type": "FLOAT4x4",
-                    "semantic": null
+                    "type": "FLOAT4x4"
                 },
                 {
                     "name": "view",
-                    "type": "FLOAT4x4",
-                    "semantic": null
+                    "type": "FLOAT4x4"
                 },
                 {
                     "name": "projection",
-                    "type": "FLOAT4x4",
-                    "semantic": null
+                    "type": "FLOAT4x4"
                 }
             ],
             "sizeInBytes": 192
-        },
+        }
+    ],
+    "buffers": [
         {
-            "name": "LightingData",
-            "elements": [
-                {
-                    "name": "distance",
-                    "type": "FLOAT",
-                    "semantic": null
-                },
-                {
-                    "name": "position",
-                    "type": "FLOAT3",
-                    "semantic": null
-                },
-                {
-                    "name": "direction",
-                    "type": "FLOAT3",
-                    "semantic": null
-                },
-                {
-                    "name": "color",
-                    "type": "FLOAT3",
-                    "semantic": null
-                }
-            ],
-            "sizeInBytes": 40
-        },
-        {
-            "name": "MaterialData",
-            "elements": [
-                {
-                    "name": "diffuse",
-                    "type": "TEXTURE_2D",
-                    "semantic": null
-                },
-                {
-                    "name": "normal",
-                    "type": "TEXTURE_2D",
-                    "semantic": null
-                },
-                {
-                    "name": "roughness",
-                    "type": "TEXTURE_2D",
-                    "semantic": null
-                }
-            ],
-            "sizeInBytes": 12
-        },
-        {
-            "name": "VS_INPUT",
-            "elements": [
-                {
-                    "name": "position",
-                    "type": "FLOAT3",
-                    "semantic": "POSITION"
-                },
-                {
-                    "name": "normal",
-                    "type": "FLOAT3",
-                    "semantic": "NORMAL"
-                },
-                {
-                    "name": "uv",
-                    "type": "FLOAT2",
-                    "semantic": "TEXCOORD0"
-                }
-            ],
-            "sizeInBytes": 32
-        },
-        {
-            "name": "VS_OUTPUT",
-            "elements": [
-                {
-                    "name": "position",
-                    "type": "FLOAT4",
-                    "semantic": "SV_Position"
-                },
-                {
-                    "name": "normal",
-                    "type": "FLOAT3",
-                    "semantic": "NORMAL"
-                },
-                {
-                    "name": "uv",
-                    "type": "FLOAT2",
-                    "semantic": "TEXCOORD0"
-                }
-            ],
-            "sizeInBytes": 36
-        },
-        {
-            "name": "PS_OUTPUT",
-            "elements": [
-                {
-                    "name": "color",
-                    "type": "FLOAT4",
-                    "semantic": "SV_Target0"
-                }
-            ],
-            "sizeInBytes": 16
+            "offset": 2000,
+            "sizeInBytes": 1000
         }
     ]
 }

@@ -7,7 +7,7 @@ HEADER {
 }
 
 DATA {
-    uint inputTexture;
+    texture2D_t inputTexture;
 }
 
 VS {
@@ -25,17 +25,20 @@ PS {
     #include "shared/common.hlsli"
 
     PS_OUTPUT main(VS_OUTPUT input) {
-        Texture2D inputTexture = GetTexture(MATERIAL_DATA, materialBuffer, inputTexture);
-        SamplerState linearSampler = GetSampler();
+        //Texture2D inputTexture = GetTexture(MATERIAL_DATA, materialBuffer, inputTexture);
+        //SamplerState linearSampler = GetSampler();
+
+        cbuffer_t<SAMPLER_DATA> b = gShaderData.samplerBuffer;
 
         PS_OUTPUT output;
-        output.color = inputTexture.Sample(linearSampler, input.uv);
+        output.color = float4(b.Get().v, 1.0f, 1.0f, 1.0f);
+        //output.color = inputTexture.Sample(linearSampler, input.uv);
         return output;
     }
 }
 
 OUTPUT {
-    CullSide = "back";
+    CullSide = "BACK";
     DepthWrite = false;
     StencilWrite = false;
 }

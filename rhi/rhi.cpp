@@ -11,25 +11,33 @@
 
 namespace ionengine::rhi
 {
-    auto sizeof_VertexFormat(VertexFormat const format) -> uint32_t
+    auto sizeof_VertexFormat(VertexFormat const format) -> size_t
     {
         switch (format)
         {
-            case VertexFormat::Float4:
+            case VertexFormat::RGBA32_FLOAT:
                 return sizeof(float) * 4;
-            case VertexFormat::Float4x4:
-                return sizeof(float) * 16;
-            case VertexFormat::Float3:
+            case VertexFormat::RGBA32_SINT:
+                return sizeof(int32_t) * 4;
+            case VertexFormat::RGBA32_UINT:
+                return sizeof(uint32_t) * 4;
+            case VertexFormat::RGB32_FLOAT:
                 return sizeof(float) * 3;
-            case VertexFormat::Float3x3:
-                return sizeof(float) * 9;
-            case VertexFormat::Float2:
+            case VertexFormat::RGB32_SINT:
+                return sizeof(int32_t) * 3;
+            case VertexFormat::RGB32_UINT:
+                return sizeof(uint32_t) * 3;
+            case VertexFormat::RG32_FLOAT:
                 return sizeof(float) * 2;
-            case VertexFormat::Float2x2:
-                return sizeof(float) * 4;
-            case VertexFormat::Float:
+            case VertexFormat::RG32_SINT:
+                return sizeof(int32_t) * 2;
+            case VertexFormat::RG32_UINT:
+                return sizeof(uint32_t) * 2;
+            case VertexFormat::R32_FLOAT:
                 return sizeof(float);
-            case VertexFormat::Uint:
+            case VertexFormat::R32_SINT:
+                return sizeof(int32_t);
+            case VertexFormat::R32_UINT:
                 return sizeof(uint32_t);
             default:
                 return 0;

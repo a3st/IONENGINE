@@ -7,7 +7,8 @@
 namespace ionengine::shadersys
 {
     auto Parser::parse(Lexer const& lexer, fx::ShaderHeaderData& headerData, fx::ShaderOutputData& outputData,
-                       std::unordered_map<fx::ShaderStageType, std::string>& stageData) -> void
+                       std::unordered_map<fx::ShaderStageType, std::string>& stageData,
+                       fx::ShaderStructureData& materialData) -> void
     {
         auto tokens = lexer.getTokens();
 
@@ -217,6 +218,8 @@ namespace ionengine::shadersys
 
                     it++;
 
+                    size_t structureSize = 0;
+
                     while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
                     {
                         if (it->getLexeme() != Lexeme::FixedType)
@@ -250,9 +253,22 @@ namespace ionengine::shadersys
 
                         it++;
 
+                        auto elementType =
+                            core::from_string<fx::ShaderElementType, core::serialize_oenum>(variableType->getContent())
+                                .value_or(fx::ShaderElementType::Uint);
+
+                        fx::ShaderStructureElementData elementData{.elementName = std::string(variable->getContent()),
+                                                                   .elementType = elementType};
+                        materialData.elements.emplace_back(std::move(elementData));
+
+                        structureSize += fx::sizeof_ShaderElementType(elementType);
+
                         materialStructure +=
                             std::string(variableType->getContent()) + " " + std::string(variable->getContent()) + ";";
                     }
+
+                    materialData.structureName = "MATERIAL_DATA";
+                    materialData.size = structureSize;
 
                     if (it->getLexeme() != Lexeme::RightBrace)
                     {
@@ -279,7 +295,8 @@ namespace ionengine::shadersys
 
         for (auto& [stageType, shaderCode] : stageData)
         {
-            shaderCode = "struct MATERIAL_DATA { " + materialStructure + " };\n" + shaderCode;
+            shaderCode = "#include \"shared/internal.hlsli\"\nstruct MATERIAL_DATA { " + materialStructure + " };\n" +
+                         shaderCode;
         }
     }
 } // namespace ionengine::shadersys

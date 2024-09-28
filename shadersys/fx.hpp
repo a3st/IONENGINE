@@ -14,6 +14,24 @@ namespace ionengine::shadersys::fx
         SPIRV
     };
 
+    enum class ShaderVertexFormat
+    {
+        R32_UINT,
+        R32_SINT,
+        R32_FLOAT,
+        RG32_UINT,
+        RG32_SINT,
+        RG32_FLOAT,
+        RGB32_UINT,
+        RGB32_SINT,
+        RGB32_FLOAT,
+        RGBA32_UINT,
+        RGBA32_SINT,
+        RGBA32_FLOAT
+    };
+
+    auto sizeof_ShaderVertexFormat(ShaderVertexFormat const format) -> size_t;
+
     enum class ShaderElementType
     {
         Float4x4,
@@ -24,6 +42,7 @@ namespace ionengine::shadersys::fx
         Float2,
         Float,
         Uint,
+        Sint,
         Bool
     };
 
@@ -43,18 +62,29 @@ namespace ionengine::shadersys::fx
         None
     };
 
+    struct ShaderInputElementData
+    {
+        ShaderVertexFormat format;
+        std::optional<std::string> semantic;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(format, "format");
+            archive.property(semantic, "semantic");
+        }
+    };
+
     struct ShaderConstantData
     {
         std::string constantName;
         ShaderElementType constantType;
-        uint32_t structure;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
             archive.property(constantName, "name");
             archive.property(constantType, "type");
-            archive.property(structure, "structure");
         }
     };
 
@@ -62,14 +92,25 @@ namespace ionengine::shadersys::fx
     {
         std::string elementName;
         ShaderElementType elementType;
-        std::optional<std::string> semantic;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
             archive.property(elementName, "name");
             archive.property(elementType, "type");
-            archive.property(semantic, "semantic");
+        }
+    };
+
+    struct ShaderInputData
+    {
+        std::vector<ShaderInputElementData> elements;
+        uint32_t size;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(elements, "elements");
+            archive.property(size, "sizeInBytes");
         }
     };
 
@@ -90,14 +131,16 @@ namespace ionengine::shadersys::fx
 
     struct ShaderStageData
     {
-        int32_t buffer;
+        uint32_t buffer;
         std::string entryPoint;
+        ShaderInputData inputData;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
             archive.property(buffer, "buffer");
             archive.property(entryPoint, "entryPoint");
+            archive.property(inputData, "input");
         }
     };
 
@@ -113,6 +156,19 @@ namespace ionengine::shadersys::fx
             archive.property(shaderName, "name");
             archive.property(description, "description");
             archive.property(shaderDomain, "domain");
+        }
+    };
+
+    struct ShaderBufferData
+    {
+        uint64_t offset;
+        size_t size;
+
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.property(offset, "offset");
+            archive.property(size, "sizeInBytes");
         }
     };
 
@@ -139,6 +195,7 @@ namespace ionengine::shadersys::fx
         ShaderOutputData output;
         std::vector<ShaderConstantData> constants;
         std::vector<ShaderStructureData> structures;
+        std::vector<ShaderBufferData> buffers;
 
         template <typename Archive>
         auto operator()(Archive& archive)
@@ -147,6 +204,7 @@ namespace ionengine::shadersys::fx
             archive.property(output, "output");
             archive.property(constants, "constants");
             archive.property(structures, "structures");
+            archive.property(buffers, "buffers");
         }
     };
 
@@ -155,7 +213,7 @@ namespace ionengine::shadersys::fx
         std::array<uint8_t, Magic.size()> magic;
         ShaderAPIType apiType;
         ShaderEffectData effectData;
-        std::vector<std::vector<uint8_t>> buffers;
+        std::vector<uint8_t> blob;
 
         template <typename Archive>
         auto operator()(Archive& archive)
@@ -163,13 +221,34 @@ namespace ionengine::shadersys::fx
             archive.property(magic);
             archive.property(apiType);
             archive.template with<core::serialize_ojson, core::serialize_ijson>(effectData);
-            archive.property(buffers);
+            archive.property(blob);
         }
     };
 } // namespace ionengine::shadersys::fx
 
 namespace ionengine::core
 {
+    template <>
+    struct serializable_enum<shadersys::fx::ShaderVertexFormat>
+    {
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.field(shadersys::fx::ShaderVertexFormat::RGBA32_FLOAT, "RGBA32_FLOAT");
+            archive.field(shadersys::fx::ShaderVertexFormat::RGBA32_SINT, "RGBA32_SINT");
+            archive.field(shadersys::fx::ShaderVertexFormat::RGBA32_UINT, "RGBA32_UINT");
+            archive.field(shadersys::fx::ShaderVertexFormat::RGB32_FLOAT, "RGB32_FLOAT");
+            archive.field(shadersys::fx::ShaderVertexFormat::RGB32_SINT, "RGB32_SINT");
+            archive.field(shadersys::fx::ShaderVertexFormat::RGB32_UINT, "RGB32_UINT");
+            archive.field(shadersys::fx::ShaderVertexFormat::RG32_FLOAT, "RG32_FLOAT");
+            archive.field(shadersys::fx::ShaderVertexFormat::RG32_SINT, "RG32_SINT");
+            archive.field(shadersys::fx::ShaderVertexFormat::RG32_UINT, "RG32_UINT");
+            archive.field(shadersys::fx::ShaderVertexFormat::R32_FLOAT, "R32_FLOAT");
+            archive.field(shadersys::fx::ShaderVertexFormat::R32_SINT, "R32_SINT");
+            archive.field(shadersys::fx::ShaderVertexFormat::R32_UINT, "R32_UINT");
+        }
+    };
+
     template <>
     struct serializable_enum<shadersys::fx::ShaderElementType>
     {
@@ -184,11 +263,8 @@ namespace ionengine::core
             archive.field(shadersys::fx::ShaderElementType::Float2, "FLOAT2");
             archive.field(shadersys::fx::ShaderElementType::Float, "FLOAT");
             archive.field(shadersys::fx::ShaderElementType::Uint, "UINT");
+            archive.field(shadersys::fx::ShaderElementType::Sint, "SINT");
             archive.field(shadersys::fx::ShaderElementType::Bool, "BOOL");
-            archive.field(shadersys::fx::ShaderElementType::SamplerState, "SAMPLER_STATE");
-            archive.field(shadersys::fx::ShaderElementType::ConstantBuffer, "CONSTANT_BUFFER");
-            archive.field(shadersys::fx::ShaderElementType::StorageBuffer, "STORAGE_BUFFER");
-            archive.field(shadersys::fx::ShaderElementType::Texture2D, "TEXTURE2D");
         }
     };
 
@@ -210,9 +286,9 @@ namespace ionengine::core
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(shadersys::fx::ShaderCullSide::None, "none");
-            archive.field(shadersys::fx::ShaderCullSide::Back, "back");
-            archive.field(shadersys::fx::ShaderCullSide::Front, "front");
+            archive.field(shadersys::fx::ShaderCullSide::None, "NONE");
+            archive.field(shadersys::fx::ShaderCullSide::Back, "BACK");
+            archive.field(shadersys::fx::ShaderCullSide::Front, "FRONT");
         }
     };
 } // namespace ionengine::core

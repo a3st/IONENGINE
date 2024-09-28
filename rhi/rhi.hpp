@@ -352,18 +352,21 @@ namespace ionengine::rhi
 
     enum class VertexFormat
     {
-        Float4x4,
-        Float3x3,
-        Float2x2,
-        Float4,
-        Float3,
-        Float2,
-        Float,
-        Uint,
-        Bool
+        R32_UINT,
+        R32_SINT,
+        R32_FLOAT,
+        RG32_UINT,
+        RG32_SINT,
+        RG32_FLOAT,
+        RGB32_UINT,
+        RGB32_SINT,
+        RGB32_FLOAT,
+        RGBA32_UINT,
+        RGBA32_SINT,
+        RGBA32_FLOAT
     };
 
-    auto sizeof_VertexFormat(VertexFormat const format) -> uint32_t;
+    auto sizeof_VertexFormat(VertexFormat const format) -> size_t;
 
     struct VertexDeclarationInfo
     {

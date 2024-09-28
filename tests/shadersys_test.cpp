@@ -104,8 +104,9 @@ TEST(ShaderSystem, Parser_Test)
 
     shadersys::fx::ShaderHeaderData headerData;
     shadersys::fx::ShaderOutputData outputData;
+    shadersys::fx::ShaderStructureData materialData;
     std::unordered_map<shadersys::fx::ShaderStageType, std::string> stageData;
-    parser.parse(lexer, headerData, outputData, stageData);
+    parser.parse(lexer, headerData, outputData, stageData, materialData);
 }
 
 TEST(ShaderSystem, Compiler_Test)

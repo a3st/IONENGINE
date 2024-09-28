@@ -18,24 +18,13 @@ struct PS_OUTPUT {
 #endif
 
 struct SAMPLER_DATA {
-    uint linearSampler;
+    float v;
+    sampler_t linearSampler;
 };
 
 struct SHADER_DATA {
-    uint materialBuffer;
-    uint samplerBuffer;
+    cbuffer_t<MATERIAL_DATA> materialBuffer;
+    cbuffer_t<SAMPLER_DATA> samplerBuffer;
 };
 
-ConstantBuffer<SHADER_DATA> __shaderData : register(b0, space0);
-
-#ifndef GetBuffer
-#define GetBuffer(type, buffer) ConstantBuffer<type>(ResourceDescriptorHeap[__shaderData. buffer])
-#endif
-
-#ifndef GetTexture
-#define GetTexture(type, buffer, texture) ResourceDescriptorHeap[ConstantBuffer<type>(ResourceDescriptorHeap[__shaderData. buffer]). texture]
-#endif
-
-#ifndef GetSampler
-#define GetSampler() SamplerDescriptorHeap[ConstantBuffer<SAMPLER_DATA>(ResourceDescriptorHeap[__shaderData.samplerBuffer]).linearSampler]
-#endif
+ConstantBuffer<SHADER_DATA> gShaderData : register(b0, space0);

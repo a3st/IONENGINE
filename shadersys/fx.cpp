@@ -28,6 +28,41 @@ namespace ionengine::shadersys::fx
             case ShaderElementType::Bool:
             case ShaderElementType::Uint:
                 return sizeof(uint32_t);
+            case ShaderElementType::Sint:
+                return sizeof(int32_t);
+            default:
+                return 0;
+        }
+    }
+
+    auto sizeof_ShaderVertexFormat(ShaderVertexFormat const format) -> size_t
+    {
+        switch (format)
+        {
+            case ShaderVertexFormat::RGBA32_FLOAT:
+                return sizeof(float) * 4;
+            case ShaderVertexFormat::RGBA32_SINT:
+                return sizeof(int32_t) * 4;
+            case ShaderVertexFormat::RGBA32_UINT:
+                return sizeof(uint32_t) * 4;
+            case ShaderVertexFormat::RGB32_FLOAT:
+                return sizeof(float) * 3;
+            case ShaderVertexFormat::RGB32_SINT:
+                return sizeof(int32_t) * 3;
+            case ShaderVertexFormat::RGB32_UINT:
+                return sizeof(uint32_t) * 3;
+            case ShaderVertexFormat::RG32_FLOAT:
+                return sizeof(float) * 2;
+            case ShaderVertexFormat::RG32_SINT:
+                return sizeof(int32_t) * 2;
+            case ShaderVertexFormat::RG32_UINT:
+                return sizeof(uint32_t) * 2;
+            case ShaderVertexFormat::R32_FLOAT:
+                return sizeof(float);
+            case ShaderVertexFormat::R32_SINT:
+                return sizeof(int32_t);
+            case ShaderVertexFormat::R32_UINT:
+                return sizeof(uint32_t);
             default:
                 return 0;
         }

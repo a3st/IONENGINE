@@ -308,18 +308,29 @@ namespace ionengine::rhi
     {
         switch (format)
         {
-            case VertexFormat::Float4:
-            case VertexFormat::Float4x4:
+            case VertexFormat::RGBA32_FLOAT:
                 return DXGI_FORMAT_R32G32B32A32_FLOAT;
-            case VertexFormat::Float3:
-            case VertexFormat::Float3x3:
+            case VertexFormat::RGBA32_SINT:
+                return DXGI_FORMAT_R32G32B32A32_SINT;
+            case VertexFormat::RGBA32_UINT:
+                return DXGI_FORMAT_R32G32B32A32_UINT;
+            case VertexFormat::RGB32_FLOAT:
                 return DXGI_FORMAT_R32G32B32_FLOAT;
-            case VertexFormat::Float2:
-            case VertexFormat::Float2x2:
+            case VertexFormat::RGB32_SINT:
+                return DXGI_FORMAT_R32G32B32_SINT;
+            case VertexFormat::RGB32_UINT:
+                return DXGI_FORMAT_R32G32B32_UINT;
+            case VertexFormat::RG32_FLOAT:
                 return DXGI_FORMAT_R32G32_FLOAT;
-            case VertexFormat::Float:
+            case VertexFormat::RG32_SINT:
+                return DXGI_FORMAT_R32G32_SINT;
+            case VertexFormat::RG32_UINT:
+                return DXGI_FORMAT_R32G32_UINT;
+            case VertexFormat::R32_FLOAT:
                 return DXGI_FORMAT_R32_FLOAT;
-            case VertexFormat::Uint:
+            case VertexFormat::R32_SINT:
+                return DXGI_FORMAT_R32_SINT;
+            case VertexFormat::R32_UINT:
                 return DXGI_FORMAT_R32_UINT;
             default:
                 return DXGI_FORMAT_UNKNOWN;
