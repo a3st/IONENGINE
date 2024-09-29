@@ -114,10 +114,10 @@ TEST(Core, Serialize_JSON_Test)
                           .enumNames = {{TestEnum::First, "firstValue"}, {TestEnum::Second, "secondValue"}},
                           .optionalInt = 2};
 
-    auto result = core::save_to_bytes<ShaderData, core::serialize_ojson>(shaderData);
+    auto result = core::to_bytes<ShaderData, core::serialize_ojson>(shaderData);
     auto buffer = std::move(result.value());
 
-    auto resultAfter = core::load_from_bytes<ShaderData, core::serialize_ijson>(buffer);
+    auto resultAfter = core::from_bytes<ShaderData, core::serialize_ijson>(buffer);
     auto object = std::move(resultAfter.value());
 
     ASSERT_EQ(object.shaderInt, shaderData.shaderInt);
@@ -161,10 +161,10 @@ TEST(Core, Serialize_Archive_Test)
                           .numArray = {5, 3, 4},
                           .shaderData = std::move(shaderData)};
 
-    auto result = core::save_to_bytes<ShaderFile, core::serialize_oarchive>(shaderFile);
+    auto result = core::to_bytes<ShaderFile, core::serialize_oarchive>(shaderFile);
     auto buffer = std::move(result.value());
 
-    auto resultAfter = core::load_from_bytes<ShaderFile, core::serialize_iarchive>(buffer);
+    auto resultAfter = core::from_bytes<ShaderFile, core::serialize_iarchive>(buffer);
     auto object = std::move(resultAfter.value());
 
     ASSERT_EQ(object.magic, shaderFile.magic);

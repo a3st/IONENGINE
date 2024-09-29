@@ -23,5 +23,7 @@ namespace ionengine::shadersys
         winrt::com_ptr<IDxcCompiler3> compiler;
         winrt::com_ptr<IDxcUtils> utils;
         winrt::com_ptr<IDxcIncludeHandler> includeHandler;
+
+        fx::ShaderAPIType apiType;
     };
 } // namespace ionengine::shadersys

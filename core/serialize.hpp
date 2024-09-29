@@ -8,6 +8,44 @@
 
 namespace ionengine::core
 {
+    template <typename Type, typename Archive, typename Target>
+    auto deserialize(Target&& target) -> std::optional<Type>
+    {
+        Type object{};
+        Archive archive(target);
+        try
+        {
+            if (archive(object) > 0)
+            {
+                return object;
+            }
+            else
+            {
+                return std::nullopt;
+            }
+        }
+        catch (core::runtime_error e)
+        {
+            std::cerr << e.what() << std::endl;
+            return std::nullopt;
+        }
+    }
+
+    template <typename Type, typename Archive, typename Target>
+    auto serialize(Type const& object, Target& target) -> size_t
+    {
+        try
+        {
+            Archive archive(target);
+            return archive(object);
+        }
+        catch (core::runtime_error e)
+        {
+            std::cerr << e.what() << std::endl;
+            return 0;
+        }
+    }
+
     template <typename Type>
     struct serializable_enum
     {
@@ -49,70 +87,6 @@ namespace ionengine::core
       private:
         std::string_view source;
         std::unordered_map<std::string, uint32_t> enum_fields;
-    };
-
-    template <typename Type, typename Archive>
-    static auto from_string(std::string_view const source) -> std::optional<Type>
-    {
-        Type object{};
-        Archive archive(source);
-        try
-        {
-            if (archive(object) > 0)
-            {
-                return object;
-            }
-            else
-            {
-                return std::nullopt;
-            }
-        }
-        catch (core::runtime_error e)
-        {
-            std::cerr << e.what() << std::endl;
-            return std::nullopt;
-        }
-    }
-
-    template <typename Type, typename Archive>
-    class serializable_struct
-    {
-      public:
-        static auto deserialize(std::basic_istream<uint8_t>& stream) -> std::optional<Type>
-        {
-            Type object{};
-            Archive archive(stream);
-            try
-            {
-                if (archive(object) > 0)
-                {
-                    return object;
-                }
-                else
-                {
-                    return std::nullopt;
-                }
-            }
-            catch (core::runtime_error e)
-            {
-                std::cerr << e.what() << std::endl;
-                return std::nullopt;
-            }
-        }
-
-        static auto serialize(Type const& object, std::basic_ostream<uint8_t>& stream) -> size_t
-        {
-            try
-            {
-                Archive archive(stream);
-                return archive(object);
-            }
-            catch (core::runtime_error e)
-            {
-                std::cerr << e.what() << std::endl;
-                return 0;
-            }
-        }
     };
 
     class serialize_ijson;
@@ -679,7 +653,7 @@ namespace ionengine::core
 
             std::basic_ispanstream<uint8_t> stream(
                 std::span<uint8_t>(const_cast<uint8_t*>(buffer.data()), buffer.size()), std::ios::binary);
-            auto result = serializable_struct<Type, InputArchive>::deserialize(stream);
+            auto result = deserialize<Type, InputArchive>(stream);
             if (result.has_value())
             {
                 element = std::move(result.value());
@@ -782,7 +756,7 @@ namespace ionengine::core
         auto with(Type const& element) -> void
         {
             std::basic_stringstream<uint8_t> temp_stream;
-            if (serializable_struct<Type, OutputArchive>::serialize(element, temp_stream) > 0)
+            if (serialize<Type, OutputArchive>(element, temp_stream) > 0)
             {
                 std::vector<uint8_t> buffer(std::istreambuf_iterator<uint8_t>(temp_stream.rdbuf()), {});
                 size_t const buffer_size = buffer.size();
@@ -858,40 +832,16 @@ namespace ionengine::core
     } // namespace internal
 
     template <typename Type, typename Archive>
-    auto load_from_bytes(std::span<uint8_t const> const data_bytes) -> std::optional<Type>
+    auto from_string(std::string_view const source) -> std::optional<Type>
     {
-        std::basic_ispanstream<uint8_t> stream(
-            std::span<uint8_t>(const_cast<uint8_t*>(data_bytes.data()), data_bytes.size()), std::ios::binary);
-        return serializable_struct<Type, Archive>::deserialize(stream);
+        return deserialize<Type, Archive>(source);
     }
 
     template <typename Type, typename Archive>
-    auto load_from_file(std::filesystem::path const& file_path) -> std::optional<Type>
-    {
-        std::basic_ifstream<uint8_t> stream(file_path, std::ios::binary);
-        if (!stream.is_open())
-        {
-            return std::nullopt;
-        }
-        return serializable_struct<Type, Archive>::deserialize(stream);
-    }
-
-    template <typename Type, typename Archive>
-    auto save_to_file(Type const& object, std::filesystem::path const& file_path) -> bool
-    {
-        std::basic_ofstream<uint8_t> stream(file_path, std::ios::binary);
-        if (!stream.is_open())
-        {
-            return false;
-        }
-        return serializable_struct<Type, Archive>::serialize(object, stream) > 0;
-    }
-
-    template <typename Type, typename Archive>
-    auto save_to_bytes(Type const& object) -> std::optional<std::vector<uint8_t>>
+    auto to_bytes(Type const& object) -> std::optional<std::vector<uint8_t>>
     {
         std::basic_stringstream<uint8_t> stream;
-        if (serializable_struct<Type, Archive>::serialize(object, stream) > 0)
+        if (serialize<Type, Archive>(object, stream) > 0)
         {
             return std::vector<uint8_t>(std::istreambuf_iterator<uint8_t>(stream.rdbuf()), {});
         }
@@ -899,5 +849,35 @@ namespace ionengine::core
         {
             return std::nullopt;
         }
+    }
+
+    template <typename Type, typename Archive>
+    auto from_bytes(std::span<uint8_t const> const data_bytes) -> std::optional<Type>
+    {
+        std::basic_ispanstream<uint8_t> stream(
+            std::span<uint8_t>(const_cast<uint8_t*>(data_bytes.data()), data_bytes.size()), std::ios::binary);
+        return deserialize<Type, Archive>(stream);
+    }
+
+    template <typename Type, typename Archive>
+    auto from_file(std::filesystem::path const& file_path) -> std::optional<Type>
+    {
+        std::basic_ifstream<uint8_t> stream(file_path, std::ios::binary);
+        if (!stream.is_open())
+        {
+            return std::nullopt;
+        }
+        return deserialize<Type, Archive>(stream);
+    }
+
+    template <typename Type, typename Archive>
+    auto to_file(Type const& object, std::filesystem::path const& file_path) -> bool
+    {
+        std::basic_ofstream<uint8_t> stream(file_path, std::ios::binary);
+        if (!stream.is_open())
+        {
+            return false;
+        }
+        return serialize<Type, Archive>(object, stream) > 0;
     }
 } // namespace ionengine::core

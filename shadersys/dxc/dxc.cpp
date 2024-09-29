@@ -15,7 +15,7 @@ namespace ionengine::shadersys
         }
     }
 
-    DXCCompiler::DXCCompiler(fx::ShaderAPIType const apiType)
+    DXCCompiler::DXCCompiler(fx::ShaderAPIType const apiType) : apiType(apiType)
     {
         throwIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void()));
         throwIfFailed(::DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), utils.put_void()));
@@ -48,6 +48,9 @@ namespace ionengine::shadersys
 
         for (auto const& [stageType, shaderCode] : stageData)
         {
+            fx::ShaderStageData shaderStageData{.buffer = static_cast<uint32_t>(effectData.buffers.size()),
+                                                .entryPoint = "main"};
+
             std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
             std::vector<LPCWSTR> arguments = {L"-E main", defaultIncludePath.c_str(), L"-HV 2021"};
 
@@ -92,7 +95,8 @@ namespace ionengine::shadersys
             winrt::com_ptr<IDxcBlob> shaderBlob;
             throwIfFailed(result->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), shaderBlob.put_void(), nullptr));
 
-            fx::ShaderBufferData bufferData{.offset = streambuf.tellp(), .size = shaderBlob->GetBufferSize()};
+            fx::ShaderBufferData bufferData{.offset = static_cast<uint64_t>(streambuf.tellp()),
+                                            .size = shaderBlob->GetBufferSize()};
             effectData.buffers.emplace_back(std::move(bufferData));
 
             streambuf.write(reinterpret_cast<uint8_t const*>(shaderBlob->GetBufferPointer()),
@@ -108,8 +112,6 @@ namespace ionengine::shadersys
             winrt::com_ptr<ID3D12ShaderReflection> shaderReflection;
             throwIfFailed(utils->CreateReflection(&reflectionBuffer, __uuidof(ID3D12ShaderReflection),
                                                   shaderReflection.put_void()));
-
-            fx::ShaderStageData shaderStageData{.entryPoint = "main"};
 
             D3D12_SHADER_DESC shaderDesc{};
             throwIfFailed(shaderReflection->GetDesc(&shaderDesc));
@@ -197,6 +199,13 @@ namespace ionengine::shadersys
             outputData.stages[stageType] = std::move(shaderStageData);
         }
 
-        return std::nullopt;
+        effectData.header = std::move(headerData);
+        effectData.output = std::move(outputData);
+        effectData.structures.emplace_back(std::move(materialData));
+
+        return fx::ShaderEffectFile{.magic = fx::Magic,
+                                    .apiType = apiType,
+                                    .effectData = std::move(effectData),
+                                    .blob = {std::istreambuf_iterator<uint8_t>(streambuf.rdbuf()), {}}};
     }
 } // namespace ionengine::shadersys
