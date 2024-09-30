@@ -257,8 +257,8 @@ namespace ionengine::shadersys
                             core::from_string<fx::ShaderElementType, core::serialize_oenum>(variableType->getContent())
                                 .value_or(fx::ShaderElementType::Uint);
 
-                        fx::ShaderStructureElementData elementData{.elementName = std::string(variable->getContent()),
-                                                                   .elementType = elementType};
+                        fx::ShaderStructureElementData elementData{.name = std::string(variable->getContent()),
+                                                                   .type = elementType};
                         materialData.elements.emplace_back(std::move(elementData));
 
                         structureSize += fx::sizeof_ShaderElementType(elementType);
@@ -267,7 +267,7 @@ namespace ionengine::shadersys
                             std::string(variableType->getContent()) + " " + std::string(variable->getContent()) + ";";
                     }
 
-                    materialData.structureName = "MATERIAL_DATA";
+                    materialData.name = "MATERIAL_DATA";
                     materialData.size = structureSize;
 
                     if (it->getLexeme() != Lexeme::RightBrace)

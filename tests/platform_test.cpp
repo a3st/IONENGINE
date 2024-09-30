@@ -6,10 +6,21 @@
 
 using namespace ionengine;
 
-TEST(Platform, App_Launch_Test)
+class TestAppContext : public platform::AppContext
 {
-    auto app = platform::App::create("TestProject");
-    app->setInputEventCallback([](platform::InputEvent const& event) {
+  public:
+    TestAppContext() = default;
+
+    auto onIdleEvent() -> void override
+    {
+    }
+
+    auto onWindowEvent(platform::WindowEvent const& event) -> void override
+    {
+    }
+
+    auto onInputEvent(platform::InputEvent const& event) -> void override
+    {
         if (event.deviceType == platform::InputDeviceType::Keyboard)
         {
             if (event.state == platform::InputState::Pressed)
@@ -21,7 +32,13 @@ TEST(Platform, App_Launch_Test)
                 std::cout << "Key released: " << static_cast<uint32_t>(event.keyCode) << std::endl;
             }
         }
-    });
+    }
+};
+
+TEST(Platform, App_Launch_Test)
+{
+    TestAppContext context;
+    auto app = platform::App::create(context, "TestProject");
     app->run();
 }
 

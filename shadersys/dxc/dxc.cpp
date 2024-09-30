@@ -40,11 +40,31 @@ namespace ionengine::shadersys
         std::unordered_map<shadersys::fx::ShaderStageType, std::string> stageData;
         fx::ShaderStructureData materialData;
 
-        parser.parse(lexer, headerData, outputData, stageData, materialData);
+        try
+        {
+            parser.parse(lexer, headerData, outputData, stageData, materialData);
+        }
+        catch (parser_error e)
+        {
+            std::cerr << e.what() << std::endl;
+            return std::nullopt;
+        }
 
         std::basic_stringstream<uint8_t> streambuf;
 
-        fx::ShaderEffectData effectData{};
+        fx::ShaderEffectData effectData{.header = std::move(headerData), .output = std::move(outputData)};
+
+        if (materialData.size > 0)
+        {
+            effectData.constants.emplace_back(
+                fx::ShaderConstantData{.name = "materialBuffer", .type = fx::ShaderElementType::Uint});
+            effectData.structures.emplace_back(std::move(materialData));
+        }
+
+        if (headerData.shaderDomain.compare("Surface") == 0)
+        {
+            
+        }
 
         for (auto const& [stageType, shaderCode] : stageData)
         {
@@ -123,19 +143,19 @@ namespace ionengine::shadersys
                 D3D12_SIGNATURE_PARAMETER_DESC signatureParameterDesc{};
                 throwIfFailed(shaderReflection->GetInputParameterDesc(i, &signatureParameterDesc));
 
-                fx::ShaderVertexFormat format;
+                fx::VertexFormat format;
                 if (signatureParameterDesc.Mask == 1)
                 {
                     switch (signatureParameterDesc.ComponentType)
                     {
                         case D3D_REGISTER_COMPONENT_UINT32:
-                            format = fx::ShaderVertexFormat::R32_UINT;
+                            format = fx::VertexFormat::R32_UINT;
                             break;
                         case D3D_REGISTER_COMPONENT_SINT32:
-                            format = fx::ShaderVertexFormat::R32_SINT;
+                            format = fx::VertexFormat::R32_SINT;
                             break;
                         case D3D_REGISTER_COMPONENT_FLOAT32:
-                            format = fx::ShaderVertexFormat::R32_FLOAT;
+                            format = fx::VertexFormat::R32_FLOAT;
                             break;
                     }
                 }
@@ -144,13 +164,13 @@ namespace ionengine::shadersys
                     switch (signatureParameterDesc.ComponentType)
                     {
                         case D3D_REGISTER_COMPONENT_UINT32:
-                            format = fx::ShaderVertexFormat::RG32_UINT;
+                            format = fx::VertexFormat::RG32_UINT;
                             break;
                         case D3D_REGISTER_COMPONENT_SINT32:
-                            format = fx::ShaderVertexFormat::RG32_UINT;
+                            format = fx::VertexFormat::RG32_UINT;
                             break;
                         case D3D_REGISTER_COMPONENT_FLOAT32:
-                            format = fx::ShaderVertexFormat::RG32_UINT;
+                            format = fx::VertexFormat::RG32_UINT;
                             break;
                     }
                 }
@@ -159,13 +179,13 @@ namespace ionengine::shadersys
                     switch (signatureParameterDesc.ComponentType)
                     {
                         case D3D_REGISTER_COMPONENT_UINT32:
-                            format = fx::ShaderVertexFormat::RGB32_UINT;
+                            format = fx::VertexFormat::RGB32_UINT;
                             break;
                         case D3D_REGISTER_COMPONENT_SINT32:
-                            format = fx::ShaderVertexFormat::RGB32_UINT;
+                            format = fx::VertexFormat::RGB32_UINT;
                             break;
                         case D3D_REGISTER_COMPONENT_FLOAT32:
-                            format = fx::ShaderVertexFormat::RGB32_UINT;
+                            format = fx::VertexFormat::RGB32_UINT;
                             break;
                     }
                 }
@@ -174,13 +194,13 @@ namespace ionengine::shadersys
                     switch (signatureParameterDesc.ComponentType)
                     {
                         case D3D_REGISTER_COMPONENT_UINT32:
-                            format = fx::ShaderVertexFormat::RGBA32_UINT;
+                            format = fx::VertexFormat::RGBA32_UINT;
                             break;
                         case D3D_REGISTER_COMPONENT_SINT32:
-                            format = fx::ShaderVertexFormat::RGBA32_UINT;
+                            format = fx::VertexFormat::RGBA32_UINT;
                             break;
                         case D3D_REGISTER_COMPONENT_FLOAT32:
-                            format = fx::ShaderVertexFormat::RGBA32_UINT;
+                            format = fx::VertexFormat::RGBA32_UINT;
                             break;
                     }
                 }
@@ -191,17 +211,13 @@ namespace ionengine::shadersys
                                                            std::to_string(signatureParameterDesc.SemanticIndex)};
                 shaderStageData.inputData.elements.emplace_back(std::move(elementData));
 
-                inputSize += fx::sizeof_ShaderVertexFormat(format);
+                inputSize += fx::sizeof_VertexFormat(format);
             }
 
             shaderStageData.inputData.size = inputSize;
 
             outputData.stages[stageType] = std::move(shaderStageData);
         }
-
-        effectData.header = std::move(headerData);
-        effectData.output = std::move(outputData);
-        effectData.structures.emplace_back(std::move(materialData));
 
         return fx::ShaderEffectFile{.magic = fx::Magic,
                                     .apiType = apiType,

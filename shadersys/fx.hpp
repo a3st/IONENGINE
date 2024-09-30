@@ -14,7 +14,7 @@ namespace ionengine::shadersys::fx
         SPIRV
     };
 
-    enum class ShaderVertexFormat
+    enum class VertexFormat
     {
         R32_UINT,
         R32_SINT,
@@ -30,7 +30,7 @@ namespace ionengine::shadersys::fx
         RGBA32_FLOAT
     };
 
-    auto sizeof_ShaderVertexFormat(ShaderVertexFormat const format) -> size_t;
+    auto sizeof_VertexFormat(VertexFormat const format) -> size_t;
 
     enum class ShaderElementType
     {
@@ -64,7 +64,7 @@ namespace ionengine::shadersys::fx
 
     struct ShaderInputElementData
     {
-        ShaderVertexFormat format;
+        VertexFormat format;
         std::optional<std::string> semantic;
 
         template <typename Archive>
@@ -77,27 +77,27 @@ namespace ionengine::shadersys::fx
 
     struct ShaderConstantData
     {
-        std::string constantName;
-        ShaderElementType constantType;
+        std::string name;
+        ShaderElementType type;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.property(constantName, "name");
-            archive.property(constantType, "type");
+            archive.property(name, "name");
+            archive.property(type, "type");
         }
     };
 
     struct ShaderStructureElementData
     {
-        std::string elementName;
-        ShaderElementType elementType;
+        std::string name;
+        ShaderElementType type;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.property(elementName, "name");
-            archive.property(elementType, "type");
+            archive.property(name, "name");
+            archive.property(type, "type");
         }
     };
 
@@ -116,14 +116,14 @@ namespace ionengine::shadersys::fx
 
     struct ShaderStructureData
     {
-        std::string structureName;
+        std::string name;
         std::vector<ShaderStructureElementData> elements;
         uint32_t size;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.property(structureName, "name");
+            archive.property(name, "name");
             archive.property(elements, "elements");
             archive.property(size, "sizeInBytes");
         }
@@ -229,23 +229,23 @@ namespace ionengine::shadersys::fx
 namespace ionengine::core
 {
     template <>
-    struct serializable_enum<shadersys::fx::ShaderVertexFormat>
+    struct serializable_enum<shadersys::fx::VertexFormat>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(shadersys::fx::ShaderVertexFormat::RGBA32_FLOAT, "RGBA32_FLOAT");
-            archive.field(shadersys::fx::ShaderVertexFormat::RGBA32_SINT, "RGBA32_SINT");
-            archive.field(shadersys::fx::ShaderVertexFormat::RGBA32_UINT, "RGBA32_UINT");
-            archive.field(shadersys::fx::ShaderVertexFormat::RGB32_FLOAT, "RGB32_FLOAT");
-            archive.field(shadersys::fx::ShaderVertexFormat::RGB32_SINT, "RGB32_SINT");
-            archive.field(shadersys::fx::ShaderVertexFormat::RGB32_UINT, "RGB32_UINT");
-            archive.field(shadersys::fx::ShaderVertexFormat::RG32_FLOAT, "RG32_FLOAT");
-            archive.field(shadersys::fx::ShaderVertexFormat::RG32_SINT, "RG32_SINT");
-            archive.field(shadersys::fx::ShaderVertexFormat::RG32_UINT, "RG32_UINT");
-            archive.field(shadersys::fx::ShaderVertexFormat::R32_FLOAT, "R32_FLOAT");
-            archive.field(shadersys::fx::ShaderVertexFormat::R32_SINT, "R32_SINT");
-            archive.field(shadersys::fx::ShaderVertexFormat::R32_UINT, "R32_UINT");
+            archive.field(shadersys::fx::VertexFormat::RGBA32_FLOAT, "RGBA32_FLOAT");
+            archive.field(shadersys::fx::VertexFormat::RGBA32_SINT, "RGBA32_SINT");
+            archive.field(shadersys::fx::VertexFormat::RGBA32_UINT, "RGBA32_UINT");
+            archive.field(shadersys::fx::VertexFormat::RGB32_FLOAT, "RGB32_FLOAT");
+            archive.field(shadersys::fx::VertexFormat::RGB32_SINT, "RGB32_SINT");
+            archive.field(shadersys::fx::VertexFormat::RGB32_UINT, "RGB32_UINT");
+            archive.field(shadersys::fx::VertexFormat::RG32_FLOAT, "RG32_FLOAT");
+            archive.field(shadersys::fx::VertexFormat::RG32_SINT, "RG32_SINT");
+            archive.field(shadersys::fx::VertexFormat::RG32_UINT, "RG32_UINT");
+            archive.field(shadersys::fx::VertexFormat::R32_FLOAT, "R32_FLOAT");
+            archive.field(shadersys::fx::VertexFormat::R32_SINT, "R32_SINT");
+            archive.field(shadersys::fx::VertexFormat::R32_UINT, "R32_UINT");
         }
     };
 

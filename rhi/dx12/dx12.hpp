@@ -426,7 +426,7 @@ namespace ionengine::rhi
         }
     };
 
-    using UniqueHandle = std::unique_ptr<HANDLE, HANDLE_deleter>;
+    using UniqueHandle = std::unique_ptr<std::remove_pointer<HANDLE>::type, HANDLE_deleter>;
 
     class DX12Device final : public Device
     {

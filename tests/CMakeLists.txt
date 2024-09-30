@@ -47,3 +47,14 @@ target_link_libraries(shadersys_test PRIVATE
     GTest::gtest)
 
 target_precompile_headers(shadersys_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
+
+# Engine
+add_executable(engine_test engine_test.cpp)
+
+target_include_directories(engine_test PRIVATE ${PROJECT_SOURCE_DIR})
+
+target_link_libraries(engine_test PRIVATE 
+    engine
+    GTest::gtest)
+
+target_precompile_headers(engine_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)

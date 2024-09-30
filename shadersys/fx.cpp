@@ -35,33 +35,33 @@ namespace ionengine::shadersys::fx
         }
     }
 
-    auto sizeof_ShaderVertexFormat(ShaderVertexFormat const format) -> size_t
+    auto sizeof_VertexFormat(VertexFormat const format) -> size_t
     {
         switch (format)
         {
-            case ShaderVertexFormat::RGBA32_FLOAT:
+            case VertexFormat::RGBA32_FLOAT:
                 return sizeof(float) * 4;
-            case ShaderVertexFormat::RGBA32_SINT:
+            case VertexFormat::RGBA32_SINT:
                 return sizeof(int32_t) * 4;
-            case ShaderVertexFormat::RGBA32_UINT:
+            case VertexFormat::RGBA32_UINT:
                 return sizeof(uint32_t) * 4;
-            case ShaderVertexFormat::RGB32_FLOAT:
+            case VertexFormat::RGB32_FLOAT:
                 return sizeof(float) * 3;
-            case ShaderVertexFormat::RGB32_SINT:
+            case VertexFormat::RGB32_SINT:
                 return sizeof(int32_t) * 3;
-            case ShaderVertexFormat::RGB32_UINT:
+            case VertexFormat::RGB32_UINT:
                 return sizeof(uint32_t) * 3;
-            case ShaderVertexFormat::RG32_FLOAT:
+            case VertexFormat::RG32_FLOAT:
                 return sizeof(float) * 2;
-            case ShaderVertexFormat::RG32_SINT:
+            case VertexFormat::RG32_SINT:
                 return sizeof(int32_t) * 2;
-            case ShaderVertexFormat::RG32_UINT:
+            case VertexFormat::RG32_UINT:
                 return sizeof(uint32_t) * 2;
-            case ShaderVertexFormat::R32_FLOAT:
+            case VertexFormat::R32_FLOAT:
                 return sizeof(float);
-            case ShaderVertexFormat::R32_SINT:
+            case VertexFormat::R32_SINT:
                 return sizeof(int32_t);
-            case ShaderVertexFormat::R32_UINT:
+            case VertexFormat::R32_UINT:
                 return sizeof(uint32_t);
             default:
                 return 0;

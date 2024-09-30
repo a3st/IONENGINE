@@ -2,10 +2,7 @@
 
 #pragma once
 
-#include "math/matrix.hpp"
-#include "renderable.hpp"
-#include "shader.hpp"
-#include "texture.hpp"
+#include "linked_device.hpp"
 
 namespace ionengine
 {
@@ -15,11 +12,6 @@ namespace ionengine
     {
       public:
         Renderer(LinkedDevice& device);
-
-        auto createTextureAsset(uint32_t const width, uint32_t const height,
-                                TextureUsage const usage) -> core::ref_ptr<TextureAsset>;
-
-        auto createShaderAsset() -> core::ref_ptr<ShaderAsset>;
 
         auto drawQuad() -> void;
 
@@ -31,7 +23,7 @@ namespace ionengine
 
         auto resize(uint32_t const width, uint32_t const height) -> void;
 
-        auto render(std::span<RenderableData> const renderables) -> void;
+        // auto render(std::span<RenderableData> const renderables) -> void;
 
         core::ref_ptr<rhi::Texture> swapchainTexture;
 

@@ -10,7 +10,7 @@ namespace ionengine::platform
     class X11App : public App
     {
       public:
-        X11App(std::string_view const title);
+        X11App(AppContext& context, std::string_view const title);
         ~X11App();
 
         auto getWindowHandle() -> void* override;
@@ -22,6 +22,7 @@ namespace ionengine::platform
       private:
         Display* display;
         Window window;
+        AppContext* context;
 
         Atom WM_DELETE_WINDOW;
     };

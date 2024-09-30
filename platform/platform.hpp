@@ -57,40 +57,29 @@ namespace ionengine::platform
         };
     };
 
+    class AppContext
+    {
+      public:
+        virtual ~AppContext() = default;
+
+        virtual auto onIdleEvent() -> void = 0;
+
+        virtual auto onInputEvent(InputEvent const& event) -> void = 0;
+
+        virtual auto onWindowEvent(WindowEvent const& event) -> void = 0;
+    };
+
     class App : public core::ref_counted_object
     {
       public:
-        ~App() = default;
+        virtual ~App() = default;
 
-        static auto create(std::string_view const title) -> core::ref_ptr<App>;
+        static auto create(AppContext& context, std::string_view const title) -> core::ref_ptr<App>;
 
         virtual auto getWindowHandle() -> void* = 0;
 
         virtual auto getInstanceHandle() -> void* = 0;
 
-        template <typename Func>
-        auto setIdleCallback(Func&& function) -> void
-        {
-            idleCallback = [function]() { function(); };
-        }
-
-        template <typename Func>
-        auto setInputEventCallback(Func&& function) -> void
-        {
-            inputEventCallback = [function](InputEvent const& event) { function(event); };
-        }
-
-        template <typename Func>
-        auto setWindowEventCallback(Func&& function) -> void
-        {
-            windowEventCallback = [function](WindowEvent const& event) { function(event); };
-        }
-
         virtual auto run() -> void = 0;
-
-      protected:
-        std::function<void()> idleCallback;
-        std::function<void(InputEvent const&)> inputEventCallback;
-        std::function<void(WindowEvent const&)> windowEventCallback;
     };
 } // namespace ionengine::platform

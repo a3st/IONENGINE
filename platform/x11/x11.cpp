@@ -25,7 +25,7 @@ namespace ionengine::platform
         {76, KeyCode::F10},       {95, KeyCode::F11},    {96, KeyCode::F12},     {119, KeyCode::Delete},
         {110, KeyCode::Home},     {115, KeyCode::End},   {112, KeyCode::PageUp}, {117, KeyCode::PageDown}};
 
-    X11App::X11App(std::string_view const title)
+    X11App::X11App(AppContext& context, std::string_view const title) : context(&context)
     {
         display = ::XOpenDisplay(nullptr);
         if (!display)
@@ -78,22 +78,14 @@ namespace ionengine::platform
                         WindowEvent windowEvent{.eventType = WindowEventType::Resize,
                                                 .size = {.width = static_cast<uint32_t>(event.xconfigure.width),
                                                          .height = static_cast<uint32_t>(event.xconfigure.height)}};
-
-                        if (windowEventCallback)
-                        {
-                            windowEventCallback(windowEvent);
-                        }
+                        platformInstance->context->onWindowEvent(windowEvent);
                         break;
                     }
                     case ClientMessage: {
                         if (event.xclient.data.l[0] == WM_DELETE_WINDOW)
                         {
                             WindowEvent windowEvent{.eventType = WindowEventType::Close};
-
-                            if (windowEventCallback)
-                            {
-                                windowEventCallback(windowEvent);
-                            }
+                            platformInstance->context->onWindowEvent(windowEvent);
 
                             running = false;
                         }
@@ -106,6 +98,7 @@ namespace ionengine::platform
                             InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                              .state = InputState::Pressed,
                                              .keyCode = result->second};
+                            platformInstance->context->onInputEvent(inputEvent);
                         }
                         break;
                     }
@@ -116,16 +109,14 @@ namespace ionengine::platform
                             InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                              .state = InputState::Released,
                                              .keyCode = result->second};
+                            platformInstance->context->onInputEvent(inputEvent);
                         }
                         break;
                     }
                 }
             }
 
-            if (idleCallback)
-            {
-                idleCallback();
-            }
+            platformInstance->context->onIdleEvent();
         }
     }
 } // namespace ionengine::platform

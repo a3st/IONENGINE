@@ -1680,7 +1680,7 @@ namespace ionengine::rhi
         throwIfFailed(
             ::D3D12CreateDevice(adapter.get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device4), device.put_void()));
 
-        fenceEvent = std::make_unique<UniqueHandle>(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
+        fenceEvent = UniqueHandle(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
         if (!fenceEvent)
         {
             throwIfFailed(::HRESULT_FROM_WIN32(GetLastError()));
@@ -1773,14 +1773,14 @@ namespace ionengine::rhi
     auto DX12Device::createGraphicsContext() -> core::ref_ptr<GraphicsContext>
     {
         return core::make_ref<DX12GraphicsContext>(device.get(), pipelineCache.get(), descriptorAllocator.get(),
-                                                   graphicsQueue.queue.get(), graphicsQueue.fence.get(), fenceEvent,
+                                                   graphicsQueue.queue.get(), graphicsQueue.fence.get(), fenceEvent.get(),
                                                    graphicsQueue.fenceValue);
     }
 
     auto DX12Device::createCopyContext() -> core::ref_ptr<CopyContext>
     {
         return core::make_ref<DX12CopyContext>(device.get(), memoryAllocator.get(), copyQueue.queue.get(),
-                                               copyQueue.fence.get(), fenceEvent, copyQueue.fenceValue);
+                                               copyQueue.fence.get(), fenceEvent.get(), copyQueue.fenceValue);
     }
 
     auto DX12Device::requestBackBuffer() -> core::ref_ptr<Texture>
@@ -1792,8 +1792,8 @@ namespace ionengine::rhi
 
         if (graphicsQueue.fence->GetCompletedValue() < graphicsQueue.fenceValue)
         {
-            throwIfFailed(graphicsQueue.fence->SetEventOnCompletion(graphicsQueue.fenceValue, fenceEvent));
-            ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+            throwIfFailed(graphicsQueue.fence->SetEventOnCompletion(graphicsQueue.fenceValue, fenceEvent.get()));
+            ::WaitForSingleObjectEx(fenceEvent.get(), INFINITE, FALSE);
         }
         return backBuffers[swapchain->GetCurrentBackBufferIndex()];
     }
@@ -1813,8 +1813,8 @@ namespace ionengine::rhi
 
     auto DX12Device::resizeBackBuffers(uint32_t const width, uint32_t const height) -> void
     {
-        throwIfFailed(graphicsQueue.fence->SetEventOnCompletion(graphicsQueue.fenceValue, fenceEvent));
-        ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+        throwIfFailed(graphicsQueue.fence->SetEventOnCompletion(graphicsQueue.fenceValue, fenceEvent.get()));
+        ::WaitForSingleObjectEx(fenceEvent.get(), INFINITE, FALSE);
 
         backBuffers.clear();
 

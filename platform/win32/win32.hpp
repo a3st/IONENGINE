@@ -12,7 +12,7 @@ namespace ionengine::platform
     class Win32App : public App
     {
       public:
-        Win32App(std::string_view const title);
+        Win32App(AppContext& context, std::string_view const title);
 
         ~Win32App();
 
@@ -24,6 +24,7 @@ namespace ionengine::platform
 
       private:
         HWND window;
+        AppContext* context;
 
         static auto wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT;
     };

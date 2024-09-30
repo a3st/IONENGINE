@@ -10,27 +10,27 @@ using namespace ionengine;
 TEST(RHI, DeviceOffRender_Test)
 {
     rhi::RHICreateInfo rhiCreateInfo{.window = nullptr};
-    
     auto device = rhi::Device::create(rhiCreateInfo);
 }
 
-TEST(RHI, DeviceSwapchain_Test)
+class TestAppContext : public platform::AppContext
 {
-    auto platform = platform::App::create("TestProject");
+  public:
+    TestAppContext() = default;
 
-    uint32_t width = 800;
-    uint32_t height = 600;
+    auto initialize(platform::App& app)
+    {
+        rhi::RHICreateInfo rhiCreateInfo{.window = app.getWindowHandle(),
+                                         .instance = app.getInstanceHandle(),
+                                         .windowWidth = width,
+                                         .windowHeight = height};
+        this->device = rhi::Device::create(rhiCreateInfo);
 
-    rhi::RHICreateInfo rhiCreateInfo{.window = platform->getWindowHandle(),
-                                     .instance = platform->getInstanceHandle(),
-                                     .windowWidth = width,
-                                     .windowHeight = height};
+        this->graphicsContext = device->createGraphicsContext();
+    }
 
-    auto device = rhi::Device::create(rhiCreateInfo);
-
-    auto graphicsContext = device->createGraphicsContext();
-
-    platform->setIdleCallback([&]() {
+    auto onIdleEvent() -> void override
+    {
         graphicsContext->reset();
 
         auto backBuffer = device->requestBackBuffer();
@@ -53,21 +53,56 @@ TEST(RHI, DeviceSwapchain_Test)
         device->presentBackBuffer();
 
         result.wait();
-    });
-    platform->setWindowEventCallback([&](platform::WindowEvent const& event) {
+    }
+
+    auto onWindowEvent(platform::WindowEvent const& event) -> void override
+    {
         switch (event.eventType)
         {
             case platform::WindowEventType::Resize: {
-                device->resizeBackBuffers(event.size.width, event.size.height);
                 width = event.size.width;
                 height = event.size.height;
+
+                if (device)
+                {
+                    device->resizeBackBuffers(width, height);
+                }
                 break;
             }
             default: {
                 break;
             }
         }
-    });
+    }
+
+    auto onInputEvent(platform::InputEvent const& event) -> void override
+    {
+        if (event.deviceType == platform::InputDeviceType::Keyboard)
+        {
+            if (event.state == platform::InputState::Pressed)
+            {
+                std::cout << "Key pressed: " << static_cast<uint32_t>(event.keyCode) << std::endl;
+            }
+            else
+            {
+                std::cout << "Key released: " << static_cast<uint32_t>(event.keyCode) << std::endl;
+            }
+        }
+    }
+
+  private:
+    core::ref_ptr<rhi::Device> device;
+    core::ref_ptr<rhi::GraphicsContext> graphicsContext;
+
+    uint32_t width;
+    uint32_t height;
+};
+
+TEST(RHI, DeviceSwapchain_Test)
+{
+    TestAppContext context;
+    auto platform = platform::App::create(context, "TestProject");
+    context.initialize(*platform);
     platform->run();
 }
 

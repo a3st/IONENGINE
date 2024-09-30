@@ -51,10 +51,7 @@ namespace ionengine::platform
                 ::PostQuitMessage(0);
 
                 WindowEvent windowEvent{.eventType = WindowEventType::Close};
-                if (platformInstance->windowEventCallback)
-                {
-                    platformInstance->windowEventCallback(windowEvent);
-                }
+                platformInstance->context->onWindowEvent(windowEvent);
                 break;
             }
             case WM_SIZE: {
@@ -64,10 +61,7 @@ namespace ionengine::platform
                 WindowEvent windowEvent{
                     .eventType = WindowEventType::Resize,
                     .size = {.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height)}};
-                if (platformInstance->windowEventCallback)
-                {
-                    platformInstance->windowEventCallback(windowEvent);
-                }
+                platformInstance->context->onWindowEvent(windowEvent);
                 break;
             }
             case WM_KEYDOWN: {
@@ -80,10 +74,7 @@ namespace ionengine::platform
                     InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                           .state = InputState::Pressed,
                                           .keyCode = result->second};
-                    if (platformInstance->inputEventCallback)
-                    {
-                        platformInstance->inputEventCallback(inputEvent);
-                    }
+                    platformInstance->context->onInputEvent(inputEvent);
                 }
                 break;
             }
@@ -97,10 +88,7 @@ namespace ionengine::platform
                     InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                           .state = InputState::Released,
                                           .keyCode = result->second};
-                    if (platformInstance->inputEventCallback)
-                    {
-                        platformInstance->inputEventCallback(inputEvent);
-                    }
+                    platformInstance->context->onInputEvent(inputEvent);
                 }
                 break;
             }
@@ -114,10 +102,7 @@ namespace ionengine::platform
                     InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                           .state = InputState::Pressed,
                                           .keyCode = result->second};
-                    if (platformInstance->inputEventCallback)
-                    {
-                        platformInstance->inputEventCallback(inputEvent);
-                    }
+                    platformInstance->context->onInputEvent(inputEvent);
                 }
                 break;
             }
@@ -131,10 +116,7 @@ namespace ionengine::platform
                     InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                           .state = InputState::Released,
                                           .keyCode = result->second};
-                    if (platformInstance->inputEventCallback)
-                    {
-                        platformInstance->inputEventCallback(inputEvent);
-                    }
+                    platformInstance->context->onInputEvent(inputEvent);
                 }
                 break;
             }
@@ -142,7 +124,7 @@ namespace ionengine::platform
         return ::DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
-    Win32App::Win32App(std::string_view const title)
+    Win32App::Win32App(AppContext& context, std::string_view const title) : context(&context)
     {
         WNDCLASS wndClass{.lpfnWndProc = reinterpret_cast<WNDPROC>(wndProc),
                           .hInstance = ::GetModuleHandle(nullptr),
@@ -214,10 +196,7 @@ namespace ionengine::platform
             }
             else
             {
-                if (idleCallback)
-                {
-                    idleCallback();
-                }
+                context->onIdleEvent();
             }
         }
     }
