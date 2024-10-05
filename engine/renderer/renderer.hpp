@@ -10,6 +10,8 @@ namespace ionengine
 {
     class RenderPass : public core::ref_counted_object
     {
+      public:
+        virtual auto render() -> void = 0;
     };
 
     class RendererBuilder
@@ -32,6 +34,8 @@ namespace ionengine
         auto createShader(shadersys::fx::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>;
 
         auto createTexture() -> core::ref_ptr<Texture>;
+
+        auto render() -> void;
 
         /*
 

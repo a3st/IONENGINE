@@ -9,6 +9,10 @@ namespace ionengine
     {
     }
 
+    auto Renderer::render() -> void
+    {
+    }
+
     auto createShader(shadersys::fx::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>
     {
         return nullptr;

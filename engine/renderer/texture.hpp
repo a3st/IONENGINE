@@ -4,11 +4,12 @@
 
 #include "rhi/rhi.hpp"
 
-namespace ionengine {
-    class Texture : public core::ref_counted_object {
-
+namespace ionengine
+{
+    class Texture : public core::ref_counted_object
+    {
     };
-}
+} // namespace ionengine
 
 /*
 namespace ionengine

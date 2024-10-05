@@ -3,8 +3,7 @@ cmake_minimum_required(VERSION 3.25.1)
 add_library(engine SHARED
     renderer/texture.cpp
     renderer/shader.cpp
-    renderer/renderer.cpp
-    engine.cpp)
+    renderer/renderer.cpp)
 
 target_include_directories(engine PUBLIC 
     ${PROJECT_SOURCE_DIR}
