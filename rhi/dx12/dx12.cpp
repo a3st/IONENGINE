@@ -1730,9 +1730,12 @@ namespace ionengine::rhi
 
         if (createInfo.window)
         {
+            RECT rect{};
+            ::GetClientRect(reinterpret_cast<HWND>(createInfo.window), &rect);
+
             {
-                DXGI_SWAP_CHAIN_DESC1 swapchainDesc{.Width = createInfo.windowWidth,
-                                                    .Height = createInfo.windowHeight,
+                DXGI_SWAP_CHAIN_DESC1 swapchainDesc{.Width = static_cast<uint32_t>(rect.right),
+                                                    .Height = static_cast<uint32_t>(rect.bottom),
                                                     .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
                                                     .SampleDesc = {.Count = 1},
                                                     .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
@@ -1746,7 +1749,8 @@ namespace ionengine::rhi
                                                               nullptr, nullptr, swapchain.put()));
                 swapchain.as(this->swapchain);
             }
-            this->createSwapchainBuffers(createInfo.windowWidth, createInfo.windowHeight);
+
+            this->createSwapchainBuffers(rect.right, rect.bottom);
         }
     }
 

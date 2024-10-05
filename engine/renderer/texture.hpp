@@ -2,9 +2,15 @@
 
 #pragma once
 
-#include "engine/asset.hpp"
 #include "rhi/rhi.hpp"
 
+namespace ionengine {
+    class Texture : public core::ref_counted_object {
+
+    };
+}
+
+/*
 namespace ionengine
 {
     class LinkedDevice;
@@ -114,3 +120,4 @@ namespace ionengine::core
         }
     };
 } // namespace ionengine::core
+*/

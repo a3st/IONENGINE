@@ -3,3 +3,6 @@
 #pragma once
 
 #include "platform/platform.hpp"
+#include "rhi/rhi.hpp"
+
+#include "renderer/renderer.hpp"

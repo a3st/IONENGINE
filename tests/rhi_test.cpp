@@ -21,9 +21,7 @@ class TestAppContext : public platform::AppContext
     auto initialize(platform::App& app)
     {
         rhi::RHICreateInfo rhiCreateInfo{.window = app.getWindowHandle(),
-                                         .instance = app.getInstanceHandle(),
-                                         .windowWidth = width,
-                                         .windowHeight = height};
+                                         .instance = app.getInstanceHandle()};
         this->device = rhi::Device::create(rhiCreateInfo);
 
         this->graphicsContext = device->createGraphicsContext();

@@ -1,71 +1,111 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "shader.hpp"
-#include "linked_device.hpp"
 #include "precompiled.h"
 
 namespace ionengine
 {
-    auto ShaderElementType_to_VertexFormat(rhi::fx::ShaderElementType const format) -> rhi::VertexFormat
+    auto FXVertexFormat_to_VertexFormat(shadersys::fx::VertexFormat const format) -> rhi::VertexFormat
     {
         switch (format)
         {
-            case rhi::fx::ShaderElementType::Float: {
-                return rhi::VertexFormat::Float;
-            }
-            case rhi::fx::ShaderElementType::Float2: {
-                return rhi::VertexFormat::Float2;
-            }
-            case rhi::fx::ShaderElementType::Float3: {
-                return rhi::VertexFormat::Float3;
-            }
-            case rhi::fx::ShaderElementType::Float4: {
-                return rhi::VertexFormat::Float4;
-            }
-            case rhi::fx::ShaderElementType::Float4x4: {
-                return rhi::VertexFormat::Float4x4;
-            }
-            case rhi::fx::ShaderElementType::Bool: {
-                return rhi::VertexFormat::Bool;
-            }
-            case rhi::fx::ShaderElementType::Uint: {
-                return rhi::VertexFormat::Uint;
-            }
-            default: {
+            case shadersys::fx::VertexFormat::RGBA32_FLOAT:
+                return rhi::VertexFormat::RGBA32_FLOAT;
+            case shadersys::fx::VertexFormat::RGBA32_SINT:
+                return rhi::VertexFormat::RGBA32_SINT;
+            case shadersys::fx::VertexFormat::RGBA32_UINT:
+                return rhi::VertexFormat::RGBA32_UINT;
+            case shadersys::fx::VertexFormat::RGB32_FLOAT:
+                return rhi::VertexFormat::RGB32_FLOAT;
+            case shadersys::fx::VertexFormat::RGB32_SINT:
+                return rhi::VertexFormat::RGB32_SINT;
+            case shadersys::fx::VertexFormat::RGB32_UINT:
+                return rhi::VertexFormat::RGB32_UINT;
+            case shadersys::fx::VertexFormat::RG32_FLOAT:
+                return rhi::VertexFormat::RG32_FLOAT;
+            case shadersys::fx::VertexFormat::RG32_SINT:
+                return rhi::VertexFormat::RG32_SINT;
+            case shadersys::fx::VertexFormat::RG32_UINT:
+                return rhi::VertexFormat::RG32_UINT;
+            case shadersys::fx::VertexFormat::R32_FLOAT:
+                return rhi::VertexFormat::R32_FLOAT;
+            case shadersys::fx::VertexFormat::R32_SINT:
+                return rhi::VertexFormat::R32_SINT;
+            case shadersys::fx::VertexFormat::R32_UINT:
+                return rhi::VertexFormat::R32_UINT;
+            default:
                 throw std::invalid_argument("Passed invalid argument into function");
+        }
+    }
+
+    Shader::Shader(rhi::Device& device, shadersys::fx::ShaderEffectFile const& shaderEffect)
+    {
+        std::string apiType;
+        switch (shaderEffect.apiType)
+        {
+            case shadersys::fx::ShaderAPIType::DXIL: {
+                apiType = "D3D12";
+                break;
+            }
+            case shadersys::fx::ShaderAPIType::SPIRV: {
+                apiType = "Vulkan";
+                break;
             }
         }
+
+        if (apiType != device.getBackendName())
+        {
+            throw core::runtime_error("Shader has a different shader backend");
+        }
+
+        rhi::ShaderCreateInfo shaderCreateInfo{.pipelineType = rhi::PipelineType::Graphics};
+
+        for (auto const& [stageType, stageData] : shaderEffect.effectData.output.stages)
+        {
+            uint32_t const bufferIndex = stageData.buffer;
+            auto const& bufferData = shaderEffect.effectData.buffers[bufferIndex];
+
+            if (stageType == shadersys::fx::ShaderStageType::Compute)
+            {
+                shaderCreateInfo.pipelineType = rhi::PipelineType::Compute;
+
+                rhi::ShaderStageCreateInfo stageCreateInfo{
+                    .entryPoint = stageData.entryPoint,
+                    .shader = {shaderEffect.blob.data() + bufferData.offset, bufferData.size}};
+                shaderCreateInfo.compute = std::move(stageCreateInfo);
+            }
+            else
+            {
+                rhi::ShaderStageCreateInfo stageCreateInfo{
+                    .entryPoint = stageData.entryPoint,
+                    .shader = {shaderEffect.blob.data() + bufferData.offset, bufferData.size}};
+                switch (stageType)
+                {
+                    case shadersys::fx::ShaderStageType::Vertex: {
+                        for (auto const& inputElement : stageData.inputData.elements)
+                        {
+                            rhi::VertexDeclarationInfo vertexDeclarationInfo{
+                                .semantic = inputElement.semantic,
+                                .format = FXVertexFormat_to_VertexFormat(inputElement.format)};
+
+                            shaderCreateInfo.graphics.vertexDeclarations.emplace_back(std::move(vertexDeclarationInfo));
+                        }
+
+                        shaderCreateInfo.graphics.vertexStage = std::move(stageCreateInfo);
+                        break;
+                    }
+                    case shadersys::fx::ShaderStageType::Pixel: {
+                        shaderCreateInfo.graphics.pixelStage = std::move(stageCreateInfo);
+                        break;
+                    }
+                }
+            }
+        }
+
+        shaderProgram = device.createShader(shaderCreateInfo);
     }
 
-    auto isSemanticVertexDeclaration(std::string_view const semantic) -> bool
-    {
-        if (semantic.contains("POSITION"))
-        {
-            return true;
-        }
-        else if (semantic.contains("NORMAL"))
-        {
-            return true;
-        }
-        else if (semantic.contains("TEXCOORD"))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    ShaderAsset::ShaderAsset(LinkedDevice& device) : device(&device)
-    {
-    }
-
-    auto ShaderAsset::getShader() const -> core::ref_ptr<rhi::Shader>
-    {
-        return shaderProgram;
-    }
-
+    /*
     auto ShaderAsset::parseShaderEffectFile(rhi::fx::ShaderEffectFile const& shaderEffectFile) -> bool
     {
         std::string targetType;
@@ -124,7 +164,8 @@ namespace ionengine
                                       [](auto const& element) { return element.structureName == "VS_INPUT"; });
             if (found == shaderEffectFile.effectData.structures.end())
             {
-                std::cerr << "[Renderer] ShaderAsset {} hasn't input assembler and cannot be used as a vertex shader"
+                std::cerr << "[Renderer] ShaderAsset {} hasn't input assembler and cannot be used as a vertex
+    shader"
                           << std::endl;
                 return false;
             }
@@ -193,38 +234,5 @@ namespace ionengine
         }
         return true;
     }
-
-    auto ShaderAsset::loadFromFile(std::filesystem::path const& filePath) -> bool
-    {
-        auto result = core::loadFromFile<rhi::fx::ShaderEffectFile>(filePath);
-        if (!result.has_value())
-        {
-            return false;
-        }
-
-        rhi::fx::ShaderEffectFile shaderEffectFile = std::move(result.value());
-        return this->parseShaderEffectFile(shaderEffectFile);
-    }
-
-    auto ShaderAsset::loadFromBytes(std::span<uint8_t const> const dataBytes) -> bool
-    {
-        auto result = core::loadFromBytes<rhi::fx::ShaderEffectFile>(dataBytes);
-        if (!result.has_value())
-        {
-            return false;
-        }
-
-        rhi::fx::ShaderEffectFile shaderEffectFile = std::move(result.value());
-        return this->parseShaderEffectFile(shaderEffectFile);
-    }
-
-    auto ShaderAsset::getOptions() const -> std::unordered_map<std::string, ShaderOption>
-    {
-        return options;
-    }
-
-    auto ShaderAsset::getRasterizerStage() const -> rhi::RasterizerStageInfo const&
-    {
-        return rasterizerStage;
-    }
+    */
 } // namespace ionengine

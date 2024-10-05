@@ -2,36 +2,44 @@
 
 #pragma once
 
-#include "linked_device.hpp"
+#include "rhi/rhi.hpp"
+#include "shader.hpp"
+#include "texture.hpp"
 
 namespace ionengine
 {
-    class LinkedDevice;
+    class RenderPass : public core::ref_counted_object
+    {
+    };
 
-    class Renderer
+    class RendererBuilder
     {
       public:
-        Renderer(LinkedDevice& device);
+        RendererBuilder();
 
-        auto drawQuad() -> void;
-
-        auto beginDraw(std::span<core::ref_ptr<rhi::Texture>> colors, core::ref_ptr<rhi::Texture> depthStencil,
-                       std::optional<math::Color> const clearColor, std::optional<float> const clearDepth,
-                       std::optional<uint8_t> const clearStencil) -> void;
-
-        auto endDraw() -> void;
-
-        auto resize(uint32_t const width, uint32_t const height) -> void;
-
-        // auto render(std::span<RenderableData> const renderables) -> void;
-
-        core::ref_ptr<rhi::Texture> swapchainTexture;
+        template <typename Type = RenderPass>
+        auto addPass();
 
       private:
-        LinkedDevice* device;
-        std::stack<core::ref_ptr<rhi::Texture>> colorBarriers;
-        uint32_t rendererWidth;
-        uint32_t rendererHeight;
-        core::ref_ptr<rhi::Shader> currentShader;
+        std::vector<core::ref_ptr<RenderPass>> renderPasses;
+    };
+
+    class Renderer : core::ref_counted_object
+    {
+      public:
+        Renderer(rhi::Device& device);
+
+        auto createShader(shadersys::fx::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>;
+
+        auto createTexture() -> core::ref_ptr<Texture>;
+
+        /*
+
+        */
+
+      private:
+        rhi::Device* device;
+
+        std::unordered_map<std::string, core::ref_ptr<Shader>> shaders;
     };
 } // namespace ionengine

@@ -5,12 +5,13 @@ add_library(shadersys STATIC
     compiler.cpp
     lexer.cpp
     parser.cpp
-    fx.cpp
-)
+    fx.cpp)
 
-target_include_directories(shadersys PRIVATE ${PROJECT_SOURCE_DIR})
+target_include_directories(shadersys PUBLIC 
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/shadersys)
 
-target_include_directories(shadersys PRIVATE 
+target_include_directories(shadersys PUBLIC 
     ${PROJECT_SOURCE_DIR}/thirdparty/dxc/windows/include)
 
 target_link_directories(shadersys PUBLIC
@@ -19,10 +20,9 @@ target_link_directories(shadersys PUBLIC
 target_link_libraries(shadersys PUBLIC 
     core
     dxgi
-    dxcompiler
-)
+    dxcompiler)
 
 target_compile_definitions(shadersys PUBLIC
     IONENGINE_SHADERSYS_DXC)
 
-target_precompile_headers(shadersys PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
+target_precompile_headers(shadersys PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)

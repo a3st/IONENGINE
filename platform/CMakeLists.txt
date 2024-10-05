@@ -4,8 +4,7 @@ add_library(platform STATIC platform.cpp)
 
 target_include_directories(platform PUBLIC
     ${PROJECT_SOURCE_DIR} 
-    ${PROJECT_SOURCE_DIR}/platform
-)
+    ${PROJECT_SOURCE_DIR}/platform)
 
 target_precompile_headers(platform PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)
 

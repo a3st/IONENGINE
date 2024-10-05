@@ -9,12 +9,23 @@
 
 namespace ionengine::platform
 {
+    struct HWND_deleter
+    {
+        void operator()(HWND window)
+        {
+            if (window)
+            {
+                ::DestroyWindow(window);
+            }
+        }
+    };
+
+    using UniqueHWND = std::unique_ptr<std::remove_pointer<HWND>::type, HWND_deleter>;
+
     class Win32App : public App
     {
       public:
         Win32App(AppContext& context, std::string_view const title);
-
-        ~Win32App();
 
         auto getWindowHandle() -> void* override;
 
@@ -23,8 +34,8 @@ namespace ionengine::platform
         auto run() -> void override;
 
       private:
-        HWND window;
         AppContext* context;
+        UniqueHWND window;
 
         static auto wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT;
     };

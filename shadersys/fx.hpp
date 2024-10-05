@@ -65,7 +65,7 @@ namespace ionengine::shadersys::fx
     struct ShaderInputElementData
     {
         VertexFormat format;
-        std::optional<std::string> semantic;
+        std::string semantic;
 
         template <typename Archive>
         auto operator()(Archive& archive)

@@ -240,8 +240,6 @@ namespace ionengine::rhi
     {
         void* window;
         void* instance;
-        uint32_t windowWidth;
-        uint32_t windowHeight;
     };
 
     struct RenderPassColorInfo
@@ -386,7 +384,7 @@ namespace ionengine::rhi
         union {
             struct
             {
-                std::span<VertexDeclarationInfo const> vertexDeclarations;
+                std::vector<VertexDeclarationInfo> vertexDeclarations;
                 ShaderStageCreateInfo vertexStage;
                 ShaderStageCreateInfo pixelStage;
             } graphics;

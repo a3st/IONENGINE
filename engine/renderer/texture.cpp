@@ -1,10 +1,9 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "texture.hpp"
-#include "linked_device.hpp"
 #include "precompiled.h"
-#include <png.h>
 
+/*
 namespace ionengine
 {
     TextureAsset::TextureAsset(LinkedDevice& device) : device(&device), textureData({})
@@ -106,3 +105,4 @@ namespace ionengine
         return std::vector<uint8_t>(std::istreambuf_iterator<uint8_t>(io.stream), {});
     }
 } // namespace ionengine
+*/

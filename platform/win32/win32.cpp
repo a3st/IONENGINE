@@ -142,26 +142,21 @@ namespace ionengine::platform
         RECT rect{.right = 800, .bottom = 600};
         ::AdjustWindowRect(&rect, windowStyle, false);
 
-        window = ::CreateWindow(wndClass.lpszClassName, internal::toWString(title).c_str(), windowStyle, CW_USEDEFAULT,
-                                CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
-                                wndClass.hInstance, nullptr);
+        window = UniqueHWND(::CreateWindow(wndClass.lpszClassName, internal::toWString(title).c_str(), windowStyle,
+                                           CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top,
+                                           nullptr, nullptr, wndClass.hInstance, nullptr));
         if (!window)
         {
             throw core::runtime_error("An error occurred while creating the window");
         }
 
-        ::SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-        ::ShowWindow(window, SW_SHOWDEFAULT);
-    }
-
-    Win32App::~Win32App()
-    {
-        ::DestroyWindow(window);
+        ::SetWindowLongPtr(window.get(), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        ::ShowWindow(window.get(), SW_SHOWDEFAULT);
     }
 
     auto Win32App::getWindowHandle() -> void*
     {
-        return reinterpret_cast<void*>(window);
+        return reinterpret_cast<void*>(window.get());
     }
 
     auto Win32App::getInstanceHandle() -> void*
