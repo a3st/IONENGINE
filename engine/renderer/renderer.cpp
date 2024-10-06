@@ -6,8 +6,10 @@
 namespace ionengine
 {
     Renderer::Renderer(rhi::Device& device, std::vector<core::ref_ptr<RenderPass>> const& renderPasses,
-                       core::ref_ptr<RenderPassStorage> passStorage)
-        : device(&device), renderPasses(renderPasses), passStorage(passStorage)
+                       core::ref_ptr<RenderPassStorage> passStorage, uint32_t const outputWidth,
+                       uint32_t const outputHeight)
+        : device(&device), renderPasses(renderPasses), passStorage(passStorage), outputWidth(outputWidth),
+          outputHeight(outputHeight)
     {
         graphicsContext = device.createGraphicsContext();
         copyContext = device.createCopyContext();
@@ -52,7 +54,7 @@ namespace ionengine
 
     auto Renderer::createShader(shadersys::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>
     {
-        return nullptr;
+        return core::make_ref<Shader>(*device, shaderEffect);
     }
 
     auto Renderer::createTexture() -> core::ref_ptr<Texture>
@@ -61,10 +63,11 @@ namespace ionengine
         return nullptr;
     }
 
-    auto RendererBuilder::build(rhi::Device& device) -> core::ref_ptr<Renderer>
+    auto RendererBuilder::build(rhi::Device& device, uint32_t const outputWidth,
+                                uint32_t const outputHeight) -> core::ref_ptr<Renderer>
     {
         passStorage = core::make_ref<RenderPassStorage>();
 
-        return core::make_ref<Renderer>(device, renderPasses, passStorage);
+        return core::make_ref<Renderer>(device, renderPasses, passStorage, outputWidth, outputHeight);
     }
 } // namespace ionengine

@@ -95,6 +95,24 @@ namespace ionengine
                         break;
                     }
                     case shadersys::fx::ShaderStageType::Pixel: {
+                        rasterizerStageInfo.fillMode = rhi::FillMode::Solid;
+
+                        switch (shaderEffect.effectData.output.cullSide)
+                        {
+                            case shadersys::fx::ShaderCullSide::Back: {
+                                rasterizerStageInfo.cullMode = rhi::CullMode::Back;
+                                break;
+                            }
+                            case shadersys::fx::ShaderCullSide::Front: {
+                                rasterizerStageInfo.cullMode = rhi::CullMode::Front;
+                                break;
+                            }
+                            case shadersys::fx::ShaderCullSide::None: {
+                                rasterizerStageInfo.cullMode = rhi::CullMode::None;
+                                break;
+                            }
+                        }
+
                         shaderCreateInfo.graphics.pixelStage = std::move(stageCreateInfo);
                         break;
                     }

@@ -68,7 +68,7 @@ namespace ionengine::shadersys
             effectData.structures.emplace_back(std::move(materialData));
         }
 
-        if (headerData.shaderDomain.compare("Surface") == 0)
+        if (effectData.header.shaderDomain.compare("Surface") == 0)
         {
         }
 
@@ -96,7 +96,7 @@ namespace ionengine::shadersys
                 }
             }
 
-            if (headerData.shaderDomain.compare("Screen") == 0)
+            if (effectData.header.shaderDomain.compare("Screen") == 0)
             {
                 arguments.emplace_back(L"-D SHADER_DOMAIN_TYPE_SCREEN");
             }
@@ -226,7 +226,7 @@ namespace ionengine::shadersys
 
             shaderStageData.inputData.size = inputSize;
 
-            outputData.stages[stageType] = std::move(shaderStageData);
+            effectData.output.stages[stageType] = std::move(shaderStageData);
         }
 
         return ShaderEffectFile{.magic = fx::Magic,

@@ -15,8 +15,8 @@ VS {
 
     VS_OUTPUT main(VS_INPUT input) {
         VS_OUTPUT output;
-        output.position = float4(output.uv * 2.0 + -1.0, 0.0, 1.0);
         output.uv = float2((input.id << 1) & 2, input.id & 2);
+        output.position = float4(output.uv * 2.0 + -1.0, 0.0, 1.0);
         return output;
     }
 }

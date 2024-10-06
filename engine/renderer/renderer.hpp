@@ -48,7 +48,7 @@ namespace ionengine
     {
       public:
         Renderer(rhi::Device& device, std::vector<core::ref_ptr<RenderPass>> const& renderPasses,
-                 core::ref_ptr<RenderPassStorage> passStorage);
+                 core::ref_ptr<RenderPassStorage> passStorage, uint32_t const outputWidth, uint32_t const outputHeight);
 
         auto createShader(shadersys::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>;
 
@@ -90,7 +90,7 @@ namespace ionengine
             return *this;
         }
 
-        auto build(rhi::Device& device) -> core::ref_ptr<Renderer>;
+        auto build(rhi::Device& device, uint32_t const outputWidth, uint32_t const outputHeight) -> core::ref_ptr<Renderer>;
 
       private:
         std::vector<core::ref_ptr<RenderPass>> renderPasses;
