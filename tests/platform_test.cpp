@@ -38,8 +38,8 @@ class TestAppContext : public platform::AppContext
 TEST(Platform, App_Launch_Test)
 {
     TestAppContext context;
-    auto app = platform::App::create(context, "TestProject");
-    app->run();
+    auto application = platform::App::create(context, "TestProject");
+    application->run();
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

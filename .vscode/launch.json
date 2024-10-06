@@ -2,32 +2,6 @@
     "version": "1.0.0",
     "configurations": [
         {
-            "name": "(Windows) Debug Editor",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/tools/editor.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/tools",
-            "environment": [],
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "(Windows) Debug Shader Compiler",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/tools/shaderc.exe",
-            "args": [
-                "sd14.0.fx",
-                "--target", "DXIL",
-                "--output", "3.bin"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/build/tools",
-            "environment": [],
-            "console": "integratedTerminal"
-        },
-        {
             "name": "(Windows) Debug Test",
             "type": "cppvsdbg",
             "request": "launch",

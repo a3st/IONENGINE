@@ -99,9 +99,9 @@ class TestAppContext : public platform::AppContext
 TEST(RHI, DeviceSwapchain_Test)
 {
     TestAppContext context;
-    auto platform = platform::App::create(context, "TestProject");
-    context.initialize(*platform);
-    platform->run();
+    auto application = platform::App::create(context, "TestProject");
+    context.initialize(*application);
+    application->run();
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

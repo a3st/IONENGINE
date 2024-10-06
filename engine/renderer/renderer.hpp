@@ -22,7 +22,7 @@ namespace ionengine
                            rhi::TextureUsage const usage) -> core::handle<RenderPassTexture>;
     };
 
-    class RenderPassStorage
+    class RenderPassStorage : public core::ref_counted_object
     {
       public:
         auto getTexture(core::handle<RenderPassTexture> const handle) -> core::ref_ptr<rhi::Texture>;
@@ -39,15 +39,14 @@ namespace ionengine
 
         rhi::GraphicsContext* graphicsContext;
         rhi::CopyContext* copyContext;
-
-      protected:
         RenderPassStorage* passStorage;
     };
 
     class Renderer : public core::ref_counted_object
     {
       public:
-        Renderer(rhi::Device& device, std::vector<core::ref_ptr<RenderPass>> const& renderPasses);
+        Renderer(rhi::Device& device, std::vector<core::ref_ptr<RenderPass>> const& renderPasses,
+                 core::ref_ptr<RenderPassStorage> passStorage);
 
         auto createShader(shadersys::fx::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>;
 
@@ -68,6 +67,7 @@ namespace ionengine
         core::ref_ptr<rhi::CopyContext> copyContext;
 
         std::vector<core::ref_ptr<RenderPass>> renderPasses;
+        core::ref_ptr<RenderPassStorage> passStorage;
         std::unordered_map<std::string, core::ref_ptr<Shader>> shaders;
 
         uint32_t outputWidth;
@@ -92,5 +92,6 @@ namespace ionengine
 
       private:
         std::vector<core::ref_ptr<RenderPass>> renderPasses;
+        core::ref_ptr<RenderPassStorage> passStorage;
     };
 } // namespace ionengine
