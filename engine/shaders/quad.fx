@@ -28,10 +28,10 @@ PS {
         //Texture2D inputTexture = GetTexture(MATERIAL_DATA, materialBuffer, inputTexture);
         //SamplerState linearSampler = GetSampler();
 
-        cbuffer_t<SAMPLER_DATA> b = gShaderData.samplerBuffer;
+        // cbuffer_t<SAMPLER_DATA> b = gShaderData.samplerBuffer;
 
         PS_OUTPUT output;
-        output.color = float4(b.Get().v, 1.0f, 1.0f, 1.0f);
+        output.color = float4(0.5f, 1.0f, 1.0f, 1.0f);
         //output.color = inputTexture.Sample(linearSampler, input.uv);
         return output;
     }

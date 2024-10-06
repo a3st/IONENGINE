@@ -16,6 +16,7 @@ add_subdirectory(platform)
 add_subdirectory(rhi)
 add_subdirectory(shadersys)
 add_subdirectory(engine)
+add_subdirectory(tools)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)

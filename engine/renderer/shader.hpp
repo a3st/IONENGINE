@@ -18,7 +18,11 @@ namespace ionengine
             size_t size;
         };*/
 
-        Shader(rhi::Device& device, shadersys::fx::ShaderEffectFile const& shaderEffect);
+        Shader(rhi::Device& device, shadersys::ShaderEffectFile const& shaderEffect);
+
+        auto getShader() const -> core::ref_ptr<rhi::Shader>;
+
+        auto getRasterizer() const -> rhi::RasterizerStageInfo const&;
 
       private:
         core::ref_ptr<rhi::Shader> shaderProgram;

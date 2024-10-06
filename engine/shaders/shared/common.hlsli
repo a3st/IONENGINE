@@ -18,7 +18,6 @@ struct PS_OUTPUT {
 #endif
 
 struct SAMPLER_DATA {
-    float v;
     sampler_t linearSampler;
 };
 

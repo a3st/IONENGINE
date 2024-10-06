@@ -1,11 +1,10 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "core/error.hpp"
-#include "fx.hpp"
 #include "precompiled.h"
+#include "shadersys/compiler.hpp"
 #include <argh.h>
 
-namespace shaderc = ionengine::tools::shaderc;
+using namespace ionengine;
 
 auto main(int32_t argc, char** argv) -> int32_t
 {
@@ -45,12 +44,11 @@ auto main(int32_t argc, char** argv) -> int32_t
 
     try
     {
-        shaderc::FXCompiler fxCompiler;
-        fxCompiler.addIncludePath(std::filesystem::path(input).parent_path().make_preferred());
+        core::ref_ptr<shadersys::ShaderCompiler> shaderCompiler;
 
         if (target.compare("DXIL") == 0)
         {
-            
+            shaderCompiler = shadersys::ShaderCompiler::create(shadersys::fx::ShaderAPIType::DXIL);
         }
         else if (target.compare("SPIRV") == 0)
         {
@@ -64,9 +62,12 @@ auto main(int32_t argc, char** argv) -> int32_t
         }
 
         std::string errors;
-        if (fxCompiler.compile(std::filesystem::path(input).make_preferred(),
-                               std::filesystem::path(output).make_preferred(), errors))
+        auto compileResult = shaderCompiler->compileFromFile(std::filesystem::path(input).make_preferred(), errors);
+        if (compileResult.has_value())
         {
+            core::to_file<shadersys::ShaderEffectFile, core::serialize_oarchive>(
+                compileResult.value(), std::filesystem::path(output).make_preferred());
+
             std::cout << "Out: " << std::filesystem::absolute(output).generic_string() << std::endl;
         }
         else
@@ -75,7 +76,7 @@ auto main(int32_t argc, char** argv) -> int32_t
         }
         return EXIT_SUCCESS;
     }
-    catch (ionengine::core::runtime_error e)
+    catch (core::runtime_error e)
     {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

@@ -15,6 +15,11 @@ namespace ionengine::shadersys
         }
     }
 
+    auto isDefaultSemantic(std::string_view const semantic) -> bool
+    {
+        return semantic.find("SV_") != std::string_view::npos;
+    }
+
     DXCCompiler::DXCCompiler(fx::ShaderAPIType const apiType) : apiType(apiType)
     {
         throwIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void()));
@@ -22,11 +27,13 @@ namespace ionengine::shadersys
         throwIfFailed(utils->CreateDefaultIncludeHandler(includeHandler.put()));
     }
 
-    auto DXCCompiler::compileFromFile(std::filesystem::path const& filePath) -> std::optional<fx::ShaderEffectFile>
+    auto DXCCompiler::compileFromFile(std::filesystem::path const& filePath,
+                                      std::string& errors) -> std::optional<ShaderEffectFile>
     {
         std::basic_ifstream<uint8_t> stream(filePath);
         if (!stream.is_open())
         {
+            errors = "the input file is in a different format, is corrupted, or was not found";
             return std::nullopt;
         }
 
@@ -46,7 +53,7 @@ namespace ionengine::shadersys
         }
         catch (parser_error e)
         {
-            std::cerr << e.what() << std::endl;
+            errors = e.what();
             return std::nullopt;
         }
 
@@ -63,7 +70,6 @@ namespace ionengine::shadersys
 
         if (headerData.shaderDomain.compare("Surface") == 0)
         {
-            
         }
 
         for (auto const& [stageType, shaderCode] : stageData)
@@ -106,9 +112,8 @@ namespace ionengine::shadersys
 
             if (errorsBlob && errorsBlob->GetStringLength() > 0)
             {
-                std::cerr << "\n" + std::string(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()),
-                                                errorsBlob->GetBufferSize())
-                          << std::endl;
+                errors =
+                    std::string(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()), errorsBlob->GetBufferSize());
                 return std::nullopt;
             }
 
@@ -142,6 +147,11 @@ namespace ionengine::shadersys
             {
                 D3D12_SIGNATURE_PARAMETER_DESC signatureParameterDesc{};
                 throwIfFailed(shaderReflection->GetInputParameterDesc(i, &signatureParameterDesc));
+
+                if (isDefaultSemantic(signatureParameterDesc.SemanticName))
+                {
+                    continue;
+                }
 
                 fx::VertexFormat format;
                 if (signatureParameterDesc.Mask == 1)
@@ -219,9 +229,9 @@ namespace ionengine::shadersys
             outputData.stages[stageType] = std::move(shaderStageData);
         }
 
-        return fx::ShaderEffectFile{.magic = fx::Magic,
-                                    .apiType = apiType,
-                                    .effectData = std::move(effectData),
-                                    .blob = {std::istreambuf_iterator<uint8_t>(streambuf.rdbuf()), {}}};
+        return ShaderEffectFile{.magic = fx::Magic,
+                                .apiType = apiType,
+                                .effectData = std::move(effectData),
+                                .blob = {std::istreambuf_iterator<uint8_t>(streambuf.rdbuf()), {}}};
     }
 } // namespace ionengine::shadersys

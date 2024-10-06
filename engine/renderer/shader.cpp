@@ -38,7 +38,7 @@ namespace ionengine
         }
     }
 
-    Shader::Shader(rhi::Device& device, shadersys::fx::ShaderEffectFile const& shaderEffect)
+    Shader::Shader(rhi::Device& device, shadersys::ShaderEffectFile const& shaderEffect)
     {
         std::string apiType;
         switch (shaderEffect.apiType)
@@ -103,6 +103,16 @@ namespace ionengine
         }
 
         shaderProgram = device.createShader(shaderCreateInfo);
+    }
+
+    auto Shader::getShader() const -> core::ref_ptr<rhi::Shader>
+    {
+        return shaderProgram;
+    }
+
+    auto Shader::getRasterizer() const -> rhi::RasterizerStageInfo const&
+    {
+        return rasterizerStageInfo;
     }
 
     /*

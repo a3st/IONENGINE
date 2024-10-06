@@ -17,6 +17,8 @@ namespace ionengine
             renderPass->graphicsContext = graphicsContext.get();
             renderPass->copyContext = copyContext.get();
             renderPass->passStorage = passStorage.get();
+
+            renderPass->initialize(this);
         }
     }
 
@@ -48,8 +50,14 @@ namespace ionengine
         outputWidth = width, outputHeight = height;
     }
 
-    auto Renderer::createShader(shadersys::fx::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>
+    auto Renderer::createShader(shadersys::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>
     {
+        return nullptr;
+    }
+
+    auto Renderer::createTexture() -> core::ref_ptr<Texture>
+    {
+        std::cout << "call ::createTexture" << std::endl;
         return nullptr;
     }
 

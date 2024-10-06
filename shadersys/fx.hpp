@@ -4,215 +4,218 @@
 
 #include "core/serialize.hpp"
 
-namespace ionengine::shadersys::fx
+namespace ionengine::shadersys
 {
-    std::array<uint8_t, 4> constexpr Magic{'F', 'X', '1', '0'};
-
-    enum class ShaderAPIType : uint32_t
+    namespace fx
     {
-        DXIL,
-        SPIRV
-    };
+        std::array<uint8_t, 4> constexpr Magic{'F', 'X', '1', '0'};
 
-    enum class VertexFormat
-    {
-        R32_UINT,
-        R32_SINT,
-        R32_FLOAT,
-        RG32_UINT,
-        RG32_SINT,
-        RG32_FLOAT,
-        RGB32_UINT,
-        RGB32_SINT,
-        RGB32_FLOAT,
-        RGBA32_UINT,
-        RGBA32_SINT,
-        RGBA32_FLOAT
-    };
-
-    auto sizeof_VertexFormat(VertexFormat const format) -> size_t;
-
-    enum class ShaderElementType
-    {
-        Float4x4,
-        Float3x3,
-        Float2x2,
-        Float4,
-        Float3,
-        Float2,
-        Float,
-        Uint,
-        Sint,
-        Bool
-    };
-
-    auto sizeof_ShaderElementType(ShaderElementType const elementType) -> size_t;
-
-    enum class ShaderStageType
-    {
-        Vertex,
-        Pixel,
-        Compute
-    };
-
-    enum class ShaderCullSide
-    {
-        Back,
-        Front,
-        None
-    };
-
-    struct ShaderInputElementData
-    {
-        VertexFormat format;
-        std::string semantic;
-
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        enum class ShaderAPIType : uint32_t
         {
-            archive.property(format, "format");
-            archive.property(semantic, "semantic");
-        }
-    };
+            DXIL,
+            SPIRV
+        };
 
-    struct ShaderConstantData
-    {
-        std::string name;
-        ShaderElementType type;
-
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        enum class VertexFormat
         {
-            archive.property(name, "name");
-            archive.property(type, "type");
-        }
-    };
+            R32_UINT,
+            R32_SINT,
+            R32_FLOAT,
+            RG32_UINT,
+            RG32_SINT,
+            RG32_FLOAT,
+            RGB32_UINT,
+            RGB32_SINT,
+            RGB32_FLOAT,
+            RGBA32_UINT,
+            RGBA32_SINT,
+            RGBA32_FLOAT
+        };
 
-    struct ShaderStructureElementData
-    {
-        std::string name;
-        ShaderElementType type;
+        auto sizeof_VertexFormat(VertexFormat const format) -> size_t;
 
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        enum class ShaderElementType
         {
-            archive.property(name, "name");
-            archive.property(type, "type");
-        }
-    };
+            Float4x4,
+            Float3x3,
+            Float2x2,
+            Float4,
+            Float3,
+            Float2,
+            Float,
+            Uint,
+            Sint,
+            Bool
+        };
 
-    struct ShaderInputData
-    {
-        std::vector<ShaderInputElementData> elements;
-        uint32_t size;
+        auto sizeof_ShaderElementType(ShaderElementType const elementType) -> size_t;
 
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        enum class ShaderStageType
         {
-            archive.property(elements, "elements");
-            archive.property(size, "sizeInBytes");
-        }
-    };
+            Vertex,
+            Pixel,
+            Compute
+        };
 
-    struct ShaderStructureData
-    {
-        std::string name;
-        std::vector<ShaderStructureElementData> elements;
-        uint32_t size;
-
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        enum class ShaderCullSide
         {
-            archive.property(name, "name");
-            archive.property(elements, "elements");
-            archive.property(size, "sizeInBytes");
-        }
-    };
+            Back,
+            Front,
+            None
+        };
 
-    struct ShaderStageData
-    {
-        uint32_t buffer;
-        std::string entryPoint;
-        ShaderInputData inputData;
-
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        struct ShaderInputElementData
         {
-            archive.property(buffer, "buffer");
-            archive.property(entryPoint, "entryPoint");
-            archive.property(inputData, "input");
-        }
-    };
+            VertexFormat format;
+            std::string semantic;
 
-    struct ShaderHeaderData
-    {
-        std::string shaderName;
-        std::string description;
-        std::string shaderDomain;
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(format, "format");
+                archive.property(semantic, "semantic");
+            }
+        };
 
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        struct ShaderConstantData
         {
-            archive.property(shaderName, "name");
-            archive.property(description, "description");
-            archive.property(shaderDomain, "domain");
-        }
-    };
+            std::string name;
+            ShaderElementType type;
 
-    struct ShaderBufferData
-    {
-        uint64_t offset;
-        size_t size;
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(name, "name");
+                archive.property(type, "type");
+            }
+        };
 
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        struct ShaderStructureElementData
         {
-            archive.property(offset, "offset");
-            archive.property(size, "sizeInBytes");
-        }
-    };
+            std::string name;
+            ShaderElementType type;
 
-    struct ShaderOutputData
-    {
-        std::unordered_map<ShaderStageType, ShaderStageData> stages;
-        bool depthWrite;
-        bool stencilWrite;
-        ShaderCullSide cullSide;
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(name, "name");
+                archive.property(type, "type");
+            }
+        };
 
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        struct ShaderInputData
         {
-            archive.property(stages, "stages");
-            archive.property(depthWrite, "depthWrite");
-            archive.property(stencilWrite, "stencilWrite");
-            archive.property(cullSide, "cullSide");
-        }
-    };
+            std::vector<ShaderInputElementData> elements;
+            uint32_t size;
 
-    struct ShaderEffectData
-    {
-        ShaderHeaderData header;
-        ShaderOutputData output;
-        std::vector<ShaderConstantData> constants;
-        std::vector<ShaderStructureData> structures;
-        std::vector<ShaderBufferData> buffers;
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(elements, "elements");
+                archive.property(size, "sizeInBytes");
+            }
+        };
 
-        template <typename Archive>
-        auto operator()(Archive& archive)
+        struct ShaderStructureData
         {
-            archive.property(header, "header");
-            archive.property(output, "output");
-            archive.property(constants, "constants");
-            archive.property(structures, "structures");
-            archive.property(buffers, "buffers");
-        }
-    };
+            std::string name;
+            std::vector<ShaderStructureElementData> elements;
+            uint32_t size;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(name, "name");
+                archive.property(elements, "elements");
+                archive.property(size, "sizeInBytes");
+            }
+        };
+
+        struct ShaderStageData
+        {
+            uint32_t buffer;
+            std::string entryPoint;
+            ShaderInputData inputData;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(buffer, "buffer");
+                archive.property(entryPoint, "entryPoint");
+                archive.property(inputData, "input");
+            }
+        };
+
+        struct ShaderHeaderData
+        {
+            std::string shaderName;
+            std::string description;
+            std::string shaderDomain;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(shaderName, "name");
+                archive.property(description, "description");
+                archive.property(shaderDomain, "domain");
+            }
+        };
+
+        struct ShaderBufferData
+        {
+            uint64_t offset;
+            size_t size;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(offset, "offset");
+                archive.property(size, "sizeInBytes");
+            }
+        };
+
+        struct ShaderOutputData
+        {
+            std::unordered_map<ShaderStageType, ShaderStageData> stages;
+            bool depthWrite;
+            bool stencilWrite;
+            ShaderCullSide cullSide;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(stages, "stages");
+                archive.property(depthWrite, "depthWrite");
+                archive.property(stencilWrite, "stencilWrite");
+                archive.property(cullSide, "cullSide");
+            }
+        };
+
+        struct ShaderEffectData
+        {
+            ShaderHeaderData header;
+            ShaderOutputData output;
+            std::vector<ShaderConstantData> constants;
+            std::vector<ShaderStructureData> structures;
+            std::vector<ShaderBufferData> buffers;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(header, "header");
+                archive.property(output, "output");
+                archive.property(constants, "constants");
+                archive.property(structures, "structures");
+                archive.property(buffers, "buffers");
+            }
+        };
+    } // namespace fx
 
     struct ShaderEffectFile
     {
-        std::array<uint8_t, Magic.size()> magic;
-        ShaderAPIType apiType;
-        ShaderEffectData effectData;
+        std::array<uint8_t, fx::Magic.size()> magic;
+        fx::ShaderAPIType apiType;
+        fx::ShaderEffectData effectData;
         std::vector<uint8_t> blob;
 
         template <typename Archive>
@@ -224,7 +227,7 @@ namespace ionengine::shadersys::fx
             archive.property(blob);
         }
     };
-} // namespace ionengine::shadersys::fx
+} // namespace ionengine::shadersys
 
 namespace ionengine::core
 {

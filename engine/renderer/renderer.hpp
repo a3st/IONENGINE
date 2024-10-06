@@ -35,6 +35,8 @@ namespace ionengine
       public:
         virtual ~RenderPass() = default;
 
+        virtual auto initialize(class Renderer* renderer) -> void = 0;
+
         virtual auto render() -> void = 0;
 
         rhi::GraphicsContext* graphicsContext;
@@ -48,7 +50,7 @@ namespace ionengine
         Renderer(rhi::Device& device, std::vector<core::ref_ptr<RenderPass>> const& renderPasses,
                  core::ref_ptr<RenderPassStorage> passStorage);
 
-        auto createShader(shadersys::fx::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>;
+        auto createShader(shadersys::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>;
 
         auto createTexture() -> core::ref_ptr<Texture>;
 

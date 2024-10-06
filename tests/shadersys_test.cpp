@@ -112,8 +112,9 @@ TEST(ShaderSystem, Parser_Test)
 TEST(ShaderSystem, Compiler_Test)
 {
     auto shaderCompiler = shadersys::ShaderCompiler::create(shadersys::fx::ShaderAPIType::DXIL);
-    auto effectFile = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx");
-    core::to_file<shadersys::fx::ShaderEffectFile, core::serialize_oarchive>(effectFile.value(), "test.bin");
+    std::string errors;
+    auto effectFile = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx", errors);
+    core::to_file<shadersys::ShaderEffectFile, core::serialize_oarchive>(effectFile.value(), "test.bin");
 }
 
 auto main(int32_t argc, char** argv) -> int32_t
