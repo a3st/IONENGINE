@@ -7,28 +7,28 @@
 
 namespace ionengine::shadersys::fx
 {
-    auto sizeof_ShaderElementType(ShaderElementType const elementType) -> size_t
+    auto sizeof_ElementType(ElementType const elementType) -> size_t
     {
         switch (elementType)
         {
-            case ShaderElementType::Float4:
+            case ElementType::Float4:
                 return sizeof(float) * 4;
-            case ShaderElementType::Float4x4:
+            case ElementType::Float4x4:
                 return sizeof(float) * 16;
-            case ShaderElementType::Float3:
+            case ElementType::Float3:
                 return sizeof(float) * 3;
-            case ShaderElementType::Float3x3:
+            case ElementType::Float3x3:
                 return sizeof(float) * 9;
-            case ShaderElementType::Float2:
+            case ElementType::Float2:
                 return sizeof(float) * 2;
-            case ShaderElementType::Float2x2:
+            case ElementType::Float2x2:
                 return sizeof(float) * 4;
-            case ShaderElementType::Float:
+            case ElementType::Float:
                 return sizeof(float);
-            case ShaderElementType::Bool:
-            case ShaderElementType::Uint:
+            case ElementType::Bool:
+            case ElementType::Uint:
                 return sizeof(uint32_t);
-            case ShaderElementType::Sint:
+            case ElementType::Sint:
                 return sizeof(int32_t);
             default:
                 return 0;

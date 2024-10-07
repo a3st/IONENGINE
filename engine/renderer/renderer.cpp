@@ -5,37 +5,36 @@
 
 namespace ionengine
 {
-    Renderer::Renderer(rhi::Device& device, std::vector<core::ref_ptr<RenderPass>> const& renderPasses,
-                       core::ref_ptr<RenderPassStorage> passStorage, uint32_t const outputWidth,
-                       uint32_t const outputHeight)
-        : device(&device), renderPasses(renderPasses), passStorage(passStorage), outputWidth(outputWidth),
-          outputHeight(outputHeight)
+    Renderer::Renderer(rhi::RHICreateInfo const& createInfo,
+                       std::vector<core::ref_ptr<RenderPass>> const& renderPasses)
+        : renderPasses(renderPasses)
     {
-        graphicsContext = device.createGraphicsContext();
-        copyContext = device.createCopyContext();
+        device = rhi::Device::create(createInfo);
+
+        graphicsContext = device->createGraphicsContext();
+        copyContext = device->createCopyContext();
 
         for (auto& renderPass : renderPasses)
         {
             renderPass->graphicsContext = graphicsContext.get();
             renderPass->copyContext = copyContext.get();
-            renderPass->passStorage = passStorage.get();
-
-            renderPass->initialize(this);
         }
     }
 
-    auto Renderer::render() -> void
+    auto Renderer::render(RenderingData& renderingData) -> void
     {
         graphicsContext->reset();
 
-        passStorage->backBuffer = device->requestBackBuffer();
+        renderingData.backBuffer = device->requestBackBuffer();
+
+        outputWidth = renderingData.backBuffer->getWidth(), outputHeight = renderingData.backBuffer->getHeight();
 
         graphicsContext->setViewport(0, 0, outputWidth, outputHeight);
         graphicsContext->setScissor(0, 0, outputWidth, outputHeight);
 
         for (auto const& renderPass : renderPasses)
         {
-            renderPass->render();
+            renderPass->render(renderingData);
         }
 
         rhi::Future<rhi::Query> graphicsResult = graphicsContext->execute();
@@ -63,11 +62,8 @@ namespace ionengine
         return nullptr;
     }
 
-    auto RendererBuilder::build(rhi::Device& device, uint32_t const outputWidth,
-                                uint32_t const outputHeight) -> core::ref_ptr<Renderer>
+    auto RendererBuilder::build(rhi::RHICreateInfo const& createInfo) -> core::ref_ptr<Renderer>
     {
-        passStorage = core::make_ref<RenderPassStorage>();
-
-        return core::make_ref<Renderer>(device, renderPasses, passStorage, outputWidth, outputHeight);
+        return core::make_ref<Renderer>(createInfo, renderPasses);
     }
 } // namespace ionengine

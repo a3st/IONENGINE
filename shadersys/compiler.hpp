@@ -12,7 +12,7 @@ namespace ionengine::shadersys
       public:
         virtual ~ShaderCompiler() = default;
 
-        static auto create(fx::ShaderAPIType const apiType) -> core::ref_ptr<ShaderCompiler>;
+        static auto create(fx::APIType const apiType) -> core::ref_ptr<ShaderCompiler>;
 
         virtual auto compileFromFile(std::filesystem::path const& filePath, std::string& errors) -> std::optional<ShaderEffectFile> = 0;
     };

@@ -9,7 +9,7 @@
 
 namespace ionengine::shadersys
 {
-    auto ShaderCompiler::create(fx::ShaderAPIType const apiType) -> core::ref_ptr<ShaderCompiler>
+    auto ShaderCompiler::create(fx::APIType const apiType) -> core::ref_ptr<ShaderCompiler>
     {
 #ifdef IONENGINE_SHADERSYS_DXC
         return core::make_ref<DXCCompiler>(apiType);

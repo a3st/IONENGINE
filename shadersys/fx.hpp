@@ -10,7 +10,7 @@ namespace ionengine::shadersys
     {
         std::array<uint8_t, 4> constexpr Magic{'F', 'X', '1', '0'};
 
-        enum class ShaderAPIType : uint32_t
+        enum class APIType : uint32_t
         {
             DXIL,
             SPIRV
@@ -34,7 +34,7 @@ namespace ionengine::shadersys
 
         auto sizeof_VertexFormat(VertexFormat const format) -> size_t;
 
-        enum class ShaderElementType
+        enum class ElementType
         {
             Float4x4,
             Float3x3,
@@ -48,23 +48,23 @@ namespace ionengine::shadersys
             Bool
         };
 
-        auto sizeof_ShaderElementType(ShaderElementType const elementType) -> size_t;
+        auto sizeof_ElementType(ElementType const elementType) -> size_t;
 
-        enum class ShaderStageType
+        enum class StageType
         {
             Vertex,
             Pixel,
             Compute
         };
 
-        enum class ShaderCullSide
+        enum class CullSide
         {
             Back,
             Front,
             None
         };
 
-        struct ShaderInputElementData
+        struct InputElementData
         {
             VertexFormat format;
             std::string semantic;
@@ -77,10 +77,10 @@ namespace ionengine::shadersys
             }
         };
 
-        struct ShaderConstantData
+        struct ConstantData
         {
             std::string name;
-            ShaderElementType type;
+            ElementType type;
 
             template <typename Archive>
             auto operator()(Archive& archive)
@@ -90,10 +90,10 @@ namespace ionengine::shadersys
             }
         };
 
-        struct ShaderStructureElementData
+        struct StructureElementData
         {
             std::string name;
-            ShaderElementType type;
+            ElementType type;
 
             template <typename Archive>
             auto operator()(Archive& archive)
@@ -103,9 +103,9 @@ namespace ionengine::shadersys
             }
         };
 
-        struct ShaderInputData
+        struct InputData
         {
-            std::vector<ShaderInputElementData> elements;
+            std::vector<InputElementData> elements;
             uint32_t size;
 
             template <typename Archive>
@@ -116,10 +116,10 @@ namespace ionengine::shadersys
             }
         };
 
-        struct ShaderStructureData
+        struct StructureData
         {
             std::string name;
-            std::vector<ShaderStructureElementData> elements;
+            std::vector<StructureElementData> elements;
             uint32_t size;
 
             template <typename Archive>
@@ -131,37 +131,37 @@ namespace ionengine::shadersys
             }
         };
 
-        struct ShaderStageData
+        struct StageData
         {
             uint32_t buffer;
             std::string entryPoint;
-            ShaderInputData inputData;
+            InputData input;
 
             template <typename Archive>
             auto operator()(Archive& archive)
             {
                 archive.property(buffer, "buffer");
                 archive.property(entryPoint, "entryPoint");
-                archive.property(inputData, "input");
+                archive.property(input, "input");
             }
         };
 
-        struct ShaderHeaderData
+        struct HeaderData
         {
-            std::string shaderName;
+            std::string name;
             std::string description;
-            std::string shaderDomain;
+            std::string domain;
 
             template <typename Archive>
             auto operator()(Archive& archive)
             {
-                archive.property(shaderName, "name");
+                archive.property(name, "name");
                 archive.property(description, "description");
-                archive.property(shaderDomain, "domain");
+                archive.property(domain, "domain");
             }
         };
 
-        struct ShaderBufferData
+        struct BufferData
         {
             uint64_t offset;
             size_t size;
@@ -174,12 +174,12 @@ namespace ionengine::shadersys
             }
         };
 
-        struct ShaderOutputData
+        struct OutputData
         {
-            std::unordered_map<ShaderStageType, ShaderStageData> stages;
+            std::unordered_map<StageType, StageData> stages;
             bool depthWrite;
             bool stencilWrite;
-            ShaderCullSide cullSide;
+            CullSide cullSide;
 
             template <typename Archive>
             auto operator()(Archive& archive)
@@ -191,13 +191,13 @@ namespace ionengine::shadersys
             }
         };
 
-        struct ShaderEffectData
+        struct EffectData
         {
-            ShaderHeaderData header;
-            ShaderOutputData output;
-            std::vector<ShaderConstantData> constants;
-            std::vector<ShaderStructureData> structures;
-            std::vector<ShaderBufferData> buffers;
+            HeaderData header;
+            OutputData output;
+            std::vector<ConstantData> constants;
+            std::vector<StructureData> structures;
+            std::vector<BufferData> buffers;
 
             template <typename Archive>
             auto operator()(Archive& archive)
@@ -214,8 +214,8 @@ namespace ionengine::shadersys
     struct ShaderEffectFile
     {
         std::array<uint8_t, fx::Magic.size()> magic;
-        fx::ShaderAPIType apiType;
-        fx::ShaderEffectData effectData;
+        fx::APIType apiType;
+        fx::EffectData effectData;
         std::vector<uint8_t> blob;
 
         template <typename Archive>
@@ -253,45 +253,45 @@ namespace ionengine::core
     };
 
     template <>
-    struct serializable_enum<shadersys::fx::ShaderElementType>
+    struct serializable_enum<shadersys::fx::ElementType>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(shadersys::fx::ShaderElementType::Float4x4, "FLOAT4x4");
-            archive.field(shadersys::fx::ShaderElementType::Float3x3, "FLOAT3x3");
-            archive.field(shadersys::fx::ShaderElementType::Float2x2, "FLOAT2x2");
-            archive.field(shadersys::fx::ShaderElementType::Float4, "FLOAT4");
-            archive.field(shadersys::fx::ShaderElementType::Float3, "FLOAT3");
-            archive.field(shadersys::fx::ShaderElementType::Float2, "FLOAT2");
-            archive.field(shadersys::fx::ShaderElementType::Float, "FLOAT");
-            archive.field(shadersys::fx::ShaderElementType::Uint, "UINT");
-            archive.field(shadersys::fx::ShaderElementType::Sint, "SINT");
-            archive.field(shadersys::fx::ShaderElementType::Bool, "BOOL");
+            archive.field(shadersys::fx::ElementType::Float4x4, "FLOAT4x4");
+            archive.field(shadersys::fx::ElementType::Float3x3, "FLOAT3x3");
+            archive.field(shadersys::fx::ElementType::Float2x2, "FLOAT2x2");
+            archive.field(shadersys::fx::ElementType::Float4, "FLOAT4");
+            archive.field(shadersys::fx::ElementType::Float3, "FLOAT3");
+            archive.field(shadersys::fx::ElementType::Float2, "FLOAT2");
+            archive.field(shadersys::fx::ElementType::Float, "FLOAT");
+            archive.field(shadersys::fx::ElementType::Uint, "UINT");
+            archive.field(shadersys::fx::ElementType::Sint, "SINT");
+            archive.field(shadersys::fx::ElementType::Bool, "BOOL");
         }
     };
 
     template <>
-    struct serializable_enum<shadersys::fx::ShaderStageType>
+    struct serializable_enum<shadersys::fx::StageType>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(shadersys::fx::ShaderStageType::Vertex, "VS");
-            archive.field(shadersys::fx::ShaderStageType::Pixel, "PS");
-            archive.field(shadersys::fx::ShaderStageType::Compute, "CS");
+            archive.field(shadersys::fx::StageType::Vertex, "VS");
+            archive.field(shadersys::fx::StageType::Pixel, "PS");
+            archive.field(shadersys::fx::StageType::Compute, "CS");
         }
     };
 
     template <>
-    struct serializable_enum<shadersys::fx::ShaderCullSide>
+    struct serializable_enum<shadersys::fx::CullSide>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(shadersys::fx::ShaderCullSide::None, "NONE");
-            archive.field(shadersys::fx::ShaderCullSide::Back, "BACK");
-            archive.field(shadersys::fx::ShaderCullSide::Front, "FRONT");
+            archive.field(shadersys::fx::CullSide::None, "NONE");
+            archive.field(shadersys::fx::CullSide::Back, "BACK");
+            archive.field(shadersys::fx::CullSide::Front, "FRONT");
         }
     };
 } // namespace ionengine::core

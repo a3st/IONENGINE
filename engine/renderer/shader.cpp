@@ -43,11 +43,11 @@ namespace ionengine
         std::string apiType;
         switch (shaderEffect.apiType)
         {
-            case shadersys::fx::ShaderAPIType::DXIL: {
+            case shadersys::fx::APIType::DXIL: {
                 apiType = "D3D12";
                 break;
             }
-            case shadersys::fx::ShaderAPIType::SPIRV: {
+            case shadersys::fx::APIType::SPIRV: {
                 apiType = "Vulkan";
                 break;
             }
@@ -65,7 +65,7 @@ namespace ionengine
             uint32_t const bufferIndex = stageData.buffer;
             auto const& bufferData = shaderEffect.effectData.buffers[bufferIndex];
 
-            if (stageType == shadersys::fx::ShaderStageType::Compute)
+            if (stageType == shadersys::fx::StageType::Compute)
             {
                 shaderCreateInfo.pipelineType = rhi::PipelineType::Compute;
 
@@ -81,8 +81,8 @@ namespace ionengine
                     .shader = {shaderEffect.blob.data() + bufferData.offset, bufferData.size}};
                 switch (stageType)
                 {
-                    case shadersys::fx::ShaderStageType::Vertex: {
-                        for (auto const& inputElement : stageData.inputData.elements)
+                    case shadersys::fx::StageType::Vertex: {
+                        for (auto const& inputElement : stageData.input.elements)
                         {
                             rhi::VertexDeclarationInfo vertexDeclarationInfo{
                                 .semantic = inputElement.semantic,
@@ -94,20 +94,20 @@ namespace ionengine
                         shaderCreateInfo.graphics.vertexStage = std::move(stageCreateInfo);
                         break;
                     }
-                    case shadersys::fx::ShaderStageType::Pixel: {
+                    case shadersys::fx::StageType::Pixel: {
                         rasterizerStageInfo.fillMode = rhi::FillMode::Solid;
 
                         switch (shaderEffect.effectData.output.cullSide)
                         {
-                            case shadersys::fx::ShaderCullSide::Back: {
+                            case shadersys::fx::CullSide::Back: {
                                 rasterizerStageInfo.cullMode = rhi::CullMode::Back;
                                 break;
                             }
-                            case shadersys::fx::ShaderCullSide::Front: {
+                            case shadersys::fx::CullSide::Front: {
                                 rasterizerStageInfo.cullMode = rhi::CullMode::Front;
                                 break;
                             }
-                            case shadersys::fx::ShaderCullSide::None: {
+                            case shadersys::fx::CullSide::None: {
                                 rasterizerStageInfo.cullMode = rhi::CullMode::None;
                                 break;
                             }

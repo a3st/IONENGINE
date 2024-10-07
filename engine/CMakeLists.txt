@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.25.1)
 
-add_library(engine SHARED
+add_library(engine STATIC
+    renderer/model.cpp
     renderer/texture.cpp
     renderer/shader.cpp
     renderer/renderer.cpp)
@@ -15,6 +16,7 @@ target_link_libraries(engine PUBLIC
     core
     platform 
     shadersys
+    mdl
     rhi)
 
 set_target_properties(engine PROPERTIES

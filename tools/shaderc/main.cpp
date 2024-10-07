@@ -48,7 +48,7 @@ auto main(int32_t argc, char** argv) -> int32_t
 
         if (target.compare("DXIL") == 0)
         {
-            shaderCompiler = shadersys::ShaderCompiler::create(shadersys::fx::ShaderAPIType::DXIL);
+            shaderCompiler = shadersys::ShaderCompiler::create(shadersys::fx::APIType::DXIL);
         }
         else if (target.compare("SPIRV") == 0)
         {

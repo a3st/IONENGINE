@@ -3,6 +3,7 @@
 #pragma once
 
 #include "core/handle.hpp"
+#include "model.hpp"
 #include "rhi/rhi.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
@@ -22,11 +23,14 @@ namespace ionengine
                            rhi::TextureUsage const usage) -> core::handle<RenderPassTexture>;
     };
 
-    class RenderPassStorage : public core::ref_counted_object
+    struct DrawResults
     {
-      public:
-        auto getTexture(core::handle<RenderPassTexture> const handle) -> core::ref_ptr<rhi::Texture>;
+        std::vector<core::ref_ptr<Surface>> visibleSurfaces;
+    };
 
+    struct RenderingData
+    {
+        DrawResults drawResults;
         core::ref_ptr<rhi::Texture> backBuffer;
     };
 
@@ -35,26 +39,22 @@ namespace ionengine
       public:
         virtual ~RenderPass() = default;
 
-        virtual auto initialize(class Renderer* renderer) -> void = 0;
-
-        virtual auto render() -> void = 0;
+        virtual auto render(RenderingData const& renderingData) -> void = 0;
 
         rhi::GraphicsContext* graphicsContext;
         rhi::CopyContext* copyContext;
-        RenderPassStorage* passStorage;
     };
 
     class Renderer : public core::ref_counted_object
     {
       public:
-        Renderer(rhi::Device& device, std::vector<core::ref_ptr<RenderPass>> const& renderPasses,
-                 core::ref_ptr<RenderPassStorage> passStorage, uint32_t const outputWidth, uint32_t const outputHeight);
+        Renderer(rhi::RHICreateInfo const& createInfo, std::vector<core::ref_ptr<RenderPass>> const& renderPasses);
 
         auto createShader(shadersys::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>;
 
         auto createTexture() -> core::ref_ptr<Texture>;
 
-        auto render() -> void;
+        auto render(RenderingData& renderingData) -> void;
 
         auto resize(uint32_t const width, uint32_t const height) -> void;
 
@@ -63,13 +63,12 @@ namespace ionengine
         */
 
       private:
-        rhi::Device* device;
+        core::ref_ptr<rhi::Device> device;
 
         core::ref_ptr<rhi::GraphicsContext> graphicsContext;
         core::ref_ptr<rhi::CopyContext> copyContext;
 
         std::vector<core::ref_ptr<RenderPass>> renderPasses;
-        core::ref_ptr<RenderPassStorage> passStorage;
         std::unordered_map<std::string, core::ref_ptr<Shader>> shaders;
 
         uint32_t outputWidth;
@@ -90,10 +89,9 @@ namespace ionengine
             return *this;
         }
 
-        auto build(rhi::Device& device, uint32_t const outputWidth, uint32_t const outputHeight) -> core::ref_ptr<Renderer>;
+        auto build(rhi::RHICreateInfo const& createInfo) -> core::ref_ptr<Renderer>;
 
       private:
         std::vector<core::ref_ptr<RenderPass>> renderPasses;
-        core::ref_ptr<RenderPassStorage> passStorage;
     };
 } // namespace ionengine

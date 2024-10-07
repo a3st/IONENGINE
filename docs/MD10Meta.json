@@ -1,0 +1,55 @@
+{
+    "model": {
+        "objects": [
+            {
+                "name": "wheel_r",
+                "surfaces": [
+                    0,
+                    1,
+                    2
+                ]
+            },
+            {
+                "name": "wheel_l",
+                "surfaces": [
+                    2,
+                    3,
+                    4
+                ]
+            }
+        ],
+        "surfaces": [
+            {
+                "buffer": 1,
+                "material": 2,
+                "indexCount": 1000
+            }
+        ],
+        "buffers": [
+            {
+                "offset": 0,
+                "sizeInBytes": 1254
+            }
+        ],
+        "vertices": {
+            "buffer": 1,
+            "layout": {
+                "elements": [
+                    {
+                        "format": "RGB32_FLOAT",
+                        "semantic": "POSITION"
+                    },
+                    {
+                        "format": "RGB32_FLOAT",
+                        "semantic": "NORMAL"
+                    },
+                    {
+                        "format": "RGB32_FLOAT",
+                        "semantic": "TEXCOORD0"
+                    }
+                ],
+                "sizeInBytes": 16
+            }
+        }
+    }
+}

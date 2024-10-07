@@ -15,7 +15,7 @@ namespace ionengine::shadersys
     class DXCCompiler : public ShaderCompiler
     {
       public:
-        DXCCompiler(fx::ShaderAPIType const apiType);
+        DXCCompiler(fx::APIType const apiType);
 
         auto compileFromFile(std::filesystem::path const& filePath, std::string& errors) -> std::optional<ShaderEffectFile> override;
 
@@ -24,6 +24,6 @@ namespace ionengine::shadersys
         winrt::com_ptr<IDxcUtils> utils;
         winrt::com_ptr<IDxcIncludeHandler> includeHandler;
 
-        fx::ShaderAPIType apiType;
+        fx::APIType apiType;
     };
 } // namespace ionengine::shadersys
