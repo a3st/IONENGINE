@@ -9,7 +9,7 @@
             "VS": {
                 "buffer": 0,
                 "entryPoint": "main",
-                "input": {
+                "vertexLayout": {
                     "elements": [
                         {
                             "format": "RGB32_FLOAT",

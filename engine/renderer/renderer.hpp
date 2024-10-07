@@ -50,7 +50,7 @@ namespace ionengine
       public:
         Renderer(rhi::RHICreateInfo const& createInfo, std::vector<core::ref_ptr<RenderPass>> const& renderPasses);
 
-        auto createShader(shadersys::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>;
+        auto createShader(shadersys::ShaderFile const& shaderFile) -> core::ref_ptr<Shader>;
 
         auto createTexture() -> core::ref_ptr<Texture>;
 

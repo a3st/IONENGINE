@@ -5,7 +5,7 @@
 
 namespace ionengine
 {
-    auto FXVertexFormat_to_VertexFormat(shadersys::fx::VertexFormat const format) -> rhi::VertexFormat
+    auto FXVertexFormat_to_RHIVertexFormat(shadersys::fx::VertexFormat const format) -> rhi::VertexFormat
     {
         switch (format)
         {
@@ -38,10 +38,10 @@ namespace ionengine
         }
     }
 
-    Shader::Shader(rhi::Device& device, shadersys::ShaderEffectFile const& shaderEffect)
+    Shader::Shader(rhi::Device& device, shadersys::ShaderFile const& shaderFile)
     {
         std::string apiType;
-        switch (shaderEffect.apiType)
+        switch (shaderFile.apiType)
         {
             case shadersys::fx::APIType::DXIL: {
                 apiType = "D3D12";
@@ -60,10 +60,10 @@ namespace ionengine
 
         rhi::ShaderCreateInfo shaderCreateInfo{.pipelineType = rhi::PipelineType::Graphics};
 
-        for (auto const& [stageType, stageData] : shaderEffect.effectData.output.stages)
+        for (auto const& [stageType, stageData] : shaderFile.shaderData.output.stages)
         {
             uint32_t const bufferIndex = stageData.buffer;
-            auto const& bufferData = shaderEffect.effectData.buffers[bufferIndex];
+            auto const& bufferData = shaderFile.shaderData.buffers[bufferIndex];
 
             if (stageType == shadersys::fx::StageType::Compute)
             {
@@ -71,22 +71,22 @@ namespace ionengine
 
                 rhi::ShaderStageCreateInfo stageCreateInfo{
                     .entryPoint = stageData.entryPoint,
-                    .shader = {shaderEffect.blob.data() + bufferData.offset, bufferData.size}};
+                    .shader = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
                 shaderCreateInfo.compute = std::move(stageCreateInfo);
             }
             else
             {
                 rhi::ShaderStageCreateInfo stageCreateInfo{
                     .entryPoint = stageData.entryPoint,
-                    .shader = {shaderEffect.blob.data() + bufferData.offset, bufferData.size}};
+                    .shader = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
                 switch (stageType)
                 {
                     case shadersys::fx::StageType::Vertex: {
-                        for (auto const& inputElement : stageData.input.elements)
+                        for (auto const& inputElement : stageData.vertexLayout.elements)
                         {
                             rhi::VertexDeclarationInfo vertexDeclarationInfo{
                                 .semantic = inputElement.semantic,
-                                .format = FXVertexFormat_to_VertexFormat(inputElement.format)};
+                                .format = FXVertexFormat_to_RHIVertexFormat(inputElement.format)};
 
                             shaderCreateInfo.graphics.vertexDeclarations.emplace_back(std::move(vertexDeclarationInfo));
                         }
@@ -97,7 +97,7 @@ namespace ionengine
                     case shadersys::fx::StageType::Pixel: {
                         rasterizerStageInfo.fillMode = rhi::FillMode::Solid;
 
-                        switch (shaderEffect.effectData.output.cullSide)
+                        switch (shaderFile.shaderData.output.cullSide)
                         {
                             case shadersys::fx::CullSide::Back: {
                                 rasterizerStageInfo.cullMode = rhi::CullMode::Back;

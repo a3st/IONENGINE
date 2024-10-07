@@ -1,55 +1,52 @@
 {
-    "model": {
-        "objects": [
+    "materialCount": 4,
+    "buffer": 1,
+    "vertexLayout": {
+        "elements": [
             {
-                "name": "wheel_r",
-                "surfaces": [
-                    0,
-                    1,
-                    2
-                ]
+                "format": "RGB32_FLOAT",
+                "semantic": "POSITION"
             },
             {
-                "name": "wheel_l",
-                "surfaces": [
-                    2,
-                    3,
-                    4
-                ]
-            }
-        ],
-        "surfaces": [
+                "format": "RGB32_FLOAT",
+                "semantic": "NORMAL"
+            },
             {
-                "buffer": 1,
-                "material": 2,
-                "indexCount": 1000
+                "format": "RGB32_FLOAT",
+                "semantic": "TEXCOORD0"
             }
         ],
-        "buffers": [
-            {
-                "offset": 0,
-                "sizeInBytes": 1254
-            }
-        ],
-        "vertices": {
-            "buffer": 1,
-            "layout": {
-                "elements": [
-                    {
-                        "format": "RGB32_FLOAT",
-                        "semantic": "POSITION"
-                    },
-                    {
-                        "format": "RGB32_FLOAT",
-                        "semantic": "NORMAL"
-                    },
-                    {
-                        "format": "RGB32_FLOAT",
-                        "semantic": "TEXCOORD0"
-                    }
-                ],
-                "sizeInBytes": 16
-            }
+        "sizeInBytes": 16
+    },
+    "objects": [
+        {
+            "name": "wheel_r",
+            "surfaces": [
+                0,
+                1,
+                2
+            ]
+        },
+        {
+            "name": "wheel_l",
+            "surfaces": [
+                2,
+                3,
+                4
+            ]
         }
-    }
+    ],
+    "surfaces": [
+        {
+            "buffer": 1,
+            "material": 2,
+            "indexCount": 1000
+        }
+    ],
+    "buffers": [
+        {
+            "offset": 0,
+            "sizeInBytes": 1254
+        }
+    ]
 }

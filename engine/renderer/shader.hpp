@@ -18,7 +18,7 @@ namespace ionengine
             size_t size;
         };*/
 
-        Shader(rhi::Device& device, shadersys::ShaderEffectFile const& shaderEffect);
+        Shader(rhi::Device& device, shadersys::ShaderFile const& shaderFile);
 
         auto getShader() const -> core::ref_ptr<rhi::Shader>;
 

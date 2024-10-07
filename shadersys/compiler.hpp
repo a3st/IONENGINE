@@ -14,6 +14,6 @@ namespace ionengine::shadersys
 
         static auto create(fx::APIType const apiType) -> core::ref_ptr<ShaderCompiler>;
 
-        virtual auto compileFromFile(std::filesystem::path const& filePath, std::string& errors) -> std::optional<ShaderEffectFile> = 0;
+        virtual auto compileFromFile(std::filesystem::path const& filePath, std::string& errors) -> std::optional<ShaderFile> = 0;
     };
 } // namespace ionengine::shadersys

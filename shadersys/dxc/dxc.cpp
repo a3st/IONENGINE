@@ -28,7 +28,7 @@ namespace ionengine::shadersys
     }
 
     auto DXCCompiler::compileFromFile(std::filesystem::path const& filePath,
-                                      std::string& errors) -> std::optional<ShaderEffectFile>
+                                      std::string& errors) -> std::optional<ShaderFile>
     {
         std::basic_ifstream<uint8_t> stream(filePath);
         if (!stream.is_open())
@@ -59,22 +59,22 @@ namespace ionengine::shadersys
 
         std::basic_stringstream<uint8_t> streambuf;
 
-        fx::EffectData effectData{.header = std::move(headerData), .output = std::move(outputData)};
+        fx::ShaderData shaderData{.header = std::move(headerData), .output = std::move(outputData)};
 
         if (materialData.size > 0)
         {
-            effectData.constants.emplace_back(
+            shaderData.constants.emplace_back(
                 fx::ConstantData{.name = "materialBuffer", .type = fx::ElementType::Uint});
-            effectData.structures.emplace_back(std::move(materialData));
+            shaderData.structures.emplace_back(std::move(materialData));
         }
 
-        if (effectData.header.domain.compare("Surface") == 0)
+        if (shaderData.header.domain.compare("Surface") == 0)
         {
         }
 
         for (auto const& [stageType, shaderCode] : stageData)
         {
-            fx::StageData shaderStageData{.buffer = static_cast<uint32_t>(effectData.buffers.size()),
+            fx::StageData shaderStageData{.buffer = static_cast<uint32_t>(shaderData.buffers.size()),
                                           .entryPoint = "main"};
 
             std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
@@ -96,7 +96,7 @@ namespace ionengine::shadersys
                 }
             }
 
-            if (effectData.header.domain.compare("Screen") == 0)
+            if (shaderData.header.domain.compare("Screen") == 0)
             {
                 arguments.emplace_back(L"-D SHADER_DOMAIN_TYPE_SCREEN");
             }
@@ -122,7 +122,7 @@ namespace ionengine::shadersys
 
             fx::BufferData bufferData{.offset = static_cast<uint64_t>(streambuf.tellp()),
                                       .size = shaderBlob->GetBufferSize()};
-            effectData.buffers.emplace_back(std::move(bufferData));
+            shaderData.buffers.emplace_back(std::move(bufferData));
 
             streambuf.write(reinterpret_cast<uint8_t const*>(shaderBlob->GetBufferPointer()),
                             shaderBlob->GetBufferSize());
@@ -215,22 +215,22 @@ namespace ionengine::shadersys
                     }
                 }
 
-                fx::InputElementData elementData{.format = format,
+                fx::VertexLayoutElementData elementData{.format = format,
                                                  .semantic = signatureParameterDesc.SemanticName +
                                                              std::to_string(signatureParameterDesc.SemanticIndex)};
-                shaderStageData.input.elements.emplace_back(std::move(elementData));
+                shaderStageData.vertexLayout.elements.emplace_back(std::move(elementData));
 
                 inputSize += fx::sizeof_VertexFormat(format);
             }
 
-            shaderStageData.input.size = inputSize;
+            shaderStageData.vertexLayout.size = inputSize;
 
-            effectData.output.stages[stageType] = std::move(shaderStageData);
+            shaderData.output.stages[stageType] = std::move(shaderStageData);
         }
 
-        return ShaderEffectFile{.magic = fx::Magic,
+        return ShaderFile{.magic = fx::Magic,
                                 .apiType = apiType,
-                                .effectData = std::move(effectData),
+                                .shaderData = std::move(shaderData),
                                 .blob = {std::istreambuf_iterator<uint8_t>(streambuf.rdbuf()), {}}};
     }
 } // namespace ionengine::shadersys

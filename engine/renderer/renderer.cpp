@@ -51,9 +51,9 @@ namespace ionengine
         outputWidth = width, outputHeight = height;
     }
 
-    auto Renderer::createShader(shadersys::ShaderEffectFile const& shaderEffect) -> core::ref_ptr<Shader>
+    auto Renderer::createShader(shadersys::ShaderFile const& shaderFile) -> core::ref_ptr<Shader>
     {
-        return core::make_ref<Shader>(*device, shaderEffect);
+        return core::make_ref<Shader>(*device, shaderFile);
     }
 
     auto Renderer::createTexture() -> core::ref_ptr<Texture>

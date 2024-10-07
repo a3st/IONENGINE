@@ -64,7 +64,7 @@ namespace ionengine::shadersys
             None
         };
 
-        struct InputElementData
+        struct VertexLayoutElementData
         {
             VertexFormat format;
             std::string semantic;
@@ -103,9 +103,9 @@ namespace ionengine::shadersys
             }
         };
 
-        struct InputData
+        struct VertexLayoutData
         {
-            std::vector<InputElementData> elements;
+            std::vector<VertexLayoutElementData> elements;
             uint32_t size;
 
             template <typename Archive>
@@ -135,14 +135,14 @@ namespace ionengine::shadersys
         {
             uint32_t buffer;
             std::string entryPoint;
-            InputData input;
+            VertexLayoutData vertexLayout;
 
             template <typename Archive>
             auto operator()(Archive& archive)
             {
                 archive.property(buffer, "buffer");
                 archive.property(entryPoint, "entryPoint");
-                archive.property(input, "input");
+                archive.property(vertexLayout, "vertexLayout");
             }
         };
 
@@ -191,7 +191,7 @@ namespace ionengine::shadersys
             }
         };
 
-        struct EffectData
+        struct ShaderData
         {
             HeaderData header;
             OutputData output;
@@ -211,11 +211,11 @@ namespace ionengine::shadersys
         };
     } // namespace fx
 
-    struct ShaderEffectFile
+    struct ShaderFile
     {
         std::array<uint8_t, fx::Magic.size()> magic;
         fx::APIType apiType;
-        fx::EffectData effectData;
+        fx::ShaderData shaderData;
         std::vector<uint8_t> blob;
 
         template <typename Archive>
@@ -223,7 +223,7 @@ namespace ionengine::shadersys
         {
             archive.property(magic);
             archive.property(apiType);
-            archive.template with<core::serialize_ojson, core::serialize_ijson>(effectData);
+            archive.template with<core::serialize_ojson, core::serialize_ijson>(shaderData);
             archive.property(blob);
         }
     };

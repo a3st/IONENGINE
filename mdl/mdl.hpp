@@ -10,6 +10,22 @@ namespace ionengine
     {
         std::array<uint8_t, 4> constexpr Magic{'M', 'D', '1', '0'};
 
+        enum class VertexFormat
+        {
+            R32_UINT,
+            R32_SINT,
+            R32_FLOAT,
+            RG32_UINT,
+            RG32_SINT,
+            RG32_FLOAT,
+            RGB32_UINT,
+            RGB32_SINT,
+            RGB32_FLOAT,
+            RGBA32_UINT,
+            RGBA32_SINT,
+            RGBA32_FLOAT
+        };
+
         struct BufferData
         {
             uint64_t offset;
@@ -51,11 +67,37 @@ namespace ionengine
             }
         };
 
-        
+        struct VertexLayoutElementData
+        {
+            VertexFormat format;
+            std::string semantic;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(format, "format");
+                archive.property(semantic, "semantic");
+            }
+        };
+
+        struct VertexLayoutData
+        {
+            std::vector<VertexLayoutElementData> elements;
+            uint32_t size;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(elements, "elements");
+                archive.property(size, "sizeInBytes");
+            }
+        };
 
         struct ModelData
         {
             uint32_t materialCount;
+            uint32_t buffer;
+            VertexLayoutData vertexLayout;
             std::vector<ObjectData> objects;
             std::vector<SurfaceData> surfaces;
             std::vector<BufferData> buffers;
@@ -64,6 +106,8 @@ namespace ionengine
             auto operator()(Archive& archive)
             {
                 archive.property(materialCount, "materialCount");
+                archive.property(buffer, "buffer");
+                archive.property(vertexLayout, "vertexLayout");
                 archive.property(objects, "objects");
                 archive.property(surfaces, "surfaces");
                 archive.property(buffers, "buffers");
@@ -85,4 +129,4 @@ namespace ionengine
             archive.property(blob);
         }
     };
-}
+} // namespace ionengine
