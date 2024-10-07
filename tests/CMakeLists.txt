@@ -58,3 +58,14 @@ target_link_libraries(engine_test PRIVATE
     GTest::gtest)
 
 target_precompile_headers(engine_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
+
+# MDL
+add_executable(mdl_test mdl_test.cpp)
+
+target_include_directories(mdl_test PRIVATE ${PROJECT_SOURCE_DIR})
+
+target_link_libraries(mdl_test PRIVATE 
+    mdl
+    GTest::gtest)
+
+target_precompile_headers(mdl_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)

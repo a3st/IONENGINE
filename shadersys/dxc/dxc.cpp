@@ -59,7 +59,7 @@ namespace ionengine::shadersys
 
         std::basic_stringstream<uint8_t> streambuf;
 
-        fx::ShaderData shaderData{.header = std::move(headerData), .output = std::move(outputData)};
+        fx::ShaderData shaderData{.headerData = std::move(headerData), .outputData = std::move(outputData)};
 
         if (materialData.size > 0)
         {
@@ -68,7 +68,7 @@ namespace ionengine::shadersys
             shaderData.structures.emplace_back(std::move(materialData));
         }
 
-        if (shaderData.header.domain.compare("Surface") == 0)
+        if (shaderData.headerData.domain.compare("Surface") == 0)
         {
         }
 
@@ -96,7 +96,7 @@ namespace ionengine::shadersys
                 }
             }
 
-            if (shaderData.header.domain.compare("Screen") == 0)
+            if (shaderData.headerData.domain.compare("Screen") == 0)
             {
                 arguments.emplace_back(L"-D SHADER_DOMAIN_TYPE_SCREEN");
             }
@@ -225,7 +225,7 @@ namespace ionengine::shadersys
 
             shaderStageData.vertexLayout.size = inputSize;
 
-            shaderData.output.stages[stageType] = std::move(shaderStageData);
+            shaderData.outputData.stages[stageType] = std::move(shaderStageData);
         }
 
         return ShaderFile{.magic = fx::Magic,

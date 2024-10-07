@@ -193,8 +193,8 @@ namespace ionengine::shadersys
 
         struct ShaderData
         {
-            HeaderData header;
-            OutputData output;
+            HeaderData headerData;
+            OutputData outputData;
             std::vector<ConstantData> constants;
             std::vector<StructureData> structures;
             std::vector<BufferData> buffers;
@@ -202,8 +202,8 @@ namespace ionengine::shadersys
             template <typename Archive>
             auto operator()(Archive& archive)
             {
-                archive.property(header, "header");
-                archive.property(output, "output");
+                archive.property(headerData, "header");
+                archive.property(outputData, "output");
                 archive.property(constants, "constants");
                 archive.property(structures, "structures");
                 archive.property(buffers, "buffers");

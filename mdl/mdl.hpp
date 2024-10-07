@@ -118,14 +118,14 @@ namespace ionengine
     struct ModelFile
     {
         std::array<uint8_t, mdl::Magic.size()> magic;
-        mdl::ModelData model;
+        mdl::ModelData modelData;
         std::vector<uint8_t> blob;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
             archive.property(magic);
-            archive.template with<core::serialize_ojson, core::serialize_ijson>(model);
+            archive.template with<core::serialize_ojson, core::serialize_ijson>(modelData);
             archive.property(blob);
         }
     };

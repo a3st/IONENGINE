@@ -60,7 +60,7 @@ namespace ionengine
 
         rhi::ShaderCreateInfo shaderCreateInfo{.pipelineType = rhi::PipelineType::Graphics};
 
-        for (auto const& [stageType, stageData] : shaderFile.shaderData.output.stages)
+        for (auto const& [stageType, stageData] : shaderFile.shaderData.outputData.stages)
         {
             uint32_t const bufferIndex = stageData.buffer;
             auto const& bufferData = shaderFile.shaderData.buffers[bufferIndex];
@@ -97,7 +97,7 @@ namespace ionengine
                     case shadersys::fx::StageType::Pixel: {
                         rasterizerStageInfo.fillMode = rhi::FillMode::Solid;
 
-                        switch (shaderFile.shaderData.output.cullSide)
+                        switch (shaderFile.shaderData.outputData.cullSide)
                         {
                             case shadersys::fx::CullSide::Back: {
                                 rasterizerStageInfo.cullMode = rhi::CullMode::Back;
