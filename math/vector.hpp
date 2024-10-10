@@ -107,8 +107,8 @@ namespace ionengine::math
         }
     };
 
-    using Vector2f = Vector2<float>;
-    using Vector2d = Vector2<double>;
+    using Vec2f = Vector2<float>;
+    using Vec2d = Vector2<double>;
 
     template <typename Type>
     struct Vector3
@@ -231,8 +231,8 @@ namespace ionengine::math
         }
     };
 
-    using Vector3f = Vector3<float>;
-    using Vector3d = Vector3<double>;
+    using Vec3f = Vector3<float>;
+    using Vec3d = Vector3<double>;
 
     template <typename Type>
     struct Vector4

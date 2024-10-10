@@ -26,6 +26,8 @@ namespace ionengine
             RGBA32_FLOAT
         };
 
+        auto sizeof_VertexFormat(VertexFormat const format) -> size_t;
+
         struct BufferData
         {
             uint64_t offset;

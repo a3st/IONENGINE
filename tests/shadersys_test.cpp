@@ -102,20 +102,20 @@ TEST(ShaderSystem, Parser_Test)
     shadersys::Lexer lexer(quadShader);
     shadersys::Parser parser;
 
-    shadersys::fx::ShaderHeaderData headerData;
-    shadersys::fx::ShaderOutputData outputData;
-    shadersys::fx::ShaderStructureData materialData;
-    std::unordered_map<shadersys::fx::ShaderStageType, std::string> stageData;
+    shadersys::fx::HeaderData headerData;
+    shadersys::fx::OutputData outputData;
+    shadersys::fx::StructureData materialData;
+    std::unordered_map<shadersys::fx::StageType, std::string> stageData;
     parser.parse(lexer, headerData, outputData, stageData, materialData);
 }
 
 TEST(ShaderSystem, Compiler_Test)
 {
-    auto shaderCompiler = shadersys::ShaderCompiler::create(shadersys::fx::ShaderAPIType::DXIL);
+    auto shaderCompiler = shadersys::ShaderCompiler::create(shadersys::fx::APIType::DXIL);
     std::string errors;
-    auto effectFile = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx", errors);
+    auto shaderFile = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx", errors);
     std::cout << errors << std::endl;
-    core::to_file<shadersys::ShaderEffectFile, core::serialize_oarchive>(effectFile.value(), "test.bin");
+    core::to_file<shadersys::ShaderFile, core::serialize_oarchive>(shaderFile.value(), "test.bin");
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

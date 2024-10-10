@@ -149,23 +149,23 @@ namespace ionengine::rhi
 
         struct EntryHasher
         {
-            auto operator()(const Entry& entry) const -> std::size_t
+            auto operator()(const Entry& other) const -> std::size_t
             {
-                auto depthStencil = entry.depthStencil.value_or(DepthStencilStageInfo::Default());
-                return entry.shaderHash ^ XXH64(&entry.rasterizer.fillMode, sizeof(uint32_t), 0) ^
-                       XXH64(&entry.rasterizer.cullMode, sizeof(uint32_t), 0) ^
-                       XXH64(&entry.blendColor.blendDst, sizeof(uint32_t), 0) ^
-                       XXH64(&entry.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
-                       XXH64(&entry.blendColor.blendEnable, sizeof(uint32_t), 0) ^
-                       XXH64(&entry.blendColor.blendOp, sizeof(uint32_t), 0) ^
-                       XXH64(&entry.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
-                       XXH64(&entry.blendColor.blendSrc, sizeof(uint32_t), 0) ^
-                       XXH64(&entry.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
+                auto depthStencil = other.depthStencil.value_or(DepthStencilStageInfo::Default());
+                return entry.shaderHash ^ XXH64(&other.rasterizer.fillMode, sizeof(uint32_t), 0) ^
+                       XXH64(&other.rasterizer.cullMode, sizeof(uint32_t), 0) ^
+                       XXH64(&other.blendColor.blendDst, sizeof(uint32_t), 0) ^
+                       XXH64(&other.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
+                       XXH64(&other.blendColor.blendEnable, sizeof(uint32_t), 0) ^
+                       XXH64(&other.blendColor.blendOp, sizeof(uint32_t), 0) ^
+                       XXH64(&other.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
+                       XXH64(&other.blendColor.blendSrc, sizeof(uint32_t), 0) ^
+                       XXH64(&other.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
                        XXH64(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
                        XXH64(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
                        XXH64(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
-                       XXH64(entry.renderTargetFormats.data(), entry.renderTargetFormats.size(), 0) ^
-                       XXH64(&entry.depthStencilFormat, sizeof(VkFormat), 0);
+                       XXH64(other.renderTargetFormats.data(), other.renderTargetFormats.size(), 0) ^
+                       XXH64(&other.depthStencilFormat, sizeof(VkFormat), 0);
             }
         };
 
