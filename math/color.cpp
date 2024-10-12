@@ -5,7 +5,7 @@
 
 namespace ionengine::math
 {
-    Color& Color::srgb()
+    auto Color::srgb() -> Color&
     {
         for (size_t const i : std::views::iota(0u, 3u))
         {
@@ -22,7 +22,7 @@ namespace ionengine::math
         return *this;
     }
 
-    Color& Color::rgb()
+    auto Color::rgb() -> Color&
     {
         for (size_t const i : std::views::iota(0u, 3u))
         {

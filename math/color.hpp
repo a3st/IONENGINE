@@ -25,7 +25,7 @@ namespace ionengine::math
         {
         }
 
-        Color& operator=(Color const& other)
+        auto operator=(Color const& other) -> Color&
         {
             r = other.r;
             g = other.g;
@@ -34,7 +34,7 @@ namespace ionengine::math
             return *this;
         }
 
-        Color& operator=(Color&& other) noexcept
+        auto operator=(Color&& other) -> Color&
         {
             r = other.r;
             g = other.g;
@@ -43,28 +43,36 @@ namespace ionengine::math
             return *this;
         }
 
-        const float* data() const
+        auto data() const -> float const*
         {
             return &r;
         }
 
-        size_t size() const
+        auto size() const -> size_t
         {
             return 4;
         }
 
-        Color& rgb();
+        auto rgb() -> Color&;
 
-        Color& srgb();
+        auto srgb() -> Color&;
 
-        bool operator==(Color const& other) const
+        auto operator==(Color const& other) const -> bool
         {
             return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
         }
-
-        bool operator!=(Color const& other) const
-        {
-            return std::tie(r, g, b, a) != std::tie(other.r, other.g, other.b, other.a);
-        }
     };
 } // namespace ionengine::math
+
+namespace std
+{
+    template <>
+    struct hash<ionengine::math::Color>
+    {
+        auto operator()(ionengine::math::Color const& other) const -> size_t
+        {
+            return std::hash<float>()(other.r) ^ std::hash<float>()(other.g) ^ std::hash<float>()(other.b) ^
+                   std::hash<float>()(other.a);
+        }
+    };
+} // namespace std

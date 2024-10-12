@@ -4,347 +4,333 @@
 
 #include "math/vector.hpp"
 
-namespace ionengine::math {
+namespace ionengine::math
+{
+    template <typename Type>
+    struct Mat
+    {
+        Type _00, _01, _02, _03;
+        Type _10, _11, _12, _13;
+        Type _20, _21, _22, _23;
+        Type _30, _31, _32, _33;
 
-template<typename Type>
-struct Matrix {
+        Mat()
+            : _00(0), _01(0), _02(0), _03(0), _10(0), _11(0), _12(0), _13(0), _20(0), _21(0), _22(0), _23(0), _30(0),
+              _31(0), _32(0), _33(0)
+        {
+        }
 
-	Type m00, m01, m02, m03;
-	Type m10, m11, m12, m13;
-	Type m20, m21, m22, m23;
-	Type m30, m31, m32, m33;
+        Mat(Type const _00, Type const _01, Type const _02, Type const _03, Type const _10, Type const _11,
+            Type const _12, Type const _13, Type const _20, Type const _21, Type const _22, Type const _23,
+            Type const _30, Type const _31, Type const _32, Type const _33)
+            : _00(_00), _01(_01), _02(_02), _03(_03), _10(_10), _11(_11), _12(_12), _13(_13), _20(_20), _21(_21),
+              _22(_22), _23(_23), _30(_30), _31(_31), _32(_32), _33(_33)
+        {
+        }
 
-	Matrix() = default;
+        Mat(Mat const& other)
+            : _00(other._00), _01(other._01), _02(other._02), _03(other._03), _10(other._10), _11(other._11),
+              _12(other._12), _13(other._13), _20(other._20), _21(other._21), _22(other._22), _23(other._23),
+              _30(other._30), _31(other._31), _32(other._32), _33(other._33)
+        {
+        }
 
-	Matrix(
-		Type const _m00, Type const _m01, Type const _m02, Type const _m03,
-		Type const _m10, Type const _m11, Type const _m12, Type const _m13,
-		Type const _m20, Type const _m21, Type const _m22, Type const _m23,
-		Type const _m30, Type const _m31, Type const _m32, Type const _m33
-	) :  
-		m00(_m00), m01(_m01), m02(_m02), m03(_m03),
-		m10(_m10), m11(_m11), m12(_m12), m13(_m13),
-		m20(_m20), m21(_m21), m22(_m22), m23(_m23),
-		m30(_m30), m31(_m31), m32(_m32), m33(_m33) { }
+        Mat(Mat&& other) noexcept
+            : _00(other._00), _01(other._01), _02(other._02), _03(other._03), _10(other._10), _11(other._11),
+              _12(other._12), _13(other._13), _20(other._20), _21(other._21), _22(other._22), _23(other._23),
+              _30(other._30), _31(other._31), _32(other._32), _33(other._33)
+        {
+        }
 
-	Matrix(Matrix const& other) : 
-		m00(other.m00), m01(other.m01), m02(other.m02), m03(other.m03),
-		m10(other.m10), m11(other.m11), m12(other.m12), m13(other.m13),
-		m20(other.m20), m21(other.m21), m22(other.m22), m23(other.m23),
-		m30(other.m30), m31(other.m31), m32(other.m32), m33(other.m33) { }
+        auto operator=(Mat const& other) -> Mat&
+        {
+            _00 = other._00;
+            _01 = other._01;
+            _02 = other._02;
+            _03 = other._03;
+            _10 = other._10;
+            _11 = other._11;
+            _12 = other._12;
+            _13 = other._13;
+            _20 = other._20;
+            _21 = other._21;
+            _22 = other._22;
+            _23 = other._23;
+            _30 = other._30;
+            _31 = other._31;
+            _32 = other._32;
+            _33 = other._33;
+            return *this;
+        }
 
-	Matrix(Matrix&& other) noexcept :
-		m00(other.m00), m01(other.m01), m02(other.m02), m03(other.m03),
-		m10(other.m10), m11(other.m11), m12(other.m12), m13(other.m13),
-		m20(other.m20), m21(other.m21), m22(other.m22), m23(other.m23),
-		m30(other.m30), m31(other.m31), m32(other.m32), m33(other.m33) { }
+        auto operator=(Mat&& other) -> Mat&
+        {
+            _00 = other._00;
+            _01 = other._01;
+            _02 = other._02;
+            _03 = other._03;
+            _10 = other._10;
+            _11 = other._11;
+            _12 = other._12;
+            _13 = other._13;
+            _20 = other._20;
+            _21 = other._21;
+            _22 = other._22;
+            _23 = other._23;
+            _30 = other._30;
+            _31 = other._31;
+            _32 = other._32;
+            _33 = other._33;
+            return *this;
+        }
 
-	Matrix& operator=(Matrix const& other) {
+        auto data() const -> Type const*
+        {
+            return &_00;
+        }
 
-		m00 = other.m00;
-		m01 = other.m01;
-		m02 = other.m02;
-		m03 = other.m03;
-		m10 = other.m10;
-		m11 = other.m11;
-		m12 = other.m12;
-		m13 = other.m13;
-		m20 = other.m20;
-		m21 = other.m21;
-		m22 = other.m22;
-		m23 = other.m23;
-		m30 = other.m30;
-		m31 = other.m31;
-		m32 = other.m32;
-		m33 = other.m33;
-		return *this;
-	}
+        auto size() const -> size_t
+        {
+            return 16;
+        }
 
-	Matrix& operator=(Matrix&& other) noexcept {
+        auto transpose() -> Mat&
+        {
+            Mat mat = *this;
+            _00 = mat._00;
+            _01 = mat._10;
+            _02 = mat._20;
+            _03 = mat._30;
+            _10 = mat._01;
+            _11 = mat._11;
+            _12 = mat._21;
+            _13 = mat._31;
+            _20 = mat._02;
+            _21 = mat._12;
+            _22 = mat._22;
+            _23 = mat._32;
+            _30 = mat._03;
+            _31 = mat._13;
+            _32 = mat._23;
+            _33 = mat._33;
+            return *this;
+        }
 
-		m00 = other.m00;
-		m01 = other.m01;
-		m02 = other.m02;
-		m03 = other.m03;
-		m10 = other.m10;
-		m11 = other.m11;
-		m12 = other.m12;
-		m13 = other.m13;
-		m20 = other.m20;
-		m21 = other.m21;
-		m22 = other.m22;
-		m23 = other.m23;
-		m30 = other.m30;
-		m31 = other.m31;
-		m32 = other.m32;
-		m33 = other.m33;
-		return *this;
-	}
+        auto inverse() -> Mat&
+        {
+            Type n11 = _00, n12 = _10, n13 = _20, n14 = _30;
+            Type n21 = _01, n22 = _11, n23 = _21, n24 = _31;
+            Type n31 = _02, n32 = _12, n33 = _22, n34 = _32;
+            Type n41 = _03, n42 = _13, n43 = _23, n44 = _33;
 
-	Type const* data() const { return &m00; }
+            Type t11 = n23 * n34 * n42 - n24 * n33 * n42 + n24 * n32 * n43 - n22 * n34 * n43 - n23 * n32 * n44 +
+                       n22 * n33 * n44;
+            Type t12 = n14 * n33 * n42 - n13 * n34 * n42 - n14 * n32 * n43 + n12 * n34 * n43 + n13 * n32 * n44 -
+                       n12 * n33 * n44;
+            Type t13 = n13 * n24 * n42 - n14 * n23 * n42 + n14 * n22 * n43 - n12 * n24 * n43 - n13 * n22 * n44 +
+                       n12 * n23 * n44;
+            Type t14 = n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34 -
+                       n12 * n23 * n34;
 
-	size_t size() const { return 16; }
+            Type det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
+            Type idet = static_cast<Type>(1.0f / det);
 
-	Matrix& transpose() {
+            _00 = t11 * idet;
+            _01 = (n24 * n33 * n41 - n23 * n34 * n41 - n24 * n31 * n43 + n21 * n34 * n43 + n23 * n31 * n44 -
+                   n21 * n33 * n44) *
+                  idet;
+            _02 = (n22 * n34 * n41 - n24 * n32 * n41 + n24 * n31 * n42 - n21 * n34 * n42 - n22 * n31 * n44 +
+                   n21 * n32 * n44) *
+                  idet;
+            _03 = (n23 * n32 * n41 - n22 * n33 * n41 - n23 * n31 * n42 + n21 * n33 * n42 + n22 * n31 * n43 -
+                   n21 * n32 * n43) *
+                  idet;
 
-		Matrix mat = *this;
-		m00 = mat.m00;
-		m01 = mat.m10;
-		m02 = mat.m20;
-		m03 = mat.m30;
-		m10 = mat.m01;
-		m11 = mat.m11;
-		m12 = mat.m21;
-		m13 = mat.m31;
-		m20 = mat.m02;
-		m21 = mat.m12;
-		m22 = mat.m22;
-		m23 = mat.m32;
-		m30 = mat.m03;
-		m31 = mat.m13;
-		m32 = mat.m23;
-		m33 = mat.m33;
-		return *this;
-	}
+            _10 = t12 * idet;
+            _11 = (n13 * n34 * n41 - n14 * n33 * n41 + n14 * n31 * n43 - n11 * n34 * n43 - n13 * n31 * n44 +
+                   n11 * n33 * n44) *
+                  idet;
+            _12 = (n14 * n32 * n41 - n12 * n34 * n41 - n14 * n31 * n42 + n11 * n34 * n42 + n12 * n31 * n44 -
+                   n11 * n32 * n44) *
+                  idet;
+            _13 = (n12 * n33 * n41 - n13 * n32 * n41 + n13 * n31 * n42 - n11 * n33 * n42 - n12 * n31 * n43 +
+                   n11 * n32 * n43) *
+                  idet;
 
-	Matrix& inverse() {
+            _20 = t13 * idet;
+            _21 = (n14 * n23 * n41 - n13 * n24 * n41 - n14 * n21 * n43 + n11 * n24 * n43 + n13 * n21 * n44 -
+                   n11 * n23 * n44) *
+                  idet;
+            _22 = (n12 * n24 * n41 - n14 * n22 * n41 + n14 * n21 * n42 - n11 * n24 * n42 - n12 * n21 * n44 +
+                   n11 * n22 * n44) *
+                  idet;
+            _23 = (n13 * n22 * n41 - n12 * n23 * n41 - n13 * n21 * n42 + n11 * n23 * n42 + n12 * n21 * n43 -
+                   n11 * n22 * n43) *
+                  idet;
 
-		Type n11 = m00, n12 = m10, n13 = m20, n14 = m30;
-		Type n21 = m01, n22 = m11, n23 = m21, n24 = m31;
-		Type n31 = m02, n32 = m12, n33 = m22, n34 = m32;
-		Type n41 = m03, n42 = m13, n43 = m23, n44 = m33;
+            _30 = t14 * idet;
+            _31 = (n13 * n24 * n31 - n14 * n23 * n31 + n14 * n21 * n33 - n11 * n24 * n33 - n13 * n21 * n34 +
+                   n11 * n23 * n34) *
+                  idet;
+            _32 = (n14 * n22 * n31 - n12 * n24 * n31 - n14 * n21 * n32 + n11 * n24 * n32 + n12 * n21 * n34 -
+                   n11 * n22 * n34) *
+                  idet;
+            _33 = (n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 +
+                   n11 * n22 * n33) *
+                  idet;
+            return *this;
+        };
 
-		Type t11 = n23 * n34 * n42 - n24 * n33 * n42 + n24 * n32 * n43 - n22 * n34 * n43 - n23 * n32 * n44 + n22 * n33 * n44;
-		Type t12 = n14 * n33 * n42 - n13 * n34 * n42 - n14 * n32 * n43 + n12 * n34 * n43 + n13 * n32 * n44 - n12 * n33 * n44;
-		Type t13 = n13 * n24 * n42 - n14 * n23 * n42 + n14 * n22 * n43 - n12 * n24 * n43 - n13 * n22 * n44 + n12 * n23 * n44;
-		Type t14 = n14 * n23 * n32 - n13 * n24 * n32 - n14 * n22 * n33 + n12 * n24 * n33 + n13 * n22 * n34 - n12 * n23 * n34;
+        auto operator*(Mat const& other) const -> Mat
+        {
+            return Mat{_00 * other._00 + _01 * other._10 + _02 * other._20 + _03 * other._30,
+                       _00 * other._01 + _01 * other._11 + _02 * other._21 + _03 * other._31,
+                       _00 * other._02 + _01 * other._12 + _02 * other._22 + _03 * other._32,
+                       _00 * other._03 + _01 * other._13 + _02 * other._23 + _03 * other._33,
+                       _10 * other._00 + _11 * other._10 + _12 * other._20 + _13 * other._30,
+                       _10 * other._01 + _11 * other._11 + _12 * other._21 + _13 * other._31,
+                       _10 * other._02 + _11 * other._12 + _12 * other._22 + _13 * other._32,
+                       _10 * other._03 + _11 * other._13 + _12 * other._23 + _13 * other._33,
+                       _20 * other._00 + _21 * other._10 + _22 * other._20 + _23 * other._30,
+                       _20 * other._01 + _21 * other._11 + _22 * other._21 + _23 * other._31,
+                       _20 * other._02 + _21 * other._12 + _22 * other._22 + _23 * other._32,
+                       _20 * other._03 + _21 * other._13 + _22 * other._23 + _23 * other._33,
+                       _30 * other._00 + _31 * other._10 + _32 * other._20 + _33 * other._30,
+                       _30 * other._01 + _31 * other._11 + _32 * other._21 + _33 * other._31,
+                       _30 * other._02 + _31 * other._12 + _32 * other._22 + _33 * other._32,
+                       _30 * other._03 + _31 * other._13 + _32 * other._23 + _33 * other._33};
+        }
 
-		Type det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
-		Type idet = static_cast<Type>(1.0f / det);
+        auto operator*(Vec4<Type> const& other) const -> Mat
+        {
+            return Mat{_00 * other.x, _01 * other.y, _02 * other.z, _03 * other.w, _10 * other.x, _11 * other.y,
+                       _12 * other.z, _13 * other.w, _20 * other.x, _21 * other.y, _22 * other.z, _23 * other.w,
+                       _30 * other.x, _31 * other.y, _32 * other.z, _33 * other.w};
+        }
 
-		m00 = t11 * idet;
-		m01 = (n24 * n33 * n41 - n23 * n34 * n41 - n24 * n31 * n43 + n21 * n34 * n43 + n23 * n31 * n44 - n21 * n33 * n44) * idet;
-		m02 = (n22 * n34 * n41 - n24 * n32 * n41 + n24 * n31 * n42 - n21 * n34 * n42 - n22 * n31 * n44 + n21 * n32 * n44) * idet;
-		m03 = (n23 * n32 * n41 - n22 * n33 * n41 - n23 * n31 * n42 + n21 * n33 * n42 + n22 * n31 * n43 - n21 * n32 * n43) * idet;
+        auto operator*(Type const other) const -> Mat
+        {
+            return Mat{_00 * other, _01 * other, _02 * other, _03 * other, _10 * other, _11 * other,
+                       _12 * other, _13 * other, _20 * other, _21 * other, _22 * other, _23 * other,
+                       _30 * other, _31 * other, _32 * other, _33 * other};
+        }
 
-		m10 = t12 * idet;
-		m11 = (n13 * n34 * n41 - n14 * n33 * n41 + n14 * n31 * n43 - n11 * n34 * n43 - n13 * n31 * n44 + n11 * n33 * n44) * idet;
-		m12 = (n14 * n32 * n41 - n12 * n34 * n41 - n14 * n31 * n42 + n11 * n34 * n42 + n12 * n31 * n44 - n11 * n32 * n44) * idet;
-		m13 = (n12 * n33 * n41 - n13 * n32 * n41 + n13 * n31 * n42 - n11 * n33 * n42 - n12 * n31 * n43 + n11 * n32 * n43) * idet;
+        auto operator+(Mat const& other) const -> Mat
+        {
+            return Mat{_00 + other.m00, _01 + other._01, _02 + other._02, _03 + other._03,
+                       _10 + other._10, _11 + other._11, _12 + other._12, _13 + other._13,
+                       _20 + other._20, _21 + other._21, _22 + other._22, _23 + other._23,
+                       _30 + other._30, _31 + other._31, _32 + other._32, _33 + other._33};
+        }
 
-		m20 = t13 * idet;
-		m21 = (n14 * n23 * n41 - n13 * n24 * n41 - n14 * n21 * n43 + n11 * n24 * n43 + n13 * n21 * n44 - n11 * n23 * n44) * idet;
-		m22 = (n12 * n24 * n41 - n14 * n22 * n41 + n14 * n21 * n42 - n11 * n24 * n42 - n12 * n21 * n44 + n11 * n22 * n44) * idet;
-		m23 = (n13 * n22 * n41 - n12 * n23 * n41 - n13 * n21 * n42 + n11 * n23 * n42 + n12 * n21 * n43 - n11 * n22 * n43) * idet;
+        auto operator-(Mat const& other) const -> Mat
+        {
+            return Mat{_00 - other._00, _01 - other._01, _02 - other._02, _03 - other._03,
+                       _10 - other._10, _11 - other._11, _12 - other._12, _13 - other._13,
+                       _20 - other._20, _21 - other._21, _22 - other._22, _23 - other._23,
+                       _30 - other._30, _31 - other._31, _32 - other._32, _33 - other._33};
+        }
 
-		m30 = t14 * idet;
-		m31 = (n13 * n24 * n31 - n14 * n23 * n31 + n14 * n21 * n33 - n11 * n24 * n33 - n13 * n21 * n34 + n11 * n23 * n34) * idet;
-		m32 = (n14 * n22 * n31 - n12 * n24 * n31 - n14 * n21 * n32 + n11 * n24 * n32 + n12 * n21 * n34 - n11 * n22 * n34) * idet;
-		m33 = (n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 + n11 * n22 * n33) * idet;
-		return *this;
-	};
+        static auto identity() -> Mat
+        {
+            Mat mat{};
+            mat._00 = 1;
+            mat._11 = 1;
+            mat._22 = 1;
+            mat._33 = 1;
+            return mat;
+        }
 
-	Matrix operator*(Matrix const& other) const {
+        static auto translate(Vec3<Type> const& position) -> Mat
+        {
+            auto mat = Mat<Type>::identity();
+            mat._30 = position.x;
+            mat._31 = position.y;
+            mat._32 = position.z;
+            return mat;
+        }
 
-		auto mat = Matrix {};
-		mat.m00 = m00 * other.m00 + m01 * other.m10 + m02 * other.m20 + m03 * other.m30;
-		mat.m01 = m00 * other.m01 + m01 * other.m11 + m02 * other.m21 + m03 * other.m31;
-		mat.m02 = m00 * other.m02 + m01 * other.m12 + m02 * other.m22 + m03 * other.m32;
-		mat.m03 = m00 * other.m03 + m01 * other.m13 + m02 * other.m23 + m03 * other.m33;
-		mat.m10 = m10 * other.m00 + m11 * other.m10 + m12 * other.m20 + m13 * other.m30;
-		mat.m11 = m10 * other.m01 + m11 * other.m11 + m12 * other.m21 + m13 * other.m31;
-		mat.m12 = m10 * other.m02 + m11 * other.m12 + m12 * other.m22 + m13 * other.m32;
-		mat.m13 = m10 * other.m03 + m11 * other.m13 + m12 * other.m23 + m13 * other.m33;
-		mat.m20 = m20 * other.m00 + m21 * other.m10 + m22 * other.m20 + m23 * other.m30;
-		mat.m21 = m20 * other.m01 + m21 * other.m11 + m22 * other.m21 + m23 * other.m31;
-		mat.m22 = m20 * other.m02 + m21 * other.m12 + m22 * other.m22 + m23 * other.m32;
-		mat.m23 = m20 * other.m03 + m21 * other.m13 + m22 * other.m23 + m23 * other.m33;
-		mat.m30 = m30 * other.m00 + m31 * other.m10 + m32 * other.m20 + m33 * other.m30;
-		mat.m31 = m30 * other.m01 + m31 * other.m11 + m32 * other.m21 + m33 * other.m31;
-		mat.m32 = m30 * other.m02 + m31 * other.m12 + m32 * other.m22 + m33 * other.m32;
-		mat.m33 = m30 * other.m03 + m31 * other.m13 + m32 * other.m23 + m33 * other.m33;
-		return mat;
-	}
+        static auto scale(Vec3<Type> const& scale) -> Mat
+        {
+            auto mat = Mat<Type>::identity();
+            mat._00 = scale.x;
+            mat._11 = scale.y;
+            mat._22 = scale.z;
+            return mat;
+        }
 
-	Matrix operator*(Vector4<Type> const& other) const {
+        static auto perspectiveRH(Type const fovy, Type const aspect, Type const nearDst, Type const farDst) -> Mat
+        {
+            Mat mat{};
+            mat._00 = static_cast<Type>(1) / (std::tan(fovy / static_cast<Type>(2)) * aspect);
+            mat._11 = static_cast<Type>(1) / std::tan(fovy / static_cast<Type>(2));
+            mat._22 = farDst / (nearDst - farDst);
+            mat._23 = -static_cast<Type>(1);
+            mat._32 = (farDst * nearDst) / (nearDst - farDst);
+            return mat;
+        }
 
-		auto mat = Matrix {};
-		mat.m00 = m00 * other.x;
-		mat.m01 = m01 * other.y;
-		mat.m02 = m02 * other.z;
-		mat.m03 = m03 * other.w;
-		mat.m10 = m10 * other.x;
-		mat.m11 = m11 * other.y;
-		mat.m12 = m12 * other.z;
-		mat.m13 = m13 * other.w;
-		mat.m20 = m20 * other.x;
-		mat.m21 = m21 * other.y;
-		mat.m22 = m22 * other.z;
-		mat.m23 = m23 * other.w;
-		mat.m30 = m30 * other.x;
-		mat.m31 = m31 * other.y;
-		mat.m32 = m32 * other.z;
-		mat.m33 = m33 * other.w;
-		return mat;
-	}
+        static auto orthographicRH(Type const left, Type const right, Type const bottom, Type const top,
+                                   Type const nearDst, Type const farDst) -> Mat
+        {
+            auto mat = Mat<Type>::identity();
+            mat._00 = static_cast<Type>(2) / (right - left);
+            mat._11 = static_cast<Type>(2) / (top - bottom);
+            mat._22 = static_cast<Type>(1) / (nearDst - farDst);
+            mat._30 = -(right + left) / (right - left);
+            mat._31 = -(top + bottom) / (top - bottom);
+            mat._32 = nearDst / (nearDst - farDst);
+            return mat;
+        }
 
-	Matrix operator*(Type const other) const {
+        static auto lookAtRH(Vec3<Type> const& eye, Vec3<Type> const& center, Vec3<Type> const& up) -> Mat
+        {
+            Vec3<Type> f = (eye - center).normalize();
+            Vec3<Type> r = Vector3(up).cross(f).normalize();
+            Vec3<Type> u = Vector3(f).cross(r);
 
-		auto mat = Matrix {};
-		mat.m00 = m00 * other;
-		mat.m01 = m01 * other;
-		mat.m02 = m02 * other;
-		mat.m03 = m03 * other;
-		mat.m10 = m10 * other;
-		mat.m11 = m11 * other;
-		mat.m12 = m12 * other;
-		mat.m13 = m13 * other;
-		mat.m20 = m20 * other;
-		mat.m21 = m21 * other;
-		mat.m22 = m22 * other;
-		mat.m23 = m23 * other;
-		mat.m30 = m30 * other;
-		mat.m31 = m31 * other;
-		mat.m32 = m32 * other;
-		mat.m33 = m33 * other;
-		return mat;
-	}
+            auto mat = Mat<Type>::identity();
+            mat._00 = r.x;
+            mat._10 = r.y;
+            mat._20 = r.z;
+            mat._01 = u.x;
+            mat._11 = u.y;
+            mat._21 = u.z;
+            mat._02 = f.x;
+            mat._12 = f.y;
+            mat._22 = f.z;
+            mat._30 = -r.dot(eye);
+            mat._31 = -u.dot(eye);
+            mat._32 = -f.dot(eye);
+            return mat;
+        }
 
-	Matrix operator+(Matrix const& other) const {
+        auto operator==(Mat const& other) const -> bool
+        {
+            return std::make_tuple(_00, _01, _02, _03, _10, _11, _12, _13, _20, _21, _22, _23, _30, _31, _32, _33) ==
+                   std::make_tuple(other._00, other._01, other._02, other._03, other._10, other._11, other._12,
+                                   other._13, other._20, other._21, other._22, other._23, other._30, other._31,
+                                   other._32, other._33);
+        }
+    };
 
-		auto mat = Matrix {};
-		mat.m00 = m00 + other.m00;
-		mat.m01 = m01 + other.m01;
-		mat.m02 = m02 + other.m02;
-		mat.m03 = m03 + other.m03;
-		mat.m10 = m10 + other.m10;
-		mat.m11 = m11 + other.m11;
-		mat.m12 = m12 + other.m12;
-		mat.m13 = m13 + other.m13;
-		mat.m20 = m20 + other.m20;
-		mat.m21 = m21 + other.m21;
-		mat.m22 = m22 + other.m22;
-		mat.m23 = m23 + other.m23;
-		mat.m30 = m30 + other.m30;
-		mat.m31 = m31 + other.m31;
-		mat.m32 = m32 + other.m32;
-		mat.m33 = m33 + other.m33;
-		return mat;
-	}
+    using Matf = Mat<float>;
+    using Matd = Mat<double>;
+} // namespace ionengine::math
 
-	Matrix operator-(Matrix const& other) const {
-
-		auto mat = Matrix {};
-		mat.m00 = m00 - other.m00;
-		mat.m01 = m01 - other.m01;
-		mat.m02 = m02 - other.m02;
-		mat.m03 = m03 - other.m03;
-		mat.m10 = m10 - other.m10;
-		mat.m11 = m11 - other.m11;
-		mat.m12 = m12 - other.m12;
-		mat.m13 = m13 - other.m13;
-		mat.m20 = m20 - other.m20;
-		mat.m21 = m21 - other.m21;
-		mat.m22 = m22 - other.m22;
-		mat.m23 = m23 - other.m23;
-		mat.m30 = m30 - other.m30;
-		mat.m31 = m31 - other.m31;
-		mat.m32 = m32 - other.m32;
-		mat.m33 = m33 - other.m33;
-		return mat;
-	}
-
-	static Matrix<Type> identity() {
-
-		auto mat = Matrix<Type> {};
-		mat.m00 = 1;
-		mat.m11 = 1;
-		mat.m22 = 1;
-		mat.m33 = 1;
-		return mat;
-	}
-
-	static Matrix<Type> translate(Vector3<Type> const& position) {
-
-		Matrix<Type> mat = Matrix<Type>::identity();
-		mat.m30 = position.x;
-		mat.m31 = position.y;
-		mat.m32 = position.z;
-		return mat;
-	}
-
-	static Matrix<Type> scale(Vector3<Type> const& scale) {
-
-		Matrix<Type> mat = Matrix<Type>::identity();
-		mat.m00 = scale.x;
-		mat.m11 = scale.y;
-		mat.m22 = scale.z;
-		return mat;
-	}
-
-	static Matrix<Type> perspective_rh(Type const fovy, Type const aspect, Type const near_dst, Type const far_dst) {
-
-		auto mat = Matrix<Type> {};
-		mat.m00 = static_cast<Type>(1) / (std::tan(fovy / static_cast<Type>(2)) * aspect);
-		mat.m11 = static_cast<Type>(1) / std::tan(fovy / static_cast<Type>(2));
-		mat.m22 = far_dst / (near_dst - far_dst);
-		mat.m23 = - static_cast<Type>(1);
-		mat.m32 = (far_dst * near_dst) / (near_dst - far_dst);
-		return mat;
-	}
-
-	static Matrix orthographic_rh(
-		Type const left, Type const right,
-		Type const bottom, Type const top,
-		Type const near_dst, Type const far_dst
-	) {
-
-		auto mat = Matrix<Type>::identity();
-		mat.m00 = static_cast<Type>(2) / (right - left);
-		mat.m11 = static_cast<Type>(2) / (top - bottom);
-		mat.m22 = static_cast<Type>(1) / (near_dst - far_dst);
-		mat.m30 = - (right + left) / (right - left);
-		mat.m31 = - (top + bottom) / (top - bottom);
-		mat.m32 = near_dst / (near_dst - far_dst);
-		return mat;
-	}
-
-	static Matrix look_at_rh(Vector3<Type> const& eye, Vector3<Type> const& center, Vector3<Type> const& up) {
-
-		Vector3<Type> f = (eye - center).normalize();
-		Vector3<Type> r = Vector3(up).cross(f).normalize();
-		Vector3<Type> u = Vector3(f).cross(r);
-
-		Matrix<Type> mat = Matrix<Type>::identity();
-		mat.m00 = r.x;
-		mat.m10 = r.y;
-		mat.m20 = r.z;
-		mat.m01 = u.x;
-		mat.m11 = u.y;
-		mat.m21 = u.z;
-		mat.m02 = f.x;
-		mat.m12 = f.y;
-		mat.m22 = f.z;
-		mat.m30 = -r.dot(eye);
-		mat.m31 = -u.dot(eye);
-		mat.m32 = -f.dot(eye);
-		return mat;
-	}
-
-	bool operator==(Matrix const& other) const {
-
-		return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) == 
-			std::tie(other.m00, other.m01, other.m02, other.m03, other.m10, other.m11, other.m12, other.m13, other.m20, other.m21, other.m22, other.m23, other.m30, other.m31, other.m32, other.m33);
-	}
-
-	bool operator!=(Matrix const& other) const {
-
-		return std::tie(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) != 
-			std::tie(other.m00, other.m01, other.m02, other.m03, other.m10, other.m11, other.m12, other.m13, other.m20, other.m21, other.m22, other.m23, other.m30, other.m31, other.m32, other.m33);
-	}
-};
-
-using Matrixf = Matrix<float>;
-using Matrixd = Matrix<double>;
-
-}
+namespace std
+{
+    template <typename Type>
+    struct hash<ionengine::math::Mat<Type>>
+    {
+        auto operator()(ionengine::math::Mat<Type> const& other) const -> size_t
+        {
+            return std::hash<Type>()(other._00) ^ std::hash<Type>()(other._01) ^ std::hash<Type>()(other._02) ^
+                   std::hash<Type>()(other._03) ^ std::hash<Type>()(other._10) ^ std::hash<Type>()(other._11) ^
+                   std::hash<Type>()(other._12) ^ std::hash<Type>()(other._13) ^ std::hash<Type>()(other._20) ^
+                   std::hash<Type>()(other._21) ^ std::hash<Type>()(other._22) ^ std::hash<Type>()(other._23) ^
+                   std::hash<Type>()(other._30) ^ std::hash<Type>()(other._31) ^ std::hash<Type>()(other._32) ^
+                   std::hash<Type>()(other._33);
+        }
+    };
+} // namespace std

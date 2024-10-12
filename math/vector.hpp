@@ -5,141 +5,132 @@
 namespace ionengine::math
 {
     template <typename Type>
-    struct Vector2
+    struct Vec2
     {
         Type x;
         Type y;
 
-        Vector2() = default;
-
-        Vector2(Type const x, Type const y) : x(x), y(y)
+        Vec2() : x(0), y(0)
         {
         }
 
-        Vector2(Vector2 const& other) : x(other.x), y(other.y)
+        Vec2(Type const x, Type const y) : x(x), y(y)
         {
         }
 
-        Vector2(Vector2&& other) noexcept : x(other.x), y(other.y)
+        Vec2(Vec2 const& other) : x(other.x), y(other.y)
         {
         }
 
-        Vector2& operator=(Vector2 const& other)
+        Vec2(Vec2&& other) : x(other.x), y(other.y)
         {
-            x = other.x;
-            y = other.y;
-            return *this;
         }
 
-        Vector2& operator=(Vector2&& other) noexcept
+        auto operator=(Vec2 const& other) -> Vector2&
         {
             x = other.x;
             y = other.y;
             return *this;
         }
 
-        Type const* data() const
+        auto operator=(Vec2&& other) -> Vector2&
+        {
+            x = other.x;
+            y = other.y;
+            return *this;
+        }
+
+        auto data() const -> Type const*
         {
             return &x;
         }
 
-        size_t size() const
+        auto size() const -> size_t
         {
             return 2;
         }
 
-        Vector2& normalize()
+        auto normalize() -> Vec2&
         {
-            Type inverse = static_cast<Type>(1) / length();
+            Type inverse = static_cast<Type>(1) / this->length();
             x = x * inverse;
             y = y * inverse;
             return *this;
         }
 
-        Type length() const
+        auto length() const -> Type
         {
             return static_cast<Type>(std::sqrt(x * x + y * y));
         }
 
-        Vector2 operator*(Type const other) const
+        auto operator*(Type const other) const -> Vec2
         {
-            return Vector2{x * other, y * other};
+            return Vec2{x * other, y * other};
         }
 
-        Vector2 operator-(Vector2 const& other) const
+        auto operator-(Vec2 const& other) const -> Vec2
         {
-            return Vector2{x - other.x, y - other.y};
+            return Vec2{x - other.x, y - other.y};
         }
 
-        Vector2 operator-(Type const other) const
+        auto operator-(Type const other) const -> Vec2
         {
-            return Vector2{x - other, y - other};
+            return Vec2{x - other, y - other};
         }
 
-        Vector2 operator-() const
+        auto operator-() const -> Vec2
         {
-            return Vector2{-x, -y};
+            return Vec2{-x, -y};
         }
 
-        Vector2 operator+(Vector2 const& other) const
+        auto operator+(Vec2 const& other) const -> Vec2
         {
-            return Vector2{x + other.x, y + other.y};
+            return Vec2{x + other.x, y + other.y};
         }
 
-        Vector2 operator+(Type const other) const
+        auto operator+(Type const other) const -> Vec2
         {
-            return Vector2{x + other, y + other};
+            return Vec2{x + other, y + other};
         }
 
-        Vector2 operator/(Type const other) const
+        auto operator/(Type const other) const -> Vec2
         {
-            return Vector2{x / other, y / other};
+            return Vec2{x / other, y / other};
         }
 
-        bool operator==(Vector2 const& other) const
+        bool operator==(Vec2 const& other) const
         {
-            return std::tie(x, y) == std::tie(other.x, other.y);
-        }
-
-        bool operator!=(Vector2 const& other) const
-        {
-            return std::tie(x, y) != std::tie(other.x, other.y);
+            return std::make_tuple(x, y) == std::make_tuple(other.x, other.y);
         }
     };
 
-    using Vec2f = Vector2<float>;
-    using Vec2d = Vector2<double>;
+    using Vec2f = Vec2<float>;
+    using Vec2d = Vec2<double>;
 
     template <typename Type>
-    struct Vector3
+    struct Vec3
     {
         Type x;
         Type y;
         Type z;
 
-        Vector3() = default;
-
-        Vector3(const Type x, const Type y, const Type z) : x(x), y(y), z(z)
+        Vec3() : x(0), y(0), z(0)
         {
         }
 
-        Vector3(Vector3 const& other) : x(other.x), y(other.y), z(other.z)
+        Vec3(const Type x, const Type y, const Type z) : x(x), y(y), z(z)
         {
         }
 
-        Vector3(Vector3&& other) noexcept : x(other.x), y(other.y), z(other.z)
+        Vec3(Vec3 const& other) : x(other.x), y(other.y), z(other.z)
         {
         }
 
-        Vector3& operator=(Vector3 const& other)
+        Vec3(Vec3&& other) : x(other.x), y(other.y), z(other.z)
         {
-            x = other.x;
-            y = other.y;
-            z = other.z;
-            return *this;
         }
 
-        Vector3& operator=(Vector3&& other) noexcept
+        auto operator=(Vec3 const& other) -> Vec3
         {
             x = other.x;
             y = other.y;
@@ -147,83 +138,86 @@ namespace ionengine::math
             return *this;
         }
 
-        Type const* data() const
+        auto operator=(Vec3&& other) -> Vec3
+        {
+            x = other.x;
+            y = other.y;
+            z = other.z;
+            return *this;
+        }
+
+        auto data() const -> Type const*
         {
             return &x;
         }
 
-        size_t size() const
+        auto size() const -> size_t
         {
             return 3;
         }
 
-        Vector3& normalize()
+        auto normalize() -> Vec3
         {
-            Type inverse = static_cast<Type>(1) / length();
+            Type inverse = static_cast<Type>(1) / this->length();
             x = x * inverse;
             y = y * inverse;
             z = z * inverse;
             return *this;
         }
 
-        Type length() const
+        auto length() const -> Type
         {
             return static_cast<Type>(std::sqrt(x * x + y * y + z * z));
         }
 
-        Vector3 operator*(Type const other) const
+        auto operator*(Type const other) const -> Vec3
         {
-            return Vector3{x * other, y * other, z * other};
+            return Vec3{x * other, y * other, z * other};
         }
 
-        Vector3 operator-(Vector3 const& other) const
+        auto operator-(Vec3 const& other) const -> Vec3
         {
-            return Vector3{x - other.x, y - other.y, z - other.z};
+            return Vec3{x - other.x, y - other.y, z - other.z};
         }
 
-        Vector3 operator-(Type const other) const
+        auto operator-(Type const other) const -> Vec3
         {
-            return Vector3{x - other, y - other, z - other};
+            return Vec3{x - other, y - other, z - other};
         }
 
-        Vector3 operator-() const
+        auto operator-() const -> Vec3
         {
-            return Vector3{-x, -y, -z};
+            return Vec3{-x, -y, -z};
         }
 
-        Vector3 operator+(Vector3 const& other) const
+        auto operator+(Vec3 const& other) const -> Vec3
         {
-            return Vector3{x + other.x, y + other.y, z + other.z};
+            return Vec3{x + other.x, y + other.y, z + other.z};
         }
 
-        Vector3 operator+(Type const other) const
+        auto operator+(Type const other) const -> Vec3
         {
-            return Vector3{x + other, y + other, z + other};
+            return Vec3{x + other, y + other, z + other};
         }
 
-        Vector3 operator/(Type const other) const
+        auto operator/(Type const other) const -> Vec3
         {
-            return Vector3{x / other, y / other, z / other};
+            return Vec3{x / other, y / other, z / other};
         }
 
-        bool operator==(Vector3 const& other) const
+        auto operator==(Vec3 const& other) const -> bool
         {
-            return std::tie(x, y, z) == std::tie(other.x, other.y, other.z);
+            return std::make_tuple(x, y, z) == std::make_tuple(other.x, other.y, other.z);
         }
 
-        bool operator!=(Vector3 const& other) const
-        {
-            return std::tie(x, y, z) != std::tie(other.x, other.y, other.z);
-        }
-
-        Type dot(Vector3 const& other) const
+        auto dot(Vec3 const& other) const -> Type
         {
             return x * other.x + y * other.y + z * other.z;
         }
 
-        Vector3& cross(Vector3 const& other)
+        auto cross(Vec3 const& other) -> Vec3
         {
-            Vector3<Type> vec = *this;
+            Vec3 vec = *this;
             x = vec.y * other.z - vec.z * other.y;
             y = vec.z * other.x - vec.x * other.z;
             z = vec.x * other.y - vec.y * other.x;
@@ -231,41 +225,34 @@ namespace ionengine::math
         }
     };
 
-    using Vec3f = Vector3<float>;
-    using Vec3d = Vector3<double>;
+    using Vec3f = Vec3<float>;
+    using Vec3d = Vec3<double>;
 
     template <typename Type>
-    struct Vector4
+    struct Vec4
     {
         Type x;
         Type y;
         Type z;
         Type w;
 
-        Vector4() = default;
-
-        Vector4(const Type x, const Type y, const Type z, const Type w) : x(x), y(y), z(z), w(w)
+        Vec4() : x(0), y(0), z(0), w(0)
         {
         }
 
-        Vector4(Vector4 const& other) : x(other.x), y(other.y), z(other.z), w(other.w)
+        Vec4(const Type x, const Type y, const Type z, const Type w) : x(x), y(y), z(z), w(w)
         {
         }
 
-        Vector4(Vector4&& other) noexcept : x(other.x), y(other.y), z(other.z), w(other.w)
+        Vec4(Vec4 const& other) : x(other.x), y(other.y), z(other.z), w(other.w)
         {
         }
 
-        Vector4& operator=(Vector4 const& other)
+        Vec4(Vec4&& other) : x(other.x), y(other.y), z(other.z), w(other.w)
         {
-            x = other.x;
-            y = other.y;
-            z = other.z;
-            w = other.w;
-            return *this;
         }
 
-        Vector4& operator=(Vector4&& other) noexcept
+        auto operator=(Vec4 const& other) -> Vec4
         {
             x = other.x;
             y = other.y;
@@ -274,19 +261,28 @@ namespace ionengine::math
             return *this;
         }
 
-        Type const* data() const
+        auto operator=(Vec4&& other) -> Vec4
+        {
+            x = other.x;
+            y = other.y;
+            z = other.z;
+            w = other.w;
+            return *this;
+        }
+
+        auto data() const -> Type const*
         {
             return &x;
         }
 
-        size_t size() const
+        auto size() const -> size_t
         {
             return 4;
         }
 
-        Vector4& normalize()
+        auto normalize() -> Vec4&
         {
-            Type inverse = static_cast<Type>(1) / length();
+            Type inverse = static_cast<Type>(1) / this->length();
             x = x * inverse;
             y = y * inverse;
             z = z * inverse;
@@ -294,85 +290,80 @@ namespace ionengine::math
             return *this;
         }
 
-        Type length() const
+        auto length() const -> Type
         {
             return static_cast<Type>(std::sqrt(x * x + y * y + z * z + w * w));
         }
 
-        Vector4 operator*(Type const other) const
+        auto operator*(Type const other) const -> Vec4
         {
-            return Vector4{x * other, y * other, z * other, w * other};
+            return Vec4{x * other, y * other, z * other, w * other};
         }
 
-        Vector4 operator-(Vector4 const& other) const
+        auto operator-(Vec4 const& other) const -> Vec4
         {
-            return Vector4{x - other.x, y - other.y, z - other.z, w - other.w};
+            return Vec4{x - other.x, y - other.y, z - other.z, w - other.w};
         }
 
-        Vector4 operator-(Type const other) const
+        auto operator-(Type const other) const -> Vec4
         {
-            return Vector4{x - other, y - other, z - other, w - other};
+            return Vec4{x - other, y - other, z - other, w - other};
         }
 
-        Vector4 operator-() const
+        auto operator-() const -> Vec4
         {
-            return Vector4{-x, -y, -z, -w};
+            return Vec4{-x, -y, -z, -w};
         }
 
-        Vector4 operator+(Vector4 const& other) const
+        auto operator+(Vec4 const& other) const -> Vec4
         {
-            return Vector4{x + other.x, y + other.y, z + other.z, w + other.w};
+            return Vec4{x + other.x, y + other.y, z + other.z, w + other.w};
         }
 
-        Vector4 operator+(Type const other) const
+        auto operator+(Type const other) const -> Vec4
         {
-            return Vector4{x + other, y + other, z + other, w + other};
+            return Vec4{x + other, y + other, z + other, w + other};
         }
 
-        Vector4 operator/(Type const other) const
+        auto operator/(Type const other) const -> Vec4
         {
-            return Vector4{x / other, y / other, z / other, w / other};
+            return Vec4{x / other, y / other, z / other, w / other};
         }
 
-        bool operator==(Vector4 const& other) const
+        auto operator==(Vec4 const& other) const -> bool
         {
-            return std::tie(x, y, z) == std::tie(other.x, other.y, other.z, other.w);
-        }
-
-        bool operator!=(Vector4 const& other) const
-        {
-            return std::tie(x, y, z) != std::tie(other.x, other.y, other.z, other.w);
+            return std::make_tuple(x, y, z) == std::make_tuple(other.x, other.y, other.z, other.w);
         }
     };
 
-    using Vector4f = Vector4<float>;
-    using Vector4d = Vector4<double>;
+    using Vec4f = Vec4<float>;
+    using Vec4d = Vec4<double>;
 } // namespace ionengine::math
 
 namespace std
 {
     template <typename Type>
-    struct hash<ionengine::math::Vector2<Type>>
+    struct hash<ionengine::math::Vec2<Type>>
     {
-        size_t operator()(ionengine::math::Vector2<Type> const& other) const
+        auto operator()(ionengine::math::Vec2<Type> const& other) const -> size_t
         {
             return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y);
         }
     };
 
     template <typename Type>
-    struct hash<ionengine::math::Vector3<Type>>
+    struct hash<ionengine::math::Vec3<Type>>
     {
-        size_t operator()(ionengine::math::Vector3<Type> const& other) const
+        auto operator()(ionengine::math::Vec3<Type> const& other) const -> size_t
         {
             return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z);
         }
     };
 
     template <typename Type>
-    struct hash<ionengine::math::Vector4<Type>>
+    struct hash<ionengine::math::Vec4<Type>>
     {
-        size_t operator()(ionengine::math::Vector4<Type> const& other) const
+        auto operator()(ionengine::math::Vec4<Type> const& other) const -> size_t
         {
             return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^
                    std::hash<Type>()(other.w);
