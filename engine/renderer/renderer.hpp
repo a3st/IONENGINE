@@ -7,6 +7,7 @@
 #include "rhi/rhi.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
+#include "camera.hpp"
 
 namespace ionengine
 {

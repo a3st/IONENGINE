@@ -11,6 +11,13 @@ namespace ionengine
     {
     }
 
+    auto Surface::draw(rhi::GraphicsContext& context) -> void
+    {
+        shader->setActive(context);
+
+        context.drawIndexed(indexCount, 1);
+    }
+
     Model::Model(rhi::Device& device, rhi::CopyContext& copyContext, ModelFile const& modelFile)
     {
         core::ref_ptr<rhi::Buffer> vertexBuffer;

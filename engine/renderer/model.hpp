@@ -4,6 +4,8 @@
 
 #include "mdl/mdl.hpp"
 #include "rhi/rhi.hpp"
+#include "shader.hpp"
+#include "material.hpp"
 
 namespace ionengine
 {
@@ -13,10 +15,13 @@ namespace ionengine
         Surface(core::ref_ptr<rhi::Buffer> vertexBuffer, core::ref_ptr<rhi::Buffer> indexBuffer,
                 uint32_t const indexCount, uint32_t const material);
 
+        auto draw(rhi::GraphicsContext& context) -> void;
+
       private:
         core::ref_ptr<rhi::Buffer> vertexBuffer;
         core::ref_ptr<rhi::Buffer> indexBuffer;
         uint32_t indexCount;
+        core::ref_ptr<Shader> shader;
         uint32_t material;
     };
 
@@ -27,5 +32,6 @@ namespace ionengine
 
       private:
         std::vector<core::ref_ptr<Surface>> surfaces;
+        std::vector<core::ref_ptr<Material>> materials;
     };
 } // namespace ionengine

@@ -123,14 +123,10 @@ namespace ionengine
         shaderProgram = device.createShader(shaderCreateInfo);
     }
 
-    auto Shader::getShader() const -> core::ref_ptr<rhi::Shader>
+    auto Shader::setActive(rhi::GraphicsContext& context) -> void
     {
-        return shaderProgram;
-    }
-
-    auto Shader::getRasterizer() const -> rhi::RasterizerStageInfo const&
-    {
-        return rasterizerStageInfo;
+        context.setGraphicsPipelineOptions(shaderProgram, rasterizerStageInfo, rhi::BlendColorInfo::Opaque(),
+                                           std::nullopt);
     }
 
     /*

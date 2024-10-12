@@ -20,9 +20,7 @@ namespace ionengine
 
         Shader(rhi::Device& device, shadersys::ShaderFile const& shaderFile);
 
-        auto getShader() const -> core::ref_ptr<rhi::Shader>;
-
-        auto getRasterizer() const -> rhi::RasterizerStageInfo const&;
+        auto setActive(rhi::GraphicsContext& context) -> void;
 
       private:
         core::ref_ptr<rhi::Shader> shaderProgram;

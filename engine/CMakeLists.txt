@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.25.1)
 
 add_library(engine STATIC
+    renderer/camera.cpp
     renderer/material.cpp
     renderer/model.cpp
     renderer/texture.cpp
