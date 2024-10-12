@@ -4,6 +4,7 @@
 
 #include "math/vector.hpp"
 #include "mdl/importer.hpp"
+#include <tiny_obj_loader.h>
 
 namespace ionengine::mdl
 {
@@ -17,6 +18,8 @@ namespace ionengine::mdl
                            std::string& errors) -> std::optional<ModelFile> override;
 
       private:
+        auto readOBJToModelFile(tinyobj::ObjReader const& reader, std::string& errors) -> std::optional<ModelFile>;
+
         struct Vertex
         {
             math::Vec3f position;

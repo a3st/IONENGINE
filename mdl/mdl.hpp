@@ -56,19 +56,6 @@ namespace ionengine
             }
         };
 
-        struct ObjectData
-        {
-            std::string name;
-            std::vector<uint32_t> surfaces;
-
-            template <typename Archive>
-            auto operator()(Archive& archive)
-            {
-                archive.property(name, "name");
-                archive.property(surfaces, "surfaces");
-            }
-        };
-
         struct VertexLayoutElementData
         {
             VertexFormat format;
@@ -100,7 +87,6 @@ namespace ionengine
             uint32_t materialCount;
             uint32_t buffer;
             VertexLayoutData vertexLayout;
-            std::vector<ObjectData> objects;
             std::vector<SurfaceData> surfaces;
             std::vector<BufferData> buffers;
 
@@ -110,7 +96,6 @@ namespace ionengine
                 archive.property(materialCount, "materialCount");
                 archive.property(buffer, "buffer");
                 archive.property(vertexLayout, "vertexLayout");
-                archive.property(objects, "objects");
                 archive.property(surfaces, "surfaces");
                 archive.property(buffers, "buffers");
             }

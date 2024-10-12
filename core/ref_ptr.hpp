@@ -43,6 +43,11 @@ namespace ionengine::core
             return --ref_count;
         }
 
+        auto use_count() -> uint32_t
+        {
+            return ref_count;
+        }
+
       private:
         std::atomic<uint32_t> ref_count;
     };
@@ -165,6 +170,53 @@ namespace ionengine::core
             }
         }
 
+        Type* ptr;
+    };
+
+    template <typename Type>
+    class weak_ptr
+    {
+      public:
+        weak_ptr() : ptr(nullptr)
+        {
+        }
+
+        weak_ptr(std::nullptr_t) : ptr(nullptr)
+        {
+        }
+
+        weak_ptr(ref_ptr<Type> const& ptr) : ptr(ptr.get())
+        {
+        }
+
+        weak_ptr(weak_ptr const& other) : ptr(other.ptr)
+        {
+        }
+
+        auto operator=(weak_ptr const& other) -> weak_ptr&
+        {
+            ptr = other.ptr;
+            return *this;
+        }
+
+        auto operator->() -> ref_ptr<Type>
+        {
+            assert(ptr != nullptr && "weak_ptr is null");
+            return ptr;
+        }
+
+        auto get() const -> ref_ptr<Type>
+        {
+            assert(ptr != nullptr && "weak_ptr is null");
+            return ptr;
+        }
+
+        operator bool() const
+        {
+            return ptr != nullptr;
+        }
+
+      private:
         Type* ptr;
     };
 

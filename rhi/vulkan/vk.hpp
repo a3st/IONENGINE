@@ -353,7 +353,7 @@ namespace ionengine::rhi
 
         auto createCopyContext() -> core::ref_ptr<CopyContext> override;
 
-        auto requestBackBuffer() -> core::ref_ptr<Texture> override;
+        auto requestBackBuffer() -> core::weak_ptr<Texture> override;
 
         auto presentBackBuffer() -> void override;
 

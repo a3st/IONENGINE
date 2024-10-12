@@ -1787,7 +1787,7 @@ namespace ionengine::rhi
                                                copyQueue.fence.get(), fenceEvent.get(), copyQueue.fenceValue);
     }
 
-    auto DX12Device::requestBackBuffer() -> core::ref_ptr<Texture>
+    auto DX12Device::requestBackBuffer() -> core::weak_ptr<Texture>
     {
         if (!swapchain)
         {

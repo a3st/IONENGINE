@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "core/handle.hpp"
+#include "material.hpp"
 #include "model.hpp"
 #include "rhi/rhi.hpp"
 #include "shader.hpp"
@@ -19,8 +19,8 @@ namespace ionengine
       public:
         RenderPassCreateInfo() = default;
 
-        auto createTexture(rhi::TextureFormat const format,
-                           rhi::TextureUsage const usage) -> core::handle<RenderPassTexture>;
+        /*auto createTexture(rhi::TextureFormat const format,
+                           rhi::TextureUsage const usage) -> core::handle<RenderPassTexture>;*/
     };
 
     struct DrawResults
@@ -31,7 +31,7 @@ namespace ionengine
     struct RenderingData
     {
         DrawResults drawResults;
-        core::ref_ptr<rhi::Texture> backBuffer;
+        core::weak_ptr<rhi::Texture> backBuffer;
     };
 
     class RenderPass : public core::ref_counted_object
@@ -54,6 +54,10 @@ namespace ionengine
 
         auto createTexture() -> core::ref_ptr<Texture>;
 
+        auto createModel(ModelFile const& modelFile) -> core::ref_ptr<Model>;
+
+        auto createMaterial(Shader& shader) -> core::ref_ptr<Material>;
+
         auto render(RenderingData& renderingData) -> void;
 
         auto resize(uint32_t const width, uint32_t const height) -> void;
@@ -69,7 +73,6 @@ namespace ionengine
         core::ref_ptr<rhi::CopyContext> copyContext;
 
         std::vector<core::ref_ptr<RenderPass>> renderPasses;
-        std::unordered_map<std::string, core::ref_ptr<Shader>> shaders;
 
         uint32_t outputWidth;
         uint32_t outputHeight;

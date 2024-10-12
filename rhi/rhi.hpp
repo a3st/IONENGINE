@@ -589,7 +589,7 @@ namespace ionengine::rhi
 
         virtual auto createCopyContext() -> core::ref_ptr<CopyContext> = 0;
 
-        virtual auto requestBackBuffer() -> core::ref_ptr<Texture> = 0;
+        virtual auto requestBackBuffer() -> core::weak_ptr<Texture> = 0;
 
         virtual auto presentBackBuffer() -> void = 0;
 

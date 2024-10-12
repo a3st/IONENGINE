@@ -1277,7 +1277,7 @@ namespace ionengine::rhi
         return nullptr;
     }
 
-    auto VKDevice::requestBackBuffer() -> core::ref_ptr<Texture>
+    auto VKDevice::requestBackBuffer() -> core::weak_ptr<Texture>
     {
         if (!swapchain)
         {

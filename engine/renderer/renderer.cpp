@@ -5,8 +5,7 @@
 
 namespace ionengine
 {
-    Renderer::Renderer(rhi::RHICreateInfo const& createInfo,
-                       std::vector<core::ref_ptr<RenderPass>> const& renderPasses)
+    Renderer::Renderer(rhi::RHICreateInfo const& createInfo, std::vector<core::ref_ptr<RenderPass>> const& renderPasses)
         : renderPasses(renderPasses)
     {
         device = rhi::Device::create(createInfo);
@@ -59,6 +58,16 @@ namespace ionengine
     auto Renderer::createTexture() -> core::ref_ptr<Texture>
     {
         std::cout << "call ::createTexture" << std::endl;
+        return nullptr;
+    }
+
+    auto Renderer::createModel(ModelFile const& modelFile) -> core::ref_ptr<Model>
+    {
+        return core::make_ref<Model>(*device, *copyContext, modelFile);
+    }
+
+    auto Renderer::createMaterial(Shader& shader) -> core::ref_ptr<Material>
+    {
         return nullptr;
     }
 

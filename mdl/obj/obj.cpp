@@ -2,7 +2,6 @@
 
 #include "obj.hpp"
 #include "precompiled.h"
-#include <tiny_obj_loader.h>
 
 namespace ionengine::mdl
 {
@@ -17,8 +16,29 @@ namespace ionengine::mdl
             return std::nullopt;
         }
 
-        tinyobj::attrib_t const& attrib = objReader.GetAttrib();
-        std::vector<tinyobj::shape_t> const& shapes = objReader.GetShapes();
+        return readOBJToModelFile(objReader, errors);
+    }
+
+    auto OBJImporter::loadFromBytes(std::span<uint8_t const> const dataBytes,
+                                    std::string& errors) -> std::optional<ModelFile>
+    {
+        tinyobj::ObjReader objReader;
+
+        tinyobj::ObjReaderConfig config{};
+        if (!objReader.ParseFromString(std::string(reinterpret_cast<char const*>(dataBytes.data()), dataBytes.size()),
+                                       {}, config))
+        {
+            return std::nullopt;
+        }
+
+        return readOBJToModelFile(objReader, errors);
+    }
+
+    auto OBJImporter::readOBJToModelFile(tinyobj::ObjReader const& reader,
+                                         std::string& errors) -> std::optional<ModelFile>
+    {
+        tinyobj::attrib_t const& attrib = reader.GetAttrib();
+        std::vector<tinyobj::shape_t> const& shapes = reader.GetShapes();
 
         uint32_t materialIndex = 0;
         std::unordered_map<Vertex, uint32_t, VertexHasher> uniqueVertices{};
@@ -32,8 +52,6 @@ namespace ionengine::mdl
         for (auto const& shape : shapes)
         {
             indices.clear();
-
-            uint64_t const bufferOffset = static_cast<uint64_t>(streambuf.tellp());
 
             std::cout << "shape v " << shape.mesh.num_face_vertices.size() << std::endl;
 
@@ -79,8 +97,6 @@ namespace ionengine::mdl
                 }
 
                 offset += fv;
-
-                streambuf.write(reinterpret_cast<uint8_t const*>(indices.data()), indices.size() * sizeof(uint32_t));
             }
 
             mdl::SurfaceData surfaceData{.buffer = static_cast<uint32_t>(modelData.buffers.size()),
@@ -88,17 +104,14 @@ namespace ionengine::mdl
                                          .indexCount = static_cast<uint32_t>(indices.size())};
             modelData.surfaces.emplace_back(std::move(surfaceData));
 
-            mdl::BufferData bufferData{.offset = bufferOffset, .size = indices.size() * sizeof(uint32_t)};
+            mdl::BufferData bufferData{.offset = static_cast<uint64_t>(streambuf.tellp()),
+                                       .size = indices.size() * sizeof(uint32_t)};
             modelData.buffers.emplace_back(std::move(bufferData));
+
+            streambuf.write(reinterpret_cast<uint8_t const*>(indices.data()), indices.size() * sizeof(uint32_t));
 
             materialIndex++;
         }
-
-        std::vector<uint32_t> surfaces(modelData.surfaces.size());
-        std::iota(surfaces.begin(), surfaces.end(), 0);
-
-        mdl::ObjectData objectData{.name = "base", .surfaces = std::move(surfaces)};
-        modelData.objects.emplace_back(std::move(objectData));
 
         modelData.materialCount = materialIndex;
         modelData.buffer = static_cast<uint32_t>(modelData.buffers.size());
@@ -120,11 +133,5 @@ namespace ionengine::mdl
         return ModelFile{.magic = mdl::Magic,
                          .modelData = std::move(modelData),
                          .blob = {std::istreambuf_iterator<uint8_t>(streambuf.rdbuf()), {}}};
-    }
-
-    auto OBJImporter::loadFromBytes(std::span<uint8_t const> const dataBytes,
-                                    std::string& errors) -> std::optional<ModelFile>
-    {
-        return std::nullopt;
     }
 } // namespace ionengine::mdl
