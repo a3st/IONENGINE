@@ -2,10 +2,10 @@
 
 #pragma once
 
+#include "material.hpp"
 #include "mdl/mdl.hpp"
 #include "rhi/rhi.hpp"
 #include "shader.hpp"
-#include "material.hpp"
 
 namespace ionengine
 {
@@ -13,7 +13,7 @@ namespace ionengine
     {
       public:
         Surface(core::ref_ptr<rhi::Buffer> vertexBuffer, core::ref_ptr<rhi::Buffer> indexBuffer,
-                uint32_t const indexCount, uint32_t const material);
+                uint32_t const indexCount);
 
         auto draw(rhi::GraphicsContext& context) -> void;
 
@@ -21,8 +21,6 @@ namespace ionengine
         core::ref_ptr<rhi::Buffer> vertexBuffer;
         core::ref_ptr<rhi::Buffer> indexBuffer;
         uint32_t indexCount;
-        core::ref_ptr<Shader> shader;
-        uint32_t material;
     };
 
     class Model : public core::ref_counted_object

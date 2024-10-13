@@ -145,7 +145,6 @@ namespace ionengine::math
             _03 = (n23 * n32 * n41 - n22 * n33 * n41 - n23 * n31 * n42 + n21 * n33 * n42 + n22 * n31 * n43 -
                    n21 * n32 * n43) *
                   idet;
-
             _10 = t12 * idet;
             _11 = (n13 * n34 * n41 - n14 * n33 * n41 + n14 * n31 * n43 - n11 * n34 * n43 - n13 * n31 * n44 +
                    n11 * n33 * n44) *
@@ -156,7 +155,6 @@ namespace ionengine::math
             _13 = (n12 * n33 * n41 - n13 * n32 * n41 + n13 * n31 * n42 - n11 * n33 * n42 - n12 * n31 * n43 +
                    n11 * n32 * n43) *
                   idet;
-
             _20 = t13 * idet;
             _21 = (n14 * n23 * n41 - n13 * n24 * n41 - n14 * n21 * n43 + n11 * n24 * n43 + n13 * n21 * n44 -
                    n11 * n23 * n44) *
@@ -167,7 +165,6 @@ namespace ionengine::math
             _23 = (n13 * n22 * n41 - n12 * n23 * n41 - n13 * n21 * n42 + n11 * n23 * n42 + n12 * n21 * n43 -
                    n11 * n22 * n43) *
                   idet;
-
             _30 = t14 * idet;
             _31 = (n13 * n24 * n31 - n14 * n23 * n31 + n14 * n21 * n33 - n11 * n24 * n33 - n13 * n21 * n34 +
                    n11 * n23 * n34) *
@@ -318,19 +315,16 @@ namespace ionengine::math
     using Matd = Mat<double>;
 } // namespace ionengine::math
 
-namespace std
+template <typename Type>
+struct std::hash<ionengine::math::Mat<Type>>
 {
-    template <typename Type>
-    struct hash<ionengine::math::Mat<Type>>
+    auto operator()(ionengine::math::Mat<Type> const& other) const -> size_t
     {
-        auto operator()(ionengine::math::Mat<Type> const& other) const -> size_t
-        {
-            return std::hash<Type>()(other._00) ^ std::hash<Type>()(other._01) ^ std::hash<Type>()(other._02) ^
-                   std::hash<Type>()(other._03) ^ std::hash<Type>()(other._10) ^ std::hash<Type>()(other._11) ^
-                   std::hash<Type>()(other._12) ^ std::hash<Type>()(other._13) ^ std::hash<Type>()(other._20) ^
-                   std::hash<Type>()(other._21) ^ std::hash<Type>()(other._22) ^ std::hash<Type>()(other._23) ^
-                   std::hash<Type>()(other._30) ^ std::hash<Type>()(other._31) ^ std::hash<Type>()(other._32) ^
-                   std::hash<Type>()(other._33);
-        }
-    };
-} // namespace std
+        return std::hash<Type>()(other._00) ^ std::hash<Type>()(other._01) ^ std::hash<Type>()(other._02) ^
+               std::hash<Type>()(other._03) ^ std::hash<Type>()(other._10) ^ std::hash<Type>()(other._11) ^
+               std::hash<Type>()(other._12) ^ std::hash<Type>()(other._13) ^ std::hash<Type>()(other._20) ^
+               std::hash<Type>()(other._21) ^ std::hash<Type>()(other._22) ^ std::hash<Type>()(other._23) ^
+               std::hash<Type>()(other._30) ^ std::hash<Type>()(other._31) ^ std::hash<Type>()(other._32) ^
+               std::hash<Type>()(other._33);
+    }
+};

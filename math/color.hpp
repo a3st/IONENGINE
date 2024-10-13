@@ -64,15 +64,12 @@ namespace ionengine::math
     };
 } // namespace ionengine::math
 
-namespace std
+template <>
+struct std::hash<ionengine::math::Color>
 {
-    template <>
-    struct hash<ionengine::math::Color>
+    auto operator()(ionengine::math::Color const& other) const -> size_t
     {
-        auto operator()(ionengine::math::Color const& other) const -> size_t
-        {
-            return std::hash<float>()(other.r) ^ std::hash<float>()(other.g) ^ std::hash<float>()(other.b) ^
-                   std::hash<float>()(other.a);
-        }
-    };
-} // namespace std
+        return std::hash<float>()(other.r) ^ std::hash<float>()(other.g) ^ std::hash<float>()(other.b) ^
+               std::hash<float>()(other.a);
+    }
+};

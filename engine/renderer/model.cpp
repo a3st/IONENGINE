@@ -6,15 +6,15 @@
 namespace ionengine
 {
     Surface::Surface(core::ref_ptr<rhi::Buffer> vertexBuffer, core::ref_ptr<rhi::Buffer> indexBuffer,
-                     uint32_t const indexCount, uint32_t const material)
-        : vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), indexCount(indexCount), material(material)
+                     uint32_t const indexCount)
+        : vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), indexCount(indexCount)
     {
     }
 
     auto Surface::draw(rhi::GraphicsContext& context) -> void
     {
-        shader->setActive(context);
-
+        context.bindVertexBuffer(vertexBuffer, 0, vertexBuffer->getSize());
+        context.bindIndexBuffer(indexBuffer, 0, indexBuffer->getSize(), rhi::IndexFormat::Uint32);
         context.drawIndexed(indexCount, 1);
     }
 
@@ -49,8 +49,7 @@ namespace ionengine
                              std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size))
                 .wait();
 
-            auto surface =
-                core::make_ref<Surface>(vertexBuffer, indexBuffer, surfaceData.indexCount, surfaceData.material);
+            auto surface = core::make_ref<Surface>(vertexBuffer, indexBuffer, surfaceData.indexCount);
             surfaces.emplace_back(surface);
         }
     }

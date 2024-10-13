@@ -26,14 +26,14 @@ namespace ionengine::math
         {
         }
 
-        auto operator=(Vec2 const& other) -> Vector2&
+        auto operator=(Vec2 const& other) -> Vec2&
         {
             x = other.x;
             y = other.y;
             return *this;
         }
 
-        auto operator=(Vec2&& other) -> Vector2&
+        auto operator=(Vec2&& other) -> Vec2&
         {
             x = other.x;
             y = other.y;
@@ -340,33 +340,30 @@ namespace ionengine::math
     using Vec4d = Vec4<double>;
 } // namespace ionengine::math
 
-namespace std
+template <typename Type>
+struct std::hash<ionengine::math::Vec2<Type>>
 {
-    template <typename Type>
-    struct hash<ionengine::math::Vec2<Type>>
+    auto operator()(ionengine::math::Vec2<Type> const& other) const -> size_t
     {
-        auto operator()(ionengine::math::Vec2<Type> const& other) const -> size_t
-        {
-            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y);
-        }
-    };
+        return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y);
+    }
+};
 
-    template <typename Type>
-    struct hash<ionengine::math::Vec3<Type>>
+template <typename Type>
+struct std::hash<ionengine::math::Vec3<Type>>
+{
+    auto operator()(ionengine::math::Vec3<Type> const& other) const -> size_t
     {
-        auto operator()(ionengine::math::Vec3<Type> const& other) const -> size_t
-        {
-            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z);
-        }
-    };
+        return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z);
+    }
+};
 
-    template <typename Type>
-    struct hash<ionengine::math::Vec4<Type>>
+template <typename Type>
+struct std::hash<ionengine::math::Vec4<Type>>
+{
+    auto operator()(ionengine::math::Vec4<Type> const& other) const -> size_t
     {
-        auto operator()(ionengine::math::Vec4<Type> const& other) const -> size_t
-        {
-            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^
-                   std::hash<Type>()(other.w);
-        }
-    };
-} // namespace std
+        return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^
+               std::hash<Type>()(other.w);
+    }
+};

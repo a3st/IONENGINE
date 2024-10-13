@@ -132,7 +132,7 @@ namespace ionengine::math
 
             Type rotAngle = static_cast<Type>(angle * std::numbers::pi / 180.0f);
             Type rotSin = std::sin(rotAngle / 2);
-            Vec3<Type> normAxis = Vec3<Type>(axis).normalize();
+            auto normAxis = Vec3<Type>(axis).normalize();
 
             quat.x = normAxis.x * rotSin;
             quat.y = normAxis.y * rotSin;
@@ -181,18 +181,17 @@ namespace ionengine::math
         {
             Quat quat{};
 
-            Type rotx, roty, rotz;
-            rotx = static_cast<Type>(x * std::numbers::pi / 180.0f);
-            roty = static_cast<Type>(y * std::numbers::pi / 180.0f);
-            rotz = static_cast<Type>(z * std::numbers::pi / 180.0f);
+            Type rotx = static_cast<Type>(x * std::numbers::pi / 180.0f);
+            Type roty = static_cast<Type>(y * std::numbers::pi / 180.0f);
+            Type rotz = static_cast<Type>(z * std::numbers::pi / 180.0f);
 
-            Type sinx, siny, sinz, cosx, cosy, cosz;
-            sinx = std::sin(rotx / 2);
-            siny = std::sin(roty / 2);
-            sinz = std::sin(rotz / 2);
-            cosx = std::cos(rotx / 2);
-            cosy = std::cos(roty / 2);
-            cosz = std::cos(rotz / 2);
+            Type sinx = std::sin(rotx / 2);
+            Type siny = std::sin(roty / 2);
+            Type sinz = std::sin(rotz / 2);
+
+            Type cosx = std::cos(rotx / 2);
+            Type cosy = std::cos(roty / 2);
+            Type cosz = std::cos(rotz / 2);
 
             quat.x = sinx * cosy * cosz + cosx * siny * sinz;
             quat.y = cosx * siny * cosz - sinx * cosy * sinz;
@@ -206,15 +205,12 @@ namespace ionengine::math
     using Quatd = Quat<double>;
 } // namespace ionengine::math
 
-namespace std
+template <typename Type>
+struct std::hash<ionengine::math::Quat<Type>>
 {
-    template <typename Type>
-    struct hash<ionengine::math::Quat<Type>>
+    auto operator()(ionengine::math::Quat<Type> const& other) const -> size_t
     {
-        auto operator()(ionengine::math::Quat<Type> const& other) const -> size_t
-        {
-            return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^
-                   std::hash<Type>()(other.w);
-        }
-    };
-} // namespace std
+        return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^
+               std::hash<Type>()(other.w);
+    }
+};

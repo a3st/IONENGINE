@@ -2,12 +2,13 @@
 
 #pragma once
 
+#include "camera.hpp"
 #include "material.hpp"
+#include "math/matrix.hpp"
 #include "model.hpp"
 #include "rhi/rhi.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
-#include "camera.hpp"
 
 namespace ionengine
 {
@@ -24,9 +25,31 @@ namespace ionengine
                            rhi::TextureUsage const usage) -> core::handle<RenderPassTexture>;*/
     };
 
+#pragma pack(push, 1)
+    struct TransformData
+    {
+        math::Matf model;
+        math::Matf view;
+        math::Matf projection;
+    };
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+    struct LightingData
+    {
+    };
+#pragma pack(pop)
+
+    struct ObjectData
+    {
+        core::ref_ptr<Surface> surface;
+        core::ref_ptr<Shader> shader;
+    };
+
     struct DrawResults
     {
-        std::vector<core::ref_ptr<Surface>> visibleSurfaces;
+        std::vector<ObjectData> visibleObjects;
+        std::vector<LightingData> visibleLights;
     };
 
     struct RenderingData
@@ -62,10 +85,6 @@ namespace ionengine
         auto render(RenderingData& renderingData) -> void;
 
         auto resize(uint32_t const width, uint32_t const height) -> void;
-
-        /*
-
-        */
 
       private:
         core::ref_ptr<rhi::Device> device;
