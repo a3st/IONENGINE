@@ -535,7 +535,8 @@ namespace ionengine::core
 
                     if constexpr (std::is_integral_v<typename Type::key_type>)
                     {
-                        output.json_chunk << "\"" << std::to_string(key) << "\":\"" << value << "\"";
+                        output.json_chunk << "\"" << std::to_string(key) << "\":";
+                        to_json(output, "", value);
                     }
                     else if constexpr (std::is_scoped_enum_v<typename Type::key_type>)
                     {

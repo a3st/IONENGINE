@@ -60,7 +60,7 @@ namespace ionengine
 
         rhi::ShaderCreateInfo shaderCreateInfo{.pipelineType = rhi::PipelineType::Graphics};
 
-        for (auto const& [stageType, stageData] : shaderFile.shaderData.outputData.stages)
+        /*for (auto const& [stageType, stageData] : shaderFile.shaderData.outputData.stages)
         {
             uint32_t const bufferIndex = stageData.buffer;
             auto const& bufferData = shaderFile.shaderData.buffers[bufferIndex];
@@ -120,13 +120,27 @@ namespace ionengine
             }
         }
 
-        shaderProgram = device.createShader(shaderCreateInfo);
+        shaderProgram = device.createShader(shaderCreateInfo);*/
     }
 
-    auto Shader::setActive(rhi::GraphicsContext& context) -> void
+    auto Shader::setActive(rhi::GraphicsContext& context, uint32_t const flags) -> void
     {
-        context.setGraphicsPipelineOptions(shaderProgram, rasterizerStageInfo, rhi::BlendColorInfo::Opaque(),
-                                           std::nullopt);
+        auto result = shaderVariants.find(flags);
+        if (result == shaderVariants.end())
+        {
+        }
+
+        context.setGraphicsPipelineOptions(result->second.shaderProgram, rasterizerStageInfo,
+                                           rhi::BlendColorInfo::Opaque(), std::nullopt);
+    }
+
+    auto Shader::getFlagsByName(std::string_view const permutationName) const -> uint32_t
+    {
+        auto result = permutationNames.find(std::string(permutationName));
+        if (result == permutationNames.end())
+        {
+        }
+        return result->second;
     }
 
     /*

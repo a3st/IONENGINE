@@ -52,6 +52,7 @@ struct ShaderData
     std::unique_ptr<InternalData> internalData2;
     std::array<int32_t, 2> positions;
     std::unordered_map<TestEnum, std::string> enumNames;
+    std::unordered_map<uint32_t, std::string> valueNames;
     std::optional<uint32_t> optionalInt;
     std::optional<float> optionalFloat;
 
@@ -69,6 +70,7 @@ struct ShaderData
         archive.property(internalData2, "internal2");
         archive.property(positions, "positions");
         archive.property(enumNames, "enumNames");
+        archive.property(valueNames, "enumNames");
         archive.property(optionalInt, "optionalInt");
         archive.property(optionalFloat, "optionalFloat");
     }
@@ -112,6 +114,7 @@ TEST(Core, Serialize_JSON_Test)
                           .internalData2 = std::move(internalData),
                           .positions = {20, 30},
                           .enumNames = {{TestEnum::First, "firstValue"}, {TestEnum::Second, "secondValue"}},
+                          .valueNames = {{32, "firstValue"}, {33, "secondValue"}},
                           .optionalInt = 2};
 
     auto result = core::to_bytes<ShaderData, core::serialize_ojson>(shaderData);
@@ -133,6 +136,7 @@ TEST(Core, Serialize_JSON_Test)
     ASSERT_EQ(object.internalData2->materialIndex, shaderData.internalData2->materialIndex);
     ASSERT_EQ(object.positions, shaderData.positions);
     ASSERT_EQ(object.enumNames, shaderData.enumNames);
+    ASSERT_EQ(object.valueNames, shaderData.valueNames);
     ASSERT_EQ(object.optionalInt, shaderData.optionalInt);
     ASSERT_EQ(object.optionalFloat, shaderData.optionalFloat);
 }

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "buffer_pool.hpp"
 #include "camera.hpp"
 #include "material.hpp"
 #include "math/matrix.hpp"
@@ -25,31 +26,17 @@ namespace ionengine
                            rhi::TextureUsage const usage) -> core::handle<RenderPassTexture>;*/
     };
 
-#pragma pack(push, 1)
-    struct TransformData
-    {
-        math::Matf model;
-        math::Matf view;
-        math::Matf projection;
-    };
-#pragma pack(pop)
-
-#pragma pack(push, 1)
-    struct LightingData
-    {
-    };
-#pragma pack(pop)
-
     struct ObjectData
     {
         core::ref_ptr<Surface> surface;
         core::ref_ptr<Shader> shader;
+        core::ref_ptr<rhi::Buffer> materialBuffer;
     };
 
     struct DrawResults
     {
         std::vector<ObjectData> visibleObjects;
-        std::vector<LightingData> visibleLights;
+        std::vector<shadersys::common::LightingData> visibleLights;
     };
 
     struct RenderingData
@@ -67,6 +54,7 @@ namespace ionengine
 
         rhi::GraphicsContext* graphicsContext;
         rhi::CopyContext* copyContext;
+        ConstantBufferPool* constantBufferPool;
     };
 
     class Renderer : public core::ref_counted_object
@@ -91,6 +79,8 @@ namespace ionengine
 
         core::ref_ptr<rhi::GraphicsContext> graphicsContext;
         core::ref_ptr<rhi::CopyContext> copyContext;
+
+        core::ref_ptr<ConstantBufferPool> constantBufferPool;
 
         std::vector<core::ref_ptr<RenderPass>> renderPasses;
 

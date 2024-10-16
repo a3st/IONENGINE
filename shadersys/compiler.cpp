@@ -9,6 +9,26 @@
 
 namespace ionengine::shadersys
 {
+    auto getAllVariants(std::span<std::string const> const permutations,
+                        std::unordered_map<std::string, uint32_t> const& flags) -> std::vector<uint32_t>
+    {
+        std::vector<uint32_t> variants = {1};
+
+        uint32_t flag = 0;
+        for (size_t const i : std::views::iota(0u, permutations.size()))
+        {
+            flag |= flags.at(permutations[i]);
+
+            for (size_t const j : std::views::iota(i + 1, permutations.size()))
+            {
+                uint32_t const finalFlag = flag | flags.at(permutations[j]);
+                variants.emplace_back(finalFlag);
+            }
+        }
+
+        return variants;
+    }
+
     auto ShaderCompiler::create(fx::APIType const apiType) -> core::ref_ptr<ShaderCompiler>
     {
 #ifdef IONENGINE_SHADERSYS_DXC

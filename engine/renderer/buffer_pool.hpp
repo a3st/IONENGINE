@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "core/error.hpp"
 #include "rhi/rhi.hpp"
 
 namespace ionengine
@@ -20,6 +21,20 @@ namespace ionengine
       public:
         ConstantBufferPool(rhi::Device& device);
 
+        template <typename Type>
+        auto allocateWrite(rhi::CopyContext& context, Type const& object) -> core::weak_ptr<rhi::Buffer>
+        {
+            auto buffer = allocateMemory(sizeof(Type));
+            if (!buffer)
+            {
+                throw core::runtime_error("An error occurred while allocating memory");
+            }
+            context.barrier(buffer.get(), rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
+            context.writeBuffer(buffer.get(), std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&object), sizeof(Type)));
+            context.barrier(buffer.get(), rhi::ResourceState::CopyDest, rhi::ResourceState::Common);
+            return buffer;
+        }
+
       protected:
         auto allocateMemory(size_t const size) -> core::weak_ptr<rhi::Buffer> override;
 
@@ -32,6 +47,13 @@ namespace ionengine
         using list_of_buffer_t = std::list<core::ref_ptr<rhi::Buffer>>;
 
         list_of_buffer_t buffers;
-        list_of_buffer_t::iterator cur;
+
+        struct Entry
+        {
+            std::list<list_of_buffer_t::iterator> elements;
+            std::list<list_of_buffer_t::iterator>::iterator cur;
+        };
+
+        std::map<size_t, Entry> buckets;
     };
 } // namespace ionengine

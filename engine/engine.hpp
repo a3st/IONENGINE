@@ -4,5 +4,5 @@
 
 #include "platform/platform.hpp"
 #include "rhi/rhi.hpp"
-
+#include "shadersys/compiler.hpp"
 #include "renderer/renderer.hpp"

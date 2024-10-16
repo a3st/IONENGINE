@@ -13,10 +13,13 @@ namespace ionengine
         graphicsContext = device->createGraphicsContext();
         copyContext = device->createCopyContext();
 
+        constantBufferPool = core::make_ref<ConstantBufferPool>(*device);
+
         for (auto& renderPass : renderPasses)
         {
             renderPass->graphicsContext = graphicsContext.get();
             renderPass->copyContext = copyContext.get();
+            renderPass->constantBufferPool = constantBufferPool.get();
         }
     }
 

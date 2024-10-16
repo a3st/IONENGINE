@@ -61,176 +61,204 @@ namespace ionengine::shadersys
 
         fx::ShaderData shaderData{.headerData = std::move(headerData), .outputData = std::move(outputData)};
 
-        if (materialData.size > 0)
-        {
-            shaderData.constants.emplace_back(
-                fx::ConstantData{.name = "materialBuffer", .type = fx::ElementType::Uint});
-            shaderData.structures.emplace_back(std::move(materialData));
-        }
+        std::vector<std::string> permutations = {"BASE"};
 
         if (shaderData.headerData.domain.compare("Surface") == 0)
         {
+            permutations.emplace_back("FEATURE_SKINNING");
         }
 
-        for (auto const& [stageType, shaderCode] : stageData)
+        for (size_t const i : std::views::iota(0u, permutations.size()))
         {
-            fx::StageData shaderStageData{.buffer = static_cast<uint32_t>(shaderData.buffers.size()),
-                                          .entryPoint = "main"};
+            shaderData.permutations[permutations[i]] = 1 << i;
+        }
 
-            std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
-            std::vector<LPCWSTR> arguments = {L"-E main", defaultIncludePath.c_str(), L"-HV 2021"};
+        auto shaderVariants = getAllVariants(permutations, shaderData.permutations);
+        for (auto const variantFlags : shaderVariants)
+        {
+            fx::ShaderVariantData shaderVariantData{};
 
-            switch (stageType)
+            if (materialData.size > 0)
             {
-                case fx::StageType::Vertex: {
-                    arguments.emplace_back(L"-T vs_6_6");
-                    break;
-                }
-                case fx::StageType::Pixel: {
-                    arguments.emplace_back(L"-T ps_6_6");
-                    break;
-                }
-                case fx::StageType::Compute: {
-                    arguments.emplace_back(L"-T cs_6_6");
-                    break;
-                }
+                shaderVariantData.constants.emplace_back(shadersys::common::materialConstantData);
+                shaderVariantData.structures.emplace_back(std::move(materialData));
             }
 
-            if (shaderData.headerData.domain.compare("Screen") == 0)
+            if (shaderData.headerData.domain.compare("Surface") == 0)
             {
-                arguments.emplace_back(L"-D SHADER_DOMAIN_TYPE_SCREEN");
+                shaderVariantData.constants.emplace_back(shadersys::common::transformConstantData);
+                shaderVariantData.structures.emplace_back(shadersys::common::transformStructureData);
             }
 
-            DxcBuffer shaderBuffer{.Ptr = shaderCode.data(), .Size = shaderCode.size(), .Encoding = DXC_CP_UTF8};
-
-            winrt::com_ptr<IDxcResult> result;
-            throwIfFailed(compiler->Compile(&shaderBuffer, arguments.data(), static_cast<uint32_t>(arguments.size()),
-                                            includeHandler.get(), __uuidof(IDxcResult), result.put_void()));
-
-            winrt::com_ptr<IDxcBlobUtf8> errorsBlob;
-            throwIfFailed(result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), errorsBlob.put_void(), nullptr));
-
-            if (errorsBlob && errorsBlob->GetStringLength() > 0)
+            for (auto const& [stageType, shaderCode] : stageData)
             {
-                errors =
-                    std::string(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()), errorsBlob->GetBufferSize());
-                return std::nullopt;
-            }
+                fx::StageData shaderStageData{.buffer = static_cast<uint32_t>(shaderData.buffers.size()),
+                                              .entryPoint = "main"};
 
-            winrt::com_ptr<IDxcBlob> shaderBlob;
-            throwIfFailed(result->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), shaderBlob.put_void(), nullptr));
+                std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
+                std::vector<LPCWSTR> arguments = {L"-E main", defaultIncludePath.c_str(), L"-HV 2021"};
 
-            fx::BufferData bufferData{.offset = static_cast<uint64_t>(streambuf.tellp()),
-                                      .size = shaderBlob->GetBufferSize()};
-            shaderData.buffers.emplace_back(std::move(bufferData));
-
-            streambuf.write(reinterpret_cast<uint8_t const*>(shaderBlob->GetBufferPointer()),
-                            shaderBlob->GetBufferSize());
-
-            winrt::com_ptr<IDxcBlob> reflectionBlob;
-            throwIfFailed(
-                result->GetOutput(DXC_OUT_REFLECTION, __uuidof(IDxcBlob), reflectionBlob.put_void(), nullptr));
-
-            DxcBuffer reflectionBuffer{.Ptr = reflectionBlob->GetBufferPointer(),
-                                       .Size = reflectionBlob->GetBufferSize()};
-
-            winrt::com_ptr<ID3D12ShaderReflection> shaderReflection;
-            throwIfFailed(utils->CreateReflection(&reflectionBuffer, __uuidof(ID3D12ShaderReflection),
-                                                  shaderReflection.put_void()));
-
-            D3D12_SHADER_DESC shaderDesc{};
-            throwIfFailed(shaderReflection->GetDesc(&shaderDesc));
-
-            size_t inputSize = 0;
-
-            for (uint32_t const i : std::views::iota(0u, shaderDesc.InputParameters))
-            {
-                D3D12_SIGNATURE_PARAMETER_DESC signatureParameterDesc{};
-                throwIfFailed(shaderReflection->GetInputParameterDesc(i, &signatureParameterDesc));
-
-                if (isDefaultSemantic(signatureParameterDesc.SemanticName))
+                switch (stageType)
                 {
-                    continue;
-                }
-
-                fx::VertexFormat format;
-                if (signatureParameterDesc.Mask == 1)
-                {
-                    switch (signatureParameterDesc.ComponentType)
-                    {
-                        case D3D_REGISTER_COMPONENT_UINT32:
-                            format = fx::VertexFormat::R32_UINT;
-                            break;
-                        case D3D_REGISTER_COMPONENT_SINT32:
-                            format = fx::VertexFormat::R32_SINT;
-                            break;
-                        case D3D_REGISTER_COMPONENT_FLOAT32:
-                            format = fx::VertexFormat::R32_FLOAT;
-                            break;
+                    case fx::StageType::Vertex: {
+                        arguments.emplace_back(L"-T vs_6_6");
+                        break;
                     }
-                }
-                else if (signatureParameterDesc.Mask <= 3)
-                {
-                    switch (signatureParameterDesc.ComponentType)
-                    {
-                        case D3D_REGISTER_COMPONENT_UINT32:
-                            format = fx::VertexFormat::RG32_UINT;
-                            break;
-                        case D3D_REGISTER_COMPONENT_SINT32:
-                            format = fx::VertexFormat::RG32_UINT;
-                            break;
-                        case D3D_REGISTER_COMPONENT_FLOAT32:
-                            format = fx::VertexFormat::RG32_UINT;
-                            break;
+                    case fx::StageType::Pixel: {
+                        arguments.emplace_back(L"-T ps_6_6");
+                        break;
                     }
-                }
-                else if (signatureParameterDesc.Mask <= 7)
-                {
-                    switch (signatureParameterDesc.ComponentType)
-                    {
-                        case D3D_REGISTER_COMPONENT_UINT32:
-                            format = fx::VertexFormat::RGB32_UINT;
-                            break;
-                        case D3D_REGISTER_COMPONENT_SINT32:
-                            format = fx::VertexFormat::RGB32_UINT;
-                            break;
-                        case D3D_REGISTER_COMPONENT_FLOAT32:
-                            format = fx::VertexFormat::RGB32_UINT;
-                            break;
-                    }
-                }
-                else if (signatureParameterDesc.Mask <= 15)
-                {
-                    switch (signatureParameterDesc.ComponentType)
-                    {
-                        case D3D_REGISTER_COMPONENT_UINT32:
-                            format = fx::VertexFormat::RGBA32_UINT;
-                            break;
-                        case D3D_REGISTER_COMPONENT_SINT32:
-                            format = fx::VertexFormat::RGBA32_UINT;
-                            break;
-                        case D3D_REGISTER_COMPONENT_FLOAT32:
-                            format = fx::VertexFormat::RGBA32_UINT;
-                            break;
+                    case fx::StageType::Compute: {
+                        arguments.emplace_back(L"-T cs_6_6");
+                        break;
                     }
                 }
 
-                fx::VertexLayoutElementData elementData{.format = format,
-                                                 .semantic = signatureParameterDesc.SemanticName +
-                                                             std::to_string(signatureParameterDesc.SemanticIndex)};
-                shaderStageData.vertexLayout.elements.emplace_back(std::move(elementData));
+                if (shaderData.headerData.domain.compare("Screen") == 0)
+                {
+                    arguments.emplace_back(L"-D SHADER_DOMAIN_TYPE_SCREEN");
+                }
+                else if (shaderData.headerData.domain.compare("Surface") == 0)
+                {
+                    arguments.emplace_back(L"-D SHADER_DOMAIN_TYPE_SURFACE");
+                }
 
-                inputSize += fx::sizeof_VertexFormat(format);
+                DxcBuffer shaderBuffer{.Ptr = shaderCode.data(), .Size = shaderCode.size(), .Encoding = DXC_CP_UTF8};
+
+                winrt::com_ptr<IDxcResult> result;
+                throwIfFailed(compiler->Compile(&shaderBuffer, arguments.data(),
+                                                static_cast<uint32_t>(arguments.size()), includeHandler.get(),
+                                                __uuidof(IDxcResult), result.put_void()));
+
+                winrt::com_ptr<IDxcBlobUtf8> errorsBlob;
+                throwIfFailed(
+                    result->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), errorsBlob.put_void(), nullptr));
+
+                if (errorsBlob && errorsBlob->GetStringLength() > 0)
+                {
+                    errors = std::string(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()),
+                                         errorsBlob->GetBufferSize());
+                    return std::nullopt;
+                }
+
+                winrt::com_ptr<IDxcBlob> shaderBlob;
+                throwIfFailed(result->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), shaderBlob.put_void(), nullptr));
+
+                fx::BufferData bufferData{.offset = static_cast<uint64_t>(streambuf.tellp()),
+                                          .size = shaderBlob->GetBufferSize()};
+                shaderData.buffers.emplace_back(std::move(bufferData));
+
+                streambuf.write(reinterpret_cast<uint8_t const*>(shaderBlob->GetBufferPointer()),
+                                shaderBlob->GetBufferSize());
+
+                winrt::com_ptr<IDxcBlob> reflectionBlob;
+                throwIfFailed(
+                    result->GetOutput(DXC_OUT_REFLECTION, __uuidof(IDxcBlob), reflectionBlob.put_void(), nullptr));
+
+                DxcBuffer reflectionBuffer{.Ptr = reflectionBlob->GetBufferPointer(),
+                                           .Size = reflectionBlob->GetBufferSize()};
+
+                winrt::com_ptr<ID3D12ShaderReflection> shaderReflection;
+                throwIfFailed(utils->CreateReflection(&reflectionBuffer, __uuidof(ID3D12ShaderReflection),
+                                                      shaderReflection.put_void()));
+
+                D3D12_SHADER_DESC shaderDesc{};
+                throwIfFailed(shaderReflection->GetDesc(&shaderDesc));
+
+                size_t inputSize = 0;
+
+                for (uint32_t const i : std::views::iota(0u, shaderDesc.InputParameters))
+                {
+                    D3D12_SIGNATURE_PARAMETER_DESC signatureParameterDesc{};
+                    throwIfFailed(shaderReflection->GetInputParameterDesc(i, &signatureParameterDesc));
+
+                    if (isDefaultSemantic(signatureParameterDesc.SemanticName))
+                    {
+                        continue;
+                    }
+
+                    fx::VertexFormat format;
+                    if (signatureParameterDesc.Mask == 1)
+                    {
+                        switch (signatureParameterDesc.ComponentType)
+                        {
+                            case D3D_REGISTER_COMPONENT_UINT32:
+                                format = fx::VertexFormat::R32_UINT;
+                                break;
+                            case D3D_REGISTER_COMPONENT_SINT32:
+                                format = fx::VertexFormat::R32_SINT;
+                                break;
+                            case D3D_REGISTER_COMPONENT_FLOAT32:
+                                format = fx::VertexFormat::R32_FLOAT;
+                                break;
+                        }
+                    }
+                    else if (signatureParameterDesc.Mask <= 3)
+                    {
+                        switch (signatureParameterDesc.ComponentType)
+                        {
+                            case D3D_REGISTER_COMPONENT_UINT32:
+                                format = fx::VertexFormat::RG32_UINT;
+                                break;
+                            case D3D_REGISTER_COMPONENT_SINT32:
+                                format = fx::VertexFormat::RG32_UINT;
+                                break;
+                            case D3D_REGISTER_COMPONENT_FLOAT32:
+                                format = fx::VertexFormat::RG32_UINT;
+                                break;
+                        }
+                    }
+                    else if (signatureParameterDesc.Mask <= 7)
+                    {
+                        switch (signatureParameterDesc.ComponentType)
+                        {
+                            case D3D_REGISTER_COMPONENT_UINT32:
+                                format = fx::VertexFormat::RGB32_UINT;
+                                break;
+                            case D3D_REGISTER_COMPONENT_SINT32:
+                                format = fx::VertexFormat::RGB32_UINT;
+                                break;
+                            case D3D_REGISTER_COMPONENT_FLOAT32:
+                                format = fx::VertexFormat::RGB32_UINT;
+                                break;
+                        }
+                    }
+                    else if (signatureParameterDesc.Mask <= 15)
+                    {
+                        switch (signatureParameterDesc.ComponentType)
+                        {
+                            case D3D_REGISTER_COMPONENT_UINT32:
+                                format = fx::VertexFormat::RGBA32_UINT;
+                                break;
+                            case D3D_REGISTER_COMPONENT_SINT32:
+                                format = fx::VertexFormat::RGBA32_UINT;
+                                break;
+                            case D3D_REGISTER_COMPONENT_FLOAT32:
+                                format = fx::VertexFormat::RGBA32_UINT;
+                                break;
+                        }
+                    }
+
+                    fx::VertexLayoutElementData elementData{.format = format,
+                                                            .semantic =
+                                                                signatureParameterDesc.SemanticName +
+                                                                std::to_string(signatureParameterDesc.SemanticIndex)};
+                    shaderStageData.vertexLayout.elements.emplace_back(std::move(elementData));
+
+                    inputSize += fx::sizeof_VertexFormat(format);
+                }
+
+                shaderStageData.vertexLayout.size = inputSize;
+
+                shaderVariantData.stages[stageType] = std::move(shaderStageData);
             }
 
-            shaderStageData.vertexLayout.size = inputSize;
-
-            shaderData.outputData.stages[stageType] = std::move(shaderStageData);
+            shaderData.shaders[variantFlags] = std::move(shaderVariantData);
         }
 
         return ShaderFile{.magic = fx::Magic,
-                                .apiType = apiType,
-                                .shaderData = std::move(shaderData),
-                                .blob = {std::istreambuf_iterator<uint8_t>(streambuf.rdbuf()), {}}};
+                          .apiType = apiType,
+                          .shaderData = std::move(shaderData),
+                          .blob = {std::istreambuf_iterator<uint8_t>(streambuf.rdbuf()), {}}};
     }
 } // namespace ionengine::shadersys

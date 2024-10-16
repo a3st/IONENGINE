@@ -118,6 +118,19 @@ TEST(ShaderSystem, Compiler_Test)
     core::to_file<shadersys::ShaderFile, core::serialize_oarchive>(shaderFile.value(), "test.bin");
 }
 
+TEST(ShaderSystem, Permutation_Test)
+{
+    std::vector<std::string> permutations = {"BASE", "FEATURE_SKINNING", "FEATURE_MSAA"};
+    std::unordered_map<std::string, uint32_t> flags = {
+        {"BASE", 1 << 0}, {"FEATURE_SKINNING", 1 << 1}, {"FEATURE_MSAA", 1 << 2}};
+
+    auto result = shadersys::getAllVariants(permutations, flags);
+    ASSERT_EQ(result[0], 1);
+    ASSERT_EQ(result[1], 3);
+    ASSERT_EQ(result[2], 5);
+    ASSERT_EQ(result[3], 7);
+}
+
 auto main(int32_t argc, char** argv) -> int32_t
 {
     testing::InitGoogleTest(&argc, argv);

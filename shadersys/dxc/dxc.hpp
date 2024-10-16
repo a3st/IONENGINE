@@ -4,10 +4,10 @@
 
 #include "shadersys/compiler.hpp"
 #define NOMINMAX
-#include <windows.h>
 #include <d3d12shader.h>
 #include <dxcapi.h>
 #include <dxgi1_4.h>
+#include <windows.h>
 #include <winrt/base.h>
 
 namespace ionengine::shadersys
@@ -17,7 +17,8 @@ namespace ionengine::shadersys
       public:
         DXCCompiler(fx::APIType const apiType);
 
-        auto compileFromFile(std::filesystem::path const& filePath, std::string& errors) -> std::optional<ShaderFile> override;
+        auto compileFromFile(std::filesystem::path const& filePath,
+                             std::string& errors) -> std::optional<ShaderFile> override;
 
       private:
         winrt::com_ptr<IDxcCompiler3> compiler;

@@ -176,7 +176,6 @@ namespace ionengine::shadersys
 
         struct OutputData
         {
-            std::unordered_map<StageType, StageData> stages;
             bool depthWrite;
             bool stencilWrite;
             CullSide cullSide;
@@ -184,28 +183,42 @@ namespace ionengine::shadersys
             template <typename Archive>
             auto operator()(Archive& archive)
             {
-                archive.property(stages, "stages");
                 archive.property(depthWrite, "depthWrite");
                 archive.property(stencilWrite, "stencilWrite");
                 archive.property(cullSide, "cullSide");
             }
         };
 
+        struct ShaderVariantData
+        {
+            std::unordered_map<StageType, StageData> stages;
+            std::vector<ConstantData> constants;
+            std::vector<StructureData> structures;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(stages, "stages");
+                archive.property(constants, "constants");
+                archive.property(structures, "structures");
+            }
+        };
+
         struct ShaderData
         {
             HeaderData headerData;
+            std::unordered_map<std::string, uint32_t> permutations;
+            std::unordered_map<uint32_t, ShaderVariantData> shaders;
             OutputData outputData;
-            std::vector<ConstantData> constants;
-            std::vector<StructureData> structures;
             std::vector<BufferData> buffers;
 
             template <typename Archive>
             auto operator()(Archive& archive)
             {
                 archive.property(headerData, "header");
+                archive.property(permutations, "permutations");
+                archive.property(shaders, "shaders");
                 archive.property(outputData, "output");
-                archive.property(constants, "constants");
-                archive.property(structures, "structures");
                 archive.property(buffers, "buffers");
             }
         };

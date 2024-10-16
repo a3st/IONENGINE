@@ -4,76 +4,84 @@
         "description": "Basic description",
         "domain": "Screen"
     },
-    "output": {
-        "stages": {
-            "VS": {
-                "buffer": 0,
-                "entryPoint": "main",
-                "vertexLayout": {
-                    "elements": [
-                        {
-                            "format": "RGB32_FLOAT",
-                            "semantic": "POSITION"
-                        },
-                        {
-                            "format": "RGB32_FLOAT",
-                            "semantic": "NORMAL"
-                        },
-                        {
-                            "format": "RG32_FLOAT",
-                            "semantic": "TEXCOORD0"
-                        }
-                    ],
-                    "sizeInBytes": 24
+    "permutations": {
+        "BASE": 1,
+        "SKINNING": 2
+    },
+    "shaders": {
+        "1": {
+            "stages": {
+                "VS": {
+                    "buffer": 0,
+                    "entryPoint": "main",
+                    "vertexLayout": {
+                        "elements": [
+                            {
+                                "format": "RGB32_FLOAT",
+                                "semantic": "POSITION"
+                            },
+                            {
+                                "format": "RGB32_FLOAT",
+                                "semantic": "NORMAL"
+                            },
+                            {
+                                "format": "RG32_FLOAT",
+                                "semantic": "TEXCOORD0"
+                            }
+                        ],
+                        "sizeInBytes": 24
+                    }
+                },
+                "PS": {
+                    "buffer": 1,
+                    "entryPoint": "main"
                 }
             },
-            "PS": {
-                "buffer": 1,
-                "entryPoint": "main"
-            }
-        },
+            "constants": [
+                {
+                    "name": "worldBuffer",
+                    "type": "UINT"
+                },
+                {
+                    "name": "lightingBuffer",
+                    "type": "UINT"
+                },
+                {
+                    "name": "samplerBuffer",
+                    "type": "UINT"
+                },
+                {
+                    "name": "materialBuffer",
+                    "type": "UINT"
+                }
+            ],
+            "structures": [
+                {
+                    "name": "MATERIAL_DATA",
+                    "elements": [
+                        {
+                            "name": "model",
+                            "type": "FLOAT4x4"
+                        },
+                        {
+                            "name": "view",
+                            "type": "FLOAT4x4"
+                        },
+                        {
+                            "name": "projection",
+                            "type": "FLOAT4x4"
+                        }
+                    ],
+                    "sizeInBytes": 192
+                }
+            ]
+        }
+    },
+    "output": {
         "depthWrite": false,
         "stencilWrite": false,
         "cullSide": "back"
     },
-    "constants": [
-        {
-            "name": "worldBuffer",
-            "type": "UINT"
-        },
-        {
-            "name": "lightingBuffer",
-            "type": "UINT"
-        },
-        {
-            "name": "samplerBuffer",
-            "type": "UINT"
-        },
-        {
-            "name": "materialBuffer",
-            "type": "UINT"
-        }
-    ],
-    "structures": [
-        {
-            "name": "MATERIAL_DATA",
-            "elements": [
-                {
-                    "name": "model",
-                    "type": "FLOAT4x4"
-                },
-                {
-                    "name": "view",
-                    "type": "FLOAT4x4"
-                },
-                {
-                    "name": "projection",
-                    "type": "FLOAT4x4"
-                }
-            ],
-            "sizeInBytes": 192
-        }
-    ],
     "buffers": [
         {
             "offset": 2000,

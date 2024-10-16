@@ -10,6 +10,11 @@ namespace ionengine
     class Shader : public core::ref_counted_object
     {
       public:
+        struct Variant
+        {
+            core::ref_ptr<rhi::Shader> shaderProgram;
+        };
+
         /*struct ShaderOption
         {
             uint32_t constantIndex;
@@ -20,11 +25,13 @@ namespace ionengine
 
         Shader(rhi::Device& device, shadersys::ShaderFile const& shaderFile);
 
-        auto setActive(rhi::GraphicsContext& context) -> void;
+        auto setActive(rhi::GraphicsContext& context, uint32_t const flags) -> void;
+
+        auto getFlagsByName(std::string_view const permutationName) const -> uint32_t;
 
       private:
-        core::ref_ptr<rhi::Shader> shaderProgram;
-
+        std::unordered_map<std::string, uint32_t> permutationNames;
+        std::unordered_map<uint32_t, Variant> shaderVariants;
         rhi::RasterizerStageInfo rasterizerStageInfo;
     };
 } // namespace ionengine
