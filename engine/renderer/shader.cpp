@@ -38,6 +38,18 @@ namespace ionengine
         }
     }
 
+    ShaderVariant::ShaderVariant(core::ref_ptr<rhi::Shader> shaderProgram,
+                                 rhi::RasterizerStageInfo& rasterizerStageInfo)
+        : shaderProgram(shaderProgram), rasterizerStageInfo(&rasterizerStageInfo)
+    {
+    }
+
+    auto ShaderVariant::setActive(rhi::GraphicsContext& context) -> void
+    {
+        context.setGraphicsPipelineOptions(shaderProgram, *rasterizerStageInfo, rhi::BlendColorInfo::Opaque(),
+                                           std::nullopt);
+    }
+
     Shader::Shader(rhi::Device& device, shadersys::ShaderFile const& shaderFile)
     {
         std::string apiType;
@@ -58,80 +70,90 @@ namespace ionengine
             throw core::runtime_error("Shader has a different shader backend");
         }
 
-        rhi::ShaderCreateInfo shaderCreateInfo{.pipelineType = rhi::PipelineType::Graphics};
-
-        /*for (auto const& [stageType, stageData] : shaderFile.shaderData.outputData.stages)
+        for (auto const& [permutationName, flags] : shaderFile.shaderData.permutations)
         {
-            uint32_t const bufferIndex = stageData.buffer;
-            auto const& bufferData = shaderFile.shaderData.buffers[bufferIndex];
+            permutationNames[permutationName] = flags;
+        }
 
-            if (stageType == shadersys::fx::StageType::Compute)
-            {
-                shaderCreateInfo.pipelineType = rhi::PipelineType::Compute;
+        rasterizerStageInfo.fillMode = rhi::FillMode::Solid;
 
-                rhi::ShaderStageCreateInfo stageCreateInfo{
-                    .entryPoint = stageData.entryPoint,
-                    .shader = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
-                shaderCreateInfo.compute = std::move(stageCreateInfo);
+        switch (shaderFile.shaderData.outputData.cullSide)
+        {
+            case shadersys::fx::CullSide::Back: {
+                rasterizerStageInfo.cullMode = rhi::CullMode::Back;
+                break;
             }
-            else
+            case shadersys::fx::CullSide::Front: {
+                rasterizerStageInfo.cullMode = rhi::CullMode::Front;
+                break;
+            }
+            case shadersys::fx::CullSide::None: {
+                rasterizerStageInfo.cullMode = rhi::CullMode::None;
+                break;
+            }
+        }
+
+        for (auto const& [flags, shaderData] : shaderFile.shaderData.shaders)
+        {
+            if (flags == permutationNames["BASE"])
             {
-                rhi::ShaderStageCreateInfo stageCreateInfo{
-                    .entryPoint = stageData.entryPoint,
-                    .shader = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
-                switch (stageType)
+                auto result = std::find_if(shaderData.structures.begin(), shaderData.structures.end(),
+                                           [](auto const& element) { return element.name == "MATERIAL_DATA"; });
+                if (result != shaderData.structures.end())
                 {
-                    case shadersys::fx::StageType::Vertex: {
-                        for (auto const& inputElement : stageData.vertexLayout.elements)
-                        {
-                            rhi::VertexDeclarationInfo vertexDeclarationInfo{
-                                .semantic = inputElement.semantic,
-                                .format = FXVertexFormat_to_RHIVertexFormat(inputElement.format)};
+                    materialData = *result;
+                }
+            }
 
-                            shaderCreateInfo.graphics.vertexDeclarations.emplace_back(std::move(vertexDeclarationInfo));
+            rhi::ShaderCreateInfo shaderCreateInfo{.pipelineType = rhi::PipelineType::Graphics};
+
+            for (auto const& [stageType, stageData] : shaderData.stages)
+            {
+                uint32_t const bufferIndex = stageData.buffer;
+                auto const& bufferData = shaderFile.shaderData.buffers[bufferIndex];
+
+                if (stageType == shadersys::fx::StageType::Compute)
+                {
+                    shaderCreateInfo.pipelineType = rhi::PipelineType::Compute;
+
+                    rhi::ShaderStageCreateInfo stageCreateInfo{
+                        .entryPoint = stageData.entryPoint,
+                        .shader = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
+                    shaderCreateInfo.compute = std::move(stageCreateInfo);
+                }
+                else
+                {
+                    rhi::ShaderStageCreateInfo stageCreateInfo{
+                        .entryPoint = stageData.entryPoint,
+                        .shader = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
+                    switch (stageType)
+                    {
+                        case shadersys::fx::StageType::Vertex: {
+                            for (auto const& inputElement : stageData.vertexLayout.elements)
+                            {
+                                rhi::VertexDeclarationInfo vertexDeclarationInfo{
+                                    .semantic = inputElement.semantic,
+                                    .format = FXVertexFormat_to_RHIVertexFormat(inputElement.format)};
+
+                                shaderCreateInfo.graphics.vertexDeclarations.emplace_back(
+                                    std::move(vertexDeclarationInfo));
+                            }
+
+                            shaderCreateInfo.graphics.vertexStage = std::move(stageCreateInfo);
+                            break;
                         }
-
-                        shaderCreateInfo.graphics.vertexStage = std::move(stageCreateInfo);
-                        break;
-                    }
-                    case shadersys::fx::StageType::Pixel: {
-                        rasterizerStageInfo.fillMode = rhi::FillMode::Solid;
-
-                        switch (shaderFile.shaderData.outputData.cullSide)
-                        {
-                            case shadersys::fx::CullSide::Back: {
-                                rasterizerStageInfo.cullMode = rhi::CullMode::Back;
-                                break;
-                            }
-                            case shadersys::fx::CullSide::Front: {
-                                rasterizerStageInfo.cullMode = rhi::CullMode::Front;
-                                break;
-                            }
-                            case shadersys::fx::CullSide::None: {
-                                rasterizerStageInfo.cullMode = rhi::CullMode::None;
-                                break;
-                            }
+                        case shadersys::fx::StageType::Pixel: {
+                            shaderCreateInfo.graphics.pixelStage = std::move(stageCreateInfo);
+                            break;
                         }
-
-                        shaderCreateInfo.graphics.pixelStage = std::move(stageCreateInfo);
-                        break;
                     }
                 }
             }
+
+            auto shaderProgram = device.createShader(shaderCreateInfo);
+
+            shaderVariants[flags] = core::make_ref<ShaderVariant>(shaderProgram, rasterizerStageInfo);
         }
-
-        shaderProgram = device.createShader(shaderCreateInfo);*/
-    }
-
-    auto Shader::setActive(rhi::GraphicsContext& context, uint32_t const flags) -> void
-    {
-        auto result = shaderVariants.find(flags);
-        if (result == shaderVariants.end())
-        {
-        }
-
-        context.setGraphicsPipelineOptions(result->second.shaderProgram, rasterizerStageInfo,
-                                           rhi::BlendColorInfo::Opaque(), std::nullopt);
     }
 
     auto Shader::getFlagsByName(std::string_view const permutationName) const -> uint32_t
@@ -143,134 +165,17 @@ namespace ionengine
         return result->second;
     }
 
-    /*
-    auto ShaderAsset::parseShaderEffectFile(rhi::fx::ShaderEffectFile const& shaderEffectFile) -> bool
+    auto Shader::getVariant(uint32_t const flags) -> core::ref_ptr<ShaderVariant>
     {
-        std::string targetType;
-        switch (shaderEffectFile.target)
+        auto result = shaderVariants.find(flags);
+        if (result == shaderVariants.end())
         {
-            case rhi::fx::ShaderTargetType::DXIL: {
-                targetType = "D3D12";
-                break;
-            }
-            case rhi::fx::ShaderTargetType::SPIRV: {
-                targetType = "Vulkan";
-                break;
-            }
         }
-
-        if (targetType != device->getDevice().getBackendType())
-        {
-            std::cerr << "[Renderer] ShaderAsset {} has a different shader backend" << std::endl;
-            return false;
-        }
-
-        if (shaderEffectFile.effectData.technique.stages.find(rhi::fx::ShaderStageType::Compute) !=
-            shaderEffectFile.effectData.technique.stages.end())
-        {
-            uint32_t const bufferIndex =
-                shaderEffectFile.effectData.technique.stages.at(rhi::fx::ShaderStageType::Compute).buffer;
-            shaderProgram = device->getDevice().createShader(shaderEffectFile.buffers[bufferIndex]);
-        }
-        else
-        {
-            uint32_t const vertexBufferIndex =
-                shaderEffectFile.effectData.technique.stages.at(rhi::fx::ShaderStageType::Vertex).buffer;
-            uint32_t const pixelBufferIndex =
-                shaderEffectFile.effectData.technique.stages.at(rhi::fx::ShaderStageType::Pixel).buffer;
-
-            rasterizerStage.fillMode = rhi::FillMode::Solid;
-
-            switch (shaderEffectFile.effectData.technique.cullSide)
-            {
-                case rhi::fx::ShaderCullSide::Back: {
-                    rasterizerStage.cullMode = rhi::CullMode::Back;
-                    break;
-                }
-                case rhi::fx::ShaderCullSide::Front: {
-                    rasterizerStage.cullMode = rhi::CullMode::Front;
-                    break;
-                }
-                case rhi::fx::ShaderCullSide::None: {
-                    rasterizerStage.cullMode = rhi::CullMode::None;
-                    break;
-                }
-            }
-
-            auto found = std::find_if(shaderEffectFile.effectData.structures.begin(),
-                                      shaderEffectFile.effectData.structures.end(),
-                                      [](auto const& element) { return element.structureName == "VS_INPUT"; });
-            if (found == shaderEffectFile.effectData.structures.end())
-            {
-                std::cerr << "[Renderer] ShaderAsset {} hasn't input assembler and cannot be used as a vertex
-    shader"
-                          << std::endl;
-                return false;
-            }
-
-            std::vector<rhi::VertexDeclarationInfo> vertexDeclarations;
-            uint32_t index = 0;
-            for (auto const& structureElement : found->elements)
-            {
-                rhi::VertexDeclarationInfo vertexDeclarationInfo = {
-                    .semantic = structureElement.semantic,
-                    .index = index,
-                    .format = ShaderElementType_to_VertexFormat(structureElement.elementType)};
-
-                vertexDeclarations.emplace_back(std::move(vertexDeclarationInfo));
-                ++index;
-            }
-
-            shaderProgram =
-                device->getDevice().createShader(vertexDeclarations, shaderEffectFile.buffers[vertexBufferIndex],
-                                                 shaderEffectFile.buffers[pixelBufferIndex]);
-        }
-
-        for (uint32_t const i : std::views::iota(0u, shaderEffectFile.effectData.constants.size()))
-        {
-            std::string namespaceName;
-            std::string optionName;
-            switch (shaderEffectFile.effectData.constants[i].constantType)
-            {
-                case rhi::fx::ShaderElementType::StorageBuffer:
-                case rhi::fx::ShaderElementType::ConstantBuffer: {
-                    namespaceName = shaderEffectFile.effectData.constants[i].constantName;
-                    break;
-                }
-                default: {
-                    optionName = shaderEffectFile.effectData.constants[i].constantName;
-                    break;
-                }
-            }
-
-            // Option is SamplerState, Texture or values. No need namespace there
-            if (namespaceName.empty())
-            {
-                ShaderOption option = {
-                    .constantIndex = i,
-                    .elementType = shaderEffectFile.effectData.constants[i].constantType,
-                    .offset = 0,
-                    .size = rhi::fx::ShaderElementSize[shaderEffectFile.effectData.constants[i].constantType]};
-
-                options.emplace(optionName, std::move(option));
-            }
-            else
-            {
-                uint32_t const structureIndex = shaderEffectFile.effectData.constants[i].structure;
-
-                uint64_t offset = 0;
-                for (auto const& structureElement : shaderEffectFile.effectData.structures[structureIndex].elements)
-                {
-                    ShaderOption option = {.constantIndex = i,
-                                           .elementType = structureElement.elementType,
-                                           .offset = offset,
-                                           .size = rhi::fx::ShaderElementSize[structureElement.elementType]};
-
-                    options.emplace(namespaceName + "." + structureElement.elementName, std::move(option));
-                }
-            }
-        }
-        return true;
+        return result->second;
     }
-    */
+
+    auto Shader::getMaterialData() -> std::optional<shadersys::fx::StructureData>
+    {
+        return materialData;
+    }
 } // namespace ionengine

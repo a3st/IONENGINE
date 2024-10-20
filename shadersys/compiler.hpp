@@ -30,6 +30,7 @@ namespace ionengine::shadersys
 #pragma pack(push, 1)
         struct LightingData
         {
+            uint32_t reserved;
         };
 #pragma pack(pop)
 

@@ -19,6 +19,7 @@ namespace ionengine
     }
 
     Model::Model(rhi::Device& device, rhi::CopyContext& copyContext, ModelFile const& modelFile)
+        : copyContext(&copyContext)
     {
         core::ref_ptr<rhi::Buffer> vertexBuffer;
         {
@@ -51,6 +52,24 @@ namespace ionengine
 
             auto surface = core::make_ref<Surface>(vertexBuffer, indexBuffer, surfaceData.indexCount);
             surfaces.emplace_back(surface);
+        }
+    }
+
+    auto Model::setMaterial(uint32_t const index, core::ref_ptr<Material> material) -> void
+    {
+        materials[index] = material;
+    }
+
+    auto Model::render(RenderingData& renderingData) -> void
+    {
+        for (size_t const i : std::views::iota(0u, surfaces.size()))
+        {
+            auto& material = materials[i];
+            material->update(*copyContext);
+
+            ObjectData objectData{
+                .surface = surfaces[i], .shader = material->getShader(false), .materialBuffer = material->getBuffer()};
+            renderingData.drawResults.objects.emplace_back(std::move(objectData));
         }
     }
 } // namespace ionengine

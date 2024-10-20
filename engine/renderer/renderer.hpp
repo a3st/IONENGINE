@@ -26,25 +26,6 @@ namespace ionengine
                            rhi::TextureUsage const usage) -> core::handle<RenderPassTexture>;*/
     };
 
-    struct ObjectData
-    {
-        core::ref_ptr<Surface> surface;
-        core::ref_ptr<Shader> shader;
-        core::ref_ptr<rhi::Buffer> materialBuffer;
-    };
-
-    struct DrawResults
-    {
-        std::vector<ObjectData> visibleObjects;
-        std::vector<shadersys::common::LightingData> visibleLights;
-    };
-
-    struct RenderingData
-    {
-        DrawResults drawResults;
-        core::weak_ptr<rhi::Texture> backBuffer;
-    };
-
     class RenderPass : public core::ref_counted_object
     {
       public:
@@ -55,6 +36,7 @@ namespace ionengine
         rhi::GraphicsContext* graphicsContext;
         rhi::CopyContext* copyContext;
         ConstantBufferPool* constantBufferPool;
+        bool isInitialized;
     };
 
     class Renderer : public core::ref_counted_object
@@ -68,7 +50,8 @@ namespace ionengine
 
         auto createModel(ModelFile const& modelFile) -> core::ref_ptr<Model>;
 
-        auto createMaterial(Shader& shader) -> core::ref_ptr<Material>;
+        auto createMaterial(MaterialDomain const domain, MaterialBlend const blend,
+                            core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>;
 
         auto render(RenderingData& renderingData) -> void;
 

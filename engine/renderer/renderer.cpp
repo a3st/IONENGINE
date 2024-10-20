@@ -20,6 +20,7 @@ namespace ionengine
             renderPass->graphicsContext = graphicsContext.get();
             renderPass->copyContext = copyContext.get();
             renderPass->constantBufferPool = constantBufferPool.get();
+            renderPass->isInitialized = false;
         }
     }
 
@@ -37,6 +38,11 @@ namespace ionengine
         for (auto const& renderPass : renderPasses)
         {
             renderPass->render(renderingData);
+
+            if (!renderPass->isInitialized)
+            {
+                renderPass->isInitialized = true;
+            }
         }
 
         rhi::Future<rhi::Query> graphicsResult = graphicsContext->execute();
@@ -69,9 +75,10 @@ namespace ionengine
         return core::make_ref<Model>(*device, *copyContext, modelFile);
     }
 
-    auto Renderer::createMaterial(Shader& shader) -> core::ref_ptr<Material>
+    auto Renderer::createMaterial(MaterialDomain const domain, MaterialBlend const blend,
+                                  core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>
     {
-        return nullptr;
+        return core::make_ref<Material>(*device, domain, blend, shader);
     }
 
     auto RendererBuilder::build(rhi::RHICreateInfo const& createInfo) -> core::ref_ptr<Renderer>
