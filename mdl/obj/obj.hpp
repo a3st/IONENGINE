@@ -6,7 +6,7 @@
 #include "mdl/importer.hpp"
 #include <tiny_obj_loader.h>
 
-namespace ionengine::mdl
+namespace ionengine::asset
 {
     class OBJImporter : public MDLImporter
     {

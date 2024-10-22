@@ -3,7 +3,7 @@
 #include "obj.hpp"
 #include "precompiled.h"
 
-namespace ionengine::mdl
+namespace ionengine::asset
 {
     auto OBJImporter::loadFromFile(std::filesystem::path const& filePath,
                                    std::string& errors) -> std::optional<ModelFile>
@@ -47,7 +47,7 @@ namespace ionengine::mdl
 
         std::basic_stringstream<uint8_t> streambuf;
 
-        ModelData modelData{};
+        mdl::ModelData modelData{};
 
         for (auto const& shape : shapes)
         {

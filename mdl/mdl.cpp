@@ -5,7 +5,7 @@
 #include "mdl.hpp"
 #include "precompiled.h"
 
-namespace ionengine::mdl
+namespace ionengine::asset::mdl
 {
     auto sizeof_VertexFormat(VertexFormat const format) -> size_t
     {

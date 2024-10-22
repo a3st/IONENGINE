@@ -4,7 +4,7 @@
 
 #include "core/serialize.hpp"
 
-namespace ionengine
+namespace ionengine::asset
 {
     namespace mdl
     {
@@ -116,28 +116,28 @@ namespace ionengine
             archive.property(blob);
         }
     };
-} // namespace ionengine
+} // namespace ionengine::asset
 
 namespace ionengine::core
 {
     template <>
-    struct serializable_enum<mdl::VertexFormat>
+    struct serializable_enum<asset::mdl::VertexFormat>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(mdl::VertexFormat::RGBA32_FLOAT, "RGBA32_FLOAT");
-            archive.field(mdl::VertexFormat::RGBA32_SINT, "RGBA32_SINT");
-            archive.field(mdl::VertexFormat::RGBA32_UINT, "RGBA32_UINT");
-            archive.field(mdl::VertexFormat::RGB32_FLOAT, "RGB32_FLOAT");
-            archive.field(mdl::VertexFormat::RGB32_SINT, "RGB32_SINT");
-            archive.field(mdl::VertexFormat::RGB32_UINT, "RGB32_UINT");
-            archive.field(mdl::VertexFormat::RG32_FLOAT, "RG32_FLOAT");
-            archive.field(mdl::VertexFormat::RG32_SINT, "RG32_SINT");
-            archive.field(mdl::VertexFormat::RG32_UINT, "RG32_UINT");
-            archive.field(mdl::VertexFormat::R32_FLOAT, "R32_FLOAT");
-            archive.field(mdl::VertexFormat::R32_SINT, "R32_SINT");
-            archive.field(mdl::VertexFormat::R32_UINT, "R32_UINT");
+            archive.field(asset::mdl::VertexFormat::RGBA32_FLOAT, "RGBA32_FLOAT");
+            archive.field(asset::mdl::VertexFormat::RGBA32_SINT, "RGBA32_SINT");
+            archive.field(asset::mdl::VertexFormat::RGBA32_UINT, "RGBA32_UINT");
+            archive.field(asset::mdl::VertexFormat::RGB32_FLOAT, "RGB32_FLOAT");
+            archive.field(asset::mdl::VertexFormat::RGB32_SINT, "RGB32_SINT");
+            archive.field(asset::mdl::VertexFormat::RGB32_UINT, "RGB32_UINT");
+            archive.field(asset::mdl::VertexFormat::RG32_FLOAT, "RG32_FLOAT");
+            archive.field(asset::mdl::VertexFormat::RG32_SINT, "RG32_SINT");
+            archive.field(asset::mdl::VertexFormat::RG32_UINT, "RG32_UINT");
+            archive.field(asset::mdl::VertexFormat::R32_FLOAT, "R32_FLOAT");
+            archive.field(asset::mdl::VertexFormat::R32_SINT, "R32_SINT");
+            archive.field(asset::mdl::VertexFormat::R32_UINT, "R32_UINT");
         }
     };
 } // namespace ionengine::core

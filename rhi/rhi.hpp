@@ -375,7 +375,7 @@ namespace ionengine::rhi
     struct ShaderStageCreateInfo
     {
         std::string entryPoint;
-        std::span<uint8_t const> shader;
+        std::span<uint8_t const> shaderCode;
     };
 
     struct ShaderCreateInfo

@@ -38,18 +38,6 @@ namespace ionengine
         }
     }
 
-    ShaderVariant::ShaderVariant(core::ref_ptr<rhi::Shader> shaderProgram,
-                                 rhi::RasterizerStageInfo& rasterizerStageInfo)
-        : shaderProgram(shaderProgram), rasterizerStageInfo(&rasterizerStageInfo)
-    {
-    }
-
-    auto ShaderVariant::setActive(rhi::GraphicsContext& context) -> void
-    {
-        context.setGraphicsPipelineOptions(shaderProgram, *rasterizerStageInfo, rhi::BlendColorInfo::Opaque(),
-                                           std::nullopt);
-    }
-
     Shader::Shader(rhi::Device& device, shadersys::ShaderFile const& shaderFile)
     {
         std::string apiType;
@@ -97,11 +85,9 @@ namespace ionengine
         {
             if (flags == permutationNames["BASE"])
             {
-                auto result = std::find_if(shaderData.structures.begin(), shaderData.structures.end(),
-                                           [](auto const& element) { return element.name == "MATERIAL_DATA"; });
-                if (result != shaderData.structures.end())
+                for (auto const& element : shaderData.structures)
                 {
-                    materialData = *result;
+                    structureNames[element.name] = element;
                 }
             }
 
@@ -118,14 +104,14 @@ namespace ionengine
 
                     rhi::ShaderStageCreateInfo stageCreateInfo{
                         .entryPoint = stageData.entryPoint,
-                        .shader = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
+                        .shaderCode = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
                     shaderCreateInfo.compute = std::move(stageCreateInfo);
                 }
                 else
                 {
                     rhi::ShaderStageCreateInfo stageCreateInfo{
                         .entryPoint = stageData.entryPoint,
-                        .shader = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
+                        .shaderCode = {shaderFile.blob.data() + bufferData.offset, bufferData.size}};
                     switch (stageType)
                     {
                         case shadersys::fx::StageType::Vertex: {
@@ -150,32 +136,32 @@ namespace ionengine
                 }
             }
 
-            auto shaderProgram = device.createShader(shaderCreateInfo);
-
-            shaderVariants[flags] = core::make_ref<ShaderVariant>(shaderProgram, rasterizerStageInfo);
+            shaders[flags] = device.createShader(shaderCreateInfo);
         }
     }
 
-    auto Shader::getFlagsByName(std::string_view const permutationName) const -> uint32_t
+    auto Shader::getPermutationNames() const -> std::unordered_map<std::string, uint32_t> const&
     {
-        auto result = permutationNames.find(std::string(permutationName));
-        if (result == permutationNames.end())
+        return permutationNames;
+    }
+
+    auto Shader::getShader(uint32_t const flags) -> core::ref_ptr<rhi::Shader>
+    {
+        auto result = shaders.find(flags);
+        if (result == shaders.end())
         {
+            throw core::runtime_error("An error occurred while getting shader by flags");
         }
         return result->second;
     }
 
-    auto Shader::getVariant(uint32_t const flags) -> core::ref_ptr<ShaderVariant>
+    auto Shader::getStructureNames() const -> std::unordered_map<std::string, shadersys::fx::StructureData> const&
     {
-        auto result = shaderVariants.find(flags);
-        if (result == shaderVariants.end())
-        {
-        }
-        return result->second;
+        return structureNames;
     }
 
-    auto Shader::getMaterialData() -> std::optional<shadersys::fx::StructureData>
+    auto Shader::getRasterizerStageInfo() const -> rhi::RasterizerStageInfo const&
     {
-        return materialData;
+        return rasterizerStageInfo;
     }
 } // namespace ionengine

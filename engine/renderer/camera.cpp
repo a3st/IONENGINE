@@ -5,5 +5,7 @@
 
 namespace ionengine
 {
-
-}
+    Camera::Camera()
+    {
+    }
+} // namespace ionengine

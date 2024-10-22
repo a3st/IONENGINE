@@ -7,33 +7,23 @@
 
 namespace ionengine
 {
-    class ShaderVariant : public core::ref_counted_object
-    {
-      public:
-        ShaderVariant(core::ref_ptr<rhi::Shader> shaderProgram, rhi::RasterizerStageInfo& rasterizerStageInfo);
-
-        auto setActive(rhi::GraphicsContext& context) -> void;
-
-      private:
-        core::ref_ptr<rhi::Shader> shaderProgram;
-        rhi::RasterizerStageInfo* rasterizerStageInfo;
-    };
-
     class Shader : public core::ref_counted_object
     {
       public:
         Shader(rhi::Device& device, shadersys::ShaderFile const& shaderFile);
 
-        auto getFlagsByName(std::string_view const permutationName) const -> uint32_t;
+        auto getPermutationNames() const -> std::unordered_map<std::string, uint32_t> const&;
 
-        auto getVariant(uint32_t const flags) -> core::ref_ptr<ShaderVariant>;
+        auto getShader(uint32_t const flags) -> core::ref_ptr<rhi::Shader>;
 
-        auto getMaterialData() -> std::optional<shadersys::fx::StructureData>;
+        auto getStructureNames() const -> std::unordered_map<std::string, shadersys::fx::StructureData> const&;
+
+        auto getRasterizerStageInfo() const -> rhi::RasterizerStageInfo const&;
 
       private:
         std::unordered_map<std::string, uint32_t> permutationNames;
-        std::unordered_map<uint32_t, core::ref_ptr<ShaderVariant>> shaderVariants;
+        std::unordered_map<uint32_t, core::ref_ptr<rhi::Shader>> shaders;
+        std::unordered_map<std::string, shadersys::fx::StructureData> structureNames;
         rhi::RasterizerStageInfo rasterizerStageInfo;
-        std::optional<shadersys::fx::StructureData> materialData;
     };
 } // namespace ionengine

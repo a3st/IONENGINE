@@ -8,6 +8,15 @@ namespace ionengine
 {
     class Texture : public core::ref_counted_object
     {
+      public:
+        Texture(rhi::Device& device, uint32_t const width, uint32_t const height, rhi::TextureFormat const format,
+                rhi::TextureUsageFlags const flags);
+
+        static auto createRenderTarget2D(rhi::Device& device, uint32_t const width, uint32_t const height,
+                                         rhi::TextureFormat const format) -> core::ref_ptr<Texture>;
+
+      private:
+        core::ref_ptr<rhi::Texture> texture;
     };
 } // namespace ionengine
 

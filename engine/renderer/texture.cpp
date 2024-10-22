@@ -3,6 +3,30 @@
 #include "texture.hpp"
 #include "precompiled.h"
 
+namespace ionengine
+{
+    Texture::Texture(rhi::Device& device, uint32_t const width, uint32_t const height, rhi::TextureFormat const format,
+                     rhi::TextureUsageFlags const flags)
+    {
+        rhi::TextureCreateInfo textureCreateInfo{.width = width,
+                                                 .height = height,
+                                                 .depth = 1,
+                                                 .mipLevels = 1,
+                                                 .format = format,
+                                                 .dimension = rhi::TextureDimension::_2D,
+                                                 .flags = flags};
+        texture = device.createTexture(textureCreateInfo);
+    }
+
+    auto Texture::createRenderTarget2D(rhi::Device& device, uint32_t const width, uint32_t const height,
+                                       rhi::TextureFormat const format) -> core::ref_ptr<Texture>
+    {
+        return core::make_ref<Texture>(
+            device, width, height, format,
+            (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource));
+    }
+} // namespace ionengine
+
 /*
 namespace ionengine
 {

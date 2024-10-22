@@ -5,7 +5,7 @@
 #include "core/ref_ptr.hpp"
 #include "mdl.hpp"
 
-namespace ionengine::mdl
+namespace ionengine::asset
 {
     class MDLImporter : public core::ref_counted_object
     {

@@ -72,6 +72,13 @@ namespace ionengine::shadersys
 
                                 headerData.domain = std::move(value);
                             }
+                            else if (variable->getContent().compare("Blend") == 0)
+                            {
+                                std::string value;
+                                it = this->parseOptionValue(variable, it, value);
+
+                                headerData.blend = std::move(value);
+                            }
                             else
                             {
                                 std::string value;

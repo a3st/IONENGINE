@@ -5,25 +5,11 @@
 
 namespace ionengine
 {
-    Surface::Surface(core::ref_ptr<rhi::Buffer> vertexBuffer, core::ref_ptr<rhi::Buffer> indexBuffer,
-                     uint32_t const indexCount)
-        : vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), indexCount(indexCount)
-    {
-    }
-
-    auto Surface::draw(rhi::GraphicsContext& context) -> void
-    {
-        context.bindVertexBuffer(vertexBuffer, 0, vertexBuffer->getSize());
-        context.bindIndexBuffer(indexBuffer, 0, indexBuffer->getSize(), rhi::IndexFormat::Uint32);
-        context.drawIndexed(indexCount, 1);
-    }
-
-    Model::Model(rhi::Device& device, rhi::CopyContext& copyContext, ModelFile const& modelFile)
-        : copyContext(&copyContext)
+    Model::Model(rhi::Device& device, rhi::CopyContext& copyContext, asset::ModelFile const& modelFile)
     {
         core::ref_ptr<rhi::Buffer> vertexBuffer;
         {
-            mdl::BufferData const& bufferData = modelFile.modelData.buffers[modelFile.modelData.buffer];
+            asset::mdl::BufferData const& bufferData = modelFile.modelData.buffers[modelFile.modelData.buffer];
 
             rhi::BufferCreateInfo bufferCreateInfo{
                 .size = bufferData.size,
@@ -38,7 +24,7 @@ namespace ionengine
 
         for (auto const& surfaceData : modelFile.modelData.surfaces)
         {
-            mdl::BufferData const& bufferData = modelFile.modelData.buffers[surfaceData.buffer];
+            asset::mdl::BufferData const& bufferData = modelFile.modelData.buffers[surfaceData.buffer];
 
             rhi::BufferCreateInfo bufferCreateInfo{
                 .size = bufferData.size,
@@ -60,16 +46,34 @@ namespace ionengine
         materials[index] = material;
     }
 
-    auto Model::render(RenderingData& renderingData) -> void
+    auto Model::getSurfaces() const -> std::span<core::ref_ptr<Surface> const>
+    {
+        return surfaces;
+    }
+
+    auto Model::getMaterials() const -> std::span<core::ref_ptr<Material> const>
+    {
+        return materials;
+    }
+
+    /*auto Model::addTo(RenderQueue& opaque, RenderQueue& translucent, uint16_t const layer) -> void
     {
         for (size_t const i : std::views::iota(0u, surfaces.size()))
         {
-            auto& material = materials[i];
-            material->update(*copyContext);
-
-            ObjectData objectData{
-                .surface = surfaces[i], .shader = material->getShader(false), .materialBuffer = material->getBuffer()};
-            renderingData.drawResults.objects.emplace_back(std::move(objectData));
+            switch (materials[i]->blend)
+            {
+                case MaterialBlend::Opaque: {
+                    opaque.push(surfaces[i], materials[i], layer);
+                    break;
+                }
+                case MaterialBlend::Translucent: {
+                    translucent.push(surfaces[i], materials[i], layer);
+                    break;
+                }
+                default: {
+                    throw core::runtime_error("");
+                }
+            }
         }
-    }
+    }*/
 } // namespace ionengine

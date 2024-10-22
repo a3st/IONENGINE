@@ -8,7 +8,8 @@ namespace ionengine
 {
     enum class MaterialDomain
     {
-        Surface
+        Surface,
+        Screen
     };
 
     enum class MaterialBlend
@@ -20,8 +21,7 @@ namespace ionengine
     class Material : public core::ref_counted_object
     {
       public:
-        Material(rhi::Device& device, MaterialDomain const domain, MaterialBlend const blend,
-                 core::ref_ptr<Shader> shader);
+        Material(rhi::Device& device, core::ref_ptr<Shader> shader);
 
         template <typename Type>
         auto setValue(std::string_view const parameter, Type const& value) -> void
@@ -29,12 +29,15 @@ namespace ionengine
             auto result = parameterNames.find(std::string(parameter));
             if (result == parameterNames.end())
             {
+                throw core::runtime_error("An error occurred while setting a value to an invalid variable");
             }
 
             if constexpr (std::is_same_v<Type, math::Color>)
             {
                 if (result->second.type != shadersys::fx::ElementType::Float4)
                 {
+                    throw core::runtime_error(
+                        "An error occurred while setting a value to an variable with different type");
                 }
 
                 std::memcpy(rawBuffer.data(), value.data(), sizeof(math::Color));
@@ -43,25 +46,30 @@ namespace ionengine
 
         auto update(rhi::CopyContext& copyContext) -> void;
 
-        auto getBuffer() -> core::ref_ptr<rhi::Buffer>;
+        auto getDomain() const -> MaterialDomain;
 
-        auto getShader(bool isSkin) -> core::ref_ptr<ShaderVariant>;
+        auto getBlend() const -> MaterialBlend;
+
+        auto getBuffer() const -> core::ref_ptr<rhi::Buffer>;
+
+        auto getShader(bool const isSkin) -> core::ref_ptr<rhi::Shader>;
 
       private:
-        rhi::CopyContext* copyContext;
-
         struct ParameterData
         {
             uint64_t offset;
             shadersys::fx::ElementType type;
         };
 
-        core::ref_ptr<rhi::Buffer> constantBuffer;
         std::vector<uint8_t> rawBuffer;
         bool isUpdated;
 
-        core::ref_ptr<Shader> shader;
-
         std::unordered_map<std::string, ParameterData> parameterNames;
+
+        core::ref_ptr<Shader> shader;
+        core::ref_ptr<rhi::Buffer> buffer;
+
+        MaterialDomain domain;
+        MaterialBlend blend;
     };
 } // namespace ionengine

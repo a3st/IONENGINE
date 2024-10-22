@@ -5,24 +5,22 @@
 
 namespace ionengine
 {
-    Material::Material(rhi::Device& device, MaterialDomain const domain, MaterialBlend const blend,
-                       core::ref_ptr<Shader> shader)
-        : isUpdated(false), shader(shader)
+    Material::Material(rhi::Device& device, core::ref_ptr<Shader> shader) : isUpdated(false), shader(shader)
     {
-        if (!shader->getMaterialData())
+        auto result = shader->getStructureNames().find("MATERIAL_DATA");
+        if (result != shader->getStructureNames().end())
         {
+            throw core::runtime_error("An error occurred while creating material that contains a non material shader");
         }
 
-        auto materialData = shader->getMaterialData().value();
-
-        rhi::BufferCreateInfo bufferCreateInfo{.size = materialData.size,
+        rhi::BufferCreateInfo bufferCreateInfo{.size = result->second.size,
                                                .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
-        constantBuffer = device.createBuffer(bufferCreateInfo);
+        buffer = device.createBuffer(bufferCreateInfo);
 
-        rawBuffer.resize(materialData.size);
+        rawBuffer.resize(result->second.size);
 
         uint64_t offset = 0;
-        for (auto const& element : materialData.elements)
+        for (auto const& element : result->second.elements)
         {
             size_t const elementSize = shadersys::fx::sizeof_ElementType(element.type);
 
@@ -36,20 +34,34 @@ namespace ionengine
     {
         if (!isUpdated)
         {
-            copyContext.writeBuffer(constantBuffer, rawBuffer);
+            copyContext.writeBuffer(buffer, rawBuffer);
 
             isUpdated = true;
         }
     }
 
-    auto Material::getBuffer() -> core::ref_ptr<rhi::Buffer>
+    auto Material::getDomain() const -> MaterialDomain
     {
-        return constantBuffer;
+        return domain;
     }
 
-    auto Material::getShader(bool isSkin) -> core::ref_ptr<ShaderVariant>
+    auto Material::getBlend() const -> MaterialBlend
     {
-        uint32_t flags = shader->getFlagsByName("BASE");
-        return shader->getVariant(flags);
+        return blend;
+    }
+
+    auto Material::getBuffer() const -> core::ref_ptr<rhi::Buffer>
+    {
+        return buffer;
+    }
+
+    auto Material::getShader(bool const isSkin) -> core::ref_ptr<rhi::Shader>
+    {
+        uint32_t flags = shader->getPermutationNames().find("BASE")->second;
+        if (isSkin)
+        {
+            flags |= shader->getPermutationNames().find("FEATURE_SKINNING")->second;
+        }
+        return shader->getShader(flags);
     }
 } // namespace ionengine

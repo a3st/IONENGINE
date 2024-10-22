@@ -4,6 +4,7 @@ HEADER {
     Name = "Base3D";
     Description = "Base3D";
     Domain = "Surface";
+    Blend = "Opaque"
 }
 
 DATA {

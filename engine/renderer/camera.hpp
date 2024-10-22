@@ -2,13 +2,21 @@
 
 #pragma once
 
-#include "core/ref_ptr.hpp"
+#include "texture.hpp"
+#include "math/matrix.hpp"
 
 namespace ionengine
 {
     class Camera : public core::ref_counted_object
     {
       public:
+        Camera();
+
+        math::Matf projectionMatrix;
+
+        
+
       private:
+        core::ref_ptr<Texture> targetTexture;
     };
 } // namespace ionengine

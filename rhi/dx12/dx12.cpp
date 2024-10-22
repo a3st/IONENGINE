@@ -864,7 +864,7 @@ namespace ionengine::rhi
             XXH64_state_t* hasher = ::XXH64_createState();
             {
                 DX12ShaderStage shaderStage;
-                shaderStage.buffer = createInfo.graphics.vertexStage.shader | std::ranges::to<std::vector<uint8_t>>();
+                shaderStage.buffer = createInfo.graphics.vertexStage.shaderCode | std::ranges::to<std::vector<uint8_t>>();
                 shaderStage.shaderByteCode = {.pShaderBytecode = shaderStage.buffer.data(),
                                               .BytecodeLength = shaderStage.buffer.size()};
                 stages.emplace(DX12ShaderStageType::Vertex, std::move(shaderStage));
@@ -874,7 +874,7 @@ namespace ionengine::rhi
 
             {
                 DX12ShaderStage shaderStage;
-                shaderStage.buffer = createInfo.graphics.pixelStage.shader | std::ranges::to<std::vector<uint8_t>>();
+                shaderStage.buffer = createInfo.graphics.pixelStage.shaderCode | std::ranges::to<std::vector<uint8_t>>();
                 shaderStage.shaderByteCode = {.pShaderBytecode = shaderStage.buffer.data(),
                                               .BytecodeLength = shaderStage.buffer.size()};
                 stages.emplace(DX12ShaderStageType::Pixel, std::move(shaderStage));
@@ -890,7 +890,7 @@ namespace ionengine::rhi
             XXH64_state_t* hasher = ::XXH64_createState();
             {
                 DX12ShaderStage shaderStage;
-                shaderStage.buffer = createInfo.compute.shader | std::ranges::to<std::vector<uint8_t>>();
+                shaderStage.buffer = createInfo.compute.shaderCode | std::ranges::to<std::vector<uint8_t>>();
                 shaderStage.shaderByteCode = {.pShaderBytecode = shaderStage.buffer.data(),
                                               .BytecodeLength = shaderStage.buffer.size()};
                 stages.emplace(DX12ShaderStageType::Compute, std::move(shaderStage));

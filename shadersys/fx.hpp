@@ -151,6 +151,7 @@ namespace ionengine::shadersys
             std::string name;
             std::string description;
             std::string domain;
+            std::string blend;
 
             template <typename Archive>
             auto operator()(Archive& archive)
@@ -158,6 +159,7 @@ namespace ionengine::shadersys
                 archive.property(name, "name");
                 archive.property(description, "description");
                 archive.property(domain, "domain");
+                archive.property(blend, "blend");
             }
         };
 

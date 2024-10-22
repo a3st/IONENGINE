@@ -5,8 +5,7 @@
 
 namespace ionengine
 {
-    Renderer::Renderer(rhi::RHICreateInfo const& createInfo, std::vector<core::ref_ptr<RenderPass>> const& renderPasses)
-        : renderPasses(renderPasses)
+    Renderer::Renderer(rhi::RHICreateInfo const& createInfo)
     {
         device = rhi::Device::create(createInfo);
 
@@ -14,36 +13,31 @@ namespace ionengine
         copyContext = device->createCopyContext();
 
         constantBufferPool = core::make_ref<ConstantBufferPool>(*device);
-
-        for (auto& renderPass : renderPasses)
-        {
-            renderPass->graphicsContext = graphicsContext.get();
-            renderPass->copyContext = copyContext.get();
-            renderPass->constantBufferPool = constantBufferPool.get();
-            renderPass->isInitialized = false;
-        }
     }
 
-    auto Renderer::render(RenderingData& renderingData) -> void
+    auto Renderer::render() -> void
     {
         graphicsContext->reset();
 
-        renderingData.backBuffer = device->requestBackBuffer();
+        auto backBuffer = device->requestBackBuffer();
 
-        outputWidth = renderingData.backBuffer->getWidth(), outputHeight = renderingData.backBuffer->getHeight();
+        outputWidth = backBuffer->getWidth(), outputHeight = backBuffer->getHeight();
 
         graphicsContext->setViewport(0, 0, outputWidth, outputHeight);
         graphicsContext->setScissor(0, 0, outputWidth, outputHeight);
 
-        for (auto const& renderPass : renderPasses)
-        {
-            renderPass->render(renderingData);
+        graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::Common,
+                                 rhi::ResourceState::RenderTarget);
 
-            if (!renderPass->isInitialized)
-            {
-                renderPass->isInitialized = true;
-            }
-        }
+        std::vector<rhi::RenderPassColorInfo> colors{rhi::RenderPassColorInfo{.texture = backBuffer.get(),
+                                                                              .loadOp = rhi::RenderPassLoadOp::Clear,
+                                                                              .storeOp = rhi::RenderPassStoreOp::Store,
+                                                                              .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}}};
+        graphicsContext->beginRenderPass(colors, std::nullopt);
+
+        
+
+        graphicsContext->endRenderPass();
 
         rhi::Future<rhi::Query> graphicsResult = graphicsContext->execute();
 
@@ -70,19 +64,13 @@ namespace ionengine
         return nullptr;
     }
 
-    auto Renderer::createModel(ModelFile const& modelFile) -> core::ref_ptr<Model>
+    auto Renderer::createModel(asset::ModelFile const& modelFile) -> core::ref_ptr<Model>
     {
         return core::make_ref<Model>(*device, *copyContext, modelFile);
     }
 
-    auto Renderer::createMaterial(MaterialDomain const domain, MaterialBlend const blend,
-                                  core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>
+    auto Renderer::createMaterial(core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>
     {
-        return core::make_ref<Material>(*device, domain, blend, shader);
-    }
-
-    auto RendererBuilder::build(rhi::RHICreateInfo const& createInfo) -> core::ref_ptr<Renderer>
-    {
-        return core::make_ref<Renderer>(createInfo, renderPasses);
+        return core::make_ref<Material>(*device, shader);
     }
 } // namespace ionengine
