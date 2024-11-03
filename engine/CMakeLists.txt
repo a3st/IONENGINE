@@ -8,7 +8,11 @@ add_library(engine STATIC
     renderer/material.cpp
     renderer/model.cpp
     renderer/shader.cpp
-    renderer/renderer.cpp)
+    renderer/renderer.cpp
+    
+    scene/entity.cpp
+    scene/components/transform2d.cpp
+    scene/components/sprite_renderer.cpp)
 
 target_include_directories(engine PUBLIC 
     ${PROJECT_SOURCE_DIR}

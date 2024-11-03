@@ -69,12 +69,6 @@ namespace ionengine
             renderPasses.emplace_back(std::move(renderPass));
         }*/
 
-        RenderQueue opaqueQueue;
-
-        RenderQueue translucentQueue;
-
-        std::list<core::ref_ptr<Camera>> cameras;
-
       private:
         core::ref_ptr<rhi::Device> device;
 
@@ -87,5 +81,9 @@ namespace ionengine
 
         uint32_t outputWidth;
         uint32_t outputHeight;
+
+        RenderQueue opaqueQueue;
+
+        RenderQueue translucentQueue;
     };
 } // namespace ionengine
