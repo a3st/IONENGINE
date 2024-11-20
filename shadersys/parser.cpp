@@ -6,13 +6,13 @@
 
 namespace ionengine::shadersys
 {
-    auto Parser::parse(Lexer const& lexer, fx::HeaderData& headerData, fx::OutputData& outputData,
-                       std::unordered_map<fx::StageType, std::string>& stageData,
-                       fx::StructureData& materialData) -> void
+    auto Parser::parse(Lexer const& lexer, asset::fx::HeaderData& headerData, asset::fx::OutputData& outputData,
+                       std::unordered_map<asset::fx::StageType, std::string>& stageData,
+                       asset::fx::StructureData& materialData) -> void
     {
         auto tokens = lexer.getTokens();
 
-        std::string materialStructure;
+        std::string materialStructureHLSL;
 
         auto it = tokens.begin();
         while (it != tokens.end())
@@ -154,8 +154,8 @@ namespace ionengine::shadersys
                                 it = this->parseOptionValue(variable, it, value);
 
                                 outputData.cullSide =
-                                    core::from_string<fx::CullSide, core::serialize_oenum>(value).value_or(
-                                        fx::CullSide::None);
+                                    core::from_string<asset::fx::CullSide, core::serialize_oenum>(value).value_or(
+                                        asset::fx::CullSide::None);
                             }
                         }
                         else
@@ -196,8 +196,8 @@ namespace ionengine::shadersys
                             std::to_underlying(ErrorCode::ShaderCode), region->getContent()));
                     }
 
-                    stageData[core::from_string<fx::StageType, core::serialize_oenum>(region->getContent()).value()] =
-                        it->getContent();
+                    stageData[core::from_string<asset::fx::StageType, core::serialize_oenum>(region->getContent())
+                                  .value()] = it->getContent();
 
                     it++;
 
@@ -261,16 +261,16 @@ namespace ionengine::shadersys
                         it++;
 
                         auto elementType =
-                            core::from_string<fx::ElementType, core::serialize_oenum>(variableType->getContent())
-                                .value_or(fx::ElementType::Uint);
+                            core::from_string<asset::fx::ElementType, core::serialize_oenum>(variableType->getContent())
+                                .value_or(asset::fx::ElementType::Uint);
 
-                        fx::StructureElementData elementData{.name = std::string(variable->getContent()),
-                                                             .type = elementType};
+                        asset::fx::StructureElementData elementData{.name = std::string(variable->getContent()),
+                                                                    .type = elementType};
                         materialData.elements.emplace_back(std::move(elementData));
 
-                        structureSize += fx::sizeof_ElementType(elementType);
+                        structureSize += asset::fx::sizeof_ElementType(elementType);
 
-                        materialStructure +=
+                        materialStructureHLSL +=
                             std::string(variableType->getContent()) + " " + std::string(variable->getContent()) + ";";
                     }
 
@@ -302,8 +302,8 @@ namespace ionengine::shadersys
 
         for (auto& [stageType, shaderCode] : stageData)
         {
-            shaderCode = "#include \"shared/internal.hlsli\"\nstruct MATERIAL_DATA { " + materialStructure + " };\n" +
-                         shaderCode;
+            shaderCode = "#include \"shared/internal.hlsli\"\nstruct MATERIAL_DATA { " + materialStructureHLSL +
+                         " };\n" + shaderCode;
         }
     }
 } // namespace ionengine::shadersys

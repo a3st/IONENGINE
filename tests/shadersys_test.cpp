@@ -102,20 +102,20 @@ TEST(ShaderSystem, Parser_Test)
     shadersys::Lexer lexer(quadShader);
     shadersys::Parser parser;
 
-    shadersys::fx::HeaderData headerData;
-    shadersys::fx::OutputData outputData;
-    shadersys::fx::StructureData materialData;
-    std::unordered_map<shadersys::fx::StageType, std::string> stageData;
+    asset::fx::HeaderData headerData;
+    asset::fx::OutputData outputData;
+    asset::fx::StructureData materialData;
+    std::unordered_map<asset::fx::StageType, std::string> stageData;
     parser.parse(lexer, headerData, outputData, stageData, materialData);
 }
 
 TEST(ShaderSystem, Compiler_Test)
 {
-    auto shaderCompiler = shadersys::ShaderCompiler::create(shadersys::fx::APIType::DXIL);
+    auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::APIType::DXIL);
     std::string errors;
     auto shaderFile = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx", errors);
     std::cout << errors << std::endl;
-    core::to_file<shadersys::ShaderFile, core::serialize_oarchive>(shaderFile.value(), "test.bin");
+    core::to_file<asset::ShaderFile, core::serialize_oarchive>(shaderFile.value(), "test.bin");
 }
 
 TEST(ShaderSystem, Permutation_Test)

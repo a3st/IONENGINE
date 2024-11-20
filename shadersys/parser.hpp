@@ -32,8 +32,9 @@ namespace ionengine::shadersys
       public:
         Parser() = default;
 
-        auto parse(Lexer const& lexer, fx::HeaderData& headerData, fx::OutputData& outputData,
-                   std::unordered_map<fx::StageType, std::string>& stageData, fx::StructureData& materialData) -> void;
+        auto parse(Lexer const& lexer, asset::fx::HeaderData& headerData, asset::fx::OutputData& outputData,
+                   std::unordered_map<asset::fx::StageType, std::string>& stageData,
+                   asset::fx::StructureData& materialData) -> void;
 
       private:
         template <typename Type>

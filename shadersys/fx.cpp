@@ -5,7 +5,7 @@
 #include "fx.hpp"
 #include "precompiled.h"
 
-namespace ionengine::shadersys::fx
+namespace ionengine::asset::fx
 {
     auto sizeof_ElementType(ElementType const elementType) -> size_t
     {
@@ -31,7 +31,7 @@ namespace ionengine::shadersys::fx
             case ElementType::Sint:
                 return sizeof(int32_t);
             default:
-                return 0;
+                throw std::invalid_argument("Passed invalid argument into function");
         }
     }
 
@@ -64,7 +64,7 @@ namespace ionengine::shadersys::fx
             case VertexFormat::R32_UINT:
                 return sizeof(uint32_t);
             default:
-                return 0;
+                throw std::invalid_argument("Passed invalid argument into function");
         }
     }
-} // namespace ionengine::shadersys::fx
+} // namespace ionengine::asset::fx

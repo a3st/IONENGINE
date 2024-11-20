@@ -21,11 +21,14 @@ namespace ionengine::shadersys
         };
 #pragma pack(pop)
 
-        inline fx::ConstantData const transformConstantData{.name = "transformBuffer", .type = fx::ElementType::Uint};
-        inline fx::StructureData const transformStructureData{
+        inline asset::fx::ConstantData const transformConstantData{.name = "transformBuffer",
+                                                                   .type = asset::fx::ElementType::Uint};
+        inline asset::fx::StructureData const transformStructureData{
             .name = "TRANSFORM_DATA",
-            .elements = {fx::StructureElementData{.name = "modelViewProj", .type = fx::ElementType::Float4x4},
-                         fx::StructureElementData{.name = "inverseModelViewProj", .type = fx::ElementType::Float4x4}}};
+            .elements = {
+                asset::fx::StructureElementData{.name = "modelViewProj", .type = asset::fx::ElementType::Float4x4},
+                asset::fx::StructureElementData{.name = "inverseModelViewProj",
+                                                .type = asset::fx::ElementType::Float4x4}}};
 
 #pragma pack(push, 1)
         struct LightingData
@@ -34,7 +37,8 @@ namespace ionengine::shadersys
         };
 #pragma pack(pop)
 
-        inline fx::ConstantData const materialConstantData{.name = "materialBuffer", .type = fx::ElementType::Uint};
+        inline asset::fx::ConstantData const materialConstantData{.name = "materialBuffer",
+                                                                  .type = asset::fx::ElementType::Uint};
     } // namespace common
 
     class ShaderCompiler : public core::ref_counted_object
@@ -42,9 +46,9 @@ namespace ionengine::shadersys
       public:
         virtual ~ShaderCompiler() = default;
 
-        static auto create(fx::APIType const apiType) -> core::ref_ptr<ShaderCompiler>;
+        static auto create(asset::fx::APIType const apiType) -> core::ref_ptr<ShaderCompiler>;
 
         virtual auto compileFromFile(std::filesystem::path const& filePath,
-                                     std::string& errors) -> std::optional<ShaderFile> = 0;
+                                     std::string& errors) -> std::optional<asset::ShaderFile> = 0;
     };
 } // namespace ionengine::shadersys

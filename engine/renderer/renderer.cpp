@@ -53,7 +53,7 @@ namespace ionengine
         outputWidth = width, outputHeight = height;
     }
 
-    auto Renderer::createShader(shadersys::ShaderFile const& shaderFile) -> core::ref_ptr<Shader>
+    auto Renderer::createShader(asset::ShaderFile const& shaderFile) -> core::ref_ptr<Shader>
     {
         return core::make_ref<Shader>(*device, shaderFile);
     }

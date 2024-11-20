@@ -49,13 +49,13 @@ namespace ionengine
       public:
         Renderer(rhi::RHICreateInfo const& createInfo);
 
-        auto createShader(shadersys::ShaderFile const& shaderFile) -> core::ref_ptr<Shader>;
-
-        auto createTexture() -> core::ref_ptr<Texture>;
+        auto createShader(asset::ShaderFile const& shaderFile) -> core::ref_ptr<Shader>;
 
         auto createModel(asset::ModelFile const& modelFile) -> core::ref_ptr<Model>;
 
         auto createMaterial(core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>;
+
+        auto createTexture() -> core::ref_ptr<Texture>;
 
         auto render() -> void;
 

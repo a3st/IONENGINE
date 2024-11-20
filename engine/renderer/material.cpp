@@ -10,7 +10,7 @@ namespace ionengine
         auto result = shader->getStructureNames().find("MATERIAL_DATA");
         if (result != shader->getStructureNames().end())
         {
-            throw core::runtime_error("An error occurred while creating material that contains a non material shader");
+            throw core::runtime_error("Material is not supported by the shader system");
         }
 
         rhi::BufferCreateInfo bufferCreateInfo{.size = result->second.size,
@@ -22,7 +22,7 @@ namespace ionengine
         uint64_t offset = 0;
         for (auto const& element : result->second.elements)
         {
-            size_t const elementSize = shadersys::fx::sizeof_ElementType(element.type);
+            size_t const elementSize = asset::fx::sizeof_ElementType(element.type);
 
             ParameterData parameterData{.offset = offset, .type = element.type};
             parameterNames[element.name] = std::move(parameterData);
@@ -55,10 +55,10 @@ namespace ionengine
         return buffer;
     }
 
-    auto Material::getShader(bool const isSkin) -> core::ref_ptr<rhi::Shader>
+    auto Material::getShader(bool const enableSkinningFeature) -> core::ref_ptr<rhi::Shader>
     {
         uint32_t flags = shader->getPermutationNames().find("BASE")->second;
-        if (isSkin)
+        if (enableSkinningFeature)
         {
             flags |= shader->getPermutationNames().find("FEATURE_SKINNING")->second;
         }

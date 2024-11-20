@@ -15,16 +15,16 @@ namespace ionengine::shadersys
     class DXCCompiler : public ShaderCompiler
     {
       public:
-        DXCCompiler(fx::APIType const apiType);
+        DXCCompiler(asset::fx::APIType const apiType);
 
         auto compileFromFile(std::filesystem::path const& filePath,
-                             std::string& errors) -> std::optional<ShaderFile> override;
+                             std::string& errors) -> std::optional<asset::ShaderFile> override;
 
       private:
         winrt::com_ptr<IDxcCompiler3> compiler;
         winrt::com_ptr<IDxcUtils> utils;
         winrt::com_ptr<IDxcIncludeHandler> includeHandler;
 
-        fx::APIType apiType;
+        asset::fx::APIType apiType;
     };
 } // namespace ionengine::shadersys

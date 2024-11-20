@@ -20,7 +20,7 @@ namespace ionengine::shadersys
         return semantic.find("SV_") != std::string_view::npos;
     }
 
-    DXCCompiler::DXCCompiler(fx::APIType const apiType) : apiType(apiType)
+    DXCCompiler::DXCCompiler(asset::fx::APIType const apiType) : apiType(apiType)
     {
         throwIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void()));
         throwIfFailed(::DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), utils.put_void()));
@@ -28,7 +28,7 @@ namespace ionengine::shadersys
     }
 
     auto DXCCompiler::compileFromFile(std::filesystem::path const& filePath,
-                                      std::string& errors) -> std::optional<ShaderFile>
+                                      std::string& errors) -> std::optional<asset::ShaderFile>
     {
         std::basic_ifstream<uint8_t> stream(filePath);
         if (!stream.is_open())
@@ -42,10 +42,10 @@ namespace ionengine::shadersys
         Lexer lexer(std::string_view(reinterpret_cast<char const*>(buffer.data()), buffer.size()));
         Parser parser;
 
-        fx::HeaderData headerData;
-        fx::OutputData outputData;
-        std::unordered_map<shadersys::fx::StageType, std::string> stageData;
-        fx::StructureData materialData;
+        asset::fx::HeaderData headerData;
+        asset::fx::OutputData outputData;
+        std::unordered_map<asset::fx::StageType, std::string> stageData;
+        asset::fx::StructureData materialData;
 
         try
         {
@@ -59,7 +59,7 @@ namespace ionengine::shadersys
 
         std::basic_stringstream<uint8_t> streambuf;
 
-        fx::ShaderData shaderData{.headerData = std::move(headerData), .outputData = std::move(outputData)};
+        asset::fx::ShaderData shaderData{.headerData = std::move(headerData), .outputData = std::move(outputData)};
 
         std::vector<std::string> permutations = {"BASE"};
 
@@ -76,7 +76,7 @@ namespace ionengine::shadersys
         auto shaderVariants = getAllVariants(permutations, shaderData.permutations);
         for (auto const variantFlags : shaderVariants)
         {
-            fx::ShaderVariantData shaderVariantData{};
+            asset::fx::ShaderVariantData shaderVariantData{};
 
             if (materialData.size > 0)
             {
@@ -92,23 +92,23 @@ namespace ionengine::shadersys
 
             for (auto const& [stageType, shaderCode] : stageData)
             {
-                fx::StageData shaderStageData{.buffer = static_cast<uint32_t>(shaderData.buffers.size()),
-                                              .entryPoint = "main"};
+                asset::fx::StageData shaderStageData{.buffer = static_cast<uint32_t>(shaderData.buffers.size()),
+                                                     .entryPoint = "main"};
 
                 std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
                 std::vector<LPCWSTR> arguments = {L"-E main", defaultIncludePath.c_str(), L"-HV 2021"};
 
                 switch (stageType)
                 {
-                    case fx::StageType::Vertex: {
+                    case asset::fx::StageType::Vertex: {
                         arguments.emplace_back(L"-T vs_6_6");
                         break;
                     }
-                    case fx::StageType::Pixel: {
+                    case asset::fx::StageType::Pixel: {
                         arguments.emplace_back(L"-T ps_6_6");
                         break;
                     }
-                    case fx::StageType::Compute: {
+                    case asset::fx::StageType::Compute: {
                         arguments.emplace_back(L"-T cs_6_6");
                         break;
                     }
@@ -144,8 +144,8 @@ namespace ionengine::shadersys
                 winrt::com_ptr<IDxcBlob> shaderBlob;
                 throwIfFailed(result->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), shaderBlob.put_void(), nullptr));
 
-                fx::BufferData bufferData{.offset = static_cast<uint64_t>(streambuf.tellp()),
-                                          .size = shaderBlob->GetBufferSize()};
+                asset::fx::BufferData bufferData{.offset = static_cast<uint64_t>(streambuf.tellp()),
+                                                 .size = shaderBlob->GetBufferSize()};
                 shaderData.buffers.emplace_back(std::move(bufferData));
 
                 streambuf.write(reinterpret_cast<uint8_t const*>(shaderBlob->GetBufferPointer()),
@@ -177,19 +177,19 @@ namespace ionengine::shadersys
                         continue;
                     }
 
-                    fx::VertexFormat format;
+                    asset::fx::VertexFormat format;
                     if (signatureParameterDesc.Mask == 1)
                     {
                         switch (signatureParameterDesc.ComponentType)
                         {
                             case D3D_REGISTER_COMPONENT_UINT32:
-                                format = fx::VertexFormat::R32_UINT;
+                                format = asset::fx::VertexFormat::R32_UINT;
                                 break;
                             case D3D_REGISTER_COMPONENT_SINT32:
-                                format = fx::VertexFormat::R32_SINT;
+                                format = asset::fx::VertexFormat::R32_SINT;
                                 break;
                             case D3D_REGISTER_COMPONENT_FLOAT32:
-                                format = fx::VertexFormat::R32_FLOAT;
+                                format = asset::fx::VertexFormat::R32_FLOAT;
                                 break;
                         }
                     }
@@ -198,13 +198,13 @@ namespace ionengine::shadersys
                         switch (signatureParameterDesc.ComponentType)
                         {
                             case D3D_REGISTER_COMPONENT_UINT32:
-                                format = fx::VertexFormat::RG32_UINT;
+                                format = asset::fx::VertexFormat::RG32_UINT;
                                 break;
                             case D3D_REGISTER_COMPONENT_SINT32:
-                                format = fx::VertexFormat::RG32_UINT;
+                                format = asset::fx::VertexFormat::RG32_UINT;
                                 break;
                             case D3D_REGISTER_COMPONENT_FLOAT32:
-                                format = fx::VertexFormat::RG32_UINT;
+                                format = asset::fx::VertexFormat::RG32_UINT;
                                 break;
                         }
                     }
@@ -213,13 +213,13 @@ namespace ionengine::shadersys
                         switch (signatureParameterDesc.ComponentType)
                         {
                             case D3D_REGISTER_COMPONENT_UINT32:
-                                format = fx::VertexFormat::RGB32_UINT;
+                                format = asset::fx::VertexFormat::RGB32_UINT;
                                 break;
                             case D3D_REGISTER_COMPONENT_SINT32:
-                                format = fx::VertexFormat::RGB32_UINT;
+                                format = asset::fx::VertexFormat::RGB32_UINT;
                                 break;
                             case D3D_REGISTER_COMPONENT_FLOAT32:
-                                format = fx::VertexFormat::RGB32_UINT;
+                                format = asset::fx::VertexFormat::RGB32_UINT;
                                 break;
                         }
                     }
@@ -228,24 +228,24 @@ namespace ionengine::shadersys
                         switch (signatureParameterDesc.ComponentType)
                         {
                             case D3D_REGISTER_COMPONENT_UINT32:
-                                format = fx::VertexFormat::RGBA32_UINT;
+                                format = asset::fx::VertexFormat::RGBA32_UINT;
                                 break;
                             case D3D_REGISTER_COMPONENT_SINT32:
-                                format = fx::VertexFormat::RGBA32_UINT;
+                                format = asset::fx::VertexFormat::RGBA32_UINT;
                                 break;
                             case D3D_REGISTER_COMPONENT_FLOAT32:
-                                format = fx::VertexFormat::RGBA32_UINT;
+                                format = asset::fx::VertexFormat::RGBA32_UINT;
                                 break;
                         }
                     }
 
-                    fx::VertexLayoutElementData elementData{.format = format,
-                                                            .semantic =
-                                                                signatureParameterDesc.SemanticName +
-                                                                std::to_string(signatureParameterDesc.SemanticIndex)};
+                    asset::fx::VertexLayoutElementData elementData{
+                        .format = format,
+                        .semantic =
+                            signatureParameterDesc.SemanticName + std::to_string(signatureParameterDesc.SemanticIndex)};
                     shaderStageData.vertexLayout.elements.emplace_back(std::move(elementData));
 
-                    inputSize += fx::sizeof_VertexFormat(format);
+                    inputSize += asset::fx::sizeof_VertexFormat(format);
                 }
 
                 shaderStageData.vertexLayout.size = inputSize;
@@ -256,7 +256,7 @@ namespace ionengine::shadersys
             shaderData.shaders[variantFlags] = std::move(shaderVariantData);
         }
 
-        return ShaderFile{.magic = fx::Magic,
+        return asset::ShaderFile{.magic = asset::fx::Magic,
                           .apiType = apiType,
                           .shaderData = std::move(shaderData),
                           .blob = {std::istreambuf_iterator<uint8_t>(streambuf.rdbuf()), {}}};

@@ -4,7 +4,7 @@
 
 #include "core/serialize.hpp"
 
-namespace ionengine::shadersys
+namespace ionengine::asset
 {
     namespace fx
     {
@@ -242,71 +242,71 @@ namespace ionengine::shadersys
             archive.property(blob);
         }
     };
-} // namespace ionengine::shadersys
+} // namespace ionengine::asset
 
 namespace ionengine::core
 {
     template <>
-    struct serializable_enum<shadersys::fx::VertexFormat>
+    struct serializable_enum<asset::fx::VertexFormat>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(shadersys::fx::VertexFormat::RGBA32_FLOAT, "RGBA32_FLOAT");
-            archive.field(shadersys::fx::VertexFormat::RGBA32_SINT, "RGBA32_SINT");
-            archive.field(shadersys::fx::VertexFormat::RGBA32_UINT, "RGBA32_UINT");
-            archive.field(shadersys::fx::VertexFormat::RGB32_FLOAT, "RGB32_FLOAT");
-            archive.field(shadersys::fx::VertexFormat::RGB32_SINT, "RGB32_SINT");
-            archive.field(shadersys::fx::VertexFormat::RGB32_UINT, "RGB32_UINT");
-            archive.field(shadersys::fx::VertexFormat::RG32_FLOAT, "RG32_FLOAT");
-            archive.field(shadersys::fx::VertexFormat::RG32_SINT, "RG32_SINT");
-            archive.field(shadersys::fx::VertexFormat::RG32_UINT, "RG32_UINT");
-            archive.field(shadersys::fx::VertexFormat::R32_FLOAT, "R32_FLOAT");
-            archive.field(shadersys::fx::VertexFormat::R32_SINT, "R32_SINT");
-            archive.field(shadersys::fx::VertexFormat::R32_UINT, "R32_UINT");
+            archive.field(asset::fx::VertexFormat::RGBA32_FLOAT, "RGBA32_FLOAT");
+            archive.field(asset::fx::VertexFormat::RGBA32_SINT, "RGBA32_SINT");
+            archive.field(asset::fx::VertexFormat::RGBA32_UINT, "RGBA32_UINT");
+            archive.field(asset::fx::VertexFormat::RGB32_FLOAT, "RGB32_FLOAT");
+            archive.field(asset::fx::VertexFormat::RGB32_SINT, "RGB32_SINT");
+            archive.field(asset::fx::VertexFormat::RGB32_UINT, "RGB32_UINT");
+            archive.field(asset::fx::VertexFormat::RG32_FLOAT, "RG32_FLOAT");
+            archive.field(asset::fx::VertexFormat::RG32_SINT, "RG32_SINT");
+            archive.field(asset::fx::VertexFormat::RG32_UINT, "RG32_UINT");
+            archive.field(asset::fx::VertexFormat::R32_FLOAT, "R32_FLOAT");
+            archive.field(asset::fx::VertexFormat::R32_SINT, "R32_SINT");
+            archive.field(asset::fx::VertexFormat::R32_UINT, "R32_UINT");
         }
     };
 
     template <>
-    struct serializable_enum<shadersys::fx::ElementType>
+    struct serializable_enum<asset::fx::ElementType>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(shadersys::fx::ElementType::Float4x4, "FLOAT4x4");
-            archive.field(shadersys::fx::ElementType::Float3x3, "FLOAT3x3");
-            archive.field(shadersys::fx::ElementType::Float2x2, "FLOAT2x2");
-            archive.field(shadersys::fx::ElementType::Float4, "FLOAT4");
-            archive.field(shadersys::fx::ElementType::Float3, "FLOAT3");
-            archive.field(shadersys::fx::ElementType::Float2, "FLOAT2");
-            archive.field(shadersys::fx::ElementType::Float, "FLOAT");
-            archive.field(shadersys::fx::ElementType::Uint, "UINT");
-            archive.field(shadersys::fx::ElementType::Sint, "SINT");
-            archive.field(shadersys::fx::ElementType::Bool, "BOOL");
+            archive.field(asset::fx::ElementType::Float4x4, "FLOAT4x4");
+            archive.field(asset::fx::ElementType::Float3x3, "FLOAT3x3");
+            archive.field(asset::fx::ElementType::Float2x2, "FLOAT2x2");
+            archive.field(asset::fx::ElementType::Float4, "FLOAT4");
+            archive.field(asset::fx::ElementType::Float3, "FLOAT3");
+            archive.field(asset::fx::ElementType::Float2, "FLOAT2");
+            archive.field(asset::fx::ElementType::Float, "FLOAT");
+            archive.field(asset::fx::ElementType::Uint, "UINT");
+            archive.field(asset::fx::ElementType::Sint, "SINT");
+            archive.field(asset::fx::ElementType::Bool, "BOOL");
         }
     };
 
     template <>
-    struct serializable_enum<shadersys::fx::StageType>
+    struct serializable_enum<asset::fx::StageType>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(shadersys::fx::StageType::Vertex, "VS");
-            archive.field(shadersys::fx::StageType::Pixel, "PS");
-            archive.field(shadersys::fx::StageType::Compute, "CS");
+            archive.field(asset::fx::StageType::Vertex, "VS");
+            archive.field(asset::fx::StageType::Pixel, "PS");
+            archive.field(asset::fx::StageType::Compute, "CS");
         }
     };
 
     template <>
-    struct serializable_enum<shadersys::fx::CullSide>
+    struct serializable_enum<asset::fx::CullSide>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(shadersys::fx::CullSide::None, "NONE");
-            archive.field(shadersys::fx::CullSide::Back, "BACK");
-            archive.field(shadersys::fx::CullSide::Front, "FRONT");
+            archive.field(asset::fx::CullSide::None, "NONE");
+            archive.field(asset::fx::CullSide::Back, "BACK");
+            archive.field(asset::fx::CullSide::Front, "FRONT");
         }
     };
 } // namespace ionengine::core
