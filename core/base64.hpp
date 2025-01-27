@@ -82,85 +82,82 @@ namespace ionengine::core
         }
     } // namespace internal
 
-    namespace base64
+    inline std::string base64_encode(std::span<uint8_t const> const source)
     {
-        inline std::string encode(std::span<uint8_t const> const source)
+        auto const size = source.size();
+        auto const full_tripples = size / 3;
+
+        std::string output;
+        output.reserve((full_tripples + 2) * 4);
+
+        for (size_t const i : std::views::iota(0u, full_tripples))
         {
-            auto const size = source.size();
-            auto const full_tripples = size / 3;
-
-            std::string output;
-            output.reserve((full_tripples + 2) * 4);
-
-            for (size_t const i : std::views::iota(0u, full_tripples))
-            {
-                auto const tripplet = source.subspan(i * 3, 3);
-                auto const base64_chars = internal::encode_tripplet(tripplet[0], tripplet[1], tripplet[2]);
-                std::copy(std::begin(base64_chars), std::end(base64_chars), std::back_inserter(output));
-            }
-
-            if (auto const remaining_chars = size - full_tripples * 3; remaining_chars == 2)
-            {
-                auto const last_two = source.last(2);
-                auto const base64_chars = internal::encode_tripplet(last_two[0], last_two[1], 0x00);
-
-                output.push_back(base64_chars[0]);
-                output.push_back(base64_chars[1]);
-                output.push_back(base64_chars[2]);
-                output.push_back('=');
-            }
-            else if (remaining_chars == 1)
-            {
-                auto const base64_chars = internal::encode_tripplet(source.back(), 0x00, 0x00);
-
-                output.push_back(base64_chars[0]);
-                output.push_back(base64_chars[1]);
-                output.push_back('=');
-                output.push_back('=');
-            }
-            return output;
+            auto const tripplet = source.subspan(i * 3, 3);
+            auto const base64_chars = internal::encode_tripplet(tripplet[0], tripplet[1], tripplet[2]);
+            std::copy(std::begin(base64_chars), std::end(base64_chars), std::back_inserter(output));
         }
 
-        inline std::optional<std::vector<std::uint8_t>> decode(std::string_view source)
+        if (auto const remaining_chars = size - full_tripples * 3; remaining_chars == 2)
         {
-            if (source.size() == 0)
-            {
-                return std::nullopt;
-            }
+            auto const last_two = source.last(2);
+            auto const base64_chars = internal::encode_tripplet(last_two[0], last_two[1], 0x00);
 
-            if (!internal::is_valid_base64_str(source))
-            {
-                return std::nullopt;
-            }
+            output.push_back(base64_chars[0]);
+            output.push_back(base64_chars[1]);
+            output.push_back(base64_chars[2]);
+            output.push_back('=');
+        }
+        else if (remaining_chars == 1)
+        {
+            auto const base64_chars = internal::encode_tripplet(source.back(), 0x00, 0x00);
 
-            auto const unpadded_source = source.substr(0, source.find_first_of('='));
-            auto const full_quadruples = unpadded_source.size() / 4;
+            output.push_back(base64_chars[0]);
+            output.push_back(base64_chars[1]);
+            output.push_back('=');
+            output.push_back('=');
+        }
+        return output;
+    }
 
-            std::vector<std::uint8_t> decoded_bytes;
-            decoded_bytes.reserve(((full_quadruples + 2) * 3) / 4);
+    inline std::optional<std::vector<std::uint8_t>> base64_decode(std::string_view source)
+    {
+        if (source.size() == 0)
+        {
+            return std::nullopt;
+        }
 
-            for (size_t const i : std::views::iota(0u, full_quadruples))
-            {
-                auto const quad = unpadded_source.substr(i * 4, 4);
-                auto const bytes = internal::decode_quad(quad[0], quad[1], quad[2], quad[3]);
-                std::copy(std::begin(bytes), std::end(bytes), std::back_inserter(decoded_bytes));
-            }
+        if (!internal::is_valid_base64_str(source))
+        {
+            return std::nullopt;
+        }
 
-            if (auto const last_quad = unpadded_source.substr(full_quadruples * 4); last_quad.size() == 0)
-            {
-                return decoded_bytes;
-            }
-            else if ((last_quad.size() == 2) || (last_quad[2] == '='))
-            {
-                auto const bytes = internal::decode_quad(last_quad[0], last_quad[1], 'A', 'A');
-                decoded_bytes.push_back(bytes[0]);
-            }
-            else
-            {
-                auto const bytes = internal::decode_quad(last_quad[0], last_quad[1], last_quad[2], 'A');
-                std::copy_n(std::begin(bytes), 2, std::back_inserter(decoded_bytes));
-            }
+        auto const unpadded_source = source.substr(0, source.find_first_of('='));
+        auto const full_quadruples = unpadded_source.size() / 4;
+
+        std::vector<std::uint8_t> decoded_bytes;
+        decoded_bytes.reserve(((full_quadruples + 2) * 3) / 4);
+
+        for (size_t const i : std::views::iota(0u, full_quadruples))
+        {
+            auto const quad = unpadded_source.substr(i * 4, 4);
+            auto const bytes = internal::decode_quad(quad[0], quad[1], quad[2], quad[3]);
+            std::copy(std::begin(bytes), std::end(bytes), std::back_inserter(decoded_bytes));
+        }
+
+        if (auto const last_quad = unpadded_source.substr(full_quadruples * 4); last_quad.size() == 0)
+        {
             return decoded_bytes;
         }
-    } // namespace base64
+        else if ((last_quad.size() == 2) || (last_quad[2] == '='))
+        {
+            auto const bytes = internal::decode_quad(last_quad[0], last_quad[1], 'A', 'A');
+            decoded_bytes.push_back(bytes[0]);
+        }
+        else
+        {
+            auto const bytes = internal::decode_quad(last_quad[0], last_quad[1], last_quad[2], 'A');
+            std::copy_n(std::begin(bytes), 2, std::back_inserter(decoded_bytes));
+        }
+        return decoded_bytes;
+    }
 } // namespace ionengine::core

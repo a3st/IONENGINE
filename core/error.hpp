@@ -7,7 +7,7 @@ namespace ionengine::core
     class runtime_error : public std::exception
     {
       public:
-        runtime_error(std::string_view const error) : message(error)
+        runtime_error(std::string_view const message) : message(message)
         {
         }
 

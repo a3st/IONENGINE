@@ -4,83 +4,78 @@
         "description": "Basic description",
         "domain": "Screen"
     },
-    "permutations": {
-        "BASE": 1,
-        "SKINNING": 2
-    },
-    "shaders": {
-        "1": {
-            "stages": {
-                "VS": {
-                    "buffer": 0,
-                    "entryPoint": "main",
-                    "vertexLayout": {
-                        "elements": [
-                            {
-                                "format": "RGB32_FLOAT",
-                                "semantic": "POSITION"
-                            },
-                            {
-                                "format": "RGB32_FLOAT",
-                                "semantic": "NORMAL"
-                            },
-                            {
-                                "format": "RG32_FLOAT",
-                                "semantic": "TEXCOORD0"
-                            }
-                        ],
-                        "sizeInBytes": 24
-                    }
-                },
-                "PS": {
-                    "buffer": 1,
-                    "entryPoint": "main"
-                }
-            },
-            "constants": [
-                {
-                    "name": "worldBuffer",
-                    "type": "UINT"
-                },
-                {
-                    "name": "lightingBuffer",
-                    "type": "UINT"
-                },
-                {
-                    "name": "samplerBuffer",
-                    "type": "UINT"
-                },
-                {
-                    "name": "materialBuffer",
-                    "type": "UINT"
-                }
-            ],
-            "structures": [
-                {
-                    "name": "MATERIAL_DATA",
+    "shader": {
+        "stages": {
+            "VS": {
+                "buffer": 0,
+                "entryPoint": "main",
+                "vertexLayout": {
                     "elements": [
                         {
-                            "name": "model",
-                            "type": "FLOAT4x4"
+                            "format": "RGB32_FLOAT",
+                            "semantic": "POSITION"
                         },
                         {
-                            "name": "view",
-                            "type": "FLOAT4x4"
+                            "format": "RGB32_FLOAT",
+                            "semantic": "NORMAL"
                         },
                         {
-                            "name": "projection",
-                            "type": "FLOAT4x4"
+                            "format": "RG32_FLOAT",
+                            "semantic": "TEXCOORD0"
                         }
                     ],
-                    "sizeInBytes": 192
+                    "sizeInBytes": 24
                 }
-            ]
-        }
-    },
-    "output": {
-        "depthWrite": false,
-        "stencilWrite": false,
-        "cullSide": "back"
+            },
+            "PS": {
+                "buffer": 1,
+                "entryPoint": "main",
+                "output": {
+                    "depthWrite": false,
+                    "stencilWrite": false,
+                    "cullSide": "back",
+                    "fillMode": "front"
+                }
+            }
+        },
+        "structures": [
+            {
+                "name": "MATERIAL_DATA",
+                "elements": [
+                    {
+                        "name": "model",
+                        "type": "FLOAT4x4"
+                    },
+                    {
+                        "name": "view",
+                        "type": "FLOAT4x4"
+                    },
+                    {
+                        "name": "projection",
+                        "type": "FLOAT4x4"
+                    }
+                ],
+                "sizeInBytes": 192
+            },
+            {
+                "name": "SHADER_DATA",
+                "elements": [
+                    {
+                        "name": "transformBuffer",
+                        "type": "UINT"
+                    },
+                    {
+                        "name": "samplerBuffer",
+                        "type": "UINT"
+                    },
+                    {
+                        "name": "materialBuffer",
+                        "type": "UINT"
+                    }
+                ],
+                "sizeInBytes": 20
+            }
+        ]
     },
     "buffers": [
         {

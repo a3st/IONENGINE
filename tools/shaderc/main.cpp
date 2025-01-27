@@ -48,7 +48,7 @@ auto main(int32_t argc, char** argv) -> int32_t
 
         if (target.compare("DXIL") == 0)
         {
-            shaderCompiler = shadersys::ShaderCompiler::create(shadersys::fx::APIType::DXIL);
+            shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::APIType::DXIL);
         }
         else if (target.compare("SPIRV") == 0)
         {
@@ -65,8 +65,8 @@ auto main(int32_t argc, char** argv) -> int32_t
         auto compileResult = shaderCompiler->compileFromFile(std::filesystem::path(input).make_preferred(), errors);
         if (compileResult.has_value())
         {
-            core::to_file<shadersys::ShaderEffectFile, core::serialize_oarchive>(
-                compileResult.value(), std::filesystem::path(output).make_preferred());
+            core::to_file<asset::ShaderFile, core::serialize_oarchive>(compileResult.value(),
+                                                                       std::filesystem::path(output).make_preferred());
 
             std::cout << "Out: " << std::filesystem::absolute(output).generic_string() << std::endl;
         }

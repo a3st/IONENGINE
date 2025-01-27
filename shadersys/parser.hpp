@@ -6,38 +6,64 @@
 #include "core/string.hpp"
 #include "fx.hpp"
 #include "lexer.hpp"
+#undef EOF
 
 namespace ionengine::shadersys
 {
-    enum class ErrorCode : uint32_t
+    /*!
+        \brief Errors that will get when parse a shader file
+    */
+    enum class ParseError : uint32_t
     {
-        EndOfScope = 1000,
+        EOF = 1000,
         Operator = 1001,
         Character = 1002,
         UnknownType = 1003,
         OtherType = 1004,
-        ShaderCode = 1005
+        ShaderCode = 1005,
+        UnknownSection = 1006,
+        EOS = 1007
     };
 
-    class parser_error : public core::runtime_error
+    /*!
+        \brief Data that got when parsed a shader file
+    */
+    struct ShaderParseData
     {
-      public:
-        parser_error(std::string_view const error) : core::runtime_error(error)
-        {
-        }
+        asset::fx::HeaderData headerData;
+        std::unordered_map<asset::fx::StageType, std::string> codeData;
+        asset::fx::StructureData materialData;
+        std::unordered_map<std::string, std::string> csAttributes;
+        std::unordered_map<std::string, std::string> psAttributes;
     };
 
+    /*!
+        \brief Parser that can parse a FX shader file
+    */
     class Parser
     {
       public:
-        Parser() = default;
+        Parser(std::string& errors);
 
-        auto parse(Lexer const& lexer, asset::fx::HeaderData& headerData, asset::fx::OutputData& outputData,
-                   std::unordered_map<asset::fx::StageType, std::string>& stageData,
-                   asset::fx::StructureData& materialData) -> void;
+        auto parse(Lexer const& lexer) -> std::expected<ShaderParseData, ParseError>;
 
       private:
-        template <typename Type>
+        std::string* errors;
+        std::optional<ParseError> parseError;
+
+        auto parseToken(std::span<Token const>::iterator it) -> std::expected<ShaderParseData, ParseError>;
+
+        auto parseHeader(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+
+        auto parseData(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+
+        auto parseAttributes(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+
+        auto parseShaderCode(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+
+        auto parseOptionValue(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+
+        /*template <typename Type>
         auto parseOptionValue(std::span<Token const>::iterator variable, std::span<Token const>::iterator it,
                               Type& value) -> std::span<Token const>::iterator
         {
@@ -107,6 +133,6 @@ namespace ionengine::shadersys
 
             it++;
             return it;
-        }
+        }*/
     };
 } // namespace ionengine::shadersys

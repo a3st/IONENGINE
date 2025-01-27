@@ -21,6 +21,7 @@ VS {
     }
 }
 
+[FillMode("SOLID"), CullSide("BACK"), DepthWrite(true), StencilWrite(false)]
 PS {
     #include "shared/common.hlsli"
 
@@ -35,10 +36,4 @@ PS {
         //output.color = inputTexture.Sample(linearSampler, input.uv);
         return output;
     }
-}
-
-OUTPUT {
-    CullSide = "BACK";
-    DepthWrite = false;
-    StencilWrite = false;
 }

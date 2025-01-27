@@ -6,15 +6,112 @@
 
 namespace ionengine::shadersys
 {
-    auto Parser::parse(Lexer const& lexer, asset::fx::HeaderData& headerData, asset::fx::OutputData& outputData,
-                       std::unordered_map<asset::fx::StageType, std::string>& stageData,
-                       asset::fx::StructureData& materialData) -> void
+    Parser::Parser(std::string& errors) : errors(&errors)
+    {
+    }
+
+    auto Parser::parseAttributes(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    {
+        return it;
+    }
+
+    auto Parser::parseData(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    {
+        return it;
+    }
+
+    auto Parser::parseHeader(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    {
+        auto region = it;
+        it++;
+
+        if (it->getLexeme() != Lexeme::LeftBrace)
+        {
+            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
+                                  std::to_underlying(ParseError::EOS), region->getContent());
+            parseError = ParseError::EOS;
+        }
+
+        it++;
+
+        while (it != std::span<Token const>::iterator() && it->getLexeme() != Lexeme::RightBrace)
+        {
+            it = parseOptionValue(it);
+        }
+        return it;
+    }
+
+    auto Parser::parseShaderCode(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    {
+        return it;
+    }
+
+    auto Parser::parseOptionValue(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    {
+        return it;
+    }
+
+    auto Parser::parseToken(std::span<Token const>::iterator it) -> std::expected<ShaderParseData, ParseError>
+    {
+        if (it->getLexeme() == Lexeme::Identifier)
+        {
+            if (it->getContent().compare("HEADER") == 0)
+            {
+                it = this->parseHeader(it);
+            }
+            else if (it->getContent().compare("DATA") == 0)
+            {
+                it = this->parseData(it);
+            }
+            else if (it->getLexeme() == Lexeme::LeftBracket)
+            {
+                it = this->parseAttributes(it);
+
+                if (it->getContent().compare("VS") == 0 || it->getContent().compare("PS") == 0 ||
+                    it->getContent().compare("CS") == 0)
+                {
+                    it = this->parseShaderCode(it);
+                }
+                else
+                {
+                    *errors = std::format("line:{}: error {}: unknown section '{}'", it->getNumLine(),
+                                          std::to_underlying(ParseError::UnknownSection), it->getContent());
+                    return std::unexpected(ParseError::UnknownSection);
+                }
+            }
+            else
+            {
+                *errors = std::format("line:{}: error {}: unknown section '{}'", it->getNumLine(),
+                                      std::to_underlying(ParseError::UnknownSection), it->getContent());
+                return std::unexpected(ParseError::UnknownSection);
+            }
+        }
+
+        if (parseError.has_value())
+        {
+            return std::unexpected(parseError.value());
+        }
+
+        if (it != std::span<Token const>::iterator())
+        {
+            return this->parseToken(it);
+        }
+        else
+        {
+            return std::unexpected(ParseError::EOF);
+        }
+    }
+
+    auto Parser::parse(Lexer const& lexer) -> std::expected<ShaderParseData, ParseError>
     {
         auto tokens = lexer.getTokens();
 
         std::string materialStructureHLSL;
 
         auto it = tokens.begin();
+        return this->parseToken(it);
+
+        /*auto it = tokens.begin();
         while (it != tokens.end())
         {
             if (it->getLexeme() == Lexeme::Identifier)
@@ -304,6 +401,6 @@ namespace ionengine::shadersys
         {
             shaderCode = "#include \"shared/internal.hlsli\"\nstruct MATERIAL_DATA { " + materialStructureHLSL +
                          " };\n" + shaderCode;
-        }
+        }*/
     }
 } // namespace ionengine::shadersys

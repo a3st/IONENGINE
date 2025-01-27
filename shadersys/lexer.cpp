@@ -6,11 +6,12 @@
 
 namespace ionengine::shadersys
 {
-    std::set<std::string> const types{"uint",   "bool",     "float",    "float2",   "float3",
-                                      "float4", "float2x2", "float3x3", "float4x4", "texture2D_t"};
+    std::set<std::string> const types{"uint",     "bool",     "float",    "float2",      "float3",    "float4",
+                                      "float2x2", "float3x3", "float4x4", "texture2D_t", "cbuffer_t", "sampler_t"};
 
-    Token::Token(std::string_view const str, Lexeme const lexeme, uint32_t const numLine)
-        : str(str), lexeme(lexeme), numLine(numLine)
+    Token::Token(std::string_view const str, Lexeme const lexeme, std::filesystem::path const& filePath,
+                 uint32_t const numLine)
+        : str(str), lexeme(lexeme), filePath(filePath), numLine(numLine)
     {
     }
 
@@ -51,12 +52,29 @@ namespace ionengine::shadersys
         return numLine;
     }
 
-    Lexer::Lexer(std::string_view const input) : locale("en_US.utf8")
+    auto Token::getFilePath() const -> std::filesystem::path const&
     {
-        this->analyzeBufferData(input);
+        return filePath;
     }
 
-    auto Lexer::analyzeBufferData(std::string_view const buffer) -> void
+    Lexer::Lexer(std::filesystem::path const& filePath) : locale("en_US.utf8")
+    {
+        std::ifstream stream(filePath);
+        if (!stream.is_open())
+        {
+            throw std::runtime_error("the input file is in a different format, is corrupted, or was not found");
+        }
+
+        std::string const buffer = {std::istreambuf_iterator<char>(stream.rdbuf()), {}};
+        this->analyzeBufferData(buffer, filePath);
+    }
+
+    Lexer::Lexer(std::string_view const source, std::filesystem::path const& filePath) : locale("en_US.utf8")
+    {
+        this->analyzeBufferData(source, filePath);
+    }
+
+    auto Lexer::analyzeBufferData(std::string_view const buffer, std::filesystem::path const& filePath) -> void
     {
         uint64_t offset = 0;
         uint32_t curLine = 1;
@@ -261,7 +279,7 @@ namespace ionengine::shadersys
 
             if (tokenLexeme != Lexeme::Unknown)
             {
-                Token token(tokenStr, tokenLexeme, curLine);
+                Token token(tokenStr, tokenLexeme, filePath, curLine);
                 tokens.emplace_back(std::move(token));
                 // std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
             }

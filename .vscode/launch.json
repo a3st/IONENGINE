@@ -5,7 +5,7 @@
             "name": "(Windows) Debug Test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/tests/shadersys_test.exe",
+            "program": "${workspaceFolder}/build/tests/core_test.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/tests",

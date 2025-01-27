@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.25.1)
 
 add_library(shadersys STATIC
-    dxc/dxc.cpp
-    compiler.cpp
     lexer.cpp
     parser.cpp
     fx.cpp)

@@ -31,7 +31,7 @@ namespace ionengine::asset::fx
             case ElementType::Sint:
                 return sizeof(int32_t);
             default:
-                throw std::invalid_argument("Passed invalid argument into function");
+                throw std::invalid_argument("the argument cannot be converted into");
         }
     }
 
@@ -64,7 +64,7 @@ namespace ionengine::asset::fx
             case VertexFormat::R32_UINT:
                 return sizeof(uint32_t);
             default:
-                throw std::invalid_argument("Passed invalid argument into function");
+                throw std::invalid_argument("the argument cannot be converted into");
         }
     }
 } // namespace ionengine::asset::fx

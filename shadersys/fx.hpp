@@ -10,7 +10,7 @@ namespace ionengine::asset
     {
         std::array<uint8_t, 4> constexpr Magic{'F', 'X', '1', '0'};
 
-        enum class APIType : uint32_t
+        enum class ShaderFormat : uint32_t
         {
             DXIL,
             SPIRV
@@ -55,6 +55,12 @@ namespace ionengine::asset
             Vertex,
             Pixel,
             Compute
+        };
+
+        enum class FillMode
+        {
+            Solid,
+            Wireframe
         };
 
         enum class CullSide
@@ -131,11 +137,29 @@ namespace ionengine::asset
             }
         };
 
+        struct OutputData
+        {
+            bool depthWrite;
+            bool stencilWrite;
+            CullSide cullSide;
+            FillMode fillMode;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(depthWrite, "depthWrite");
+                archive.property(stencilWrite, "stencilWrite");
+                archive.property(cullSide, "cullSide");
+                archive.property(fillMode, "fillMode");
+            }
+        };
+
         struct StageData
         {
             uint32_t buffer;
             std::string entryPoint;
-            VertexLayoutData vertexLayout;
+            std::optional<VertexLayoutData> vertexLayout;
+            std::optional<OutputData> output;
 
             template <typename Archive>
             auto operator()(Archive& archive)
@@ -143,6 +167,7 @@ namespace ionengine::asset
                 archive.property(buffer, "buffer");
                 archive.property(entryPoint, "entryPoint");
                 archive.property(vertexLayout, "vertexLayout");
+                archive.property(output, "output");
             }
         };
 
@@ -176,51 +201,19 @@ namespace ionengine::asset
             }
         };
 
-        struct OutputData
-        {
-            bool depthWrite;
-            bool stencilWrite;
-            CullSide cullSide;
-
-            template <typename Archive>
-            auto operator()(Archive& archive)
-            {
-                archive.property(depthWrite, "depthWrite");
-                archive.property(stencilWrite, "stencilWrite");
-                archive.property(cullSide, "cullSide");
-            }
-        };
-
-        struct ShaderVariantData
-        {
-            std::unordered_map<StageType, StageData> stages;
-            std::vector<ConstantData> constants;
-            std::vector<StructureData> structures;
-
-            template <typename Archive>
-            auto operator()(Archive& archive)
-            {
-                archive.property(stages, "stages");
-                archive.property(constants, "constants");
-                archive.property(structures, "structures");
-            }
-        };
-
         struct ShaderData
         {
             HeaderData headerData;
-            std::unordered_map<std::string, uint32_t> permutations;
-            std::unordered_map<uint32_t, ShaderVariantData> shaders;
-            OutputData outputData;
+            std::unordered_map<StageType, StageData> stages;
+            std::vector<StructureData> structures;
             std::vector<BufferData> buffers;
 
             template <typename Archive>
             auto operator()(Archive& archive)
             {
                 archive.property(headerData, "header");
-                archive.property(permutations, "permutations");
-                archive.property(shaders, "shaders");
-                archive.property(outputData, "output");
+                archive.property(stages, "stages");
+                archive.property(structures, "structures");
                 archive.property(buffers, "buffers");
             }
         };
@@ -229,7 +222,7 @@ namespace ionengine::asset
     struct ShaderFile
     {
         std::array<uint8_t, fx::Magic.size()> magic;
-        fx::APIType apiType;
+        fx::ShaderFormat shaderFormat;
         fx::ShaderData shaderData;
         std::vector<uint8_t> blob;
 
@@ -237,7 +230,7 @@ namespace ionengine::asset
         auto operator()(Archive& archive)
         {
             archive.property(magic);
-            archive.property(apiType);
+            archive.property(shaderFormat);
             archive.template with<core::serialize_ojson, core::serialize_ijson>(shaderData);
             archive.property(blob);
         }
@@ -307,6 +300,17 @@ namespace ionengine::core
             archive.field(asset::fx::CullSide::None, "NONE");
             archive.field(asset::fx::CullSide::Back, "BACK");
             archive.field(asset::fx::CullSide::Front, "FRONT");
+        }
+    };
+
+    template <>
+    struct serializable_enum<asset::fx::FillMode>
+    {
+        template <typename Archive>
+        auto operator()(Archive& archive)
+        {
+            archive.field(asset::fx::FillMode::Wireframe, "WIREFRAME");
+            archive.field(asset::fx::FillMode::Solid, "SOLID");
         }
     };
 } // namespace ionengine::core

@@ -2,18 +2,24 @@
 
 #pragma once
 
-#include "core/error.hpp"
-
 namespace ionengine::core
 {
-    namespace trim_mode
+    /*!
+        \brief Modes that used when trim
+    */
+    enum class trim_mode
     {
-        inline uint32_t both = 0;
-        inline uint32_t beg = 1;
-        inline uint32_t end = 2;
-    }; // namespace trim_mode
+        both,
+        beg,
+        end
+    };
 
-    inline auto trim(std::string& source, uint32_t const trim_mode) -> void
+    /*!
+        \brief Trim string
+        \param[in|out] source Input string that will modified
+        \param[in] trim_mode Mode that will used to trim
+    */
+    inline auto trim(std::string& source, trim_mode const trim_mode) -> void
     {
         if (trim_mode == trim_mode::beg || trim_mode == trim_mode::both)
         {
@@ -29,16 +35,37 @@ namespace ionengine::core
         }
     }
 
-    template <typename Type>
-    inline auto ston(std::string_view const source) -> Type
+    /*!
+        \brief Errors that will get when convert
+    */
+    enum class convert_error
     {
-        Type out;
-        auto result = std::from_chars(source.data(), source.data() + source.size(), out);
+        invalid_argument,
+        out_of_range
+    };
+
+    /*!
+        \brief Convert string_view to number
+        \param[in] source Input string_view that will converted to number
+        \return Number or error
+    */
+    template <typename Type>
+    inline auto ston(std::string_view const source) -> std::expected<Type, convert_error>
+    {
+        Type output;
+        auto result = std::from_chars(source.data(), source.data() + source.size(), output);
 
         if (result.ec == std::errc::invalid_argument)
         {
-            throw core::runtime_error("An error occurred while converting a number");
+            return std::unexpected(convert_error::invalid_argument);
         }
-        return out;
+        else if (result.ec == std::errc::out_of_range)
+        {
+            return std::unexpected(convert_error::out_of_range);
+        }
+        else
+        {
+            return output;
+        }
     }
 } // namespace ionengine::core

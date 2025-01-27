@@ -107,8 +107,6 @@ namespace ionengine::rhi
       public:
         virtual ~Shader() = default;
 
-        virtual auto getHash() const -> uint64_t = 0;
-
         virtual auto getPipelineType() const -> PipelineType = 0;
     };
 

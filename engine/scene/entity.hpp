@@ -10,6 +10,8 @@ namespace ionengine
         std::string name;
         std::vector<std::string> tags;
 
+        Entity() = default;
+
       private:
     };
 } // namespace ionengine

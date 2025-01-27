@@ -117,11 +117,8 @@ TEST(Core, Serialize_JSON_Test)
                           .valueNames = {{32, "firstValue"}, {33, "secondValue"}},
                           .optionalInt = 2};
 
-    auto result = core::to_bytes<ShaderData, core::serialize_ojson>(shaderData);
-    auto buffer = std::move(result.value());
-
-    auto resultAfter = core::from_bytes<ShaderData, core::serialize_ijson>(buffer);
-    auto object = std::move(resultAfter.value());
+    auto buffer = core::serialize<ShaderData, core::serialize_ojson, std::basic_stringstream<uint8_t>>(shaderData).value();
+    auto object = core::deserialize<ShaderData, core::serialize_ijson>(buffer).value();
 
     ASSERT_EQ(object.shaderInt, shaderData.shaderInt);
     ASSERT_EQ(object.shaderFloat, shaderData.shaderFloat);
@@ -165,11 +162,8 @@ TEST(Core, Serialize_Archive_Test)
                           .numArray = {5, 3, 4},
                           .shaderData = std::move(shaderData)};
 
-    auto result = core::to_bytes<ShaderFile, core::serialize_oarchive>(shaderFile);
-    auto buffer = std::move(result.value());
-
-    auto resultAfter = core::from_bytes<ShaderFile, core::serialize_iarchive>(buffer);
-    auto object = std::move(resultAfter.value());
+    auto buffer = core::serialize<ShaderFile, core::serialize_oarchive, std::basic_stringstream<uint8_t>>(shaderFile).value();
+    auto object = core::deserialize<ShaderFile, core::serialize_iarchive>(buffer).value();
 
     ASSERT_EQ(object.magic, shaderFile.magic);
     ASSERT_EQ(object.shaderFloat, shaderFile.shaderFloat);
@@ -195,15 +189,14 @@ TEST(Core, Serialize_Archive_Test)
 TEST(Core, Base64_Encode)
 {
     std::string test = "Hello world!";
-    std::string encodedString =
-        core::base64::encode(std::span<uint8_t const>((uint8_t const*)test.data(), test.size()));
+    std::string encodedString = core::base64_encode(std::span<uint8_t const>((uint8_t const*)test.data(), test.size()));
     ASSERT_EQ(encodedString, "SGVsbG8gd29ybGQh");
 }
 
 TEST(Core, Base64_Decode)
 {
     std::string test = "SGVsbG8gd29ybGQh";
-    auto buffer = core::base64::decode(test).value();
+    auto buffer = core::base64_decode(test).value();
     ASSERT_EQ(std::string(reinterpret_cast<char*>(buffer.data()), buffer.size()), "Hello world!");
 }
 
