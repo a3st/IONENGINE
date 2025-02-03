@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "parser.hpp"
 #include "core/string.hpp"
@@ -10,17 +10,82 @@ namespace ionengine::shadersys
     {
     }
 
-    auto Parser::parseAttributes(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    auto Parser::parseAttributes(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                                 ShaderParseData& parseData) -> std::span<Token const>::iterator
     {
-        return it;
+        it++;
+
+        std::unordered_map<std::string, std::string> attributes;
+
+        while (it != tokens.end() && it->getLexeme() != Lexeme::RightBracket)
+        {
+            auto attribute = it;
+
+            if (it->getLexeme() != Lexeme::Identifier)
+            {
+                *errors =
+                    std::format("line:{}: error {}: identifier '{}' missing end of scope", attribute->getNumLine(),
+                                std::to_underlying(ParseError::EOS), attribute->getContent());
+                errorCode = ParseError::EOS;
+            }
+
+            it++;
+
+            if (it->getLexeme() != Lexeme::LeftParen)
+            {
+                *errors = std::format("line:{}: error {}: identifier '{}' missing missing opening ('(') character",
+                                      attribute->getNumLine(), std::to_underlying(ParseError::Character),
+                                      attribute->getContent());
+                errorCode = ParseError::Character;
+            }
+
+            it++;
+
+            if (it->getLexeme() != Lexeme::FloatLiteral && it->getLexeme() != Lexeme::BoolLiteral &&
+                it->getLexeme() != Lexeme::StringLiteral)
+            {
+                *errors =
+                    std::format("line:{}: error {}: identifier '{}' has invalid value type", attribute->getNumLine(),
+                                std::to_underlying(ParseError::InvalidType), attribute->getContent());
+                errorCode = ParseError::InvalidType;
+            }
+
+            it++;
+
+            attributes[std::string(attribute->getContent())] = std::string(it->getContent());
+
+            if (it->getLexeme() != Lexeme::RightParen)
+            {
+                *errors = std::format("line:{}: error {}: identifier '{}' missing missing closing (')') character",
+                                      attribute->getNumLine(), std::to_underlying(ParseError::Character),
+                                      attribute->getContent());
+                errorCode = ParseError::Character;
+            }
+
+            it++;
+
+            // TODO!
+        }
+
+        auto retIt = it;
+        it++;
+
+        if (it->getContent().compare("VS") == 0)
+        {
+        }
+        else if (it->getContent().compare("PS") == 0)
+        {
+            parseData.psAttributes = std::move(attributes);
+        }
+        else if (it->getContent().compare("CS") == 0)
+        {
+            parseData.csAttributes = std::move(attributes);
+        }
+        return ++retIt;
     }
 
-    auto Parser::parseData(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
-    {
-        return it;
-    }
-
-    auto Parser::parseHeader(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    auto Parser::parseDataGroup(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                                ShaderParseData& parseData) -> std::span<Token const>::iterator
     {
         auto region = it;
         it++;
@@ -29,378 +94,289 @@ namespace ionengine::shadersys
         {
             *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
                                   std::to_underlying(ParseError::EOS), region->getContent());
-            parseError = ParseError::EOS;
+            errorCode = ParseError::EOS;
         }
 
         it++;
 
-        while (it != std::span<Token const>::iterator() && it->getLexeme() != Lexeme::RightBrace)
+        while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
         {
-            it = parseOptionValue(it);
+            asset::fx::StructureElementData outVariable;
+            it = parseStructVariable(it, errorCode, outVariable);
+            parseData.materialData.size += asset::fx::sizeof_ElementType(outVariable.type);
+            parseData.materialData.elements.emplace_back(outVariable);
         }
-        return it;
+
+        parseData.materialData.name = "MATERIAL_DATA";
+        return ++it;
     }
 
-    auto Parser::parseShaderCode(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    auto Parser::parseStructVariable(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                                     asset::fx::StructureElementData& outVariable) -> std::span<Token const>::iterator
     {
-        return it;
+        if (it->getLexeme() != Lexeme::FixedType)
+        {
+            *errors = std::format("line:{}: error {}: invalid variable type '{}'", it->getNumLine(),
+                                  std::to_underlying(ParseError::EOS), it->getContent());
+            errorCode = ParseError::InvalidType;
+        }
+
+        if (it->getContent().compare("float") == 0)
+        {
+            outVariable.type = asset::fx::ElementType::Float3;
+        }
+        else if (it->getContent().compare("float2") == 0)
+        {
+            outVariable.type = asset::fx::ElementType::Float2;
+        }
+        else if (it->getContent().compare("float3") == 0)
+        {
+            outVariable.type = asset::fx::ElementType::Float3;
+        }
+        else if (it->getContent().compare("float3x3") == 0)
+        {
+            outVariable.type = asset::fx::ElementType::Float3x3;
+        }
+        else if (it->getContent().compare("float4") == 0)
+        {
+            outVariable.type = asset::fx::ElementType::Float4;
+        }
+        else if (it->getContent().compare("float4x4") == 0)
+        {
+            outVariable.type = asset::fx::ElementType::Float4x4;
+        }
+        else if (it->getContent().compare("bool") == 0)
+        {
+            outVariable.type = asset::fx::ElementType::Bool;
+        }
+        else if (it->getContent().compare("int") == 0)
+        {
+            outVariable.type = asset::fx::ElementType::Sint;
+        }
+        else
+        {
+            outVariable.type = asset::fx::ElementType::Uint;
+        }
+
+        it++;
+
+        if (it->getLexeme() != Lexeme::Identifier)
+        {
+            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", it->getNumLine(),
+                                  std::to_underlying(ParseError::EOS), it->getContent());
+            errorCode = ParseError::EOS;
+        }
+
+        auto variable = it;
+
+        outVariable.name = std::string(it->getContent());
+
+        it++;
+
+        if (it->getLexeme() != Lexeme::Semicolon)
+        {
+            *errors =
+                std::format("line:{}: error {}: identifier '{}' missing ending (;) character", variable->getNumLine(),
+                            std::to_underlying(ParseError::Character), variable->getContent());
+            errorCode = ParseError::Character;
+        }
+
+        return ++it;
     }
 
-    auto Parser::parseOptionValue(std::span<Token const>::iterator it) -> std::span<Token const>::iterator
+    auto Parser::parseHeaderGroup(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                                  ShaderParseData& parseData) -> std::span<Token const>::iterator
     {
-        return it;
+        auto region = it;
+        it++;
+
+        if (it->getLexeme() != Lexeme::LeftBrace)
+        {
+            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
+                                  std::to_underlying(ParseError::EOS), region->getContent());
+            errorCode = ParseError::EOS;
+        }
+
+        it++;
+
+        while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
+        {
+            std::string outVariable, outValue;
+            it = parseOptionValue(it, errorCode, outVariable, outValue);
+
+            if (outVariable.compare("Name") == 0)
+            {
+                parseData.headerData.name = outValue;
+            }
+            else if (outVariable.compare("Description") == 0)
+            {
+                parseData.headerData.description = outValue;
+            }
+            else if (outVariable.compare("Domain") == 0)
+            {
+                parseData.headerData.domain = outValue;
+            }
+        }
+        return ++it;
     }
 
-    auto Parser::parseToken(std::span<Token const>::iterator it) -> std::expected<ShaderParseData, ParseError>
+    auto Parser::parseShaderCode(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                                 ShaderParseData& parseData) -> std::span<Token const>::iterator
     {
+        auto region = it;
+
+        asset::fx::StageType stageType;
+        if (region->getContent().compare("VS") == 0)
+        {
+            stageType = asset::fx::StageType::Vertex;
+        }
+        else if (region->getContent().compare("PS") == 0)
+        {
+            stageType = asset::fx::StageType::Pixel;
+        }
+        else if (region->getContent().compare("CS") == 0)
+        {
+            stageType = asset::fx::StageType::Compute;
+        }
+
+        it++;
+
+        if (it->getLexeme() != Lexeme::LeftBrace)
+        {
+            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
+                                  std::to_underlying(ParseError::EOS), region->getContent());
+            errorCode = ParseError::EOS;
+        }
+
+        it++;
+
+        if (it->getLexeme() != Lexeme::ShaderCode)
+        {
+            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
+                                  std::to_underlying(ParseError::EOS), region->getContent());
+            errorCode = ParseError::EOS;
+        }
+
+        parseData.codeData[stageType] = std::string(it->getContent());
+
+        it++;
+
+        if (it->getLexeme() != Lexeme::RightBrace)
+        {
+            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
+                                  std::to_underlying(ParseError::EOS), region->getContent());
+            errorCode = ParseError::EOS;
+        }
+
+        return ++it;
+    }
+
+    auto Parser::parseOptionValue(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                                  std::string& outName, std::string& outValue) -> std::span<Token const>::iterator
+    {
+        if (it->getLexeme() != Lexeme::Identifier)
+        {
+            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", it->getNumLine(),
+                                  std::to_underlying(ParseError::EOS), it->getContent());
+            errorCode = ParseError::EOS;
+        }
+
+        auto variable = it;
+        it++;
+
+        if (it->getLexeme() != Lexeme::Assignment)
+        {
+            *errors =
+                std::format("line:{}: error {}: identifier '{}' missing assignment (=) operator",
+                            variable->getNumLine(), std::to_underlying(ParseError::Operator), variable->getContent());
+            errorCode = ParseError::Operator;
+        }
+
+        it++;
+
+        if (it->getLexeme() != Lexeme::FloatLiteral && it->getLexeme() != Lexeme::BoolLiteral &&
+            it->getLexeme() != Lexeme::StringLiteral)
+        {
+            *errors = std::format("line:{}: error {}: identifier '{}' has invalid value type", variable->getNumLine(),
+                                  std::to_underlying(ParseError::InvalidType), variable->getContent());
+            errorCode = ParseError::InvalidType;
+        }
+
+        outName = std::string(variable->getContent());
+        outValue = std::string(it->getContent());
+
+        it++;
+
+        if (it->getLexeme() != Lexeme::Semicolon)
+        {
+            *errors =
+                std::format("line:{}: error {}: identifier '{}' missing ending (;) character", variable->getNumLine(),
+                            std::to_underlying(ParseError::Character), variable->getContent());
+            errorCode = ParseError::Character;
+        }
+
+        return ++it;
+    }
+
+    auto Parser::parseToken(std::span<Token const>::iterator it, ShaderParseData& parseData)
+        -> std::optional<ParseError>
+    {
+        std::optional<ParseError> errorCode;
+
         if (it->getLexeme() == Lexeme::Identifier)
         {
             if (it->getContent().compare("HEADER") == 0)
             {
-                it = this->parseHeader(it);
+                it = this->parseHeaderGroup(it, errorCode, parseData);
             }
             else if (it->getContent().compare("DATA") == 0)
             {
-                it = this->parseData(it);
+                it = this->parseDataGroup(it, errorCode, parseData);
             }
             else if (it->getLexeme() == Lexeme::LeftBracket)
             {
-                it = this->parseAttributes(it);
-
-                if (it->getContent().compare("VS") == 0 || it->getContent().compare("PS") == 0 ||
-                    it->getContent().compare("CS") == 0)
-                {
-                    it = this->parseShaderCode(it);
-                }
-                else
-                {
-                    *errors = std::format("line:{}: error {}: unknown section '{}'", it->getNumLine(),
-                                          std::to_underlying(ParseError::UnknownSection), it->getContent());
-                    return std::unexpected(ParseError::UnknownSection);
-                }
+                it = this->parseAttributes(it, errorCode, parseData);
+            }
+            else if (it->getContent().compare("VS") == 0 || it->getContent().compare("PS") == 0 ||
+                     it->getContent().compare("CS") == 0)
+            {
+                it = this->parseShaderCode(it, errorCode, parseData);
             }
             else
             {
                 *errors = std::format("line:{}: error {}: unknown section '{}'", it->getNumLine(),
                                       std::to_underlying(ParseError::UnknownSection), it->getContent());
-                return std::unexpected(ParseError::UnknownSection);
+                return ParseError::UnknownSection;
             }
-        }
-
-        if (parseError.has_value())
-        {
-            return std::unexpected(parseError.value());
-        }
-
-        if (it != std::span<Token const>::iterator())
-        {
-            return this->parseToken(it);
         }
         else
         {
-            return std::unexpected(ParseError::EOF);
+            *errors = std::format("line:{}: error {}: expression is incomplete", it->getNumLine(),
+                                  std::to_underlying(ParseError::EOF));
+            return ParseError::EOF;
+        }
+
+        if (errorCode.has_value())
+        {
+            return errorCode.value();
+        }
+
+        if (it != tokens.end())
+        {
+            return this->parseToken(it, parseData);
+        }
+        else
+        {
+            return std::nullopt;
         }
     }
 
     auto Parser::parse(Lexer const& lexer) -> std::expected<ShaderParseData, ParseError>
     {
-        auto tokens = lexer.getTokens();
-
-        std::string materialStructureHLSL;
-
-        auto it = tokens.begin();
-        return this->parseToken(it);
-
-        /*auto it = tokens.begin();
-        while (it != tokens.end())
-        {
-            if (it->getLexeme() == Lexeme::Identifier)
-            {
-                if (it->getContent().compare("HEADER") == 0)
-                {
-                    auto region = it;
-                    it++;
-
-                    if (it->getLexeme() != Lexeme::LeftBrace)
-                    {
-                        throw parser_error(std::format("line:{}: error {}: identifier '{}' missing end of scope",
-                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
-                                                       region->getContent()));
-                    }
-
-                    it++;
-
-                    while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
-                    {
-                        if (it->getLexeme() == Lexeme::Identifier)
-                        {
-                            auto variable = it;
-
-                            it++;
-
-                            if (it->getLexeme() != Lexeme::Assignment)
-                            {
-                                throw parser_error(
-                                    std::format("line:{}: error {}: identifier '{}' missing assignment (=) operator",
-                                                variable->getNumLine(), std::to_underlying(ErrorCode::Operator),
-                                                variable->getContent()));
-                            }
-
-                            it++;
-
-                            if (variable->getContent().compare("Name") == 0)
-                            {
-                                std::string value;
-                                it = this->parseOptionValue(variable, it, value);
-
-                                headerData.name = std::move(value);
-                            }
-                            else if (variable->getContent().compare("Description") == 0)
-                            {
-                                std::string value;
-                                it = this->parseOptionValue(variable, it, value);
-
-                                headerData.description = std::move(value);
-                            }
-                            else if (variable->getContent().compare("Domain") == 0)
-                            {
-                                std::string value;
-                                it = this->parseOptionValue(variable, it, value);
-
-                                headerData.domain = std::move(value);
-                            }
-                            else if (variable->getContent().compare("Blend") == 0)
-                            {
-                                std::string value;
-                                it = this->parseOptionValue(variable, it, value);
-
-                                headerData.blend = std::move(value);
-                            }
-                            else
-                            {
-                                std::string value;
-                                it = this->parseOptionValue(variable, it, value);
-
-                                std::cout << "Unknown" << std::endl;
-                            }
-                        }
-                        else
-                        {
-                            it++;
-                        }
-                    }
-
-                    if (it == tokens.end())
-                    {
-                        throw parser_error(std::format("line:{}: error {}: identifier '{}' missing end of scope",
-                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
-                                                       region->getContent()));
-                    }
-
-                    it++;
-                }
-                else if (it->getContent().compare("OUTPUT") == 0)
-                {
-                    auto region = it;
-                    it++;
-
-                    if (it->getLexeme() != Lexeme::LeftBrace)
-                    {
-                        throw parser_error(std::format("line:{}: error {}: identifier '{}' missing end of scope",
-                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
-                                                       region->getContent()));
-                    }
-
-                    it++;
-
-                    while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
-                    {
-                        if (it->getLexeme() == Lexeme::Identifier)
-                        {
-                            auto variable = it;
-
-                            it++;
-
-                            if (it->getLexeme() != Lexeme::Assignment)
-                            {
-                                throw parser_error(
-                                    std::format("line:{}: error {}: identifier '{}' missing assignment (=) operator",
-                                                variable->getNumLine(), std::to_underlying(ErrorCode::Operator),
-                                                variable->getContent()));
-                            }
-
-                            it++;
-
-                            if (variable->getContent().compare("DepthWrite") == 0)
-                            {
-                                bool value;
-                                it = this->parseOptionValue(variable, it, value);
-
-                                outputData.depthWrite = value;
-                            }
-                            else if (variable->getContent().compare("StencilWrite") == 0)
-                            {
-                                bool value;
-                                it = this->parseOptionValue(variable, it, value);
-
-                                outputData.depthWrite = value;
-                            }
-                            else if (variable->getContent().compare("CullSide") == 0)
-                            {
-                                std::string value;
-                                it = this->parseOptionValue(variable, it, value);
-
-                                outputData.cullSide =
-                                    core::from_string<asset::fx::CullSide, core::serialize_oenum>(value).value_or(
-                                        asset::fx::CullSide::None);
-                            }
-                        }
-                        else
-                        {
-                            it++;
-                        }
-                    }
-
-                    if (it == tokens.end())
-                    {
-                        throw parser_error(std::format("line:{}: error {}: identifier '{}' missing end of scope",
-                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
-                                                       region->getContent()));
-                    }
-
-                    it++;
-                }
-                else if (it->getContent().compare("VS") == 0 || it->getContent().compare("PS") == 0 ||
-                         it->getContent().compare("CS") == 0)
-                {
-                    auto region = it;
-
-                    it++;
-
-                    if (it->getLexeme() != Lexeme::LeftBrace)
-                    {
-                        throw parser_error(std::format("line:{}: error {}: identifier '{}' missing end of scope",
-                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
-                                                       region->getContent()));
-                    }
-
-                    it++;
-
-                    if (it->getLexeme() != Lexeme::ShaderCode)
-                    {
-                        throw parser_error(std::format(
-                            "line:{}: error {}: identifier '{}' missing shader code of any stage", region->getNumLine(),
-                            std::to_underlying(ErrorCode::ShaderCode), region->getContent()));
-                    }
-
-                    stageData[core::from_string<asset::fx::StageType, core::serialize_oenum>(region->getContent())
-                                  .value()] = it->getContent();
-
-                    it++;
-
-                    if (it->getLexeme() != Lexeme::RightBrace)
-                    {
-                        throw parser_error(std::format("line:{}: error {}: identifier '{}' missing end of scope",
-                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
-                                                       region->getContent()));
-                    }
-
-                    it++;
-                }
-                else if (it->getContent().compare("DATA") == 0)
-                {
-                    auto region = it;
-
-                    it++;
-
-                    if (it->getLexeme() != Lexeme::LeftBrace)
-                    {
-                        throw parser_error(std::format("line:{}: error {}: identifier '{}' missing end of scope",
-                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
-                                                       region->getContent()));
-                    }
-
-                    it++;
-
-                    size_t structureSize = 0;
-
-                    while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
-                    {
-                        if (it->getLexeme() != Lexeme::FixedType)
-                        {
-                            throw parser_error(std::format(
-                                "line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
-                                std::to_underlying(ErrorCode::EndOfScope), region->getContent()));
-                        }
-
-                        auto variableType = it;
-
-                        it++;
-
-                        if (it->getLexeme() != Lexeme::Identifier)
-                        {
-                            throw parser_error(std::format(
-                                "line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
-                                std::to_underlying(ErrorCode::EndOfScope), region->getContent()));
-                        }
-
-                        auto variable = it;
-
-                        it++;
-
-                        if (it->getLexeme() != Lexeme::Semicolon)
-                        {
-                            throw parser_error(std::format(
-                                "line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
-                                std::to_underlying(ErrorCode::EndOfScope), region->getContent()));
-                        }
-
-                        it++;
-
-                        auto elementType =
-                            core::from_string<asset::fx::ElementType, core::serialize_oenum>(variableType->getContent())
-                                .value_or(asset::fx::ElementType::Uint);
-
-                        asset::fx::StructureElementData elementData{.name = std::string(variable->getContent()),
-                                                                    .type = elementType};
-                        materialData.elements.emplace_back(std::move(elementData));
-
-                        structureSize += asset::fx::sizeof_ElementType(elementType);
-
-                        materialStructureHLSL +=
-                            std::string(variableType->getContent()) + " " + std::string(variable->getContent()) + ";";
-                    }
-
-                    materialData.name = "MATERIAL_DATA";
-                    materialData.size = structureSize;
-
-                    if (it->getLexeme() != Lexeme::RightBrace)
-                    {
-                        throw parser_error(std::format("line:{}: error {}: identifier '{}' missing end of scope",
-                                                       region->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
-                                                       region->getContent()));
-                    }
-
-                    it++;
-                }
-                else
-                {
-                    throw parser_error(std::format("line:{}: error {}: identifier '{}' cannot be declared",
-                                                   it->getNumLine(), std::to_underlying(ErrorCode::EndOfScope),
-                                                   it->getContent()));
-                }
-            }
-            else
-            {
-                throw parser_error(std::format("line:{}: error {}: token cannot be declared", it->getNumLine(),
-                                               std::to_underlying(ErrorCode::EndOfScope)));
-            }
-        }
-
-        for (auto& [stageType, shaderCode] : stageData)
-        {
-            shaderCode = "#include \"shared/internal.hlsli\"\nstruct MATERIAL_DATA { " + materialStructureHLSL +
-                         " };\n" + shaderCode;
-        }*/
+        tokens = lexer.getTokens();
+        ShaderParseData parseData{};
+        auto errorCode = this->parseToken(tokens.begin(), parseData);
+        return errorCode.has_value() ? std::unexpected(errorCode.value())
+                                     : std::expected<ShaderParseData, ParseError>(parseData);
     }
 } // namespace ionengine::shadersys

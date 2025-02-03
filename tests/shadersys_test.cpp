@@ -102,7 +102,9 @@ TEST(ShaderSystem, Parser_Test)
     shadersys::Lexer lexer(quadShader, std::filesystem::current_path() / "shadersys_test.cpp");
     std::string errors;
     shadersys::Parser parser(errors);
-    auto parseData = parser.parse(lexer);
+    auto result = parser.parse(lexer);
+
+    std::cout << errors << std::endl;
 }
 
 TEST(ShaderSystem, Compiler_Test)

@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -18,8 +18,7 @@ namespace ionengine::shadersys
         EOF = 1000,
         Operator = 1001,
         Character = 1002,
-        UnknownType = 1003,
-        OtherType = 1004,
+        InvalidType = 1003,
         ShaderCode = 1005,
         UnknownSection = 1006,
         EOS = 1007
@@ -49,90 +48,26 @@ namespace ionengine::shadersys
 
       private:
         std::string* errors;
-        std::optional<ParseError> parseError;
+        std::span<Token const> tokens;
 
-        auto parseToken(std::span<Token const>::iterator it) -> std::expected<ShaderParseData, ParseError>;
+        auto parseToken(std::span<Token const>::iterator it, ShaderParseData& parseData) -> std::optional<ParseError>;
 
-        auto parseHeader(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+        auto parseHeaderGroup(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                              ShaderParseData& parseData) -> std::span<Token const>::iterator;
 
-        auto parseData(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+        auto parseDataGroup(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                            ShaderParseData& parseData) -> std::span<Token const>::iterator;
 
-        auto parseAttributes(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+        auto parseAttributes(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                             ShaderParseData& parseData) -> std::span<Token const>::iterator;
 
-        auto parseShaderCode(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+        auto parseShaderCode(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                             ShaderParseData& parseData) -> std::span<Token const>::iterator;
 
-        auto parseOptionValue(std::span<Token const>::iterator it) -> std::span<Token const>::iterator;
+        auto parseOptionValue(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                              std::string& outName, std::string& outValue) -> std::span<Token const>::iterator;
 
-        /*template <typename Type>
-        auto parseOptionValue(std::span<Token const>::iterator variable, std::span<Token const>::iterator it,
-                              Type& value) -> std::span<Token const>::iterator
-        {
-            if constexpr (std::is_integral_v<Type> && !std::is_same_v<Type, bool>)
-            {
-                if (it->getLexeme() == Lexeme::FloatLiteral)
-                {
-                    try
-                    {
-                        value = core::ston<Type>(it->getContent());
-                    }
-                    catch (core::runtime_error e)
-                    {
-                        throw parser_error(std::format(
-                            "line:{}: error {}: identifier '{}' has unknown value type", variable->getNumLine(),
-                            std::to_underlying(ErrorCode::UnknownType), variable->getContent()));
-                    }
-                }
-                else
-                {
-                    throw parser_error(std::format("line:{}: error {}: identifier '{}' has other value type",
-                                                   variable->getNumLine(), std::to_underlying(ErrorCode::OtherType),
-                                                   variable->getContent()));
-                }
-            }
-            else if constexpr (std::is_same_v<Type,
-                                              std::basic_string<char, std::char_traits<char>, std::allocator<char>>>)
-            {
-                if (it->getLexeme() == Lexeme::StringLiteral)
-                {
-                    value = it->getContent();
-                }
-                else
-                {
-                    throw parser_error(std::format("line:{}: error {}: identifier '{}' has other value type",
-                                                   variable->getNumLine(), std::to_underlying(ErrorCode::OtherType),
-                                                   variable->getContent()));
-                }
-            }
-            else if constexpr (std::is_integral_v<Type> && std::is_same_v<Type, bool>)
-            {
-                if (it->getLexeme() == Lexeme::BoolLiteral)
-                {
-                    value =
-                        it->getContent().compare("true") ? true
-                        : it->getContent().compare("false")
-                            ? false
-                            : throw parser_error(std::format(
-                                  "line:{}: error {}: identifier '{}' has unknown value type", variable->getNumLine(),
-                                  std::to_underlying(ErrorCode::UnknownType), variable->getContent()));
-                }
-                else
-                {
-                    throw parser_error(std::format("line:{}: error {}: identifier '{}' has other value type",
-                                                   variable->getNumLine(), std::to_underlying(ErrorCode::OtherType),
-                                                   variable->getContent()));
-                }
-            }
-
-            it++;
-
-            if (it->getLexeme() != Lexeme::Semicolon)
-            {
-                throw parser_error(std::format("line:{}: error {}: missing ';' character", variable->getNumLine(),
-                                               std::to_underlying(ErrorCode::Character)));
-            }
-
-            it++;
-            return it;
-        }*/
+        auto parseStructVariable(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+                                 asset::fx::StructureElementData& outVariable) -> std::span<Token const>::iterator;
     };
 } // namespace ionengine::shadersys
