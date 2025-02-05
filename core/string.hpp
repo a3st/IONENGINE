@@ -40,8 +40,7 @@ namespace ionengine::core
     */
     enum class convert_error
     {
-        invalid_argument,
-        out_of_range
+        invalid_argument
     };
 
     /*!
@@ -59,9 +58,20 @@ namespace ionengine::core
         {
             return std::unexpected(convert_error::invalid_argument);
         }
-        else if (result.ec == std::errc::out_of_range)
+        else
         {
-            return std::unexpected(convert_error::out_of_range);
+            return output;
+        }
+    }
+
+    inline auto stob(std::string_view const source) -> std::expected<bool, convert_error>
+    {
+        int32_t output;
+        auto result = std::from_chars(source.data(), source.data() + source.size(), output);
+
+        if (result.ec == std::errc::invalid_argument)
+        {
+            return std::unexpected(convert_error::invalid_argument);
         }
         else
         {

@@ -6,10 +6,6 @@
 
 namespace ionengine::shadersys
 {
-    Parser::Parser(std::string& errors) : errors(&errors)
-    {
-    }
-
     auto Parser::parseAttributes(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
                                  ShaderParseData& parseData) -> std::span<Token const>::iterator
     {
@@ -50,9 +46,9 @@ namespace ionengine::shadersys
                 errorCode = ParseError::InvalidType;
             }
 
-            it++;
-
             attributes[std::string(attribute->getContent())] = std::string(it->getContent());
+
+            it++;
 
             if (it->getLexeme() != Lexeme::RightParen)
             {
@@ -64,7 +60,10 @@ namespace ionengine::shadersys
 
             it++;
 
-            // TODO!
+            if (it->getLexeme() == Lexeme::Comma)
+            {
+                it++;
+            }
         }
 
         auto retIt = it;
@@ -117,46 +116,15 @@ namespace ionengine::shadersys
         if (it->getLexeme() != Lexeme::FixedType)
         {
             *errors = std::format("line:{}: error {}: invalid variable type '{}'", it->getNumLine(),
-                                  std::to_underlying(ParseError::EOS), it->getContent());
+                                  std::to_underlying(ParseError::InvalidType), it->getContent());
             errorCode = ParseError::InvalidType;
         }
 
-        if (it->getContent().compare("float") == 0)
-        {
-            outVariable.type = asset::fx::ElementType::Float3;
-        }
-        else if (it->getContent().compare("float2") == 0)
-        {
-            outVariable.type = asset::fx::ElementType::Float2;
-        }
-        else if (it->getContent().compare("float3") == 0)
-        {
-            outVariable.type = asset::fx::ElementType::Float3;
-        }
-        else if (it->getContent().compare("float3x3") == 0)
-        {
-            outVariable.type = asset::fx::ElementType::Float3x3;
-        }
-        else if (it->getContent().compare("float4") == 0)
-        {
-            outVariable.type = asset::fx::ElementType::Float4;
-        }
-        else if (it->getContent().compare("float4x4") == 0)
-        {
-            outVariable.type = asset::fx::ElementType::Float4x4;
-        }
-        else if (it->getContent().compare("bool") == 0)
-        {
-            outVariable.type = asset::fx::ElementType::Bool;
-        }
-        else if (it->getContent().compare("int") == 0)
-        {
-            outVariable.type = asset::fx::ElementType::Sint;
-        }
-        else
-        {
-            outVariable.type = asset::fx::ElementType::Uint;
-        }
+        auto typeResult = core::deserialize<core::serialize_ienum, asset::fx::ElementType>(
+            std::istringstream(std::string(it->getContent())));
+        assert(typeResult.has_value() && "missing field in serializable_enum<asset::fx::ElementType>");
+
+        outVariable.type = typeResult.value();
 
         it++;
 
@@ -333,10 +301,6 @@ namespace ionengine::shadersys
             {
                 it = this->parseDataGroup(it, errorCode, parseData);
             }
-            else if (it->getLexeme() == Lexeme::LeftBracket)
-            {
-                it = this->parseAttributes(it, errorCode, parseData);
-            }
             else if (it->getContent().compare("VS") == 0 || it->getContent().compare("PS") == 0 ||
                      it->getContent().compare("CS") == 0)
             {
@@ -348,6 +312,10 @@ namespace ionengine::shadersys
                                       std::to_underlying(ParseError::UnknownSection), it->getContent());
                 return ParseError::UnknownSection;
             }
+        }
+        else if (it->getLexeme() == Lexeme::LeftBracket)
+        {
+            it = this->parseAttributes(it, errorCode, parseData);
         }
         else
         {
@@ -371,12 +339,21 @@ namespace ionengine::shadersys
         }
     }
 
-    auto Parser::parse(Lexer const& lexer) -> std::expected<ShaderParseData, ParseError>
+    auto Parser::parse(std::span<Token const> const tokens, std::string& errors)
+        -> std::expected<ShaderParseData, ParseError>
     {
-        tokens = lexer.getTokens();
+        this->errors = &errors;
+        this->tokens = tokens;
+
         ShaderParseData parseData{};
         auto errorCode = this->parseToken(tokens.begin(), parseData);
-        return errorCode.has_value() ? std::unexpected(errorCode.value())
-                                     : std::expected<ShaderParseData, ParseError>(parseData);
+        if (errorCode.has_value())
+        {
+            return std::unexpected(errorCode.value());
+        }
+        else
+        {
+            return parseData;
+        }
     }
 } // namespace ionengine::shadersys

@@ -57,24 +57,28 @@ namespace ionengine::shadersys
         return filePath;
     }
 
-    Lexer::Lexer(std::filesystem::path const& filePath) : locale("en_US.utf8")
+    Lexer::Lexer() : locale("en_US.utf8")
+    {
+    }
+
+    auto Lexer::parse(std::filesystem::path const& filePath, std::string& errors)
+        -> std::expected<std::vector<Token>, LexerError>
     {
         std::ifstream stream(filePath);
         if (!stream.is_open())
         {
-            throw std::runtime_error("the input file is in a different format, is corrupted, or was not found");
+            errors = "the input file is in a different format, is corrupted, or was not found";
+            return std::unexpected(LexerError::EOF);
         }
 
         std::string const buffer = {std::istreambuf_iterator<char>(stream.rdbuf()), {}};
-        this->analyzeBufferData(buffer, filePath);
+        std::vector<Token> tokens;
+        this->analyzeBufferData(buffer, filePath, tokens);
+        return tokens;
     }
 
-    Lexer::Lexer(std::string_view const source, std::filesystem::path const& filePath) : locale("en_US.utf8")
-    {
-        this->analyzeBufferData(source, filePath);
-    }
-
-    auto Lexer::analyzeBufferData(std::string_view const buffer, std::filesystem::path const& filePath) -> void
+    auto Lexer::analyzeBufferData(std::string_view const buffer, std::filesystem::path const& filePath,
+                                  std::vector<Token>& tokens) -> void
     {
         uint64_t offset = 0;
         uint32_t curLine = 1;
@@ -281,16 +285,10 @@ namespace ionengine::shadersys
             {
                 Token token(tokenStr, tokenLexeme, filePath, curLine);
                 tokens.emplace_back(std::move(token));
-                // std::cout << std::format("Token {}: {}", (uint8_t)tokenLexeme, tokenStr) << std::endl;
             }
 
             offset++;
         }
-    }
-
-    auto Lexer::getTokens() const -> std::span<Token const>
-    {
-        return tokens;
     }
 
     auto Lexer::isLetter(char const c) const -> bool

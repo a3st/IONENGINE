@@ -22,13 +22,13 @@ namespace ionengine::core
         \param[in] target Object that will deserialized
         \return Deserialized object or error
     */
-    template <typename Type, typename Archive, typename Target>
-    auto deserialize(Target&& target) -> std::expected<Type, serialize_error>
+    template <typename Archive, typename Type, typename Target>
+    auto deserialize(Target const& target) -> std::expected<Type, serialize_error>
     {
         try
         {
             Type object{};
-            Archive archive(target);
+            Archive archive(const_cast<Target&>(target));
             archive(object);
             return object;
         }
@@ -47,7 +47,7 @@ namespace ionengine::core
         \param[in] object Object that will serialized
         \return Serialized object or error
     */
-    template <typename Type, typename Archive, typename Target>
+    template <typename Archive, typename Target, typename Type>
     auto serialize(Type const& object) -> std::expected<Target, serialize_error>
     {
         try
@@ -80,10 +80,10 @@ namespace ionengine::core
         auto operator()(Archive& archive);
     };
 
-    class serialize_oenum
+    class serialize_ienum
     {
       public:
-        serialize_oenum(std::string_view const source) : source(source)
+        serialize_ienum(std::basic_istringstream<char>& stream) : stream(&stream)
         {
         }
 
@@ -96,10 +96,10 @@ namespace ionengine::core
         template <typename Type>
         auto operator()(Type& object) -> size_t
         {
-            serializable_enum<Type> target;
+            serializable_enum<typename std::remove_const<Type>::type> target;
             target(*this);
 
-            auto result = enum_fields.find(std::string(source));
+            auto result = enum_fields.find(stream->str());
             if (result != enum_fields.end())
             {
                 object = static_cast<Type>(result->second);
@@ -112,8 +112,44 @@ namespace ionengine::core
         }
 
       private:
-        std::string_view source;
+        std::basic_istringstream<char>* stream;
         std::unordered_map<std::string, uint32_t> enum_fields;
+    };
+
+    class serialize_oenum
+    {
+      public:
+        serialize_oenum(std::basic_ostringstream<char>& stream) : stream(&stream)
+        {
+        }
+
+        template <typename Type>
+        auto field(Type const& element, std::string_view const json_name) -> void
+        {
+            enum_fields[static_cast<uint32_t>(element)] = std::string(json_name);
+        }
+
+        template <typename Type>
+        auto operator()(Type& object) -> size_t
+        {
+            serializable_enum<typename std::remove_const<Type>::type> target;
+            target(*this);
+
+            auto result = enum_fields.find(static_cast<uint32_t>(object));
+            if (result != enum_fields.end())
+            {
+                stream->write(result->second.c_str(), result->second.size());
+                return stream->tellp();
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+      private:
+        std::basic_ostringstream<char>* stream;
+        std::unordered_map<uint32_t, std::string> enum_fields;
     };
 
     class serialize_ijson;
@@ -228,8 +264,8 @@ namespace ionengine::core
     class serialize_ojson
     {
         template <typename Type>
-        friend auto internal::to_json(serialize_ojson& output, std::string_view const json_name,
-                                      Type const& element) -> void;
+        friend auto internal::to_json(serialize_ojson& output, std::string_view const json_name, Type const& element)
+            -> void;
 
       public:
         serialize_ojson(std::basic_ostream<uint8_t>& stream) : stream(&stream)

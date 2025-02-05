@@ -42,9 +42,9 @@ namespace ionengine::shadersys
     class Parser
     {
       public:
-        Parser(std::string& errors);
+        Parser() = default;
 
-        auto parse(Lexer const& lexer) -> std::expected<ShaderParseData, ParseError>;
+        auto parse(std::span<Token const> const tokens, std::string& errors) -> std::expected<ShaderParseData, ParseError>;
 
       private:
         std::string* errors;

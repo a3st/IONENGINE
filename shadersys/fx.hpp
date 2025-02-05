@@ -45,7 +45,10 @@ namespace ionengine::asset
             Float,
             Uint,
             Sint,
-            Bool
+            Bool,
+            Texture2D,
+            ConstBuffer,
+            Sampler
         };
 
         auto sizeof_ElementType(ElementType const elementType) -> size_t;
@@ -266,16 +269,19 @@ namespace ionengine::core
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(asset::fx::ElementType::Float4x4, "FLOAT4x4");
-            archive.field(asset::fx::ElementType::Float3x3, "FLOAT3x3");
-            archive.field(asset::fx::ElementType::Float2x2, "FLOAT2x2");
-            archive.field(asset::fx::ElementType::Float4, "FLOAT4");
-            archive.field(asset::fx::ElementType::Float3, "FLOAT3");
-            archive.field(asset::fx::ElementType::Float2, "FLOAT2");
-            archive.field(asset::fx::ElementType::Float, "FLOAT");
-            archive.field(asset::fx::ElementType::Uint, "UINT");
-            archive.field(asset::fx::ElementType::Sint, "SINT");
-            archive.field(asset::fx::ElementType::Bool, "BOOL");
+            archive.field(asset::fx::ElementType::Float4x4, "float4x4");
+            archive.field(asset::fx::ElementType::Float3x3, "float3x3");
+            archive.field(asset::fx::ElementType::Float2x2, "float2x2");
+            archive.field(asset::fx::ElementType::Float4, "float4");
+            archive.field(asset::fx::ElementType::Float3, "float3");
+            archive.field(asset::fx::ElementType::Float2, "float2");
+            archive.field(asset::fx::ElementType::Float, "float");
+            archive.field(asset::fx::ElementType::Uint, "uint");
+            archive.field(asset::fx::ElementType::Sint, "int");
+            archive.field(asset::fx::ElementType::Bool, "bool");
+            archive.field(asset::fx::ElementType::Texture2D, "texture2D_t");
+            archive.field(asset::fx::ElementType::Sampler, "sampler_t");
+            archive.field(asset::fx::ElementType::ConstBuffer, "cbuffer_t");
         }
     };
 

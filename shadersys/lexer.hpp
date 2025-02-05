@@ -2,8 +2,13 @@
 
 #pragma once
 
+#undef EOF
+
 namespace ionengine::shadersys
 {
+    /*!
+      \brief Lexemes that can parsed from source
+    */
     enum class Lexeme : uint8_t
     {
         Unknown,
@@ -52,26 +57,33 @@ namespace ionengine::shadersys
         auto getFilePath() const -> std::filesystem::path const&;
 
       private:
-        std::string_view str;
+        std::string str;
         Lexeme lexeme;
         std::filesystem::path filePath;
         uint32_t numLine;
     };
 
+    enum class LexerError
+    {
+        EOF
+    };
+
+    /*!
+      \brief Lexer that can divide source into lexems
+    */
     class Lexer
     {
       public:
-        Lexer(std::filesystem::path const& filePath);
+        Lexer();
 
-        Lexer(std::string_view const source, std::filesystem::path const& filePath);
-
-        auto getTokens() const -> std::span<Token const>;
+        auto parse(std::filesystem::path const& filePath, std::string& errors)
+            -> std::expected<std::vector<Token>, LexerError>;
 
       private:
-        std::vector<Token> tokens;
         std::locale locale;
 
-        auto analyzeBufferData(std::string_view const buffer, std::filesystem::path const& filePath) -> void;
+        auto analyzeBufferData(std::string_view const buffer, std::filesystem::path const& filePath,
+                               std::vector<Token>& tokens) -> void;
 
         auto isLetter(char const c) const -> bool;
 

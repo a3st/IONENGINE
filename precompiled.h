@@ -14,6 +14,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <mutex>
 #include <numbers>
 #include <numeric>

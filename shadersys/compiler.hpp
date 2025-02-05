@@ -5,12 +5,10 @@
 #include "core/ref_ptr.hpp"
 #include "math/matrix.hpp"
 #include "shadersys/fx.hpp"
+#undef EOF
 
 namespace ionengine::shadersys
 {
-    auto getAllVariants(std::span<std::string const> const permutations,
-                        std::unordered_map<std::string, uint32_t> const& flags) -> std::vector<uint32_t>;
-
     namespace common
     {
 #pragma pack(push, 1)
@@ -41,14 +39,19 @@ namespace ionengine::shadersys
                                                                   .type = asset::fx::ElementType::Uint};
     } // namespace common
 
+    enum class CompileError : uint32_t
+    {
+        EOF
+    };
+
     class ShaderCompiler : public core::ref_counted_object
     {
       public:
         virtual ~ShaderCompiler() = default;
 
-        static auto create(asset::fx::APIType const apiType) -> core::ref_ptr<ShaderCompiler>;
+        static auto create(asset::fx::ShaderFormat const shaderFormat) -> core::ref_ptr<ShaderCompiler>;
 
-        virtual auto compileFromFile(std::filesystem::path const& filePath,
-                                     std::string& errors) -> std::optional<asset::ShaderFile> = 0;
+        virtual auto compileFromFile(std::filesystem::path const& filePath, std::string& errors)
+            -> std::expected<asset::ShaderFile, CompileError> = 0;
     };
 } // namespace ionengine::shadersys

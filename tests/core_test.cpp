@@ -117,8 +117,8 @@ TEST(Core, Serialize_JSON_Test)
                           .valueNames = {{32, "firstValue"}, {33, "secondValue"}},
                           .optionalInt = 2};
 
-    auto buffer = core::serialize<ShaderData, core::serialize_ojson, std::basic_stringstream<uint8_t>>(shaderData).value();
-    auto object = core::deserialize<ShaderData, core::serialize_ijson>(buffer).value();
+    auto buffer = core::serialize<core::serialize_ojson, std::basic_stringstream<uint8_t>>(shaderData).value();
+    auto object = core::deserialize<core::serialize_ijson, ShaderData>(buffer).value();
 
     ASSERT_EQ(object.shaderInt, shaderData.shaderInt);
     ASSERT_EQ(object.shaderFloat, shaderData.shaderFloat);
@@ -162,8 +162,8 @@ TEST(Core, Serialize_Archive_Test)
                           .numArray = {5, 3, 4},
                           .shaderData = std::move(shaderData)};
 
-    auto buffer = core::serialize<ShaderFile, core::serialize_oarchive, std::basic_stringstream<uint8_t>>(shaderFile).value();
-    auto object = core::deserialize<ShaderFile, core::serialize_iarchive>(buffer).value();
+    auto buffer = core::serialize<core::serialize_oarchive, std::basic_stringstream<uint8_t>>(shaderFile).value();
+    auto object = core::deserialize<core::serialize_iarchive, ShaderFile>(buffer).value();
 
     ASSERT_EQ(object.magic, shaderFile.magic);
     ASSERT_EQ(object.shaderFloat, shaderFile.shaderFloat);
@@ -186,14 +186,20 @@ TEST(Core, Serialize_Archive_Test)
     ASSERT_EQ(object.shaderData.positions, shaderFile.shaderData.positions);
 }
 
-TEST(Core, Base64_Encode)
+TEST(Core, Serialize_Enum_Test)
+{
+    auto buffer = core::serialize<core::serialize_oenum, std::ostringstream>(TestEnum::Second).value();
+    auto object = core::deserialize<core::serialize_ienum, TestEnum>(std::istringstream("third")).value();
+}
+
+TEST(Core, Base64_Encode_Test)
 {
     std::string test = "Hello world!";
     std::string encodedString = core::base64_encode(std::span<uint8_t const>((uint8_t const*)test.data(), test.size()));
     ASSERT_EQ(encodedString, "SGVsbG8gd29ybGQh");
 }
 
-TEST(Core, Base64_Decode)
+TEST(Core, Base64_Decode_Test)
 {
     std::string test = "SGVsbG8gd29ybGQh";
     auto buffer = core::base64_decode(test).value();
