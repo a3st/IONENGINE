@@ -2,20 +2,20 @@
 
 #ifdef SHADER_DOMAIN_TYPE_SCREEN
 struct VS_INPUT {
-    uint id: SV_VertexID;
+    uint id : SV_VertexID;
 };
 
 struct VS_OUTPUT {
-    float4 position: SV_Position;
-    float2 uv: TEXCOORD0;
+    float4 position : SV_Position;
+    float2 uv : TEXCOORD0;
 };
 
 struct PS_OUTPUT {
-    float4 color: SV_Target0;
+    float4 color : SV_Target0;
 };
 #elif SHADER_DOMAIN_TYPE_SURFACE
 struct VS_INPUT {
-    uint id: SV_VertexID;
+    uint id : SV_VertexID;
 };
 
 struct TRANSFORM_DATA {

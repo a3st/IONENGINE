@@ -28,6 +28,54 @@ namespace ionengine::shadersys
         throwIfFailed(utils->CreateDefaultIncludeHandler(includeHandler.put()));
     }
 
+    auto DXCCompiler::getOutputStates(std::unordered_map<std::string, std::string> const& attributes,
+                                      asset::fx::OutputData& outputData) -> void
+    {
+        std::unordered_map<std::string, std::string>::const_iterator it;
+        if ((it = attributes.find("FillMode")) != attributes.end())
+        {
+            outputData.fillMode =
+                core::deserialize<core::serialize_ienum, asset::fx::FillMode>(std::istringstream(it->second))
+                    .value_or(asset::fx::FillMode::Solid);
+        }
+        else if ((it = attributes.find("CullSide")) != attributes.end())
+        {
+            outputData.cullSide =
+                core::deserialize<core::serialize_ienum, asset::fx::CullSide>(std::istringstream(it->second))
+                    .value_or(asset::fx::CullSide::Back);
+        }
+        else if ((it = attributes.find("DepthWrite")) != attributes.end())
+        {
+            outputData.depthWrite = core::stob(it->second).value_or(false);
+        }
+        else if ((it = attributes.find("StencilWrite")) != attributes.end())
+        {
+            outputData.stencilWrite = core::stob(it->second).value_or(false);
+        }
+    }
+
+    auto DXCCompiler::generateStructureDataCode(asset::fx::StructureData const& structureData, std::string& outCode)
+        -> void
+    {
+        std::ostringstream oss;
+        oss << "struct " << structureData.name << " { ";
+
+        for (auto const& element : structureData.elements)
+        {
+            auto typeResult = core::serialize<core::serialize_oenum, std::ostringstream>(element.type);
+            if (!typeResult.has_value())
+            {
+                continue;
+            }
+
+            oss << typeResult.value().str() << " " << element.name << "; ";
+        }
+
+        oss << "};";
+
+        outCode = oss.str();
+    }
+
     auto DXCCompiler::getInputAssembler(DxcBuffer const& buffer, asset::fx::VertexLayoutData& vertexLayout) -> void
     {
         winrt::com_ptr<ID3D12ShaderReflection> shaderReflection;
@@ -131,51 +179,6 @@ namespace ionengine::shadersys
         }
     }
 
-    auto DXCCompiler::getOutputStates(std::unordered_map<std::string, std::string> const& attributes,
-                                      asset::fx::OutputData& outputData) -> void
-    {
-        std::unordered_map<std::string, std::string>::const_iterator it;
-        if ((it = attributes.find("FillMode")) != attributes.end())
-        {
-            outputData.fillMode =
-                core::deserialize<core::serialize_ienum, asset::fx::FillMode>(std::istringstream(it->second))
-                    .value_or(asset::fx::FillMode::Solid);
-        }
-        else if ((it = attributes.find("CullSide")) != attributes.end())
-        {
-            outputData.cullSide =
-                core::deserialize<core::serialize_ienum, asset::fx::CullSide>(std::istringstream(it->second))
-                    .value_or(asset::fx::CullSide::Back);
-        }
-        else if ((it = attributes.find("DepthWrite")) != attributes.end())
-        {
-            outputData.depthWrite = core::stob(it->second).value_or(false);
-        }
-        else if ((it = attributes.find("StencilWrite")) != attributes.end())
-        {
-            outputData.stencilWrite = core::stob(it->second).value_or(false);
-        }
-    }
-
-    auto DXCCompiler::generateMaterialDataCode(asset::fx::StructureData const& materialData, std::string& outCode)
-        -> void
-    {
-        std::ostringstream oss;
-        oss << "struct MATERIAL_DATA {\n";
-        for (auto const& element : materialData.elements)
-        {
-            auto typeResult = core::serialize<core::serialize_oenum, std::ostringstream>(element.type);
-            if (!typeResult.has_value())
-            {
-            }
-
-            oss << typeResult.value().str() << " " << element.name << ";\n";
-        }
-        oss << "};\n";
-
-        outCode = oss.str();
-    }
-
     auto DXCCompiler::compileFromFile(std::filesystem::path const& filePath, std::string& errors)
         -> std::expected<asset::ShaderFile, CompileError>
     {
@@ -195,14 +198,14 @@ namespace ionengine::shadersys
 
         ShaderParseData const parseData = std::move(parserResult.value());
 
-        asset::fx::ShaderData shaderData = {.headerData = parseData.headerData};
+        asset::fx::ShaderData shaderData = {.headerData = parseData.headerData, .structures = {parseData.materialData}};
         std::basic_stringstream<uint8_t> shaderBlob;
 
         std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
         std::vector<LPCWSTR> arguments;
 
         std::string materialDataCode;
-        this->generateMaterialDataCode(parseData.materialData, materialDataCode);
+        this->generateStructureDataCode(parseData.materialData, materialDataCode);
 
         for (auto const& [stageType, shaderCode] : parseData.codeData)
         {
@@ -239,7 +242,8 @@ namespace ionengine::shadersys
                 arguments.emplace_back(L"-D SHADER_DOMAIN_TYPE_SURFACE");
             }
 
-            std::string const stageShaderCode = "#include \"shared/internal.hlsli\"\n" + materialDataCode + shaderCode;
+            std::string const stageShaderCode =
+                "#include \"shared/internal.hlsli\"\n" + materialDataCode + "\n" + shaderCode;
 
             DxcBuffer const codeBuffer = {
                 .Ptr = stageShaderCode.data(), .Size = stageShaderCode.size(), .Encoding = DXC_CP_UTF8};
@@ -267,10 +271,6 @@ namespace ionengine::shadersys
             shaderData.buffers.emplace_back(std::move(bufferData));
 
             shaderBlob.write(reinterpret_cast<uint8_t const*>(outBlob->GetBufferPointer()), outBlob->GetBufferSize());
-
-            // winrt::com_ptr<IDxcBlob> outputHLSL;
-            // throwIfFailed(compileResult->GetOutput(DXC_OUT_HLSL, __uuidof(IDxcBlob), outputHLSL.put_void(),
-            // nullptr));
 
             switch (stageType)
             {

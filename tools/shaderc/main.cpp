@@ -48,7 +48,7 @@ auto main(int32_t argc, char** argv) -> int32_t
 
         if (target.compare("DXIL") == 0)
         {
-            shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::APIType::DXIL);
+            shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
         }
         else if (target.compare("SPIRV") == 0)
         {
@@ -65,10 +65,12 @@ auto main(int32_t argc, char** argv) -> int32_t
         auto compileResult = shaderCompiler->compileFromFile(std::filesystem::path(input).make_preferred(), errors);
         if (compileResult.has_value())
         {
-            core::to_file<asset::ShaderFile, core::serialize_oarchive>(compileResult.value(),
-                                                                       std::filesystem::path(output).make_preferred());
-
-            std::cout << "Out: " << std::filesystem::absolute(output).generic_string() << std::endl;
+            std::basic_ofstream<uint8_t> ofs(std::filesystem::path(output).make_preferred(), std::ios::binary);
+            auto serializeResult = core::serialize<core::serialize_oarchive>(ofs, compileResult.value());
+            if (serializeResult.has_value())
+            {
+                std::cout << "Out: " << std::filesystem::absolute(output).generic_string() << std::endl;
+            }
         }
         else
         {
@@ -76,7 +78,7 @@ auto main(int32_t argc, char** argv) -> int32_t
         }
         return EXIT_SUCCESS;
     }
-    catch (core::runtime_error e)
+    catch (std::runtime_error e)
     {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

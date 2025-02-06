@@ -86,19 +86,6 @@ namespace ionengine::asset
             }
         };
 
-        struct ConstantData
-        {
-            std::string name;
-            ElementType type;
-
-            template <typename Archive>
-            auto operator()(Archive& archive)
-            {
-                archive.property(name, "name");
-                archive.property(type, "type");
-            }
-        };
-
         struct StructureElementData
         {
             std::string name;

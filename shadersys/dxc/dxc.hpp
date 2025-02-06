@@ -24,13 +24,14 @@ namespace ionengine::shadersys
         winrt::com_ptr<IDxcCompiler3> compiler;
         winrt::com_ptr<IDxcUtils> utils;
         winrt::com_ptr<IDxcIncludeHandler> includeHandler;
+        std::string* errors;
 
         auto getInputAssembler(DxcBuffer const& buffer, asset::fx::VertexLayoutData& vertexLayout) -> void;
 
         auto getOutputStates(std::unordered_map<std::string, std::string> const& attributes,
                              asset::fx::OutputData& outputData) -> void;
 
-        auto generateMaterialDataCode(asset::fx::StructureData const& materialData, std::string& outCode) -> void;
+        auto generateStructureDataCode(asset::fx::StructureData const& structureData, std::string& outCode) -> void;
 
         auto isDefaultSemantic(std::string_view const semantic) -> bool;
     };

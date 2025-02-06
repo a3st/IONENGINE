@@ -73,6 +73,38 @@ namespace ionengine::core
         }
     }
 
+    /*!
+        \brief Serialize object with class
+        \param[in] target Target where will output serialized data
+        \param[in] object Object that will serialized
+        \return Serialized size or error
+    */
+    template <typename Archive, typename Target, typename Type>
+    auto serialize(Target& target, Type const& object) -> std::expected<size_t, serialize_error>
+    {
+        try
+        {
+            Archive archive(target);
+            size_t const sizeInBytes = archive(object);
+            if (sizeInBytes > 0)
+            {
+                return sizeInBytes;
+            }
+            else
+            {
+                return std::unexpected(serialize_error::eof);
+            }
+        }
+        catch (std::invalid_argument e)
+        {
+            return std::unexpected(serialize_error::invalid_argument);
+        }
+        catch (std::out_of_range e)
+        {
+            return std::unexpected(serialize_error::out_of_range);
+        }
+    }
+
     template <typename Type>
     struct serializable_enum
     {

@@ -23,15 +23,15 @@ TEST(ShaderSystem, Parser_Test)
     auto lexerResult = lexer.parse("../../engine/shaders/quad.fx", errors);
     shadersys::Parser parser;
     auto parserResult = parser.parse(lexerResult.value(), errors);
+    ASSERT_TRUE(parserResult.has_value());
 }
 
 TEST(ShaderSystem, Compiler_Test)
 {
     auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
     std::string errors;
-    auto result = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx", errors);
-    std::cout << errors << std::endl;
-
+    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx", errors);
+    ASSERT_TRUE(compileResult.has_value());
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

@@ -12,7 +12,7 @@ DATA {
 
 VS {
     #include "shared/common.hlsli"
-
+WS
     VS_OUTPUT main(VS_INPUT input) {
         VS_OUTPUT output;
         output.uv = float2((input.id << 1) & 2, input.id & 2);
@@ -32,8 +32,7 @@ PS {
         // cbuffer_t<SAMPLER_DATA> b = gShaderData.samplerBuffer;
 
         PS_OUTPUT output;
-        output.color = float4(0.5f, 1.0f, 1.0f, 1.0f);
-        //output.color = inputTexture.Sample(linearSampler, input.uv);
+        output.color = inputTexture.Sample(linearSampler, input.uv);
         return output;
     }
 }
