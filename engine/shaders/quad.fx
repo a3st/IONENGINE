@@ -12,7 +12,7 @@ DATA {
 
 VS {
     #include "shared/common.hlsli"
-WS
+
     VS_OUTPUT main(VS_INPUT input) {
         VS_OUTPUT output;
         output.uv = float2((input.id << 1) & 2, input.id & 2);
@@ -26,13 +26,14 @@ PS {
     #include "shared/common.hlsli"
 
     PS_OUTPUT main(VS_OUTPUT input) {
-        //Texture2D inputTexture = GetTexture(MATERIAL_DATA, materialBuffer, inputTexture);
-        //SamplerState linearSampler = GetSampler();
+        cbuffer_t<SAMPLER_DATA> samplerBuffer = gShaderData.samplerBuffer;
+        cbuffer_t<MATERIAL_DATA> materialBuffer = gShaderData.materialBuffer;
 
-        // cbuffer_t<SAMPLER_DATA> b = gShaderData.samplerBuffer;
+        texture2D_t inputTexture = materialBuffer.Get().inputTexture;
+        sampler_t linearSampler = samplerBuffer.Get().linearSampler;
 
         PS_OUTPUT output;
-        output.color = inputTexture.Sample(linearSampler, input.uv);
+        output.color = inputTexture.Get().Sample(linearSampler.Get(), input.uv);
         return output;
     }
 }
