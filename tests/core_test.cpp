@@ -1,6 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "core/base64.hpp"
+#include "core/event.hpp"
 #include "core/serialize.hpp"
 #include "precompiled.h"
 #include <gtest/gtest.h>
@@ -204,6 +205,27 @@ TEST(Core, Base64_Decode_Test)
     std::string test = "SGVsbG8gd29ybGQh";
     auto buffer = core::base64_decode(test).value();
     ASSERT_EQ(std::string(reinterpret_cast<char*>(buffer.data()), buffer.size()), "Hello world!");
+}
+
+TEST(Core, Event_Test)
+{
+    int32_t const testedValue = 5;
+
+    core::event<void(int32_t)> eventInt;
+    eventInt += [&](int32_t a) -> void {
+        std::cout << a << std::endl;
+        ASSERT_EQ(a, testedValue);
+    };
+    eventInt += [&](int32_t a) -> void {
+        std::cout << a + 2 << std::endl;
+        ASSERT_EQ(a + 2, testedValue + 2);
+    };
+    eventInt += [&](int32_t a) -> void {
+        std::cout << a + 3 << std::endl;
+        ASSERT_EQ(a + 3, testedValue + 3);
+    };
+
+    eventInt(testedValue);
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

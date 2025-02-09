@@ -44,10 +44,10 @@ namespace ionengine::rhi
         }
     }
 
-    auto Device::create(RHICreateInfo const& createInfo) -> core::ref_ptr<Device>
+    auto RHI::create(RHICreateInfo const& createInfo) -> core::ref_ptr<RHI>
     {
 #ifdef IONENGINE_RHI_DIRECTX12
-        return core::make_ref<DX12Device>(createInfo);
+        return core::make_ref<DX12RHI>(createInfo);
 #elif IONENGINE_RHI_VULKAN
         return core::make_ref<VKDevice>(createInfo);
 #elif IONENGINE_RHI_GL

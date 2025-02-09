@@ -51,7 +51,7 @@ namespace ionengine::platform
                 ::PostQuitMessage(0);
 
                 WindowEvent windowEvent{.eventType = WindowEventType::Close};
-                platformInstance->context->onWindowEvent(windowEvent);
+                platformInstance->windowStateChanged.invoke(windowEvent);
                 break;
             }
             case WM_SIZE: {
@@ -61,7 +61,7 @@ namespace ionengine::platform
                 WindowEvent windowEvent{
                     .eventType = WindowEventType::Resize,
                     .size = {.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height)}};
-                platformInstance->context->onWindowEvent(windowEvent);
+                platformInstance->windowStateChanged.invoke(windowEvent);
                 break;
             }
             case WM_KEYDOWN: {
@@ -74,7 +74,7 @@ namespace ionengine::platform
                     InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                           .state = InputState::Pressed,
                                           .keyCode = result->second};
-                    platformInstance->context->onInputEvent(inputEvent);
+                    platformInstance->inputStateChanged.invoke(inputEvent);
                 }
                 break;
             }
@@ -88,7 +88,7 @@ namespace ionengine::platform
                     InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                           .state = InputState::Released,
                                           .keyCode = result->second};
-                    platformInstance->context->onInputEvent(inputEvent);
+                    platformInstance->inputStateChanged.invoke(inputEvent);
                 }
                 break;
             }
@@ -102,7 +102,7 @@ namespace ionengine::platform
                     InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                           .state = InputState::Pressed,
                                           .keyCode = result->second};
-                    platformInstance->context->onInputEvent(inputEvent);
+                    platformInstance->inputStateChanged.invoke(inputEvent);
                 }
                 break;
             }
@@ -116,7 +116,7 @@ namespace ionengine::platform
                     InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
                                           .state = InputState::Released,
                                           .keyCode = result->second};
-                    platformInstance->context->onInputEvent(inputEvent);
+                    platformInstance->inputStateChanged.invoke(inputEvent);
                 }
                 break;
             }
@@ -124,22 +124,22 @@ namespace ionengine::platform
         return ::DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
-    Win32App::Win32App(AppContext& context, std::string_view const title) : context(&context)
+    Win32App::Win32App(std::string_view const title)
     {
-        WNDCLASS wndClass{.lpfnWndProc = reinterpret_cast<WNDPROC>(wndProc),
-                          .hInstance = ::GetModuleHandle(nullptr),
-                          .hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)),
-                          .lpszClassName = L"Platform Win32"};
+        WNDCLASS wndClass = {.lpfnWndProc = reinterpret_cast<WNDPROC>(wndProc),
+                             .hInstance = ::GetModuleHandle(nullptr),
+                             .hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)),
+                             .lpszClassName = L"Platform Win32"};
 
         if (!::RegisterClass(&wndClass))
         {
-            throw core::runtime_error("An error occurred while registering the window");
+            throw std::runtime_error("an error occurred while registering the window");
         }
 
         uint32_t windowStyle =
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
 
-        RECT rect{.right = 800, .bottom = 600};
+        RECT rect = {.right = 800, .bottom = 600};
         ::AdjustWindowRect(&rect, windowStyle, false);
 
         window = UniqueHWND(::CreateWindow(wndClass.lpszClassName, internal::toWString(title).c_str(), windowStyle,
@@ -191,7 +191,7 @@ namespace ionengine::platform
             }
             else
             {
-                context->onIdleEvent();
+                windowUpdated();
             }
         }
     }

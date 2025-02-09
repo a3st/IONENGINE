@@ -1,7 +1,6 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "dx12.hpp"
-#include "core/error.hpp"
 #include "precompiled.h"
 
 namespace ionengine::rhi
@@ -10,33 +9,42 @@ namespace ionengine::rhi
     {
         switch (hr)
         {
-            case E_FAIL:
-                return "Attempted to create a device with the debug layer enabled and the layer is not "
-                       "installed";
-            case E_INVALIDARG:
-                return "An invalid parameter was passed to the returning function";
-            case E_OUTOFMEMORY:
+            case E_FAIL: {
+                return "attempted to create a device with the debug layer enabled and the layer is not installed";
+            }
+            case E_INVALIDARG: {
+                return "an invalid parameter was passed to the returning function";
+            }
+            case E_OUTOFMEMORY: {
                 return "Direct3D could not allocate sufficient memory to complete the call";
-            case E_NOTIMPL:
-                return "The method call isn't implemented with the passed parameter combination";
-            case S_FALSE:
-                return "Alternate success value, indicating a successful but nonstandard completion";
-            case S_OK:
-                return "No error occurred";
-            case D3D12_ERROR_ADAPTER_NOT_FOUND:
-                return "The specified cached PSO was created on a different adapter and cannot be "
-                       "reused on the current adapter";
-            case D3D12_ERROR_DRIVER_VERSION_MISMATCH:
-                return "The specified cached PSO was created on a different driver version and cannot "
-                       "be reused on the current adapter";
-            case DXGI_ERROR_INVALID_CALL:
-                return "The method call is invalid. For example, a method's parameter may not be a "
-                       "valid pointer";
-            case DXGI_ERROR_WAS_STILL_DRAWING:
-                return "The previous blit operation that is transferring information to or from this "
-                       "surface is incomplete";
-            default:
-                return "An unknown error has occurred";
+            }
+            case E_NOTIMPL: {
+                return "the method call isn't implemented with the passed parameter combination";
+            }
+            case S_FALSE: {
+                return "alternate success value, indicating a successful but nonstandard completion";
+            }
+            case S_OK: {
+                return "no error occurred";
+            }
+            case D3D12_ERROR_ADAPTER_NOT_FOUND: {
+                return "the specified cached PSO was created on a different adapter and cannot be reused on the "
+                       "current adapter";
+            }
+            case D3D12_ERROR_DRIVER_VERSION_MISMATCH: {
+                return "the specified cached PSO was created on a different driver version and cannot be reused on the "
+                       "current adapter";
+            }
+            case DXGI_ERROR_INVALID_CALL: {
+                return "the method call is invalid. For example, a method's parameter may not be a valid pointer";
+            }
+            case DXGI_ERROR_WAS_STILL_DRAWING: {
+                return "the previous blit operation that is transferring information to or from this surface is "
+                       "incomplete";
+            }
+            default: {
+                return "an unknown error has occurred";
+            }
         }
     }
 
@@ -44,7 +52,7 @@ namespace ionengine::rhi
     {
         if (FAILED(hr))
         {
-            throw core::runtime_error(HRESULT_to_string(hr));
+            throw std::runtime_error(HRESULT_to_string(hr));
         }
     }
 
@@ -421,8 +429,8 @@ namespace ionengine::rhi
         }
     }
 
-    auto DescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heapType,
-                                       DescriptorAllocation** allocation) -> HRESULT
+    auto DescriptorAllocator::allocate(D3D12_DESCRIPTOR_HEAP_TYPE const heapType, DescriptorAllocation** allocation)
+        -> HRESULT
     {
         std::lock_guard lock(mutex);
 
@@ -633,15 +641,15 @@ namespace ionengine::rhi
           height(createInfo.height), depth(createInfo.depth), mipLevels(createInfo.mipLevels),
           format(createInfo.format), dimension(createInfo.dimension), flags(createInfo.flags)
     {
-        D3D12_RESOURCE_DESC resourceDesc{.Dimension =
-                                             TextureDimension_to_D3D12_RESOURCE_DIMENSION(createInfo.dimension),
-                                         .Width = width,
-                                         .Height = height,
-                                         .DepthOrArraySize = static_cast<uint16_t>(depth),
-                                         .MipLevels = static_cast<uint16_t>(mipLevels),
-                                         .Format = TextureFormat_to_DXGI_FORMAT(format),
-                                         .SampleDesc = {.Count = 1},
-                                         .Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN};
+        D3D12_RESOURCE_DESC resourceDesc = {.Dimension =
+                                                TextureDimension_to_D3D12_RESOURCE_DIMENSION(createInfo.dimension),
+                                            .Width = width,
+                                            .Height = height,
+                                            .DepthOrArraySize = static_cast<uint16_t>(depth),
+                                            .MipLevels = static_cast<uint16_t>(mipLevels),
+                                            .Format = TextureFormat_to_DXGI_FORMAT(format),
+                                            .SampleDesc = {.Count = 1},
+                                            .Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN};
 
         D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
         D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
@@ -754,7 +762,7 @@ namespace ionengine::rhi
 
         if (flags & TextureUsage::RenderTarget)
         {
-            assert(descriptorAllocator && "To create a texture with views, you need to pass the allocator descriptor");
+            assert(descriptorAllocator && "to create a texture with views, you need to pass an allocator descriptor");
 
             winrt::com_ptr<DescriptorAllocation> descriptorAllocation;
             throwIfFailed(descriptorAllocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, descriptorAllocation.put()));
@@ -811,6 +819,28 @@ namespace ionengine::rhi
         return descriptorAllocations.at(usage).get();
     }
 
+    DX12Sampler::DX12Sampler(ID3D12Device1* device, DescriptorAllocator* descriptorAllocator,
+                             SamplerCreateInfo const& createInfo)
+    {
+        D3D12_SAMPLER_DESC samplerDesc = {.Filter = Filter_to_D3D12_FILTER(createInfo.filter),
+                                          .AddressU = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressU),
+                                          .AddressV = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressV),
+                                          .AddressW = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressV),
+                                          .MaxAnisotropy = createInfo.anisotropic,
+                                          .ComparisonFunc = CompareOp_to_D3D12_COMPARISON_FUNC(createInfo.compareOp)};
+
+        assert(descriptorAllocator && "to create a sampler, you need to pass an allocator descriptor");
+
+        throwIfFailed(descriptorAllocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, descriptorAllocation.put()));
+
+        device->CreateSampler(&samplerDesc, descriptorAllocation->getCPUHandle());
+    }
+
+    auto DX12Sampler::getDescriptorOffset() const -> uint32_t
+    {
+        return descriptorAllocation->getOffset();
+    }
+
     DX12VertexInput::DX12VertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations)
     {
         uint32_t offset = 0;
@@ -864,7 +894,8 @@ namespace ionengine::rhi
             XXH64_state_t* hasher = ::XXH64_createState();
             {
                 DX12ShaderStage shaderStage;
-                shaderStage.buffer = createInfo.graphics.vertexStage.shaderCode | std::ranges::to<std::vector<uint8_t>>();
+                shaderStage.buffer =
+                    createInfo.graphics.vertexStage.shaderCode | std::ranges::to<std::vector<uint8_t>>();
                 shaderStage.shaderByteCode = {.pShaderBytecode = shaderStage.buffer.data(),
                                               .BytecodeLength = shaderStage.buffer.size()};
                 stages.emplace(DX12ShaderStageType::Vertex, std::move(shaderStage));
@@ -874,7 +905,8 @@ namespace ionengine::rhi
 
             {
                 DX12ShaderStage shaderStage;
-                shaderStage.buffer = createInfo.graphics.pixelStage.shaderCode | std::ranges::to<std::vector<uint8_t>>();
+                shaderStage.buffer =
+                    createInfo.graphics.pixelStage.shaderCode | std::ranges::to<std::vector<uint8_t>>();
                 shaderStage.shaderByteCode = {.pShaderBytecode = shaderStage.buffer.data(),
                                               .BytecodeLength = shaderStage.buffer.size()};
                 stages.emplace(DX12ShaderStageType::Pixel, std::move(shaderStage));
@@ -1146,9 +1178,11 @@ namespace ionengine::rhi
         currentShader = nullptr;
     }
 
-    auto DX12GraphicsContext::setGraphicsPipelineOptions(
-        core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
-        std::optional<DepthStencilStageInfo> const depthStencil) -> void
+    auto DX12GraphicsContext::setGraphicsPipelineOptions(core::ref_ptr<Shader> shader,
+                                                         RasterizerStageInfo const& rasterizer,
+                                                         BlendColorInfo const& blendColor,
+                                                         std::optional<DepthStencilStageInfo> const depthStencil)
+        -> void
     {
         auto pipeline = pipelineCache->get(dynamic_cast<DX12Shader*>(shader.get()), rasterizer, blendColor,
                                            depthStencil, renderTargetFormats, depthStencilFormat);
@@ -1247,8 +1281,8 @@ namespace ionengine::rhi
         commandList->EndRenderPass();
     }
 
-    auto DX12GraphicsContext::bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
-                                               size_t const size) -> void
+    auto DX12GraphicsContext::bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
+        -> void
     {
         D3D12_VERTEX_BUFFER_VIEW vertexBufferView{
             .BufferLocation = dynamic_cast<DX12Buffer*>(buffer.get())->getResource()->GetGPUVirtualAddress() + offset,
@@ -1290,8 +1324,8 @@ namespace ionengine::rhi
         commandList->DrawInstanced(vertexCount, instanceCount, 0, 0);
     }
 
-    auto DX12GraphicsContext::setViewport(int32_t const x, int32_t const y, uint32_t const width,
-                                          uint32_t const height) -> void
+    auto DX12GraphicsContext::setViewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height)
+        -> void
     {
         D3D12_VIEWPORT viewport{.TopLeftX = static_cast<float>(x),
                                 .TopLeftY = static_cast<float>(y),
@@ -1312,8 +1346,8 @@ namespace ionengine::rhi
         commandList->RSSetScissorRects(1, &rect);
     }
 
-    auto DX12GraphicsContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
-                                      ResourceState const after) -> void
+    auto DX12GraphicsContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+        -> void
     {
         D3D12_RESOURCE_BARRIER resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
                                                .Transition = {
@@ -1423,8 +1457,8 @@ namespace ionengine::rhi
         throwIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
     }
 
-    auto DX12CopyContext::writeBuffer(core::ref_ptr<Buffer> dest,
-                                      std::span<uint8_t const> const dataBytes) -> Future<Buffer>
+    auto DX12CopyContext::writeBuffer(core::ref_ptr<Buffer> dest, std::span<uint8_t const> const dataBytes)
+        -> Future<Buffer>
     {
         // Check for overflow buffer
         if (writeStagingBuffer.buffer->getSize() - writeStagingBuffer.offset < dataBytes.size())
@@ -1545,8 +1579,8 @@ namespace ionengine::rhi
         return readBytes;
     }
 
-    auto DX12CopyContext::readTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
-                                      uint8_t* dataBytes) -> size_t
+    auto DX12CopyContext::readTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel, uint8_t* dataBytes)
+        -> size_t
     {
         size_t rowBytes = 0;
         uint32_t rowCount = 0;
@@ -1614,8 +1648,8 @@ namespace ionengine::rhi
         return Future<Query>(query, std::move(futureImpl));
     }
 
-    auto DX12CopyContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
-                                  ResourceState const after) -> void
+    auto DX12CopyContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+        -> void
     {
         D3D12_RESOURCE_BARRIER resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
                                                .Transition = {
@@ -1627,8 +1661,8 @@ namespace ionengine::rhi
         commandList->ResourceBarrier(1, &resourceBarrier);
     }
 
-    auto DX12CopyContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before,
-                                  ResourceState const after) -> void
+    auto DX12CopyContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+        -> void
     {
         D3D12_RESOURCE_BARRIER resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
                                                .Transition = {
@@ -1640,7 +1674,78 @@ namespace ionengine::rhi
         commandList->ResourceBarrier(1, &resourceBarrier);
     }
 
-    DX12Device::DX12Device(RHICreateInfo const& createInfo)
+    DX12Swapchain::DX12Swapchain(IDXGIFactory4* factory, ID3D12Device4* device,
+                                 DescriptorAllocator* descriptorAllocator, DeviceQueueData& deviceQueue,
+                                 HANDLE fenceEvent, SwapchainCreateInfo const& createInfo)
+        : device(device), descriptorAllocator(descriptorAllocator), deviceQueue(&deviceQueue), fenceEvent(fenceEvent)
+    {
+        RECT rect{};
+        ::GetClientRect(reinterpret_cast<HWND>(createInfo.window), &rect);
+
+        {
+            DXGI_SWAP_CHAIN_DESC1 swapchainDesc = {.Width = static_cast<uint32_t>(rect.right),
+                                                   .Height = static_cast<uint32_t>(rect.bottom),
+                                                   .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+                                                   .SampleDesc = {.Count = 1},
+                                                   .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
+                                                   .BufferCount = 2,
+                                                   .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+                                                   .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED};
+
+            winrt::com_ptr<IDXGISwapChain1> swapchain;
+            throwIfFailed(factory->CreateSwapChainForHwnd(this->deviceQueue->queue.get(),
+                                                          reinterpret_cast<HWND>(createInfo.window), &swapchainDesc,
+                                                          nullptr, nullptr, swapchain.put()));
+            swapchain.as(this->swapchain);
+        }
+
+        this->createSwapchainBuffers(rect.right, rect.bottom);
+    }
+
+    auto DX12Swapchain::requestBackBuffer() -> core::weak_ptr<Texture>
+    {
+        if (deviceQueue->fence->GetCompletedValue() < deviceQueue->fenceValue)
+        {
+            throwIfFailed(deviceQueue->fence->SetEventOnCompletion(deviceQueue->fenceValue, fenceEvent));
+            ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+        }
+        return backBuffers[swapchain->GetCurrentBackBufferIndex()];
+    }
+
+    auto DX12Swapchain::presentBackBuffer() -> void
+    {
+        throwIfFailed(swapchain->Present(0, 0));
+
+        deviceQueue->fenceValue++;
+        throwIfFailed(deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue));
+    }
+
+    auto DX12Swapchain::resizeBackBuffers(uint32_t const width, uint32_t const height) -> void
+    {
+        throwIfFailed(deviceQueue->fence->SetEventOnCompletion(deviceQueue->fenceValue, fenceEvent));
+        ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+
+        backBuffers.clear();
+
+        throwIfFailed(swapchain->ResizeBuffers(2, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0));
+        this->createSwapchainBuffers(width, height);
+    }
+
+    auto DX12Swapchain::createSwapchainBuffers(uint32_t const width, uint32_t const height) -> void
+    {
+        for (uint32_t const i : std::views::iota(0u, 2u))
+        {
+            core::ref_ptr<Texture> texture;
+            {
+                winrt::com_ptr<ID3D12Resource> resource;
+                throwIfFailed(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
+                texture = core::make_ref<DX12Texture>(device, descriptorAllocator, resource);
+            }
+            backBuffers.emplace_back(texture);
+        }
+    }
+
+    DX12RHI::DX12RHI(RHICreateInfo const& createInfo)
     {
 #ifndef NDEBUG
         throwIfFailed(::D3D12GetDebugInterface(__uuidof(ID3D12Debug1), debug.put_void()));
@@ -1662,7 +1767,7 @@ namespace ionengine::rhi
 
             for (uint32_t i = 0; factory->EnumAdapters1(i, adapter.put()) != DXGI_ERROR_NOT_FOUND; ++i)
             {
-                auto dxgi_adapter_desc = DXGI_ADAPTER_DESC1{};
+                DXGI_ADAPTER_DESC1 dxgi_adapter_desc = {};
                 throwIfFailed(adapter->GetDesc1(&dxgi_adapter_desc));
 
                 if (dxgi_adapter_desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
@@ -1686,163 +1791,74 @@ namespace ionengine::rhi
             throwIfFailed(::HRESULT_FROM_WIN32(GetLastError()));
         }
 
-        // Create Direct Queue (Default Queue)
-        {
-            D3D12_COMMAND_QUEUE_DESC commandQueueDesc{.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
-                                                      .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL};
-            throwIfFailed(device->CreateCommandQueue(&commandQueueDesc, __uuidof(ID3D12CommandQueue),
-                                                     graphicsQueue.queue.put_void()));
-        }
-
-        throwIfFailed(
-            device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), graphicsQueue.fence.put_void()));
-        graphicsQueue.fenceValue = 0;
-
-        // Create Copy Queue
-        {
-            D3D12_COMMAND_QUEUE_DESC commandQueueDesc{.Type = D3D12_COMMAND_LIST_TYPE_COPY,
-                                                      .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL};
-            throwIfFailed(device->CreateCommandQueue(&commandQueueDesc, __uuidof(ID3D12CommandQueue),
-                                                     copyQueue.queue.put_void()));
-        }
-
-        throwIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), copyQueue.fence.put_void()));
-        copyQueue.fenceValue = 0;
-
-        // Create Compute Queue
-        {
-            D3D12_COMMAND_QUEUE_DESC commandQueueDesc{.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE,
-                                                      .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL};
-            throwIfFailed(device->CreateCommandQueue(&commandQueueDesc, __uuidof(ID3D12CommandQueue),
-                                                     computeQueue.queue.put_void()));
-        }
-
-        throwIfFailed(
-            device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), computeQueue.fence.put_void()));
-        computeQueue.fenceValue = 0;
+        graphicsQueue = this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_DIRECT);
+        copyQueue = this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_COPY);
+        computeQueue = this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_COMPUTE);
 
         descriptorAllocator = core::make_ref<DescriptorAllocator>(device.get());
 
-        D3D12MA::ALLOCATOR_DESC maAllocatorDesc = {.pDevice = device.get(), .pAdapter = adapter.get()};
-        throwIfFailed(D3D12MA::CreateAllocator(&maAllocatorDesc, memoryAllocator.put()));
+        D3D12MA::ALLOCATOR_DESC memoryAllocatorDesc = {.pDevice = device.get(), .pAdapter = adapter.get()};
+        throwIfFailed(D3D12MA::CreateAllocator(&memoryAllocatorDesc, memoryAllocator.put()));
 
         pipelineCache = core::make_ref<PipelineCache>(device.get(), createInfo);
-
-        if (createInfo.window)
-        {
-            RECT rect{};
-            ::GetClientRect(reinterpret_cast<HWND>(createInfo.window), &rect);
-
-            {
-                DXGI_SWAP_CHAIN_DESC1 swapchainDesc{.Width = static_cast<uint32_t>(rect.right),
-                                                    .Height = static_cast<uint32_t>(rect.bottom),
-                                                    .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-                                                    .SampleDesc = {.Count = 1},
-                                                    .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-                                                    .BufferCount = 2,
-                                                    .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
-                                                    .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED};
-
-                winrt::com_ptr<IDXGISwapChain1> swapchain;
-                throwIfFailed(factory->CreateSwapChainForHwnd(graphicsQueue.queue.get(),
-                                                              reinterpret_cast<HWND>(createInfo.window), &swapchainDesc,
-                                                              nullptr, nullptr, swapchain.put()));
-                swapchain.as(this->swapchain);
-            }
-
-            this->createSwapchainBuffers(rect.right, rect.bottom);
-        }
     }
 
-    auto DX12Device::createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader>
+    auto DX12RHI::createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader>
     {
         return core::make_ref<DX12Shader>(device.get(), createInfo);
     }
 
-    auto DX12Device::createTexture(TextureCreateInfo const& createInfo) -> core::ref_ptr<Texture>
+    auto DX12RHI::createTexture(TextureCreateInfo const& createInfo) -> core::ref_ptr<Texture>
     {
         return core::make_ref<DX12Texture>(device.get(), memoryAllocator.get(), descriptorAllocator.get(), createInfo);
     }
 
-    auto DX12Device::createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer>
+    auto DX12RHI::createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer>
     {
         return core::make_ref<DX12Buffer>(device.get(), memoryAllocator.get(), descriptorAllocator.get(), createInfo);
     }
 
-    auto DX12Device::createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler>
+    auto DX12RHI::createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler>
     {
-        return nullptr;
+        return core::make_ref<DX12Sampler>(device.get(), descriptorAllocator.get(), createInfo);
     }
 
-    auto DX12Device::createGraphicsContext() -> core::ref_ptr<GraphicsContext>
+    auto DX12RHI::tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain>
+    {
+        return !swapchain ? core::make_ref<DX12Swapchain>(factory.get(), device.get(), descriptorAllocator.get(),
+                                                          graphicsQueue, fenceEvent.get(), createInfo)
+                          : swapchain;
+    }
+
+    auto DX12RHI::createGraphicsContext() -> core::ref_ptr<GraphicsContext>
     {
         return core::make_ref<DX12GraphicsContext>(device.get(), pipelineCache.get(), descriptorAllocator.get(),
-                                                   graphicsQueue.queue.get(), graphicsQueue.fence.get(), fenceEvent.get(),
-                                                   graphicsQueue.fenceValue);
+                                                   graphicsQueue.queue.get(), graphicsQueue.fence.get(),
+                                                   fenceEvent.get(), graphicsQueue.fenceValue);
     }
 
-    auto DX12Device::createCopyContext() -> core::ref_ptr<CopyContext>
+    auto DX12RHI::createCopyContext() -> core::ref_ptr<CopyContext>
     {
         return core::make_ref<DX12CopyContext>(device.get(), memoryAllocator.get(), copyQueue.queue.get(),
                                                copyQueue.fence.get(), fenceEvent.get(), copyQueue.fenceValue);
     }
 
-    auto DX12Device::requestBackBuffer() -> core::weak_ptr<Texture>
-    {
-        if (!swapchain)
-        {
-            throw core::runtime_error("Swapchain is not found");
-        }
-
-        if (graphicsQueue.fence->GetCompletedValue() < graphicsQueue.fenceValue)
-        {
-            throwIfFailed(graphicsQueue.fence->SetEventOnCompletion(graphicsQueue.fenceValue, fenceEvent.get()));
-            ::WaitForSingleObjectEx(fenceEvent.get(), INFINITE, FALSE);
-        }
-        return backBuffers[swapchain->GetCurrentBackBufferIndex()];
-    }
-
-    auto DX12Device::presentBackBuffer() -> void
-    {
-        if (!swapchain)
-        {
-            throw core::runtime_error("Swapchain is not found");
-        }
-
-        throwIfFailed(swapchain->Present(0, 0));
-
-        graphicsQueue.fenceValue++;
-        throwIfFailed(graphicsQueue.queue->Signal(graphicsQueue.fence.get(), graphicsQueue.fenceValue));
-    }
-
-    auto DX12Device::resizeBackBuffers(uint32_t const width, uint32_t const height) -> void
-    {
-        throwIfFailed(graphicsQueue.fence->SetEventOnCompletion(graphicsQueue.fenceValue, fenceEvent.get()));
-        ::WaitForSingleObjectEx(fenceEvent.get(), INFINITE, FALSE);
-
-        backBuffers.clear();
-
-        throwIfFailed(swapchain->ResizeBuffers(2, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0));
-        this->createSwapchainBuffers(width, height);
-    }
-
-    auto DX12Device::getBackendName() const -> std::string_view
+    auto DX12RHI::getName() const -> std::string_view
     {
         return "D3D12";
     }
 
-    auto DX12Device::createSwapchainBuffers(uint32_t const width, uint32_t const height) -> void
+    auto DX12RHI::createDeviceQueue(D3D12_COMMAND_LIST_TYPE const commandListType) -> DeviceQueueData
     {
-        for (uint32_t const i : std::views::iota(0u, 2u))
-        {
-            core::ref_ptr<Texture> texture;
-            {
-                winrt::com_ptr<ID3D12Resource> resource;
-                throwIfFailed(swapchain->GetBuffer(i, __uuidof(ID3D12Resource), resource.put_void()));
+        DeviceQueueData deviceQueue{};
 
-                texture = core::make_ref<DX12Texture>(device.get(), descriptorAllocator.get(), resource);
-            }
-            backBuffers.emplace_back(texture);
-        }
+        D3D12_COMMAND_QUEUE_DESC const commandQueueDesc = {.Type = commandListType,
+                                                           .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL};
+        throwIfFailed(
+            device->CreateCommandQueue(&commandQueueDesc, __uuidof(ID3D12CommandQueue), deviceQueue.queue.put_void()));
+        throwIfFailed(
+            device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), deviceQueue.fence.put_void()));
+
+        return deviceQueue;
     }
 } // namespace ionengine::rhi

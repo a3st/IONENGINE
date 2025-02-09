@@ -42,8 +42,8 @@ namespace ionengine::rhi
         DescriptorAllocation() = default;
 
         auto initialize(DescriptorAllocator* allocator, ID3D12DescriptorHeap* heap,
-                        D3D12_DESCRIPTOR_HEAP_TYPE const heapType, uint32_t const incrementSize,
-                        uint32_t const offset) -> void;
+                        D3D12_DESCRIPTOR_HEAP_TYPE const heapType, uint32_t const incrementSize, uint32_t const offset)
+            -> void;
 
         std::atomic<uint32_t> refCount;
     };
@@ -159,6 +159,18 @@ namespace ionengine::rhi
         TextureUsageFlags flags;
     };
 
+    class DX12Sampler final : public Sampler
+    {
+      public:
+        DX12Sampler(ID3D12Device1* device, DescriptorAllocator* descriptorAllocator,
+                    SamplerCreateInfo const& createInfo);
+
+        auto getDescriptorOffset() const -> uint32_t override;
+
+      private:
+        winrt::com_ptr<DescriptorAllocation> descriptorAllocation;
+    };
+
     enum class DX12ShaderStageType
     {
         Vertex,
@@ -192,9 +204,9 @@ namespace ionengine::rhi
       public:
         DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo);
 
-        auto getHash() const -> uint64_t override;
-
         auto getPipelineType() const -> PipelineType override;
+
+        auto getHash() const -> uint64_t;
 
         auto getStages() const -> std::unordered_map<DX12ShaderStageType, DX12ShaderStage> const&;
 
@@ -290,6 +302,13 @@ namespace ionengine::rhi
     {
     };
 
+    struct DeviceQueueData
+    {
+        winrt::com_ptr<ID3D12CommandQueue> queue;
+        winrt::com_ptr<ID3D12Fence> fence;
+        uint64_t fenceValue;
+    };
+
     class DX12GraphicsContext final : public GraphicsContext
     {
       public:
@@ -319,17 +338,17 @@ namespace ionengine::rhi
 
         auto draw(uint32_t const vertexCount, uint32_t const instanceCount) -> void override;
 
-        auto setViewport(int32_t const x, int32_t const y, uint32_t const width,
-                         uint32_t const height) -> void override;
+        auto setViewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height)
+            -> void override;
 
-        auto setScissor(int32_t const left, int32_t const top, int32_t const right,
-                        int32_t const bottom) -> void override;
+        auto setScissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom)
+            -> void override;
 
-        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
-                     ResourceState const after) -> void override;
+        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+            -> void override;
 
-        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before,
-                     ResourceState const after) -> void override;
+        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+            -> void override;
 
         auto execute() -> Future<Query> override;
 
@@ -359,8 +378,8 @@ namespace ionengine::rhi
 
         auto reset() -> void override;
 
-        auto writeBuffer(core::ref_ptr<Buffer> dest,
-                         std::span<uint8_t const> const dataBytes) -> Future<Buffer> override;
+        auto writeBuffer(core::ref_ptr<Buffer> dest, std::span<uint8_t const> const dataBytes)
+            -> Future<Buffer> override;
 
         auto writeTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
                           std::span<uint8_t const> const dataBytes) -> Future<Texture> override;
@@ -369,11 +388,11 @@ namespace ionengine::rhi
 
         auto readTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel, uint8_t* dataBytes) -> size_t override;
 
-        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
-                     ResourceState const after) -> void override;
+        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+            -> void override;
 
-        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before,
-                     ResourceState const after) -> void override;
+        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+            -> void override;
 
         auto execute() -> Future<Query> override;
 
@@ -428,10 +447,33 @@ namespace ionengine::rhi
 
     using UniqueHandle = std::unique_ptr<std::remove_pointer<HANDLE>::type, HANDLE_deleter>;
 
-    class DX12Device final : public Device
+    class DX12Swapchain : public Swapchain
     {
       public:
-        DX12Device(RHICreateInfo const& createInfo);
+        DX12Swapchain(IDXGIFactory4* factory, ID3D12Device4* device, DescriptorAllocator* descriptorAllocator,
+                      DeviceQueueData& deviceQueue, HANDLE fenceEvent, SwapchainCreateInfo const& createInfo);
+
+        auto requestBackBuffer() -> core::weak_ptr<Texture> override;
+
+        auto presentBackBuffer() -> void override;
+
+        auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void override;
+
+      private:
+        ID3D12Device4* device;
+        DescriptorAllocator* descriptorAllocator;
+        DeviceQueueData* deviceQueue;
+        HANDLE fenceEvent;
+        winrt::com_ptr<IDXGISwapChain3> swapchain;
+        std::vector<core::ref_ptr<Texture>> backBuffers;
+
+        auto createSwapchainBuffers(uint32_t const width, uint32_t const height) -> void;
+    };
+
+    class DX12RHI final : public RHI
+    {
+      public:
+        DX12RHI(RHICreateInfo const& createInfo);
 
         auto createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader> override;
 
@@ -441,17 +483,13 @@ namespace ionengine::rhi
 
         auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> override;
 
+        auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain> override;
+
         auto createGraphicsContext() -> core::ref_ptr<GraphicsContext> override;
 
         auto createCopyContext() -> core::ref_ptr<CopyContext> override;
 
-        auto requestBackBuffer() -> core::weak_ptr<Texture> override;
-
-        auto presentBackBuffer() -> void override;
-
-        auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void override;
-
-        auto getBackendName() const -> std::string_view override;
+        auto getName() const -> std::string_view override;
 
       private:
 #ifndef NDEBUG
@@ -460,26 +498,21 @@ namespace ionengine::rhi
         winrt::com_ptr<IDXGIFactory4> factory;
         winrt::com_ptr<IDXGIAdapter1> adapter;
         winrt::com_ptr<ID3D12Device4> device;
-        winrt::com_ptr<IDXGISwapChain3> swapchain;
         winrt::com_ptr<D3D12MA::Allocator> memoryAllocator;
 
-        struct QueueInfo
-        {
-            winrt::com_ptr<ID3D12CommandQueue> queue;
-            winrt::com_ptr<ID3D12Fence> fence;
-            uint64_t fenceValue;
-        };
-        QueueInfo graphicsQueue;
-        QueueInfo copyQueue;
-        QueueInfo computeQueue;
-
         UniqueHandle fenceEvent;
+
+        DeviceQueueData graphicsQueue;
+        DeviceQueueData copyQueue;
+        DeviceQueueData computeQueue;
 
         core::ref_ptr<DescriptorAllocator> descriptorAllocator;
         core::ref_ptr<PipelineCache> pipelineCache;
 
-        std::vector<core::ref_ptr<Texture>> backBuffers;
+        core::ref_ptr<DX12Swapchain> swapchain;
 
-        auto createSwapchainBuffers(uint32_t const width, uint32_t const height) -> void;
+        // std::thread backgroundWorker;
+
+        auto createDeviceQueue(D3D12_COMMAND_LIST_TYPE const commandListType) -> DeviceQueueData;
     };
 } // namespace ionengine::rhi

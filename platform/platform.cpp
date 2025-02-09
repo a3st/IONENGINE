@@ -11,12 +11,12 @@
 
 namespace ionengine::platform
 {
-    auto App::create(AppContext& context, std::string_view const title) -> core::ref_ptr<App>
+    auto App::create(std::string_view const title) -> core::ref_ptr<App>
     {
 #ifdef IONENGINE_PLATFORM_WIN32
-        return core::make_ref<Win32App>(context, title);
+        return core::make_ref<Win32App>(title);
 #elif IONENGINE_PLATFORM_X11
-        return core::make_ref<X11App>(context, title);
+        return core::make_ref<X11App>(title);
 #else
 #error platform backend is not defined
 #endif

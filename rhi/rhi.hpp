@@ -236,6 +236,10 @@ namespace ionengine::rhi
 
     struct RHICreateInfo
     {
+    };
+
+    struct SwapchainCreateInfo
+    {
         void* window;
         void* instance;
     };
@@ -405,18 +409,6 @@ namespace ionengine::rhi
         }
     };
 
-    struct BufferBindData
-    {
-        core::ref_ptr<Buffer> resource;
-        BufferUsage usage;
-    };
-
-    struct TextureBindData
-    {
-        core::ref_ptr<Texture> resource;
-        TextureUsage usage;
-    };
-
     class FutureImpl
     {
       public:
@@ -507,11 +499,11 @@ namespace ionengine::rhi
 
         virtual auto execute() -> Future<Query> = 0;
 
-        virtual auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
-                             ResourceState const after) -> void = 0;
+        virtual auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+            -> void = 0;
 
-        virtual auto barrier(core::ref_ptr<Texture> dest, ResourceState const before,
-                             ResourceState const after) -> void = 0;
+        virtual auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+            -> void = 0;
 
         virtual auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
                                                 BlendColorInfo const& blendColor,
@@ -524,8 +516,8 @@ namespace ionengine::rhi
 
         virtual auto endRenderPass() -> void = 0;
 
-        virtual auto bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
-                                      size_t const size) -> void = 0;
+        virtual auto bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
+            -> void = 0;
 
         virtual auto bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
                                      IndexFormat const format) -> void = 0;
@@ -534,11 +526,11 @@ namespace ionengine::rhi
 
         virtual auto draw(uint32_t const vertexCount, uint32_t const instanceCount) -> void = 0;
 
-        virtual auto setViewport(int32_t const x, int32_t const y, uint32_t const width,
-                                 uint32_t const height) -> void = 0;
+        virtual auto setViewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height)
+            -> void = 0;
 
-        virtual auto setScissor(int32_t const left, int32_t const top, int32_t const right,
-                                int32_t const bottom) -> void = 0;
+        virtual auto setScissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom)
+            -> void = 0;
     };
 
     class CopyContext : public core::ref_counted_object
@@ -550,30 +542,42 @@ namespace ionengine::rhi
 
         virtual auto execute() -> Future<Query> = 0;
 
-        virtual auto writeBuffer(core::ref_ptr<Buffer> dest,
-                                 std::span<uint8_t const> const dataBytes) -> Future<Buffer> = 0;
+        virtual auto writeBuffer(core::ref_ptr<Buffer> dest, std::span<uint8_t const> const dataBytes)
+            -> Future<Buffer> = 0;
 
         virtual auto writeTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
                                   std::span<uint8_t const> const dataBytes) -> Future<Texture> = 0;
 
         virtual auto readBuffer(core::ref_ptr<Buffer> dest, uint8_t* dataBytes) -> size_t = 0;
 
-        virtual auto readTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
-                                 uint8_t* dataBytes) -> size_t = 0;
+        virtual auto readTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel, uint8_t* dataBytes)
+            -> size_t = 0;
 
-        virtual auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
-                             ResourceState const after) -> void = 0;
+        virtual auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+            -> void = 0;
 
-        virtual auto barrier(core::ref_ptr<Texture> dest, ResourceState const before,
-                             ResourceState const after) -> void = 0;
+        virtual auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+            -> void = 0;
     };
 
-    class Device : public core::ref_counted_object
+    class Swapchain : public core::ref_counted_object
     {
       public:
-        virtual ~Device() = default;
+        virtual ~Swapchain() = default;
 
-        static auto create(RHICreateInfo const& createInfo) -> core::ref_ptr<Device>;
+        virtual auto requestBackBuffer() -> core::weak_ptr<Texture> = 0;
+
+        virtual auto presentBackBuffer() -> void = 0;
+
+        virtual auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void = 0;
+    };
+
+    class RHI : public core::ref_counted_object
+    {
+      public:
+        virtual ~RHI() = default;
+
+        static auto create(RHICreateInfo const& createInfo) -> core::ref_ptr<RHI>;
 
         virtual auto createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader> = 0;
 
@@ -583,16 +587,12 @@ namespace ionengine::rhi
 
         virtual auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> = 0;
 
+        virtual auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain> = 0;
+
         virtual auto createGraphicsContext() -> core::ref_ptr<GraphicsContext> = 0;
 
         virtual auto createCopyContext() -> core::ref_ptr<CopyContext> = 0;
 
-        virtual auto requestBackBuffer() -> core::weak_ptr<Texture> = 0;
-
-        virtual auto presentBackBuffer() -> void = 0;
-
-        virtual auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void = 0;
-
-        virtual auto getBackendName() const -> std::string_view = 0;
+        virtual auto getName() const -> std::string_view = 0;
     };
 } // namespace ionengine::rhi

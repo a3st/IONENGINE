@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "core/event.hpp"
 #include "core/ref_ptr.hpp"
 #include "input/keycodes.hpp"
 
@@ -57,29 +58,23 @@ namespace ionengine::platform
         };
     };
 
-    class AppContext
-    {
-      public:
-        virtual ~AppContext() = default;
-
-        virtual auto onIdleEvent() -> void = 0;
-
-        virtual auto onInputEvent(InputEvent const& event) -> void = 0;
-
-        virtual auto onWindowEvent(WindowEvent const& event) -> void = 0;
-    };
-
     class App : public core::ref_counted_object
     {
       public:
         virtual ~App() = default;
 
-        static auto create(AppContext& context, std::string_view const title) -> core::ref_ptr<App>;
+        static auto create(std::string_view const title) -> core::ref_ptr<App>;
 
         virtual auto getWindowHandle() -> void* = 0;
 
         virtual auto getInstanceHandle() -> void* = 0;
 
         virtual auto run() -> void = 0;
+
+        core::event<void(InputEvent const&)> inputStateChanged;
+
+        core::event<void(WindowEvent const&)> windowStateChanged;
+
+        core::event<void()> windowUpdated;
     };
 } // namespace ionengine::platform

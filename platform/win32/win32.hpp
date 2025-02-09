@@ -25,7 +25,7 @@ namespace ionengine::platform
     class Win32App : public App
     {
       public:
-        Win32App(AppContext& context, std::string_view const title);
+        Win32App(std::string_view const title);
 
         auto getWindowHandle() -> void* override;
 
@@ -34,7 +34,6 @@ namespace ionengine::platform
         auto run() -> void override;
 
       private:
-        AppContext* context;
         UniqueHWND window;
 
         static auto wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT;

@@ -9,72 +9,27 @@ using namespace ionengine;
 
 TEST(RHI, DeviceOffRender_Test)
 {
-    rhi::RHICreateInfo rhiCreateInfo{.window = nullptr};
-    auto device = rhi::Device::create(rhiCreateInfo);
+    rhi::RHICreateInfo rhiCreateInfo{};
+    auto rhi = rhi::RHI::create(rhiCreateInfo);
 }
 
-class TestAppContext : public platform::AppContext
+TEST(RHI, DeviceSwapchain_Test)
 {
-  public:
-    TestAppContext() = default;
+    auto application = platform::App::create("TestProject");
 
-    auto initialize(platform::App& app)
-    {
-        rhi::RHICreateInfo rhiCreateInfo{.window = app.getWindowHandle(),
-                                         .instance = app.getInstanceHandle()};
-        this->device = rhi::Device::create(rhiCreateInfo);
+    uint32_t width;
+    uint32_t height;
 
-        this->graphicsContext = device->createGraphicsContext();
-    }
+    rhi::RHICreateInfo rhiCreateInfo{};
+    auto rhi = rhi::RHI::create(rhiCreateInfo);
 
-    auto onIdleEvent() -> void override
-    {
-        graphicsContext->reset();
+    auto graphicsContext = rhi->createGraphicsContext();
 
-        auto backBuffer = device->requestBackBuffer();
+    rhi::SwapchainCreateInfo const swapchainCreateInfo = {.window = application->getWindowHandle(),
+                                                          .instance = application->getInstanceHandle()};
+    auto swapchain = rhi->tryGetSwapchain(swapchainCreateInfo);
 
-        std::vector<rhi::RenderPassColorInfo> colors{rhi::RenderPassColorInfo{.texture = backBuffer,
-                                                                              .loadOp = rhi::RenderPassLoadOp::Clear,
-                                                                              .storeOp = rhi::RenderPassStoreOp::Store,
-                                                                              .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}}};
-
-        graphicsContext->setViewport(0, 0, width, height);
-        graphicsContext->setScissor(0, 0, width, height);
-
-        graphicsContext->barrier(backBuffer, rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
-        graphicsContext->beginRenderPass(colors, std::nullopt);
-        graphicsContext->endRenderPass();
-        graphicsContext->barrier(backBuffer, rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
-
-        auto result = graphicsContext->execute();
-
-        device->presentBackBuffer();
-
-        result.wait();
-    }
-
-    auto onWindowEvent(platform::WindowEvent const& event) -> void override
-    {
-        switch (event.eventType)
-        {
-            case platform::WindowEventType::Resize: {
-                width = event.size.width;
-                height = event.size.height;
-
-                if (device)
-                {
-                    device->resizeBackBuffers(width, height);
-                }
-                break;
-            }
-            default: {
-                break;
-            }
-        }
-    }
-
-    auto onInputEvent(platform::InputEvent const& event) -> void override
-    {
+    application->inputStateChanged += [&](platform::InputEvent const& event) -> void {
         if (event.deviceType == platform::InputDeviceType::Keyboard)
         {
             if (event.state == platform::InputState::Pressed)
@@ -86,21 +41,53 @@ class TestAppContext : public platform::AppContext
                 std::cout << "Key released: " << static_cast<uint32_t>(event.keyCode) << std::endl;
             }
         }
-    }
+    };
 
-  private:
-    core::ref_ptr<rhi::Device> device;
-    core::ref_ptr<rhi::GraphicsContext> graphicsContext;
+    application->windowStateChanged += [&](platform::WindowEvent const& event) -> void {
+        switch (event.eventType)
+        {
+            case platform::WindowEventType::Resize: {
+                width = event.size.width;
+                height = event.size.height;
 
-    uint32_t width;
-    uint32_t height;
-};
+                if (rhi)
+                {
+                    swapchain->resizeBackBuffers(width, height);
+                }
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    };
 
-TEST(RHI, DeviceSwapchain_Test)
-{
-    TestAppContext context;
-    auto application = platform::App::create(context, "TestProject");
-    context.initialize(*application);
+    application->windowUpdated += [&]() -> void {
+        graphicsContext->reset();
+
+        auto backBuffer = swapchain->requestBackBuffer();
+
+        std::vector<rhi::RenderPassColorInfo> colors = {
+            rhi::RenderPassColorInfo{.texture = backBuffer.get(),
+                                     .loadOp = rhi::RenderPassLoadOp::Clear,
+                                     .storeOp = rhi::RenderPassStoreOp::Store,
+                                     .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}}};
+
+        graphicsContext->setViewport(0, 0, width, height);
+        graphicsContext->setScissor(0, 0, width, height);
+
+        graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
+        graphicsContext->beginRenderPass(colors, std::nullopt);
+        graphicsContext->endRenderPass();
+        graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
+
+        auto result = graphicsContext->execute();
+
+        swapchain->presentBackBuffer();
+
+        result.wait();
+    };
+
     application->run();
 }
 
