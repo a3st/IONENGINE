@@ -28,13 +28,9 @@ namespace ionengine::rhi
       public:
         virtual ~Buffer() = default;
 
-        virtual auto getSize() -> size_t = 0;
+        virtual auto getSize() const -> size_t = 0;
 
-        virtual auto getFlags() -> BufferUsageFlags = 0;
-
-        virtual auto mapMemory() -> uint8_t* = 0;
-
-        virtual auto unmapMemory() -> void = 0;
+        virtual auto getFlags() const -> BufferUsageFlags = 0;
 
         virtual auto getDescriptorOffset(BufferUsage const usage) const -> uint32_t = 0;
     };
@@ -236,6 +232,13 @@ namespace ionengine::rhi
 
     struct RHICreateInfo
     {
+        size_t stagingBufferSize;
+
+        static auto Default() -> RHICreateInfo const&
+        {
+            static const RHICreateInfo instance = {.stagingBufferSize = 8 * 1024 * 1024};
+            return instance;
+        }
     };
 
     struct SwapchainCreateInfo
@@ -486,24 +489,83 @@ namespace ionengine::rhi
         std::unique_ptr<FutureImpl> impl;
     };
 
+    template <>
+    class Future<void>
+    {
+        template <typename Derived>
+        friend class Future;
+
+      public:
+        Future() : impl(nullptr)
+        {
+        }
+
+        Future(std::unique_ptr<FutureImpl>&& impl) : impl(std::move(impl))
+        {
+        }
+
+        Future(Future&& other) : impl(std::move(other.impl))
+        {
+        }
+
+        template <typename Derived>
+        Future(Future<Derived> other) : impl(std::move(other.impl))
+        {
+        }
+
+        Future(Future const&) = delete;
+
+        auto operator=(Future&& other) -> Future&
+        {
+            impl = std::move(other.impl);
+            return *this;
+        }
+
+        template <typename Derived>
+        auto operator=(Future<Derived> other) -> Future&
+        {
+            impl = std::move(other.impl);
+            return *this;
+        }
+
+        auto operator=(Future const&) -> Future& = delete;
+
+        auto getResult() const -> bool
+        {
+            return impl->getResult();
+        }
+
+        auto wait() -> void
+        {
+            impl->wait();
+        }
+
+      private:
+        std::unique_ptr<FutureImpl> impl;
+    };
+
     class Query : public core::ref_counted_object
     {
     };
 
-    class GraphicsContext : public core::ref_counted_object
+    class IDeviceContext
     {
       public:
-        virtual ~GraphicsContext() = default;
-
-        virtual auto reset() -> void = 0;
-
-        virtual auto execute() -> Future<Query> = 0;
+        virtual ~IDeviceContext() = default;
 
         virtual auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
             -> void = 0;
 
         virtual auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
             -> void = 0;
+
+        virtual auto execute() -> Future<void> = 0;
+    };
+
+    class GraphicsContext : public core::ref_counted_object, public IDeviceContext
+    {
+      public:
+        virtual ~GraphicsContext() = default;
 
         virtual auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
                                                 BlendColorInfo const& blendColor,
@@ -533,31 +595,23 @@ namespace ionengine::rhi
             -> void = 0;
     };
 
-    class CopyContext : public core::ref_counted_object
+    class CopyContext : public core::ref_counted_object, public IDeviceContext
     {
       public:
         virtual ~CopyContext() = default;
 
-        virtual auto reset() -> void = 0;
+        virtual auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset,
+                                  std::span<uint8_t const> const dataBytes) -> Future<Buffer> = 0;
 
-        virtual auto execute() -> Future<Query> = 0;
+        virtual auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
+                                   std::span<uint8_t const> const dataBytes) -> Future<Texture> = 0;
 
-        virtual auto writeBuffer(core::ref_ptr<Buffer> dest, std::span<uint8_t const> const dataBytes)
-            -> Future<Buffer> = 0;
-
-        virtual auto writeTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
-                                  std::span<uint8_t const> const dataBytes) -> Future<Texture> = 0;
-
+        /*
         virtual auto readBuffer(core::ref_ptr<Buffer> dest, uint8_t* dataBytes) -> size_t = 0;
 
         virtual auto readTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel, uint8_t* dataBytes)
             -> size_t = 0;
-
-        virtual auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
-            -> void = 0;
-
-        virtual auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
-            -> void = 0;
+        */
     };
 
     class Swapchain : public core::ref_counted_object
@@ -589,9 +643,9 @@ namespace ionengine::rhi
 
         virtual auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain> = 0;
 
-        virtual auto createGraphicsContext() -> core::ref_ptr<GraphicsContext> = 0;
+        virtual auto getGraphicsContext() -> core::ref_ptr<GraphicsContext> = 0;
 
-        virtual auto createCopyContext() -> core::ref_ptr<CopyContext> = 0;
+        virtual auto getCopyContext() -> core::ref_ptr<CopyContext> = 0;
 
         virtual auto getName() const -> std::string_view = 0;
     };

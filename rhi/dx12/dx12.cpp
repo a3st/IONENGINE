@@ -525,7 +525,7 @@ namespace ionengine::rhi
             heapType = D3D12_HEAP_TYPE_READBACK;
         }
 
-        D3D12MA::ALLOCATION_DESC maAllocationDesc{.HeapType = heapType};
+        D3D12MA::ALLOCATION_DESC const maAllocationDesc{.HeapType = heapType};
         throwIfFailed(memoryAllocator->CreateResource(&maAllocationDesc, &resourceDesc, initialState, nullptr,
                                                       memoryAllocation.put(), __uuidof(ID3D12Resource),
                                                       resource.put_void()));
@@ -539,9 +539,9 @@ namespace ionengine::rhi
                 descriptorAllocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, descriptorAllocation.put()));
             descriptorAllocations.emplace(BufferUsage::ConstantBuffer, descriptorAllocation);
 
-            D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc{.BufferLocation = resource->GetGPUVirtualAddress(),
-                                                                   .SizeInBytes =
-                                                                       static_cast<uint32_t>(resourceDesc.Width)};
+            D3D12_CONSTANT_BUFFER_VIEW_DESC const constantBufferViewDesc{
+                .BufferLocation = resource->GetGPUVirtualAddress(),
+                .SizeInBytes = static_cast<uint32_t>(resourceDesc.Width)};
             device->CreateConstantBufferView(&constantBufferViewDesc, descriptorAllocation->getCPUHandle());
         }
         if (flags & BufferUsage::ShaderResource)
@@ -553,7 +553,7 @@ namespace ionengine::rhi
                 descriptorAllocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, descriptorAllocation.put()));
             descriptorAllocations.emplace(BufferUsage::ShaderResource, descriptorAllocation);
 
-            D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{
+            D3D12_SHADER_RESOURCE_VIEW_DESC const shaderResourceViewDesc{
                 .Format = DXGI_FORMAT_UNKNOWN,
                 .ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
                 .Buffer = {.FirstElement = 0,
@@ -571,7 +571,7 @@ namespace ionengine::rhi
                 descriptorAllocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, descriptorAllocation.put()));
             descriptorAllocations.emplace(BufferUsage::UnorderedAccess, descriptorAllocation);
 
-            D3D12_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewDesc{
+            D3D12_UNORDERED_ACCESS_VIEW_DESC const unorderedAccessViewDesc{
                 .Format = DXGI_FORMAT_UNKNOWN,
                 .ViewDimension = D3D12_UAV_DIMENSION_BUFFER,
                 .Buffer = {.FirstElement = 0,
@@ -591,7 +591,7 @@ namespace ionengine::rhi
         }
         else
         {
-            D3D12_RANGE range{.Begin = 0, .End = size};
+            D3D12_RANGE const range{.Begin = 0, .End = size};
             throwIfFailed(resource->Map(0, &range, reinterpret_cast<void**>(&mappedBytes)));
         }
         return mappedBytes;
@@ -601,7 +601,7 @@ namespace ionengine::rhi
     {
         if (flags & BufferUsage::MapWrite)
         {
-            D3D12_RANGE range{.Begin = 0, .End = size};
+            D3D12_RANGE const range{.Begin = 0, .End = size};
             resource->Unmap(0, &range);
         }
         else if (flags & BufferUsage::MapRead)
@@ -610,12 +610,12 @@ namespace ionengine::rhi
         }
     }
 
-    auto DX12Buffer::getSize() -> size_t
+    auto DX12Buffer::getSize() const -> size_t
     {
         return size;
     }
 
-    auto DX12Buffer::getFlags() -> BufferUsageFlags
+    auto DX12Buffer::getFlags() const -> BufferUsageFlags
     {
         return flags;
     }
@@ -641,15 +641,15 @@ namespace ionengine::rhi
           height(createInfo.height), depth(createInfo.depth), mipLevels(createInfo.mipLevels),
           format(createInfo.format), dimension(createInfo.dimension), flags(createInfo.flags)
     {
-        D3D12_RESOURCE_DESC resourceDesc = {.Dimension =
-                                                TextureDimension_to_D3D12_RESOURCE_DIMENSION(createInfo.dimension),
-                                            .Width = width,
-                                            .Height = height,
-                                            .DepthOrArraySize = static_cast<uint16_t>(depth),
-                                            .MipLevels = static_cast<uint16_t>(mipLevels),
-                                            .Format = TextureFormat_to_DXGI_FORMAT(format),
-                                            .SampleDesc = {.Count = 1},
-                                            .Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN};
+        D3D12_RESOURCE_DESC resourceDesc{.Dimension =
+                                             TextureDimension_to_D3D12_RESOURCE_DIMENSION(createInfo.dimension),
+                                         .Width = width,
+                                         .Height = height,
+                                         .DepthOrArraySize = static_cast<uint16_t>(depth),
+                                         .MipLevels = static_cast<uint16_t>(mipLevels),
+                                         .Format = TextureFormat_to_DXGI_FORMAT(format),
+                                         .SampleDesc = {.Count = 1},
+                                         .Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN};
 
         D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
         D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
@@ -668,7 +668,7 @@ namespace ionengine::rhi
             resourceDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        D3D12MA::ALLOCATION_DESC maAllocationDesc = {.HeapType = heapType};
+        D3D12MA::ALLOCATION_DESC const maAllocationDesc{.HeapType = heapType};
         throwIfFailed(memoryAllocator->CreateResource(&maAllocationDesc, &resourceDesc, initialState, nullptr,
                                                       memoryAllocation.put(), __uuidof(ID3D12Resource),
                                                       resource.put_void()));
@@ -681,8 +681,8 @@ namespace ionengine::rhi
             throwIfFailed(descriptorAllocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, descriptorAllocation.put()));
             descriptorAllocations.emplace(TextureUsage::RenderTarget, descriptorAllocation);
 
-            D3D12_RENDER_TARGET_VIEW_DESC renderTargetViewDesc{.Format = resourceDesc.Format,
-                                                               .ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D};
+            D3D12_RENDER_TARGET_VIEW_DESC const renderTargetViewDesc{.Format = resourceDesc.Format,
+                                                                     .ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D};
             device->CreateRenderTargetView(resource.get(), &renderTargetViewDesc, descriptorAllocation->getCPUHandle());
         }
 
@@ -768,8 +768,8 @@ namespace ionengine::rhi
             throwIfFailed(descriptorAllocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, descriptorAllocation.put()));
             descriptorAllocations.emplace(TextureUsage::RenderTarget, descriptorAllocation);
 
-            D3D12_RENDER_TARGET_VIEW_DESC renderTargetViewDesc{.Format = resourceDesc.Format,
-                                                               .ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D};
+            D3D12_RENDER_TARGET_VIEW_DESC const renderTargetViewDesc{.Format = resourceDesc.Format,
+                                                                     .ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D};
             device->CreateRenderTargetView(resource.get(), &renderTargetViewDesc, descriptorAllocation->getCPUHandle());
         }
     }
@@ -822,12 +822,13 @@ namespace ionengine::rhi
     DX12Sampler::DX12Sampler(ID3D12Device1* device, DescriptorAllocator* descriptorAllocator,
                              SamplerCreateInfo const& createInfo)
     {
-        D3D12_SAMPLER_DESC samplerDesc = {.Filter = Filter_to_D3D12_FILTER(createInfo.filter),
-                                          .AddressU = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressU),
-                                          .AddressV = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressV),
-                                          .AddressW = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressV),
-                                          .MaxAnisotropy = createInfo.anisotropic,
-                                          .ComparisonFunc = CompareOp_to_D3D12_COMPARISON_FUNC(createInfo.compareOp)};
+        D3D12_SAMPLER_DESC const samplerDesc{.Filter = Filter_to_D3D12_FILTER(createInfo.filter),
+                                             .AddressU = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressU),
+                                             .AddressV = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressV),
+                                             .AddressW = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressV),
+                                             .MaxAnisotropy = createInfo.anisotropic,
+                                             .ComparisonFunc =
+                                                 CompareOp_to_D3D12_COMPARISON_FUNC(createInfo.compareOp)};
 
         assert(descriptorAllocator && "to create a sampler, you need to pass an allocator descriptor");
 
@@ -956,8 +957,8 @@ namespace ionengine::rhi
     Pipeline::Pipeline(ID3D12Device4* device, ID3D12RootSignature* rootSignature, DX12Shader* shader,
                        RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                        std::optional<DepthStencilStageInfo> const depthStencil,
-                       std::span<DXGI_FORMAT const> const renderTargetFormats, DXGI_FORMAT const depthStencilFormat,
-                       ID3DBlob* blob)
+                       std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& renderTargetFormats,
+                       DXGI_FORMAT const depthStencilFormat, ID3DBlob* blob)
         : rootSignature(rootSignature)
     {
         D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
@@ -970,7 +971,7 @@ namespace ionengine::rhi
                 case DX12ShaderStageType::Vertex: {
                     graphicsPipelineStateDesc.VS = stageData.shaderByteCode;
 
-                    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{
+                    D3D12_INPUT_LAYOUT_DESC const inputLayoutDesc{
                         .pInputElementDescs = shader->getVertexInput().value().getInputElementDescs().data(),
                         .NumElements =
                             static_cast<uint32_t>(shader->getVertexInput().value().getInputElementDescs().size())};
@@ -981,7 +982,7 @@ namespace ionengine::rhi
                 case DX12ShaderStageType::Pixel: {
                     graphicsPipelineStateDesc.PS = stageData.shaderByteCode;
 
-                    D3D12_RENDER_TARGET_BLEND_DESC renderTargetBlendDesc{
+                    D3D12_RENDER_TARGET_BLEND_DESC const renderTargetBlendDesc{
                         .BlendEnable = blendColor.blendEnable,
                         .SrcBlend = Blend_to_D3D12_BLEND(blendColor.blendSrc),
                         .DestBlend = Blend_to_D3D12_BLEND(blendColor.blendDst),
@@ -1010,17 +1011,17 @@ namespace ionengine::rhi
             }
         }
 
-        D3D12_RASTERIZER_DESC rasterizerDesc{.FillMode = FillMode_to_D3D12_FILL_MODE(rasterizer.fillMode),
-                                             .CullMode = CullMode_to_D3D12_CULL_MODE(rasterizer.cullMode),
-                                             .FrontCounterClockwise = true,
-                                             .DepthBias = D3D12_DEFAULT_DEPTH_BIAS,
-                                             .DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
-                                             .SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
-                                             .DepthClipEnable = true,
-                                             .MultisampleEnable = false,
-                                             .AntialiasedLineEnable = false,
-                                             .ForcedSampleCount = 0,
-                                             .ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF};
+        D3D12_RASTERIZER_DESC const rasterizerDesc{.FillMode = FillMode_to_D3D12_FILL_MODE(rasterizer.fillMode),
+                                                   .CullMode = CullMode_to_D3D12_CULL_MODE(rasterizer.cullMode),
+                                                   .FrontCounterClockwise = true,
+                                                   .DepthBias = D3D12_DEFAULT_DEPTH_BIAS,
+                                                   .DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+                                                   .SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+                                                   .DepthClipEnable = true,
+                                                   .MultisampleEnable = false,
+                                                   .AntialiasedLineEnable = false,
+                                                   .ForcedSampleCount = 0,
+                                                   .ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF};
 
         graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;
 
@@ -1028,21 +1029,21 @@ namespace ionengine::rhi
         graphicsPipelineStateDesc.SampleMask = std::numeric_limits<uint32_t>::max();
         graphicsPipelineStateDesc.SampleDesc.Count = 1;
 
-        D3D12_DEPTH_STENCILOP_DESC depthStencilOpDesc{.StencilFailOp = D3D12_STENCIL_OP_KEEP,
-                                                      .StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
-                                                      .StencilPassOp = D3D12_STENCIL_OP_KEEP,
-                                                      .StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS};
+        D3D12_DEPTH_STENCILOP_DESC const depthStencilOpDesc{.StencilFailOp = D3D12_STENCIL_OP_KEEP,
+                                                            .StencilDepthFailOp = D3D12_STENCIL_OP_KEEP,
+                                                            .StencilPassOp = D3D12_STENCIL_OP_KEEP,
+                                                            .StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS};
 
         auto depthStencilValue = depthStencil.value_or(DepthStencilStageInfo::Default());
-        D3D12_DEPTH_STENCIL_DESC depthStencilDesc{.DepthEnable = depthStencilValue.depthWrite,
-                                                  .DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
-                                                  .DepthFunc =
-                                                      CompareOp_to_D3D12_COMPARISON_FUNC(depthStencilValue.depthFunc),
-                                                  .StencilEnable = depthStencilValue.stencilWrite,
-                                                  .StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
-                                                  .StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
-                                                  .FrontFace = depthStencilOpDesc,
-                                                  .BackFace = depthStencilOpDesc};
+        D3D12_DEPTH_STENCIL_DESC const depthStencilDesc{
+            .DepthEnable = depthStencilValue.depthWrite,
+            .DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+            .DepthFunc = CompareOp_to_D3D12_COMPARISON_FUNC(depthStencilValue.depthFunc),
+            .StencilEnable = depthStencilValue.stencilWrite,
+            .StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
+            .StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
+            .FrontFace = depthStencilOpDesc,
+            .BackFace = depthStencilOpDesc};
 
         graphicsPipelineStateDesc.DepthStencilState = depthStencilDesc;
 
@@ -1079,12 +1080,12 @@ namespace ionengine::rhi
 
     PipelineCache::PipelineCache(ID3D12Device4* device, RHICreateInfo const& createInfo) : device(device)
     {
-        D3D12_ROOT_PARAMETER1 rootParameter{
+        D3D12_ROOT_PARAMETER1 const rootParameter{
             .ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
             .Constants = {.ShaderRegister = 0, .RegisterSpace = 0, .Num32BitValues = 16},
             .ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL};
 
-        D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc{
+        D3D12_VERSIONED_ROOT_SIGNATURE_DESC const rootSignatureDesc{
             .Version = D3D_ROOT_SIGNATURE_VERSION_1_1,
             .Desc_1_1 = {.NumParameters = 1,
                          .pParameters = &rootParameter,
@@ -1151,11 +1152,41 @@ namespace ionengine::rhi
         ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
     }
 
+    auto DX12DeviceContext_barrier(ID3D12GraphicsCommandList4* commandList, core::ref_ptr<Buffer> dest,
+                                   ResourceState const before, ResourceState const after) -> void
+    {
+        auto dxDestBuffer = dynamic_cast<DX12Buffer*>(dest.get());
+
+        D3D12_RESOURCE_BARRIER const resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                                                     .Transition = {
+                                                         .pResource = dxDestBuffer->getResource(),
+                                                         .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                                                         .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before),
+                                                         .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after),
+                                                     }};
+        commandList->ResourceBarrier(1, &resourceBarrier);
+    }
+
+    auto DX12DeviceContext_barrier(ID3D12GraphicsCommandList4* commandList, core::ref_ptr<Texture> dest,
+                                   ResourceState const before, ResourceState const after) -> void
+    {
+        auto dxDestTexture = dynamic_cast<DX12Texture*>(dest.get());
+
+        D3D12_RESOURCE_BARRIER const resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                                                     .Transition = {
+                                                         .pResource = dxDestTexture->getResource(),
+                                                         .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                                                         .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before),
+                                                         .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after),
+                                                     }};
+        commandList->ResourceBarrier(1, &resourceBarrier);
+    }
+
     DX12GraphicsContext::DX12GraphicsContext(ID3D12Device4* device, PipelineCache* pipelineCache,
-                                             DescriptorAllocator* descriptorAllocator, ID3D12CommandQueue* queue,
-                                             ID3D12Fence* fence, HANDLE fenceEvent, uint64_t& fenceValue)
-        : device(device), pipelineCache(pipelineCache), descriptorAllocator(descriptorAllocator), queue(queue),
-          fence(fence), fenceEvent(fenceEvent), fenceValue(&fenceValue)
+                                             DescriptorAllocator* descriptorAllocator, DeviceQueueData& deviceQueue,
+                                             HANDLE fenceEvent)
+        : device(device), pipelineCache(pipelineCache), descriptorAllocator(descriptorAllocator),
+          deviceQueue(&deviceQueue), fenceEvent(fenceEvent), isCommandListOpened(false)
     {
         throwIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator),
                                                      commandAllocator.put_void()));
@@ -1164,8 +1195,13 @@ namespace ionengine::rhi
                                                  __uuidof(ID3D12GraphicsCommandList4), commandList.put_void()));
     }
 
-    auto DX12GraphicsContext::reset() -> void
+    auto DX12GraphicsContext::tryResetCommandList() -> void
     {
+        if (isCommandListOpened)
+        {
+            return;
+        }
+
         throwIfFailed(commandAllocator->Reset());
         throwIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
 
@@ -1174,8 +1210,9 @@ namespace ionengine::rhi
             descriptorAllocator->getDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)};
         commandList->SetDescriptorHeaps(static_cast<uint32_t>(descriptorHeaps.size()), descriptorHeaps.data());
 
-        isRootSignatureBinded = false;
         currentShader = nullptr;
+
+        isCommandListOpened = true;
     }
 
     auto DX12GraphicsContext::setGraphicsPipelineOptions(core::ref_ptr<Shader> shader,
@@ -1184,19 +1221,17 @@ namespace ionengine::rhi
                                                          std::optional<DepthStencilStageInfo> const depthStencil)
         -> void
     {
-        auto pipeline = pipelineCache->get(dynamic_cast<DX12Shader*>(shader.get()), rasterizer, blendColor,
-                                           depthStencil, renderTargetFormats, depthStencilFormat);
+        this->tryResetCommandList();
 
-        if (!isRootSignatureBinded)
-        {
-            commandList->SetGraphicsRootSignature(pipeline->getRootSignature());
-            isRootSignatureBinded = true;
-        }
+        auto dxShader = dynamic_cast<DX12Shader*>(shader.get());
+        currentShader = shader;
 
+        auto pipeline =
+            pipelineCache->get(dxShader, rasterizer, blendColor, depthStencil, renderTargetFormats, depthStencilFormat);
+
+        commandList->SetGraphicsRootSignature(pipeline->getRootSignature());
         commandList->SetPipelineState(pipeline->getPipelineState());
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        currentShader = shader;
     }
 
     auto DX12GraphicsContext::bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void
@@ -1207,28 +1242,30 @@ namespace ionengine::rhi
     auto DX12GraphicsContext::beginRenderPass(std::span<RenderPassColorInfo> const colors,
                                               std::optional<RenderPassDepthStencilInfo> depthStencil) -> void
     {
+        this->tryResetCommandList();
+
         renderTargetFormats.fill(DXGI_FORMAT_UNKNOWN);
         depthStencilFormat = DXGI_FORMAT_UNKNOWN;
 
-        auto renderPassRenderTargets =
-            std::array<D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT>{};
+        std::array<D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT>
+            renderPassRenderTargets;
 
         for (uint32_t const i : std::views::iota(0u, colors.size()))
         {
-            D3D12_RENDER_PASS_BEGINNING_ACCESS begin{
+            D3D12_RENDER_PASS_BEGINNING_ACCESS const begin{
                 .Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(colors[i].loadOp),
                 .Clear = {.ClearValue = {.Format = TextureFormat_to_DXGI_FORMAT(colors[i].texture->getFormat()),
                                          .Color = {colors[i].clearColor.r, colors[i].clearColor.g,
                                                    colors[i].clearColor.b, colors[i].clearColor.a}}}};
-            D3D12_RENDER_PASS_ENDING_ACCESS end{
+            D3D12_RENDER_PASS_ENDING_ACCESS const end{
                 .Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(colors[i].storeOp)};
+
+            auto dxTargetTexture = dynamic_cast<DX12Texture*>(colors[i].texture.get());
 
             renderPassRenderTargets[i].BeginningAccess = begin;
             renderPassRenderTargets[i].EndingAccess = end;
-            renderPassRenderTargets[i].cpuDescriptor = dynamic_cast<DX12Texture*>(colors[i].texture.get())
-                                                           ->getDescriptor(TextureUsage::RenderTarget)
-                                                           ->getCPUHandle();
-
+            renderPassRenderTargets[i].cpuDescriptor =
+                dxTargetTexture->getDescriptor(TextureUsage::RenderTarget)->getCPUHandle();
             renderTargetFormats[i] = begin.Clear.ClearValue.Format;
         }
 
@@ -1238,13 +1275,14 @@ namespace ionengine::rhi
             depthStencilFormat = TextureFormat_to_DXGI_FORMAT(value.texture->getFormat());
 
             D3D12_RENDER_PASS_DEPTH_STENCIL_DESC renderPassDepthStencil{};
+
             {
-                D3D12_RENDER_PASS_BEGINNING_ACCESS begin{
+                D3D12_RENDER_PASS_BEGINNING_ACCESS const begin{
                     .Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(value.depthLoadOp),
                     .Clear = {
                         .ClearValue = {.Format = depthStencilFormat, .DepthStencil = {.Depth = value.clearDepth}}}};
 
-                D3D12_RENDER_PASS_ENDING_ACCESS end{
+                D3D12_RENDER_PASS_ENDING_ACCESS const end{
                     .Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(value.depthStoreOp)};
 
                 renderPassDepthStencil.DepthBeginningAccess = begin;
@@ -1252,19 +1290,21 @@ namespace ionengine::rhi
             }
 
             {
-                D3D12_RENDER_PASS_BEGINNING_ACCESS begin{
+                D3D12_RENDER_PASS_BEGINNING_ACCESS const begin{
                     .Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(value.stencilLoadOp),
                     .Clear = {
                         .ClearValue = {.Format = depthStencilFormat, .DepthStencil = {.Stencil = value.clearStencil}}}};
-                D3D12_RENDER_PASS_ENDING_ACCESS end{
+                D3D12_RENDER_PASS_ENDING_ACCESS const end{
                     .Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(value.stencilStoreOp)};
 
                 renderPassDepthStencil.StencilBeginningAccess = begin;
                 renderPassDepthStencil.StencilEndingAccess = end;
             }
-            renderPassDepthStencil.cpuDescriptor = dynamic_cast<DX12Texture*>(value.texture.get())
-                                                       ->getDescriptor(TextureUsage::DepthStencil)
-                                                       ->getCPUHandle();
+
+            auto dxTargetTexture = dynamic_cast<DX12Texture*>(value.texture.get());
+
+            renderPassDepthStencil.cpuDescriptor =
+                dxTargetTexture->getDescriptor(TextureUsage::DepthStencil)->getCPUHandle();
 
             commandList->BeginRenderPass(static_cast<uint32_t>(colors.size()), renderPassRenderTargets.data(),
                                          &renderPassDepthStencil, D3D12_RENDER_PASS_FLAG_NONE);
@@ -1284,8 +1324,12 @@ namespace ionengine::rhi
     auto DX12GraphicsContext::bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
         -> void
     {
-        D3D12_VERTEX_BUFFER_VIEW vertexBufferView{
-            .BufferLocation = dynamic_cast<DX12Buffer*>(buffer.get())->getResource()->GetGPUVirtualAddress() + offset,
+        this->tryResetCommandList();
+
+        auto dxBuffer = dynamic_cast<DX12Buffer*>(buffer.get());
+
+        D3D12_VERTEX_BUFFER_VIEW const vertexBufferView{
+            .BufferLocation = dxBuffer->getResource()->GetGPUVirtualAddress() + offset,
             .SizeInBytes = static_cast<uint32_t>(size),
             .StrideInBytes = currentShader->getVertexInput().value().getInputSize()};
         commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
@@ -1294,8 +1338,12 @@ namespace ionengine::rhi
     auto DX12GraphicsContext::bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
                                               IndexFormat const format) -> void
     {
-        D3D12_INDEX_BUFFER_VIEW indexBufferView{
-            .BufferLocation = static_cast<DX12Buffer*>(buffer.get())->getResource()->GetGPUVirtualAddress() + offset};
+        this->tryResetCommandList();
+
+        auto dxBuffer = dynamic_cast<DX12Buffer*>(buffer.get());
+
+        D3D12_INDEX_BUFFER_VIEW indexBufferView{.BufferLocation =
+                                                    dxBuffer->getResource()->GetGPUVirtualAddress() + offset};
         switch (format)
         {
             case IndexFormat::Uint32: {
@@ -1327,64 +1375,59 @@ namespace ionengine::rhi
     auto DX12GraphicsContext::setViewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height)
         -> void
     {
-        D3D12_VIEWPORT viewport{.TopLeftX = static_cast<float>(x),
-                                .TopLeftY = static_cast<float>(y),
-                                .Width = static_cast<float>(width),
-                                .Height = static_cast<float>(height),
-                                .MinDepth = D3D12_MIN_DEPTH,
-                                .MaxDepth = D3D12_MAX_DEPTH};
+        this->tryResetCommandList();
+
+        D3D12_VIEWPORT const viewport{.TopLeftX = static_cast<float>(x),
+                                      .TopLeftY = static_cast<float>(y),
+                                      .Width = static_cast<float>(width),
+                                      .Height = static_cast<float>(height),
+                                      .MinDepth = D3D12_MIN_DEPTH,
+                                      .MaxDepth = D3D12_MAX_DEPTH};
         commandList->RSSetViewports(1, &viewport);
     }
 
     auto DX12GraphicsContext::setScissor(int32_t const left, int32_t const top, int32_t const right,
                                          int32_t const bottom) -> void
     {
-        D3D12_RECT rect{.left = static_cast<LONG>(left),
-                        .top = static_cast<LONG>(top),
-                        .right = static_cast<LONG>(right),
-                        .bottom = static_cast<LONG>(bottom)};
+        this->tryResetCommandList();
+
+        D3D12_RECT const rect{.left = static_cast<LONG>(left),
+                              .top = static_cast<LONG>(top),
+                              .right = static_cast<LONG>(right),
+                              .bottom = static_cast<LONG>(bottom)};
         commandList->RSSetScissorRects(1, &rect);
     }
 
     auto DX12GraphicsContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
         -> void
     {
-        D3D12_RESOURCE_BARRIER resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                                               .Transition = {
-                                                   .pResource = dynamic_cast<DX12Buffer*>(dest.get())->getResource(),
-                                                   .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                   .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before),
-                                                   .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after),
-                                               }};
-        commandList->ResourceBarrier(1, &resourceBarrier);
+        this->tryResetCommandList();
+
+        DX12DeviceContext_barrier(commandList.get(), dest, before, after);
     }
 
     auto DX12GraphicsContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before,
                                       ResourceState const after) -> void
     {
-        D3D12_RESOURCE_BARRIER resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                                               .Transition = {
-                                                   .pResource = dynamic_cast<DX12Texture*>(dest.get())->getResource(),
-                                                   .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                   .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before),
-                                                   .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after),
-                                               }};
-        commandList->ResourceBarrier(1, &resourceBarrier);
+        this->tryResetCommandList();
+
+        DX12DeviceContext_barrier(commandList.get(), dest, before, after);
     }
 
-    auto DX12GraphicsContext::execute() -> Future<Query>
+    auto DX12GraphicsContext::execute() -> Future<void>
     {
         throwIfFailed(commandList->Close());
+        isCommandListOpened = false;
 
-        std::array<ID3D12CommandList*, 1> commandLists{commandList.get()};
-        queue->ExecuteCommandLists(static_cast<uint32_t>(commandLists.size()), commandLists.data());
+        std::array<ID3D12CommandList*, 1> const commandLists{commandList.get()};
+        deviceQueue->queue->ExecuteCommandLists(static_cast<uint32_t>(commandLists.size()), commandLists.data());
 
-        (*fenceValue)++;
-        throwIfFailed(queue->Signal(fence, *fenceValue));
+        deviceQueue->fenceValue++;
+        throwIfFailed(deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue));
 
-        auto query = core::make_ref<DX12Query>();
-        auto futureImpl = std::make_unique<DX12FutureImpl>(queue, fence, fenceEvent, *fenceValue);
-        return Future<Query>(query, std::move(futureImpl));
+        auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
+                                                           fenceEvent, deviceQueue->fenceValue);
+        return Future<void>(std::move(futureImpl));
     }
 
     auto DX12CopyContext::getSurfaceData(rhi::TextureFormat const format, uint32_t const width, uint32_t const height,
@@ -1425,9 +1468,9 @@ namespace ionengine::rhi
     }
 
     DX12CopyContext::DX12CopyContext(ID3D12Device4* device, D3D12MA::Allocator* memoryAllocator,
-                                     ID3D12CommandQueue* queue, ID3D12Fence* fence, HANDLE fenceEvent,
-                                     uint64_t& fenceValue)
-        : device(device), queue(queue), fence(fence), fenceEvent(fenceEvent), fenceValue(&fenceValue)
+                                     DeviceQueueData& deviceQueue, HANDLE fenceEvent,
+                                     RHICreateInfo const& rhiCreateInfo)
+        : device(device), deviceQueue(&deviceQueue), fenceEvent(fenceEvent)
     {
         throwIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, __uuidof(ID3D12CommandAllocator),
                                                      commandAllocator.put_void()));
@@ -1435,28 +1478,71 @@ namespace ionengine::rhi
         throwIfFailed(device->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_LIST_FLAG_NONE,
                                                  __uuidof(ID3D12GraphicsCommandList4), commandList.put_void()));
 
-        size_t const stagingBufferSize = 16 * 1024 * 1024;
         {
-            BufferCreateInfo bufferCreateInfo{.size = stagingBufferSize,
-                                              .flags = (BufferUsageFlags)(BufferUsage::MapWrite)};
+            BufferCreateInfo const bufferCreateInfo{.size = rhiCreateInfo.stagingBufferSize,
+                                                    .flags = (BufferUsageFlags)(BufferUsage::MapWrite)};
             writeStagingBuffer = {.buffer =
                                       core::make_ref<DX12Buffer>(device, memoryAllocator, nullptr, bufferCreateInfo)};
         }
 
         {
-            BufferCreateInfo bufferCreateInfo{.size = stagingBufferSize,
-                                              .flags = (BufferUsageFlags)(BufferUsage::MapRead)};
+            BufferCreateInfo const bufferCreateInfo{.size = rhiCreateInfo.stagingBufferSize,
+                                                    .flags = (BufferUsageFlags)(BufferUsage::MapRead)};
             readStagingBuffer = {.buffer =
                                      core::make_ref<DX12Buffer>(device, memoryAllocator, nullptr, bufferCreateInfo)};
         }
     }
 
-    auto DX12CopyContext::reset() -> void
+    auto DX12CopyContext::tryResetCommandList() -> void
     {
+        if (isCommandListOpened)
+        {
+            return;
+        }
+
         throwIfFailed(commandAllocator->Reset());
         throwIfFailed(commandList->Reset(commandAllocator.get(), nullptr));
+
+        isCommandListOpened = true;
     }
 
+    auto DX12CopyContext::updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset,
+                                       std::span<uint8_t const> const dataBytes) -> Future<Buffer>
+    {
+        // Check for overflow staging buffer
+        if (writeStagingBuffer.buffer->getSize() - writeStagingBuffer.offset < dataBytes.size())
+        {
+            auto executeResult = this->execute();
+            // Wait until command buffer ends work
+            executeResult.wait();
+        }
+
+        uint32_t const resourceAlignmentMask = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1;
+
+        uint64_t const startWriteOffset = writeStagingBuffer.offset;
+
+        uint8_t* mappedBytes = writeStagingBuffer.buffer->mapMemory();
+        {
+            std::basic_ospanstream<uint8_t> oss(
+                std::span<uint8_t>(mappedBytes + startWriteOffset, writeStagingBuffer.buffer->getSize()));
+            oss.write(dataBytes.data(), dataBytes.size());
+
+            uint64_t const offset = oss.tellp();
+            writeStagingBuffer.offset = (offset + resourceAlignmentMask) & ~resourceAlignmentMask;
+        }
+        writeStagingBuffer.buffer->unmapMemory();
+
+        auto dxDestBuffer = dynamic_cast<DX12Buffer*>(dest.get());
+
+        commandList->CopyBufferRegion(dxDestBuffer->getResource(), offset, writeStagingBuffer.buffer->getResource(),
+                                      startWriteOffset, dataBytes.size());
+
+        auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
+                                                           fenceEvent, deviceQueue->fenceValue);
+        return Future<Buffer>(dest, std::move(futureImpl));
+    }
+
+    /*
     auto DX12CopyContext::writeBuffer(core::ref_ptr<Buffer> dest, std::span<uint8_t const> const dataBytes)
         -> Future<Buffer>
     {
@@ -1629,49 +1715,36 @@ namespace ionengine::rhi
         }
         readStagingBuffer.buffer->unmapMemory();
         return readBytes;
-    }
+    }*/
 
-    auto DX12CopyContext::execute() -> Future<Query>
+    auto DX12CopyContext::execute() -> Future<void>
     {
         writeStagingBuffer.offset = 0;
 
         throwIfFailed(commandList->Close());
+        isCommandListOpened = false;
 
-        std::array<ID3D12CommandList*, 1> commandLists{commandList.get()};
-        queue->ExecuteCommandLists(static_cast<uint32_t>(commandLists.size()), commandLists.data());
+        std::array<ID3D12CommandList*, 1> const commandLists{commandList.get()};
+        deviceQueue->queue->ExecuteCommandLists(static_cast<uint32_t>(commandLists.size()), commandLists.data());
 
-        (*fenceValue)++;
-        throwIfFailed(queue->Signal(fence, *fenceValue));
+        deviceQueue->fenceValue++;
+        throwIfFailed(deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue));
 
-        auto query = core::make_ref<DX12Query>();
-        auto futureImpl = std::make_unique<DX12FutureImpl>(queue, fence, fenceEvent, *fenceValue);
-        return Future<Query>(query, std::move(futureImpl));
+        auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
+                                                           fenceEvent, deviceQueue->fenceValue);
+        return Future<void>(std::move(futureImpl));
     }
 
     auto DX12CopyContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
         -> void
     {
-        D3D12_RESOURCE_BARRIER resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                                               .Transition = {
-                                                   .pResource = dynamic_cast<DX12Buffer*>(dest.get())->getResource(),
-                                                   .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                   .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before),
-                                                   .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after),
-                                               }};
-        commandList->ResourceBarrier(1, &resourceBarrier);
+        DX12DeviceContext_barrier(commandList.get(), dest, before, after);
     }
 
     auto DX12CopyContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
         -> void
     {
-        D3D12_RESOURCE_BARRIER resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                                               .Transition = {
-                                                   .pResource = dynamic_cast<DX12Texture*>(dest.get())->getResource(),
-                                                   .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                   .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before),
-                                                   .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after),
-                                               }};
-        commandList->ResourceBarrier(1, &resourceBarrier);
+        DX12DeviceContext_barrier(commandList.get(), dest, before, after);
     }
 
     DX12Swapchain::DX12Swapchain(IDXGIFactory4* factory, ID3D12Device4* device,
@@ -1683,14 +1756,14 @@ namespace ionengine::rhi
         ::GetClientRect(reinterpret_cast<HWND>(createInfo.window), &rect);
 
         {
-            DXGI_SWAP_CHAIN_DESC1 swapchainDesc = {.Width = static_cast<uint32_t>(rect.right),
-                                                   .Height = static_cast<uint32_t>(rect.bottom),
-                                                   .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
-                                                   .SampleDesc = {.Count = 1},
-                                                   .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-                                                   .BufferCount = 2,
-                                                   .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
-                                                   .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED};
+            DXGI_SWAP_CHAIN_DESC1 const swapchainDesc{.Width = static_cast<uint32_t>(rect.right),
+                                                      .Height = static_cast<uint32_t>(rect.bottom),
+                                                      .Format = DXGI_FORMAT_R8G8B8A8_UNORM,
+                                                      .SampleDesc = {.Count = 1},
+                                                      .BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
+                                                      .BufferCount = 2,
+                                                      .SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD,
+                                                      .AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED};
 
             winrt::com_ptr<IDXGISwapChain1> swapchain;
             throwIfFailed(factory->CreateSwapChainForHwnd(this->deviceQueue->queue.get(),
@@ -1767,10 +1840,10 @@ namespace ionengine::rhi
 
             for (uint32_t i = 0; factory->EnumAdapters1(i, adapter.put()) != DXGI_ERROR_NOT_FOUND; ++i)
             {
-                DXGI_ADAPTER_DESC1 dxgi_adapter_desc = {};
-                throwIfFailed(adapter->GetDesc1(&dxgi_adapter_desc));
+                DXGI_ADAPTER_DESC1 adapterDesc{};
+                throwIfFailed(adapter->GetDesc1(&adapterDesc));
 
-                if (dxgi_adapter_desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+                if (adapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
                 {
                     continue;
                 }
@@ -1791,16 +1864,21 @@ namespace ionengine::rhi
             throwIfFailed(::HRESULT_FROM_WIN32(GetLastError()));
         }
 
-        graphicsQueue = this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_DIRECT);
-        copyQueue = this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_COPY);
-        computeQueue = this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_COMPUTE);
+        this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, graphicsQueue);
+        this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_COPY, copyQueue);
+        this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_COMPUTE, computeQueue);
 
         descriptorAllocator = core::make_ref<DescriptorAllocator>(device.get());
 
-        D3D12MA::ALLOCATOR_DESC memoryAllocatorDesc = {.pDevice = device.get(), .pAdapter = adapter.get()};
+        D3D12MA::ALLOCATOR_DESC const memoryAllocatorDesc{.pDevice = device.get(), .pAdapter = adapter.get()};
         throwIfFailed(D3D12MA::CreateAllocator(&memoryAllocatorDesc, memoryAllocator.put()));
 
         pipelineCache = core::make_ref<PipelineCache>(device.get(), createInfo);
+
+        graphicsContext = core::make_ref<DX12GraphicsContext>(
+            device.get(), pipelineCache.get(), descriptorAllocator.get(), graphicsQueue, fenceEvent.get());
+        copyContext = core::make_ref<DX12CopyContext>(device.get(), memoryAllocator.get(), copyQueue, fenceEvent.get(),
+                                                      createInfo);
     }
 
     auto DX12RHI::createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader>
@@ -1825,40 +1903,38 @@ namespace ionengine::rhi
 
     auto DX12RHI::tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain>
     {
-        return !swapchain ? core::make_ref<DX12Swapchain>(factory.get(), device.get(), descriptorAllocator.get(),
-                                                          graphicsQueue, fenceEvent.get(), createInfo)
-                          : swapchain;
+        if (!swapchain)
+        {
+            swapchain = core::make_ref<DX12Swapchain>(factory.get(), device.get(), descriptorAllocator.get(),
+                                                      graphicsQueue, fenceEvent.get(), createInfo);
+        }
+
+        return swapchain;
     }
 
-    auto DX12RHI::createGraphicsContext() -> core::ref_ptr<GraphicsContext>
+    auto DX12RHI::getGraphicsContext() -> core::ref_ptr<GraphicsContext>
     {
-        return core::make_ref<DX12GraphicsContext>(device.get(), pipelineCache.get(), descriptorAllocator.get(),
-                                                   graphicsQueue.queue.get(), graphicsQueue.fence.get(),
-                                                   fenceEvent.get(), graphicsQueue.fenceValue);
+        return graphicsContext;
     }
 
-    auto DX12RHI::createCopyContext() -> core::ref_ptr<CopyContext>
+    auto DX12RHI::getCopyContext() -> core::ref_ptr<CopyContext>
     {
-        return core::make_ref<DX12CopyContext>(device.get(), memoryAllocator.get(), copyQueue.queue.get(),
-                                               copyQueue.fence.get(), fenceEvent.get(), copyQueue.fenceValue);
+        return copyContext;
     }
 
     auto DX12RHI::getName() const -> std::string_view
     {
-        return "D3D12";
+        return rhiName;
     }
 
-    auto DX12RHI::createDeviceQueue(D3D12_COMMAND_LIST_TYPE const commandListType) -> DeviceQueueData
+    auto DX12RHI::createDeviceQueue(D3D12_COMMAND_LIST_TYPE const commandListType, DeviceQueueData& deviceQueue) -> void
     {
-        DeviceQueueData deviceQueue{};
-
-        D3D12_COMMAND_QUEUE_DESC const commandQueueDesc = {.Type = commandListType,
-                                                           .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL};
+        D3D12_COMMAND_QUEUE_DESC const commandQueueDesc{.Type = commandListType,
+                                                        .Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL};
         throwIfFailed(
             device->CreateCommandQueue(&commandQueueDesc, __uuidof(ID3D12CommandQueue), deviceQueue.queue.put_void()));
         throwIfFailed(
             device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), deviceQueue.fence.put_void()));
-
-        return deviceQueue;
+        deviceQueue.fenceValue = deviceQueue.fence->GetCompletedValue();
     }
 } // namespace ionengine::rhi

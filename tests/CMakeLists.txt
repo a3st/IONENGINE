@@ -33,7 +33,8 @@ target_include_directories(rhi_test PRIVATE ${PROJECT_SOURCE_DIR})
 target_link_libraries(rhi_test PRIVATE 
     platform
     GTest::gtest
-    rhi)
+    rhi
+    shadersys)
 
 target_precompile_headers(rhi_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 

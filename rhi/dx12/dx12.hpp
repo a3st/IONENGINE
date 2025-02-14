@@ -90,13 +90,13 @@ namespace ionengine::rhi
         DX12Buffer(ID3D12Device1* device, D3D12MA::Allocator* memoryAllocator, DescriptorAllocator* descriptorAllocator,
                    BufferCreateInfo const& createInfo);
 
-        auto getSize() -> size_t override;
+        auto getSize() const -> size_t override;
 
-        auto getFlags() -> BufferUsageFlags override;
+        auto getFlags() const -> BufferUsageFlags override;
 
-        auto mapMemory() -> uint8_t* override;
+        auto mapMemory() -> uint8_t*;
 
-        auto unmapMemory() -> void override;
+        auto unmapMemory() -> void;
 
         auto getDescriptorOffset(BufferUsage const usage) const -> uint32_t override;
 
@@ -225,8 +225,8 @@ namespace ionengine::rhi
         Pipeline(ID3D12Device4* device, ID3D12RootSignature* rootSignature, DX12Shader* shader,
                  RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                  std::optional<DepthStencilStageInfo> const depthStencil,
-                 std::span<DXGI_FORMAT const> const renderTargetFormats, DXGI_FORMAT const depthStencilFormat,
-                 ID3DBlob* blob);
+                 std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& renderTargetFormats,
+                 DXGI_FORMAT const depthStencilFormat, ID3DBlob* blob);
 
         auto getPipelineState() -> ID3D12PipelineState*;
 
@@ -298,10 +298,6 @@ namespace ionengine::rhi
         std::unordered_map<Entry, core::ref_ptr<Pipeline>, EntryHasher> entries;
     };
 
-    class DX12Query final : public Query
-    {
-    };
-
     struct DeviceQueueData
     {
         winrt::com_ptr<ID3D12CommandQueue> queue;
@@ -313,10 +309,7 @@ namespace ionengine::rhi
     {
       public:
         DX12GraphicsContext(ID3D12Device4* device, PipelineCache* pipelineCache,
-                            DescriptorAllocator* descriptorAllocator, ID3D12CommandQueue* queue, ID3D12Fence* fence,
-                            HANDLE fenceEvent, uint64_t& fenceValue);
-
-        auto reset() -> void override;
+                            DescriptorAllocator* descriptorAllocator, DeviceQueueData& deviceQueue, HANDLE fenceEvent);
 
         auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
                                         BlendColorInfo const& blendColor,
@@ -350,43 +343,39 @@ namespace ionengine::rhi
         auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
             -> void override;
 
-        auto execute() -> Future<Query> override;
+        auto execute() -> Future<void> override;
 
       private:
         ID3D12Device4* device;
         PipelineCache* pipelineCache;
         DescriptorAllocator* descriptorAllocator;
-        ID3D12CommandQueue* queue;
-        ID3D12Fence* fence;
+        DeviceQueueData* deviceQueue;
         HANDLE fenceEvent;
-        uint64_t* fenceValue;
         winrt::com_ptr<ID3D12CommandAllocator> commandAllocator;
         winrt::com_ptr<ID3D12GraphicsCommandList4> commandList;
-
+        bool isCommandListOpened;
         core::ref_ptr<DX12Shader> currentShader;
-        bool isRootSignatureBinded;
         std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> renderTargetFormats;
         DXGI_FORMAT depthStencilFormat;
         std::array<uint32_t, 16> bindings;
+
+        auto tryResetCommandList() -> void;
     };
 
     class DX12CopyContext final : public CopyContext
     {
       public:
-        DX12CopyContext(ID3D12Device4* device, D3D12MA::Allocator* memoryAllocator, ID3D12CommandQueue* queue,
-                        ID3D12Fence* fence, HANDLE fenceEvent, uint64_t& fenceValue);
+        DX12CopyContext(ID3D12Device4* device, D3D12MA::Allocator* memoryAllocator, DeviceQueueData& deviceQueue,
+                        HANDLE fenceEvent, RHICreateInfo const& rhiCreateInfo);
 
-        auto reset() -> void override;
-
-        auto writeBuffer(core::ref_ptr<Buffer> dest, std::span<uint8_t const> const dataBytes)
+        auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset, std::span<uint8_t const> const dataBytes)
             -> Future<Buffer> override;
 
-        auto writeTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
-                          std::span<uint8_t const> const dataBytes) -> Future<Texture> override;
-
-        auto readBuffer(core::ref_ptr<Buffer> dest, uint8_t* dataBytes) -> size_t override;
-
-        auto readTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel, uint8_t* dataBytes) -> size_t override;
+        auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
+                           std::span<uint8_t const> const dataBytes) -> Future<Texture> override
+        {
+            return Future<Texture>();
+        }
 
         auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
             -> void override;
@@ -394,28 +383,29 @@ namespace ionengine::rhi
         auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
             -> void override;
 
-        auto execute() -> Future<Query> override;
+        auto execute() -> Future<void> override;
 
       private:
         ID3D12Device4* device;
-        ID3D12CommandQueue* queue;
-        ID3D12Fence* fence;
+        DeviceQueueData* deviceQueue;
         HANDLE fenceEvent;
-        uint64_t* fenceValue;
         winrt::com_ptr<ID3D12CommandAllocator> commandAllocator;
         winrt::com_ptr<ID3D12GraphicsCommandList4> commandList;
+        bool isCommandListOpened;
 
-        struct BufferInfo
+        struct StagingBufferData
         {
-            core::ref_ptr<Buffer> buffer;
+            core::ref_ptr<DX12Buffer> buffer;
             uint64_t offset;
         };
 
-        BufferInfo readStagingBuffer;
-        BufferInfo writeStagingBuffer;
+        StagingBufferData readStagingBuffer;
+        StagingBufferData writeStagingBuffer;
 
         auto getSurfaceData(rhi::TextureFormat const format, uint32_t const width, uint32_t const height,
                             size_t& rowBytes, uint32_t& rowCount) -> void;
+
+        auto tryResetCommandList() -> void;
     };
 
     class DX12FutureImpl final : public FutureImpl
@@ -485,9 +475,9 @@ namespace ionengine::rhi
 
         auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain> override;
 
-        auto createGraphicsContext() -> core::ref_ptr<GraphicsContext> override;
+        auto getGraphicsContext() -> core::ref_ptr<GraphicsContext> override;
 
-        auto createCopyContext() -> core::ref_ptr<CopyContext> override;
+        auto getCopyContext() -> core::ref_ptr<CopyContext> override;
 
         auto getName() const -> std::string_view override;
 
@@ -510,9 +500,11 @@ namespace ionengine::rhi
         core::ref_ptr<PipelineCache> pipelineCache;
 
         core::ref_ptr<DX12Swapchain> swapchain;
+        core::ref_ptr<DX12GraphicsContext> graphicsContext;
+        core::ref_ptr<DX12CopyContext> copyContext;
 
-        // std::thread backgroundWorker;
+        std::string const rhiName{"D3D12"};
 
-        auto createDeviceQueue(D3D12_COMMAND_LIST_TYPE const commandListType) -> DeviceQueueData;
+        auto createDeviceQueue(D3D12_COMMAND_LIST_TYPE const commandListType, DeviceQueueData& deviceQueue) -> void;
     };
 } // namespace ionengine::rhi

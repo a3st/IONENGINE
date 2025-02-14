@@ -4,13 +4,14 @@
 #include "precompiled.h"
 #include "rhi/rhi.hpp"
 #include <gtest/gtest.h>
+#include "shadersys/compiler.hpp"
+#include "math/matrix.hpp"
 
 using namespace ionengine;
 
 TEST(RHI, DeviceOffRender_Test)
 {
-    rhi::RHICreateInfo rhiCreateInfo{};
-    auto rhi = rhi::RHI::create(rhiCreateInfo);
+    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
 }
 
 TEST(RHI, DeviceSwapchain_Test)
@@ -20,13 +21,12 @@ TEST(RHI, DeviceSwapchain_Test)
     uint32_t width;
     uint32_t height;
 
-    rhi::RHICreateInfo rhiCreateInfo{};
-    auto rhi = rhi::RHI::create(rhiCreateInfo);
+    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
 
-    auto graphicsContext = rhi->createGraphicsContext();
+    auto graphicsContext = rhi->getGraphicsContext();
 
-    rhi::SwapchainCreateInfo const swapchainCreateInfo = {.window = application->getWindowHandle(),
-                                                          .instance = application->getInstanceHandle()};
+    rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
+                                                       .instance = application->getInstanceHandle()};
     auto swapchain = rhi->tryGetSwapchain(swapchainCreateInfo);
 
     application->inputStateChanged += [&](platform::InputEvent const& event) -> void {
@@ -42,6 +42,14 @@ TEST(RHI, DeviceSwapchain_Test)
             }
         }
     };
+
+    // Compile Shaders
+    auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
+    std::string errors;
+    auto compileResult = shaderCompiler->compileFromFile("../../shaders/base3d.fx", errors);
+    ASSERT_TRUE(compileResult.has_value());
+
+    
 
     application->windowStateChanged += [&](platform::WindowEvent const& event) -> void {
         switch (event.eventType)
@@ -63,11 +71,9 @@ TEST(RHI, DeviceSwapchain_Test)
     };
 
     application->windowUpdated += [&]() -> void {
-        graphicsContext->reset();
-
         auto backBuffer = swapchain->requestBackBuffer();
 
-        std::vector<rhi::RenderPassColorInfo> colors = {
+        std::vector<rhi::RenderPassColorInfo> colors{
             rhi::RenderPassColorInfo{.texture = backBuffer.get(),
                                      .loadOp = rhi::RenderPassLoadOp::Clear,
                                      .storeOp = rhi::RenderPassStoreOp::Store,
@@ -81,11 +87,10 @@ TEST(RHI, DeviceSwapchain_Test)
         graphicsContext->endRenderPass();
         graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
 
-        auto result = graphicsContext->execute();
+        auto executeResult = graphicsContext->execute();
+        executeResult.wait();
 
         swapchain->presentBackBuffer();
-
-        result.wait();
     };
 
     application->run();
