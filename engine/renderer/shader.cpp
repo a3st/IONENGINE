@@ -34,7 +34,7 @@ namespace ionengine
             case asset::fx::VertexFormat::R32_UINT:
                 return rhi::VertexFormat::R32_UINT;
             default:
-                throw std::invalid_argument("Passed invalid argument into function");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 

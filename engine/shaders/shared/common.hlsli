@@ -7,15 +7,27 @@ struct VS_INPUT {
 
 struct VS_OUTPUT {
     float4 position : SV_Position;
-    float2 uv : TEXCOORD0;
+    float2 uv : TEXCOORD;
 };
 
 struct PS_OUTPUT {
-    float4 color : SV_Target0;
+    float4 color : SV_Target;
 };
 #elif SHADER_DOMAIN_TYPE_SURFACE
 struct VS_INPUT {
-    uint id : SV_VertexID;
+    float3 position : POSITION;
+    float3 normal : NORMAL;
+    float2 uv : TEXCOORD;
+};
+
+struct VS_OUTPUT {
+    float4 position : SV_Position;
+    float3 normal : NORMAL;
+    float2 uv : TEXCOORD;
+};
+
+struct PS_OUTPUT {
+    float4 color : SV_Target;
 };
 
 struct TRANSFORM_DATA {

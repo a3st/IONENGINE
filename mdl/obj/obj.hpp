@@ -11,14 +11,16 @@ namespace ionengine::asset
     class OBJImporter : public MDLImporter
     {
       public:
-        auto loadFromFile(std::filesystem::path const& filePath,
-                          std::string& errors) -> std::optional<ModelFile> override;
+        auto loadFromFile(std::filesystem::path const& filePath, std::string& errors)
+            -> std::expected<ModelFile, MDLImportError> override;
 
-        auto loadFromBytes(std::span<uint8_t const> const dataBytes,
-                           std::string& errors) -> std::optional<ModelFile> override;
+        auto loadFromBytes(std::span<uint8_t const> const dataBytes, std::string& errors)
+            -> std::expected<ModelFile, MDLImportError> override;
 
       private:
-        auto readOBJToModelFile(tinyobj::ObjReader const& reader, std::string& errors) -> std::optional<ModelFile>;
+        std::string* errors;
+
+        auto readModelData(tinyobj::ObjReader const& reader) -> std::expected<ModelFile, MDLImportError>;
 
         struct Vertex
         {
@@ -41,4 +43,4 @@ namespace ionengine::asset
             }
         };
     };
-} // namespace ionengine::mdl
+} // namespace ionengine::asset

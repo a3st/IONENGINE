@@ -34,7 +34,8 @@ target_link_libraries(rhi_test PRIVATE
     platform
     GTest::gtest
     rhi
-    shadersys)
+    shadersys
+    mdl)
 
 target_precompile_headers(rhi_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 

@@ -8,7 +8,7 @@ using namespace ionengine;
 
 TEST(MDL, LoadOBJ_Test)
 {
-    auto objImporter = core::make_ref<mdl::OBJImporter>();
+    auto objImporter = core::make_ref<asset::OBJImporter>();
 
     std::string errors;
     auto modelFile = objImporter->loadFromFile("box.obj", errors);

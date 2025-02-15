@@ -389,7 +389,7 @@ namespace ionengine::rhi
         union {
             struct
             {
-                std::vector<VertexDeclarationInfo> vertexDeclarations;
+                std::span<VertexDeclarationInfo const> vertexDeclarations;
                 ShaderStageCreateInfo vertexStage;
                 ShaderStageCreateInfo pixelStage;
             } graphics;
