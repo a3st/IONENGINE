@@ -10,7 +10,6 @@ namespace ionengine::shadersys::common
     struct TransformData
     {
         math::Matf modelViewProj;
-        math::Matf inverseModelViewProj;
     };
 
     struct SamplerData

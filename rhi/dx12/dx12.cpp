@@ -132,7 +132,7 @@ namespace ionengine::rhi
             case TextureDimension::_3D:
                 return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -157,7 +157,7 @@ namespace ionengine::rhi
             case CompareOp::NotEqual:
                 return D3D12_COMPARISON_FUNC_NOT_EQUAL;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -176,7 +176,7 @@ namespace ionengine::rhi
             case Blend::BlendFactor:
                 return D3D12_BLEND_BLEND_FACTOR;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -195,7 +195,7 @@ namespace ionengine::rhi
             case BlendOp::Subtract:
                 return D3D12_BLEND_OP_SUBTRACT;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -208,7 +208,7 @@ namespace ionengine::rhi
             case FillMode::Wireframe:
                 return D3D12_FILL_MODE_WIREFRAME;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -223,7 +223,7 @@ namespace ionengine::rhi
             case CullMode::None:
                 return D3D12_CULL_MODE_NONE;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -238,7 +238,7 @@ namespace ionengine::rhi
             case Filter::Anisotropic:
                 return D3D12_FILTER_COMPARISON_ANISOTROPIC;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -253,7 +253,7 @@ namespace ionengine::rhi
             case AddressMode::Mirror:
                 return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     };
 
@@ -269,7 +269,7 @@ namespace ionengine::rhi
             case RenderPassLoadOp::DontCare:
                 return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -283,7 +283,7 @@ namespace ionengine::rhi
             case RenderPassStoreOp::DontCare:
                 return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -308,7 +308,7 @@ namespace ionengine::rhi
             case ResourceState::CopyDest:
                 return D3D12_RESOURCE_STATE_COPY_DEST;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -532,7 +532,7 @@ namespace ionengine::rhi
 
         if (flags & BufferUsage::ConstantBuffer)
         {
-            assert(descriptorAllocator && "To create a buffer with views, you need to pass the allocator descriptor");
+            assert(descriptorAllocator && "to create a buffer with views, you need to pass the allocator descriptor");
 
             winrt::com_ptr<DescriptorAllocation> descriptorAllocation;
             throwIfFailed(
@@ -546,7 +546,7 @@ namespace ionengine::rhi
         }
         if (flags & BufferUsage::ShaderResource)
         {
-            assert(descriptorAllocator && "To create a buffer with views, you need to pass the allocator descriptor");
+            assert(descriptorAllocator && "to create a buffer with views, you need to pass the allocator descriptor");
 
             winrt::com_ptr<DescriptorAllocation> descriptorAllocation;
             throwIfFailed(
@@ -564,7 +564,7 @@ namespace ionengine::rhi
         }
         if (flags & BufferUsage::UnorderedAccess)
         {
-            assert(descriptorAllocator && "To create a buffer with views, you need to pass the allocator descriptor");
+            assert(descriptorAllocator && "to create a buffer with views, you need to pass the allocator descriptor");
 
             winrt::com_ptr<DescriptorAllocation> descriptorAllocation;
             throwIfFailed(
@@ -675,7 +675,7 @@ namespace ionengine::rhi
 
         if (flags & TextureUsage::RenderTarget)
         {
-            assert(descriptorAllocator && "To create a texture with views, you need to pass the allocator descriptor");
+            assert(descriptorAllocator && "to create a texture with views, you need to pass the allocator descriptor");
 
             winrt::com_ptr<DescriptorAllocation> descriptorAllocation;
             throwIfFailed(descriptorAllocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_RTV, descriptorAllocation.put()));
@@ -688,7 +688,7 @@ namespace ionengine::rhi
 
         if (flags & TextureUsage::DepthStencil)
         {
-            assert(descriptorAllocator && "To create a texture with views, you need to pass the allocator descriptor");
+            assert(descriptorAllocator && "to create a texture with views, you need to pass the allocator descriptor");
 
             winrt::com_ptr<DescriptorAllocation> descriptorAllocation;
             throwIfFailed(descriptorAllocator->allocate(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, descriptorAllocation.put()));
@@ -702,7 +702,7 @@ namespace ionengine::rhi
                     break;
                 }
                 default: {
-                    assert(false && "Creation of depth stencil only possible in 2D dimension");
+                    assert(false && "creation of depth stencil only possible in 2D dimension");
                     break;
                 }
             }
@@ -711,7 +711,7 @@ namespace ionengine::rhi
 
         if (flags & TextureUsage::ShaderResource)
         {
-            assert(descriptorAllocator && "To create a texture with views, you need to pass the allocator descriptor");
+            assert(descriptorAllocator && "to create a texture with views, you need to pass the allocator descriptor");
 
             winrt::com_ptr<DescriptorAllocation> descriptorAllocation;
             throwIfFailed(
@@ -871,16 +871,16 @@ namespace ionengine::rhi
             inputElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
             inputElementDesc.InstanceDataStepRate = 0;
 
-            inputElementDescs.emplace_back(inputElementDesc);
+            inputElements.emplace_back(std::move(inputElementDesc));
             offset += sizeof_VertexFormat(vertexDeclaration.format);
         }
 
         inputSize = offset;
     }
 
-    auto DX12VertexInput::getInputElementDescs() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>
+    auto DX12VertexInput::getDesc() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>
     {
-        return inputElementDescs;
+        return inputElements;
     }
 
     auto DX12VertexInput::getInputSize() const -> uint32_t
@@ -889,6 +889,7 @@ namespace ionengine::rhi
     }
 
     DX12Shader::DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo)
+        : pipelineType(createInfo.pipelineType)
     {
         if (createInfo.pipelineType == rhi::PipelineType::Graphics)
         {
@@ -949,7 +950,7 @@ namespace ionengine::rhi
         return hash;
     }
 
-    auto DX12Shader::getVertexInput() const -> std::optional<DX12VertexInput>
+    auto DX12Shader::getVertexInput() const -> std::optional<DX12VertexInput> const&
     {
         return vertexInput;
     }
@@ -971,10 +972,11 @@ namespace ionengine::rhi
                 case DX12ShaderStageType::Vertex: {
                     graphicsPipelineStateDesc.VS = stageData.shaderByteCode;
 
+                    auto const& vertexInput = shader->getVertexInput().value();
+
                     D3D12_INPUT_LAYOUT_DESC const inputLayoutDesc{
-                        .pInputElementDescs = shader->getVertexInput().value().getInputElementDescs().data(),
-                        .NumElements =
-                            static_cast<uint32_t>(shader->getVertexInput().value().getInputElementDescs().size())};
+                        .pInputElementDescs = vertexInput.getDesc().data(),
+                        .NumElements = static_cast<uint32_t>(vertexInput.getDesc().size())};
 
                     graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
                     break;
@@ -1224,7 +1226,6 @@ namespace ionengine::rhi
         this->tryResetCommandList();
 
         auto dxShader = dynamic_cast<DX12Shader*>(shader.get());
-        currentShader = shader;
 
         auto pipeline =
             pipelineCache->get(dxShader, rasterizer, blendColor, depthStencil, renderTargetFormats, depthStencilFormat);
@@ -1232,6 +1233,8 @@ namespace ionengine::rhi
         commandList->SetGraphicsRootSignature(pipeline->getRootSignature());
         commandList->SetPipelineState(pipeline->getPipelineState());
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        currentShader = shader;
     }
 
     auto DX12GraphicsContext::bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void
@@ -1470,7 +1473,7 @@ namespace ionengine::rhi
     DX12CopyContext::DX12CopyContext(ID3D12Device4* device, D3D12MA::Allocator* memoryAllocator,
                                      DeviceQueueData& deviceQueue, HANDLE fenceEvent,
                                      RHICreateInfo const& rhiCreateInfo)
-        : device(device), deviceQueue(&deviceQueue), fenceEvent(fenceEvent)
+        : device(device), deviceQueue(&deviceQueue), fenceEvent(fenceEvent), isCommandListOpened(false)
     {
         throwIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, __uuidof(ID3D12CommandAllocator),
                                                      commandAllocator.put_void()));
@@ -1509,6 +1512,8 @@ namespace ionengine::rhi
     auto DX12CopyContext::updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset,
                                        std::span<uint8_t const> const dataBytes) -> Future<Buffer>
     {
+        this->tryResetCommandList();
+
         // Check for overflow staging buffer
         if (writeStagingBuffer.buffer->getSize() - writeStagingBuffer.offset < dataBytes.size())
         {
@@ -1738,12 +1743,16 @@ namespace ionengine::rhi
     auto DX12CopyContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
         -> void
     {
+        this->tryResetCommandList();
+
         DX12DeviceContext_barrier(commandList.get(), dest, before, after);
     }
 
     auto DX12CopyContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
         -> void
     {
+        this->tryResetCommandList();
+
         DX12DeviceContext_barrier(commandList.get(), dest, before, after);
     }
 

@@ -73,7 +73,7 @@ namespace ionengine::math
             return std::sqrt(x * x + y * y + z * z + w * w);
         }
 
-        auto toMat() const -> Mat
+        auto toMat() const -> Mat<Type>
         {
             Type xy = x * y;
             Type xz = x * z;
@@ -85,7 +85,7 @@ namespace ionengine::math
             Type yy = y * y;
             Type zz = z * z;
 
-            auto mat = Matrix<Type>::identity();
+            auto mat = Mat<Type>::identity();
             mat._00 = 1.0f - 2.0f * (yy + zz);
             mat._01 = 2.0f * (xy - zw);
             mat._02 = 2.0f * (xz + yw);
@@ -141,7 +141,7 @@ namespace ionengine::math
             return quat;
         }
 
-        auto operator*(Quaternion const& other) const -> Quat
+        auto operator*(Quat const& other) const -> Quat
         {
             return Quat{w * other.x + x * other.w + y * other.z - z * other.y,
                         w * other.y - x * other.z + y * other.w + z * other.x,

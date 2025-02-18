@@ -11,7 +11,7 @@ TEST(MDL, LoadOBJ_Test)
     auto objImporter = core::make_ref<asset::OBJImporter>();
 
     std::string errors;
-    auto modelFile = objImporter->loadFromFile("box.obj", errors);
+    auto modelFile = objImporter->loadFromFile("../../engine/objects/box.obj", errors);
     std::cout << errors << std::endl;
 }
 

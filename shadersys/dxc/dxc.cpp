@@ -124,11 +124,11 @@ namespace ionengine::shadersys
                         break;
                     }
                     case D3D_REGISTER_COMPONENT_SINT32: {
-                        format = asset::fx::VertexFormat::RG32_UINT;
+                        format = asset::fx::VertexFormat::RG32_SINT;
                         break;
                     }
                     case D3D_REGISTER_COMPONENT_FLOAT32: {
-                        format = asset::fx::VertexFormat::RG32_UINT;
+                        format = asset::fx::VertexFormat::RG32_FLOAT;
                         break;
                     }
                 }
@@ -142,11 +142,11 @@ namespace ionengine::shadersys
                         break;
                     }
                     case D3D_REGISTER_COMPONENT_SINT32: {
-                        format = asset::fx::VertexFormat::RGB32_UINT;
+                        format = asset::fx::VertexFormat::RGB32_SINT;
                         break;
                     }
                     case D3D_REGISTER_COMPONENT_FLOAT32: {
-                        format = asset::fx::VertexFormat::RGB32_UINT;
+                        format = asset::fx::VertexFormat::RGB32_FLOAT;
                         break;
                     }
                 }
@@ -160,11 +160,11 @@ namespace ionengine::shadersys
                         break;
                     }
                     case D3D_REGISTER_COMPONENT_SINT32: {
-                        format = asset::fx::VertexFormat::RGBA32_UINT;
+                        format = asset::fx::VertexFormat::RGBA32_SINT;
                         break;
                     }
                     case D3D_REGISTER_COMPONENT_FLOAT32: {
-                        format = asset::fx::VertexFormat::RGBA32_UINT;
+                        format = asset::fx::VertexFormat::RGBA32_FLOAT;
                         break;
                     }
                 }

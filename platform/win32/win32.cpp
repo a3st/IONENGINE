@@ -151,7 +151,6 @@ namespace ionengine::platform
         }
 
         ::SetWindowLongPtr(window.get(), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-        ::ShowWindow(window.get(), SW_SHOWDEFAULT);
     }
 
     auto Win32App::getWindowHandle() -> void*
@@ -166,6 +165,8 @@ namespace ionengine::platform
 
     auto Win32App::run() -> void
     {
+        ::ShowWindow(window.get(), SW_SHOWDEFAULT);
+
         MSG msg;
         bool running = true;
 
@@ -191,7 +192,7 @@ namespace ionengine::platform
             }
             else
             {
-                windowUpdated();
+                windowUpdated.invoke();
             }
         }
     }

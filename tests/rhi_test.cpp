@@ -1,12 +1,14 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "math/matrix.hpp"
+#include "math/quaternion.hpp"
+#include "mdl/obj/obj.hpp"
 #include "platform/platform.hpp"
 #include "precompiled.h"
 #include "rhi/rhi.hpp"
+#include "shadersys/common.hpp"
 #include "shadersys/compiler.hpp"
 #include <gtest/gtest.h>
-#include "mdl/obj/obj.hpp"
 
 using namespace ionengine;
 
@@ -115,20 +117,55 @@ TEST(RHI, DeviceSwapchain_Test)
         shader = rhi->createShader(shaderCreateInfo);
     }
 
-    rhi::BufferCreateInfo const bufferCreateInfo{.size = 1 * 1024 * 1024,
-                                                 .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::Vertex};
-    auto vertexBuffer = rhi->createBuffer(bufferCreateInfo);
+    core::ref_ptr<rhi::Buffer> vBuffer;
+    {
+        rhi::BufferCreateInfo const bufferCreateInfo{.size = 1 * 1024 * 1024,
+                                                     .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::Vertex};
+        vBuffer = rhi->createBuffer(bufferCreateInfo);
+    }
 
+    core::ref_ptr<rhi::Buffer> iBuffer;
+    {
+        rhi::BufferCreateInfo const bufferCreateInfo{.size = 1 * 1024 * 1024,
+                                                     .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::Index};
+        iBuffer = rhi->createBuffer(bufferCreateInfo);
+    }
+
+    core::ref_ptr<rhi::Buffer> tBuffer;
+    {
+        rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
+                                                     .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
+        tBuffer = rhi->createBuffer(bufferCreateInfo);
+    }
+
+    uint32_t indexCount = 0;
     // Load model
     {
         auto objImporter = core::make_ref<asset::OBJImporter>();
-        auto modelResult = objImporter->loadFromFile("box.obj", errors);
+        auto modelResult = objImporter->loadFromFile("../../engine/objects/box.obj", errors);
         ASSERT_TRUE(modelResult.has_value());
 
         asset::ModelFile modelFile = std::move(modelResult.value());
-    }
 
-    //copyContext->updateBuffer(vertexBuffer, 0, )
+        auto const& vertexBuffer = modelFile.modelData.buffers[modelFile.modelData.buffer];
+
+        copyContext->barrier(vBuffer, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
+
+        auto copyResult = copyContext->updateBuffer(
+            vBuffer, 0, std::span<uint8_t const>(modelFile.blob.data() + vertexBuffer.offset, vertexBuffer.size));
+
+        copyContext->barrier(vBuffer, rhi::ResourceState::CopyDest, rhi::ResourceState::Common);
+
+        auto const& indexBuffer = modelFile.modelData.buffers[modelFile.modelData.surfaces[0].buffer];
+
+        copyResult = copyContext->updateBuffer(
+            iBuffer, 0, std::span<uint8_t const>(modelFile.blob.data() + indexBuffer.offset, indexBuffer.size));
+
+        auto executeResult = copyContext->execute();
+        executeResult.wait();
+
+        indexCount = modelFile.modelData.surfaces[0].indexCount;
+    }
 
     application->windowStateChanged += [&](platform::WindowEvent const& event) -> void {
         switch (event.eventType)
@@ -149,8 +186,42 @@ TEST(RHI, DeviceSwapchain_Test)
         }
     };
 
+    math::Quatf originalRot = math::Quatf::euler(0.0f, 0.0f, 0.0f);
+    float angle = 0.0f;
+
+    auto beginFrameTime = std::chrono::steady_clock::now();
+
     application->windowUpdated += [&]() -> void {
+        auto endFrameTime = std::chrono::steady_clock::now();
+
+        float deltaTime =
+            std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() / 1000000.0f;
+        
+        // Update
+        math::Matf projection =
+            math::Matf::perspectiveRH(60.0f * std::numbers::pi / 180.0f, width / height, 0.1f, 100.0f);
+        math::Matf view = math::Matf::lookAtRH(math::Vec3f(4.0f, 2.0f, 4.0f), math::Vec3f(0.0f, 0.0f, 0.0f),
+                                               math::Vec3f(0.0f, 0.0f, 1.0f));
+
+        math::Quatf currentRot = originalRot * math::Quatf::fromAngleAxis(angle, math::Vec3f(0.0f, 0.0f, 1.0f));
+
+        math::Matf model = math::Matf::identity() * currentRot.toMat();
+
+        angle += 100.0f * deltaTime;
+
         auto backBuffer = swapchain->requestBackBuffer();
+
+        // Update MVP Matrix
+        {
+            shadersys::common::TransformData const transformData{.modelViewProj = model * view * projection};
+
+            copyContext->updateBuffer(
+                tBuffer, 0,
+                std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&transformData), sizeof(transformData)));
+
+            auto executeResult = copyContext->execute();
+            executeResult.wait();
+        }
 
         std::vector<rhi::RenderPassColorInfo> colors{rhi::RenderPassColorInfo{.texture = backBuffer.get(),
                                                                               .loadOp = rhi::RenderPassLoadOp::Clear,
@@ -162,6 +233,13 @@ TEST(RHI, DeviceSwapchain_Test)
 
         graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
         graphicsContext->beginRenderPass(colors, std::nullopt);
+        graphicsContext->setGraphicsPipelineOptions(
+            shader, rhi::RasterizerStageInfo{.fillMode = rhi::FillMode::Solid, .cullMode = rhi::CullMode::Back},
+            rhi::BlendColorInfo::Opaque(), std::nullopt);
+        graphicsContext->bindDescriptor(0, tBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
+        graphicsContext->bindVertexBuffer(vBuffer, 0, vBuffer->getSize());
+        graphicsContext->bindIndexBuffer(iBuffer, 0, iBuffer->getSize(), rhi::IndexFormat::Uint32);
+        graphicsContext->drawIndexed(indexCount, 1);
         graphicsContext->endRenderPass();
         graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
 
@@ -169,6 +247,8 @@ TEST(RHI, DeviceSwapchain_Test)
         executeResult.wait();
 
         swapchain->presentBackBuffer();
+
+        beginFrameTime = endFrameTime;
     };
 
     application->run();

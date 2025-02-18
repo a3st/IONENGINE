@@ -183,13 +183,13 @@ namespace ionengine::rhi
       public:
         DX12VertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations);
 
-        auto getInputElementDescs() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
+        auto getDesc() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
 
         auto getInputSize() const -> uint32_t;
 
       private:
-        std::vector<std::string> semanticNames;
-        std::vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
+        std::list<std::string> semanticNames;
+        std::vector<D3D12_INPUT_ELEMENT_DESC> inputElements;
         uint32_t inputSize;
     };
 
@@ -210,7 +210,7 @@ namespace ionengine::rhi
 
         auto getStages() const -> std::unordered_map<DX12ShaderStageType, DX12ShaderStage> const&;
 
-        auto getVertexInput() const -> std::optional<DX12VertexInput>;
+        auto getVertexInput() const -> std::optional<DX12VertexInput> const&;
 
       private:
         std::optional<DX12VertexInput> vertexInput;
