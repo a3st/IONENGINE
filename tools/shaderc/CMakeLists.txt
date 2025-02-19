@@ -21,8 +21,8 @@ set_target_properties(shaderc PROPERTIES
 
 if(WIN32)
     add_custom_command(TARGET shaderc POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/thirdparty/dxc/windows/bin/x64/dxcompiler.dll ${CMAKE_BINARY_DIR}/tools/dxcompiler.dll
-        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/thirdparty/dxc/windows/bin/x64/dxil.dll ${CMAKE_BINARY_DIR}/tools/dxil.dll)
+        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/dxc/thirdparty/windows/bin/x64/dxcompiler.dll ${CMAKE_BINARY_DIR}/tools/dxcompiler.dll
+        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/dxc/thirdparty/windows/bin/x64/dxil.dll ${CMAKE_BINARY_DIR}/tools/dxil.dll)
 elseif(UNIX)
     message(FATAL_ERROR "shaderc is not available on this platform")
 endif()

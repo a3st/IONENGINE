@@ -8,7 +8,7 @@ HEADER {
 }
 
 DATA {
-    
+    texture2D_t basicTex;
 }
 
 VS {
@@ -32,10 +32,14 @@ VS {
 PS {
     #include "shared/common.hlsli"
 
-    PS_OUTPUT main(VS_OUTPUT input) 
+    PS_OUTPUT main(VS_OUTPUT input)
     {
+        cbuffer_t<SAMPLER_DATA> samplerBuffer = gShaderData.samplerBuffer;
+        cbuffer_t<MATERIAL_DATA> materialBuffer = gShaderData.materialBuffer;
+
         PS_OUTPUT output;
-        output.color = float4(0.5f, 0.4f, 0.2f, 1.0f);
+        output.color = materialBuffer.Get().basicTex.Get().Sample(samplerBuffer.Get().linearSampler.Get(), input.uv).rgba;
+        //output.color = float4(1.0f, 0.5f, 0.3f, 1.0f);
         return output;
     }
 }

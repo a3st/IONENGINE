@@ -1,19 +1,18 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "mdl/obj/obj.hpp"
+#include "txe/png/png.hpp"
 #include "precompiled.h"
 #include <gtest/gtest.h>
 
 using namespace ionengine;
 
-TEST(MDL, LoadOBJ_Test)
+TEST(TXE, LoadPNG_Test)
 {
-    auto objImporter = core::make_ref<asset::OBJImporter>();
-
+    auto pngImporter = core::make_ref<asset::PNGImporter>();
     std::string errors;
-    auto modelFile = objImporter->loadFromFile("../../engine/objects/box.obj", errors);
+    auto textureFile = pngImporter->loadFromFile("../../engine/textures/spngbob.png", errors);
     std::cout << errors << std::endl;
-    ASSERT_TRUE(modelFile.has_value());
+    ASSERT_TRUE(textureFile.has_value());
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

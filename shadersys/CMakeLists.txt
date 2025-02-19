@@ -12,10 +12,10 @@ target_include_directories(shadersys PUBLIC
     ${PROJECT_SOURCE_DIR}/shadersys)
 
 target_include_directories(shadersys PUBLIC 
-    ${PROJECT_SOURCE_DIR}/thirdparty/dxc/windows/include)
+    ${PROJECT_SOURCE_DIR}/dxc/thirdparty/windows/include)
 
 target_link_directories(shadersys PUBLIC
-    ${PROJECT_SOURCE_DIR}/thirdparty/dxc/windows/lib/x64)
+    ${PROJECT_SOURCE_DIR}/dxc/thirdparty/windows/lib/x64)
 
 target_link_libraries(shadersys PUBLIC 
     core

@@ -1195,6 +1195,8 @@ namespace ionengine::rhi
 
         throwIfFailed(device->CreateCommandList1(0, D3D12_COMMAND_LIST_TYPE_DIRECT, D3D12_COMMAND_LIST_FLAG_NONE,
                                                  __uuidof(ID3D12GraphicsCommandList4), commandList.put_void()));
+
+        bindingData.resize(sizeof(uint32_t) * 4 * 16);
     }
 
     auto DX12GraphicsContext::tryResetCommandList() -> void
@@ -1239,7 +1241,7 @@ namespace ionengine::rhi
 
     auto DX12GraphicsContext::bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void
     {
-        bindings[index] = descriptor;
+        std::memcpy(bindingData.data() + index * sizeof(uint32_t) * 4, &descriptor, sizeof(uint32_t));
     }
 
     auto DX12GraphicsContext::beginRenderPass(std::span<RenderPassColorInfo> const colors,
@@ -1365,13 +1367,13 @@ namespace ionengine::rhi
 
     auto DX12GraphicsContext::drawIndexed(uint32_t const indexCount, uint32_t const instanceCount) -> void
     {
-        commandList->SetGraphicsRoot32BitConstants(0, static_cast<uint32_t>(bindings.size()), bindings.data(), 0);
+        commandList->SetGraphicsRoot32BitConstants(0, 16, bindingData.data(), 0);
         commandList->DrawIndexedInstanced(indexCount, instanceCount, 0, 0, 0);
     }
 
     auto DX12GraphicsContext::draw(uint32_t const vertexCount, uint32_t const instanceCount) -> void
     {
-        commandList->SetGraphicsRoot32BitConstants(0, static_cast<uint32_t>(bindings.size()), bindings.data(), 0);
+        commandList->SetGraphicsRoot32BitConstants(0, 16, bindingData.data(), 0);
         commandList->DrawInstanced(vertexCount, instanceCount, 0, 0);
     }
 
@@ -1433,7 +1435,7 @@ namespace ionengine::rhi
         return Future<void>(std::move(futureImpl));
     }
 
-    auto DX12CopyContext::getSurfaceData(rhi::TextureFormat const format, uint32_t const width, uint32_t const height,
+    auto DX12CopyContext::getSurfaceData(DXGI_FORMAT const format, uint32_t const width, uint32_t const height,
                                          size_t& rowBytes, uint32_t& rowCount) -> void
     {
         bool bc = false;
@@ -1441,14 +1443,14 @@ namespace ionengine::rhi
 
         switch (format)
         {
-            case rhi::TextureFormat::BC1:
-            case rhi::TextureFormat::BC4: {
+            case DXGI_FORMAT_BC1_UNORM:
+            case DXGI_FORMAT_BC4_UNORM: {
                 bc = true;
                 bpe = 8;
                 break;
             }
-            case rhi::TextureFormat::BC3:
-            case rhi::TextureFormat::BC5: {
+            case DXGI_FORMAT_BC3_UNORM:
+            case DXGI_FORMAT_BC5_UNORM: {
                 bc = true;
                 bpe = 16;
                 break;
@@ -1512,15 +1514,88 @@ namespace ionengine::rhi
     auto DX12CopyContext::updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset,
                                        std::span<uint8_t const> const dataBytes) -> Future<Buffer>
     {
+        auto dxDestBuffer = dynamic_cast<DX12Buffer*>(dest.get());
+        if (dxDestBuffer->getFlags() & rhi::BufferUsage::MapWrite)
+        {
+            // Check for overflow destination buffer
+            if (dxDestBuffer->getSize() - offset < dataBytes.size())
+            {
+                throw std::runtime_error("not enough memory to perform the operation");
+            }
+
+            uint8_t* mappedBytes = dxDestBuffer->mapMemory();
+            {
+                std::basic_ospanstream<uint8_t> oss(std::span<uint8_t>(mappedBytes + offset, dxDestBuffer->getSize()));
+                oss.write(dataBytes.data(), dataBytes.size());
+            }
+            dxDestBuffer->unmapMemory();
+
+            auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
+                                                               fenceEvent, deviceQueue->fenceValue);
+            return Future<Buffer>(dest, std::move(futureImpl));
+        }
+        else
+        {
+            this->tryResetCommandList();
+
+            // Check for overflow staging buffer
+            if (writeStagingBuffer.buffer->getSize() - writeStagingBuffer.offset < dataBytes.size())
+            {
+                auto executeResult = this->execute();
+                // Wait until command buffer ends work
+                executeResult.wait();
+            }
+
+            uint32_t const resourceAlignmentMask = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1;
+
+            uint64_t const startWriteOffset = writeStagingBuffer.offset;
+
+            uint8_t* mappedBytes = writeStagingBuffer.buffer->mapMemory();
+            {
+                std::basic_ospanstream<uint8_t> oss(
+                    std::span<uint8_t>(mappedBytes, writeStagingBuffer.buffer->getSize()));
+                oss.seekp(startWriteOffset);
+                oss.write(dataBytes.data(), dataBytes.size());
+
+                uint64_t const offset = oss.tellp();
+                writeStagingBuffer.offset = (offset + resourceAlignmentMask) & ~resourceAlignmentMask;
+            }
+            writeStagingBuffer.buffer->unmapMemory();
+
+            commandList->CopyBufferRegion(dxDestBuffer->getResource(), offset, writeStagingBuffer.buffer->getResource(),
+                                          startWriteOffset, dataBytes.size());
+
+            auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
+                                                               fenceEvent, deviceQueue->fenceValue + 1);
+            return Future<Buffer>(dest, std::move(futureImpl));
+        }
+    }
+
+    auto DX12CopyContext::updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
+                                        std::span<uint8_t const> const dataBytes) -> Future<Texture>
+    {
         this->tryResetCommandList();
 
+        auto dxDestTexture = dynamic_cast<DX12Texture*>(dest.get());
+        D3D12_RESOURCE_DESC resourceDesc = dxDestTexture->getResource()->GetDesc();
+
+        size_t totalBytes = 0;
+        D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{};
+        device->GetCopyableFootprints(&resourceDesc, resourceIndex, 1, 0, &footprint, nullptr, nullptr, &totalBytes);
+
         // Check for overflow staging buffer
-        if (writeStagingBuffer.buffer->getSize() - writeStagingBuffer.offset < dataBytes.size())
+        if (writeStagingBuffer.buffer->getSize() - writeStagingBuffer.offset < totalBytes)
         {
             auto executeResult = this->execute();
             // Wait until command buffer ends work
             executeResult.wait();
         }
+
+        size_t rowBytes = 0;
+        uint32_t rowCount = 0;
+
+        this->getSurfaceData(resourceDesc.Format, footprint.Footprint.Width, footprint.Footprint.Height, rowBytes,
+                             rowCount);
 
         uint32_t const resourceAlignmentMask = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1;
 
@@ -1528,59 +1603,37 @@ namespace ionengine::rhi
 
         uint8_t* mappedBytes = writeStagingBuffer.buffer->mapMemory();
         {
-            std::basic_ospanstream<uint8_t> oss(
-                std::span<uint8_t>(mappedBytes + startWriteOffset, writeStagingBuffer.buffer->getSize()));
-            oss.write(dataBytes.data(), dataBytes.size());
+            std::basic_ospanstream<uint8_t> oss(std::span<uint8_t>(mappedBytes, writeStagingBuffer.buffer->getSize()));
+            oss.seekp(startWriteOffset);
+            footprint.Offset = oss.tellp();
+
+            for (uint32_t const i : std::views::iota(0u, rowCount))
+            {
+                oss.write(dataBytes.data() + rowBytes * i, rowBytes);
+
+                // Align by row pitch
+                oss.seekp(footprint.Footprint.RowPitch - rowBytes, std::ios::cur);
+            }
 
             uint64_t const offset = oss.tellp();
             writeStagingBuffer.offset = (offset + resourceAlignmentMask) & ~resourceAlignmentMask;
         }
         writeStagingBuffer.buffer->unmapMemory();
 
-        auto dxDestBuffer = dynamic_cast<DX12Buffer*>(dest.get());
-
-        commandList->CopyBufferRegion(dxDestBuffer->getResource(), offset, writeStagingBuffer.buffer->getResource(),
-                                      startWriteOffset, dataBytes.size());
+        D3D12_TEXTURE_COPY_LOCATION const sourceCopyLocation{.pResource = writeStagingBuffer.buffer->getResource(),
+                                                             .Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+                                                             .PlacedFootprint = footprint};
+        D3D12_TEXTURE_COPY_LOCATION const destCopyLocation{.pResource = dxDestTexture->getResource(),
+                                                           .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                                                           .SubresourceIndex = resourceIndex};
+        commandList->CopyTextureRegion(&destCopyLocation, 0, 0, 0, &sourceCopyLocation, nullptr);
 
         auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
-                                                           fenceEvent, deviceQueue->fenceValue);
-        return Future<Buffer>(dest, std::move(futureImpl));
+                                                           fenceEvent, deviceQueue->fenceValue + 1);
+        return Future<Texture>(dest, std::move(futureImpl));
     }
 
     /*
-    auto DX12CopyContext::writeBuffer(core::ref_ptr<Buffer> dest, std::span<uint8_t const> const dataBytes)
-        -> Future<Buffer>
-    {
-        // Check for overflow buffer
-        if (writeStagingBuffer.buffer->getSize() - writeStagingBuffer.offset < dataBytes.size())
-        {
-            this->execute();
-            this->reset();
-        }
-
-        uint32_t const resourceAlignmentMask = D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT - 1;
-
-        uint64_t offset = writeStagingBuffer.offset;
-        uint8_t* mappedBytes = writeStagingBuffer.buffer->mapMemory();
-        {
-            std::basic_ospanstream<uint8_t> stream(
-                std::span<uint8_t>(mappedBytes + writeStagingBuffer.offset, writeStagingBuffer.buffer->getSize()),
-                std::ios::binary);
-            stream.write(dataBytes.data(), dataBytes.size());
-
-            writeStagingBuffer.offset =
-                (static_cast<uint64_t>(stream.tellp()) + resourceAlignmentMask) & ~resourceAlignmentMask;
-        }
-        writeStagingBuffer.buffer->unmapMemory();
-
-        commandList->CopyBufferRegion(dynamic_cast<DX12Buffer*>(dest.get())->getResource(), 0,
-                                      dynamic_cast<DX12Buffer*>(writeStagingBuffer.buffer.get())->getResource(), offset,
-                                      dataBytes.size());
-
-        auto futureImpl = std::make_unique<DX12FutureImpl>(queue, fence, fenceEvent, *fenceValue);
-        return Future<Buffer>(dest, std::move(futureImpl));
-    }
-
     auto DX12CopyContext::writeTexture(core::ref_ptr<Texture> dest, uint32_t const mipLevel,
                                        std::span<uint8_t const> const dataBytes) -> Future<Texture>
     {

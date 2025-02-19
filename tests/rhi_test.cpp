@@ -8,6 +8,7 @@
 #include "rhi/rhi.hpp"
 #include "shadersys/common.hpp"
 #include "shadersys/compiler.hpp"
+#include "txe/png/png.hpp"
 #include <gtest/gtest.h>
 
 using namespace ionengine;
@@ -45,6 +46,17 @@ auto FXVertexFormat_to_RHIVertexFormat(asset::fx::VertexFormat const format) -> 
             return rhi::VertexFormat::R32_SINT;
         case asset::fx::VertexFormat::R32_UINT:
             return rhi::VertexFormat::R32_UINT;
+        default:
+            throw std::invalid_argument("passed invalid argument into function");
+    }
+}
+
+auto TXETextureFormat_to_RHITextureFormat(asset::txe::TextureFormat const format) -> rhi::TextureFormat
+{
+    switch (format)
+    {
+        case asset::txe::TextureFormat::RGBA8_UNORM:
+            return rhi::TextureFormat::RGBA8_UNORM;
         default:
             throw std::invalid_argument("passed invalid argument into function");
     }
@@ -138,6 +150,33 @@ TEST(RHI, DeviceSwapchain_Test)
         tBuffer = rhi->createBuffer(bufferCreateInfo);
     }
 
+    core::ref_ptr<rhi::Buffer> sBuffer;
+    {
+        rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
+                                                     .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
+        sBuffer = rhi->createBuffer(bufferCreateInfo);
+    }
+
+    core::ref_ptr<rhi::Buffer> mBuffer;
+    {
+        rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
+                                                     .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
+        mBuffer = rhi->createBuffer(bufferCreateInfo);
+    }
+
+    core::ref_ptr<rhi::Sampler> linearSampler;
+    {
+        rhi::SamplerCreateInfo const samplerCreateInfo{.filter = rhi::Filter::Anisotropic,
+                                                       .addressU = rhi::AddressMode::Wrap,
+                                                       .addressV = rhi::AddressMode::Wrap,
+                                                       .addressW = rhi::AddressMode::Wrap,
+                                                       .compareOp = rhi::CompareOp::LessEqual,
+                                                       .anisotropic = 4};
+        linearSampler = rhi->createSampler(samplerCreateInfo);
+    }
+
+    core::ref_ptr<rhi::Texture> basicTexture;
+
     uint32_t indexCount = 0;
     // Load model
     {
@@ -158,13 +197,76 @@ TEST(RHI, DeviceSwapchain_Test)
 
         auto const& indexBuffer = modelFile.modelData.buffers[modelFile.modelData.surfaces[0].buffer];
 
+        copyContext->barrier(iBuffer, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
+
         copyResult = copyContext->updateBuffer(
             iBuffer, 0, std::span<uint8_t const>(modelFile.blob.data() + indexBuffer.offset, indexBuffer.size));
+
+        copyContext->barrier(iBuffer, rhi::ResourceState::CopyDest, rhi::ResourceState::Common);
 
         auto executeResult = copyContext->execute();
         executeResult.wait();
 
         indexCount = modelFile.modelData.surfaces[0].indexCount;
+    }
+
+    // Load texture
+    {
+        auto pngImporter = core::make_ref<asset::PNGImporter>();
+        auto textureResult = pngImporter->loadFromFile("../../engine/textures/spngbob.png", errors);
+        ASSERT_TRUE(textureResult.has_value());
+
+        asset::TextureFile textureFile = std::move(textureResult.value());
+
+        rhi::TextureCreateInfo const textureCreateInfo{
+            .width = textureFile.textureData.width,
+            .height = textureFile.textureData.height,
+            .depth = 1,
+            .mipLevels = 1,
+            .format = TXETextureFormat_to_RHITextureFormat(textureFile.textureData.format),
+            .dimension = rhi::TextureDimension::_2D,
+            .flags = (rhi::TextureUsageFlags)rhi::TextureUsage::ShaderResource};
+        basicTexture = rhi->createTexture(textureCreateInfo);
+
+        auto const& mipBuffer = textureFile.textureData.buffers[textureFile.textureData.mipLevels[0]];
+
+        copyContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
+
+        auto copyResult = copyContext->updateTexture(
+            basicTexture, 0, std::span<uint8_t const>(textureFile.blob.data() + mipBuffer.offset, mipBuffer.size));
+
+        copyContext->barrier(basicTexture, rhi::ResourceState::CopyDest, rhi::ResourceState::Common);
+
+        auto executeResult = copyContext->execute();
+        executeResult.wait();
+    }
+
+    // Initialize static resources
+    {
+        shadersys::common::SamplerData const samplerData{.linearSampler = linearSampler->getDescriptorOffset()};
+
+        copyContext->updateBuffer(
+            sBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&samplerData), sizeof(samplerData)));
+
+        auto executeResult = copyContext->execute();
+        executeResult.wait();
+
+        struct MaterialData
+        {
+            uint32_t basicTex;
+        };
+
+        MaterialData const materialData{.basicTex =
+                                            basicTexture->getDescriptorOffset(rhi::TextureUsage::ShaderResource)};
+
+        copyContext->updateBuffer(
+            mBuffer, 0,
+            std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&materialData), sizeof(materialData)));
+
+        executeResult = copyContext->execute();
+        executeResult.wait();
+
+        graphicsContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::ShaderRead);
     }
 
     application->windowStateChanged += [&](platform::WindowEvent const& event) -> void {
@@ -196,7 +298,7 @@ TEST(RHI, DeviceSwapchain_Test)
 
         float deltaTime =
             std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() / 1000000.0f;
-        
+
         // Update
         math::Matf projection =
             math::Matf::perspectiveRH(60.0f * std::numbers::pi / 180.0f, width / height, 0.1f, 100.0f);
@@ -237,6 +339,8 @@ TEST(RHI, DeviceSwapchain_Test)
             shader, rhi::RasterizerStageInfo{.fillMode = rhi::FillMode::Solid, .cullMode = rhi::CullMode::Back},
             rhi::BlendColorInfo::Opaque(), std::nullopt);
         graphicsContext->bindDescriptor(0, tBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
+        graphicsContext->bindDescriptor(1, sBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
+        graphicsContext->bindDescriptor(2, mBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
         graphicsContext->bindVertexBuffer(vBuffer, 0, vBuffer->getSize());
         graphicsContext->bindIndexBuffer(iBuffer, 0, iBuffer->getSize(), rhi::IndexFormat::Uint32);
         graphicsContext->drawIndexed(indexCount, 1);

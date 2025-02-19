@@ -4,79 +4,59 @@
         "description": "Basic description",
         "domain": "Screen"
     },
-    "shader": {
-        "stages": {
-            "VS": {
-                "buffer": 0,
-                "entryPoint": "main",
-                "vertexLayout": {
-                    "elements": [
-                        {
-                            "format": "RGB32_FLOAT",
-                            "semantic": "POSITION"
-                        },
-                        {
-                            "format": "RGB32_FLOAT",
-                            "semantic": "NORMAL"
-                        },
-                        {
-                            "format": "RG32_FLOAT",
-                            "semantic": "TEXCOORD0"
-                        }
-                    ],
-                    "sizeInBytes": 24
-                }
-            },
-            "PS": {
-                "buffer": 1,
-                "entryPoint": "main",
-                "output": {
-                    "depthWrite": false,
-                    "stencilWrite": false,
-                    "cullSide": "BACK",
-                    "fillMode": "FRONT"
-                }
+    "stages": {
+        "VS": {
+            "buffer": 0,
+            "entryPoint": "main",
+            "vertexLayout": {
+                "elements": [
+                    {
+                        "format": "RGB32_FLOAT",
+                        "semantic": "POSITION"
+                    },
+                    {
+                        "format": "RGB32_FLOAT",
+                        "semantic": "NORMAL"
+                    },
+                    {
+                        "format": "RG32_FLOAT",
+                        "semantic": "TEXCOORD0"
+                    }
+                ],
+                "sizeInBytes": 24
             }
         },
-        "structures": [
-            {
-                "name": "MATERIAL_DATA",
-                "elements": [
-                    {
-                        "name": "model",
-                        "type": "FLOAT4x4"
-                    },
-                    {
-                        "name": "view",
-                        "type": "FLOAT4x4"
-                    },
-                    {
-                        "name": "projection",
-                        "type": "FLOAT4x4"
-                    }
-                ],
-                "sizeInBytes": 192
-            },
-            {
-                "name": "SHADER_DATA",
-                "elements": [
-                    {
-                        "name": "transformBuffer",
-                        "type": "UINT"
-                    },
-                    {
-                        "name": "samplerBuffer",
-                        "type": "UINT"
-                    },
-                    {
-                        "name": "materialBuffer",
-                        "type": "UINT"
-                    }
-                ],
-                "sizeInBytes": 20
+        "PS": {
+            "buffer": 1,
+            "entryPoint": "main",
+            "output": {
+                "depthWrite": false,
+                "stencilWrite": false,
+                "cullSide": "BACK",
+                "fillMode": "FRONT"
             }
-        ]
+        }
     },
+    "structures": [
+        {
+            "name": "MATERIAL_DATA",
+            "elements": [
+                {
+                    "name": "model",
+                    "type": "FLOAT4x4"
+                },
+                {
+                    "name": "view",
+                    "type": "FLOAT4x4"
+                },
+                {
+                    "name": "projection",
+                    "type": "FLOAT4x4"
+                }
+            ],
+            "sizeInBytes": 192
+        }
+    ],
     "buffers": [
         {
             "offset": 2000,

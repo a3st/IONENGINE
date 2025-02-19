@@ -1,0 +1,23 @@
+{
+    "format": "RGBA8_UNORM",
+    "dimension": "2D",
+    "width": 512,
+    "height": 512,
+    "mipLevels": [
+        0,
+        1,
+        2,
+        3,
+        4
+    ],
+    "buffers": [
+        {
+            "offset": 0,
+            "sizeInBytes": 1024
+        },
+        {
+            "offset": 1024,
+            "sizeInBytes": 1024
+        }
+    ]
+}

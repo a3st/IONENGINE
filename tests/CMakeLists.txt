@@ -35,7 +35,8 @@ target_link_libraries(rhi_test PRIVATE
     GTest::gtest
     rhi
     shadersys
-    mdl)
+    mdl
+    txe)
 
 target_precompile_headers(rhi_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
 
@@ -71,3 +72,14 @@ target_link_libraries(mdl_test PRIVATE
     GTest::gtest)
 
 target_precompile_headers(mdl_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
+
+# TXE
+add_executable(txe_test txe_test.cpp)
+
+target_include_directories(txe_test PRIVATE ${PROJECT_SOURCE_DIR})
+
+target_link_libraries(txe_test PRIVATE 
+    txe
+    GTest::gtest)
+
+target_precompile_headers(txe_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)

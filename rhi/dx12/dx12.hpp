@@ -357,7 +357,7 @@ namespace ionengine::rhi
         core::ref_ptr<DX12Shader> currentShader;
         std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> renderTargetFormats;
         DXGI_FORMAT depthStencilFormat;
-        std::array<uint32_t, 16> bindings;
+        std::vector<uint8_t> bindingData;
 
         auto tryResetCommandList() -> void;
     };
@@ -372,10 +372,7 @@ namespace ionengine::rhi
             -> Future<Buffer> override;
 
         auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
-                           std::span<uint8_t const> const dataBytes) -> Future<Texture> override
-        {
-            return Future<Texture>();
-        }
+                           std::span<uint8_t const> const dataBytes) -> Future<Texture> override;
 
         auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
             -> void override;
@@ -402,8 +399,8 @@ namespace ionengine::rhi
         StagingBufferData readStagingBuffer;
         StagingBufferData writeStagingBuffer;
 
-        auto getSurfaceData(rhi::TextureFormat const format, uint32_t const width, uint32_t const height,
-                            size_t& rowBytes, uint32_t& rowCount) -> void;
+        auto getSurfaceData(DXGI_FORMAT const format, uint32_t const width, uint32_t const height, size_t& rowBytes,
+                            uint32_t& rowCount) -> void;
 
         auto tryResetCommandList() -> void;
     };
