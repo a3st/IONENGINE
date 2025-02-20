@@ -4,19 +4,34 @@
 
 namespace ionengine::core
 {
-    class runtime_error : public std::exception
+    enum class error_code
+    {
+        invalid_argument,
+        out_of_range,
+        eof,
+        parse_token,
+        compile
+    };
+
+    class error
     {
       public:
-        runtime_error(std::string_view const message) : message(message)
+        error(error_code const errc, std::string_view const message = "") : errc(errc), message(message)
         {
         }
 
-        const char* what() const noexcept
+        auto what() const noexcept -> std::string_view
         {
-            return reinterpret_cast<const char*>(message.c_str());
+            return message;
+        }
+
+        auto code() const noexcept -> error_code
+        {
+            return errc;
         }
 
       private:
         std::string message;
+        error_code errc;
     };
 } // namespace ionengine::core

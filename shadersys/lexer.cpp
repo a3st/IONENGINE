@@ -61,14 +61,13 @@ namespace ionengine::shadersys
     {
     }
 
-    auto Lexer::parse(std::filesystem::path const& filePath, std::string& errors)
-        -> std::expected<std::vector<Token>, LexerError>
+    auto Lexer::parse(std::filesystem::path const& filePath) -> std::expected<std::vector<Token>, core::error>
     {
         std::ifstream stream(filePath);
         if (!stream.is_open())
         {
-            errors = "the input file is in a different format, is corrupted, or was not found";
-            return std::unexpected(LexerError::EOF);
+            return std::unexpected(core::error(
+                core::error_code::eof, "the input file is in a different format, is corrupted, or was not found"));
         }
 
         std::string const buffer = {std::istreambuf_iterator<char>(stream.rdbuf()), {}};

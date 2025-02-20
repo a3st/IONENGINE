@@ -61,8 +61,7 @@ auto main(int32_t argc, char** argv) -> int32_t
             return EXIT_SUCCESS;
         }
 
-        std::string errors;
-        auto compileResult = shaderCompiler->compileFromFile(std::filesystem::path(input).make_preferred(), errors);
+        auto compileResult = shaderCompiler->compileFromFile(std::filesystem::path(input).make_preferred());
         if (compileResult.has_value())
         {
             std::basic_ofstream<uint8_t> ofs(std::filesystem::path(output).make_preferred(), std::ios::binary);
@@ -74,7 +73,7 @@ auto main(int32_t argc, char** argv) -> int32_t
         }
         else
         {
-            std::cerr << "Compilation error: " << errors << std::endl;
+            std::cerr << "Compilation error: " << compileResult.error().what() << std::endl;
         }
         return EXIT_SUCCESS;
     }

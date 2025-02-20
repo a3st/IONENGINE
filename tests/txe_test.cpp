@@ -1,6 +1,6 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
-#include "txe/png/png.hpp"
+#include "txe/cmp/cmp.hpp"
 #include "precompiled.h"
 #include <gtest/gtest.h>
 
@@ -8,10 +8,8 @@ using namespace ionengine;
 
 TEST(TXE, LoadPNG_Test)
 {
-    auto pngImporter = core::make_ref<asset::PNGImporter>();
-    std::string errors;
-    auto textureFile = pngImporter->loadFromFile("../../engine/textures/spngbob.png", errors);
-    std::cout << errors << std::endl;
+    auto cmpImporter = core::make_ref<asset::CMPImporter>(false);
+    auto textureFile = cmpImporter->loadFromFile("../../engine/textures/spngbob.png");
     ASSERT_TRUE(textureFile.has_value());
 }
 

@@ -6,8 +6,8 @@
 
 namespace ionengine::shadersys
 {
-    auto Parser::parseAttributes(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                                 ShaderParseData& parseData) -> std::span<Token const>::iterator
+    auto Parser::parseAttributes(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+        -> std::span<Token const>::iterator
     {
         it++;
 
@@ -19,20 +19,18 @@ namespace ionengine::shadersys
 
             if (it->getLexeme() != Lexeme::Identifier)
             {
-                *errors =
-                    std::format("line:{}: error {}: identifier '{}' missing end of scope", attribute->getNumLine(),
-                                std::to_underlying(ParseError::EOS), attribute->getContent());
-                errorCode = ParseError::EOS;
+                errors = std::format("line:{}: error: identifier '{}' missing end of scope", attribute->getNumLine(),
+                                     attribute->getContent());
+                successful = false;
             }
 
             it++;
 
             if (it->getLexeme() != Lexeme::LeftParen)
             {
-                *errors = std::format("line:{}: error {}: identifier '{}' missing missing opening ('(') character",
-                                      attribute->getNumLine(), std::to_underlying(ParseError::Character),
-                                      attribute->getContent());
-                errorCode = ParseError::Character;
+                errors = std::format("line:{}: error: identifier '{}' missing missing opening ('(') character",
+                                     attribute->getNumLine(), attribute->getContent());
+                successful = false;
             }
 
             it++;
@@ -40,10 +38,9 @@ namespace ionengine::shadersys
             if (it->getLexeme() != Lexeme::FloatLiteral && it->getLexeme() != Lexeme::BoolLiteral &&
                 it->getLexeme() != Lexeme::StringLiteral)
             {
-                *errors =
-                    std::format("line:{}: error {}: identifier '{}' has invalid value type", attribute->getNumLine(),
-                                std::to_underlying(ParseError::InvalidType), attribute->getContent());
-                errorCode = ParseError::InvalidType;
+                errors = std::format("line:{}: error: identifier '{}' has invalid value type", attribute->getNumLine(),
+                                     attribute->getContent());
+                successful = false;
             }
 
             attributes[std::string(attribute->getContent())] = std::string(it->getContent());
@@ -52,10 +49,9 @@ namespace ionengine::shadersys
 
             if (it->getLexeme() != Lexeme::RightParen)
             {
-                *errors = std::format("line:{}: error {}: identifier '{}' missing missing closing (')') character",
-                                      attribute->getNumLine(), std::to_underlying(ParseError::Character),
-                                      attribute->getContent());
-                errorCode = ParseError::Character;
+                errors = std::format("line:{}: error: identifier '{}' missing missing closing (')') character",
+                                     attribute->getNumLine(), attribute->getContent());
+                successful = false;
             }
 
             it++;
@@ -83,17 +79,17 @@ namespace ionengine::shadersys
         return ++retIt;
     }
 
-    auto Parser::parseDataGroup(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                                ShaderParseData& parseData) -> std::span<Token const>::iterator
+    auto Parser::parseDataGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+        -> std::span<Token const>::iterator
     {
         auto region = it;
         it++;
 
         if (it->getLexeme() != Lexeme::LeftBrace)
         {
-            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
-                                  std::to_underlying(ParseError::EOS), region->getContent());
-            errorCode = ParseError::EOS;
+            errors = std::format("line:{}: error: identifier '{}' missing end of scope", region->getNumLine(),
+                                 region->getContent());
+            successful = false;
         }
 
         it++;
@@ -101,7 +97,7 @@ namespace ionengine::shadersys
         while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
         {
             asset::fx::StructureElementData outVariable;
-            it = parseStructVariable(it, errorCode, outVariable);
+            it = parseStructVariable(it, successful, outVariable);
             parseData.materialData.size += asset::fx::sizeof_ElementType(outVariable.type);
             parseData.materialData.elements.emplace_back(outVariable);
         }
@@ -110,14 +106,13 @@ namespace ionengine::shadersys
         return ++it;
     }
 
-    auto Parser::parseStructVariable(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+    auto Parser::parseStructVariable(std::span<Token const>::iterator it, bool& successful,
                                      asset::fx::StructureElementData& outVariable) -> std::span<Token const>::iterator
     {
         if (it->getLexeme() != Lexeme::FixedType)
         {
-            *errors = std::format("line:{}: error {}: invalid variable type '{}'", it->getNumLine(),
-                                  std::to_underlying(ParseError::InvalidType), it->getContent());
-            errorCode = ParseError::InvalidType;
+            errors = std::format("line:{}: error: invalid variable type '{}'", it->getNumLine(), it->getContent());
+            successful = false;
         }
 
         auto typeResult = core::deserialize<core::serialize_ienum, asset::fx::ElementType>(
@@ -130,9 +125,9 @@ namespace ionengine::shadersys
 
         if (it->getLexeme() != Lexeme::Identifier)
         {
-            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", it->getNumLine(),
-                                  std::to_underlying(ParseError::EOS), it->getContent());
-            errorCode = ParseError::EOS;
+            errors =
+                std::format("line:{}: error: identifier '{}' missing end of scope", it->getNumLine(), it->getContent());
+            successful = false;
         }
 
         auto variable = it;
@@ -143,26 +138,25 @@ namespace ionengine::shadersys
 
         if (it->getLexeme() != Lexeme::Semicolon)
         {
-            *errors =
-                std::format("line:{}: error {}: identifier '{}' missing ending (;) character", variable->getNumLine(),
-                            std::to_underlying(ParseError::Character), variable->getContent());
-            errorCode = ParseError::Character;
+            errors = std::format("line:{}: error: identifier '{}' missing ending (;) character", variable->getNumLine(),
+                                 variable->getContent());
+            successful = false;
         }
 
         return ++it;
     }
 
-    auto Parser::parseHeaderGroup(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                                  ShaderParseData& parseData) -> std::span<Token const>::iterator
+    auto Parser::parseHeaderGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+        -> std::span<Token const>::iterator
     {
         auto region = it;
         it++;
 
         if (it->getLexeme() != Lexeme::LeftBrace)
         {
-            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
-                                  std::to_underlying(ParseError::EOS), region->getContent());
-            errorCode = ParseError::EOS;
+            errors = std::format("line:{}: error: identifier '{}' missing end of scope", region->getNumLine(),
+                                 region->getContent());
+            successful = false;
         }
 
         it++;
@@ -170,7 +164,7 @@ namespace ionengine::shadersys
         while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
         {
             std::string outVariable, outValue;
-            it = parseOptionValue(it, errorCode, outVariable, outValue);
+            it = parseOptionValue(it, successful, outVariable, outValue);
 
             if (outVariable.compare("Name") == 0)
             {
@@ -188,8 +182,8 @@ namespace ionengine::shadersys
         return ++it;
     }
 
-    auto Parser::parseShaderCode(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                                 ShaderParseData& parseData) -> std::span<Token const>::iterator
+    auto Parser::parseShaderCode(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+        -> std::span<Token const>::iterator
     {
         auto region = it;
 
@@ -211,18 +205,18 @@ namespace ionengine::shadersys
 
         if (it->getLexeme() != Lexeme::LeftBrace)
         {
-            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
-                                  std::to_underlying(ParseError::EOS), region->getContent());
-            errorCode = ParseError::EOS;
+            errors = std::format("line:{}: error: identifier '{}' missing end of scope", region->getNumLine(),
+                                 region->getContent());
+            successful = false;
         }
 
         it++;
 
         if (it->getLexeme() != Lexeme::ShaderCode)
         {
-            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
-                                  std::to_underlying(ParseError::EOS), region->getContent());
-            errorCode = ParseError::EOS;
+            errors = std::format("line:{}: error: identifier '{}' missing end of scope", region->getNumLine(),
+                                 region->getContent());
+            successful = false;
         }
 
         parseData.codeData[stageType] = std::string(it->getContent());
@@ -231,22 +225,22 @@ namespace ionengine::shadersys
 
         if (it->getLexeme() != Lexeme::RightBrace)
         {
-            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", region->getNumLine(),
-                                  std::to_underlying(ParseError::EOS), region->getContent());
-            errorCode = ParseError::EOS;
+            errors = std::format("line:{}: error: identifier '{}' missing end of scope", region->getNumLine(),
+                                 region->getContent());
+            successful = false;
         }
 
         return ++it;
     }
 
-    auto Parser::parseOptionValue(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                                  std::string& outName, std::string& outValue) -> std::span<Token const>::iterator
+    auto Parser::parseOptionValue(std::span<Token const>::iterator it, bool& successful, std::string& outName,
+                                  std::string& outValue) -> std::span<Token const>::iterator
     {
         if (it->getLexeme() != Lexeme::Identifier)
         {
-            *errors = std::format("line:{}: error {}: identifier '{}' missing end of scope", it->getNumLine(),
-                                  std::to_underlying(ParseError::EOS), it->getContent());
-            errorCode = ParseError::EOS;
+            errors =
+                std::format("line:{}: error: identifier '{}' missing end of scope", it->getNumLine(), it->getContent());
+            successful = false;
         }
 
         auto variable = it;
@@ -254,10 +248,9 @@ namespace ionengine::shadersys
 
         if (it->getLexeme() != Lexeme::Assignment)
         {
-            *errors =
-                std::format("line:{}: error {}: identifier '{}' missing assignment (=) operator",
-                            variable->getNumLine(), std::to_underlying(ParseError::Operator), variable->getContent());
-            errorCode = ParseError::Operator;
+            errors = std::format("line:{}: error: identifier '{}' missing assignment (=) operator",
+                                 variable->getNumLine(), variable->getContent());
+            successful = false;
         }
 
         it++;
@@ -265,9 +258,9 @@ namespace ionengine::shadersys
         if (it->getLexeme() != Lexeme::FloatLiteral && it->getLexeme() != Lexeme::BoolLiteral &&
             it->getLexeme() != Lexeme::StringLiteral)
         {
-            *errors = std::format("line:{}: error {}: identifier '{}' has invalid value type", variable->getNumLine(),
-                                  std::to_underlying(ParseError::InvalidType), variable->getContent());
-            errorCode = ParseError::InvalidType;
+            errors = std::format("line:{}: error: identifier '{}' has invalid value type", variable->getNumLine(),
+                                 variable->getContent());
+            successful = false;
         }
 
         outName = std::string(variable->getContent());
@@ -277,56 +270,52 @@ namespace ionengine::shadersys
 
         if (it->getLexeme() != Lexeme::Semicolon)
         {
-            *errors =
-                std::format("line:{}: error {}: identifier '{}' missing ending (;) character", variable->getNumLine(),
-                            std::to_underlying(ParseError::Character), variable->getContent());
-            errorCode = ParseError::Character;
+            errors = std::format("line:{}: error: identifier '{}' missing ending (;) character", variable->getNumLine(),
+                                 variable->getContent());
+            successful = false;
         }
 
         return ++it;
     }
 
-    auto Parser::parseToken(std::span<Token const>::iterator it, ShaderParseData& parseData)
-        -> std::optional<ParseError>
+    auto Parser::parseToken(std::span<Token const>::iterator it, ShaderParseData& parseData) -> bool
     {
-        std::optional<ParseError> errorCode;
+        bool successful = true;
 
         if (it->getLexeme() == Lexeme::Identifier)
         {
             if (it->getContent().compare("HEADER") == 0)
             {
-                it = this->parseHeaderGroup(it, errorCode, parseData);
+                it = this->parseHeaderGroup(it, successful, parseData);
             }
             else if (it->getContent().compare("DATA") == 0)
             {
-                it = this->parseDataGroup(it, errorCode, parseData);
+                it = this->parseDataGroup(it, successful, parseData);
             }
             else if (it->getContent().compare("VS") == 0 || it->getContent().compare("PS") == 0 ||
                      it->getContent().compare("CS") == 0)
             {
-                it = this->parseShaderCode(it, errorCode, parseData);
+                it = this->parseShaderCode(it, successful, parseData);
             }
             else
             {
-                *errors = std::format("line:{}: error {}: unknown section '{}'", it->getNumLine(),
-                                      std::to_underlying(ParseError::UnknownSection), it->getContent());
-                return ParseError::UnknownSection;
+                errors = std::format("line:{}: error: unknown section '{}'", it->getNumLine(), it->getContent());
+                return false;
             }
         }
         else if (it->getLexeme() == Lexeme::LeftBracket)
         {
-            it = this->parseAttributes(it, errorCode, parseData);
+            it = this->parseAttributes(it, successful, parseData);
         }
         else
         {
-            *errors = std::format("line:{}: error {}: expression is incomplete", it->getNumLine(),
-                                  std::to_underlying(ParseError::EOF));
-            return ParseError::EOF;
+            errors = std::format("line:{}: error: expression is incomplete", it->getNumLine());
+            return false;
         }
 
-        if (errorCode.has_value())
+        if (!successful)
         {
-            return errorCode.value();
+            return false;
         }
 
         if (it != tokens.end())
@@ -335,21 +324,19 @@ namespace ionengine::shadersys
         }
         else
         {
-            return std::nullopt;
+            return true;
         }
     }
 
-    auto Parser::parse(std::span<Token const> const tokens, std::string& errors)
-        -> std::expected<ShaderParseData, ParseError>
+    auto Parser::parse(std::span<Token const> const tokens) -> std::expected<ShaderParseData, core::error>
     {
-        this->errors = &errors;
         this->tokens = tokens;
 
         ShaderParseData parseData{};
-        auto errorCode = this->parseToken(tokens.begin(), parseData);
-        if (errorCode.has_value())
+        bool successful = this->parseToken(tokens.begin(), parseData);
+        if (!successful)
         {
-            return std::unexpected(errorCode.value());
+            return std::unexpected(core::error(core::error_code::parse_token, errors));
         }
         else
         {

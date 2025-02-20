@@ -1,7 +1,6 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "win32.hpp"
-#include "core/error.hpp"
 #include "precompiled.h"
 
 namespace ionengine::platform
@@ -147,7 +146,7 @@ namespace ionengine::platform
                                            nullptr, nullptr, wndClass.hInstance, nullptr));
         if (!window)
         {
-            throw core::runtime_error("An error occurred while creating the window");
+            throw std::runtime_error("An error occurred while creating the window");
         }
 
         ::SetWindowLongPtr(window.get(), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));

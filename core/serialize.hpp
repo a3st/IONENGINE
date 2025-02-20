@@ -2,28 +2,19 @@
 
 #pragma once
 
+#include "core/error.hpp"
 #include "core/base64.hpp"
 #include <simdjson.h>
 
 namespace ionengine::core
 {
     /*!
-        \brief Errors that will get when deserialize or serialize
-    */
-    enum class serialize_error
-    {
-        invalid_argument,
-        out_of_range,
-        eof
-    };
-
-    /*!
         \brief Deserialize object with class
         \param[in] target Object that will deserialized
         \return Deserialized object or error
     */
     template <typename Archive, typename Type, typename Target>
-    auto deserialize(Target const& target) -> std::expected<Type, serialize_error>
+    auto deserialize(Target const& target) -> std::expected<Type, error>
     {
         try
         {
@@ -34,11 +25,11 @@ namespace ionengine::core
         }
         catch (std::invalid_argument e)
         {
-            return std::unexpected(serialize_error::invalid_argument);
+            return std::unexpected(error(error_code::invalid_argument));
         }
         catch (std::out_of_range e)
         {
-            return std::unexpected(serialize_error::out_of_range);
+            return std::unexpected(error(error_code::out_of_range));
         }
     }
 
@@ -48,7 +39,7 @@ namespace ionengine::core
         \return Serialized object or error
     */
     template <typename Archive, typename Target, typename Type>
-    auto serialize(Type const& object) -> std::expected<Target, serialize_error>
+    auto serialize(Type const& object) -> std::expected<Target, error>
     {
         try
         {
@@ -60,16 +51,16 @@ namespace ionengine::core
             }
             else
             {
-                return std::unexpected(serialize_error::eof);
+                return std::unexpected(error(error_code::eof));
             }
         }
         catch (std::invalid_argument e)
         {
-            return std::unexpected(serialize_error::invalid_argument);
+            return std::unexpected(error(error_code::invalid_argument));
         }
         catch (std::out_of_range e)
         {
-            return std::unexpected(serialize_error::out_of_range);
+            return std::unexpected(error(error_code::out_of_range));
         }
     }
 
@@ -80,7 +71,7 @@ namespace ionengine::core
         \return Serialized size or error
     */
     template <typename Archive, typename Target, typename Type>
-    auto serialize(Target& target, Type const& object) -> std::expected<size_t, serialize_error>
+    auto serialize(Target& target, Type const& object) -> std::expected<size_t, error>
     {
         try
         {
@@ -92,16 +83,16 @@ namespace ionengine::core
             }
             else
             {
-                return std::unexpected(serialize_error::eof);
+                return std::unexpected(error(error_code::eof));
             }
         }
         catch (std::invalid_argument e)
         {
-            return std::unexpected(serialize_error::invalid_argument);
+            return std::unexpected(error(error_code::invalid_argument));
         }
         catch (std::out_of_range e)
         {
-            return std::unexpected(serialize_error::out_of_range);
+            return std::unexpected(error(error_code::out_of_range));
         }
     }
 

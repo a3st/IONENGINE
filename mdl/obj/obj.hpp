@@ -4,24 +4,15 @@
 
 #include "math/vector.hpp"
 #include "mdl/importer.hpp"
-#include <tiny_obj_loader.h>
 
 namespace ionengine::asset
 {
     class OBJImporter : public MDLImporter
     {
       public:
-        auto loadFromFile(std::filesystem::path const& filePath, std::string& errors)
-            -> std::expected<ModelFile, MDLImportError> override;
-
-        auto loadFromBytes(std::span<uint8_t const> const dataBytes, std::string& errors)
-            -> std::expected<ModelFile, MDLImportError> override;
+        auto loadFromFile(std::filesystem::path const& filePath) -> std::expected<ModelFile, core::error> override;
 
       private:
-        std::string* errors;
-
-        auto readModelData(tinyobj::ObjReader const& reader) -> std::expected<ModelFile, MDLImportError>;
-
         struct Vertex
         {
             math::Vec3f position;

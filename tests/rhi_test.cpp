@@ -8,7 +8,7 @@
 #include "rhi/rhi.hpp"
 #include "shadersys/common.hpp"
 #include "shadersys/compiler.hpp"
-#include "txe/png/png.hpp"
+#include "txe/cmp/cmp.hpp"
 #include <gtest/gtest.h>
 
 using namespace ionengine;
@@ -94,8 +94,7 @@ TEST(RHI, DeviceSwapchain_Test)
 
     // Compile shaders
     auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
-    std::string errors;
-    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/base3d.fx", errors);
+    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/base3d.fx");
     ASSERT_TRUE(compileResult.has_value());
 
     // Load shader
@@ -181,7 +180,7 @@ TEST(RHI, DeviceSwapchain_Test)
     // Load model
     {
         auto objImporter = core::make_ref<asset::OBJImporter>();
-        auto modelResult = objImporter->loadFromFile("../../engine/objects/box.obj", errors);
+        auto modelResult = objImporter->loadFromFile("../../engine/objects/box.obj");
         ASSERT_TRUE(modelResult.has_value());
 
         asset::ModelFile modelFile = std::move(modelResult.value());
@@ -212,8 +211,8 @@ TEST(RHI, DeviceSwapchain_Test)
 
     // Load texture
     {
-        auto pngImporter = core::make_ref<asset::PNGImporter>();
-        auto textureResult = pngImporter->loadFromFile("../../engine/textures/spngbob.png", errors);
+        auto stbiImporter = core::make_ref<asset::CMPImporter>(false);
+        auto textureResult = stbiImporter->loadFromFile("../../engine/textures/spngbob.png");
         ASSERT_TRUE(textureResult.has_value());
 
         asset::TextureFile textureFile = std::move(textureResult.value());
@@ -248,9 +247,6 @@ TEST(RHI, DeviceSwapchain_Test)
         copyContext->updateBuffer(
             sBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&samplerData), sizeof(samplerData)));
 
-        auto executeResult = copyContext->execute();
-        executeResult.wait();
-
         struct MaterialData
         {
             uint32_t basicTex;
@@ -263,7 +259,7 @@ TEST(RHI, DeviceSwapchain_Test)
             mBuffer, 0,
             std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&materialData), sizeof(materialData)));
 
-        executeResult = copyContext->execute();
+        auto executeResult = copyContext->execute();
         executeResult.wait();
 
         graphicsContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::ShaderRead);
@@ -291,10 +287,12 @@ TEST(RHI, DeviceSwapchain_Test)
     math::Quatf originalRot = math::Quatf::euler(0.0f, 0.0f, 0.0f);
     float angle = 0.0f;
 
-    auto beginFrameTime = std::chrono::steady_clock::now();
+    auto beginFrameTime = std::chrono::high_resolution_clock::now();
+
+    std::vector<rhi::RenderPassColorInfo> colors;
 
     application->windowUpdated += [&]() -> void {
-        auto endFrameTime = std::chrono::steady_clock::now();
+        auto endFrameTime = std::chrono::high_resolution_clock::now();
 
         float deltaTime =
             std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() / 1000000.0f;
@@ -325,10 +323,11 @@ TEST(RHI, DeviceSwapchain_Test)
             executeResult.wait();
         }
 
-        std::vector<rhi::RenderPassColorInfo> colors{rhi::RenderPassColorInfo{.texture = backBuffer.get(),
-                                                                              .loadOp = rhi::RenderPassLoadOp::Clear,
-                                                                              .storeOp = rhi::RenderPassStoreOp::Store,
-                                                                              .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}}};
+        colors.clear();
+        colors.emplace_back(rhi::RenderPassColorInfo{.texture = backBuffer.get(),
+                                                     .loadOp = rhi::RenderPassLoadOp::Clear,
+                                                     .storeOp = rhi::RenderPassStoreOp::Store,
+                                                     .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}});
 
         graphicsContext->setViewport(0, 0, width, height);
         graphicsContext->setScissor(0, 0, width, height);

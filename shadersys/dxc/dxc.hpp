@@ -17,14 +17,14 @@ namespace ionengine::shadersys
       public:
         DXCCompiler(asset::fx::ShaderFormat const shaderFormat);
 
-        auto compileFromFile(std::filesystem::path const& filePath, std::string& errors)
-            -> std::expected<asset::ShaderFile, CompileError> override;
+        auto compileFromFile(std::filesystem::path const& filePath)
+            -> std::expected<asset::ShaderFile, core::error> override;
 
       private:
         winrt::com_ptr<IDxcCompiler3> compiler;
         winrt::com_ptr<IDxcUtils> utils;
         winrt::com_ptr<IDxcIncludeHandler> includeHandler;
-        std::string* errors;
+        std::string errors;
 
         auto getInputAssembler(DxcBuffer const& buffer, asset::fx::VertexLayoutData& vertexLayout) -> void;
 

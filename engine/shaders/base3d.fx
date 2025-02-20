@@ -39,7 +39,6 @@ PS {
 
         PS_OUTPUT output;
         output.color = materialBuffer.Get().basicTex.Get().Sample(samplerBuffer.Get().linearSampler.Get(), input.uv).rgba;
-        //output.color = float4(1.0f, 0.5f, 0.3f, 1.0f);
         return output;
     }
 }

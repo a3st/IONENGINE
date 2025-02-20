@@ -9,9 +9,7 @@ add_library(shadersys STATIC
 
 target_include_directories(shadersys PUBLIC 
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/shadersys)
-
-target_include_directories(shadersys PUBLIC 
+    ${PROJECT_SOURCE_DIR}/shadersys
     ${PROJECT_SOURCE_DIR}/dxc/thirdparty/windows/include)
 
 target_link_directories(shadersys PUBLIC

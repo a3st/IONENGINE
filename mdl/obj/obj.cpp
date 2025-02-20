@@ -2,44 +2,20 @@
 
 #include "obj.hpp"
 #include "precompiled.h"
+#include <tiny_obj_loader.h>
 
 namespace ionengine::asset
 {
-    auto OBJImporter::loadFromFile(std::filesystem::path const& filePath, std::string& errors)
-        -> std::expected<ModelFile, MDLImportError>
+    auto OBJImporter::loadFromFile(std::filesystem::path const& filePath) -> std::expected<ModelFile, core::error>
     {
-        this->errors = &errors;
-
         tinyobj::ObjReader reader;
 
         tinyobj::ObjReaderConfig const config{};
         if (!reader.ParseFromFile(filePath.string(), config))
         {
-            errors = reader.Error();
-            return std::unexpected(MDLImportError::Parse);
+            return std::unexpected(core::error(core::error_code::eof, reader.Error()));
         }
 
-        return this->readModelData(reader);
-    }
-
-    auto OBJImporter::loadFromBytes(std::span<uint8_t const> const dataBytes, std::string& errors)
-        -> std::expected<ModelFile, MDLImportError>
-    {
-        tinyobj::ObjReader reader;
-
-        tinyobj::ObjReaderConfig const config{};
-        if (!reader.ParseFromString(std::string(reinterpret_cast<char const*>(dataBytes.data()), dataBytes.size()), {},
-                                    config))
-        {
-            errors = reader.Error();
-            return std::unexpected(MDLImportError::Parse);
-        }
-
-        return this->readModelData(reader);
-    }
-
-    auto OBJImporter::readModelData(tinyobj::ObjReader const& reader) -> std::expected<ModelFile, MDLImportError>
-    {
         tinyobj::attrib_t const& attrib = reader.GetAttrib();
         std::vector<tinyobj::shape_t> const& shapes = reader.GetShapes();
 
@@ -61,7 +37,7 @@ namespace ionengine::asset
         {
             indices.clear();
 
-            std::cout << "shape v " << shape.mesh.num_face_vertices.size() << std::endl;
+            // std::cout << "shape v " << shape.mesh.num_face_vertices.size() << std::endl;
 
             size_t offset = 0;
             for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); ++f)

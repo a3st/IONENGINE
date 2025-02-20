@@ -10,27 +10,24 @@ using namespace ionengine;
 
 TEST(ShaderSystem, Lexer_Test)
 {
-    std::string errors;
     shadersys::Lexer lexer;
-    auto result = lexer.parse("../../engine/shaders/quad.fx", errors);
+    auto result = lexer.parse("../../engine/shaders/quad.fx");
     ASSERT_TRUE(result.has_value());
 }
 
 TEST(ShaderSystem, Parser_Test)
 {
-    std::string errors;
     shadersys::Lexer lexer;
-    auto lexerResult = lexer.parse("../../engine/shaders/quad.fx", errors);
+    auto lexerResult = lexer.parse("../../engine/shaders/quad.fx");
     shadersys::Parser parser;
-    auto parserResult = parser.parse(lexerResult.value(), errors);
+    auto parserResult = parser.parse(lexerResult.value());
     ASSERT_TRUE(parserResult.has_value());
 }
 
 TEST(ShaderSystem, Compiler_Test)
 {
     auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
-    std::string errors;
-    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx", errors);
+    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx");
     ASSERT_TRUE(compileResult.has_value());
 }
 

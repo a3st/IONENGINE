@@ -179,21 +179,21 @@ namespace ionengine::shadersys
         }
     }
 
-    auto DXCCompiler::compileFromFile(std::filesystem::path const& filePath, std::string& errors)
-        -> std::expected<asset::ShaderFile, CompileError>
+    auto DXCCompiler::compileFromFile(std::filesystem::path const& filePath)
+        -> std::expected<asset::ShaderFile, core::error>
     {
         Lexer lexer;
-        auto lexerResult = lexer.parse(filePath, errors);
+        auto lexerResult = lexer.parse(filePath);
         if (!lexerResult.has_value())
         {
-            return std::unexpected(CompileError::EOF);
+            return std::unexpected(lexerResult.error());
         }
 
         Parser parser;
-        auto parserResult = parser.parse(lexerResult.value(), errors);
+        auto parserResult = parser.parse(lexerResult.value());
         if (!parserResult.has_value())
         {
-            return std::unexpected(CompileError::EOF);
+            return std::unexpected(parserResult.error());
         }
 
         ShaderParseData const parseData = std::move(parserResult.value());
@@ -260,7 +260,7 @@ namespace ionengine::shadersys
             {
                 errors =
                     std::string(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()), errorsBlob->GetBufferSize());
-                return std::unexpected(CompileError::EOF);
+                return std::unexpected(core::error(core::error_code::compile, errors));
             }
 
             winrt::com_ptr<IDxcBlob> outBlob;

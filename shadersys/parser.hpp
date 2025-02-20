@@ -11,20 +11,6 @@
 namespace ionengine::shadersys
 {
     /*!
-        \brief Errors that will get when parse a shader file
-    */
-    enum class ParseError : uint32_t
-    {
-        EOF = 1000,
-        Operator = 1001,
-        Character = 1002,
-        InvalidType = 1003,
-        ShaderCode = 1005,
-        UnknownSection = 1006,
-        EOS = 1007
-    };
-
-    /*!
         \brief Data that got when parsed a shader file
     */
     struct ShaderParseData
@@ -44,30 +30,30 @@ namespace ionengine::shadersys
       public:
         Parser() = default;
 
-        auto parse(std::span<Token const> const tokens, std::string& errors) -> std::expected<ShaderParseData, ParseError>;
+        auto parse(std::span<Token const> const tokens) -> std::expected<ShaderParseData, core::error>;
 
       private:
-        std::string* errors;
+        std::string errors;
         std::span<Token const> tokens;
 
-        auto parseToken(std::span<Token const>::iterator it, ShaderParseData& parseData) -> std::optional<ParseError>;
+        auto parseToken(std::span<Token const>::iterator it, ShaderParseData& parseData) -> bool;
 
-        auto parseHeaderGroup(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                              ShaderParseData& parseData) -> std::span<Token const>::iterator;
+        auto parseHeaderGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+            -> std::span<Token const>::iterator;
 
-        auto parseDataGroup(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                            ShaderParseData& parseData) -> std::span<Token const>::iterator;
+        auto parseDataGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+            -> std::span<Token const>::iterator;
 
-        auto parseAttributes(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                             ShaderParseData& parseData) -> std::span<Token const>::iterator;
+        auto parseAttributes(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+            -> std::span<Token const>::iterator;
 
-        auto parseShaderCode(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                             ShaderParseData& parseData) -> std::span<Token const>::iterator;
+        auto parseShaderCode(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+            -> std::span<Token const>::iterator;
 
-        auto parseOptionValue(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
-                              std::string& outName, std::string& outValue) -> std::span<Token const>::iterator;
+        auto parseOptionValue(std::span<Token const>::iterator it, bool& successful, std::string& outName,
+                              std::string& outValue) -> std::span<Token const>::iterator;
 
-        auto parseStructVariable(std::span<Token const>::iterator it, std::optional<ParseError>& errorCode,
+        auto parseStructVariable(std::span<Token const>::iterator it, bool& successful,
                                  asset::fx::StructureElementData& outVariable) -> std::span<Token const>::iterator;
     };
 } // namespace ionengine::shadersys

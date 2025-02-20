@@ -2,7 +2,7 @@
 
 #pragma once
 
-#undef EOF
+#include "core/error.hpp"
 
 namespace ionengine::shadersys
 {
@@ -63,11 +63,6 @@ namespace ionengine::shadersys
         uint32_t numLine;
     };
 
-    enum class LexerError
-    {
-        EOF
-    };
-
     /*!
       \brief Lexer that can divide source into lexems
     */
@@ -76,8 +71,7 @@ namespace ionengine::shadersys
       public:
         Lexer();
 
-        auto parse(std::filesystem::path const& filePath, std::string& errors)
-            -> std::expected<std::vector<Token>, LexerError>;
+        auto parse(std::filesystem::path const& filePath) -> std::expected<std::vector<Token>, core::error>;
 
       private:
         std::locale locale;
