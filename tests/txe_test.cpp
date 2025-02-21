@@ -9,7 +9,7 @@ using namespace ionengine;
 TEST(TXE, LoadPNG_Test)
 {
     auto cmpImporter = core::make_ref<asset::CMPImporter>(false);
-    auto textureFile = cmpImporter->loadFromFile("../../engine/textures/spngbob.png");
+    auto textureFile = cmpImporter->loadFromFile("../../assets/textures/spngbob.png");
     ASSERT_TRUE(textureFile.has_value());
 }
 

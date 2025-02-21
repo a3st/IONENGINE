@@ -49,9 +49,7 @@ namespace ionengine::rhi
 #ifdef IONENGINE_RHI_DIRECTX12
         return core::make_ref<DX12RHI>(createInfo);
 #elif IONENGINE_RHI_VULKAN
-        return core::make_ref<VKDevice>(createInfo);
-#elif IONENGINE_RHI_GL
-        return core::make_ref<GLDevice>(createInfo);
+        return core::make_ref<VKRHI>(createInfo);
 #else
 #error rhi backend is not defined
         return nullptr;

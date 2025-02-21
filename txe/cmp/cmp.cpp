@@ -6,7 +6,7 @@
 
 namespace ionengine::asset
 {
-    CMPImporter::CMPImporter(bool generateMipMaps) : generateMipMaps(generateMipMaps)
+    CMPImporter::CMPImporter(bool const generateMipMaps) : generateMipMaps(generateMipMaps)
     {
         ::CMP_InitFramework();
     }
@@ -32,7 +32,9 @@ namespace ionengine::asset
             ::CMP_GenerateMIPLevels(&srcMipSet, minMipSize);
         }
 
-        for (int32_t const i : std::views::iota(0, std::min(1, srcMipSet.m_nMaxMipLevels - 1)))
+        uint32_t const mipLevels = std::max(1, srcMipSet.m_nMaxMipLevels - 1);
+
+        for (uint32_t const i : std::views::iota(0u, mipLevels))
         {
             CMP_MipLevel* mipLevel;
             ::CMP_GetMipLevel(&mipLevel, &srcMipSet, i, 0);

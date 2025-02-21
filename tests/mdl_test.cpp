@@ -9,7 +9,7 @@ using namespace ionengine;
 TEST(MDL, LoadOBJ_Test)
 {
     auto objImporter = core::make_ref<asset::OBJImporter>();
-    auto modelFile = objImporter->loadFromFile("../../engine/objects/box.obj");
+    auto modelFile = objImporter->loadFromFile("../../assets/objects/box.obj");
     ASSERT_TRUE(modelFile.has_value());
 }
 

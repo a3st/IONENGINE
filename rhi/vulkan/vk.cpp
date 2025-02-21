@@ -13,17 +13,17 @@ namespace ionengine::rhi
         switch (result)
         {
             case VK_NOT_READY:
-                return "A fence or query has not yet completed";
+                return "a fence or query has not yet completed";
             case VK_TIMEOUT:
-                return "A wait operation has not completed in the specified time";
+                return "a wait operation has not completed in the specified time";
             case VK_EVENT_SET:
-                return "An event is signaled";
+                return "an event is signaled";
             case VK_EVENT_RESET:
-                return "An event is unsignaled";
+                return "an event is unsignaled";
             case VK_INCOMPLETE:
-                return "A return array was too small for the result";
+                return "a return array was too small for the result";
             default:
-                return "An unknown error has occurred";
+                return "an unknown error has occurred";
         }
     }
 
@@ -31,7 +31,7 @@ namespace ionengine::rhi
     {
         if (result != VK_SUCCESS)
         {
-            throw core::runtime_error(VkResult_to_string(result));
+            throw std::runtime_error(VkResult_to_string(result));
         }
     }
 
@@ -79,7 +79,7 @@ namespace ionengine::rhi
             case TextureDimension::_3D:
                 return VkImageType::VK_IMAGE_TYPE_3D;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -94,7 +94,7 @@ namespace ionengine::rhi
             case RenderPassLoadOp::DontCare:
                 return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -107,7 +107,7 @@ namespace ionengine::rhi
             case RenderPassStoreOp::DontCare:
                 return VK_ATTACHMENT_STORE_OP_DONT_CARE;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -132,7 +132,7 @@ namespace ionengine::rhi
             case ResourceState::CopyDest:
                 return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -158,7 +158,7 @@ namespace ionengine::rhi
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
                 return VK_ACCESS_TRANSFER_WRITE_BIT;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -206,7 +206,7 @@ namespace ionengine::rhi
             case CullMode::None:
                 return VK_CULL_MODE_NONE;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -219,7 +219,7 @@ namespace ionengine::rhi
             case FillMode::Wireframe:
                 return VK_POLYGON_MODE_LINE;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -244,7 +244,7 @@ namespace ionengine::rhi
             case CompareOp::NotEqual:
                 return VK_COMPARE_OP_NOT_EQUAL;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
@@ -261,11 +261,11 @@ namespace ionengine::rhi
             case Blend::Zero:
                 return VK_BLEND_FACTOR_ZERO;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
-    auto BlendOp_to_D3D12_VkBlendOp(BlendOp const blendOp) -> VkBlendOp
+    auto BlendOp_to_VkBlendOp(BlendOp const blendOp) -> VkBlendOp
     {
         switch (blendOp)
         {
@@ -280,14 +280,29 @@ namespace ionengine::rhi
             case BlendOp::Subtract:
                 return VK_BLEND_OP_SUBTRACT;
             default:
-                throw std::invalid_argument("Invalid argument for conversion");
+                throw std::invalid_argument("passed invalid argument into function");
+        }
+    }
+
+    auto AddressMode_to_VkSamplerAddressMode(AddressMode const addressMode) -> VkSamplerAddressMode
+    {
+        switch (addressMode)
+        {
+            case AddressMode::Clamp:
+                return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            case AddressMode::Mirror:
+                return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+            case AddressMode::Wrap:
+                return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            default:
+                throw std::invalid_argument("passed invalid argument into function");
         }
     }
 
     VKAPI_ATTR auto VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                              VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                             void* pUserData) -> VkBool32
+                                             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+        -> VkBool32
     {
         std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl;
         return VK_FALSE;
@@ -295,64 +310,130 @@ namespace ionengine::rhi
 
     DescriptorAllocator::DescriptorAllocator(VkDevice device) : device(device)
     {
-        std::array<VkDescriptorType, 4> descriptorTypes{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                                        VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_SAMPLER};
-        std::array<VkDescriptorBindingFlags, 4> bindingFlags{};
-        std::array<uint32_t, 4> descriptorLimits = {std::to_underlying(DescriptorAllocatorLimits::Uniform),
-                                                    std::to_underlying(DescriptorAllocatorLimits::Storage),
-                                                    std::to_underlying(DescriptorAllocatorLimits::SampledImage),
-                                                    std::to_underlying(DescriptorAllocatorLimits::Sampler)};
+        std::array<VkDescriptorType, 4> const descriptorTypes{
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+            VK_DESCRIPTOR_TYPE_SAMPLER};
+        // std::array<VkDescriptorBindingFlags, 4> bindingFlags{};
+        std::array<uint32_t, 4> const descriptorLimits{std::to_underlying(DescriptorAllocatorLimits::Uniform),
+                                                       std::to_underlying(DescriptorAllocatorLimits::Storage),
+                                                       std::to_underlying(DescriptorAllocatorLimits::SampledImage),
+                                                       std::to_underlying(DescriptorAllocatorLimits::Sampler)};
 
-        std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+        std::vector<VkDescriptorPoolSize> descriptorPoolSizes;
 
         for (uint32_t const i : std::views::iota(0u, 4u))
         {
-            VkDescriptorSetLayoutBinding descriptorSetLayoutBinding{.binding = i,
-                                                                    .descriptorType = descriptorTypes[i],
-                                                                    .descriptorCount = descriptorLimits[i],
-                                                                    .stageFlags = VK_SHADER_STAGE_ALL};
-            descriptorSetLayoutBindings.emplace_back(std::move(descriptorSetLayoutBinding));
-            bindingFlags[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
-
-            std::vector<uint8_t> free(descriptorLimits[i]);
-            std::fill(free.begin(), free.end(), 0x0);
-
-            std::vector<DescriptorAllocation_T> allocations(descriptorLimits[i]);
-
-            Chunk chunk{.binding = i,
-                        .free = std::move(free),
-                        .size = descriptorLimits[i],
-                        .allocations = std::move(allocations)};
-            chunks.emplace(descriptorTypes[i], std::move(chunk));
+            VkDescriptorPoolSize const descriptorPoolSize{.type = descriptorTypes[i],
+                                                          .descriptorCount = descriptorLimits[i]};
+            descriptorPoolSizes.emplace_back(std::move(descriptorPoolSize));
         }
 
-        VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{
+        VkDescriptorPoolCreateInfo const descriptorPoolCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
+            .maxSets = 2,
+            .poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size()),
+            .pPoolSizes = descriptorPoolSizes.data()};
+        throwIfFailed(::vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
+
+        // bindingFlags[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT;
+        /*
+        VkDescriptorSetLayoutBindingFlagsCreateInfo const bindingFlagsCreateInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
             .bindingCount = static_cast<uint32_t>(bindingFlags.size()),
             .pBindingFlags = bindingFlags.data()};
+        */
+        {
+            VkDescriptorSetLayoutBinding const descriptorSetLayoutBinding{.binding = 0,
+                                                                          .descriptorType =
+                                                                              VK_DESCRIPTOR_TYPE_MUTABLE_EXT,
+                                                                          .descriptorCount = descriptorLimits[0],
+                                                                          .stageFlags = VK_SHADER_STAGE_ALL};
+            VkMutableDescriptorTypeListEXT const descriptorTypeList{.descriptorTypeCount = 3,
+                                                                    .pDescriptorTypes = descriptorTypes.data()};
+            VkMutableDescriptorTypeCreateInfoEXT const mutableDescriptorTypeCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT,
+                .mutableDescriptorTypeListCount = 1,
+                .pMutableDescriptorTypeLists = &descriptorTypeList};
+            VkDescriptorSetLayoutCreateInfo const descriptorSetLayoutCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .pNext = &mutableDescriptorTypeCreateInfo,
+                .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
+                .bindingCount = 1,
+                .pBindings = &descriptorSetLayoutBinding};
 
-        VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .pNext = &bindingFlagsCreateInfo,
-            .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
-            .bindingCount = static_cast<uint32_t>(descriptorSetLayoutBindings.size()),
-            .pBindings = descriptorSetLayoutBindings.data()};
-        throwIfFailed(
-            ::vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
+            VkDescriptorSetLayout descriptorSetLayout;
+            throwIfFailed(
+                ::vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
+
+            this->createChunk(descriptorSetLayout, VK_DESCRIPTOR_TYPE_MUTABLE_EXT, descriptorLimits[0]);
+        }
+
+        {
+            VkDescriptorSetLayoutBinding const descriptorSetLayoutBinding{.binding = 0,
+                                                                          .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
+                                                                          .descriptorCount = descriptorLimits[3],
+                                                                          .stageFlags = VK_SHADER_STAGE_ALL};
+            VkDescriptorSetLayoutCreateInfo const descriptorSetLayoutCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
+                .bindingCount = 1,
+                .pBindings = &descriptorSetLayoutBinding};
+
+            VkDescriptorSetLayout descriptorSetLayout;
+            throwIfFailed(
+                ::vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
+
+            this->createChunk(descriptorSetLayout, VK_DESCRIPTOR_TYPE_SAMPLER, descriptorLimits[3]);
+        }
+    }
+
+    auto DescriptorAllocator::createChunk(VkDescriptorSetLayout descriptorSetLayout,
+                                          VkDescriptorType const descriptorType, uint32_t const descriptorCount) -> void
+    {
+        std::vector<uint8_t> free(descriptorCount);
+        std::fill(free.begin(), free.end(), 0x0);
+
+        std::vector<DescriptorAllocation_T> allocations(descriptorCount);
+
+        Chunk chunk{.descriptorSetLayout = descriptorSetLayout,
+                    .binding = 0,
+                    .free = std::move(free),
+                    .size = descriptorCount,
+                    .allocations = std::move(allocations)};
+
+        VkDescriptorSetAllocateInfo const descriptorSetAllocateInfo{.sType =
+                                                                        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                                                                    .descriptorPool = descriptorPool,
+                                                                    .descriptorSetCount = 1,
+                                                                    .pSetLayouts = &descriptorSetLayout};
+        throwIfFailed(::vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &chunk.descriptorSet));
+
+        chunks.emplace(descriptorType, std::move(chunk));
     }
 
     DescriptorAllocator::~DescriptorAllocator()
     {
-        ::vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+        ::vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+
+        for (auto const [descriptorType, chunkData] : chunks)
+        {
+            ::vkDestroyDescriptorSetLayout(device, chunkData.descriptorSetLayout, nullptr);
+        }
     }
 
-    auto DescriptorAllocator::allocate(VkDescriptorType const descriptorType,
-                                       DescriptorAllocation* allocation) -> VkResult
+    auto DescriptorAllocator::allocate(VkDescriptorType const descriptorType, DescriptorAllocation* allocation)
+        -> VkResult
     {
         std::lock_guard lock(mutex);
 
-        Chunk& chunk = chunks[descriptorType];
+        VkDescriptorType mutableDescriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        if (descriptorType != VK_DESCRIPTOR_TYPE_SAMPLER)
+        {
+            mutableDescriptorType = VK_DESCRIPTOR_TYPE_MUTABLE_EXT;
+        }
+
+        Chunk& chunk = chunks[mutableDescriptorType];
         if (1 > chunk.size - chunk.offset)
         {
             return VK_ERROR_OUT_OF_POOL_MEMORY;
@@ -380,8 +461,8 @@ namespace ionengine::rhi
             chunk.free[allocOffset] = 0x1;
             chunk.offset = allocOffset + 1;
 
-            chunk.allocations[allocOffset] = {.descriptorType = descriptorType,
-                                              .descriptorSet = nullptr,
+            chunk.allocations[allocOffset] = {.descriptorType = mutableDescriptorType,
+                                              .descriptorSet = chunk.descriptorSet,
                                               .binding = chunk.binding,
                                               .arrayElement = allocOffset};
 
@@ -442,33 +523,33 @@ namespace ionengine::rhi
         {
             XXH64_state_t* hasher = ::XXH64_createState();
             {
-                VkShaderModuleCreateInfo shaderModuleCreateInfo{
+                VkShaderModuleCreateInfo const shaderModuleCreateInfo{
                     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-                    .pCode = reinterpret_cast<uint32_t const*>(createInfo.graphics.vertexStage.shader.data())};
+                    .pCode = reinterpret_cast<uint32_t const*>(createInfo.graphics.vertexStage.shaderCode.data())};
                 VkShaderModule shaderModule;
                 throwIfFailed(::vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModule));
 
-                VKShaderStage shaderStage{.entryPoint = createInfo.graphics.vertexStage.entryPoint,
-                                          .shaderModule = shaderModule};
+                VKShaderStage const shaderStage{.entryPoint = createInfo.graphics.vertexStage.entryPoint,
+                                                .shaderModule = shaderModule};
                 stages.emplace(VK_SHADER_STAGE_VERTEX_BIT, std::move(shaderStage));
 
-                ::XXH64_update(hasher, createInfo.graphics.vertexStage.shader.data(),
-                               createInfo.graphics.vertexStage.shader.size());
+                ::XXH64_update(hasher, createInfo.graphics.vertexStage.shaderCode.data(),
+                               createInfo.graphics.vertexStage.shaderCode.size());
             }
 
             {
-                VkShaderModuleCreateInfo shaderModuleCreateInfo{
+                VkShaderModuleCreateInfo const shaderModuleCreateInfo{
                     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-                    .pCode = reinterpret_cast<uint32_t const*>(createInfo.graphics.pixelStage.shader.data())};
+                    .pCode = reinterpret_cast<uint32_t const*>(createInfo.graphics.pixelStage.shaderCode.data())};
                 VkShaderModule shaderModule;
                 throwIfFailed(::vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModule));
 
-                VKShaderStage shaderStage{.entryPoint = createInfo.graphics.pixelStage.entryPoint,
-                                          .shaderModule = shaderModule};
+                VKShaderStage const shaderStage{.entryPoint = createInfo.graphics.pixelStage.entryPoint,
+                                                .shaderModule = shaderModule};
                 stages.emplace(VK_SHADER_STAGE_FRAGMENT_BIT, std::move(shaderStage));
 
-                ::XXH64_update(hasher, createInfo.graphics.pixelStage.shader.data(),
-                               createInfo.graphics.pixelStage.shader.size());
+                ::XXH64_update(hasher, createInfo.graphics.pixelStage.shaderCode.data(),
+                               createInfo.graphics.pixelStage.shaderCode.size());
             }
             hash = ::XXH64_digest(hasher);
 
@@ -478,16 +559,17 @@ namespace ionengine::rhi
         {
             XXH64_state_t* hasher = ::XXH64_createState();
             {
-                VkShaderModuleCreateInfo shaderModuleCreateInfo{
+                VkShaderModuleCreateInfo const shaderModuleCreateInfo{
                     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-                    .pCode = reinterpret_cast<uint32_t const*>(createInfo.compute.shader.data())};
+                    .pCode = reinterpret_cast<uint32_t const*>(createInfo.compute.shaderCode.data())};
                 VkShaderModule shaderModule;
                 throwIfFailed(::vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModule));
 
-                VKShaderStage shaderStage{.entryPoint = createInfo.compute.entryPoint, .shaderModule = shaderModule};
+                VKShaderStage const shaderStage{.entryPoint = createInfo.compute.entryPoint,
+                                                .shaderModule = shaderModule};
                 stages.emplace(VK_SHADER_STAGE_COMPUTE_BIT, std::move(shaderStage));
 
-                ::XXH64_update(hasher, createInfo.compute.shader.data(), createInfo.compute.shader.size());
+                ::XXH64_update(hasher, createInfo.compute.shaderCode.data(), createInfo.compute.shaderCode.size());
             }
             hash = ::XXH64_digest(hasher);
         }
@@ -516,7 +598,7 @@ namespace ionengine::rhi
         return stages;
     }
 
-    auto VKShader::getVertexInput() const -> std::optional<VKVertexInput>
+    auto VKShader::getVertexInput() const -> std::optional<VKVertexInput> const&
     {
         return vertexInput;
     }
@@ -524,7 +606,7 @@ namespace ionengine::rhi
     Pipeline::Pipeline(VkDevice device, VkPipelineLayout pipelineLayout, VKShader* shader,
                        RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                        std::optional<DepthStencilStageInfo> const depthStencil,
-                       std::span<VkFormat const> const renderTargetFormats, VkFormat const depthStencilFormat,
+                       std::array<VkFormat, 8> const& renderTargetFormats, VkFormat const depthStencilFormat,
                        VkPipelineCache pipelineCache)
         : device(device)
     {
@@ -533,7 +615,7 @@ namespace ionengine::rhi
             std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
             for (auto const [stageFlags, shaderStage] : shader->getStages())
             {
-                VkPipelineShaderStageCreateInfo shaderStageCreateInfo{
+                VkPipelineShaderStageCreateInfo const shaderStageCreateInfo{
                     .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                     .stage = stageFlags,
                     .module = shaderStage.shaderModule,
@@ -622,31 +704,26 @@ namespace ionengine::rhi
 
     PipelineCache::PipelineCache(VkDevice device, RHICreateInfo const& createInfo) : device(device)
     {
-        std::vector<VkPushConstantRange> pushContantRanges;
-        for (uint32_t const i : std::views::iota(0u, 16u))
-        {
-            VkPushConstantRange pushConstantRange{.stageFlags = VK_SHADER_STAGE_ALL, .offset = i * 4, .size = 4};
-            pushContantRanges.emplace_back(std::move(pushConstantRange));
-        }
+        VkPushConstantRange const pushConstantRange{.stageFlags = VK_SHADER_STAGE_ALL, .offset = 0, .size = 4 * 16};
 
-        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                                                            .pushConstantRangeCount =
-                                                                static_cast<uint32_t>(pushContantRanges.size()),
-                                                            .pPushConstantRanges = pushContantRanges.data()};
+        VkPipelineLayoutCreateInfo const pipelineLayoutCreateInfo{.sType =
+                                                                      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                                                                  .pushConstantRangeCount = 1,
+                                                                  .pPushConstantRanges = &pushConstantRange};
         throwIfFailed(::vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
     }
 
     auto PipelineCache::get(VKShader* shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                             std::optional<DepthStencilStageInfo> const depthStencil,
-                            std::array<VkFormat, 8> const& renderTargetFormats,
-                            VkFormat const depthStencilFormat) -> core::ref_ptr<Pipeline>
+                            std::array<VkFormat, 8> const& renderTargetFormats, VkFormat const depthStencilFormat)
+        -> core::ref_ptr<Pipeline>
     {
-        Entry entry{.shaderHash = shader->getHash(),
-                    .rasterizer = rasterizer,
-                    .blendColor = blendColor,
-                    .depthStencil = depthStencil,
-                    .renderTargetFormats = renderTargetFormats,
-                    .depthStencilFormat = depthStencilFormat};
+        Entry const entry{.shaderHash = shader->getHash(),
+                          .rasterizer = rasterizer,
+                          .blendColor = blendColor,
+                          .depthStencil = depthStencil,
+                          .renderTargetFormats = renderTargetFormats,
+                          .depthStencilFormat = depthStencilFormat};
 
         std::unique_lock lock(mutex);
         auto result = entries.find(entry);
@@ -685,12 +762,12 @@ namespace ionengine::rhi
     {
     }
 
-    auto VKBuffer::getSize() -> size_t
+    auto VKBuffer::getSize() const -> size_t
     {
         return 0;
     }
 
-    auto VKBuffer::getFlags() -> BufferUsageFlags
+    auto VKBuffer::getFlags() const -> BufferUsageFlags
     {
         return 0;
     }
@@ -752,19 +829,19 @@ namespace ionengine::rhi
           width(width), height(height), depth(1), mipLevels(1), format(TextureFormat::BGRA8_UNORM),
           dimension(TextureDimension::_2D), flags((TextureUsageFlags)TextureUsage::RenderTarget)
     {
-        VkImageViewCreateInfo imageViewCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                                  .image = image,
-                                                  .viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
-                                                  .format = TextureFormat_to_VkFormat(format),
-                                                  .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                                 .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                                 .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                                 .a = VK_COMPONENT_SWIZZLE_IDENTITY},
-                                                  .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                                       .baseMipLevel = 0,
-                                                                       .levelCount = mipLevels,
-                                                                       .baseArrayLayer = 0,
-                                                                       .layerCount = depth}};
+        VkImageViewCreateInfo const imageViewCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                                        .image = image,
+                                                        .viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
+                                                        .format = TextureFormat_to_VkFormat(format),
+                                                        .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                       .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                       .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                       .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+                                                        .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                             .baseMipLevel = 0,
+                                                                             .levelCount = mipLevels,
+                                                                             .baseArrayLayer = 0,
+                                                                             .layerCount = depth}};
         throwIfFailed(::vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageView));
     }
 
@@ -827,6 +904,35 @@ namespace ionengine::rhi
         return initialLayout;
     }
 
+    VKSampler::VKSampler(VkDevice device, SamplerCreateInfo const& createInfo) : device(device)
+    {
+        VkSamplerCreateInfo const samplerCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            .magFilter = VK_FILTER_LINEAR,
+            .minFilter = VK_FILTER_LINEAR,
+            .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+            .addressModeU = AddressMode_to_VkSamplerAddressMode(createInfo.addressU),
+            .addressModeV = AddressMode_to_VkSamplerAddressMode(createInfo.addressV),
+            .addressModeW = AddressMode_to_VkSamplerAddressMode(createInfo.addressW),
+            .anisotropyEnable = true,
+            .maxAnisotropy = static_cast<float>(createInfo.maxAnisotropy),
+            .compareEnable = true,
+            .compareOp = CompareOp_to_VkCompareOp(createInfo.compareOp),
+            .maxLod = VK_LOD_CLAMP_NONE};
+
+        ::vkCreateSampler(device, &samplerCreateInfo, nullptr, &sampler);
+    }
+
+    VKSampler::~VKSampler()
+    {
+        ::vkDestroySampler(device, sampler, nullptr);
+    }
+
+    auto VKSampler::getDescriptorOffset() const -> uint32_t
+    {
+        return 0;
+    }
+
     VKFutureImpl::VKFutureImpl(VkDevice device, VkQueue queue, VkSemaphore semaphore, uint64_t const fenceValue)
         : device(device), queue(queue), semaphore(semaphore), fenceValue(fenceValue)
     {
@@ -841,72 +947,20 @@ namespace ionengine::rhi
 
     auto VKFutureImpl::wait() -> void
     {
-        VkSemaphoreWaitInfo semaphoreWaitInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-                                              .semaphoreCount = 1,
-                                              .pSemaphores = &semaphore,
-                                              .pValues = &fenceValue};
+        VkSemaphoreWaitInfo const semaphoreWaitInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+                                                    .semaphoreCount = 1,
+                                                    .pSemaphores = &semaphore,
+                                                    .pValues = &fenceValue};
         throwIfFailed(::vkWaitSemaphores(device, &semaphoreWaitInfo, std::numeric_limits<uint64_t>::max()));
     }
 
-    VKGraphicsContext::VKGraphicsContext(VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
-                                         VkSemaphore semaphore, uint64_t& fenceValue)
-        : device(device), queue(queue), queueFamilyIndex(queueFamilyIndex), semaphore(semaphore),
-          fenceValue(&fenceValue)
-    {
-        VkCommandPoolCreateInfo commandPoolCreateInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-                                                      .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                                                      .queueFamilyIndex = queueFamilyIndex};
-        throwIfFailed(::vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool));
-    }
-
-    VKGraphicsContext::~VKGraphicsContext()
-    {
-        ::vkDestroyCommandPool(device, commandPool, nullptr);
-    }
-
-    auto VKGraphicsContext::reset() -> void
-    {
-        throwIfFailed(::vkResetCommandPool(device, commandPool, 0));
-
-        VkCommandBufferAllocateInfo commandBufferAllocInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-                                                           .commandPool = commandPool,
-                                                           .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-                                                           .commandBufferCount = 1};
-        throwIfFailed(::vkAllocateCommandBuffers(device, &commandBufferAllocInfo, &commandBuffer));
-
-        VkCommandBufferBeginInfo commandBufferBeginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                                                        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
-        throwIfFailed(::vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
-    }
-
-    auto VKGraphicsContext::execute() -> Future<Query>
-    {
-        throwIfFailed(::vkEndCommandBuffer(commandBuffer));
-
-        (*fenceValue)++;
-        VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
-                                                          .signalSemaphoreValueCount = 1,
-                                                          .pSignalSemaphoreValues = fenceValue};
-        VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                .pNext = &semaphoreSubmitInfo,
-                                .commandBufferCount = 1,
-                                .pCommandBuffers = &commandBuffer,
-                                .signalSemaphoreCount = 1,
-                                .pSignalSemaphores = &semaphore};
-        throwIfFailed(::vkQueueSubmit(queue, 1, &submitInfo, nullptr));
-
-        auto query = core::make_ref<VKQuery>();
-        auto futureImpl = std::make_unique<VKFutureImpl>(device, queue, semaphore, *fenceValue);
-        return Future<Query>(query, std::move(futureImpl));
-    }
-
-    auto VKGraphicsContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
-                                    ResourceState const after) -> void
+    auto VKDeviceContext_barrier(VkCommandBuffer commandBuffer, core::ref_ptr<Buffer> dest, ResourceState const before,
+                                 ResourceState const after) -> void
     {
     }
 
-    auto VKGraphicsContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before,
-                                    ResourceState const after) -> void
+    auto VKDeviceContext_barrier(VkCommandBuffer commandBuffer, core::ref_ptr<Texture> dest, ResourceState const before,
+                                 ResourceState const after) -> void
     {
         auto oldLayout = [&](ResourceState const state) -> VkImageLayout {
             VkImageLayout const initialLayout = static_cast<VKTexture*>(dest.get())->getInitialLayout();
@@ -922,21 +976,84 @@ namespace ionengine::rhi
                        : ResourceState_to_VkImageLayout(state);
         };
 
-        VkImageMemoryBarrier imageMemoryBarrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                .srcAccessMask = VkImageLayout_to_VkAccessFlags(oldLayout(before)),
-                                                .dstAccessMask = VkImageLayout_to_VkAccessFlags(newLayout(after)),
-                                                .oldLayout = oldLayout(before),
-                                                .newLayout = newLayout(after),
-                                                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                .image = static_cast<VKTexture*>(dest.get())->getImage(),
-                                                .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                                     .baseMipLevel = 0,
-                                                                     .levelCount = dest->getMipLevels(),
-                                                                     .baseArrayLayer = 0,
-                                                                     .layerCount = dest->getDepth()}};
+        VkImageMemoryBarrier const imageMemoryBarrier{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                      .srcAccessMask =
+                                                          VkImageLayout_to_VkAccessFlags(oldLayout(before)),
+                                                      .dstAccessMask = VkImageLayout_to_VkAccessFlags(newLayout(after)),
+                                                      .oldLayout = oldLayout(before),
+                                                      .newLayout = newLayout(after),
+                                                      .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                      .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                      .image = static_cast<VKTexture*>(dest.get())->getImage(),
+                                                      .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                           .baseMipLevel = 0,
+                                                                           .levelCount = dest->getMipLevels(),
+                                                                           .baseArrayLayer = 0,
+                                                                           .layerCount = dest->getDepth()}};
         ::vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                                VK_DEPENDENCY_BY_REGION_BIT, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+    }
+
+    VKGraphicsContext::VKGraphicsContext(VkDevice device, PipelineCache* pipelineCache,
+                                         DescriptorAllocator* descriptorAllocator, DeviceQueueData& deviceQueue)
+        : device(device), pipelineCache(pipelineCache), descriptorAllocator(descriptorAllocator),
+          deviceQueue(&deviceQueue), isCommandListOpened(false)
+    {
+        VkCommandPoolCreateInfo const commandPoolCreateInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+                                                            .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                                                            .queueFamilyIndex = deviceQueue.familyIndex};
+        throwIfFailed(::vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool));
+    }
+
+    VKGraphicsContext::~VKGraphicsContext()
+    {
+        ::vkDestroyCommandPool(device, commandPool, nullptr);
+    }
+
+    auto VKGraphicsContext::tryAllocateCommandBuffer() -> void
+    {
+        if (isCommandListOpened)
+        {
+            return;
+        }
+
+        throwIfFailed(::vkResetCommandPool(device, commandPool, 0));
+
+        VkCommandBufferAllocateInfo const commandBufferAllocInfo{.sType =
+                                                                     VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                                                                 .commandPool = commandPool,
+                                                                 .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                                                                 .commandBufferCount = 1};
+        throwIfFailed(::vkAllocateCommandBuffers(device, &commandBufferAllocInfo, &commandBuffer));
+
+        VkCommandBufferBeginInfo const commandBufferBeginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                                                              .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
+        throwIfFailed(::vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+
+        isCommandListOpened = true;
+    }
+
+    auto VKGraphicsContext::execute() -> Future<void>
+    {
+        throwIfFailed(::vkEndCommandBuffer(commandBuffer));
+        isCommandListOpened = false;
+
+        deviceQueue->fenceValue++;
+        VkTimelineSemaphoreSubmitInfo const semaphoreSubmitInfo{
+            .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+            .signalSemaphoreValueCount = 1,
+            .pSignalSemaphoreValues = &deviceQueue->fenceValue};
+        VkSubmitInfo const submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                      .pNext = &semaphoreSubmitInfo,
+                                      .commandBufferCount = 1,
+                                      .pCommandBuffers = &commandBuffer,
+                                      .signalSemaphoreCount = 1,
+                                      .pSignalSemaphores = &deviceQueue->semaphore};
+        throwIfFailed(::vkQueueSubmit(deviceQueue->queue, 1, &submitInfo, nullptr));
+
+        auto futureImpl =
+            std::make_unique<VKFutureImpl>(device, deviceQueue->queue, deviceQueue->semaphore, deviceQueue->fenceValue);
+        return Future<void>(std::move(futureImpl));
     }
 
     auto VKGraphicsContext::setGraphicsPipelineOptions(core::ref_ptr<Shader> shader,
@@ -944,6 +1061,7 @@ namespace ionengine::rhi
                                                        BlendColorInfo const& blendColor,
                                                        std::optional<DepthStencilStageInfo> const depthStencil) -> void
     {
+        this->tryAllocateCommandBuffer();
     }
 
     auto VKGraphicsContext::bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void
@@ -953,6 +1071,8 @@ namespace ionengine::rhi
     auto VKGraphicsContext::beginRenderPass(std::span<RenderPassColorInfo> const colors,
                                             std::optional<RenderPassDepthStencilInfo> depthStencil) -> void
     {
+        this->tryAllocateCommandBuffer();
+
         std::array<VkRenderingAttachmentInfo, 8> colorAttachmentInfos;
         for (uint32_t const i : std::views::iota(0u, colors.size()))
         {
@@ -962,7 +1082,7 @@ namespace ionengine::rhi
             clearColorValue.float32[2] = colors[i].clearColor.b;
             clearColorValue.float32[3] = colors[i].clearColor.a;
 
-            VkRenderingAttachmentInfo renderingAttachmentInfo{
+            VkRenderingAttachmentInfo const renderingAttachmentInfo{
                 .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                 .imageView = static_cast<VKTexture*>(colors[i].texture.get())->getImageView(),
                 .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -972,11 +1092,11 @@ namespace ionengine::rhi
             colorAttachmentInfos[i] = std::move(renderingAttachmentInfo);
         }
 
-        VkRenderingInfo renderingInfo{.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-                                      .renderArea = renderArea,
-                                      .layerCount = 1,
-                                      .colorAttachmentCount = static_cast<uint32_t>(colors.size()),
-                                      .pColorAttachments = colorAttachmentInfos.data()};
+        VkRenderingInfo const renderingInfo{.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                                            .renderArea = renderArea,
+                                            .layerCount = 1,
+                                            .colorAttachmentCount = static_cast<uint32_t>(colors.size()),
+                                            .pColorAttachments = colorAttachmentInfos.data()};
         ::vkCmdBeginRendering(commandBuffer, &renderingInfo);
     }
 
@@ -985,8 +1105,8 @@ namespace ionengine::rhi
         ::vkCmdEndRendering(commandBuffer);
     }
 
-    auto VKGraphicsContext::bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
-                                             size_t const size) -> void
+    auto VKGraphicsContext::bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
+        -> void
     {
     }
 
@@ -1005,35 +1125,264 @@ namespace ionengine::rhi
         ::vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, 0);
     }
 
-    auto VKGraphicsContext::setViewport(int32_t const x, int32_t const y, uint32_t const width,
-                                        uint32_t const height) -> void
+    auto VKGraphicsContext::setViewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height)
+        -> void
     {
-        VkViewport viewport{.x = static_cast<float>(x),
-                            .y = static_cast<float>(y),
-                            .width = static_cast<float>(width),
-                            .height = static_cast<float>(height),
-                            .minDepth = 0.0f,
-                            .maxDepth = 1.0f};
+        this->tryAllocateCommandBuffer();
+
+        VkViewport const viewport{.x = static_cast<float>(x),
+                                  .y = static_cast<float>(y),
+                                  .width = static_cast<float>(width),
+                                  .height = static_cast<float>(height),
+                                  .minDepth = 0.0f,
+                                  .maxDepth = 1.0f};
         ::vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     }
 
-    auto VKGraphicsContext::setScissor(int32_t const left, int32_t const top, int32_t const right,
-                                       int32_t const bottom) -> void
+    auto VKGraphicsContext::setScissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom)
+        -> void
     {
-        VkRect2D rect{.offset = {.x = left, .y = top},
-                      .extent = {.width = static_cast<uint32_t>(right), .height = static_cast<uint32_t>(bottom)}};
+        this->tryAllocateCommandBuffer();
+
+        VkRect2D const rect{.offset = {.x = left, .y = top},
+                            .extent = {.width = static_cast<uint32_t>(right), .height = static_cast<uint32_t>(bottom)}};
         ::vkCmdSetScissor(commandBuffer, 0, 1, &rect);
         renderArea = rect;
     }
 
-    VKDevice::VKDevice(RHICreateInfo const& createInfo) : swapchain(nullptr)
+    auto VKGraphicsContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+        -> void
     {
-        VkApplicationInfo applicationInfo{.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-                                          .pApplicationName = "RHI",
-                                          .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-                                          .pEngineName = "RHI",
-                                          .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-                                          .apiVersion = VK_API_VERSION_1_3};
+        this->tryAllocateCommandBuffer();
+
+        VKDeviceContext_barrier(commandBuffer, dest, before, after);
+    }
+
+    auto VKGraphicsContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+        -> void
+    {
+        this->tryAllocateCommandBuffer();
+
+        VKDeviceContext_barrier(commandBuffer, dest, before, after);
+    }
+
+    auto VKCopyContext::tryAllocateCommandBuffer() -> void
+    {
+        if (isCommandListOpened)
+        {
+            return;
+        }
+
+        throwIfFailed(::vkResetCommandPool(device, commandPool, 0));
+
+        VkCommandBufferAllocateInfo const commandBufferAllocInfo{.sType =
+                                                                     VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                                                                 .commandPool = commandPool,
+                                                                 .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                                                                 .commandBufferCount = 1};
+        throwIfFailed(::vkAllocateCommandBuffers(device, &commandBufferAllocInfo, &commandBuffer));
+
+        VkCommandBufferBeginInfo const commandBufferBeginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                                                              .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
+        throwIfFailed(::vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+
+        isCommandListOpened = true;
+    }
+
+    VKCopyContext::VKCopyContext(VkDevice device, VmaAllocator memoryAllocator, DeviceQueueData& deviceQueue,
+                                 RHICreateInfo const& rhiCreateInfo)
+        : device(device), deviceQueue(&deviceQueue), isCommandListOpened(false)
+    {
+        VkCommandPoolCreateInfo const commandPoolCreateInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+                                                            .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                                                            .queueFamilyIndex = deviceQueue.familyIndex};
+        throwIfFailed(::vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool));
+    }
+
+    VKCopyContext::~VKCopyContext()
+    {
+        ::vkDestroyCommandPool(device, commandPool, nullptr);
+    }
+
+    auto VKCopyContext::updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset,
+                                     std::span<uint8_t const> const dataBytes) -> Future<Buffer>
+    {
+        return Future<Buffer>();
+    }
+
+    auto VKCopyContext::updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
+                                      std::span<uint8_t const> const dataBytes) -> Future<Texture>
+    {
+        return Future<Texture>();
+    }
+
+    auto VKCopyContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+        -> void
+    {
+        this->tryAllocateCommandBuffer();
+
+        VKDeviceContext_barrier(commandBuffer, dest, before, after);
+    }
+
+    auto VKCopyContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+        -> void
+    {
+        this->tryAllocateCommandBuffer();
+
+        VKDeviceContext_barrier(commandBuffer, dest, before, after);
+    }
+
+    auto VKCopyContext::execute() -> Future<void>
+    {
+        writeStagingBuffer.offset = 0;
+
+        throwIfFailed(::vkEndCommandBuffer(commandBuffer));
+        isCommandListOpened = false;
+
+        deviceQueue->fenceValue++;
+        VkTimelineSemaphoreSubmitInfo const semaphoreSubmitInfo{
+            .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+            .signalSemaphoreValueCount = 1,
+            .pSignalSemaphoreValues = &deviceQueue->fenceValue};
+        VkSubmitInfo const submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                      .pNext = &semaphoreSubmitInfo,
+                                      .commandBufferCount = 1,
+                                      .pCommandBuffers = &commandBuffer,
+                                      .signalSemaphoreCount = 1,
+                                      .pSignalSemaphores = &deviceQueue->semaphore};
+        throwIfFailed(::vkQueueSubmit(deviceQueue->queue, 1, &submitInfo, nullptr));
+
+        auto futureImpl =
+            std::make_unique<VKFutureImpl>(device, deviceQueue->queue, deviceQueue->semaphore, deviceQueue->fenceValue);
+        return Future<void>(std::move(futureImpl));
+    }
+
+    VKSwapchain::VKSwapchain(VkInstance instance, VkDevice device, DeviceQueueData& deviceQueue,
+                             SwapchainCreateInfo const& createInfo)
+        : instance(instance), device(device), deviceQueue(&deviceQueue)
+    {
+#ifdef IONENGINE_PLATFORM_WIN32
+        VkWin32SurfaceCreateInfoKHR const surfaceCreateInfo{.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+                                                            .hinstance =
+                                                                reinterpret_cast<HINSTANCE>(createInfo.instance),
+                                                            .hwnd = reinterpret_cast<HWND>(createInfo.window)};
+        throwIfFailed(::vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface));
+#elif IONENGINE_PLATFORM_X11
+        VkXlibSurfaceCreateInfoKHR const surfaceCreateInfo{.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
+                                                           .dpy = reinterpret_cast<Display*>(createInfo.instance),
+                                                           .window = reinterpret_cast<Window>(createInfo.window)};
+        throwIfFailed(::vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface));
+#endif
+
+        VkSemaphoreCreateInfo const semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+        throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &acquireSemaphore));
+        throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &presentSemaphore));
+
+        RECT rect{};
+        ::GetClientRect(reinterpret_cast<HWND>(createInfo.window), &rect);
+
+        this->createSwapchainBuffers(rect.right, rect.bottom);
+    }
+
+    VKSwapchain::~VKSwapchain()
+    {
+        backBuffers.clear();
+        ::vkDestroySemaphore(device, presentSemaphore, nullptr);
+        ::vkDestroySemaphore(device, acquireSemaphore, nullptr);
+        ::vkDestroySwapchainKHR(device, swapchain, nullptr);
+        ::vkDestroySurfaceKHR(instance, surface, nullptr);
+    }
+
+    auto VKSwapchain::requestBackBuffer() -> core::weak_ptr<Texture>
+    {
+        VkPipelineStageFlags const waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        auto result = ::vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<uint32_t>::max(), acquireSemaphore,
+                                              nullptr, &imageIndex);
+        if (result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR)
+        {
+            VkSubmitInfo const submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                          .waitSemaphoreCount = 1,
+                                          .pWaitSemaphores = &acquireSemaphore,
+                                          .pWaitDstStageMask = &waitDstStageMask};
+            throwIfFailed(::vkQueueSubmit(deviceQueue->queue, 1, &submitInfo, nullptr));
+        }
+        return backBuffers[imageIndex];
+    }
+
+    auto VKSwapchain::presentBackBuffer() -> void
+    {
+        VkPipelineStageFlags const waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        VkTimelineSemaphoreSubmitInfo const semaphoreSubmitInfo{
+            .sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
+            .waitSemaphoreValueCount = 1,
+            .pWaitSemaphoreValues = &deviceQueue->fenceValue};
+        VkSubmitInfo const submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                      .pNext = &semaphoreSubmitInfo,
+                                      .waitSemaphoreCount = 1,
+                                      .pWaitSemaphores = &deviceQueue->semaphore,
+                                      .pWaitDstStageMask = &waitDstStageMask,
+                                      .signalSemaphoreCount = 1,
+                                      .pSignalSemaphores = &presentSemaphore};
+        throwIfFailed(::vkQueueSubmit(deviceQueue->queue, 1, &submitInfo, nullptr));
+
+        VkPresentInfoKHR const presentInfo{.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+                                           .waitSemaphoreCount = 1,
+                                           .pWaitSemaphores = &presentSemaphore,
+                                           .swapchainCount = 1,
+                                           .pSwapchains = &swapchain,
+                                           .pImageIndices = &imageIndex};
+        ::vkQueuePresentKHR(deviceQueue->queue, &presentInfo);
+    }
+
+    auto VKSwapchain::resizeBackBuffers(uint32_t const width, uint32_t const height) -> void
+    {
+        throwIfFailed(::vkDeviceWaitIdle(device));
+        backBuffers.clear();
+        ::vkDestroySwapchainKHR(device, swapchain, nullptr);
+        this->createSwapchainBuffers(width, height);
+    }
+
+    auto VKSwapchain::createSwapchainBuffers(uint32_t const width, uint32_t const height) -> void
+    {
+        // VkSurfaceCapabilitiesKHR surfaceCabalities;
+        // vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCabalities);
+
+        VkSwapchainCreateInfoKHR const swapchainCreateInfo{.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+                                                           .surface = surface,
+                                                           .minImageCount = 2,
+                                                           .imageFormat = VK_FORMAT_B8G8R8A8_UNORM,
+                                                           .imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+                                                           .imageExtent = {.width = width, .height = height},
+                                                           .imageArrayLayers = 1,
+                                                           .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                                                           .preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+                                                           .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+                                                           .presentMode = VK_PRESENT_MODE_FIFO_KHR,
+                                                           .clipped = true};
+        throwIfFailed(::vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain));
+
+        uint32_t numSwapchainImages;
+        throwIfFailed(::vkGetSwapchainImagesKHR(device, swapchain, &numSwapchainImages, nullptr));
+
+        std::vector<VkImage> swapchainImages(numSwapchainImages);
+        throwIfFailed(::vkGetSwapchainImagesKHR(device, swapchain, &numSwapchainImages, swapchainImages.data()));
+
+        for (auto const& swapchainImage : swapchainImages)
+        {
+            auto texture = core::make_ref<VKTexture>(device, swapchainImage, swapchainCreateInfo.imageExtent.width,
+                                                     swapchainCreateInfo.imageExtent.height);
+            backBuffers.emplace_back(std::move(texture));
+        }
+    }
+
+    VKRHI::VKRHI(RHICreateInfo const& createInfo)
+    {
+        VkApplicationInfo const applicationInfo{.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+                                                .pApplicationName = "RHI",
+                                                .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+                                                .pEngineName = "RHI",
+                                                .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+                                                .apiVersion = VK_API_VERSION_1_3};
 
         VkInstanceCreateInfo instanceCreateInfo{.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
                                                 .pApplicationInfo = &applicationInfo};
@@ -1061,7 +1410,7 @@ namespace ionengine::rhi
         throwIfFailed(::vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
 
 #ifndef NDEBUG
-        VkDebugUtilsMessengerCreateInfoEXT messengerCreateInfo{
+        VkDebugUtilsMessengerCreateInfoEXT const messengerCreateInfo{
             .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
             .messageSeverity =
                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
@@ -1124,19 +1473,23 @@ namespace ionengine::rhi
                 computeQueueFamily = i;
             }
 
-            VkDeviceQueueCreateInfo queueCreateInfo{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                                                    .queueFamilyIndex = i,
-                                                    .queueCount = 1,
-                                                    .pQueuePriorities = &queuePriority};
+            VkDeviceQueueCreateInfo const queueCreateInfo{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                                                          .queueFamilyIndex = i,
+                                                          .queueCount = 1,
+                                                          .pQueuePriorities = &queuePriority};
             queueCreateInfos.emplace_back(std::move(queueCreateInfo));
         }
 
-        std::vector<char const*> deviceExtensions{VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                                                  VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-                                                  VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME};
+        std::vector<char const*> const deviceExtensions{
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+            VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME, VK_EXT_MUTABLE_DESCRIPTOR_TYPE_EXTENSION_NAME};
 
+        VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT deviceMutableFeatures{
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT,
+            .mutableDescriptorType = true};
         VkPhysicalDeviceVulkan12Features deviceFeatures12{.sType =
                                                               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+                                                          .pNext = &deviceMutableFeatures,
                                                           .descriptorIndexing = true,
                                                           .descriptorBindingUniformBufferUpdateAfterBind = true,
                                                           .descriptorBindingSampledImageUpdateAfterBind = true,
@@ -1148,93 +1501,39 @@ namespace ionengine::rhi
                                                               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
                                                           .pNext = &deviceFeatures12,
                                                           .dynamicRendering = true};
-        VkDeviceCreateInfo deviceCreateInfo{.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                            .pNext = &deviceFeatures13,
-                                            .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
-                                            .pQueueCreateInfos = queueCreateInfos.data(),
-                                            .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
-                                            .ppEnabledExtensionNames = deviceExtensions.data()};
+        VkDeviceCreateInfo const deviceCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .pNext = &deviceFeatures13,
+            .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
+            .pQueueCreateInfos = queueCreateInfos.data(),
+            .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
+            .ppEnabledExtensionNames = deviceExtensions.data()};
         throwIfFailed(::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device));
 
-        // Create Graphics Queue
-        {
-            ::vkGetDeviceQueue(device, graphicsQueueFamily, 0, &graphicsQueue.queue);
-            graphicsQueue.familyIndex = graphicsQueueFamily;
-
-            VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-                                                              .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
-            VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-                                                      .pNext = &semaphoreTypeCreateInfo};
-            throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &graphicsQueue.semaphore));
-            graphicsQueue.fenceValue = 0;
-        }
-
-        // Create Transfer Queue
-        {
-            ::vkGetDeviceQueue(device, transferQueueFamily, 0, &transferQueue.queue);
-            transferQueue.familyIndex = transferQueueFamily;
-
-            VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-                                                              .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
-            VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-                                                      .pNext = &semaphoreTypeCreateInfo};
-            throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &transferQueue.semaphore));
-            transferQueue.fenceValue = 0;
-        }
-
-        // Create Compute Queue
-        {
-            ::vkGetDeviceQueue(device, computeQueueFamily, 0, &computeQueue.queue);
-            computeQueue.familyIndex = computeQueueFamily;
-
-            VkSemaphoreTypeCreateInfo semaphoreTypeCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-                                                              .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
-            VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-                                                      .pNext = &semaphoreTypeCreateInfo};
-            throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &computeQueue.semaphore));
-            computeQueue.fenceValue = 0;
-        }
+        this->createDeviceQueue(graphicsQueueFamily, graphicsQueue);
+        this->createDeviceQueue(transferQueueFamily, transferQueue);
+        this->createDeviceQueue(computeQueueFamily, computeQueue);
 
         descriptorAllocator = core::make_ref<DescriptorAllocator>(device);
 
-        if (createInfo.window)
-        {
-#ifdef IONENGINE_PLATFORM_WIN32
-            VkWin32SurfaceCreateInfoKHR surfaceCreateInfo{.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
-                                                          .hinstance = reinterpret_cast<HINSTANCE>(createInfo.instance),
-                                                          .hwnd = reinterpret_cast<HWND>(createInfo.window)};
-            throwIfFailed(::vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface));
-#elif IONENGINE_PLATFORM_X11
-            VkXlibSurfaceCreateInfoKHR surfaceCreateInfo{.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
-                                                         .dpy = reinterpret_cast<Display*>(createInfo.instance),
-                                                         .window = reinterpret_cast<Window>(createInfo.window)};
-            throwIfFailed(::vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface));
-#endif
+        VmaAllocatorCreateInfo const memoryAllocatorCreateInfo{
+            .physicalDevice = physicalDevice, .device = device, .instance = instance};
+        ::vmaCreateAllocator(&memoryAllocatorCreateInfo, &memoryAllocator);
 
-            {
-                VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-                throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &acquireSemaphore));
-            }
+        pipelineCache = core::make_ref<PipelineCache>(device, createInfo);
 
-            {
-                VkSemaphoreCreateInfo semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-                throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &presentSemaphore));
-            }
-
-            this->createSwapchain(createInfo.windowWidth, createInfo.windowHeight);
-        }
+        graphicsContext =
+            core::make_ref<VKGraphicsContext>(device, pipelineCache.get(), descriptorAllocator.get(), graphicsQueue);
+        copyContext = core::make_ref<VKCopyContext>(device, memoryAllocator, transferQueue, createInfo);
     }
 
-    VKDevice::~VKDevice()
+    VKRHI::~VKRHI()
     {
-        backBuffers.clear();
-        if (swapchain)
-        {
-            ::vkDestroySemaphore(device, presentSemaphore, nullptr);
-            ::vkDestroySemaphore(device, acquireSemaphore, nullptr);
-            ::vkDestroySwapchainKHR(device, swapchain, nullptr);
-            ::vkDestroySurfaceKHR(instance, surface, nullptr);
-        }
+        swapchain = nullptr;
+        copyContext = nullptr;
+        graphicsContext = nullptr;
+        pipelineCache = nullptr;
+        ::vmaDestroyAllocator(memoryAllocator);
         descriptorAllocator = nullptr;
         ::vkDestroySemaphore(device, graphicsQueue.semaphore, nullptr);
         ::vkDestroySemaphore(device, transferQueue.semaphore, nullptr);
@@ -1246,129 +1545,63 @@ namespace ionengine::rhi
         ::vkDestroyInstance(instance, nullptr);
     }
 
-    auto VKDevice::createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader>
+    auto VKRHI::createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader>
     {
-        return nullptr;
+        return core::make_ref<VKShader>(device, createInfo);
     }
 
-    auto VKDevice::createTexture(TextureCreateInfo const& createInfo) -> core::ref_ptr<Texture>
+    auto VKRHI::createTexture(TextureCreateInfo const& createInfo) -> core::ref_ptr<Texture>
     {
-        return nullptr;
+        return core::make_ref<VKTexture>(device, memoryAllocator, createInfo);
     }
 
-    auto VKDevice::createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer>
+    auto VKRHI::createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer>
     {
-        return nullptr;
+        return core::make_ref<VKBuffer>(device, memoryAllocator, createInfo);
     }
 
-    auto VKDevice::createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler>
+    auto VKRHI::createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler>
     {
-        return nullptr;
+        return core::make_ref<VKSampler>(device, createInfo);
     }
 
-    auto VKDevice::createGraphicsContext() -> core::ref_ptr<GraphicsContext>
-    {
-        return core::make_ref<VKGraphicsContext>(device, graphicsQueue.queue, graphicsQueue.familyIndex,
-                                                 graphicsQueue.semaphore, graphicsQueue.fenceValue);
-    }
-
-    auto VKDevice::createCopyContext() -> core::ref_ptr<CopyContext>
-    {
-        return nullptr;
-    }
-
-    auto VKDevice::requestBackBuffer() -> core::weak_ptr<Texture>
+    auto VKRHI::tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain>
     {
         if (!swapchain)
         {
-            throw core::runtime_error("Swapchain is not found");
+            swapchain = core::make_ref<VKSwapchain>(instance, device, graphicsQueue, createInfo);
         }
-
-        VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        auto result = ::vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<uint32_t>::max(), acquireSemaphore,
-                                              nullptr, &imageIndex);
-        if (result != VK_SUBOPTIMAL_KHR && result != VK_ERROR_OUT_OF_DATE_KHR)
-        {
-            VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                    .waitSemaphoreCount = 1,
-                                    .pWaitSemaphores = &acquireSemaphore,
-                                    .pWaitDstStageMask = &waitDstStageMask};
-            throwIfFailed(::vkQueueSubmit(graphicsQueue.queue, 1, &submitInfo, nullptr));
-        }
-        return backBuffers[imageIndex];
+        return swapchain;
     }
 
-    auto VKDevice::presentBackBuffer() -> void
+    auto VKRHI::getGraphicsContext() -> core::ref_ptr<GraphicsContext>
     {
-        if (!swapchain)
-        {
-            throw core::runtime_error("Swapchain is not found");
-        }
-        VkPipelineStageFlags waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        VkTimelineSemaphoreSubmitInfo semaphoreSubmitInfo{.sType = VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR,
-                                                          .waitSemaphoreValueCount = 1,
-                                                          .pWaitSemaphoreValues = &graphicsQueue.fenceValue};
-        VkSubmitInfo submitInfo{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                .pNext = &semaphoreSubmitInfo,
-                                .waitSemaphoreCount = 1,
-                                .pWaitSemaphores = &graphicsQueue.semaphore,
-                                .pWaitDstStageMask = &waitDstStageMask,
-                                .signalSemaphoreCount = 1,
-                                .pSignalSemaphores = &presentSemaphore};
-        throwIfFailed(::vkQueueSubmit(graphicsQueue.queue, 1, &submitInfo, nullptr));
-
-        VkPresentInfoKHR presentInfo{.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                     .waitSemaphoreCount = 1,
-                                     .pWaitSemaphores = &presentSemaphore,
-                                     .swapchainCount = 1,
-                                     .pSwapchains = &swapchain,
-                                     .pImageIndices = &imageIndex};
-        ::vkQueuePresentKHR(graphicsQueue.queue, &presentInfo);
+        return graphicsContext;
     }
 
-    auto VKDevice::resizeBackBuffers(uint32_t const width, uint32_t const height) -> void
+    auto VKRHI::getCopyContext() -> core::ref_ptr<CopyContext>
     {
-        throwIfFailed(::vkDeviceWaitIdle(device));
-        backBuffers.clear();
-        ::vkDestroySwapchainKHR(device, swapchain, nullptr);
-        this->createSwapchain(width, height);
+        return copyContext;
     }
 
-    auto VKDevice::getBackendName() const -> std::string_view
+    auto VKRHI::getName() const -> std::string_view
     {
-        return "Vulkan";
+        return rhiName;
     }
 
-    auto VKDevice::createSwapchain(uint32_t const width, uint32_t const height) -> void
+    auto VKRHI::createDeviceQueue(uint32_t const queueFamily, DeviceQueueData& deviceQueue) -> void
     {
-        VkSurfaceCapabilitiesKHR surfaceCabalities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCabalities);
+        ::vkGetDeviceQueue(device, queueFamily, 0, &deviceQueue.queue);
+        deviceQueue.familyIndex = queueFamily;
 
-        VkSwapchainCreateInfoKHR swapchainCreateInfo{.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-                                                     .surface = surface,
-                                                     .minImageCount = 2,
-                                                     .imageFormat = VK_FORMAT_B8G8R8A8_UNORM,
-                                                     .imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-                                                     .imageExtent = {.width = width, .height = height},
-                                                     .imageArrayLayers = 1,
-                                                     .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                                                     .preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-                                                     .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-                                                     .presentMode = VK_PRESENT_MODE_FIFO_KHR,
-                                                     .clipped = true};
-        throwIfFailed(::vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapchain));
+        VkSemaphoreTypeCreateInfo const semaphoreTypeCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+                                                                .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE};
+        VkSemaphoreCreateInfo const semaphoreCreateInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+                                                        .pNext = &semaphoreTypeCreateInfo};
+        throwIfFailed(::vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &deviceQueue.semaphore));
 
-        uint32_t numSwapchainImages;
-        throwIfFailed(::vkGetSwapchainImagesKHR(device, swapchain, &numSwapchainImages, nullptr));
-
-        std::vector<VkImage> swapchainImages(numSwapchainImages);
-        throwIfFailed(::vkGetSwapchainImagesKHR(device, swapchain, &numSwapchainImages, swapchainImages.data()));
-
-        for (auto const& swapchainImage : swapchainImages)
-        {
-            auto texture = core::make_ref<VKTexture>(device, swapchainImage, swapchainCreateInfo.imageExtent.width,
-                                                     swapchainCreateInfo.imageExtent.height);
-            backBuffers.emplace_back(std::move(texture));
-        }
+        uint64_t counterValue;
+        throwIfFailed(::vkGetSemaphoreCounterValue(device, deviceQueue.semaphore, &counterValue));
+        deviceQueue.fenceValue = counterValue;
     }
 } // namespace ionengine::rhi

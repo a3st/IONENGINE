@@ -25,6 +25,7 @@ namespace ionengine::shadersys
         winrt::com_ptr<IDxcUtils> utils;
         winrt::com_ptr<IDxcIncludeHandler> includeHandler;
         std::string errors;
+        asset::fx::ShaderFormat shaderFormat;
 
         auto getInputAssembler(DxcBuffer const& buffer, asset::fx::VertexLayoutData& vertexLayout) -> void;
 

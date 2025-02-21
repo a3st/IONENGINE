@@ -183,7 +183,7 @@ namespace ionengine::rhi
       public:
         DX12VertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations);
 
-        auto getDesc() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
+        auto getInputElementDesc() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
 
         auto getInputSize() const -> uint32_t;
 
@@ -486,7 +486,6 @@ namespace ionengine::rhi
         winrt::com_ptr<IDXGIAdapter1> adapter;
         winrt::com_ptr<ID3D12Device4> device;
         winrt::com_ptr<D3D12MA::Allocator> memoryAllocator;
-
         UniqueHandle fenceEvent;
 
         DeviceQueueData graphicsQueue;

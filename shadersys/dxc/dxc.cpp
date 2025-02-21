@@ -21,7 +21,7 @@ namespace ionengine::shadersys
         return semantic.find("SV_") != std::string_view::npos;
     }
 
-    DXCCompiler::DXCCompiler(asset::fx::ShaderFormat const shaderFormat)
+    DXCCompiler::DXCCompiler(asset::fx::ShaderFormat const shaderFormat) : shaderFormat(shaderFormat)
     {
         throwIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void()));
         throwIfFailed(::DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), utils.put_void()));
@@ -216,6 +216,10 @@ namespace ionengine::shadersys
             arguments.emplace_back(L"-E main");
             arguments.emplace_back(defaultIncludePath.c_str());
             arguments.emplace_back(L"-HV 2021");
+            if (shaderFormat == asset::fx::ShaderFormat::SPIRV)
+            {
+                arguments.emplace_back(L"-spirv");
+            }
 
             switch (stageType)
             {

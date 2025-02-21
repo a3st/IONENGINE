@@ -201,7 +201,7 @@ namespace ionengine::rhi
         AddressMode addressV;
         AddressMode addressW;
         CompareOp compareOp;
-        uint32_t anisotropic;
+        uint32_t maxAnisotropy;
     };
 
     class Sampler : public core::ref_counted_object

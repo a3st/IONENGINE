@@ -9,7 +9,7 @@ namespace ionengine::asset
     class CMPImporter : public TXEImporter
     {
       public:
-        CMPImporter(bool generateMipMaps);
+        CMPImporter(bool const generateMipMaps);
 
         auto loadFromFile(std::filesystem::path const& filePath) -> std::expected<TextureFile, core::error> override;
 

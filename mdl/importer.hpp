@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "core/error.hpp"
 #include "core/ref_ptr.hpp"
 #include "mdl.hpp"
 

@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "math/matrix.hpp"
 #include "math/quaternion.hpp"
@@ -93,7 +93,13 @@ TEST(RHI, DeviceSwapchain_Test)
     };
 
     // Compile shaders
-    auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
+    asset::fx::ShaderFormat shaderFormat;
+#ifdef IONENGINE_RHI_DIRECTX12
+    shaderFormat = asset::fx::ShaderFormat::DXIL;
+#elif IONENGINE_RHI_VULKAN
+    shaderFormat = asset::fx::ShaderFormat::SPIRV;
+#endif
+    auto shaderCompiler = shadersys::ShaderCompiler::create(shaderFormat);
     auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/base3d.fx");
     ASSERT_TRUE(compileResult.has_value());
 
@@ -170,7 +176,7 @@ TEST(RHI, DeviceSwapchain_Test)
                                                        .addressV = rhi::AddressMode::Wrap,
                                                        .addressW = rhi::AddressMode::Wrap,
                                                        .compareOp = rhi::CompareOp::LessEqual,
-                                                       .anisotropic = 4};
+                                                       .maxAnisotropy = 4};
         linearSampler = rhi->createSampler(samplerCreateInfo);
     }
 
@@ -180,7 +186,7 @@ TEST(RHI, DeviceSwapchain_Test)
     // Load model
     {
         auto objImporter = core::make_ref<asset::OBJImporter>();
-        auto modelResult = objImporter->loadFromFile("../../engine/objects/box.obj");
+        auto modelResult = objImporter->loadFromFile("../../assets/objects/box.obj");
         ASSERT_TRUE(modelResult.has_value());
 
         asset::ModelFile modelFile = std::move(modelResult.value());
@@ -211,8 +217,8 @@ TEST(RHI, DeviceSwapchain_Test)
 
     // Load texture
     {
-        auto stbiImporter = core::make_ref<asset::CMPImporter>(false);
-        auto textureResult = stbiImporter->loadFromFile("../../engine/textures/spngbob.png");
+        auto stbiImporter = core::make_ref<asset::CMPImporter>(true);
+        auto textureResult = stbiImporter->loadFromFile("../../assets/textures/debug-empty.png");
         ASSERT_TRUE(textureResult.has_value());
 
         asset::TextureFile textureFile = std::move(textureResult.value());
@@ -221,18 +227,21 @@ TEST(RHI, DeviceSwapchain_Test)
             .width = textureFile.textureData.width,
             .height = textureFile.textureData.height,
             .depth = 1,
-            .mipLevels = 1,
+            .mipLevels = static_cast<uint32_t>(textureFile.textureData.mipLevels.size()),
             .format = TXETextureFormat_to_RHITextureFormat(textureFile.textureData.format),
             .dimension = rhi::TextureDimension::_2D,
             .flags = (rhi::TextureUsageFlags)rhi::TextureUsage::ShaderResource};
         basicTexture = rhi->createTexture(textureCreateInfo);
 
-        auto const& mipBuffer = textureFile.textureData.buffers[textureFile.textureData.mipLevels[0]];
-
         copyContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
 
-        auto copyResult = copyContext->updateTexture(
-            basicTexture, 0, std::span<uint8_t const>(textureFile.blob.data() + mipBuffer.offset, mipBuffer.size));
+        for (uint32_t const i : std::views::iota(0u, textureFile.textureData.mipLevels.size()))
+        {
+            auto const& mipBuffer = textureFile.textureData.buffers[textureFile.textureData.mipLevels[i]];
+
+            auto copyResult = copyContext->updateTexture(
+                basicTexture, i, std::span<uint8_t const>(textureFile.blob.data() + mipBuffer.offset, mipBuffer.size));
+        }
 
         copyContext->barrier(basicTexture, rhi::ResourceState::CopyDest, rhi::ResourceState::Common);
 
@@ -323,7 +332,6 @@ TEST(RHI, DeviceSwapchain_Test)
             executeResult.wait();
         }
 
-        colors.clear();
         colors.emplace_back(rhi::RenderPassColorInfo{.texture = backBuffer.get(),
                                                      .loadOp = rhi::RenderPassLoadOp::Clear,
                                                      .storeOp = rhi::RenderPassStoreOp::Store,
@@ -345,6 +353,8 @@ TEST(RHI, DeviceSwapchain_Test)
         graphicsContext->drawIndexed(indexCount, 1);
         graphicsContext->endRenderPass();
         graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
+
+        colors.clear();
 
         auto executeResult = graphicsContext->execute();
         executeResult.wait();

@@ -52,10 +52,11 @@ namespace ionengine::rhi
       private:
         std::mutex mutex;
         VkDevice device;
-        VkDescriptorSetLayout descriptorSetLayout;
+        VkDescriptorPool descriptorPool;
 
         struct Chunk
         {
+            VkDescriptorSetLayout descriptorSetLayout;
             VkDescriptorSet descriptorSet;
             uint32_t binding;
             std::vector<uint8_t> free;
@@ -65,6 +66,9 @@ namespace ionengine::rhi
         };
 
         std::unordered_map<VkDescriptorType, Chunk> chunks;
+
+        auto createChunk(VkDescriptorSetLayout descriptorSetLayout, VkDescriptorType const descriptorType,
+                         uint32_t const descriptorCount) -> void;
     };
 
     class VKVertexInput
@@ -85,20 +89,20 @@ namespace ionengine::rhi
         VkShaderModule shaderModule;
     };
 
-    class VKShader : public Shader
+    class VKShader final : public Shader
     {
       public:
         VKShader(VkDevice device, ShaderCreateInfo const& createInfo);
 
         ~VKShader();
 
-        auto getHash() const -> uint64_t override;
+        auto getHash() const -> uint64_t;
 
         auto getPipelineType() const -> PipelineType override;
 
         auto getStages() const -> std::unordered_map<VkShaderStageFlagBits, VKShaderStage> const&;
 
-        auto getVertexInput() const -> std::optional<VKVertexInput>;
+        auto getVertexInput() const -> std::optional<VKVertexInput> const&;
 
       private:
         VkDevice device;
@@ -114,7 +118,7 @@ namespace ionengine::rhi
         Pipeline(VkDevice device, VkPipelineLayout pipelineLayout, VKShader* shader,
                  RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                  std::optional<DepthStencilStageInfo> const depthStencil,
-                 std::span<VkFormat const> const renderTargetFormats, VkFormat const depthStencilFormat,
+                 std::array<VkFormat, 8> const& renderTargetFormats, VkFormat const depthStencilFormat,
                  VkPipelineCache pipelineCache);
 
         ~Pipeline();
@@ -152,7 +156,7 @@ namespace ionengine::rhi
             auto operator()(const Entry& other) const -> std::size_t
             {
                 auto depthStencil = other.depthStencil.value_or(DepthStencilStageInfo::Default());
-                return entry.shaderHash ^ XXH64(&other.rasterizer.fillMode, sizeof(uint32_t), 0) ^
+                return other.shaderHash ^ XXH64(&other.rasterizer.fillMode, sizeof(uint32_t), 0) ^
                        XXH64(&other.rasterizer.cullMode, sizeof(uint32_t), 0) ^
                        XXH64(&other.blendColor.blendDst, sizeof(uint32_t), 0) ^
                        XXH64(&other.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
@@ -175,8 +179,8 @@ namespace ionengine::rhi
 
         auto get(VKShader* shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                  std::optional<DepthStencilStageInfo> const depthStencil,
-                 std::array<VkFormat, 8> const& renderTargetFormats,
-                 VkFormat const depthStencilFormat) -> core::ref_ptr<Pipeline>;
+                 std::array<VkFormat, 8> const& renderTargetFormats, VkFormat const depthStencilFormat)
+            -> core::ref_ptr<Pipeline>;
 
         auto reset() -> void;
 
@@ -189,19 +193,18 @@ namespace ionengine::rhi
 
     class VKBuffer final : public Buffer
     {
+      public:
         VKBuffer(VkDevice device, VmaAllocator memoryAllocator, BufferCreateInfo const& createInfo);
 
         ~VKBuffer();
 
-        inline static uint32_t const ConstantBufferSizeAlignment = 256;
+        auto getSize() const -> size_t override;
 
-        auto getSize() -> size_t override;
+        auto getFlags() const -> BufferUsageFlags override;
 
-        auto getFlags() -> BufferUsageFlags override;
+        auto mapMemory() -> uint8_t*;
 
-        auto mapMemory() -> uint8_t* override;
-
-        auto unmapMemory() -> void override;
+        auto unmapMemory() -> void;
 
         auto getBuffer() const -> VkBuffer;
 
@@ -259,6 +262,20 @@ namespace ionengine::rhi
         TextureUsageFlags flags;
     };
 
+    class VKSampler final : public Sampler
+    {
+      public:
+        VKSampler(VkDevice device, SamplerCreateInfo const& createInfo);
+
+        ~VKSampler();
+
+        auto getDescriptorOffset() const -> uint32_t override;
+
+      private:
+        VkDevice device;
+        VkSampler sampler;
+    };
+
     class VKFutureImpl final : public FutureImpl
     {
       public:
@@ -275,27 +292,21 @@ namespace ionengine::rhi
         uint64_t fenceValue;
     };
 
-    class VKQuery final : public Query
+    struct DeviceQueueData
     {
+        VkQueue queue;
+        VkSemaphore semaphore;
+        uint32_t familyIndex;
+        uint64_t fenceValue;
     };
 
     class VKGraphicsContext final : public GraphicsContext
     {
       public:
-        VKGraphicsContext(VkDevice device, VkQueue queue, uint32_t queueFamilyIndex, VkSemaphore semaphore,
-                          uint64_t& fenceValue);
+        VKGraphicsContext(VkDevice device, PipelineCache* pipelineCache, DescriptorAllocator* descriptorAllocator,
+                          DeviceQueueData& deviceQueue);
 
         ~VKGraphicsContext();
-
-        auto reset() -> void override;
-
-        auto execute() -> Future<Query> override;
-
-        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before,
-                     ResourceState const after) -> void override;
-
-        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before,
-                     ResourceState const after) -> void override;
 
         auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
                                         BlendColorInfo const& blendColor,
@@ -317,29 +328,111 @@ namespace ionengine::rhi
 
         auto draw(uint32_t const vertexCount, uint32_t const instanceCount) -> void override;
 
-        auto setViewport(int32_t const x, int32_t const y, uint32_t const width,
-                         uint32_t const height) -> void override;
+        auto setViewport(int32_t const x, int32_t const y, uint32_t const width, uint32_t const height)
+            -> void override;
 
-        auto setScissor(int32_t const left, int32_t const top, int32_t const right,
-                        int32_t const bottom) -> void override;
+        auto setScissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom)
+            -> void override;
+
+        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+            -> void override;
+
+        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+            -> void override;
+
+        auto execute() -> Future<void> override;
 
       private:
         VkDevice device;
-        VkQueue queue;
-        uint32_t queueFamilyIndex;
-        VkSemaphore semaphore;
-        uint64_t* fenceValue;
+        PipelineCache* pipelineCache;
+        DescriptorAllocator* descriptorAllocator;
+        DeviceQueueData* deviceQueue;
         VkCommandPool commandPool;
         VkCommandBuffer commandBuffer;
         VkRect2D renderArea;
+        bool isCommandListOpened;
+
+        auto tryAllocateCommandBuffer() -> void;
     };
 
-    class VKDevice final : public Device
+    class VKCopyContext final : public CopyContext
     {
       public:
-        VKDevice(RHICreateInfo const& createInfo);
+        VKCopyContext(VkDevice device, VmaAllocator memoryAllocator, DeviceQueueData& deviceQueue,
+                      RHICreateInfo const& rhiCreateInfo);
 
-        ~VKDevice();
+        ~VKCopyContext();
+
+        auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset, std::span<uint8_t const> const dataBytes)
+            -> Future<Buffer> override;
+
+        auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
+                           std::span<uint8_t const> const dataBytes) -> Future<Texture> override;
+
+        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+            -> void override;
+
+        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+            -> void override;
+
+        auto execute() -> Future<void> override;
+
+      private:
+        VkDevice device;
+        DeviceQueueData* deviceQueue;
+        VkCommandPool commandPool;
+        VkCommandBuffer commandBuffer;
+        bool isCommandListOpened;
+
+        struct StagingBufferData
+        {
+            core::ref_ptr<VKBuffer> buffer;
+            uint64_t offset;
+        };
+
+        StagingBufferData readStagingBuffer;
+        StagingBufferData writeStagingBuffer;
+
+        /*auto getSurfaceData(DXGI_FORMAT const format, uint32_t const width, uint32_t const height, size_t& rowBytes,
+                            uint32_t& rowCount) -> void;*/
+
+        auto tryAllocateCommandBuffer() -> void;
+    };
+
+    class VKSwapchain final : public Swapchain
+    {
+      public:
+        VKSwapchain(VkInstance instance, VkDevice device, DeviceQueueData& deviceQueue,
+                    SwapchainCreateInfo const& createInfo);
+
+        ~VKSwapchain();
+
+        auto requestBackBuffer() -> core::weak_ptr<Texture> override;
+
+        auto presentBackBuffer() -> void override;
+
+        auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void override;
+
+      private:
+        VkInstance instance;
+        VkDevice device;
+        VkSurfaceKHR surface;
+        VkSwapchainKHR swapchain;
+        DeviceQueueData* deviceQueue;
+        VkSemaphore acquireSemaphore;
+        VkSemaphore presentSemaphore;
+        uint32_t imageIndex;
+        std::vector<core::ref_ptr<Texture>> backBuffers;
+
+        auto createSwapchainBuffers(uint32_t const width, uint32_t const height) -> void;
+    };
+
+    class VKRHI final : public RHI
+    {
+      public:
+        VKRHI(RHICreateInfo const& createInfo);
+
+        ~VKRHI();
 
         auto createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader> override;
 
@@ -349,17 +442,13 @@ namespace ionengine::rhi
 
         auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> override;
 
-        auto createGraphicsContext() -> core::ref_ptr<GraphicsContext> override;
+        auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain> override;
 
-        auto createCopyContext() -> core::ref_ptr<CopyContext> override;
+        auto getGraphicsContext() -> core::ref_ptr<GraphicsContext> override;
 
-        auto requestBackBuffer() -> core::weak_ptr<Texture> override;
+        auto getCopyContext() -> core::ref_ptr<CopyContext> override;
 
-        auto presentBackBuffer() -> void override;
-
-        auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void override;
-
-        auto getBackendName() const -> std::string_view override;
+        auto getName() const -> std::string_view override;
 
       private:
         VkInstance instance;
@@ -371,28 +460,21 @@ namespace ionengine::rhi
 #endif
         VkPhysicalDevice physicalDevice;
         VkDevice device;
+        VmaAllocator memoryAllocator;
 
-        struct QueueInfo
-        {
-            VkQueue queue;
-            VkSemaphore semaphore;
-            uint32_t familyIndex;
-            uint64_t fenceValue;
-        };
-        QueueInfo graphicsQueue;
-        QueueInfo transferQueue;
-        QueueInfo computeQueue;
+        DeviceQueueData graphicsQueue;
+        DeviceQueueData transferQueue;
+        DeviceQueueData computeQueue;
 
         core::ref_ptr<DescriptorAllocator> descriptorAllocator;
+        core::ref_ptr<PipelineCache> pipelineCache;
 
-        VkSurfaceKHR surface;
-        VkSwapchainKHR swapchain;
-        VkSemaphore acquireSemaphore;
-        VkSemaphore presentSemaphore;
-        uint32_t imageIndex;
+        core::ref_ptr<VKSwapchain> swapchain;
+        core::ref_ptr<VKGraphicsContext> graphicsContext;
+        core::ref_ptr<VKCopyContext> copyContext;
 
-        std::vector<core::ref_ptr<VKTexture>> backBuffers;
+        std::string const rhiName{"Vulkan"};
 
-        auto createSwapchain(uint32_t const width, uint32_t const height) -> void;
+        auto createDeviceQueue(uint32_t const queueFamily, DeviceQueueData& deviceQueue) -> void;
     };
 } // namespace ionengine::rhi

@@ -826,7 +826,7 @@ namespace ionengine::rhi
                                              .AddressU = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressU),
                                              .AddressV = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressV),
                                              .AddressW = AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(createInfo.addressV),
-                                             .MaxAnisotropy = createInfo.anisotropic,
+                                             .MaxAnisotropy = createInfo.maxAnisotropy,
                                              .ComparisonFunc =
                                                  CompareOp_to_D3D12_COMPARISON_FUNC(createInfo.compareOp)};
 
@@ -878,7 +878,7 @@ namespace ionengine::rhi
         inputSize = offset;
     }
 
-    auto DX12VertexInput::getDesc() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>
+    auto DX12VertexInput::getInputElementDesc() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>
     {
         return inputElements;
     }
@@ -975,8 +975,8 @@ namespace ionengine::rhi
                     auto const& vertexInput = shader->getVertexInput().value();
 
                     D3D12_INPUT_LAYOUT_DESC const inputLayoutDesc{
-                        .pInputElementDescs = vertexInput.getDesc().data(),
-                        .NumElements = static_cast<uint32_t>(vertexInput.getDesc().size())};
+                        .pInputElementDescs = vertexInput.getInputElementDesc().data(),
+                        .NumElements = static_cast<uint32_t>(vertexInput.getInputElementDesc().size())};
 
                     graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
                     break;
@@ -1970,7 +1970,6 @@ namespace ionengine::rhi
             swapchain = core::make_ref<DX12Swapchain>(factory.get(), device.get(), descriptorAllocator.get(),
                                                       graphicsQueue, fenceEvent.get(), createInfo);
         }
-
         return swapchain;
     }
 

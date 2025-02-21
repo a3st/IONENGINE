@@ -45,15 +45,13 @@ auto main(int32_t argc, char** argv) -> int32_t
     try
     {
         core::ref_ptr<shadersys::ShaderCompiler> shaderCompiler;
-
         if (target.compare("DXIL") == 0)
         {
             shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
         }
         else if (target.compare("SPIRV") == 0)
         {
-            std::cout << "WARNING: This target is not currently supported by the compiler" << std::endl;
-            return EXIT_SUCCESS;
+            shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::SPIRV);
         }
         else
         {
