@@ -56,8 +56,7 @@ namespace ionengine::shadersys
         }
     }
 
-    auto DXCCompiler::generateStructureDataCode(asset::fx::StructureData const& structureData, std::string& outCode)
-        -> void
+    auto DXCCompiler::getMaterialDataCode(asset::fx::StructureData const& structureData) -> std::string
     {
         std::ostringstream oss;
         oss << "struct " << structureData.name << " { ";
@@ -75,110 +74,7 @@ namespace ionengine::shadersys
 
         oss << "};";
 
-        outCode = oss.str();
-    }
-
-    auto DXCCompiler::getInputAssembler(DxcBuffer const& buffer, asset::fx::VertexLayoutData& vertexLayout) -> void
-    {
-        winrt::com_ptr<ID3D12ShaderReflection> shaderReflection;
-        throwIfFailed(utils->CreateReflection(&buffer, __uuidof(ID3D12ShaderReflection), shaderReflection.put_void()));
-
-        D3D12_SHADER_DESC shaderDesc{};
-        throwIfFailed(shaderReflection->GetDesc(&shaderDesc));
-
-        size_t inputSize = 0;
-
-        for (uint32_t const i : std::views::iota(0u, shaderDesc.InputParameters))
-        {
-            D3D12_SIGNATURE_PARAMETER_DESC signatureParameterDesc{};
-            throwIfFailed(shaderReflection->GetInputParameterDesc(i, &signatureParameterDesc));
-
-            if (this->isDefaultSemantic(signatureParameterDesc.SemanticName))
-            {
-                continue;
-            }
-
-            asset::fx::VertexFormat format;
-            if (signatureParameterDesc.Mask == 1)
-            {
-                switch (signatureParameterDesc.ComponentType)
-                {
-                    case D3D_REGISTER_COMPONENT_UINT32: {
-                        format = asset::fx::VertexFormat::R32_UINT;
-                        break;
-                    }
-                    case D3D_REGISTER_COMPONENT_SINT32: {
-                        format = asset::fx::VertexFormat::R32_SINT;
-                        break;
-                    }
-                    case D3D_REGISTER_COMPONENT_FLOAT32: {
-                        format = asset::fx::VertexFormat::R32_FLOAT;
-                        break;
-                    }
-                }
-            }
-            else if (signatureParameterDesc.Mask <= 3)
-            {
-                switch (signatureParameterDesc.ComponentType)
-                {
-                    case D3D_REGISTER_COMPONENT_UINT32: {
-                        format = asset::fx::VertexFormat::RG32_UINT;
-                        break;
-                    }
-                    case D3D_REGISTER_COMPONENT_SINT32: {
-                        format = asset::fx::VertexFormat::RG32_SINT;
-                        break;
-                    }
-                    case D3D_REGISTER_COMPONENT_FLOAT32: {
-                        format = asset::fx::VertexFormat::RG32_FLOAT;
-                        break;
-                    }
-                }
-            }
-            else if (signatureParameterDesc.Mask <= 7)
-            {
-                switch (signatureParameterDesc.ComponentType)
-                {
-                    case D3D_REGISTER_COMPONENT_UINT32: {
-                        format = asset::fx::VertexFormat::RGB32_UINT;
-                        break;
-                    }
-                    case D3D_REGISTER_COMPONENT_SINT32: {
-                        format = asset::fx::VertexFormat::RGB32_SINT;
-                        break;
-                    }
-                    case D3D_REGISTER_COMPONENT_FLOAT32: {
-                        format = asset::fx::VertexFormat::RGB32_FLOAT;
-                        break;
-                    }
-                }
-            }
-            else if (signatureParameterDesc.Mask <= 15)
-            {
-                switch (signatureParameterDesc.ComponentType)
-                {
-                    case D3D_REGISTER_COMPONENT_UINT32: {
-                        format = asset::fx::VertexFormat::RGBA32_UINT;
-                        break;
-                    }
-                    case D3D_REGISTER_COMPONENT_SINT32: {
-                        format = asset::fx::VertexFormat::RGBA32_SINT;
-                        break;
-                    }
-                    case D3D_REGISTER_COMPONENT_FLOAT32: {
-                        format = asset::fx::VertexFormat::RGBA32_FLOAT;
-                        break;
-                    }
-                }
-            }
-
-            asset::fx::VertexLayoutElementData const layoutElement{
-                .format = format,
-                .semantic = signatureParameterDesc.SemanticName + std::to_string(signatureParameterDesc.SemanticIndex)};
-            vertexLayout.elements.emplace_back(std::move(layoutElement));
-
-            inputSize += asset::fx::sizeof_VertexFormat(format);
-        }
+        return oss.str();
     }
 
     auto DXCCompiler::compileFromFile(std::filesystem::path const& filePath)
@@ -206,10 +102,12 @@ namespace ionengine::shadersys
         std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
         std::vector<LPCWSTR> arguments;
 
-        std::string materialDataCode;
-        this->generateStructureDataCode(parseData.materialData, materialDataCode);
+        std::string const materialDataCode = this->getMaterialDataCode(parseData.materialData);
 
         std::string inputDataCode;
+        HLSLCodeGen generator;
+        asset::fx::VertexLayoutData vertexLayout;
+
         if (parseData.headerData.domain.compare("Screen") == 0)
         {
             HLSLCodeGen generator;
@@ -219,6 +117,20 @@ namespace ionengine::shadersys
             inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
             inputDataCode +=
                 generator.getHLSLConstBuffer<constants::ScreenShaderData>("SHADER_DATA", "gShaderData", 0, 0) + "\n";
+
+            vertexLayout = {};
+        }
+        else if (parseData.headerData.domain.compare("Surface") == 0)
+        {
+            inputDataCode += generator.getHLSLStruct<inputs::StaticVSInput>("VS_INPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::StaticVSOutput>("VS_OUTPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::BasePSOutput>("PS_OUTPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<common::TRANSFORM_DATA>("TRANSFORM_DATA") + "\n";
+            inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
+            inputDataCode +=
+                generator.getHLSLConstBuffer<constants::SurfaceShaderData>("SHADER_DATA", "gShaderData", 0, 0) + "\n";
+
+            vertexLayout = inputs::StaticVSInput::vertexLayout;
         }
 
         for (auto const& [stageType, shaderCode] : parseData.codeData)
@@ -254,7 +166,7 @@ namespace ionengine::shadersys
             std::string const stageShaderCode =
                 "#include \"shared/internal.hlsli\"\n\n" + materialDataCode + "\n" + inputDataCode + "\n" + shaderCode;
 
-            std::cout << stageShaderCode << std::endl;
+            // std::cout << stageShaderCode << std::endl;
 
             DxcBuffer const codeBuffer{
                 .Ptr = stageShaderCode.data(), .Size = stageShaderCode.size(), .Encoding = DXC_CP_UTF8};
@@ -283,32 +195,11 @@ namespace ionengine::shadersys
 
             shaderBlob.write(reinterpret_cast<uint8_t const*>(outBlob->GetBufferPointer()), outBlob->GetBufferSize());
 
-            /*
-            switch (stageType)
+            if (stageType == asset::fx::StageType::Vertex)
             {
-                case asset::fx::StageType::Vertex: {
-                    winrt::com_ptr<IDxcBlob> reflectBlob;
-                    throwIfFailed(compileResult->GetOutput(DXC_OUT_REFLECTION, __uuidof(IDxcBlob),
-                                                           reflectBlob.put_void(), nullptr));
-
-                    DxcBuffer const reflectBuffer{.Ptr = reflectBlob->GetBufferPointer(),
-                                                  .Size = reflectBlob->GetBufferSize()};
-
-                    asset::fx::VertexLayoutData vertexLayout{};
-                    this->getInputAssembler(reflectBuffer, vertexLayout);
-                    stageData.vertexLayout = std::move(vertexLayout);
-                    break;
-                }
-                case asset::fx::StageType::Pixel: {
-                    asset::fx::OutputData outputData{};
-                    this->getOutputStates(parseData.psAttributes, outputData);
-                    stageData.output = std::move(outputData);
-                    break;
-                }
+                stageData.vertexLayout = std::move(vertexLayout);
             }
-            */
-
-            if (stageType == asset::fx::StageType::Pixel)
+            else if (stageType == asset::fx::StageType::Pixel)
             {
                 asset::fx::OutputData outputData{};
                 this->getOutputStates(parseData.psAttributes, outputData);

@@ -27,12 +27,10 @@ namespace ionengine::shadersys
         std::string errors;
         asset::fx::ShaderFormat shaderFormat;
 
-        auto getInputAssembler(DxcBuffer const& buffer, asset::fx::VertexLayoutData& vertexLayout) -> void;
-
         auto getOutputStates(std::unordered_map<std::string, std::string> const& attributes,
                              asset::fx::OutputData& outputData) -> void;
 
-        auto generateStructureDataCode(asset::fx::StructureData const& structureData, std::string& outCode) -> void;
+        auto getMaterialDataCode(asset::fx::StructureData const& structureData) -> std::string;
 
         auto isDefaultSemantic(std::string_view const semantic) -> bool;
     };

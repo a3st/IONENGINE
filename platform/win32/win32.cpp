@@ -128,7 +128,7 @@ namespace ionengine::platform
         WNDCLASS wndClass = {.lpfnWndProc = reinterpret_cast<WNDPROC>(wndProc),
                              .hInstance = ::GetModuleHandle(nullptr),
                              .hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)),
-                             .lpszClassName = L"Platform Win32"};
+                             .lpszClassName = L"IONENGINE_Window"};
 
         if (!::RegisterClass(&wndClass))
         {

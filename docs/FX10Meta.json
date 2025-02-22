@@ -23,7 +23,7 @@
                         "semantic": "TEXCOORD0"
                     }
                 ],
-                "sizeInBytes": 24
+                "sizeInBytes": 32
             }
         },
         "PS": {

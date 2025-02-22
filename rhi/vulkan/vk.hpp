@@ -3,6 +3,7 @@
 #pragma once
 
 #include "rhi/rhi.hpp"
+#include <xxhash.h>
 #ifdef IONENGINE_PLATFORM_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
 #elif IONENGINE_PLATFORM_X11
@@ -14,7 +15,6 @@
 #undef None
 #undef max
 #undef min
-#include <xxhash.h>
 
 namespace ionengine::rhi
 {
@@ -402,7 +402,7 @@ namespace ionengine::rhi
     class VKSwapchain final : public Swapchain
     {
       public:
-        VKSwapchain(VkInstance instance, VkDevice device, DeviceQueueData& deviceQueue,
+        VKSwapchain(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, DeviceQueueData& deviceQueue,
                     SwapchainCreateInfo const& createInfo);
 
         ~VKSwapchain();
@@ -415,6 +415,7 @@ namespace ionengine::rhi
 
       private:
         VkInstance instance;
+        VkPhysicalDevice physicalDevice;
         VkDevice device;
         VkSurfaceKHR surface;
         VkSwapchainKHR swapchain;

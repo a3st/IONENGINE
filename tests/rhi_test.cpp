@@ -13,11 +13,6 @@
 
 using namespace ionengine;
 
-TEST(RHI, DeviceOffRender_Test)
-{
-    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
-}
-
 auto FXVertexFormat_to_RHIVertexFormat(asset::fx::VertexFormat const format) -> rhi::VertexFormat
 {
     switch (format)
@@ -62,9 +57,124 @@ auto TXETextureFormat_to_RHITextureFormat(asset::txe::TextureFormat const format
     }
 }
 
-TEST(RHI, DeviceSwapchain_Test)
+TEST(RHI, Device_Test)
 {
-    auto application = platform::App::create("TestProject");
+    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
+}
+
+TEST(RHI, Quad_Test)
+{
+    auto application = platform::App::create("Swapchain Test");
+
+    uint32_t width;
+    uint32_t height;
+
+    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
+
+    auto graphicsContext = rhi->getGraphicsContext();
+    auto copyContext = rhi->getCopyContext();
+
+    rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
+                                                       .instance = application->getInstanceHandle()};
+    auto swapchain = rhi->tryGetSwapchain(swapchainCreateInfo);
+
+    // Compile shaders
+    asset::fx::ShaderFormat shaderFormat;
+#ifdef IONENGINE_RHI_DIRECTX12
+    shaderFormat = asset::fx::ShaderFormat::DXIL;
+#elif IONENGINE_RHI_VULKAN
+    shaderFormat = asset::fx::ShaderFormat::SPIRV;
+#endif
+    auto shaderCompiler = shadersys::ShaderCompiler::create(shaderFormat);
+    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx");
+    ASSERT_TRUE(compileResult.has_value());
+
+    // Load shader
+    core::ref_ptr<rhi::Shader> shader;
+    {
+        asset::ShaderFile shaderFile = std::move(compileResult.value());
+
+        auto const& vertexStage = shaderFile.shaderData.stages.at(asset::fx::StageType::Vertex);
+        auto const& vertexBuffer = shaderFile.shaderData.buffers[vertexStage.buffer];
+
+        std::vector<rhi::VertexDeclarationInfo> vertexDeclarations;
+        for (auto& element : vertexStage.vertexLayout.value().elements)
+        {
+            rhi::VertexDeclarationInfo const vertexDeclaration{
+                .semantic = element.semantic, .format = FXVertexFormat_to_RHIVertexFormat(element.format)};
+            vertexDeclarations.emplace_back(vertexDeclaration);
+        }
+
+        auto const& pixelStage = shaderFile.shaderData.stages.at(asset::fx::StageType::Pixel);
+        auto const& pixelBuffer = shaderFile.shaderData.buffers[pixelStage.buffer];
+
+        rhi::ShaderCreateInfo const shaderCreateInfo{
+            .pipelineType = rhi::PipelineType::Graphics,
+            .graphics = {.vertexDeclarations = vertexDeclarations,
+                         .vertexStage = {.entryPoint = vertexStage.entryPoint,
+                                         .shaderCode = std::span<uint8_t const>(
+                                             shaderFile.blob.data() + vertexBuffer.offset, vertexBuffer.size)},
+                         .pixelStage = {.entryPoint = pixelStage.entryPoint,
+                                        .shaderCode = std::span<uint8_t const>(
+                                            shaderFile.blob.data() + pixelBuffer.offset, pixelBuffer.size)}}};
+        shader = rhi->createShader(shaderCreateInfo);
+    }
+
+    application->windowStateChanged += [&](platform::WindowEvent const& event) -> void {
+        switch (event.eventType)
+        {
+            case platform::WindowEventType::Resize: {
+                width = event.size.width;
+                height = event.size.height;
+
+                if (rhi)
+                {
+                    swapchain->resizeBackBuffers(width, height);
+                }
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    };
+
+    std::vector<rhi::RenderPassColorInfo> colors;
+
+    application->windowUpdated += [&]() -> void {
+        auto backBuffer = swapchain->requestBackBuffer();
+
+        colors.emplace_back(rhi::RenderPassColorInfo{.texture = backBuffer.get(),
+                                                     .loadOp = rhi::RenderPassLoadOp::Clear,
+                                                     .storeOp = rhi::RenderPassStoreOp::Store,
+                                                     .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}});
+
+        graphicsContext->setViewport(0, 0, width, height);
+        graphicsContext->setScissor(0, 0, width, height);
+
+        graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
+        graphicsContext->beginRenderPass(colors, std::nullopt);
+        /*graphicsContext->setGraphicsPipelineOptions(
+            shader, rhi::RasterizerStageInfo{.fillMode = rhi::FillMode::Solid, .cullMode = rhi::CullMode::Back},
+            rhi::BlendColorInfo::Opaque(), std::nullopt);
+        graphicsContext->drawIndexed(3, 1);*/
+        graphicsContext->endRenderPass();
+        graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
+
+        colors.clear();
+
+        auto executeResult = graphicsContext->execute();
+        executeResult.wait();
+
+        swapchain->presentBackBuffer();
+    };
+
+    application->run();
+}
+
+TEST(RHI, DISABLED_Render3D_Test)
+{
+    auto application = platform::App::create("Render Test");
 
     uint32_t width;
     uint32_t height;
@@ -251,7 +361,7 @@ TEST(RHI, DeviceSwapchain_Test)
 
     // Initialize static resources
     {
-        shadersys::common::SamplerData const samplerData{.linearSampler = linearSampler->getDescriptorOffset()};
+        shadersys::common::SAMPLER_DATA const samplerData{.linearSampler = linearSampler->getDescriptorOffset()};
 
         copyContext->updateBuffer(
             sBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&samplerData), sizeof(samplerData)));
@@ -307,14 +417,14 @@ TEST(RHI, DeviceSwapchain_Test)
             std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() / 1000000.0f;
 
         // Update
-        math::Matf projection =
-            math::Matf::perspectiveRH(60.0f * std::numbers::pi / 180.0f, width / height, 0.1f, 100.0f);
-        math::Matf view = math::Matf::lookAtRH(math::Vec3f(4.0f, 2.0f, 4.0f), math::Vec3f(0.0f, 0.0f, 0.0f),
-                                               math::Vec3f(0.0f, 0.0f, 1.0f));
+        math::Mat4f projection =
+            math::Mat4f::perspectiveRH(60.0f * std::numbers::pi / 180.0f, width / height, 0.1f, 100.0f);
+        math::Mat4f view = math::Mat4f::lookAtRH(math::Vec3f(4.0f, 2.0f, 4.0f), math::Vec3f(0.0f, 0.0f, 0.0f),
+                                                 math::Vec3f(0.0f, 0.0f, 1.0f));
 
         math::Quatf currentRot = originalRot * math::Quatf::fromAngleAxis(angle, math::Vec3f(0.0f, 0.0f, 1.0f));
 
-        math::Matf model = math::Matf::identity() * currentRot.toMat();
+        math::Mat4f model = math::Mat4f::identity() * currentRot.toMat();
 
         angle += 100.0f * deltaTime;
 
@@ -322,7 +432,7 @@ TEST(RHI, DeviceSwapchain_Test)
 
         // Update MVP Matrix
         {
-            shadersys::common::TransformData const transformData{.modelViewProj = model * view * projection};
+            shadersys::common::TRANSFORM_DATA const transformData{.modelViewProj = model * view * projection};
 
             copyContext->updateBuffer(
                 tBuffer, 0,

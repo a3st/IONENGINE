@@ -894,44 +894,48 @@ namespace ionengine::rhi
         if (createInfo.pipelineType == rhi::PipelineType::Graphics)
         {
             XXH64_state_t* hasher = ::XXH64_createState();
+            ::XXH64_reset(hasher, 0);
+
             {
-                DX12ShaderStage shaderStage;
+                DX12ShaderStage shaderStage{};
                 shaderStage.buffer =
                     createInfo.graphics.vertexStage.shaderCode | std::ranges::to<std::vector<uint8_t>>();
                 shaderStage.shaderByteCode = {.pShaderBytecode = shaderStage.buffer.data(),
                                               .BytecodeLength = shaderStage.buffer.size()};
                 stages.emplace(DX12ShaderStageType::Vertex, std::move(shaderStage));
 
-                ::XXH64_update(hasher, shaderStage.buffer.data(), shaderStage.buffer.size());
+                ::XXH64_update(hasher, createInfo.graphics.vertexStage.shaderCode.data(),
+                               createInfo.graphics.vertexStage.shaderCode.size());
             }
 
             {
-                DX12ShaderStage shaderStage;
+                DX12ShaderStage shaderStage{};
                 shaderStage.buffer =
                     createInfo.graphics.pixelStage.shaderCode | std::ranges::to<std::vector<uint8_t>>();
                 shaderStage.shaderByteCode = {.pShaderBytecode = shaderStage.buffer.data(),
                                               .BytecodeLength = shaderStage.buffer.size()};
                 stages.emplace(DX12ShaderStageType::Pixel, std::move(shaderStage));
 
-                ::XXH64_update(hasher, shaderStage.buffer.data(), shaderStage.buffer.size());
+                ::XXH64_update(hasher, createInfo.graphics.pixelStage.shaderCode.data(),
+                               createInfo.graphics.pixelStage.shaderCode.size());
             }
+            
             hash = ::XXH64_digest(hasher);
+            ::XXH64_freeState(hasher);
 
             vertexInput.emplace(createInfo.graphics.vertexDeclarations);
         }
         else
         {
-            XXH64_state_t* hasher = ::XXH64_createState();
             {
-                DX12ShaderStage shaderStage;
+                DX12ShaderStage shaderStage{};
                 shaderStage.buffer = createInfo.compute.shaderCode | std::ranges::to<std::vector<uint8_t>>();
                 shaderStage.shaderByteCode = {.pShaderBytecode = shaderStage.buffer.data(),
                                               .BytecodeLength = shaderStage.buffer.size()};
                 stages.emplace(DX12ShaderStageType::Compute, std::move(shaderStage));
-
-                ::XXH64_update(hasher, shaderStage.buffer.data(), shaderStage.buffer.size());
             }
-            hash = ::XXH64_digest(hasher);
+            
+            hash = ::XXH64(createInfo.compute.shaderCode.data(), createInfo.compute.shaderCode.size(), 0);
         }
     }
 

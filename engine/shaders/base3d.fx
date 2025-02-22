@@ -12,8 +12,6 @@ DATA {
 }
 
 VS {
-    #include "shared/common.hlsli"
-
     VS_OUTPUT main(VS_INPUT input) 
     {
         cbuffer_t<TRANSFORM_DATA> transformBuffer = gShaderData.transformBuffer;
@@ -30,8 +28,6 @@ VS {
 
 [FillMode("SOLID"), CullSide("BACK"), DepthWrite(true), StencilWrite(false)]
 PS {
-    #include "shared/common.hlsli"
-
     PS_OUTPUT main(VS_OUTPUT input)
     {
         cbuffer_t<SAMPLER_DATA> samplerBuffer = gShaderData.samplerBuffer;

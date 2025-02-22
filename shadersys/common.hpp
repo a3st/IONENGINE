@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "shadersys/fx.hpp"
 #include "shadersys/hlslgen.hpp"
 
 namespace ionengine::shadersys
@@ -12,6 +13,11 @@ namespace ionengine::shadersys
         struct TRANSFORM_DATA
         {
             math::Mat4f modelViewProj;
+
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<math::Mat4f>("modelViewProj");
+            }
         };
 
         struct SAMPLER_DATA
@@ -45,12 +51,44 @@ namespace ionengine::shadersys
                 generator.property<cbuffer_t<common::MATERIAL_DATA>>("materialBuffer");
             }
         };
+
+        struct SurfaceShaderData
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<cbuffer_t<common::TRANSFORM_DATA>>("transformBuffer");
+                generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerBuffer");
+                generator.property<cbuffer_t<common::MATERIAL_DATA>>("materialBuffer");
+            }
+        };
     } // namespace constants
 
     namespace inputs
     {
         struct StaticVSInput
         {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<math::Vec3f>("position", "POSITION");
+                generator.property<math::Vec3f>("normal", "NORMAL");
+                generator.property<math::Vec2f>("uv", "TEXCOORD");
+            }
+
+            static inline asset::fx::VertexLayoutData vertexLayout{
+                .elements = {{.format = asset::fx::VertexFormat::RGB32_FLOAT, .semantic = "POSITION"},
+                             {.format = asset::fx::VertexFormat::RGB32_FLOAT, .semantic = "NORMAL"},
+                             {.format = asset::fx::VertexFormat::RG32_FLOAT, .semantic = "TEXCOORD"}},
+                .size = 32};
+        };
+
+        struct StaticVSOutput
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<math::Vec4f>("position", "SV_Position");
+                generator.property<math::Vec3f>("normal", "NORMAL");
+                generator.property<math::Vec2f>("uv", "TEXCOORD");
+            }
         };
 
         struct BaseVSInput

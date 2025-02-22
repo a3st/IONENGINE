@@ -16,6 +16,7 @@ namespace ionengine::platform
             if (window)
             {
                 ::DestroyWindow(window);
+                ::UnregisterClass(L"IONENGINE_Window", ::GetModuleHandle(nullptr));
             }
         }
     };

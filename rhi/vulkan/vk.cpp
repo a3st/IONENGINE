@@ -522,9 +522,12 @@ namespace ionengine::rhi
         if (createInfo.pipelineType == rhi::PipelineType::Graphics)
         {
             XXH64_state_t* hasher = ::XXH64_createState();
+            ::XXH64_reset(hasher, 0);
+
             {
                 VkShaderModuleCreateInfo const shaderModuleCreateInfo{
                     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                    .codeSize = createInfo.graphics.vertexStage.shaderCode.size(),
                     .pCode = reinterpret_cast<uint32_t const*>(createInfo.graphics.vertexStage.shaderCode.data())};
                 VkShaderModule shaderModule;
                 throwIfFailed(::vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModule));
@@ -540,6 +543,7 @@ namespace ionengine::rhi
             {
                 VkShaderModuleCreateInfo const shaderModuleCreateInfo{
                     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                    .codeSize = createInfo.graphics.pixelStage.shaderCode.size(),
                     .pCode = reinterpret_cast<uint32_t const*>(createInfo.graphics.pixelStage.shaderCode.data())};
                 VkShaderModule shaderModule;
                 throwIfFailed(::vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModule));
@@ -551,16 +555,18 @@ namespace ionengine::rhi
                 ::XXH64_update(hasher, createInfo.graphics.pixelStage.shaderCode.data(),
                                createInfo.graphics.pixelStage.shaderCode.size());
             }
+
             hash = ::XXH64_digest(hasher);
+            ::XXH64_freeState(hasher);
 
             vertexInput.emplace(createInfo.graphics.vertexDeclarations);
         }
         else
         {
-            XXH64_state_t* hasher = ::XXH64_createState();
             {
                 VkShaderModuleCreateInfo const shaderModuleCreateInfo{
                     .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                    .codeSize = createInfo.compute.shaderCode.size(),
                     .pCode = reinterpret_cast<uint32_t const*>(createInfo.compute.shaderCode.data())};
                 VkShaderModule shaderModule;
                 throwIfFailed(::vkCreateShaderModule(device, &shaderModuleCreateInfo, nullptr, &shaderModule));
@@ -568,10 +574,9 @@ namespace ionengine::rhi
                 VKShaderStage const shaderStage{.entryPoint = createInfo.compute.entryPoint,
                                                 .shaderModule = shaderModule};
                 stages.emplace(VK_SHADER_STAGE_COMPUTE_BIT, std::move(shaderStage));
-
-                ::XXH64_update(hasher, createInfo.compute.shaderCode.data(), createInfo.compute.shaderCode.size());
             }
-            hash = ::XXH64_digest(hasher);
+
+            hash = ::XXH64(createInfo.compute.shaderCode.data(), createInfo.compute.shaderCode.size(), 0);
         }
     }
 
@@ -1257,9 +1262,9 @@ namespace ionengine::rhi
         return Future<void>(std::move(futureImpl));
     }
 
-    VKSwapchain::VKSwapchain(VkInstance instance, VkDevice device, DeviceQueueData& deviceQueue,
-                             SwapchainCreateInfo const& createInfo)
-        : instance(instance), device(device), deviceQueue(&deviceQueue)
+    VKSwapchain::VKSwapchain(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device,
+                             DeviceQueueData& deviceQueue, SwapchainCreateInfo const& createInfo)
+        : instance(instance), physicalDevice(physicalDevice), device(device), deviceQueue(&deviceQueue)
     {
 #ifdef IONENGINE_PLATFORM_WIN32
         VkWin32SurfaceCreateInfoKHR const surfaceCreateInfo{.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
@@ -1286,6 +1291,7 @@ namespace ionengine::rhi
 
     VKSwapchain::~VKSwapchain()
     {
+        ::vkDeviceWaitIdle(device);
         backBuffers.clear();
         ::vkDestroySemaphore(device, presentSemaphore, nullptr);
         ::vkDestroySemaphore(device, acquireSemaphore, nullptr);
@@ -1344,8 +1350,8 @@ namespace ionengine::rhi
 
     auto VKSwapchain::createSwapchainBuffers(uint32_t const width, uint32_t const height) -> void
     {
-        // VkSurfaceCapabilitiesKHR surfaceCabalities;
-        // vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCabalities);
+        VkSurfaceCapabilitiesKHR surfaceCabalities;
+        throwIfFailed(::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCabalities));
 
         VkSwapchainCreateInfoKHR const swapchainCreateInfo{.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
                                                            .surface = surface,
@@ -1496,6 +1502,7 @@ namespace ionengine::rhi
                                                           .descriptorBindingStorageImageUpdateAfterBind = true,
                                                           .descriptorBindingStorageBufferUpdateAfterBind = true,
                                                           .descriptorBindingPartiallyBound = true,
+                                                          .runtimeDescriptorArray = true,
                                                           .timelineSemaphore = true};
         VkPhysicalDeviceVulkan13Features deviceFeatures13{.sType =
                                                               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
@@ -1529,6 +1536,7 @@ namespace ionengine::rhi
 
     VKRHI::~VKRHI()
     {
+        ::vkDeviceWaitIdle(device);
         swapchain = nullptr;
         copyContext = nullptr;
         graphicsContext = nullptr;
@@ -1569,7 +1577,7 @@ namespace ionengine::rhi
     {
         if (!swapchain)
         {
-            swapchain = core::make_ref<VKSwapchain>(instance, device, graphicsQueue, createInfo);
+            swapchain = core::make_ref<VKSwapchain>(instance, physicalDevice, device, graphicsQueue, createInfo);
         }
         return swapchain;
     }
