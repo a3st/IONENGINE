@@ -889,9 +889,9 @@ namespace ionengine::rhi
     }
 
     DX12Shader::DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo)
-        : pipelineType(createInfo.pipelineType)
+        : shaderType(createInfo.shaderType)
     {
-        if (createInfo.pipelineType == rhi::PipelineType::Graphics)
+        if (createInfo.shaderType == rhi::ShaderType::Graphics)
         {
             XXH64_state_t* hasher = ::XXH64_createState();
             ::XXH64_reset(hasher, 0);
@@ -919,7 +919,7 @@ namespace ionengine::rhi
                 ::XXH64_update(hasher, createInfo.graphics.pixelStage.shaderCode.data(),
                                createInfo.graphics.pixelStage.shaderCode.size());
             }
-            
+
             hash = ::XXH64_digest(hasher);
             ::XXH64_freeState(hasher);
 
@@ -934,7 +934,7 @@ namespace ionengine::rhi
                                               .BytecodeLength = shaderStage.buffer.size()};
                 stages.emplace(DX12ShaderStageType::Compute, std::move(shaderStage));
             }
-            
+
             hash = ::XXH64(createInfo.compute.shaderCode.data(), createInfo.compute.shaderCode.size(), 0);
         }
     }
@@ -944,9 +944,9 @@ namespace ionengine::rhi
         return stages;
     }
 
-    auto DX12Shader::getPipelineType() const -> PipelineType
+    auto DX12Shader::getShaderType() const -> ShaderType
     {
-        return pipelineType;
+        return shaderType;
     }
 
     auto DX12Shader::getHash() const -> uint64_t
@@ -983,43 +983,44 @@ namespace ionengine::rhi
                         .NumElements = static_cast<uint32_t>(vertexInput.getInputElementDesc().size())};
 
                     graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;
+                    inputSize = vertexInput.getInputSize();
                     break;
                 }
                 case DX12ShaderStageType::Pixel: {
                     graphicsPipelineStateDesc.PS = stageData.shaderByteCode;
-
-                    D3D12_RENDER_TARGET_BLEND_DESC const renderTargetBlendDesc{
-                        .BlendEnable = blendColor.blendEnable,
-                        .SrcBlend = Blend_to_D3D12_BLEND(blendColor.blendSrc),
-                        .DestBlend = Blend_to_D3D12_BLEND(blendColor.blendDst),
-                        .BlendOp = BlendOp_to_D3D12_BLEND_OP(blendColor.blendOp),
-                        .SrcBlendAlpha = Blend_to_D3D12_BLEND(blendColor.blendSrcAlpha),
-                        .DestBlendAlpha = Blend_to_D3D12_BLEND(blendColor.blendDstAlpha),
-                        .BlendOpAlpha = BlendOp_to_D3D12_BLEND_OP(blendColor.blendOpAlpha),
-                        .RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL};
-
-                    D3D12_BLEND_DESC d3d12BlendDesc{};
-                    for (uint32_t const i : std::views::iota(0u, renderTargetFormats.size()))
-                    {
-                        if (renderTargetFormats[i] == DXGI_FORMAT_UNKNOWN)
-                        {
-                            break;
-                        }
-
-                        graphicsPipelineStateDesc.RTVFormats[i] = renderTargetFormats[i];
-                        d3d12BlendDesc.RenderTarget[i] = renderTargetBlendDesc;
-                    }
-                    graphicsPipelineStateDesc.NumRenderTargets = static_cast<uint32_t>(renderTargetFormats.size());
-                    graphicsPipelineStateDesc.BlendState = d3d12BlendDesc;
-                    graphicsPipelineStateDesc.DSVFormat = depthStencilFormat;
                     break;
                 }
             }
         }
 
+        D3D12_RENDER_TARGET_BLEND_DESC const renderTargetBlendDesc{
+            .BlendEnable = blendColor.blendEnable,
+            .SrcBlend = Blend_to_D3D12_BLEND(blendColor.blendSrc),
+            .DestBlend = Blend_to_D3D12_BLEND(blendColor.blendDst),
+            .BlendOp = BlendOp_to_D3D12_BLEND_OP(blendColor.blendOp),
+            .SrcBlendAlpha = Blend_to_D3D12_BLEND(blendColor.blendSrcAlpha),
+            .DestBlendAlpha = Blend_to_D3D12_BLEND(blendColor.blendDstAlpha),
+            .BlendOpAlpha = BlendOp_to_D3D12_BLEND_OP(blendColor.blendOpAlpha),
+            .RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL};
+
+        D3D12_BLEND_DESC d3d12BlendDesc{};
+        for (uint32_t const i : std::views::iota(0u, renderTargetFormats.size()))
+        {
+            if (renderTargetFormats[i] == DXGI_FORMAT_UNKNOWN)
+            {
+                break;
+            }
+
+            graphicsPipelineStateDesc.RTVFormats[i] = renderTargetFormats[i];
+            d3d12BlendDesc.RenderTarget[i] = renderTargetBlendDesc;
+        }
+        graphicsPipelineStateDesc.NumRenderTargets = static_cast<uint32_t>(renderTargetFormats.size());
+        graphicsPipelineStateDesc.BlendState = d3d12BlendDesc;
+        graphicsPipelineStateDesc.DSVFormat = depthStencilFormat;
+
         D3D12_RASTERIZER_DESC const rasterizerDesc{.FillMode = FillMode_to_D3D12_FILL_MODE(rasterizer.fillMode),
                                                    .CullMode = CullMode_to_D3D12_CULL_MODE(rasterizer.cullMode),
-                                                   .FrontCounterClockwise = true,
+                                                   .FrontCounterClockwise = false,
                                                    .DepthBias = D3D12_DEFAULT_DEPTH_BIAS,
                                                    .DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
                                                    .SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
@@ -1084,6 +1085,11 @@ namespace ionengine::rhi
         return rootSignature;
     }
 
+    auto Pipeline::getInputSize() const -> uint32_t
+    {
+        return inputSize;
+    }
+
     PipelineCache::PipelineCache(ID3D12Device4* device, RHICreateInfo const& createInfo) : device(device)
     {
         D3D12_ROOT_PARAMETER1 const rootParameter{
@@ -1110,12 +1116,12 @@ namespace ionengine::rhi
                             std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> const& renderTargetFormats,
                             DXGI_FORMAT const depthStencilFormat) -> core::ref_ptr<Pipeline>
     {
-        Entry entry{.shaderHash = shader->getHash(),
-                    .rasterizer = rasterizer,
-                    .blendColor = blendColor,
-                    .depthStencil = depthStencil,
-                    .renderTargetFormats = renderTargetFormats,
-                    .depthStencilFormat = depthStencilFormat};
+        Entry const entry{.shaderHash = shader->getHash(),
+                          .rasterizer = rasterizer,
+                          .blendColor = blendColor,
+                          .depthStencil = depthStencil,
+                          .renderTargetFormats = renderTargetFormats,
+                          .depthStencilFormat = depthStencilFormat};
 
         std::unique_lock lock(mutex);
         auto result = entries.find(entry);
@@ -1218,9 +1224,8 @@ namespace ionengine::rhi
             descriptorAllocator->getDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER)};
         commandList->SetDescriptorHeaps(static_cast<uint32_t>(descriptorHeaps.size()), descriptorHeaps.data());
 
-        currentShader = nullptr;
-
         isCommandListOpened = true;
+        currentPipeline = nullptr;
     }
 
     auto DX12GraphicsContext::setGraphicsPipelineOptions(core::ref_ptr<Shader> shader,
@@ -1233,14 +1238,12 @@ namespace ionengine::rhi
 
         auto dxShader = dynamic_cast<DX12Shader*>(shader.get());
 
-        auto pipeline =
+        currentPipeline =
             pipelineCache->get(dxShader, rasterizer, blendColor, depthStencil, renderTargetFormats, depthStencilFormat);
 
-        commandList->SetGraphicsRootSignature(pipeline->getRootSignature());
-        commandList->SetPipelineState(pipeline->getPipelineState());
+        commandList->SetGraphicsRootSignature(currentPipeline->getRootSignature());
+        commandList->SetPipelineState(currentPipeline->getPipelineState());
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-        currentShader = shader;
     }
 
     auto DX12GraphicsContext::bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void
@@ -1258,30 +1261,31 @@ namespace ionengine::rhi
 
         std::array<D3D12_RENDER_PASS_RENDER_TARGET_DESC, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT>
             renderPassRenderTargets;
-
         for (uint32_t const i : std::views::iota(0u, colors.size()))
         {
+            auto dxTargetTexture = dynamic_cast<DX12Texture*>(colors[i].texture.get());
+            renderTargetFormats[i] = TextureFormat_to_DXGI_FORMAT(colors[i].texture->getFormat());
+
             D3D12_RENDER_PASS_BEGINNING_ACCESS const begin{
                 .Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(colors[i].loadOp),
-                .Clear = {.ClearValue = {.Format = TextureFormat_to_DXGI_FORMAT(colors[i].texture->getFormat()),
+                .Clear = {.ClearValue = {.Format = renderTargetFormats[i],
                                          .Color = {colors[i].clearColor.r, colors[i].clearColor.g,
                                                    colors[i].clearColor.b, colors[i].clearColor.a}}}};
             D3D12_RENDER_PASS_ENDING_ACCESS const end{
                 .Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(colors[i].storeOp)};
 
-            auto dxTargetTexture = dynamic_cast<DX12Texture*>(colors[i].texture.get());
-
             renderPassRenderTargets[i].BeginningAccess = begin;
             renderPassRenderTargets[i].EndingAccess = end;
             renderPassRenderTargets[i].cpuDescriptor =
                 dxTargetTexture->getDescriptor(TextureUsage::RenderTarget)->getCPUHandle();
-            renderTargetFormats[i] = begin.Clear.ClearValue.Format;
         }
 
         if (depthStencil.has_value())
         {
             auto value = depthStencil.value();
-            depthStencilFormat = TextureFormat_to_DXGI_FORMAT(value.texture->getFormat());
+
+            auto dxTargetTexture = dynamic_cast<DX12Texture*>(value.texture.get());
+            depthStencilFormat = TextureFormat_to_DXGI_FORMAT(dxTargetTexture->getFormat());
 
             D3D12_RENDER_PASS_DEPTH_STENCIL_DESC renderPassDepthStencil{};
 
@@ -1310,8 +1314,6 @@ namespace ionengine::rhi
                 renderPassDepthStencil.StencilEndingAccess = end;
             }
 
-            auto dxTargetTexture = dynamic_cast<DX12Texture*>(value.texture.get());
-
             renderPassDepthStencil.cpuDescriptor =
                 dxTargetTexture->getDescriptor(TextureUsage::DepthStencil)->getCPUHandle();
 
@@ -1337,10 +1339,10 @@ namespace ionengine::rhi
 
         auto dxBuffer = dynamic_cast<DX12Buffer*>(buffer.get());
 
-        D3D12_VERTEX_BUFFER_VIEW const vertexBufferView{
-            .BufferLocation = dxBuffer->getResource()->GetGPUVirtualAddress() + offset,
-            .SizeInBytes = static_cast<uint32_t>(size),
-            .StrideInBytes = currentShader->getVertexInput().value().getInputSize()};
+        D3D12_VERTEX_BUFFER_VIEW const vertexBufferView{.BufferLocation =
+                                                            dxBuffer->getResource()->GetGPUVirtualAddress() + offset,
+                                                        .SizeInBytes = static_cast<uint32_t>(size),
+                                                        .StrideInBytes = currentPipeline->getInputSize()};
         commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
     }
 

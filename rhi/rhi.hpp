@@ -92,7 +92,7 @@ namespace ionengine::rhi
         virtual auto getDescriptorOffset(TextureUsage const usage) const -> uint32_t = 0;
     };
 
-    enum class PipelineType
+    enum class ShaderType
     {
         Graphics,
         Compute
@@ -103,7 +103,7 @@ namespace ionengine::rhi
       public:
         virtual ~Shader() = default;
 
-        virtual auto getPipelineType() const -> PipelineType = 0;
+        virtual auto getShaderType() const -> ShaderType = 0;
     };
 
     enum class RenderPassLoadOp
@@ -385,7 +385,7 @@ namespace ionengine::rhi
 
     struct ShaderCreateInfo
     {
-        PipelineType pipelineType;
+        ShaderType shaderType;
         union {
             struct
             {

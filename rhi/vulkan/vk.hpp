@@ -76,11 +76,12 @@ namespace ionengine::rhi
       public:
         VKVertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations);
 
-        auto getPipelineVertexInputState() const -> VkPipelineVertexInputStateCreateInfo;
+        auto getPipelineVertexInputState() const -> VkPipelineVertexInputStateCreateInfo const&;
 
       private:
         VkVertexInputBindingDescription inputBinding;
         std::vector<VkVertexInputAttributeDescription> inputAttributes;
+        VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo;
     };
 
     struct VKShaderStage
@@ -98,7 +99,7 @@ namespace ionengine::rhi
 
         auto getHash() const -> uint64_t;
 
-        auto getPipelineType() const -> PipelineType override;
+        auto getShaderType() const -> ShaderType override;
 
         auto getStages() const -> std::unordered_map<VkShaderStageFlagBits, VKShaderStage> const&;
 
@@ -109,7 +110,7 @@ namespace ionengine::rhi
         std::optional<VKVertexInput> vertexInput;
         std::unordered_map<VkShaderStageFlagBits, VKShaderStage> stages;
         uint64_t hash;
-        PipelineType pipelineType;
+        ShaderType shaderType;
     };
 
     class Pipeline : public core::ref_counted_object
@@ -123,9 +124,14 @@ namespace ionengine::rhi
 
         ~Pipeline();
 
+        auto getPipelineType() const -> VkPipelineBindPoint;
+
+        auto getPipeline() -> VkPipeline;
+
       private:
         VkDevice device;
         VkPipeline pipeline;
+        VkPipelineBindPoint pipelineType;
     };
 
     class PipelineCache final : public core::ref_counted_object
@@ -351,6 +357,8 @@ namespace ionengine::rhi
         VkCommandBuffer commandBuffer;
         VkRect2D renderArea;
         bool isCommandListOpened;
+        std::array<VkFormat, 8> renderTargetFormats;
+        VkFormat depthStencilFormat;
 
         auto tryAllocateCommandBuffer() -> void;
     };

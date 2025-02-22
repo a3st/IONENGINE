@@ -204,7 +204,7 @@ namespace ionengine::rhi
       public:
         DX12Shader(ID3D12Device4* device, ShaderCreateInfo const& createInfo);
 
-        auto getPipelineType() const -> PipelineType override;
+        auto getShaderType() const -> ShaderType override;
 
         auto getHash() const -> uint64_t;
 
@@ -216,7 +216,7 @@ namespace ionengine::rhi
         std::optional<DX12VertexInput> vertexInput;
         std::unordered_map<DX12ShaderStageType, DX12ShaderStage> stages;
         uint64_t hash;
-        PipelineType pipelineType;
+        ShaderType shaderType;
     };
 
     class Pipeline final : public core::ref_counted_object
@@ -232,9 +232,12 @@ namespace ionengine::rhi
 
         auto getRootSignature() -> ID3D12RootSignature*;
 
+        auto getInputSize() const -> uint32_t;
+
       private:
         ID3D12RootSignature* rootSignature;
         winrt::com_ptr<ID3D12PipelineState> pipelineState;
+        uint32_t inputSize;
     };
 
     class PipelineCache final : public core::ref_counted_object
@@ -354,7 +357,7 @@ namespace ionengine::rhi
         winrt::com_ptr<ID3D12CommandAllocator> commandAllocator;
         winrt::com_ptr<ID3D12GraphicsCommandList4> commandList;
         bool isCommandListOpened;
-        core::ref_ptr<DX12Shader> currentShader;
+        core::ref_ptr<Pipeline> currentPipeline;
         std::array<DXGI_FORMAT, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> renderTargetFormats;
         DXGI_FORMAT depthStencilFormat;
         std::vector<uint8_t> bindingData;

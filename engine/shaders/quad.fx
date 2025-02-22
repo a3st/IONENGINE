@@ -7,7 +7,7 @@ HEADER {
 }
 
 DATA {
-    texture2D_t inputTexture;
+    // texture2D_t inputTexture;
 }
 
 VS {
@@ -19,17 +19,18 @@ VS {
     }
 }
 
-[FillMode("SOLID"), CullSide("BACK"), DepthWrite(true), StencilWrite(false)]
+[FillMode("SOLID"), CullSide("FRONT"), DepthWrite(true), StencilWrite(false)]
 PS {
     PS_OUTPUT main(VS_OUTPUT input) {
-        cbuffer_t<SAMPLER_DATA> samplerBuffer = gShaderData.samplerBuffer;
-        cbuffer_t<MATERIAL_DATA> materialBuffer = gShaderData.materialBuffer;
+        //cbuffer_t<SAMPLER_DATA> samplerBuffer = gShaderData.samplerBuffer;
+        //cbuffer_t<MATERIAL_DATA> materialBuffer = gShaderData.materialBuffer;
 
-        texture2D_t inputTexture = materialBuffer.Get().inputTexture;
-        sampler_t linearSampler = samplerBuffer.Get().linearSampler;
+        //texture2D_t inputTexture = materialBuffer.Get().inputTexture;
+        //sampler_t linearSampler = samplerBuffer.Get().linearSampler;
 
         PS_OUTPUT output;
-        output.color = inputTexture.Get().Sample(linearSampler.Get(), input.uv);
+        // output.color = inputTexture.Get().Sample(linearSampler.Get(), input.uv);
+        output.color = float4(0.5f, 0.8f, 0.2f, 1.0f);
         return output;
     }
 }

@@ -87,6 +87,10 @@ TEST(RHI, Quad_Test)
 #endif
     auto shaderCompiler = shadersys::ShaderCompiler::create(shaderFormat);
     auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx");
+    if (!compileResult.has_value())
+    {
+        std::cerr << compileResult.error().what() << std::endl;
+    }
     ASSERT_TRUE(compileResult.has_value());
 
     // Load shader
@@ -109,7 +113,7 @@ TEST(RHI, Quad_Test)
         auto const& pixelBuffer = shaderFile.shaderData.buffers[pixelStage.buffer];
 
         rhi::ShaderCreateInfo const shaderCreateInfo{
-            .pipelineType = rhi::PipelineType::Graphics,
+            .shaderType = rhi::ShaderType::Graphics,
             .graphics = {.vertexDeclarations = vertexDeclarations,
                          .vertexStage = {.entryPoint = vertexStage.entryPoint,
                                          .shaderCode = std::span<uint8_t const>(
@@ -154,10 +158,10 @@ TEST(RHI, Quad_Test)
 
         graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
         graphicsContext->beginRenderPass(colors, std::nullopt);
-        /*graphicsContext->setGraphicsPipelineOptions(
-            shader, rhi::RasterizerStageInfo{.fillMode = rhi::FillMode::Solid, .cullMode = rhi::CullMode::Back},
+        graphicsContext->setGraphicsPipelineOptions(
+            shader, rhi::RasterizerStageInfo{.fillMode = rhi::FillMode::Solid, .cullMode = rhi::CullMode::Front},
             rhi::BlendColorInfo::Opaque(), std::nullopt);
-        graphicsContext->drawIndexed(3, 1);*/
+        graphicsContext->draw(3, 1);
         graphicsContext->endRenderPass();
         graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
 
@@ -172,7 +176,7 @@ TEST(RHI, Quad_Test)
     application->run();
 }
 
-TEST(RHI, DISABLED_Render3D_Test)
+TEST(RHI, Render3D_Test)
 {
     auto application = platform::App::create("Render Test");
 
@@ -233,7 +237,7 @@ TEST(RHI, DISABLED_Render3D_Test)
         auto const& pixelBuffer = shaderFile.shaderData.buffers[pixelStage.buffer];
 
         rhi::ShaderCreateInfo const shaderCreateInfo{
-            .pipelineType = rhi::PipelineType::Graphics,
+            .shaderType = rhi::ShaderType::Graphics,
             .graphics = {.vertexDeclarations = vertexDeclarations,
                          .vertexStage = {.entryPoint = vertexStage.entryPoint,
                                          .shaderCode = std::span<uint8_t const>(
@@ -453,7 +457,7 @@ TEST(RHI, DISABLED_Render3D_Test)
         graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
         graphicsContext->beginRenderPass(colors, std::nullopt);
         graphicsContext->setGraphicsPipelineOptions(
-            shader, rhi::RasterizerStageInfo{.fillMode = rhi::FillMode::Solid, .cullMode = rhi::CullMode::Back},
+            shader, rhi::RasterizerStageInfo{.fillMode = rhi::FillMode::Solid, .cullMode = rhi::CullMode::Front},
             rhi::BlendColorInfo::Opaque(), std::nullopt);
         graphicsContext->bindDescriptor(0, tBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
         graphicsContext->bindDescriptor(1, sBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
