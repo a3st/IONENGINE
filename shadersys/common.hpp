@@ -2,24 +2,80 @@
 
 #pragma once
 
-#include "math/matrix.hpp"
+#include "shadersys/hlslgen.hpp"
 
-namespace ionengine::shadersys::common
+namespace ionengine::shadersys
 {
+    namespace common
+    {
 #pragma pack(push, 1)
-    struct TransformData
-    {
-        math::Matf modelViewProj;
-    };
+        struct TRANSFORM_DATA
+        {
+            math::Mat4f modelViewProj;
+        };
 
-    struct SamplerData
-    {
-        uint32_t linearSampler;
-    };
+        struct SAMPLER_DATA
+        {
+            uint32_t linearSampler;
 
-    struct LightingData
-    {
-        uint32_t reserved;
-    };
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<sampler_t>("linearSampler");
+            }
+        };
+
+        struct LIGHTING_DATA
+        {
+            uint32_t reserved;
+        };
+
+        struct MATERIAL_DATA
+        {
+        };
 #pragma pack(pop)
-} // namespace ionengine::shadersys::common
+    } // namespace common
+
+    namespace constants
+    {
+        struct ScreenShaderData
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerBuffer");
+                generator.property<cbuffer_t<common::MATERIAL_DATA>>("materialBuffer");
+            }
+        };
+    } // namespace constants
+
+    namespace inputs
+    {
+        struct StaticVSInput
+        {
+        };
+
+        struct BaseVSInput
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<uint32_t>("id", "SV_VertexID");
+            }
+        };
+
+        struct BaseVSOutput
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<math::Vec4f>("position", "SV_Position");
+                generator.property<math::Vec2f>("uv", "TEXCOORD");
+            }
+        };
+
+        struct BasePSOutput
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<math::Vec4f>("color", "SV_Target");
+            }
+        };
+    } // namespace inputs
+} // namespace ionengine::shadersys

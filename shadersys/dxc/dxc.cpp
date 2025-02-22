@@ -3,6 +3,8 @@
 #include "dxc.hpp"
 #include "core/string.hpp"
 #include "precompiled.h"
+#include "shadersys/common.hpp"
+#include "shadersys/hlslgen.hpp"
 #include "shadersys/lexer.hpp"
 #include "shadersys/parser.hpp"
 
@@ -170,10 +172,10 @@ namespace ionengine::shadersys
                 }
             }
 
-            asset::fx::VertexLayoutElementData layoutElement = {
+            asset::fx::VertexLayoutElementData const layoutElement{
                 .format = format,
                 .semantic = signatureParameterDesc.SemanticName + std::to_string(signatureParameterDesc.SemanticIndex)};
-            vertexLayout.elements.emplace_back(layoutElement);
+            vertexLayout.elements.emplace_back(std::move(layoutElement));
 
             inputSize += asset::fx::sizeof_VertexFormat(format);
         }
@@ -198,7 +200,7 @@ namespace ionengine::shadersys
 
         ShaderParseData const parseData = std::move(parserResult.value());
 
-        asset::fx::ShaderData shaderData = {.headerData = parseData.headerData, .structures = {parseData.materialData}};
+        asset::fx::ShaderData shaderData{.headerData = parseData.headerData, .structures = {parseData.materialData}};
         std::basic_stringstream<uint8_t> shaderBlob;
 
         std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
@@ -207,12 +209,25 @@ namespace ionengine::shadersys
         std::string materialDataCode;
         this->generateStructureDataCode(parseData.materialData, materialDataCode);
 
+        std::string inputDataCode;
+        if (parseData.headerData.domain.compare("Screen") == 0)
+        {
+            HLSLCodeGen generator;
+            inputDataCode += generator.getHLSLStruct<inputs::BaseVSInput>("VS_INPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::BaseVSOutput>("VS_OUTPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::BasePSOutput>("PS_OUTPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
+            inputDataCode +=
+                generator.getHLSLConstBuffer<constants::ScreenShaderData>("SHADER_DATA", "gShaderData", 0, 0) + "\n";
+        }
+
         for (auto const& [stageType, shaderCode] : parseData.codeData)
         {
             asset::fx::StageData stageData{.buffer = static_cast<uint32_t>(shaderData.buffers.size()),
                                            .entryPoint = "main"};
 
             arguments.clear();
+            arguments.emplace_back(L"-Wno-ignored-attributes");
             arguments.emplace_back(L"-E main");
             arguments.emplace_back(defaultIncludePath.c_str());
             arguments.emplace_back(L"-HV 2021");
@@ -220,7 +235,6 @@ namespace ionengine::shadersys
             {
                 arguments.emplace_back(L"-spirv");
             }
-
             switch (stageType)
             {
                 case asset::fx::StageType::Vertex: {
@@ -237,19 +251,12 @@ namespace ionengine::shadersys
                 }
             }
 
-            if (parseData.headerData.domain.compare("Screen") == 0)
-            {
-                arguments.emplace_back(L"-D SHADER_DOMAIN_TYPE_SCREEN");
-            }
-            else if (parseData.headerData.domain.compare("Surface") == 0)
-            {
-                arguments.emplace_back(L"-D SHADER_DOMAIN_TYPE_SURFACE");
-            }
-
             std::string const stageShaderCode =
-                "#include \"shared/internal.hlsli\"\n" + materialDataCode + "\n" + shaderCode;
+                "#include \"shared/internal.hlsli\"\n\n" + materialDataCode + "\n" + inputDataCode + "\n" + shaderCode;
 
-            DxcBuffer const codeBuffer = {
+            std::cout << stageShaderCode << std::endl;
+
+            DxcBuffer const codeBuffer{
                 .Ptr = stageShaderCode.data(), .Size = stageShaderCode.size(), .Encoding = DXC_CP_UTF8};
 
             winrt::com_ptr<IDxcResult> compileResult;
@@ -270,12 +277,13 @@ namespace ionengine::shadersys
             winrt::com_ptr<IDxcBlob> outBlob;
             throwIfFailed(compileResult->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), outBlob.put_void(), nullptr));
 
-            asset::fx::BufferData const bufferData = {.offset = static_cast<uint64_t>(shaderBlob.tellp()),
-                                                      .size = outBlob->GetBufferSize()};
+            asset::fx::BufferData const bufferData{.offset = static_cast<uint64_t>(shaderBlob.tellp()),
+                                                   .size = outBlob->GetBufferSize()};
             shaderData.buffers.emplace_back(std::move(bufferData));
 
             shaderBlob.write(reinterpret_cast<uint8_t const*>(outBlob->GetBufferPointer()), outBlob->GetBufferSize());
 
+            /*
             switch (stageType)
             {
                 case asset::fx::StageType::Vertex: {
@@ -283,8 +291,8 @@ namespace ionengine::shadersys
                     throwIfFailed(compileResult->GetOutput(DXC_OUT_REFLECTION, __uuidof(IDxcBlob),
                                                            reflectBlob.put_void(), nullptr));
 
-                    DxcBuffer const reflectBuffer = {.Ptr = reflectBlob->GetBufferPointer(),
-                                                     .Size = reflectBlob->GetBufferSize()};
+                    DxcBuffer const reflectBuffer{.Ptr = reflectBlob->GetBufferPointer(),
+                                                  .Size = reflectBlob->GetBufferSize()};
 
                     asset::fx::VertexLayoutData vertexLayout{};
                     this->getInputAssembler(reflectBuffer, vertexLayout);
@@ -298,12 +306,20 @@ namespace ionengine::shadersys
                     break;
                 }
             }
+            */
+
+            if (stageType == asset::fx::StageType::Pixel)
+            {
+                asset::fx::OutputData outputData{};
+                this->getOutputStates(parseData.psAttributes, outputData);
+                stageData.output = std::move(outputData);
+            }
 
             shaderData.stages[stageType] = std::move(stageData);
         }
 
         return asset::ShaderFile{.magic = asset::fx::Magic,
-                                 .shaderFormat = asset::fx::ShaderFormat::DXIL,
+                                 .shaderFormat = shaderFormat,
                                  .shaderData = std::move(shaderData),
                                  .blob = {std::istreambuf_iterator<uint8_t>(shaderBlob.rdbuf()), {}}};
     }

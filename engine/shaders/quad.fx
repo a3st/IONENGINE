@@ -11,8 +11,6 @@ DATA {
 }
 
 VS {
-    #include "shared/common.hlsli"
-
     VS_OUTPUT main(VS_INPUT input) {
         VS_OUTPUT output;
         output.uv = float2((input.id << 1) & 2, input.id & 2);
@@ -23,8 +21,6 @@ VS {
 
 [FillMode("SOLID"), CullSide("BACK"), DepthWrite(true), StencilWrite(false)]
 PS {
-    #include "shared/common.hlsli"
-
     PS_OUTPUT main(VS_OUTPUT input) {
         cbuffer_t<SAMPLER_DATA> samplerBuffer = gShaderData.samplerBuffer;
         cbuffer_t<MATERIAL_DATA> materialBuffer = gShaderData.materialBuffer;

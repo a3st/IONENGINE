@@ -7,7 +7,7 @@ struct VS_INPUT {
 
 struct VS_OUTPUT {
     float4 position : SV_Position;
-    float2 uv : TEXCOORD;
+    [[vk::location(0)]] float2 uv : TEXCOORD;
 };
 
 struct PS_OUTPUT {
@@ -34,7 +34,7 @@ struct TRANSFORM_DATA {
     float4x4 modelViewProj;
 };
 #endif
-
+/*
 struct SAMPLER_DATA {
     sampler_t linearSampler;
 };
@@ -47,4 +47,4 @@ struct SHADER_DATA {
     cbuffer_t<MATERIAL_DATA> materialBuffer;
 };
 
-ConstantBuffer<SHADER_DATA> gShaderData : register(b0, space0);
+ConstantBuffer<SHADER_DATA> gShaderData : register(b0, space0);*/
