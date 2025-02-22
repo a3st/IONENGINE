@@ -118,6 +118,10 @@ namespace ionengine::shadersys
             inputDataCode +=
                 generator.getHLSLConstBuffer<constants::ScreenShaderData>("SHADER_DATA", "gShaderData", 0, 0) + "\n";
 
+            shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
+            shaderData.structures.emplace_back(common::TRANSFORM_DATA::structureData);
+            shaderData.structures.emplace_back(constants::ScreenShaderData::structureData);
+
             vertexLayout = {};
         }
         else if (parseData.headerData.domain.compare("Surface") == 0)
@@ -129,6 +133,10 @@ namespace ionengine::shadersys
             inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
             inputDataCode +=
                 generator.getHLSLConstBuffer<constants::SurfaceShaderData>("SHADER_DATA", "gShaderData", 0, 0) + "\n";
+
+            shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
+            shaderData.structures.emplace_back(common::TRANSFORM_DATA::structureData);
+            shaderData.structures.emplace_back(constants::SurfaceShaderData::structureData);
 
             vertexLayout = inputs::StaticVSInput::vertexLayout;
         }

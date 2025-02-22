@@ -18,6 +18,11 @@ namespace ionengine::shadersys
             {
                 generator.property<math::Mat4f>("modelViewProj");
             }
+
+            static inline asset::fx::StructureData structureData{
+                .name = "TRANSFORM_DATA",
+                .elements = {{.name = "modelViewProj", .type = asset::fx::ElementType::Float4x4}},
+                .size = 16};
         };
 
         struct SAMPLER_DATA
@@ -28,6 +33,11 @@ namespace ionengine::shadersys
             {
                 generator.property<sampler_t>("linearSampler");
             }
+
+            static inline asset::fx::StructureData structureData{
+                .name = "SAMPLER_DATA",
+                .elements = {{.name = "linearSampler", .type = asset::fx::ElementType::Uint}},
+                .size = 4};
         };
 
         struct LIGHTING_DATA
@@ -50,6 +60,12 @@ namespace ionengine::shadersys
                 generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerBuffer");
                 generator.property<cbuffer_t<common::MATERIAL_DATA>>("materialBuffer");
             }
+
+            static inline asset::fx::StructureData structureData{
+                .name = "SHADER_DATA",
+                .elements = {{.name = "samplerBuffer", .type = asset::fx::ElementType::ConstBuffer},
+                             {.name = "materialBuffer", .type = asset::fx::ElementType::ConstBuffer}},
+                .size = 8};
         };
 
         struct SurfaceShaderData
@@ -60,6 +76,13 @@ namespace ionengine::shadersys
                 generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerBuffer");
                 generator.property<cbuffer_t<common::MATERIAL_DATA>>("materialBuffer");
             }
+
+            static inline asset::fx::StructureData structureData{
+                .name = "SHADER_DATA",
+                .elements = {{.name = "transformBuffer", .type = asset::fx::ElementType::ConstBuffer},
+                             {.name = "samplerBuffer", .type = asset::fx::ElementType::ConstBuffer},
+                             {.name = "materialBuffer", .type = asset::fx::ElementType::ConstBuffer}},
+                .size = 12};
         };
     } // namespace constants
 

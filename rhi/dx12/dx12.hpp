@@ -268,20 +268,20 @@ namespace ionengine::rhi
             auto operator()(const Entry& other) const -> std::size_t
             {
                 auto depthStencil = other.depthStencil.value_or(DepthStencilStageInfo::Default());
-                return other.shaderHash ^ XXH64(&other.rasterizer.fillMode, sizeof(uint32_t), 0) ^
-                       XXH64(&other.rasterizer.cullMode, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendDst, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendEnable, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendOp, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendSrc, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
-                       XXH64(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
-                       XXH64(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
-                       XXH64(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
-                       XXH64(other.renderTargetFormats.data(), other.renderTargetFormats.size(), 0) ^
-                       XXH64(&other.depthStencilFormat, sizeof(DXGI_FORMAT), 0);
+                return other.shaderHash ^ ::XXH64(&other.rasterizer.fillMode, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.rasterizer.cullMode, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendDst, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendEnable, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendOp, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendSrc, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
+                       ::XXH64(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
+                       ::XXH64(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
+                       ::XXH64(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
+                       ::XXH64(other.renderTargetFormats.data(), other.renderTargetFormats.size(), 0) ^
+                       ::XXH64(&other.depthStencilFormat, sizeof(DXGI_FORMAT), 0);
             }
         };
 

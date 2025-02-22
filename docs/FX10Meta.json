@@ -55,6 +55,34 @@
                 }
             ],
             "sizeInBytes": 192
+        },
+        {
+            "name": "TRANSFORM_DATA",
+            "elements": [
+                {
+                    "name": "modelViewProj",
+                    "type": "FLOAT4x4"
+                }
+            ],
+            "sizeInBytes": 16
+        },
+        {
+            "name": "SHADER_DATA",
+            "elements": [
+                {
+                    "name": "transformBuffer",
+                    "type": "cbuffer_t"
+                },
+                {
+                    "name": "samplerBuffer",
+                    "type": "cbuffer_t"
+                },
+                {
+                    "name": "materialBuffer",
+                    "type": "cbuffer_t"
+                }
+            ],
+            "sizeInBytes": 16
         }
     ],
     "buffers": [

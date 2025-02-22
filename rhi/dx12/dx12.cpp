@@ -394,23 +394,23 @@ namespace ionengine::rhi
 
     DescriptorAllocator::DescriptorAllocator(ID3D12Device1* device) : device(device)
     {
-        std::array<D3D12_DESCRIPTOR_HEAP_TYPE, 4> heapTypes{
+        std::array<D3D12_DESCRIPTOR_HEAP_TYPE, 4> const heapTypes{
             D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
             D3D12_DESCRIPTOR_HEAP_TYPE_DSV};
-        std::array<uint32_t, 4> descriptorLimits = {std::to_underlying(DescriptorAllocatorLimits::RTV),
-                                                    std::to_underlying(DescriptorAllocatorLimits::CBV_SRV_UAV),
-                                                    std::to_underlying(DescriptorAllocatorLimits::Sampler),
-                                                    std::to_underlying(DescriptorAllocatorLimits::DSV)};
+        std::array<uint32_t, 4> const descriptorLimits{std::to_underlying(DescriptorAllocatorLimits::RTV),
+                                                       std::to_underlying(DescriptorAllocatorLimits::CBV_SRV_UAV),
+                                                       std::to_underlying(DescriptorAllocatorLimits::Sampler),
+                                                       std::to_underlying(DescriptorAllocatorLimits::DSV)};
 
         for (uint32_t const i : std::views::iota(0u, 4u))
         {
-            D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc{.Type = heapTypes[i],
-                                                          .NumDescriptors = descriptorLimits[i],
-                                                          .Flags =
-                                                              heapTypes[i] == D3D12_DESCRIPTOR_HEAP_TYPE_RTV ||
-                                                                      heapTypes[i] == D3D12_DESCRIPTOR_HEAP_TYPE_DSV
-                                                                  ? D3D12_DESCRIPTOR_HEAP_FLAG_NONE
-                                                                  : D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE};
+            D3D12_DESCRIPTOR_HEAP_DESC const descriptorHeapDesc{
+                .Type = heapTypes[i],
+                .NumDescriptors = descriptorLimits[i],
+                .Flags =
+                    heapTypes[i] == D3D12_DESCRIPTOR_HEAP_TYPE_RTV || heapTypes[i] == D3D12_DESCRIPTOR_HEAP_TYPE_DSV
+                        ? D3D12_DESCRIPTOR_HEAP_FLAG_NONE
+                        : D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE};
             winrt::com_ptr<ID3D12DescriptorHeap> descriptorHeap;
             throwIfFailed(device->CreateDescriptorHeap(&descriptorHeapDesc, __uuidof(ID3D12DescriptorHeap),
                                                        descriptorHeap.put_void()));
@@ -966,8 +966,7 @@ namespace ionengine::rhi
                        DXGI_FORMAT const depthStencilFormat, ID3DBlob* blob)
         : rootSignature(rootSignature)
     {
-        D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{};
-        graphicsPipelineStateDesc.pRootSignature = rootSignature;
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc{.pRootSignature = rootSignature};
 
         for (auto const& [stage, stageData] : shader->getStages())
         {
@@ -1198,7 +1197,7 @@ namespace ionengine::rhi
                                              DescriptorAllocator* descriptorAllocator, DeviceQueueData& deviceQueue,
                                              HANDLE fenceEvent)
         : device(device), pipelineCache(pipelineCache), descriptorAllocator(descriptorAllocator),
-          deviceQueue(&deviceQueue), fenceEvent(fenceEvent), isCommandListOpened(false)
+          deviceQueue(&deviceQueue), fenceEvent(fenceEvent), isCommandListOpened(false), currentPipeline(nullptr)
     {
         throwIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator),
                                                      commandAllocator.put_void()));
@@ -1238,12 +1237,18 @@ namespace ionengine::rhi
 
         auto dxShader = dynamic_cast<DX12Shader*>(shader.get());
 
-        currentPipeline =
+        auto pipeline =
             pipelineCache->get(dxShader, rasterizer, blendColor, depthStencil, renderTargetFormats, depthStencilFormat);
 
-        commandList->SetGraphicsRootSignature(currentPipeline->getRootSignature());
-        commandList->SetPipelineState(currentPipeline->getPipelineState());
+        if (!currentPipeline)
+        {
+            commandList->SetGraphicsRootSignature(pipeline->getRootSignature());
+        }
+
+        commandList->SetPipelineState(pipeline->getPipelineState());
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        currentPipeline = pipeline;
     }
 
     auto DX12GraphicsContext::bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void
