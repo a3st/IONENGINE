@@ -1934,7 +1934,7 @@ namespace ionengine::rhi
         fenceEvent = UniqueHandle(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
         if (!fenceEvent)
         {
-            throwIfFailed(::HRESULT_FROM_WIN32(GetLastError()));
+            throwIfFailed(::HRESULT_FROM_WIN32(::GetLastError()));
         }
 
         this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_DIRECT, graphicsQueue);

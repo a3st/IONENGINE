@@ -484,6 +484,16 @@ namespace ionengine::rhi
         chunk.offset = std::min(chunk.offset, allocation->arrayElement);
     }
 
+    auto DescriptorAllocator::getDescriptorSet(VkDescriptorType const descriptorType) -> VkDescriptorSet
+    {
+        return chunks[descriptorType].descriptorSet;
+    }
+
+    auto DescriptorAllocator::getDescriptorSetLayout(VkDescriptorType const descriptorType) -> VkDescriptorSetLayout
+    {
+        return chunks[descriptorType].descriptorSetLayout;
+    }
+
     VKVertexInput::VKVertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations)
         : vertexInputStateCreateInfo({.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO})
     {
@@ -751,14 +761,21 @@ namespace ionengine::rhi
         return pipeline;
     }
 
-    PipelineCache::PipelineCache(VkDevice device, RHICreateInfo const& createInfo) : device(device)
+    PipelineCache::PipelineCache(VkDevice device, DescriptorAllocator* descriptorAllocator,
+                                 RHICreateInfo const& createInfo)
+        : device(device)
     {
         VkPushConstantRange const pushConstantRange{.stageFlags = VK_SHADER_STAGE_ALL, .offset = 0, .size = 4 * 16};
 
-        VkPipelineLayoutCreateInfo const pipelineLayoutCreateInfo{.sType =
-                                                                      VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                                                                  .pushConstantRangeCount = 1,
-                                                                  .pPushConstantRanges = &pushConstantRange};
+        std::array<VkDescriptorSetLayout, 2> const descriptorSetLayouts{
+            descriptorAllocator->getDescriptorSetLayout(VK_DESCRIPTOR_TYPE_MUTABLE_EXT),
+            descriptorAllocator->getDescriptorSetLayout(VK_DESCRIPTOR_TYPE_SAMPLER)};
+        VkPipelineLayoutCreateInfo const pipelineLayoutCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
+            .pSetLayouts = descriptorSetLayouts.data(),
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &pushConstantRange};
         throwIfFailed(::vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
     }
 
@@ -803,36 +820,53 @@ namespace ionengine::rhi
         entries.clear();
     }
 
-    VKBuffer::VKBuffer(VkDevice device, VmaAllocator memoryAllocator, BufferCreateInfo const& createInfo)
+    auto PipelineCache::getPipelineLayout() -> VkPipelineLayout
     {
+        return pipelineLayout;
+    }
+
+    VKBuffer::VKBuffer(VkDevice device, VmaAllocator memoryAllocator, BufferCreateInfo const& createInfo)
+        : device(device), memoryAllocator(memoryAllocator), size(createInfo.size), flags(createInfo.flags)
+    {
+        VkBufferCreateInfo bufferCreateInfo{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     }
 
     VKBuffer::~VKBuffer()
     {
+        if (memoryAllocator && memoryAllocation)
+        {
+            ::vmaDestroyBuffer(memoryAllocator, buffer, memoryAllocation);
+        }
     }
 
     auto VKBuffer::getSize() const -> size_t
     {
-        return 0;
+        return size;
     }
 
     auto VKBuffer::getFlags() const -> BufferUsageFlags
     {
-        return 0;
+        return flags;
     }
 
     auto VKBuffer::mapMemory() -> uint8_t*
     {
-        return nullptr;
+        uint8_t* mappedBytes;
+        if (flags & BufferUsage::MapWrite || flags & BufferUsage::MapRead)
+        {
+            throwIfFailed(::vmaMapMemory(memoryAllocator, memoryAllocation, reinterpret_cast<void**>(&mappedBytes)));
+        }
+        return mappedBytes;
     }
 
     auto VKBuffer::unmapMemory() -> void
     {
+        ::vmaUnmapMemory(memoryAllocator, memoryAllocation);
     }
 
-    auto VKBuffer::getBuffer() const -> VkBuffer
+    auto VKBuffer::getBuffer() -> VkBuffer
     {
-        return nullptr;
+        return buffer;
     }
 
     auto VKBuffer::getDescriptorOffset(BufferUsage const usage) const -> uint32_t
@@ -840,11 +874,12 @@ namespace ionengine::rhi
         return 0;
     }
 
-    VKTexture::VKTexture(VkDevice device, VmaAllocator memoryAllocator, TextureCreateInfo const& createInfo)
-        : device(device), memoryAllocator(memoryAllocator), memoryAllocation(nullptr), width(createInfo.width),
-          height(createInfo.height), depth(createInfo.depth), mipLevels(createInfo.mipLevels),
-          format(createInfo.format), dimension(createInfo.dimension), flags(createInfo.flags),
-          initialLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+    VKTexture::VKTexture(VkDevice device, VmaAllocator memoryAllocator, DescriptorAllocator* descriptorAllocator,
+                         TextureCreateInfo const& createInfo)
+        : device(device), memoryAllocator(memoryAllocator), descriptorAllocator(descriptorAllocator),
+          memoryAllocation(nullptr), width(createInfo.width), height(createInfo.height), depth(createInfo.depth),
+          mipLevels(createInfo.mipLevels), format(createInfo.format), dimension(createInfo.dimension),
+          flags(createInfo.flags), initialLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
     {
         VkImageCreateInfo imageCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                           .imageType = TextureDimension_to_VkImageType(createInfo.dimension),
@@ -856,21 +891,60 @@ namespace ionengine::rhi
 
         if (flags & TextureUsage::DepthStencil)
         {
-            imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            imageCreateInfo.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         }
         if (flags & TextureUsage::RenderTarget)
         {
-            imageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            imageCreateInfo.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         }
         if (flags & TextureUsage::UnorderedAccess)
         {
+            imageCreateInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+        }
+        if (flags & TextureUsage::ShaderResource)
+        {
+            imageCreateInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
         }
 
-        throwIfFailed(::vkCreateImage(device, &imageCreateInfo, nullptr, &image));
+        if (flags & TextureUsage::CopyDest)
+        {
+            imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        }
+        if (flags & TextureUsage::CopySource)
+        {
+            imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        }
 
-        VmaAllocationCreateInfo vmaAllocCreateInfo{.usage = VMA_MEMORY_USAGE_AUTO};
-        throwIfFailed(
-            ::vmaAllocateMemoryForImage(memoryAllocator, image, &vmaAllocCreateInfo, &memoryAllocation, nullptr));
+        VmaAllocationCreateInfo allocationCreateInfo{.usage = VMA_MEMORY_USAGE_AUTO};
+        throwIfFailed(::vmaCreateImage(memoryAllocator, &imageCreateInfo, &allocationCreateInfo, &image,
+                                       &memoryAllocation, nullptr));
+
+        VkImageViewCreateInfo const imageViewCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                                        .image = image,
+                                                        .viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D,
+                                                        .format = TextureFormat_to_VkFormat(format),
+                                                        .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                       .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                       .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                       .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+                                                        .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                             .baseMipLevel = 0,
+                                                                             .levelCount = mipLevels,
+                                                                             .baseArrayLayer = 0,
+                                                                             .layerCount = depth}};
+        throwIfFailed(::vkCreateImageView(device, &imageViewCreateInfo, nullptr, &imageView));
+
+        if (flags & TextureUsage::ShaderResource)
+        {
+            assert(descriptorAllocator && "to create a texture with views, you need to pass the allocator descriptor");
+
+            DescriptorAllocation descriptorAllocation;
+            throwIfFailed(descriptorAllocator->allocate(VK_DESCRIPTOR_TYPE_MUTABLE_EXT, &descriptorAllocation));
+            descriptorAllocations.emplace(TextureUsage::ShaderResource, descriptorAllocation);
+
+            // TODO! Write
+        }
     }
 
     VKTexture::VKTexture(VkDevice device, VkImage image, uint32_t const width, uint32_t const height)
@@ -938,12 +1012,12 @@ namespace ionengine::rhi
         return 0;
     }
 
-    auto VKTexture::getImage() const -> VkImage
+    auto VKTexture::getImage() -> VkImage
     {
         return image;
     }
 
-    auto VKTexture::getImageView() const -> VkImageView
+    auto VKTexture::getImageView() -> VkImageView
     {
         return imageView;
     }
@@ -1011,15 +1085,17 @@ namespace ionengine::rhi
     auto VKDeviceContext_barrier(VkCommandBuffer commandBuffer, core::ref_ptr<Texture> dest, ResourceState const before,
                                  ResourceState const after) -> void
     {
+        auto vkDestTexture = static_cast<VKTexture*>(dest.get());
+
         auto oldLayout = [&](ResourceState const state) -> VkImageLayout {
-            VkImageLayout const initialLayout = static_cast<VKTexture*>(dest.get())->getInitialLayout();
+            VkImageLayout const initialLayout = vkDestTexture->getInitialLayout();
             return state == ResourceState::Common && initialLayout == VK_IMAGE_LAYOUT_UNDEFINED
                        ? initialLayout
                        : ResourceState_to_VkImageLayout(state);
         };
 
         auto newLayout = [&](ResourceState const state) -> VkImageLayout {
-            VkImageLayout const initialLayout = static_cast<VKTexture*>(dest.get())->getInitialLayout();
+            VkImageLayout const initialLayout = vkDestTexture->getInitialLayout();
             return state == ResourceState::Common && initialLayout == VK_IMAGE_LAYOUT_UNDEFINED
                        ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
                        : ResourceState_to_VkImageLayout(state);
@@ -1052,6 +1128,8 @@ namespace ionengine::rhi
                                                             .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
                                                             .queueFamilyIndex = deviceQueue.familyIndex};
         throwIfFailed(::vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool));
+
+        bindingData.resize(sizeof(uint32_t) * 4 * 16);
     }
 
     VKGraphicsContext::~VKGraphicsContext()
@@ -1079,7 +1157,14 @@ namespace ionengine::rhi
                                                               .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
         throwIfFailed(::vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
+        std::array<VkDescriptorSet, 2> const descriptorSets{
+            descriptorAllocator->getDescriptorSet(VK_DESCRIPTOR_TYPE_MUTABLE_EXT),
+            descriptorAllocator->getDescriptorSet(VK_DESCRIPTOR_TYPE_SAMPLER)};
+        ::vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineCache->getPipelineLayout(), 0,
+                                  2, descriptorSets.data(), 0, nullptr);
+
         isCommandListOpened = true;
+        renderArea = {};
     }
 
     auto VKGraphicsContext::execute() -> Future<void>
@@ -1122,6 +1207,7 @@ namespace ionengine::rhi
 
     auto VKGraphicsContext::bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void
     {
+        std::memcpy(bindingData.data() + index * sizeof(uint32_t) * 4, &descriptor, sizeof(uint32_t));
     }
 
     auto VKGraphicsContext::beginRenderPass(std::span<RenderPassColorInfo> const colors,
@@ -1135,12 +1221,12 @@ namespace ionengine::rhi
         std::array<VkRenderingAttachmentInfo, 8> colorAttachmentInfos;
         for (uint32_t const i : std::views::iota(0u, colors.size()))
         {
-            auto vkTargetTexture = dynamic_cast<VKTexture*>(colors[i].texture.get());
-            renderTargetFormats[i] = TextureFormat_to_VkFormat(vkTargetTexture->getFormat());
+            auto vkTexture = dynamic_cast<VKTexture*>(colors[i].texture.get());
+            renderTargetFormats[i] = TextureFormat_to_VkFormat(vkTexture->getFormat());
 
             VkRenderingAttachmentInfo const renderingAttachmentInfo{
                 .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                .imageView = vkTargetTexture->getImageView(),
+                .imageView = vkTexture->getImageView(),
                 .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 .loadOp = RenderPassLoadOp_to_VkAttachmentLoadOp(colors[i].loadOp),
                 .storeOp = RenderPassStoreOp_to_VkAttachmentStoreOp(colors[i].storeOp),
@@ -1159,12 +1245,12 @@ namespace ionengine::rhi
         {
             auto value = depthStencil.value();
 
-            auto vkTargetTexture = dynamic_cast<VKTexture*>(value.texture.get());
-            depthStencilFormat = TextureFormat_to_VkFormat(vkTargetTexture->getFormat());
+            auto vkTexture = dynamic_cast<VKTexture*>(value.texture.get());
+            depthStencilFormat = TextureFormat_to_VkFormat(vkTexture->getFormat());
 
             VkRenderingAttachmentInfo const depthAttachmentInfo{
                 .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                .imageView = vkTargetTexture->getImageView(),
+                .imageView = vkTexture->getImageView(),
                 .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 .loadOp = RenderPassLoadOp_to_VkAttachmentLoadOp(value.depthLoadOp),
                 .storeOp = RenderPassStoreOp_to_VkAttachmentStoreOp(value.depthStoreOp),
@@ -1173,7 +1259,7 @@ namespace ionengine::rhi
 
             VkRenderingAttachmentInfo const stencilAttachmentInfo{
                 .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                .imageView = vkTargetTexture->getImageView(),
+                .imageView = vkTexture->getImageView(),
                 .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                 .loadOp = RenderPassLoadOp_to_VkAttachmentLoadOp(value.stencilLoadOp),
                 .storeOp = RenderPassStoreOp_to_VkAttachmentStoreOp(value.stencilStoreOp),
@@ -1196,20 +1282,44 @@ namespace ionengine::rhi
     auto VKGraphicsContext::bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
         -> void
     {
+        auto vkBuffer = dynamic_cast<VKBuffer*>(buffer.get());
+
+        std::array<VkBuffer, 1> const buffers{vkBuffer->getBuffer()};
+        ::vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers.data(), &offset);
     }
 
     auto VKGraphicsContext::bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
                                             IndexFormat const format) -> void
     {
+        auto vkBuffer = dynamic_cast<VKBuffer*>(buffer.get());
+
+        VkIndexType indexType;
+        switch (format)
+        {
+            case IndexFormat::Uint32: {
+                indexType = VkIndexType::VK_INDEX_TYPE_UINT32;
+                break;
+            }
+            case IndexFormat::Uint16: {
+                indexType = VkIndexType::VK_INDEX_TYPE_UINT16;
+                break;
+            }
+        }
+
+        ::vkCmdBindIndexBuffer(commandBuffer, vkBuffer->getBuffer(), offset, indexType);
     }
 
     auto VKGraphicsContext::drawIndexed(uint32_t const indexCount, uint32_t const instanceCount) -> void
     {
+        ::vkCmdPushConstants(commandBuffer, pipelineCache->getPipelineLayout(), VK_SHADER_STAGE_ALL, 0, 16,
+                             bindingData.data());
         ::vkCmdDrawIndexed(commandBuffer, indexCount, instanceCount, 0, 0, 0);
     }
 
     auto VKGraphicsContext::draw(uint32_t const vertexCount, uint32_t const instanceCount) -> void
     {
+        ::vkCmdPushConstants(commandBuffer, pipelineCache->getPipelineLayout(), VK_SHADER_STAGE_ALL, 0, 16,
+                             bindingData.data());
         ::vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0, 0);
     }
 
@@ -1235,6 +1345,7 @@ namespace ionengine::rhi
         VkRect2D const rect{.offset = {.x = left, .y = top},
                             .extent = {.width = static_cast<uint32_t>(right), .height = static_cast<uint32_t>(bottom)}};
         ::vkCmdSetScissor(commandBuffer, 0, 1, &rect);
+
         renderArea = rect;
     }
 
@@ -1577,6 +1688,7 @@ namespace ionengine::rhi
         VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT deviceMutableFeatures{
             .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MUTABLE_DESCRIPTOR_TYPE_FEATURES_EXT,
             .mutableDescriptorType = true};
+        VkPhysicalDeviceFeatures const deviceFeatures{.samplerAnisotropy = true};
         VkPhysicalDeviceVulkan12Features deviceFeatures12{.sType =
                                                               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
                                                           .pNext = &deviceMutableFeatures,
@@ -1598,7 +1710,8 @@ namespace ionengine::rhi
             .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
             .pQueueCreateInfos = queueCreateInfos.data(),
             .enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
-            .ppEnabledExtensionNames = deviceExtensions.data()};
+            .ppEnabledExtensionNames = deviceExtensions.data(),
+            .pEnabledFeatures = &deviceFeatures};
         throwIfFailed(::vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device));
 
         this->createDeviceQueue(graphicsQueueFamily, graphicsQueue);
@@ -1611,7 +1724,7 @@ namespace ionengine::rhi
             .physicalDevice = physicalDevice, .device = device, .instance = instance};
         ::vmaCreateAllocator(&memoryAllocatorCreateInfo, &memoryAllocator);
 
-        pipelineCache = core::make_ref<PipelineCache>(device, createInfo);
+        pipelineCache = core::make_ref<PipelineCache>(device, descriptorAllocator.get(), createInfo);
 
         graphicsContext =
             core::make_ref<VKGraphicsContext>(device, pipelineCache.get(), descriptorAllocator.get(), graphicsQueue);
@@ -1644,7 +1757,7 @@ namespace ionengine::rhi
 
     auto VKRHI::createTexture(TextureCreateInfo const& createInfo) -> core::ref_ptr<Texture>
     {
-        return core::make_ref<VKTexture>(device, memoryAllocator, createInfo);
+        return core::make_ref<VKTexture>(device, memoryAllocator, descriptorAllocator.get(), createInfo);
     }
 
     auto VKRHI::createBuffer(BufferCreateInfo const& createInfo) -> core::ref_ptr<Buffer>

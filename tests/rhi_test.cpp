@@ -344,7 +344,7 @@ TEST(RHI, Render3D_Test)
             .mipLevels = static_cast<uint32_t>(textureFile.textureData.mipLevels.size()),
             .format = TXETextureFormat_to_RHITextureFormat(textureFile.textureData.format),
             .dimension = rhi::TextureDimension::_2D,
-            .flags = (rhi::TextureUsageFlags)rhi::TextureUsage::ShaderResource};
+            .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
         basicTexture = rhi->createTexture(textureCreateInfo);
 
         copyContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);

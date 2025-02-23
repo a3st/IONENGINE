@@ -49,6 +49,10 @@ namespace ionengine::rhi
 
         auto deallocate(DescriptorAllocation allocation) -> void;
 
+        auto getDescriptorSet(VkDescriptorType const descriptorType) -> VkDescriptorSet;
+
+        auto getDescriptorSetLayout(VkDescriptorType const descriptorType) -> VkDescriptorSetLayout;
+
       private:
         std::mutex mutex;
         VkDevice device;
@@ -162,24 +166,24 @@ namespace ionengine::rhi
             auto operator()(const Entry& other) const -> std::size_t
             {
                 auto depthStencil = other.depthStencil.value_or(DepthStencilStageInfo::Default());
-                return other.shaderHash ^ XXH64(&other.rasterizer.fillMode, sizeof(uint32_t), 0) ^
-                       XXH64(&other.rasterizer.cullMode, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendDst, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendEnable, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendOp, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendSrc, sizeof(uint32_t), 0) ^
-                       XXH64(&other.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
-                       XXH64(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
-                       XXH64(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
-                       XXH64(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
-                       XXH64(other.renderTargetFormats.data(), other.renderTargetFormats.size(), 0) ^
-                       XXH64(&other.depthStencilFormat, sizeof(VkFormat), 0);
+                return other.shaderHash ^ ::XXH64(&other.rasterizer.fillMode, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.rasterizer.cullMode, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendDst, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendDstAlpha, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendEnable, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendOp, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendOpAlpha, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendSrc, sizeof(uint32_t), 0) ^
+                       ::XXH64(&other.blendColor.blendSrcAlpha, sizeof(uint32_t), 0) ^
+                       ::XXH64(&depthStencil.depthFunc, sizeof(uint32_t), 0) ^
+                       ::XXH64(&depthStencil.depthWrite, sizeof(uint32_t), 0) ^
+                       ::XXH64(&depthStencil.stencilWrite, sizeof(uint32_t), 0) ^
+                       ::XXH64(other.renderTargetFormats.data(), other.renderTargetFormats.size(), 0) ^
+                       ::XXH64(&other.depthStencilFormat, sizeof(VkFormat), 0);
             }
         };
 
-        PipelineCache(VkDevice device, RHICreateInfo const& createInfo);
+        PipelineCache(VkDevice device, DescriptorAllocator* descriptorAllocator, RHICreateInfo const& createInfo);
 
         ~PipelineCache();
 
@@ -189,6 +193,8 @@ namespace ionengine::rhi
             -> core::ref_ptr<Pipeline>;
 
         auto reset() -> void;
+
+        auto getPipelineLayout() -> VkPipelineLayout;
 
       private:
         std::mutex mutex;
@@ -212,18 +218,24 @@ namespace ionengine::rhi
 
         auto unmapMemory() -> void;
 
-        auto getBuffer() const -> VkBuffer;
+        auto getBuffer() -> VkBuffer;
 
         auto getDescriptorOffset(BufferUsage const usage) const -> uint32_t override;
 
       private:
+        VkDevice device;
+        VmaAllocator memoryAllocator;
         VkBuffer buffer;
+        VmaAllocation memoryAllocation;
+        size_t size;
+        BufferUsageFlags flags;
     };
 
     class VKTexture final : public Texture
     {
       public:
-        VKTexture(VkDevice device, VmaAllocator memoryAllocator, TextureCreateInfo const& createInfo);
+        VKTexture(VkDevice device, VmaAllocator memoryAllocator, DescriptorAllocator* descriptorAllocator,
+                  TextureCreateInfo const& createInfo);
 
         /*!
             @brief Constructor for Swapchain Texture
@@ -246,17 +258,19 @@ namespace ionengine::rhi
 
         auto getDescriptorOffset(TextureUsage const usage) const -> uint32_t override;
 
-        auto getImage() const -> VkImage;
+        auto getImage() -> VkImage;
 
-        auto getImageView() const -> VkImageView;
+        auto getImageView() -> VkImageView;
 
         auto getInitialLayout() const -> VkImageLayout;
 
       private:
         VkDevice device;
         VmaAllocator memoryAllocator;
+        DescriptorAllocator* descriptorAllocator;
         VkImage image;
         VmaAllocation memoryAllocation;
+        std::unordered_map<TextureUsage, DescriptorAllocation> descriptorAllocations;
         VkImageView imageView;
         VkImageLayout initialLayout;
         uint32_t width;
@@ -359,6 +373,7 @@ namespace ionengine::rhi
         bool isCommandListOpened;
         std::array<VkFormat, 8> renderTargetFormats;
         VkFormat depthStencilFormat;
+        std::vector<uint8_t> bindingData;
 
         auto tryAllocateCommandBuffer() -> void;
     };

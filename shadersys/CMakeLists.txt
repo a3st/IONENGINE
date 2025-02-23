@@ -24,3 +24,15 @@ target_compile_definitions(shadersys PUBLIC
     IONENGINE_SHADERSYS_DXC)
 
 target_precompile_headers(shadersys PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)
+
+add_library(shadersys_fx STATIC
+    fx.cpp)
+
+target_include_directories(shadersys_fx PUBLIC 
+    ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/shadersys)
+
+target_link_libraries(shadersys_fx PUBLIC 
+    core)
+
+target_precompile_headers(shadersys_fx PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)
