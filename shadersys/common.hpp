@@ -9,11 +9,8 @@ namespace ionengine::shadersys
 {
     namespace common
     {
-#pragma pack(push, 1)
         struct TRANSFORM_DATA
         {
-            math::Mat4f modelViewProj;
-
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
                 generator.property<math::Mat4f>("modelViewProj");
@@ -27,8 +24,6 @@ namespace ionengine::shadersys
 
         struct SAMPLER_DATA
         {
-            uint32_t linearSampler;
-
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
                 generator.property<sampler_t>("linearSampler");
@@ -48,7 +43,6 @@ namespace ionengine::shadersys
         struct MATERIAL_DATA
         {
         };
-#pragma pack(pop)
     } // namespace common
 
     namespace constants

@@ -4,7 +4,7 @@
 
 #include "core/event.hpp"
 #include "core/ref_ptr.hpp"
-#include "input/keycodes.hpp"
+#include "common.hpp"
 
 namespace ionengine::platform
 {
@@ -70,6 +70,8 @@ namespace ionengine::platform
         virtual auto getInstanceHandle() -> void* = 0;
 
         virtual auto run() -> void = 0;
+
+        virtual auto setEnableMouse(bool const isEnable) -> void = 0;
 
         core::event<void(InputEvent const&)> inputStateChanged;
 

@@ -473,11 +473,11 @@ namespace ionengine::rhi
 
         auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> override;
 
-        auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain> override;
+        auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> Swapchain* override;
 
-        auto getGraphicsContext() -> core::ref_ptr<GraphicsContext> override;
+        auto getGraphicsContext() -> GraphicsContext* override;
 
-        auto getCopyContext() -> core::ref_ptr<CopyContext> override;
+        auto getCopyContext() -> CopyContext* override;
 
         auto getName() const -> std::string_view override;
 

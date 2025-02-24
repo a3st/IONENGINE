@@ -79,7 +79,7 @@ namespace ionengine::rhi
             case TextureDimension::_3D:
                 return VkImageType::VK_IMAGE_TYPE_3D;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkImageType for passed argument");
         }
     }
 
@@ -94,7 +94,7 @@ namespace ionengine::rhi
             case RenderPassLoadOp::DontCare:
                 return VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkAttachmentLoadOp for passed argument");
         }
     }
 
@@ -107,7 +107,7 @@ namespace ionengine::rhi
             case RenderPassStoreOp::DontCare:
                 return VK_ATTACHMENT_STORE_OP_DONT_CARE;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkAttachmentStoreOp for passed argument");
         }
     }
 
@@ -132,7 +132,7 @@ namespace ionengine::rhi
             case ResourceState::CopyDest:
                 return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkImageLayout for passed argument");
         }
     }
 
@@ -158,7 +158,7 @@ namespace ionengine::rhi
             case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
                 return VK_ACCESS_TRANSFER_WRITE_BIT;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkAccessFlags for passed argument");
         }
     }
 
@@ -206,7 +206,7 @@ namespace ionengine::rhi
             case CullMode::None:
                 return VK_CULL_MODE_NONE;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkCullModeFlags for passed argument");
         }
     }
 
@@ -219,7 +219,7 @@ namespace ionengine::rhi
             case FillMode::Wireframe:
                 return VK_POLYGON_MODE_LINE;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkPolygonMode for passed argument");
         }
     }
 
@@ -244,7 +244,7 @@ namespace ionengine::rhi
             case CompareOp::NotEqual:
                 return VK_COMPARE_OP_NOT_EQUAL;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkCompareOp for passed argument");
         }
     }
 
@@ -261,7 +261,7 @@ namespace ionengine::rhi
             case Blend::Zero:
                 return VK_BLEND_FACTOR_ZERO;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkBlendFactor for passed argument");
         }
     }
 
@@ -280,7 +280,7 @@ namespace ionengine::rhi
             case BlendOp::Subtract:
                 return VK_BLEND_OP_SUBTRACT;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkBlendOp for passed argument");
         }
     }
 
@@ -295,7 +295,7 @@ namespace ionengine::rhi
             case AddressMode::Wrap:
                 return VK_SAMPLER_ADDRESS_MODE_REPEAT;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown VkSamplerAddressMode for passed argument");
         }
     }
 
@@ -1770,23 +1770,23 @@ namespace ionengine::rhi
         return core::make_ref<VKSampler>(device, createInfo);
     }
 
-    auto VKRHI::tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain>
+    auto VKRHI::tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> Swapchain*
     {
         if (!swapchain)
         {
             swapchain = core::make_ref<VKSwapchain>(instance, physicalDevice, device, graphicsQueue, createInfo);
         }
-        return swapchain;
+        return swapchain.get();
     }
 
-    auto VKRHI::getGraphicsContext() -> core::ref_ptr<GraphicsContext>
+    auto VKRHI::getGraphicsContext() -> GraphicsContext*
     {
-        return graphicsContext;
+        return graphicsContext.get();
     }
 
-    auto VKRHI::getCopyContext() -> core::ref_ptr<CopyContext>
+    auto VKRHI::getCopyContext() -> CopyContext*
     {
-        return copyContext;
+        return copyContext.get();
     }
 
     auto VKRHI::getName() const -> std::string_view

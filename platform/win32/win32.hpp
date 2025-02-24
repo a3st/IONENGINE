@@ -34,6 +34,8 @@ namespace ionengine::platform
 
         auto run() -> void override;
 
+        auto setEnableMouse(bool const isEnable) -> void override;
+
       private:
         UniqueHWND window;
 

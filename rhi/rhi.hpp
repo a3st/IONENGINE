@@ -641,11 +641,11 @@ namespace ionengine::rhi
 
         virtual auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> = 0;
 
-        virtual auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain> = 0;
+        virtual auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> Swapchain* = 0;
 
-        virtual auto getGraphicsContext() -> core::ref_ptr<GraphicsContext> = 0;
+        virtual auto getGraphicsContext() -> GraphicsContext* = 0;
 
-        virtual auto getCopyContext() -> core::ref_ptr<CopyContext> = 0;
+        virtual auto getCopyContext() -> CopyContext* = 0;
 
         virtual auto getName() const -> std::string_view = 0;
     };

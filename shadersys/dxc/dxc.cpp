@@ -40,11 +40,11 @@ namespace ionengine::shadersys
                 core::deserialize<core::serialize_ienum, asset::fx::FillMode>(std::istringstream(it->second))
                     .value_or(asset::fx::FillMode::Solid);
         }
-        else if ((it = attributes.find("CullSide")) != attributes.end())
+        else if ((it = attributes.find("CullMode")) != attributes.end())
         {
-            outputData.cullSide =
-                core::deserialize<core::serialize_ienum, asset::fx::CullSide>(std::istringstream(it->second))
-                    .value_or(asset::fx::CullSide::Back);
+            outputData.cullMode =
+                core::deserialize<core::serialize_ienum, asset::fx::CullMode>(std::istringstream(it->second))
+                    .value_or(asset::fx::CullMode::Back);
         }
         else if ((it = attributes.find("DepthWrite")) != attributes.end())
         {

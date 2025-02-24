@@ -9,46 +9,33 @@ namespace ionengine::rhi
     {
         switch (hr)
         {
-            case E_FAIL: {
+            case E_FAIL:
                 return "attempted to create a device with the debug layer enabled and the layer is not installed";
-            }
-            case E_INVALIDARG: {
+            case E_INVALIDARG:
                 return "an invalid parameter was passed to the returning function";
-            }
-            case E_OUTOFMEMORY: {
+            case E_OUTOFMEMORY:
                 return "Direct3D could not allocate sufficient memory to complete the call";
-            }
-            case E_NOTIMPL: {
+            case E_NOTIMPL:
                 return "the method call isn't implemented with the passed parameter combination";
-            }
-            case S_FALSE: {
+            case S_FALSE:
                 return "alternate success value, indicating a successful but nonstandard completion";
-            }
-            case S_OK: {
-                return "no error occurred";
-            }
-            case D3D12_ERROR_ADAPTER_NOT_FOUND: {
+            case D3D12_ERROR_ADAPTER_NOT_FOUND:
                 return "the specified cached PSO was created on a different adapter and cannot be reused on the "
                        "current adapter";
-            }
-            case D3D12_ERROR_DRIVER_VERSION_MISMATCH: {
+            case D3D12_ERROR_DRIVER_VERSION_MISMATCH:
                 return "the specified cached PSO was created on a different driver version and cannot be reused on the "
                        "current adapter";
-            }
-            case DXGI_ERROR_INVALID_CALL: {
+            case DXGI_ERROR_INVALID_CALL:
                 return "the method call is invalid. For example, a method's parameter may not be a valid pointer";
-            }
-            case DXGI_ERROR_WAS_STILL_DRAWING: {
+            case DXGI_ERROR_WAS_STILL_DRAWING:
                 return "the previous blit operation that is transferring information to or from this surface is "
                        "incomplete";
-            }
-            default: {
+            default:
                 return "an unknown error has occurred";
-            }
         }
     }
 
-    auto throwIfFailed(HRESULT hr) -> void
+    auto throwIfFailed(HRESULT const hr) -> void
     {
         if (FAILED(hr))
         {
@@ -132,7 +119,7 @@ namespace ionengine::rhi
             case TextureDimension::_3D:
                 return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_RESOURCE_DIMENSION for passed argument");
         }
     }
 
@@ -157,7 +144,7 @@ namespace ionengine::rhi
             case CompareOp::NotEqual:
                 return D3D12_COMPARISON_FUNC_NOT_EQUAL;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_COMPARISON_FUNC for passed argument");
         }
     }
 
@@ -176,7 +163,7 @@ namespace ionengine::rhi
             case Blend::BlendFactor:
                 return D3D12_BLEND_BLEND_FACTOR;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_BLEND for passed argument");
         }
     }
 
@@ -195,7 +182,7 @@ namespace ionengine::rhi
             case BlendOp::Subtract:
                 return D3D12_BLEND_OP_SUBTRACT;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_BLEND_OP for passed argument");
         }
     }
 
@@ -208,7 +195,7 @@ namespace ionengine::rhi
             case FillMode::Wireframe:
                 return D3D12_FILL_MODE_WIREFRAME;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_FILL_MODE for passed argument");
         }
     }
 
@@ -223,7 +210,7 @@ namespace ionengine::rhi
             case CullMode::None:
                 return D3D12_CULL_MODE_NONE;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_CULL_MODE for passed argument");
         }
     }
 
@@ -238,11 +225,11 @@ namespace ionengine::rhi
             case Filter::Anisotropic:
                 return D3D12_FILTER_COMPARISON_ANISOTROPIC;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_FILTER for passed argument");
         }
     }
 
-    auto AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(AddressMode const addressMode)
+    auto AddressMode_to_D3D12_TEXTURE_ADDRESS_MODE(AddressMode const addressMode) -> D3D12_TEXTURE_ADDRESS_MODE
     {
         switch (addressMode)
         {
@@ -253,7 +240,7 @@ namespace ionengine::rhi
             case AddressMode::Mirror:
                 return D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_TEXTURE_ADDRESS_MODE for passed argument");
         }
     };
 
@@ -269,7 +256,7 @@ namespace ionengine::rhi
             case RenderPassLoadOp::DontCare:
                 return D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE for passed argument");
         }
     }
 
@@ -283,7 +270,7 @@ namespace ionengine::rhi
             case RenderPassStoreOp::DontCare:
                 return D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_RENDER_PASS_ENDING_ACCESS_TYPE for passed argument");
         }
     }
 
@@ -308,7 +295,7 @@ namespace ionengine::rhi
             case ResourceState::CopyDest:
                 return D3D12_RESOURCE_STATE_COPY_DEST;
             default:
-                throw std::invalid_argument("passed invalid argument into function");
+                throw std::invalid_argument("unknown D3D12_RESOURCE_STATES for passed argument");
         }
     }
 
@@ -1974,24 +1961,24 @@ namespace ionengine::rhi
         return core::make_ref<DX12Sampler>(device.get(), descriptorAllocator.get(), createInfo);
     }
 
-    auto DX12RHI::tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> core::ref_ptr<Swapchain>
+    auto DX12RHI::tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> Swapchain*
     {
         if (!swapchain)
         {
             swapchain = core::make_ref<DX12Swapchain>(factory.get(), device.get(), descriptorAllocator.get(),
                                                       graphicsQueue, fenceEvent.get(), createInfo);
         }
-        return swapchain;
+        return swapchain.get();
     }
 
-    auto DX12RHI::getGraphicsContext() -> core::ref_ptr<GraphicsContext>
+    auto DX12RHI::getGraphicsContext() -> GraphicsContext*
     {
-        return graphicsContext;
+        return graphicsContext.get();
     }
 
-    auto DX12RHI::getCopyContext() -> core::ref_ptr<CopyContext>
+    auto DX12RHI::getCopyContext() -> CopyContext*
     {
-        return copyContext;
+        return copyContext.get();
     }
 
     auto DX12RHI::getName() const -> std::string_view

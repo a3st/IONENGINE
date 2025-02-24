@@ -6,7 +6,6 @@
 #include "platform/platform.hpp"
 #include "precompiled.h"
 #include "rhi/rhi.hpp"
-#include "shadersys/common.hpp"
 #include "shadersys/compiler.hpp"
 #include "txe/cmp/cmp.hpp"
 #include <gtest/gtest.h>
@@ -42,7 +41,7 @@ auto FXVertexFormat_to_RHIVertexFormat(asset::fx::VertexFormat const format) -> 
         case asset::fx::VertexFormat::R32_UINT:
             return rhi::VertexFormat::R32_UINT;
         default:
-            throw std::invalid_argument("passed invalid argument into function");
+            throw std::invalid_argument("unknown VertexFormat for passed argument");
     }
 }
 
@@ -53,27 +52,25 @@ auto TXETextureFormat_to_RHITextureFormat(asset::txe::TextureFormat const format
         case asset::txe::TextureFormat::RGBA8_UNORM:
             return rhi::TextureFormat::RGBA8_UNORM;
         default:
-            throw std::invalid_argument("passed invalid argument into function");
+            throw std::invalid_argument("unknown TextureFormat for passed argument");
     }
 }
 
-TEST(RHI, Device_Test)
+TEST(RHI, DeviceOnly_Test)
 {
     auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
 }
 
-TEST(RHI, Quad_Test)
+TEST(RHI, RenderQuad_Test)
 {
-    auto application = platform::App::create("Swapchain Test");
+    auto application = platform::App::create("Quad");
 
-    uint32_t width;
-    uint32_t height;
+    uint32_t width, height;
 
+    // Create device and swapchain using RHI
     auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
-
     auto graphicsContext = rhi->getGraphicsContext();
     auto copyContext = rhi->getCopyContext();
-
     rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                        .instance = application->getInstanceHandle()};
     auto swapchain = rhi->tryGetSwapchain(swapchainCreateInfo);
@@ -151,7 +148,7 @@ TEST(RHI, Quad_Test)
         colors.emplace_back(rhi::RenderPassColorInfo{.texture = backBuffer.get(),
                                                      .loadOp = rhi::RenderPassLoadOp::Clear,
                                                      .storeOp = rhi::RenderPassStoreOp::Store,
-                                                     .clearColor = {0.5f, 0.6f, 0.7f, 1.0f}});
+                                                     .clearColor = {0.0f, 0.0f, 0.0f, 1.0f}});
 
         graphicsContext->setViewport(0, 0, width, height);
         graphicsContext->setScissor(0, 0, width, height);
@@ -176,35 +173,19 @@ TEST(RHI, Quad_Test)
     application->run();
 }
 
-TEST(RHI, Render3D_Test)
+TEST(RHI, RenderModel_Test)
 {
-    auto application = platform::App::create("Render Test");
+    auto application = platform::App::create("Cube");
 
-    uint32_t width;
-    uint32_t height;
+    uint32_t width, height;
 
+    // Create device and swapchain using RHI
     auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
-
     auto graphicsContext = rhi->getGraphicsContext();
     auto copyContext = rhi->getCopyContext();
-
     rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                        .instance = application->getInstanceHandle()};
     auto swapchain = rhi->tryGetSwapchain(swapchainCreateInfo);
-
-    application->inputStateChanged += [&](platform::InputEvent const& event) -> void {
-        if (event.deviceType == platform::InputDeviceType::Keyboard)
-        {
-            if (event.state == platform::InputState::Pressed)
-            {
-                std::cout << "Key pressed: " << static_cast<uint32_t>(event.keyCode) << std::endl;
-            }
-            else
-            {
-                std::cout << "Key released: " << static_cast<uint32_t>(event.keyCode) << std::endl;
-            }
-        }
-    };
 
     // Compile shaders
     asset::fx::ShaderFormat shaderFormat;
@@ -215,6 +196,10 @@ TEST(RHI, Render3D_Test)
 #endif
     auto shaderCompiler = shadersys::ShaderCompiler::create(shaderFormat);
     auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/base3d.fx");
+    if (!compileResult.has_value())
+    {
+        std::cerr << compileResult.error().what() << std::endl;
+    }
     ASSERT_TRUE(compileResult.has_value());
 
     // Load shader
@@ -230,7 +215,7 @@ TEST(RHI, Render3D_Test)
         {
             rhi::VertexDeclarationInfo const vertexDeclaration{
                 .semantic = element.semantic, .format = FXVertexFormat_to_RHIVertexFormat(element.format)};
-            vertexDeclarations.emplace_back(vertexDeclaration);
+            vertexDeclarations.emplace_back(std::move(vertexDeclaration));
         }
 
         auto const& pixelStage = shaderFile.shaderData.stages.at(asset::fx::StageType::Pixel);
@@ -248,6 +233,7 @@ TEST(RHI, Render3D_Test)
         shader = rhi->createShader(shaderCreateInfo);
     }
 
+    // Allocate resources
     core::ref_ptr<rhi::Buffer> vBuffer;
     {
         rhi::BufferCreateInfo const bufferCreateInfo{.size = 1 * 1024 * 1024,
@@ -294,8 +280,6 @@ TEST(RHI, Render3D_Test)
         linearSampler = rhi->createSampler(samplerCreateInfo);
     }
 
-    core::ref_ptr<rhi::Texture> basicTexture;
-
     uint32_t indexCount = 0;
     // Load model
     {
@@ -330,6 +314,7 @@ TEST(RHI, Render3D_Test)
     }
 
     // Load texture
+    core::ref_ptr<rhi::Texture> basicTexture;
     {
         auto stbiImporter = core::make_ref<asset::CMPImporter>(true);
         auto textureResult = stbiImporter->loadFromFile("../../assets/textures/debug-empty.png");
@@ -365,7 +350,11 @@ TEST(RHI, Render3D_Test)
 
     // Initialize static resources
     {
-        shadersys::common::SAMPLER_DATA const samplerData{.linearSampler = linearSampler->getDescriptorOffset()};
+        struct SamplerData
+        {
+            uint32_t linearSampler;
+        };
+        SamplerData const samplerData{.linearSampler = linearSampler->getDescriptorOffset()};
 
         copyContext->updateBuffer(
             sBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&samplerData), sizeof(samplerData)));
@@ -374,7 +363,6 @@ TEST(RHI, Render3D_Test)
         {
             uint32_t basicTex;
         };
-
         MaterialData const materialData{.basicTex =
                                             basicTexture->getDescriptorOffset(rhi::TextureUsage::ShaderResource)};
 
@@ -409,14 +397,11 @@ TEST(RHI, Render3D_Test)
 
     math::Quatf originalRot = math::Quatf::euler(0.0f, 0.0f, 0.0f);
     float angle = 0.0f;
-
     auto beginFrameTime = std::chrono::high_resolution_clock::now();
-
     std::vector<rhi::RenderPassColorInfo> colors;
 
     application->windowUpdated += [&]() -> void {
         auto endFrameTime = std::chrono::high_resolution_clock::now();
-
         float deltaTime =
             std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() / 1000000.0f;
 
@@ -425,18 +410,19 @@ TEST(RHI, Render3D_Test)
             math::Mat4f::perspectiveRH(60.0f * std::numbers::pi / 180.0f, width / height, 0.1f, 100.0f);
         math::Mat4f view = math::Mat4f::lookAtRH(math::Vec3f(4.0f, 2.0f, 4.0f), math::Vec3f(0.0f, 0.0f, 0.0f),
                                                  math::Vec3f(0.0f, 0.0f, 1.0f));
-
         math::Quatf currentRot = originalRot * math::Quatf::fromAngleAxis(angle, math::Vec3f(0.0f, 0.0f, 1.0f));
-
         math::Mat4f model = math::Mat4f::identity() * currentRot.toMat();
-
         angle += 100.0f * deltaTime;
 
         auto backBuffer = swapchain->requestBackBuffer();
 
-        // Update MVP Matrix
+        // Update MVP matrix
         {
-            shadersys::common::TRANSFORM_DATA const transformData{.modelViewProj = model * view * projection};
+            struct TransformData
+            {
+                math::Mat4f modelViewProj;
+            };
+            TransformData const transformData{.modelViewProj = model * view * projection};
 
             copyContext->updateBuffer(
                 tBuffer, 0,

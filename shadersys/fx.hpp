@@ -66,7 +66,7 @@ namespace ionengine::asset
             Wireframe
         };
 
-        enum class CullSide
+        enum class CullMode
         {
             Back,
             Front,
@@ -131,7 +131,7 @@ namespace ionengine::asset
         {
             bool depthWrite;
             bool stencilWrite;
-            CullSide cullSide;
+            CullMode cullMode;
             FillMode fillMode;
 
             template <typename Archive>
@@ -139,7 +139,7 @@ namespace ionengine::asset
             {
                 archive.property(depthWrite, "depthWrite");
                 archive.property(stencilWrite, "stencilWrite");
-                archive.property(cullSide, "cullSide");
+                archive.property(cullMode, "cullMode");
                 archive.property(fillMode, "fillMode");
             }
         };
@@ -285,14 +285,14 @@ namespace ionengine::core
     };
 
     template <>
-    struct serializable_enum<asset::fx::CullSide>
+    struct serializable_enum<asset::fx::CullMode>
     {
         template <typename Archive>
         auto operator()(Archive& archive)
         {
-            archive.field(asset::fx::CullSide::None, "NONE");
-            archive.field(asset::fx::CullSide::Back, "BACK");
-            archive.field(asset::fx::CullSide::Front, "FRONT");
+            archive.field(asset::fx::CullMode::None, "NONE");
+            archive.field(asset::fx::CullMode::Back, "BACK");
+            archive.field(asset::fx::CullMode::Front, "FRONT");
         }
     };
 

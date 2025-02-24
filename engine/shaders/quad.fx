@@ -19,7 +19,7 @@ VS {
     }
 }
 
-[FillMode("SOLID"), CullSide("FRONT"), DepthWrite(true), StencilWrite(false)]
+[FillMode("SOLID"), CullMode("FRONT"), DepthWrite(true), StencilWrite(false)]
 PS {
     PS_OUTPUT main(VS_OUTPUT input) {
         //cbuffer_t<SAMPLER_DATA> samplerBuffer = gShaderData.samplerBuffer;
