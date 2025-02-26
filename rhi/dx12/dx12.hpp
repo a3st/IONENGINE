@@ -320,7 +320,7 @@ namespace ionengine::rhi
 
         auto bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void override;
 
-        auto beginRenderPass(std::span<RenderPassColorInfo> const colors,
+        auto beginRenderPass(std::span<RenderPassColorInfo const> const colors,
                              std::optional<RenderPassDepthStencilInfo> depthStencil) -> void override;
 
         auto endRenderPass() -> void override;

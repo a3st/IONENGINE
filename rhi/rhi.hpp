@@ -573,7 +573,7 @@ namespace ionengine::rhi
 
         virtual auto bindDescriptor(uint32_t const index, uint32_t const descriptor) -> void = 0;
 
-        virtual auto beginRenderPass(std::span<RenderPassColorInfo> const colors,
+        virtual auto beginRenderPass(std::span<RenderPassColorInfo const> const colors,
                                      std::optional<RenderPassDepthStencilInfo> depthStencil) -> void = 0;
 
         virtual auto endRenderPass() -> void = 0;

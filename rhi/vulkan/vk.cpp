@@ -1210,7 +1210,7 @@ namespace ionengine::rhi
         std::memcpy(bindingData.data() + index * sizeof(uint32_t) * 4, &descriptor, sizeof(uint32_t));
     }
 
-    auto VKGraphicsContext::beginRenderPass(std::span<RenderPassColorInfo> const colors,
+    auto VKGraphicsContext::beginRenderPass(std::span<RenderPassColorInfo const> const colors,
                                             std::optional<RenderPassDepthStencilInfo> depthStencil) -> void
     {
         this->tryAllocateCommandBuffer();
