@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "window/window.hpp"
 #include "graphics/graphics.hpp"
+#include "window/window.hpp"
 
 namespace ionengine
 {
@@ -25,7 +25,7 @@ namespace ionengine
 
         virtual auto onUpdate(float const deltaTime) -> void = 0;
 
-        virtual auto onRender() -> void;
+        virtual auto onRender() -> void = 0;
 
         virtual auto getContext() -> EngineContext;
 

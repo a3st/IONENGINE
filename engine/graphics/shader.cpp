@@ -81,7 +81,7 @@ namespace ionengine
             }
         }
 
-        if (shaderFormat.compare(RHI.getName()) == 0)
+        if (shaderFormat.compare(RHI.getName()) != 0)
         {
             throw std::runtime_error("shader has a different format (for Vulkan use SPIR-V instead DXIL)");
         }
@@ -163,5 +163,10 @@ namespace ionengine
     auto Shader::getDomain() const -> std::string_view
     {
         return domainName;
+    }
+
+    auto Shader::getShader() -> core::ref_ptr<rhi::Shader>
+    {
+        return shader;
     }
 } // namespace ionengine

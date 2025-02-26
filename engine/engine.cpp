@@ -1,6 +1,7 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "engine.hpp"
+#include "graphics/passes/quad.hpp"
 #include "precompiled.h"
 
 namespace ionengine
@@ -15,9 +16,9 @@ namespace ionengine
 
         rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                            .instance = application->getInstanceHandle()};
-        RHI->tryGetSwapchain(swapchainCreateInfo);
+        auto swapchain = RHI->tryGetSwapchain(swapchainCreateInfo);
 
-        application->windowUpdated += [this]() -> void {
+        application->windowUpdated += [this, swapchain]() -> void {
             auto endFrameTime = std::chrono::high_resolution_clock::now();
             float deltaTime =
                 std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() /
@@ -25,7 +26,13 @@ namespace ionengine
 
             this->onUpdate(deltaTime);
 
+            auto swapchainTexture = swapchain->requestBackBuffer();
+
+            graphics->beginFrame(swapchainTexture.get());
             this->onRender();
+            graphics->endFrame();
+
+            swapchain->presentBackBuffer();
 
             beginFrameTime = endFrameTime;
         };
@@ -39,10 +46,6 @@ namespace ionengine
 
         application->run();
         return EXIT_SUCCESS;
-    }
-
-    auto Engine::onRender() -> void
-    {
     }
 
     auto Engine::getContext() -> EngineContext

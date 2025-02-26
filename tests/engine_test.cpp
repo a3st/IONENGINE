@@ -1,6 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "engine.hpp"
+#include "engine/graphics/passes/quad.hpp"
 #include "precompiled.h"
 #include <gtest/gtest.h>
 
@@ -14,14 +15,22 @@ class MyEngine : public Engine
     }
 
   protected:
-    auto onStart() -> void
+    auto onStart() -> void override
     {
         getContext().window->setEnableMouse(true);
     }
 
-    auto onUpdate(float const deltaTime) -> void
+    auto onUpdate(float const deltaTime) -> void override
     {
     }
+
+    auto onRender() -> void override
+    {
+        //auto quadPass = getContext().graphics->addRenderPass<passes::QuadPass>(quadShader);
+    }
+
+  private:
+    core::ref_ptr<Shader> quadShader;
 };
 
 TEST(Engine, Instance_Test)

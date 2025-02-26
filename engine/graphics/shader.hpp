@@ -22,6 +22,8 @@ namespace ionengine
 
         auto getDomain() const -> std::string_view;
 
+        auto getShader() -> core::ref_ptr<rhi::Shader>;
+
       private:
         core::ref_ptr<rhi::Shader> shader;
         rhi::RasterizerStageInfo rasterizerStageInfo;

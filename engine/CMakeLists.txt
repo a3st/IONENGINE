@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.25.1)
 add_library(engine STATIC
     ../shadersys/fx.cpp
 
+    graphics/texture.cpp
+    graphics/render_pass.cpp
     graphics/shader.cpp
     graphics/graphics.cpp
     window/window.cpp
