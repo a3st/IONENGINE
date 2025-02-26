@@ -40,17 +40,17 @@ namespace ionengine::shadersys
                 core::deserialize<core::serialize_ienum, asset::fx::FillMode>(std::istringstream(it->second))
                     .value_or(asset::fx::FillMode::Solid);
         }
-        else if ((it = attributes.find("CullMode")) != attributes.end())
+        if ((it = attributes.find("CullMode")) != attributes.end())
         {
             outputData.cullMode =
                 core::deserialize<core::serialize_ienum, asset::fx::CullMode>(std::istringstream(it->second))
                     .value_or(asset::fx::CullMode::Back);
         }
-        else if ((it = attributes.find("DepthWrite")) != attributes.end())
+        if ((it = attributes.find("DepthWrite")) != attributes.end())
         {
             outputData.depthWrite = core::stob(it->second).value_or(false);
         }
-        else if ((it = attributes.find("StencilWrite")) != attributes.end())
+        if ((it = attributes.find("StencilWrite")) != attributes.end())
         {
             outputData.stencilWrite = core::stob(it->second).value_or(false);
         }
