@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "core/error.hpp"
 #include "core/base64.hpp"
+#include "core/error.hpp"
 #include <simdjson.h>
 
 namespace ionengine::core
@@ -334,6 +334,10 @@ namespace ionengine::core
       public:
         serialize_iarchive(std::basic_istream<uint8_t>& stream) : stream(&stream)
         {
+            if (stream.fail())
+            {
+                throw std::out_of_range("the input stream is failed");
+            }
         }
 
         template <typename Type>
@@ -817,9 +821,16 @@ namespace ionengine::core
                 size_t num_elements = 0;
                 input.stream->read(reinterpret_cast<uint8_t*>(&num_elements), sizeof(size_t));
                 element.resize(num_elements);
-                for (size_t const i : std::views::iota(0u, num_elements))
+                if constexpr (std::is_same_v<typename Type::value_type, uint8_t>)
                 {
-                    from_binary(input, element[i]);
+                    input.stream->read(element.data(), element.size());
+                }
+                else
+                {
+                    for (size_t const i : std::views::iota(0u, element.size()))
+                    {
+                        from_binary(input, element[i]);
+                    }
                 }
             }
             else if constexpr (is_std_array<Type>::value)
@@ -847,9 +858,16 @@ namespace ionengine::core
             {
                 size_t const num_elements = element.size();
                 output.stream->write(reinterpret_cast<uint8_t const*>(&num_elements), sizeof(size_t));
-                for (auto const& e : element)
+                if constexpr (std::is_same_v<typename Type::value_type, uint8_t>)
                 {
-                    to_binary(output, e);
+                    output.stream->write(element.data(), element.size());
+                }
+                else
+                {
+                    for (auto const& e : element)
+                    {
+                        to_binary(output, e);
+                    }
                 }
             }
             else if constexpr (is_std_array<Type>::value)
