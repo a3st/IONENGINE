@@ -35,8 +35,6 @@ namespace ionengine::passes
 
         auto execute(rhi::GraphicsContext* context) -> void override
         {
-            context->setGraphicsPipelineOptions(shader->getShader(), shader->getRasterizerStageInfo(), rhi::BlendColorInfo::Opaque(),
-                                               std::nullopt);
             context->draw(3, 1);
         }
     };

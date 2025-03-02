@@ -18,19 +18,27 @@ class MyEngine : public Engine
     auto onStart() -> void override
     {
         getContext().window->setEnableMouse(true);
+        testCamera = getContext().graphics->createCamera();
+        quadShader = getContext().graphics->loadShaderFromFile("../../assets/shaders/quad_test_color_pc.bin");
     }
 
     auto onUpdate(float const deltaTime) -> void override
     {
     }
 
+    auto onConfigureRender() -> void override
+    {
+        auto quadPass = getContext().graphics->addRenderPass<passes::QuadPass>(quadShader);
+    }
+
     auto onRender() -> void override
     {
-        //auto quadPass = getContext().graphics->addRenderPass<passes::QuadPass>(quadShader);
+        getContext().graphics->drawMesh(nullptr, testCamera);
     }
 
   private:
     core::ref_ptr<Shader> quadShader;
+    core::ref_ptr<Camera> testCamera;
 };
 
 TEST(Engine, Instance_Test)

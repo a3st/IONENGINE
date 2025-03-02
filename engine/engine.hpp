@@ -25,6 +25,8 @@ namespace ionengine
 
         virtual auto onUpdate(float const deltaTime) -> void = 0;
 
+        virtual auto onConfigureRender() -> void = 0;
+
         virtual auto onRender() -> void = 0;
 
         virtual auto getContext() -> EngineContext;

@@ -133,8 +133,8 @@ namespace ionengine
             uint64_t offset = 0;
             for (auto const& element : structure.elements)
             {
-                std::string const bindName = structure.name + "." + element.name;
-                bindOffsets[bindName] = offset;
+                std::string const bindingName = structure.name + "." + element.name;
+                bindOffsets[bindingName] = offset;
                 offset += asset::fx::sizeof_ElementType(element.type);
             }
         }

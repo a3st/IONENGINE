@@ -39,4 +39,14 @@ namespace ionengine
     {
         return colors;
     }
+
+    auto RenderPass::getShader() -> core::ref_ptr<Shader>
+    {
+        return shader;
+    }
+
+    auto RenderPass::getInputs() const -> std::span<RenderPassInputInfo const> const
+    {
+        return inputs;
+    }
 } // namespace ionengine

@@ -30,6 +30,7 @@ namespace ionengine
 
             graphics->beginFrame(swapchainTexture.get());
             this->onRender();
+            this->onConfigureRender();
             graphics->endFrame();
 
             swapchain->presentBackBuffer();

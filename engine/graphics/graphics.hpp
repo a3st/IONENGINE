@@ -2,7 +2,10 @@
 
 #pragma once
 
+#include "buffer.hpp"
+#include "camera.hpp"
 #include "math/matrix.hpp"
+#include "mesh.hpp"
 #include "render_pass.hpp"
 #include "render_queue.hpp"
 #include "rhi/rhi.hpp"
@@ -34,12 +37,10 @@ namespace ionengine
         auto addRenderPass(Args&&... args) -> RenderPass*
         {
             auto renderPass =
-                std::make_unique<Type>(renderTargetsAllocator.get(), nullptr, std::forward<Args>(args)...);
+                std::make_unique<Type>(renderTargetsAllocator.get(), cameraTexture, std::forward<Args>(args)...);
             renderPathHash = renderPathHash == 0 ? renderPass->getHash() : renderPathHash ^ renderPass->getHash();
-
             RenderPass* outPass = renderPass.get();
-            RenderPathData renderPathData{.renderPass = std::move(renderPass)};
-            renderPaths.emplace_back(std::move(renderPathData));
+            renderPasses.emplace_back(std::move(renderPass));
             return outPass;
         }
 
@@ -47,30 +48,39 @@ namespace ionengine
 
         auto endFrame() -> void;
 
+        auto drawMesh(core::ref_ptr<Mesh> drawable, core::ref_ptr<Camera> targetCamera) -> void;
+
+        auto createCamera() -> core::ref_ptr<Camera>;
+
+        auto loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
+
       private:
         core::ref_ptr<rhi::RHI> RHI;
 
         core::ref_ptr<TextureAllocator> renderTargetsAllocator;
         core::ref_ptr<rhi::Texture> swapchainTexture;
+        core::ref_ptr<BufferAllocator> buffersAllocator;
+        core::ref_ptr<rhi::Texture> cameraTexture;
 
         using ResourceStateInfo = std::pair<core::ref_ptr<rhi::Texture>, rhi::ResourceState>;
 
-        struct RenderPathData
+        struct PassResourceData
         {
             std::list<ResourceStateInfo> readWriteResources;
             std::list<ResourceStateInfo> clearResources;
-            std::unique_ptr<RenderPass> renderPass;
+            core::ref_ptr<rhi::Buffer> passDataBuffer;
+            uint32_t passDataIndex;
         };
 
         uint64_t renderPathHash;
-        std::vector<RenderPathData> renderPaths;
-
-        std::unordered_map<uint64_t, std::vector<RenderPathData>> renderPathsCache;
+        std::vector<std::unique_ptr<RenderPass>> renderPasses;
+        std::unordered_map<uint64_t, std::vector<PassResourceData>> passResourcesCache;
 
         core::ref_ptr<Shader> blitShader;
 
-        auto findTextureInRenderPasses(uint32_t const offset, core::ref_ptr<rhi::Texture> source,
-                                       std::list<ResourceStateInfo>::iterator& it, rhi::ResourceState& state)
+        auto findTextureInPassResources(std::span<PassResourceData const> const passResources, uint32_t const offset,
+                                        core::ref_ptr<rhi::Texture> source,
+                                        std::list<ResourceStateInfo>::const_iterator& it, rhi::ResourceState& state)
             -> int32_t;
     };
 } // namespace ionengine

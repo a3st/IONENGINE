@@ -3,11 +3,17 @@
 #pragma once
 
 #include "rhi/rhi.hpp"
-#include "texture.hpp"
 #include "shader.hpp"
+#include "texture.hpp"
 
 namespace ionengine
 {
+    struct RenderPassInputInfo
+    {
+        std::string bindingName;
+        core::ref_ptr<rhi::Texture> texture;
+    };
+
     class RenderPass
     {
       public:
@@ -19,10 +25,15 @@ namespace ionengine
 
         auto getHash() const -> uint64_t;
 
+        auto getShader() -> core::ref_ptr<Shader>;
+
+        auto getInputs() const -> std::span<RenderPassInputInfo const> const;
+
       protected:
         auto initializeRenderPass() -> void;
 
         std::vector<rhi::RenderPassColorInfo> colors;
+        std::vector<RenderPassInputInfo> inputs;
         std::optional<rhi::RenderPassDepthStencilInfo> depthStencil;
         core::ref_ptr<Shader> shader;
 

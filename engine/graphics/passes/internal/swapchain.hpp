@@ -20,13 +20,14 @@ namespace ionengine::passes
             this->colors.emplace_back(std::move(renderPassColorInfo));
             this->shader = shader;
 
+            RenderPassInputInfo const renderPassInputInfo{.bindingName = "inputTexture1", .texture = cameraTexture};
+            this->inputs.emplace_back(std::move(renderPassInputInfo));
+
             this->initializeRenderPass();
         }
 
         auto execute(rhi::GraphicsContext* context) -> void override
         {
-            context->setGraphicsPipelineOptions(shader->getShader(), shader->getRasterizerStageInfo(),
-                                                rhi::BlendColorInfo::Opaque(), std::nullopt);
             context->draw(3, 1);
         }
     };

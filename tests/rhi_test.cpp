@@ -121,6 +121,93 @@ TEST(RHI, RenderQuad_Test)
         shader = rhi->createShader(shaderCreateInfo);
     }
 
+    // Load texture
+    core::ref_ptr<rhi::Texture> basicTexture;
+    {
+        auto stbiImporter = core::make_ref<asset::CMPImporter>(true);
+        auto textureResult = stbiImporter->loadFromFile("../../assets/textures/spngbob.png");
+        ASSERT_TRUE(textureResult.has_value());
+
+        asset::TextureFile textureFile = std::move(textureResult.value());
+
+        rhi::TextureCreateInfo const textureCreateInfo{
+            .width = textureFile.textureData.width,
+            .height = textureFile.textureData.height,
+            .depth = 1,
+            .mipLevels = static_cast<uint32_t>(textureFile.textureData.mipLevels.size()),
+            .format = TXETextureFormat_to_RHITextureFormat(textureFile.textureData.format),
+            .dimension = rhi::TextureDimension::_2D,
+            .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
+        basicTexture = rhi->createTexture(textureCreateInfo);
+
+        copyContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
+
+        for (uint32_t const i : std::views::iota(0u, textureFile.textureData.mipLevels.size()))
+        {
+            auto const& mipBuffer = textureFile.textureData.buffers[textureFile.textureData.mipLevels[i]];
+
+            auto copyResult = copyContext->updateTexture(
+                basicTexture, i, std::span<uint8_t const>(textureFile.blob.data() + mipBuffer.offset, mipBuffer.size));
+        }
+
+        copyContext->barrier(basicTexture, rhi::ResourceState::CopyDest, rhi::ResourceState::Common);
+
+        auto executeResult = copyContext->execute();
+        executeResult.wait();
+    }
+
+    core::ref_ptr<rhi::Sampler> linearSampler;
+    {
+        rhi::SamplerCreateInfo const samplerCreateInfo{.filter = rhi::Filter::Anisotropic,
+                                                       .addressU = rhi::AddressMode::Wrap,
+                                                       .addressV = rhi::AddressMode::Wrap,
+                                                       .addressW = rhi::AddressMode::Wrap,
+                                                       .compareOp = rhi::CompareOp::LessEqual,
+                                                       .maxAnisotropy = 4};
+        linearSampler = rhi->createSampler(samplerCreateInfo);
+    }
+
+    core::ref_ptr<rhi::Buffer> sBuffer;
+    {
+        rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
+                                                     .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
+        sBuffer = rhi->createBuffer(bufferCreateInfo);
+    }
+
+    core::ref_ptr<rhi::Buffer> eBuffer;
+    {
+        rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
+                                                     .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
+        eBuffer = rhi->createBuffer(bufferCreateInfo);
+    }
+
+    // Initialize static resources
+    {
+        struct SamplerData
+        {
+            uint32_t linearSampler;
+        };
+        SamplerData const samplerData{.linearSampler = linearSampler->getDescriptorOffset()};
+
+        copyContext->updateBuffer(
+            sBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&samplerData), sizeof(samplerData)));
+
+        struct EffectData
+        {
+            uint32_t basicTexture;
+        };
+        EffectData const effectData{.basicTexture =
+                                        basicTexture->getDescriptorOffset(rhi::TextureUsage::ShaderResource)};
+
+        copyContext->updateBuffer(
+            eBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&effectData), sizeof(effectData)));
+
+        auto executeResult = copyContext->execute();
+        executeResult.wait();
+
+        graphicsContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::ShaderRead);
+    }
+
     application->windowStateChanged += [&](platform::WindowEvent const& event) -> void {
         switch (event.eventType)
         {
@@ -156,8 +243,10 @@ TEST(RHI, RenderQuad_Test)
         graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::Common, rhi::ResourceState::RenderTarget);
         graphicsContext->beginRenderPass(colors, std::nullopt);
         graphicsContext->setGraphicsPipelineOptions(
-            shader, rhi::RasterizerStageInfo{.fillMode = rhi::FillMode::Solid, .cullMode = rhi::CullMode::Front},
+            shader, rhi::RasterizerStageInfo{.fillMode = rhi::FillMode::Solid, .cullMode = rhi::CullMode::Back},
             rhi::BlendColorInfo::Opaque(), std::nullopt);
+        graphicsContext->bindDescriptor(0, sBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
+        graphicsContext->bindDescriptor(1, eBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
         graphicsContext->draw(3, 1);
         graphicsContext->endRenderPass();
         graphicsContext->barrier(backBuffer.get(), rhi::ResourceState::RenderTarget, rhi::ResourceState::Common);
@@ -262,11 +351,11 @@ TEST(RHI, RenderModel_Test)
         sBuffer = rhi->createBuffer(bufferCreateInfo);
     }
 
-    core::ref_ptr<rhi::Buffer> mBuffer;
+    core::ref_ptr<rhi::Buffer> eBuffer;
     {
         rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
                                                      .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
-        mBuffer = rhi->createBuffer(bufferCreateInfo);
+        eBuffer = rhi->createBuffer(bufferCreateInfo);
     }
 
     core::ref_ptr<rhi::Sampler> linearSampler;
@@ -359,16 +448,15 @@ TEST(RHI, RenderModel_Test)
         copyContext->updateBuffer(
             sBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&samplerData), sizeof(samplerData)));
 
-        struct MaterialData
+        struct EffectData
         {
-            uint32_t basicTex;
+            uint32_t basicTexture;
         };
-        MaterialData const materialData{.basicTex =
-                                            basicTexture->getDescriptorOffset(rhi::TextureUsage::ShaderResource)};
+        EffectData const effectData{.basicTexture =
+                                        basicTexture->getDescriptorOffset(rhi::TextureUsage::ShaderResource)};
 
         copyContext->updateBuffer(
-            mBuffer, 0,
-            std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&materialData), sizeof(materialData)));
+            eBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&effectData), sizeof(effectData)));
 
         auto executeResult = copyContext->execute();
         executeResult.wait();
@@ -447,7 +535,7 @@ TEST(RHI, RenderModel_Test)
             rhi::BlendColorInfo::Opaque(), std::nullopt);
         graphicsContext->bindDescriptor(0, tBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
         graphicsContext->bindDescriptor(1, sBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
-        graphicsContext->bindDescriptor(2, mBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
+        graphicsContext->bindDescriptor(2, eBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
         graphicsContext->bindVertexBuffer(vBuffer, 0, vBuffer->getSize());
         graphicsContext->bindIndexBuffer(iBuffer, 0, iBuffer->getSize(), rhi::IndexFormat::Uint32);
         graphicsContext->drawIndexed(indexCount, 1);
