@@ -98,11 +98,10 @@ namespace ionengine::shadersys
         {
             asset::fx::StructureElementData outVariable;
             it = parseStructVariable(it, successful, outVariable);
-            parseData.materialData.size += asset::fx::sizeof_ElementType(outVariable.type);
-            parseData.materialData.elements.emplace_back(outVariable);
+            parseData.effectData.size += asset::fx::sizeof_ElementType(outVariable.type);
+            parseData.effectData.elements.emplace_back(outVariable);
         }
 
-        parseData.materialData.name = "MATERIAL_DATA";
         return ++it;
     }
 
@@ -332,7 +331,7 @@ namespace ionengine::shadersys
     {
         this->tokens = tokens;
 
-        ShaderParseData parseData{};
+        ShaderParseData parseData{.effectData = {.name = "EFFECT_DATA"}};
         bool successful = this->parseToken(tokens.begin(), parseData);
         if (!successful)
         {

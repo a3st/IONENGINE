@@ -8,18 +8,18 @@ HEADER {
 }
 
 DATA {
-    texture2D_t basicTex;
+    texture2D_t basicTexture;
 }
 
 VS {
     VS_OUTPUT main(VS_INPUT input) 
     {
-        cbuffer_t<TRANSFORM_DATA> transformBuffer = gShaderData.transformBuffer;
+        cbuffer_t<TRANSFORM_DATA> transformData = gShaderData.transformData;
 
         float4 worldPosition = float4(input.position, 1.0f);
 
         VS_OUTPUT output;
-        output.position = mul(transformBuffer.Get().modelViewProj, worldPosition);
+        output.position = mul(transformData.Get().modelViewProj, worldPosition);
         output.normal = input.normal;
         output.uv = input.uv;
         return output;
@@ -30,11 +30,11 @@ VS {
 PS {
     PS_OUTPUT main(VS_OUTPUT input)
     {
-        cbuffer_t<SAMPLER_DATA> samplerBuffer = gShaderData.samplerBuffer;
-        cbuffer_t<MATERIAL_DATA> materialBuffer = gShaderData.materialBuffer;
+        cbuffer_t<SAMPLER_DATA> samplerData = gShaderData.samplerData;
+        cbuffer_t<EFFECT_DATA> effectData = gShaderData.effectData;
 
         PS_OUTPUT output;
-        output.color = materialBuffer.Get().basicTex.Get().Sample(samplerBuffer.Get().linearSampler.Get(), input.uv).rgba;
+        output.color = effectData.Get().basicTexture.Get().Sample(samplerData.Get().linearSampler.Get(), input.uv).rgba;
         return output;
     }
 }

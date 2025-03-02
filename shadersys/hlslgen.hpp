@@ -18,6 +18,10 @@ namespace ionengine::shadersys
     {
     };
 
+    struct texture2D_t
+    {
+    };
+
     namespace internal
     {
         template <typename>
@@ -69,6 +73,10 @@ namespace ionengine::shadersys
             else if constexpr (std::is_same_v<Type, sampler_t>)
             {
                 dataType = "sampler_t";
+            }
+            else if constexpr (std::is_same_v<Type, texture2D_t>)
+            {
+                dataType = "texture2D_t";
             }
 
             if (semantic.empty())

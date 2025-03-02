@@ -30,7 +30,7 @@ namespace ionengine::shadersys
         auto getOutputStates(std::unordered_map<std::string, std::string> const& attributes,
                              asset::fx::OutputData& outputData) -> void;
 
-        auto getMaterialDataCode(asset::fx::StructureData const& structureData) -> std::string;
+        auto getEffectDataCode(asset::fx::StructureData const& structureData) -> std::string;
 
         auto isDefaultSemantic(std::string_view const semantic) -> bool;
     };

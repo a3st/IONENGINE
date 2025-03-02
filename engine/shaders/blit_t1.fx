@@ -6,31 +6,23 @@ HEADER {
     Domain = "Screen";
 }
 
-DATA {
-    // texture2D_t inputTexture;
-}
-
 VS {
     VS_OUTPUT main(VS_INPUT input) {
         VS_OUTPUT output;
         output.uv = float2((input.id << 1) & 2, input.id & 2);
-        output.position = float4(output.uv * 2.0 + -1.0, 0.0, 1.0);
+        output.position = float4(output.uv * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);
         return output;
     }
 }
 
-[FillMode("SOLID"), CullMode("FRONT"), DepthWrite(true), StencilWrite(false)]
+[FillMode("SOLID"), CullMode("BACK"), DepthWrite(true), StencilWrite(false)]
 PS {
     PS_OUTPUT main(VS_OUTPUT input) {
-        //cbuffer_t<SAMPLER_DATA> samplerBuffer = gShaderData.samplerBuffer;
-        //cbuffer_t<MATERIAL_DATA> materialBuffer = gShaderData.materialBuffer;
-
-        //texture2D_t inputTexture = materialBuffer.Get().inputTexture;
-        //sampler_t linearSampler = samplerBuffer.Get().linearSampler;
+        cbuffer_t<SAMPLER_DATA> samplerData = gShaderData.samplerData;
+        cbuffer_t<PASS_DATA> passData = gShaderData.passData;
 
         PS_OUTPUT output;
-        // output.color = inputTexture.Get().Sample(linearSampler.Get(), input.uv);
-        output.color = float4(0.5f, 0.8f, 0.2f, 1.0f);
+        output.color = passData.Get().inputTexture1.Get().Sample(samplerData.Get().linearSampler.Get(), input.uv);
         return output;
     }
 }

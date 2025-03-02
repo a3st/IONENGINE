@@ -17,7 +17,7 @@ namespace ionengine::shadersys
     {
         asset::fx::HeaderData headerData;
         std::unordered_map<asset::fx::StageType, std::string> codeData;
-        asset::fx::StructureData materialData;
+        asset::fx::StructureData effectData;
         std::unordered_map<std::string, std::string> csAttributes;
         std::unordered_map<std::string, std::string> psAttributes;
     };

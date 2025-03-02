@@ -40,8 +40,35 @@ namespace ionengine::shadersys
             uint32_t reserved;
         };
 
-        struct MATERIAL_DATA
+        struct EFFECT_DATA
         {
+        };
+
+        struct PASS_DATA
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<texture2D_t>("inputTexture1");
+                generator.property<texture2D_t>("inputTexture2");
+                generator.property<texture2D_t>("inputTexture3");
+                generator.property<texture2D_t>("inputTexture4");
+                generator.property<texture2D_t>("inputTexture5");
+                generator.property<texture2D_t>("inputTexture6");
+                generator.property<texture2D_t>("inputTexture7");
+                generator.property<texture2D_t>("inputTexture8");
+            }
+
+            static inline asset::fx::StructureData structureData{
+                .name = "PASS_DATA",
+                .elements = {{.name = "inputTexture1", .type = asset::fx::ElementType::Texture2D},
+                             {.name = "inputTexture2", .type = asset::fx::ElementType::Texture2D},
+                             {.name = "inputTexture3", .type = asset::fx::ElementType::Texture2D},
+                             {.name = "inputTexture4", .type = asset::fx::ElementType::Texture2D},
+                             {.name = "inputTexture5", .type = asset::fx::ElementType::Texture2D},
+                             {.name = "inputTexture6", .type = asset::fx::ElementType::Texture2D},
+                             {.name = "inputTexture7", .type = asset::fx::ElementType::Texture2D},
+                             {.name = "inputTexture8", .type = asset::fx::ElementType::Texture2D}},
+                .size = 32};
         };
     } // namespace common
 
@@ -51,14 +78,16 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerBuffer");
-                generator.property<cbuffer_t<common::MATERIAL_DATA>>("materialBuffer");
+                generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerData");
+                generator.property<cbuffer_t<common::EFFECT_DATA>>("effectData");
+                generator.property<cbuffer_t<common::PASS_DATA>>("passData");
             }
 
             static inline asset::fx::StructureData structureData{
                 .name = "SHADER_DATA",
-                .elements = {{.name = "samplerBuffer", .type = asset::fx::ElementType::ConstBuffer},
-                             {.name = "materialBuffer", .type = asset::fx::ElementType::ConstBuffer}},
+                .elements = {{.name = "samplerData", .type = asset::fx::ElementType::ConstBuffer},
+                             {.name = "effectData", .type = asset::fx::ElementType::ConstBuffer},
+                             {.name = "passData", .type = asset::fx::ElementType::ConstBuffer}},
                 .size = 8};
         };
 
@@ -66,16 +95,16 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<cbuffer_t<common::TRANSFORM_DATA>>("transformBuffer");
-                generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerBuffer");
-                generator.property<cbuffer_t<common::MATERIAL_DATA>>("materialBuffer");
+                generator.property<cbuffer_t<common::TRANSFORM_DATA>>("transformData");
+                generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerData");
+                generator.property<cbuffer_t<common::EFFECT_DATA>>("effectData");
             }
 
             static inline asset::fx::StructureData structureData{
                 .name = "SHADER_DATA",
-                .elements = {{.name = "transformBuffer", .type = asset::fx::ElementType::ConstBuffer},
-                             {.name = "samplerBuffer", .type = asset::fx::ElementType::ConstBuffer},
-                             {.name = "materialBuffer", .type = asset::fx::ElementType::ConstBuffer}},
+                .elements = {{.name = "transformData", .type = asset::fx::ElementType::ConstBuffer},
+                             {.name = "samplerData", .type = asset::fx::ElementType::ConstBuffer},
+                             {.name = "effectData", .type = asset::fx::ElementType::ConstBuffer}},
                 .size = 12};
         };
     } // namespace constants

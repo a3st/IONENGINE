@@ -56,7 +56,7 @@ namespace ionengine::shadersys
         }
     }
 
-    auto DXCCompiler::getMaterialDataCode(asset::fx::StructureData const& structureData) -> std::string
+    auto DXCCompiler::getEffectDataCode(asset::fx::StructureData const& structureData) -> std::string
     {
         std::ostringstream oss;
         oss << "struct " << structureData.name << " { ";
@@ -96,13 +96,13 @@ namespace ionengine::shadersys
 
         ShaderParseData const parseData = std::move(parserResult.value());
 
-        asset::fx::ShaderData shaderData{.headerData = parseData.headerData, .structures = {parseData.materialData}};
+        asset::fx::ShaderData shaderData{.headerData = parseData.headerData, .structures = {parseData.effectData}};
         std::basic_stringstream<uint8_t> shaderBlob;
 
         std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
         std::vector<LPCWSTR> arguments;
 
-        std::string const materialDataCode = this->getMaterialDataCode(parseData.materialData);
+        std::string const materialDataCode = this->getEffectDataCode(parseData.effectData);
 
         std::string inputDataCode;
         HLSLCodeGen generator;
@@ -115,11 +115,12 @@ namespace ionengine::shadersys
             inputDataCode += generator.getHLSLStruct<inputs::BaseVSOutput>("VS_OUTPUT") + "\n";
             inputDataCode += generator.getHLSLStruct<inputs::BasePSOutput>("PS_OUTPUT") + "\n";
             inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
+            inputDataCode += generator.getHLSLStruct<common::PASS_DATA>("PASS_DATA") + "\n";
             inputDataCode +=
                 generator.getHLSLConstBuffer<constants::ScreenShaderData>("SHADER_DATA", "gShaderData", 0, 0) + "\n";
 
             shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
-            shaderData.structures.emplace_back(common::TRANSFORM_DATA::structureData);
+            shaderData.structures.emplace_back(common::PASS_DATA::structureData);
             shaderData.structures.emplace_back(constants::ScreenShaderData::structureData);
 
             vertexLayout = {};
@@ -134,8 +135,8 @@ namespace ionengine::shadersys
             inputDataCode +=
                 generator.getHLSLConstBuffer<constants::SurfaceShaderData>("SHADER_DATA", "gShaderData", 0, 0) + "\n";
 
-            shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
             shaderData.structures.emplace_back(common::TRANSFORM_DATA::structureData);
+            shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
             shaderData.structures.emplace_back(constants::SurfaceShaderData::structureData);
 
             vertexLayout = inputs::StaticVSInput::vertexLayout;
