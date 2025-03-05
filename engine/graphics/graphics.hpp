@@ -69,8 +69,10 @@ namespace ionengine
             std::list<ResourceStateInfo> readWriteResources;
             std::list<ResourceStateInfo> clearResources;
             core::ref_ptr<rhi::Buffer> passDataBuffer;
-            uint32_t passDataIndex;
         };
+
+        std::vector<core::ref_ptr<rhi::Sampler>> sharedSamplers;
+        core::ref_ptr<rhi::Buffer> samplerDataBuffer;
 
         uint64_t renderPathHash;
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
@@ -82,5 +84,7 @@ namespace ionengine
                                         core::ref_ptr<rhi::Texture> source,
                                         std::list<ResourceStateInfo>::const_iterator& it, rhi::ResourceState& state)
             -> int32_t;
+
+        auto initializeSharedSamplers() -> void;
     };
 } // namespace ionengine

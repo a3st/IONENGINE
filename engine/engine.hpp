@@ -29,7 +29,7 @@ namespace ionengine
 
         virtual auto onRender() -> void = 0;
 
-        virtual auto getContext() -> EngineContext;
+        virtual auto getContext() const -> EngineContext;
 
       private:
         core::ref_ptr<platform::App> application;

@@ -7,7 +7,8 @@
 namespace ionengine
 {
     Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI)
-        : RHI(RHI), renderTargetsAllocator(core::make_ref<TextureAllocator>(RHI)), renderPathHash(0)
+        : RHI(RHI), renderTargetsAllocator(core::make_ref<TextureAllocator>(RHI)),
+          buffersAllocator(core::make_ref<BufferAllocator>(RHI)), renderPathHash(0)
     {
         std::string shaderExt;
         if (RHI->getName().compare("D3D12") == 0)
@@ -21,14 +22,18 @@ namespace ionengine
 
         blitShader = this->loadShaderFromFile("engine/shaders/blit_t1" + shaderExt + ".bin");
 
+        this->initializeSharedSamplers();
+
         // For Tests
         rhi::TextureCreateInfo const textureCreateInfo{
             .width = 800,
             .height = 600,
             .depth = 1,
             .mipLevels = 1,
+            .format = rhi::TextureFormat::RGBA8_UNORM,
             .dimension = rhi::TextureDimension::_2D,
-            .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource)};
+            .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource |
+                                              rhi::TextureUsage::CopyDest)};
         cameraTexture = RHI->createTexture(textureCreateInfo);
     }
 
@@ -58,6 +63,11 @@ namespace ionengine
 
     auto Graphics::endFrame() -> void
     {
+        if (renderPasses.empty())
+        {
+            return;
+        }
+
         this->addRenderPass<passes::SwapchainPass>(blitShader, swapchainTexture);
 
         auto pathResult = passResourcesCache.find(renderPathHash);
@@ -68,7 +78,7 @@ namespace ionengine
 
             std::cout << "Compiling render path" << std::endl;
 
-            std::set<core::ref_ptr<rhi::Texture>> trackingResources;
+            std::unordered_set<core::ref_ptr<rhi::Texture>> trackingResources;
 
             bool isNeedUploadBuffer = false;
 
@@ -86,9 +96,6 @@ namespace ionengine
 
                 if (!renderPasses[i]->getInputs().empty())
                 {
-                    passResources[i].passDataIndex =
-                        renderPasses[i]->getShader()->getBindOffsets().at("SHADER_DATA.passData") / sizeof(uint32_t);
-
                     rhi::BufferCreateInfo const bufferCreateInfo{
                         .size = 256,
                         .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer | rhi::BufferUsage::CopyDest};
@@ -99,7 +106,13 @@ namespace ionengine
                     {
                         uint32_t const bindingOffset =
                             renderPasses[i]->getShader()->getBindOffsets().at("PASS_DATA." + input.bindingName);
-                        std::memcpy(passDataRawBuffer.data() + bindingOffset, &bindingOffset, sizeof(uint32_t));
+                        uint32_t const descriptor =
+                            input.texture->getDescriptorOffset(rhi::TextureUsage::ShaderResource);
+
+                        std::memcpy(passDataRawBuffer.data() + bindingOffset, &descriptor, sizeof(uint32_t));
+
+                        passResources[i].readWriteResources.emplace_back(input.texture, rhi::ResourceState::ShaderRead);
+                        trackingResources.emplace(input.texture);
                     }
 
                     RHI->getCopyContext()->updateBuffer(passResources[i].passDataBuffer, 0, passDataRawBuffer);
@@ -118,7 +131,7 @@ namespace ionengine
                 uint32_t offset = 0, prevOffset = 0;
                 uint32_t distance = 0;
                 std::list<ResourceStateInfo>::const_iterator it;
-                rhi::ResourceState state, prevState;
+                rhi::ResourceState state = rhi::ResourceState::Common, prevState = rhi::ResourceState::Common;
 
                 while ((distance =
                             this->findTextureInPassResources(passResources, offset, trackingResource, it, state)) != -1)
@@ -128,10 +141,10 @@ namespace ionengine
                         passResources[offset].readWriteResources.erase(it);
                     }
 
-                    prevOffset = offset;
+                    prevOffset = offset + distance;
                     prevState = state;
 
-                    offset += distance + 1;
+                    offset = prevOffset + (distance == 0 ? 1 : distance);
                 }
 
                 passResources[prevOffset].clearResources.emplace_back(trackingResource, prevState);
@@ -162,10 +175,18 @@ namespace ionengine
 
             if (curPassCache.passDataBuffer)
             {
+                uint32_t const passDataIndex =
+                    renderPasses[i]->getShader()->getBindOffsets().at("SHADER_DATA.passData") / sizeof(uint32_t);
+
                 graphicsContext->bindDescriptor(
-                    curPassCache.passDataIndex,
-                    curPassCache.passDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
+                    passDataIndex, curPassCache.passDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
             }
+
+            uint32_t const samplerDataIndex =
+                renderPasses[i]->getShader()->getBindOffsets().at("SHADER_DATA.samplerData") / sizeof(uint32_t);
+
+            graphicsContext->bindDescriptor(samplerDataIndex,
+                                            samplerDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
 
             renderPasses[i]->execute(graphicsContext);
 
@@ -177,8 +198,7 @@ namespace ionengine
             }
         }
 
-        auto execResult = graphicsContext->execute();
-        execResult.wait();
+        graphicsContext->execute().wait();
     }
 
     auto Graphics::drawMesh(core::ref_ptr<Mesh> drawable, core::ref_ptr<Camera> targetCamera) -> void
@@ -228,5 +248,33 @@ namespace ionengine
 
         uint32_t distance = 0;
         return findTextureRecursive(passResources, source, offset, distance, it, state) ? distance : -1;
+    }
+
+    auto Graphics::initializeSharedSamplers() -> void
+    {
+        {
+            rhi::SamplerCreateInfo const samplerCreateInfo{.filter = rhi::Filter::Anisotropic,
+                                                           .addressU = rhi::AddressMode::Wrap,
+                                                           .addressV = rhi::AddressMode::Wrap,
+                                                           .addressW = rhi::AddressMode::Wrap,
+                                                           .compareOp = rhi::CompareOp::LessEqual,
+                                                           .maxAnisotropy = 4};
+            sharedSamplers.emplace_back(std::move(RHI->createSampler(samplerCreateInfo)));
+        }
+
+        rhi::BufferCreateInfo const bufferCreateInfo{
+            .size = 256, .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer | rhi::BufferUsage::CopyDest};
+        samplerDataBuffer = RHI->createBuffer(bufferCreateInfo);
+
+        std::vector<uint8_t> samplerDataRawBuffer(256);
+
+        for (auto const& sampler : sharedSamplers)
+        {
+            uint32_t const descriptor = sampler->getDescriptorOffset();
+            std::memcpy(samplerDataRawBuffer.data(), &descriptor, sizeof(uint32_t));
+        }
+
+        RHI->getCopyContext()->updateBuffer(samplerDataBuffer, 0, samplerDataRawBuffer);
+        RHI->getCopyContext()->execute().wait();
     }
 } // namespace ionengine

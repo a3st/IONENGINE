@@ -13,7 +13,7 @@ namespace ionengine::passes
                  core::ref_ptr<Shader> shader)
             : RenderPass("Quad Pass")
         {
-            rhi::TextureCreateInfo const textureCreateInfo{
+            /*rhi::TextureCreateInfo const textureCreateInfo{
                 .width = 800,
                 .height = 600,
                 .depth = 1,
@@ -21,9 +21,9 @@ namespace ionengine::passes
                 .format = rhi::TextureFormat::RGBA8_UNORM,
                 .dimension = rhi::TextureDimension::_2D,
                 .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource)};
-            auto baseTexture = textureAllocator->allocate(textureCreateInfo);
+            auto baseTexture = textureAllocator->allocate(textureCreateInfo);*/
 
-            rhi::RenderPassColorInfo const renderPassColorInfo{.texture = baseTexture.get(),
+            rhi::RenderPassColorInfo const renderPassColorInfo{.texture = cameraTexture,
                                                                .loadOp = rhi::RenderPassLoadOp::Clear,
                                                                .storeOp = rhi::RenderPassStoreOp::Store,
                                                                .clearColor = math::Color(0.5f, 0.5f, 0.5f, 1.0f)};

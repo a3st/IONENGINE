@@ -49,7 +49,7 @@ namespace ionengine
         return EXIT_SUCCESS;
     }
 
-    auto Engine::getContext() -> EngineContext
+    auto Engine::getContext() const -> EngineContext
     {
         return EngineContext{.window = window.get(), .graphics = graphics.get()};
     }

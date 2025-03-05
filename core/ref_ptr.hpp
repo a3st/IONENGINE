@@ -139,6 +139,11 @@ namespace ionengine::core
             return ptr != nullptr;
         }
 
+        auto operator==(ref_ptr const& other) const -> bool
+        {
+            return ptr == other.ptr;
+        }
+
       private:
         auto copy_ref(Type* other) -> void
         {
@@ -216,6 +221,11 @@ namespace ionengine::core
             return ptr != nullptr;
         }
 
+        auto operator==(weak_ptr const& other) const -> bool
+        {
+            return ptr == other.ptr;
+        }
+
       private:
         Type* ptr;
     };
@@ -227,3 +237,12 @@ namespace ionengine::core
         return ref_ptr<Type, Deleter>(ptr);
     }
 } // namespace ionengine::core
+
+template <typename Type>
+struct std::hash<ionengine::core::ref_ptr<Type>>
+{
+    auto operator()(ionengine::core::ref_ptr<Type> const& other) const -> size_t
+    {
+        return std::hash<uintptr_t>()((uintptr_t)other.get());
+    }
+};
