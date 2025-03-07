@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.25.1)
 
 find_package(simdjson CONFIG REQUIRED)
 
-add_library(core STATIC color.cpp)
+add_library(core STATIC 
+    string_utils.cpp
+    base64.cpp
+    crc32.cpp
+    color.cpp)
 
 target_include_directories(core PUBLIC ${PROJECT_SOURCE_DIR})
 

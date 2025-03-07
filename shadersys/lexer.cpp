@@ -1,7 +1,7 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "lexer.hpp"
-#include "core/string.hpp"
+#include "core/string_utils.hpp"
 #include "precompiled.h"
 
 namespace ionengine::shadersys

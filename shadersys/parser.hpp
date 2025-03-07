@@ -3,10 +3,8 @@
 #pragma once
 
 #include "core/error.hpp"
-#include "core/string.hpp"
 #include "fx.hpp"
 #include "lexer.hpp"
-#undef EOF
 
 namespace ionengine::shadersys
 {

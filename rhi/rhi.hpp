@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "core/bit.hpp"
+#include "core/bit_utils.hpp"
 #include "core/ref_ptr.hpp"
 #include "core/color.hpp"
 

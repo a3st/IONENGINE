@@ -493,7 +493,7 @@ namespace ionengine::core
                         throw std::invalid_argument("the field is not a string type");
                     }
 
-                    auto result = base64_decode(value);
+                    auto result = Base64::decode(value);
                     if (!result.has_value())
                     {
                         throw std::invalid_argument("the field is not a base64 string");

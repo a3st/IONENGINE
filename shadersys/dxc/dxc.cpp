@@ -1,7 +1,7 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "dxc.hpp"
-#include "core/string.hpp"
+#include "core/string_utils.hpp"
 #include "precompiled.h"
 #include "shadersys/common.hpp"
 #include "shadersys/hlslgen.hpp"
