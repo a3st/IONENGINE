@@ -1,7 +1,7 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
-#include "math/matrix.hpp"
-#include "math/quaternion.hpp"
+#include "core/matrix.hpp"
+#include "core/quaternion.hpp"
 #include "mdl/obj/obj.hpp"
 #include "platform/platform.hpp"
 #include "precompiled.h"
@@ -483,7 +483,7 @@ TEST(RHI, RenderModel_Test)
         }
     };
 
-    math::Quatf originalRot = math::Quatf::euler(0.0f, 0.0f, 0.0f);
+    core::Quatf originalRot = core::Quatf::euler(0.0f, 0.0f, 0.0f);
     float angle = 0.0f;
     auto beginFrameTime = std::chrono::high_resolution_clock::now();
     std::vector<rhi::RenderPassColorInfo> colors;
@@ -494,12 +494,12 @@ TEST(RHI, RenderModel_Test)
             std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() / 1000000.0f;
 
         // Update
-        math::Mat4f projection =
-            math::Mat4f::perspectiveRH(60.0f * std::numbers::pi / 180.0f, width / height, 0.1f, 100.0f);
-        math::Mat4f view = math::Mat4f::lookAtRH(math::Vec3f(4.0f, 2.0f, 4.0f), math::Vec3f(0.0f, 0.0f, 0.0f),
-                                                 math::Vec3f(0.0f, 0.0f, 1.0f));
-        math::Quatf currentRot = originalRot * math::Quatf::fromAngleAxis(angle, math::Vec3f(0.0f, 0.0f, 1.0f));
-        math::Mat4f model = math::Mat4f::identity() * currentRot.toMat();
+        core::Mat4f projection =
+            core::Mat4f::perspectiveRH(60.0f * std::numbers::pi / 180.0f, width / height, 0.1f, 100.0f);
+        core::Mat4f view = core::Mat4f::lookAtRH(core::Vec3f(4.0f, 2.0f, 4.0f), core::Vec3f(0.0f, 0.0f, 0.0f),
+                                                 core::Vec3f(0.0f, 0.0f, 1.0f));
+        core::Quatf currentRot = originalRot * core::Quatf::fromAngleAxis(angle, core::Vec3f(0.0f, 0.0f, 1.0f));
+        core::Mat4f model = core::Mat4f::identity() * currentRot.toMat();
         angle += 100.0f * deltaTime;
 
         auto backBuffer = swapchain->requestBackBuffer();
@@ -508,7 +508,7 @@ TEST(RHI, RenderModel_Test)
         {
             struct TransformData
             {
-                math::Mat4f modelViewProj;
+                core::Mat4f modelViewProj;
             };
             TransformData const transformData{.modelViewProj = model * view * projection};
 

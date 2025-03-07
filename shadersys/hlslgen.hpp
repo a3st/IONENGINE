@@ -3,8 +3,8 @@
 #pragma once
 
 #include "core/error.hpp"
-#include "math/matrix.hpp"
-#include "math/vector.hpp"
+#include "core/matrix.hpp"
+#include "core/vector.hpp"
 
 namespace ionengine::shadersys
 {
@@ -48,19 +48,19 @@ namespace ionengine::shadersys
             {
                 dataType = "uint";
             }
-            else if constexpr (std::is_same_v<Type, math::Vec4f>)
+            else if constexpr (std::is_same_v<Type, core::Vec4f>)
             {
                 dataType = "float4";
             }
-            else if constexpr (std::is_same_v<Type, math::Vec3f>)
+            else if constexpr (std::is_same_v<Type, core::Vec3f>)
             {
                 dataType = "float3";
             }
-            else if constexpr (std::is_same_v<Type, math::Vec2f>)
+            else if constexpr (std::is_same_v<Type, core::Vec2f>)
             {
                 dataType = "float2";
             }
-            else if constexpr (std::is_same_v<Type, math::Mat4f>)
+            else if constexpr (std::is_same_v<Type, core::Mat4f>)
             {
                 dataType = "float4x4";
             }

@@ -4,7 +4,7 @@
 
 #include "buffer.hpp"
 #include "camera.hpp"
-#include "math/matrix.hpp"
+#include "core/matrix.hpp"
 #include "mesh.hpp"
 #include "render_pass.hpp"
 #include "render_queue.hpp"
@@ -77,6 +77,9 @@ namespace ionengine
         uint64_t renderPathHash;
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
         std::unordered_map<uint64_t, std::vector<PassResourceData>> passResourcesCache;
+
+        RenderQueue opaqueQueue;
+        RenderQueue translucentQueue;
 
         core::ref_ptr<Shader> blitShader;
 

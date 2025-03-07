@@ -33,7 +33,7 @@ class MyEngine : public Engine
 
     auto onRender() -> void override
     {
-        // getContext().graphics->drawMesh(nullptr, testCamera);
+        getContext().graphics->drawMesh(nullptr, testCamera);
     }
 
   private:

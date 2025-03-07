@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::math
+namespace ionengine::core
 {
     template <typename Type>
     struct Vec2
@@ -338,30 +338,30 @@ namespace ionengine::math
 
     using Vec4f = Vec4<float>;
     using Vec4d = Vec4<double>;
-} // namespace ionengine::math
+} // namespace ionengine::core
 
 template <typename Type>
-struct std::hash<ionengine::math::Vec2<Type>>
+struct std::hash<ionengine::core::Vec2<Type>>
 {
-    auto operator()(ionengine::math::Vec2<Type> const& other) const -> size_t
+    auto operator()(ionengine::core::Vec2<Type> const& other) const -> size_t
     {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y);
     }
 };
 
 template <typename Type>
-struct std::hash<ionengine::math::Vec3<Type>>
+struct std::hash<ionengine::core::Vec3<Type>>
 {
-    auto operator()(ionengine::math::Vec3<Type> const& other) const -> size_t
+    auto operator()(ionengine::core::Vec3<Type> const& other) const -> size_t
     {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z);
     }
 };
 
 template <typename Type>
-struct std::hash<ionengine::math::Vec4<Type>>
+struct std::hash<ionengine::core::Vec4<Type>>
 {
-    auto operator()(ionengine::math::Vec4<Type> const& other) const -> size_t
+    auto operator()(ionengine::core::Vec4<Type> const& other) const -> size_t
     {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^
                std::hash<Type>()(other.w);

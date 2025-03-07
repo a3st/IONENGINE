@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "math/vector.hpp"
+#include "core/vector.hpp"
 #include "mdl/importer.hpp"
 
 namespace ionengine::asset
@@ -15,9 +15,9 @@ namespace ionengine::asset
       private:
         struct Vertex
         {
-            math::Vec3f position;
-            math::Vec3f normal;
-            math::Vec2f uv;
+            core::Vec3f position;
+            core::Vec3f normal;
+            core::Vec2f uv;
 
             auto operator==(Vertex const& other) const -> bool
             {
@@ -29,8 +29,8 @@ namespace ionengine::asset
         {
             auto operator()(const Vertex& other) const -> std::size_t
             {
-                return std::hash<math::Vec3f>()(other.position) ^ std::hash<math::Vec3f>()(other.normal) ^
-                       std::hash<math::Vec2f>()(other.uv);
+                return std::hash<core::Vec3f>()(other.position) ^ std::hash<core::Vec3f>()(other.normal) ^
+                       std::hash<core::Vec2f>()(other.uv);
             }
         };
     };

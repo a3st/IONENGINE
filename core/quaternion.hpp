@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "math/matrix.hpp"
+#include "core/matrix.hpp"
 
-namespace ionengine::math
+namespace ionengine::core
 {
     template <typename Type>
     struct Quat
@@ -203,12 +203,12 @@ namespace ionengine::math
 
     using Quatf = Quat<float>;
     using Quatd = Quat<double>;
-} // namespace ionengine::math
+} // namespace ionengine::core
 
 template <typename Type>
-struct std::hash<ionengine::math::Quat<Type>>
+struct std::hash<ionengine::core::Quat<Type>>
 {
-    auto operator()(ionengine::math::Quat<Type> const& other) const -> size_t
+    auto operator()(ionengine::core::Quat<Type> const& other) const -> size_t
     {
         return std::hash<Type>()(other.x) ^ std::hash<Type>()(other.y) ^ std::hash<Type>()(other.z) ^
                std::hash<Type>()(other.w);

@@ -1,9 +1,9 @@
 // Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
 
-#include "math/color.hpp"
+#include "color.hpp"
 #include "precompiled.h"
 
-namespace ionengine::math
+namespace ionengine::core
 {
     auto Color::srgb() -> Color&
     {
@@ -38,4 +38,4 @@ namespace ionengine::math
         }
         return *this;
     }
-} // namespace ionengine::math
+} // namespace ionengine::core

@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace ionengine::math
+namespace ionengine::core
 {
     struct Color
     {
@@ -62,12 +62,12 @@ namespace ionengine::math
             return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
         }
     };
-} // namespace ionengine::math
+} // namespace ionengine::core
 
 template <>
-struct std::hash<ionengine::math::Color>
+struct std::hash<ionengine::core::Color>
 {
-    auto operator()(ionengine::math::Color const& other) const -> size_t
+    auto operator()(ionengine::core::Color const& other) const -> size_t
     {
         return std::hash<float>()(other.r) ^ std::hash<float>()(other.g) ^ std::hash<float>()(other.b) ^
                std::hash<float>()(other.a);

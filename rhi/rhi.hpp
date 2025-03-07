@@ -4,7 +4,7 @@
 
 #include "core/bit.hpp"
 #include "core/ref_ptr.hpp"
-#include "math/color.hpp"
+#include "core/color.hpp"
 
 namespace ionengine::rhi
 {
@@ -252,7 +252,7 @@ namespace ionengine::rhi
         core::ref_ptr<Texture> texture;
         RenderPassLoadOp loadOp;
         RenderPassStoreOp storeOp;
-        math::Color clearColor;
+        core::Color clearColor;
     };
 
     struct RenderPassDepthStencilInfo

@@ -13,7 +13,7 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<math::Mat4f>("modelViewProj");
+                generator.property<core::Mat4f>("modelViewProj");
             }
 
             static inline asset::fx::StructureData structureData{
@@ -115,9 +115,9 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<math::Vec3f>("position", "POSITION");
-                generator.property<math::Vec3f>("normal", "NORMAL");
-                generator.property<math::Vec2f>("uv", "TEXCOORD");
+                generator.property<core::Vec3f>("position", "POSITION");
+                generator.property<core::Vec3f>("normal", "NORMAL");
+                generator.property<core::Vec2f>("uv", "TEXCOORD");
             }
 
             static inline asset::fx::VertexLayoutData vertexLayout{
@@ -131,9 +131,9 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<math::Vec4f>("position", "SV_Position");
-                generator.property<math::Vec3f>("normal", "NORMAL");
-                generator.property<math::Vec2f>("uv", "TEXCOORD");
+                generator.property<core::Vec4f>("position", "SV_Position");
+                generator.property<core::Vec3f>("normal", "NORMAL");
+                generator.property<core::Vec2f>("uv", "TEXCOORD");
             }
         };
 
@@ -149,8 +149,8 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<math::Vec4f>("position", "SV_Position");
-                generator.property<math::Vec2f>("uv", "TEXCOORD");
+                generator.property<core::Vec4f>("position", "SV_Position");
+                generator.property<core::Vec2f>("uv", "TEXCOORD");
             }
         };
 
@@ -158,7 +158,7 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<math::Vec4f>("color", "SV_Target");
+                generator.property<core::Vec4f>("color", "SV_Target");
             }
         };
     } // namespace inputs

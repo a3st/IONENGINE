@@ -26,7 +26,7 @@ namespace ionengine::passes
             rhi::RenderPassColorInfo const renderPassColorInfo{.texture = cameraTexture,
                                                                .loadOp = rhi::RenderPassLoadOp::Clear,
                                                                .storeOp = rhi::RenderPassStoreOp::Store,
-                                                               .clearColor = math::Color(0.5f, 0.5f, 0.5f, 1.0f)};
+                                                               .clearColor = core::Color(0.5f, 0.5f, 0.5f, 1.0f)};
             this->colors.emplace_back(std::move(renderPassColorInfo));
             this->shader = shader;
 

@@ -54,7 +54,7 @@ namespace ionengine::asset
                         tinyobj::real_t const vy = attrib.vertices[3 * static_cast<size_t>(index.vertex_index) + 1];
                         tinyobj::real_t const vz = attrib.vertices[3 * static_cast<size_t>(index.vertex_index) + 2];
 
-                        vertex.position = math::Vec3f(vx, vy, vz);
+                        vertex.position = core::Vec3f(vx, vy, vz);
                     }
 
                     if (index.normal_index >= 0)
@@ -63,7 +63,7 @@ namespace ionengine::asset
                         tinyobj::real_t const ny = attrib.normals[3 * static_cast<size_t>(index.normal_index) + 1];
                         tinyobj::real_t const nz = attrib.normals[3 * static_cast<size_t>(index.normal_index) + 2];
 
-                        vertex.normal = math::Vec3f(nx, ny, nz);
+                        vertex.normal = core::Vec3f(nx, ny, nz);
                     }
 
                     if (index.texcoord_index >= 0)
@@ -71,7 +71,7 @@ namespace ionengine::asset
                         tinyobj::real_t const tx = attrib.texcoords[2 * static_cast<size_t>(index.texcoord_index) + 0];
                         tinyobj::real_t const ty = attrib.texcoords[2 * static_cast<size_t>(index.texcoord_index) + 1];
 
-                        vertex.uv = math::Vec2f(tx, ty);
+                        vertex.uv = core::Vec2f(tx, ty);
                     }
 
                     if (uniqueVertices.count(vertex) == 0)

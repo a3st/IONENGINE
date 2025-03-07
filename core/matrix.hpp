@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "math/vector.hpp"
+#include "core/vector.hpp"
 
-namespace ionengine::math
+namespace ionengine::core
 {
     template <typename Type>
     struct Mat4
@@ -21,8 +21,8 @@ namespace ionengine::math
         }
 
         Mat4(Type const _00, Type const _01, Type const _02, Type const _03, Type const _10, Type const _11,
-            Type const _12, Type const _13, Type const _20, Type const _21, Type const _22, Type const _23,
-            Type const _30, Type const _31, Type const _32, Type const _33)
+             Type const _12, Type const _13, Type const _20, Type const _21, Type const _22, Type const _23,
+             Type const _30, Type const _31, Type const _32, Type const _33)
             : _00(_00), _01(_01), _02(_02), _03(_03), _10(_10), _11(_11), _12(_12), _13(_13), _20(_20), _21(_21),
               _22(_22), _23(_23), _30(_30), _31(_31), _32(_32), _33(_33)
         {
@@ -181,51 +181,51 @@ namespace ionengine::math
         auto operator*(Mat4 const& other) const -> Mat4
         {
             return Mat4{_00 * other._00 + _01 * other._10 + _02 * other._20 + _03 * other._30,
-                       _00 * other._01 + _01 * other._11 + _02 * other._21 + _03 * other._31,
-                       _00 * other._02 + _01 * other._12 + _02 * other._22 + _03 * other._32,
-                       _00 * other._03 + _01 * other._13 + _02 * other._23 + _03 * other._33,
-                       _10 * other._00 + _11 * other._10 + _12 * other._20 + _13 * other._30,
-                       _10 * other._01 + _11 * other._11 + _12 * other._21 + _13 * other._31,
-                       _10 * other._02 + _11 * other._12 + _12 * other._22 + _13 * other._32,
-                       _10 * other._03 + _11 * other._13 + _12 * other._23 + _13 * other._33,
-                       _20 * other._00 + _21 * other._10 + _22 * other._20 + _23 * other._30,
-                       _20 * other._01 + _21 * other._11 + _22 * other._21 + _23 * other._31,
-                       _20 * other._02 + _21 * other._12 + _22 * other._22 + _23 * other._32,
-                       _20 * other._03 + _21 * other._13 + _22 * other._23 + _23 * other._33,
-                       _30 * other._00 + _31 * other._10 + _32 * other._20 + _33 * other._30,
-                       _30 * other._01 + _31 * other._11 + _32 * other._21 + _33 * other._31,
-                       _30 * other._02 + _31 * other._12 + _32 * other._22 + _33 * other._32,
-                       _30 * other._03 + _31 * other._13 + _32 * other._23 + _33 * other._33};
+                        _00 * other._01 + _01 * other._11 + _02 * other._21 + _03 * other._31,
+                        _00 * other._02 + _01 * other._12 + _02 * other._22 + _03 * other._32,
+                        _00 * other._03 + _01 * other._13 + _02 * other._23 + _03 * other._33,
+                        _10 * other._00 + _11 * other._10 + _12 * other._20 + _13 * other._30,
+                        _10 * other._01 + _11 * other._11 + _12 * other._21 + _13 * other._31,
+                        _10 * other._02 + _11 * other._12 + _12 * other._22 + _13 * other._32,
+                        _10 * other._03 + _11 * other._13 + _12 * other._23 + _13 * other._33,
+                        _20 * other._00 + _21 * other._10 + _22 * other._20 + _23 * other._30,
+                        _20 * other._01 + _21 * other._11 + _22 * other._21 + _23 * other._31,
+                        _20 * other._02 + _21 * other._12 + _22 * other._22 + _23 * other._32,
+                        _20 * other._03 + _21 * other._13 + _22 * other._23 + _23 * other._33,
+                        _30 * other._00 + _31 * other._10 + _32 * other._20 + _33 * other._30,
+                        _30 * other._01 + _31 * other._11 + _32 * other._21 + _33 * other._31,
+                        _30 * other._02 + _31 * other._12 + _32 * other._22 + _33 * other._32,
+                        _30 * other._03 + _31 * other._13 + _32 * other._23 + _33 * other._33};
         }
 
         auto operator*(Vec4<Type> const& other) const -> Mat4
         {
             return Mat4{_00 * other.x, _01 * other.y, _02 * other.z, _03 * other.w, _10 * other.x, _11 * other.y,
-                       _12 * other.z, _13 * other.w, _20 * other.x, _21 * other.y, _22 * other.z, _23 * other.w,
-                       _30 * other.x, _31 * other.y, _32 * other.z, _33 * other.w};
+                        _12 * other.z, _13 * other.w, _20 * other.x, _21 * other.y, _22 * other.z, _23 * other.w,
+                        _30 * other.x, _31 * other.y, _32 * other.z, _33 * other.w};
         }
 
         auto operator*(Type const other) const -> Mat4
         {
             return Mat4{_00 * other, _01 * other, _02 * other, _03 * other, _10 * other, _11 * other,
-                       _12 * other, _13 * other, _20 * other, _21 * other, _22 * other, _23 * other,
-                       _30 * other, _31 * other, _32 * other, _33 * other};
+                        _12 * other, _13 * other, _20 * other, _21 * other, _22 * other, _23 * other,
+                        _30 * other, _31 * other, _32 * other, _33 * other};
         }
 
         auto operator+(Mat4 const& other) const -> Mat4
         {
             return Mat4{_00 + other.m00, _01 + other._01, _02 + other._02, _03 + other._03,
-                       _10 + other._10, _11 + other._11, _12 + other._12, _13 + other._13,
-                       _20 + other._20, _21 + other._21, _22 + other._22, _23 + other._23,
-                       _30 + other._30, _31 + other._31, _32 + other._32, _33 + other._33};
+                        _10 + other._10, _11 + other._11, _12 + other._12, _13 + other._13,
+                        _20 + other._20, _21 + other._21, _22 + other._22, _23 + other._23,
+                        _30 + other._30, _31 + other._31, _32 + other._32, _33 + other._33};
         }
 
         auto operator-(Mat4 const& other) const -> Mat4
         {
             return Mat4{_00 - other._00, _01 - other._01, _02 - other._02, _03 - other._03,
-                       _10 - other._10, _11 - other._11, _12 - other._12, _13 - other._13,
-                       _20 - other._20, _21 - other._21, _22 - other._22, _23 - other._23,
-                       _30 - other._30, _31 - other._31, _32 - other._32, _33 - other._33};
+                        _10 - other._10, _11 - other._11, _12 - other._12, _13 - other._13,
+                        _20 - other._20, _21 - other._21, _22 - other._22, _23 - other._23,
+                        _30 - other._30, _31 - other._31, _32 - other._32, _33 - other._33};
         }
 
         static auto identity() -> Mat4
@@ -313,12 +313,12 @@ namespace ionengine::math
 
     using Mat4f = Mat4<float>;
     using Mat4d = Mat4<double>;
-} // namespace ionengine::math
+} // namespace ionengine::core
 
 template <typename Type>
-struct std::hash<ionengine::math::Mat4<Type>>
+struct std::hash<ionengine::core::Mat4<Type>>
 {
-    auto operator()(ionengine::math::Mat4<Type> const& other) const -> size_t
+    auto operator()(ionengine::core::Mat4<Type> const& other) const -> size_t
     {
         return std::hash<Type>()(other._00) ^ std::hash<Type>()(other._01) ^ std::hash<Type>()(other._02) ^
                std::hash<Type>()(other._03) ^ std::hash<Type>()(other._10) ^ std::hash<Type>()(other._11) ^

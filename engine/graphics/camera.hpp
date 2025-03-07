@@ -2,13 +2,31 @@
 
 #pragma once
 
+#include "core/matrix.hpp"
 #include "rhi/rhi.hpp"
 
 namespace ionengine
 {
+    enum class CameraViewType
+    {
+        Perspective,
+        Orthographic
+    };
+
     class Camera : public core::ref_counted_object
     {
       public:
-        Camera() = default;
+        Camera(CameraViewType const viewType);
+
+        auto isMainCamera() const -> bool;
+
+        auto getViewType() const -> CameraViewType;
+
+      private:
+        core::Mat4f projMat;
+        core::Mat4f viewMat;
+
+        CameraViewType viewType;
+        bool mainCamera;
     };
 } // namespace ionengine

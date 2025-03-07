@@ -10,7 +10,6 @@ option(BUILD_TESTING "Build tests" TRUE)
 
 add_subdirectory(thirdparty)
 add_subdirectory(core)
-add_subdirectory(math)
 add_subdirectory(platform)
 add_subdirectory(rhi)
 add_subdirectory(mdl)
