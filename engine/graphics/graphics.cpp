@@ -205,9 +205,9 @@ namespace ionengine
     {
     }
 
-    auto Graphics::createCamera() -> core::ref_ptr<Camera>
+    auto Graphics::createCamera(CameraViewType const viewType) -> core::ref_ptr<Camera>
     {
-        return nullptr;
+        return core::make_ref<Camera>(viewType);
     }
 
     auto Graphics::findTextureInPassResources(std::span<PassResourceData const> const passResources,

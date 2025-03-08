@@ -50,7 +50,7 @@ namespace ionengine
 
         auto drawMesh(core::ref_ptr<Mesh> drawable, core::ref_ptr<Camera> targetCamera) -> void;
 
-        auto createCamera() -> core::ref_ptr<Camera>;
+        auto createCamera(CameraViewType const viewType) -> core::ref_ptr<Camera>;
 
         auto loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
 

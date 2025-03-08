@@ -18,7 +18,10 @@ class MyEngine : public Engine
     auto onStart() -> void override
     {
         getContext().window->setEnableMouse(true);
-        testCamera = getContext().graphics->createCamera();
+        testCamera = getContext().graphics->createCamera(CameraViewType::Perspective);
+        testCamera->setNearClipPlane(0.1f);
+        testCamera->setFarClipPlane(100.0f);
+        testCamera->setFieldOfView(68.0f);
         quadShader = getContext().graphics->loadShaderFromFile("../../assets/shaders/quad_test_color_pc.bin");
     }
 

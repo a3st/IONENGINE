@@ -499,7 +499,7 @@ TEST(RHI, RenderModel_Test)
         core::Mat4f view = core::Mat4f::lookAtRH(core::Vec3f(4.0f, 2.0f, 4.0f), core::Vec3f(0.0f, 0.0f, 0.0f),
                                                  core::Vec3f(0.0f, 0.0f, 1.0f));
         core::Quatf currentRot = originalRot * core::Quatf::fromAngleAxis(angle, core::Vec3f(0.0f, 0.0f, 1.0f));
-        core::Mat4f model = core::Mat4f::identity() * currentRot.toMat();
+        core::Mat4f model = core::Mat4f::identity() * currentRot.toMat4();
         angle += 100.0f * deltaTime;
 
         auto backBuffer = swapchain->requestBackBuffer();
