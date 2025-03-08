@@ -9,10 +9,11 @@ namespace ionengine
     Engine::Engine(uint32_t argc, char** argv)
     {
         application = platform::App::create("Engine");
-        window = core::make_ref<Window>(application);
+        window = std::make_unique<Window>(application);
 
         RHI = rhi::RHI::create(rhi::RHICreateInfo::Default());
-        graphics = core::make_ref<Graphics>(RHI);
+        graphics = std::make_unique<Graphics>(RHI);
+        uploadManager = std::make_unique<internal::UploadManager>(RHI);
 
         rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                            .instance = application->getInstanceHandle()};
@@ -25,6 +26,8 @@ namespace ionengine
                 1000000.0f;
 
             this->onUpdate(deltaTime);
+
+            uploadManager->onExecuteTask();
 
             auto swapchainTexture = swapchain->requestBackBuffer();
 

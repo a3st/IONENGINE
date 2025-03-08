@@ -4,7 +4,6 @@
 
 #include "buffer.hpp"
 #include "camera.hpp"
-#include "core/matrix.hpp"
 #include "mesh.hpp"
 #include "render_pass.hpp"
 #include "render_queue.hpp"
@@ -28,7 +27,7 @@ namespace ionengine
         math::Mat4f projection;
     };*/
 
-    class Graphics : public core::ref_counted_object
+    class Graphics
     {
       public:
         Graphics(core::ref_ptr<rhi::RHI> RHI);
@@ -53,6 +52,8 @@ namespace ionengine
         auto createCamera(CameraViewType const viewType) -> core::ref_ptr<Camera>;
 
         auto loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
+
+        auto loadMeshFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>;
 
       private:
         core::ref_ptr<rhi::RHI> RHI;

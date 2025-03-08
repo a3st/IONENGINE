@@ -52,6 +52,19 @@ namespace ionengine
         }
     }
 
+    auto Graphics::loadMeshFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>
+    {
+        auto meshResult = core::deserialize<core::serialize_iarchive, asset::ModelFile, std::basic_ifstream<uint8_t>>(
+            std::basic_ifstream<uint8_t>(filePath, std::ios::binary));
+        if (meshResult.has_value())
+        {
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
     auto Graphics::beginFrame(core::ref_ptr<rhi::Texture> swapchainTexture) -> void
     {
         renderTargetsAllocator->reset();

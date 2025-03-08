@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.25.1)
 
 add_library(engine STATIC
     ../shadersys/fx.cpp
+    ../mdl/mdl.cpp
 
+    graphics/upload_manager.cpp
     graphics/render_queue.cpp
     graphics/camera.cpp
     graphics/buffer.cpp

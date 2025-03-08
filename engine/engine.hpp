@@ -3,6 +3,7 @@
 #pragma once
 
 #include "graphics/graphics.hpp"
+#include "graphics/upload_manager.hpp"
 #include "window/window.hpp"
 
 namespace ionengine
@@ -37,7 +38,8 @@ namespace ionengine
 
         std::chrono::high_resolution_clock::time_point beginFrameTime;
 
-        core::ref_ptr<Window> window;
-        core::ref_ptr<Graphics> graphics;
+        std::unique_ptr<Window> window;
+        std::unique_ptr<Graphics> graphics;
+        std::unique_ptr<internal::UploadManager> uploadManager;
     };
 } // namespace ionengine

@@ -23,6 +23,7 @@ class MyEngine : public Engine
         testCamera->setFarClipPlane(100.0f);
         testCamera->setFieldOfView(68.0f);
         quadShader = getContext().graphics->loadShaderFromFile("../../assets/shaders/quad_test_color_pc.bin");
+        getContext().graphics->loadMeshFromFile("../assets/models/box.mdl");
     }
 
     auto onUpdate(float const deltaTime) -> void override

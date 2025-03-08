@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "mdl/mdl.hpp"
 #include "rhi/rhi.hpp"
 
 namespace ionengine

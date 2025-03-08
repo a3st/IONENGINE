@@ -6,7 +6,7 @@
 
 namespace ionengine
 {
-    class Window : public core::ref_counted_object
+    class Window
     {
       public:
         Window(core::ref_ptr<platform::App> application);
