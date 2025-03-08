@@ -73,7 +73,7 @@ namespace ionengine::core
             return std::sqrt(x * x + y * y + z * z + w * w);
         }
 
-        auto toMat() const -> Mat4<Type>
+        auto toMat4() const -> Mat4<Type>
         {
             Type xy = x * y;
             Type xz = x * z;

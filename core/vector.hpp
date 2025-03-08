@@ -215,13 +215,13 @@ namespace ionengine::core
             return x * other.x + y * other.y + z * other.z;
         }
 
-        auto cross(Vec3 const& other) -> Vec3
+        auto cross(Vec3 const& other) const -> Vec3
         {
             Vec3 vec = *this;
-            x = vec.y * other.z - vec.z * other.y;
-            y = vec.z * other.x - vec.x * other.z;
-            z = vec.x * other.y - vec.y * other.x;
-            return *this;
+            vec.x = y * other.z - z * other.y;
+            vec.y = z * other.x - x * other.z;
+            vec.z = x * other.y - y * other.x;
+            return vec;
         }
     };
 

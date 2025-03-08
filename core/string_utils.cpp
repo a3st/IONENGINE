@@ -3,7 +3,7 @@
 #include "string_utils.hpp"
 #include "precompiled.h"
 
-namespace ionengine::core
+namespace ionengine::core::string_utils
 {
     auto trim(std::string& source, trim_mode const trim_mode) -> void
     {

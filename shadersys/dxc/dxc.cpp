@@ -48,11 +48,11 @@ namespace ionengine::shadersys
         }
         if ((it = attributes.find("DepthWrite")) != attributes.end())
         {
-            outputData.depthWrite = core::stob(it->second).value_or(false);
+            outputData.depthWrite = core::string_utils::stob(it->second).value_or(false);
         }
         if ((it = attributes.find("StencilWrite")) != attributes.end())
         {
-            outputData.stencilWrite = core::stob(it->second).value_or(false);
+            outputData.stencilWrite = core::string_utils::stob(it->second).value_or(false);
         }
     }
 

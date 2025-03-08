@@ -4,10 +4,10 @@
 
 #include "core/error.hpp"
 
-namespace ionengine::core
+namespace ionengine::core::string_utils
 {
     /*!
-        \brief Modes that used when trim
+        \brief Modes that will used when trim
     */
     enum class trim_mode
     {

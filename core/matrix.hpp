@@ -283,8 +283,8 @@ namespace ionengine::core
         static auto lookAtRH(Vec3<Type> const& eye, Vec3<Type> const& center, Vec3<Type> const& up) -> Mat4
         {
             Vec3<Type> f = (eye - center).normalize();
-            Vec3<Type> r = Vec3(up).cross(f).normalize();
-            Vec3<Type> u = Vec3(f).cross(r);
+            Vec3<Type> r = up.cross(f).normalize();
+            Vec3<Type> u = f.cross(r);
 
             auto mat = Mat4<Type>::identity();
             mat._00 = r.x;
