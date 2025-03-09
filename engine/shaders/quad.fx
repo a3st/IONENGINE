@@ -24,11 +24,11 @@ VS {
 PS {
     PS_OUTPUT main(VS_OUTPUT input) 
     {
-        cbuffer_t<SAMPLER_DATA> samplerData = getConstBuffer<SAMPLER_DATA>(gSamplerData);
-        cbuffer_t<EFFECT_DATA> effectData = getConstBuffer<EFFECT_DATA>(gEffectData);
+        cbuffer_t<SAMPLER_DATA> samplerData = make_cbuffer<SAMPLER_DATA>(gSamplerData);
+        cbuffer_t<EFFECT_DATA> effectData = make_cbuffer<EFFECT_DATA>(gEffectData);
 
         PS_OUTPUT output;
-        output.color = GetTexture2D(effectData.Get().inputTexture).Get().Sample(GetSampler(samplerData.Get().linearSampler).Get(), input.uv);
+        output.color = make_texture2D(effectData.Get().inputTexture).Get().Sample(make_sampler(samplerData.Get().linearSampler).Get(), input.uv);
         return output;
     }
 }
