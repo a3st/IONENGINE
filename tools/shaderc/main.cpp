@@ -15,7 +15,7 @@ auto main(int32_t argc, char** argv) -> int32_t
 
     if (commandLine[{"-help", "--help"}])
     {
-        std::cout << "usage: shaderc <command> [arguments] input_file\n\n";
+        std::cout << "usage: shaderc <command> [arguments] inputFile\n\n";
         std::cout << "-target (--target)" << "\t\t\t" << "Compilation target\n";
         std::cout << "\t\t\t\t\t" << "Available parameters: SPIRV, DXIL\n\n";
         std::cout << "-output (--output)" << "\t\t\t" << "Compilation output path (Optional)" << std::endl;
@@ -29,17 +29,27 @@ auto main(int32_t argc, char** argv) -> int32_t
         return EXIT_SUCCESS;
     }
 
-    std::string input;
-    if (!(commandLine(1) >> input))
+    std::filesystem::path inputPath;
     {
-        std::cerr << "ERROR: Missing input file" << std::endl;
-        return EXIT_SUCCESS;
+        std::string input;
+        if (!(commandLine(1) >> input))
+        {
+            std::cerr << "ERROR: Missing the input file" << std::endl;
+            return EXIT_SUCCESS;
+        }
+
+        inputPath = std::filesystem::path(input).make_preferred();
     }
 
-    std::string output;
-    if (!(commandLine({"-output", "--output"}) >> output))
+    std::filesystem::path outputPath;
     {
-        output = (std::filesystem::path(input).parent_path() / std::filesystem::path(input).stem()).string() + ".bin";
+        std::string output;
+        if (!(commandLine({"-output", "--output"}) >> output))
+        {
+            output = (inputPath.parent_path() / inputPath.stem()).string() + ".bin";
+        }
+
+        outputPath = std::filesystem::path(output).make_preferred();
     }
 
     try
@@ -59,14 +69,14 @@ auto main(int32_t argc, char** argv) -> int32_t
             return EXIT_SUCCESS;
         }
 
-        auto compileResult = shaderCompiler->compileFromFile(std::filesystem::path(input).make_preferred());
+        auto compileResult = shaderCompiler->compileFromFile(inputPath);
         if (compileResult.has_value())
         {
-            std::basic_ofstream<uint8_t> ofs(std::filesystem::path(output).make_preferred(), std::ios::binary);
+            std::basic_ofstream<uint8_t> ofs(outputPath, std::ios::binary);
             auto serializeResult = core::serialize<core::serialize_oarchive>(ofs, compileResult.value());
             if (serializeResult.has_value())
             {
-                std::cout << "Out: " << std::filesystem::absolute(output).generic_string() << std::endl;
+                std::cout << "Out: " << std::filesystem::absolute(outputPath).generic_string() << std::endl;
             }
         }
         else
