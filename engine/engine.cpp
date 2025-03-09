@@ -12,8 +12,8 @@ namespace ionengine
         window = std::make_unique<Window>(application);
 
         RHI = rhi::RHI::create(rhi::RHICreateInfo::Default());
-        graphics = std::make_unique<Graphics>(RHI);
-        uploadManager = std::make_unique<internal::UploadManager>(RHI);
+        uploadManager = core::make_ref<internal::UploadManager>(RHI);
+        graphics = std::make_unique<Graphics>(RHI, uploadManager);
 
         rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                            .instance = application->getInstanceHandle()};

@@ -5,8 +5,8 @@
 
 namespace ionengine::internal
 {
-    auto UploadManager::uploadBufferToDevice(UploadBufferInfo const& uploadBufferInfo,
-                                             UploadCompletedCallback&& completedCallback) -> void
+    auto UploadManager::uploadBuffer(UploadBufferInfo const& uploadBufferInfo,
+                                     UploadCompletedCallback&& completedCallback) -> void
     {
         UploadBufferData uploadBufferData{.buffer = uploadBufferInfo.buffer,
                                           .offset = uploadBufferInfo.offset,
@@ -18,10 +18,7 @@ namespace ionengine::internal
 
     auto UploadManager::onExecuteTask() -> void
     {
-        if (trackingBufferUploads.empty())
-        {
-            return;
-        }
+        bool isUploaded = false;
 
         for (auto const& trackingBufferUpload : trackingBufferUploads)
         {
@@ -32,20 +29,29 @@ namespace ionengine::internal
             }
 
             trackingBufferUpload.callback();
+            isUploaded = true;
         }
 
-        trackingBufferUploads.clear();
+        if (isUploaded)
+        {
+            trackingBufferUploads.clear();
+        }
+
+        if (!trackingBufferUploads.empty() || bufferUploads.empty())
+        {
+            return;
+        }
 
         auto copyContext = RHI->getCopyContext();
         size_t dispatchSize = 0;
 
-        if (!bufferUploads.empty())
+        while (!bufferUploads.empty())
         {
             UploadBufferData uploadBufferData = std::move(bufferUploads.front());
 
             if (dispatchSize + uploadBufferData.dataBuffer.size() >= UploadManagerDispatchMaxSize)
             {
-                return;
+                break;
             }
 
             bufferUploads.pop();

@@ -15,17 +15,17 @@ namespace ionengine::internal
 
     using UploadCompletedCallback = std::function<void()>;
 
-    class UploadManager
+    class UploadManager : public core::ref_counted_object
     {
       public:
         UploadManager(core::ref_ptr<rhi::RHI> RHI) : RHI(RHI)
         {
         }
 
-        auto uploadBufferToDevice(UploadBufferInfo const& uploadBufferInfo, UploadCompletedCallback&& completedCallback)
+        auto uploadBuffer(UploadBufferInfo const& uploadBufferInfo, UploadCompletedCallback&& completedCallback)
             -> void;
 
-        auto uploadTextureToDevice() -> void;
+        auto uploadTexture() -> void;
 
         auto onExecuteTask() -> void;
 

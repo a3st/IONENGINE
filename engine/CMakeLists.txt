@@ -4,6 +4,7 @@ add_library(engine STATIC
     ../shadersys/fx.cpp
     ../mdl/mdl.cpp
 
+    graphics/mesh.cpp
     graphics/upload_manager.cpp
     graphics/render_queue.cpp
     graphics/camera.cpp

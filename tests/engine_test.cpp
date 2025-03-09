@@ -23,7 +23,7 @@ class MyEngine : public Engine
         testCamera->setFarClipPlane(100.0f);
         testCamera->setFieldOfView(68.0f);
         quadShader = getContext().graphics->loadShaderFromFile("../../assets/shaders/quad_test_color_pc.bin");
-        getContext().graphics->loadMeshFromFile("../assets/models/box.mdl");
+        testMesh = getContext().graphics->loadMeshFromFile("../../assets/models/box.mdl");
     }
 
     auto onUpdate(float const deltaTime) -> void override
@@ -37,12 +37,14 @@ class MyEngine : public Engine
 
     auto onRender() -> void override
     {
-        getContext().graphics->drawMesh(nullptr, testCamera);
+
+        // getContext().graphics->drawMesh(testMesh, testCamera);
     }
 
   private:
     core::ref_ptr<Shader> quadShader;
     core::ref_ptr<Camera> testCamera;
+    core::ref_ptr<Mesh> testMesh;
 };
 
 TEST(Engine, Instance_Test)

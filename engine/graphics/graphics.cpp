@@ -6,8 +6,8 @@
 
 namespace ionengine
 {
-    Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI)
-        : RHI(RHI), renderTargetsAllocator(core::make_ref<TextureAllocator>(RHI)),
+    Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI, core::ref_ptr<internal::UploadManager> uploadManager)
+        : RHI(RHI), uploadManager(uploadManager), renderTargetsAllocator(core::make_ref<TextureAllocator>(RHI)),
           buffersAllocator(core::make_ref<BufferAllocator>(RHI)), renderPathHash(0)
     {
         std::string shaderExt;
@@ -58,6 +58,7 @@ namespace ionengine
             std::basic_ifstream<uint8_t>(filePath, std::ios::binary));
         if (meshResult.has_value())
         {
+            return core::make_ref<Mesh>(*RHI, uploadManager.get(), meshResult.value());
         }
         else
         {
@@ -189,14 +190,14 @@ namespace ionengine
             if (curPassCache.passDataBuffer)
             {
                 uint32_t const passDataIndex =
-                    renderPasses[i]->getShader()->getBindOffsets().at("SHADER_DATA.passData") / sizeof(uint32_t);
+                    renderPasses[i]->getShader()->getBindOffsets().at("SHADER_DATA.gPassData") / sizeof(uint32_t);
 
                 graphicsContext->bindDescriptor(
                     passDataIndex, curPassCache.passDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
             }
 
             uint32_t const samplerDataIndex =
-                renderPasses[i]->getShader()->getBindOffsets().at("SHADER_DATA.samplerData") / sizeof(uint32_t);
+                renderPasses[i]->getShader()->getBindOffsets().at("SHADER_DATA.gSamplerData") / sizeof(uint32_t);
 
             graphicsContext->bindDescriptor(samplerDataIndex,
                                             samplerDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
@@ -214,7 +215,7 @@ namespace ionengine
         graphicsContext->execute().wait();
     }
 
-    auto Graphics::drawMesh(core::ref_ptr<Mesh> drawable, core::ref_ptr<Camera> targetCamera) -> void
+    auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::ref_ptr<Camera> targetCamera) -> void
     {
     }
 

@@ -30,7 +30,7 @@ namespace ionengine
     class Graphics
     {
       public:
-        Graphics(core::ref_ptr<rhi::RHI> RHI);
+        Graphics(core::ref_ptr<rhi::RHI> RHI, core::ref_ptr<internal::UploadManager> uploadManager);
 
         template <typename Type, typename... Args>
         auto addRenderPass(Args&&... args) -> RenderPass*
@@ -47,7 +47,7 @@ namespace ionengine
 
         auto endFrame() -> void;
 
-        auto drawMesh(core::ref_ptr<Mesh> drawable, core::ref_ptr<Camera> targetCamera) -> void;
+        auto drawMesh(core::ref_ptr<Mesh> drawableMesh, core::ref_ptr<Camera> targetCamera) -> void;
 
         auto createCamera(CameraViewType const viewType) -> core::ref_ptr<Camera>;
 
@@ -57,6 +57,7 @@ namespace ionengine
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
+        core::ref_ptr<internal::UploadManager> uploadManager;
 
         core::ref_ptr<TextureAllocator> renderTargetsAllocator;
         core::ref_ptr<rhi::Texture> swapchainTexture;
