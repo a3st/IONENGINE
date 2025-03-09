@@ -8,13 +8,13 @@ HEADER {
 }
 
 DATA {
-    texture2D_t basicTexture;
+    uint basicTexture;
 }
 
 VS {
     VS_OUTPUT main(VS_INPUT input) 
     {
-        cbuffer_t<TRANSFORM_DATA> transformData = gShaderData.transformData;
+        cbuffer_t<TRANSFORM_DATA> transformData = getConstBuffer<TRANSFORM_DATA>(gTransformData);
 
         float4 worldPosition = float4(input.position, 1.0f);
 
@@ -28,13 +28,13 @@ VS {
 
 [FillMode("SOLID"), CullMode("BACK"), DepthWrite(true), StencilWrite(false)]
 PS {
-    PS_OUTPUT main(VS_OUTPUT input)
+    PS_OUTPUT main(VS_OUTPUT input) 
     {
-        cbuffer_t<SAMPLER_DATA> samplerData = gShaderData.samplerData;
-        cbuffer_t<EFFECT_DATA> effectData = gShaderData.effectData;
+        cbuffer_t<SAMPLER_DATA> samplerData = getConstBuffer<SAMPLER_DATA>(gSamplerData);
+        cbuffer_t<EFFECT_DATA> effectData = getConstBuffer<EFFECT_DATA>(gEffectData);
 
         PS_OUTPUT output;
-        output.color = effectData.Get().basicTexture.Get().Sample(samplerData.Get().linearSampler.Get(), input.uv).rgba;
+        output.color = GetTexture2D(effectData.Get().basicTexture).Get().Sample(GetSampler(samplerData.Get().linearSampler).Get(), input.uv);
         return output;
     }
 }

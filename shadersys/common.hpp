@@ -26,7 +26,7 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<sampler_t>("linearSampler");
+                generator.property<uint32_t>("linearSampler");
             }
 
             static inline asset::fx::StructureData structureData{
@@ -48,26 +48,26 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<texture2D_t>("inputTexture1");
-                generator.property<texture2D_t>("inputTexture2");
-                generator.property<texture2D_t>("inputTexture3");
-                generator.property<texture2D_t>("inputTexture4");
-                generator.property<texture2D_t>("inputTexture5");
-                generator.property<texture2D_t>("inputTexture6");
-                generator.property<texture2D_t>("inputTexture7");
-                generator.property<texture2D_t>("inputTexture8");
+                generator.property<uint32_t>("inputTexture1");
+                generator.property<uint32_t>("inputTexture2");
+                generator.property<uint32_t>("inputTexture3");
+                generator.property<uint32_t>("inputTexture4");
+                generator.property<uint32_t>("inputTexture5");
+                generator.property<uint32_t>("inputTexture6");
+                generator.property<uint32_t>("inputTexture7");
+                generator.property<uint32_t>("inputTexture8");
             }
 
             static inline asset::fx::StructureData structureData{
                 .name = "PASS_DATA",
-                .elements = {{.name = "inputTexture1", .type = asset::fx::ElementType::Texture2D},
-                             {.name = "inputTexture2", .type = asset::fx::ElementType::Texture2D},
-                             {.name = "inputTexture3", .type = asset::fx::ElementType::Texture2D},
-                             {.name = "inputTexture4", .type = asset::fx::ElementType::Texture2D},
-                             {.name = "inputTexture5", .type = asset::fx::ElementType::Texture2D},
-                             {.name = "inputTexture6", .type = asset::fx::ElementType::Texture2D},
-                             {.name = "inputTexture7", .type = asset::fx::ElementType::Texture2D},
-                             {.name = "inputTexture8", .type = asset::fx::ElementType::Texture2D}},
+                .elements = {{.name = "inputTexture1", .type = asset::fx::ElementType::Uint},
+                             {.name = "inputTexture2", .type = asset::fx::ElementType::Uint},
+                             {.name = "inputTexture3", .type = asset::fx::ElementType::Uint},
+                             {.name = "inputTexture4", .type = asset::fx::ElementType::Uint},
+                             {.name = "inputTexture5", .type = asset::fx::ElementType::Uint},
+                             {.name = "inputTexture6", .type = asset::fx::ElementType::Uint},
+                             {.name = "inputTexture7", .type = asset::fx::ElementType::Uint},
+                             {.name = "inputTexture8", .type = asset::fx::ElementType::Uint}},
                 .size = 32};
         };
     } // namespace common
@@ -78,33 +78,33 @@ namespace ionengine::shadersys
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerData");
-                generator.property<cbuffer_t<common::EFFECT_DATA>>("effectData");
-                generator.property<cbuffer_t<common::PASS_DATA>>("passData");
+                generator.property<uint32_t>("gSamplerData", "packoffset(c0)");
+                generator.property<uint32_t>("gEffectData", "packoffset(c1)");
+                generator.property<uint32_t>("gPassData", "packoffset(c2)");
             }
 
             static inline asset::fx::StructureData structureData{
                 .name = "SHADER_DATA",
-                .elements = {{.name = "samplerData", .type = asset::fx::ElementType::ConstBuffer},
-                             {.name = "effectData", .type = asset::fx::ElementType::ConstBuffer},
-                             {.name = "passData", .type = asset::fx::ElementType::ConstBuffer}},
-                .size = 8};
+                .elements = {{.name = "gSamplerData", .type = asset::fx::ElementType::Uint},
+                             {.name = "gEffectData", .type = asset::fx::ElementType::Uint},
+                             {.name = "gPassData", .type = asset::fx::ElementType::Uint}},
+                .size = 12};
         };
 
         struct SurfaceShaderData
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
-                generator.property<cbuffer_t<common::TRANSFORM_DATA>>("transformData");
-                generator.property<cbuffer_t<common::SAMPLER_DATA>>("samplerData");
-                generator.property<cbuffer_t<common::EFFECT_DATA>>("effectData");
+                generator.property<uint32_t>("gTransformData", "packoffset(c0)");
+                generator.property<uint32_t>("gSamplerData", "packoffset(c1)");
+                generator.property<uint32_t>("gEffectData", "packoffset(c2)");
             }
 
             static inline asset::fx::StructureData structureData{
                 .name = "SHADER_DATA",
-                .elements = {{.name = "transformData", .type = asset::fx::ElementType::ConstBuffer},
-                             {.name = "samplerData", .type = asset::fx::ElementType::ConstBuffer},
-                             {.name = "effectData", .type = asset::fx::ElementType::ConstBuffer}},
+                .elements = {{.name = "gTransformData", .type = asset::fx::ElementType::Uint},
+                             {.name = "gSamplerData", .type = asset::fx::ElementType::Uint},
+                             {.name = "gEffectData", .type = asset::fx::ElementType::Uint}},
                 .size = 12};
         };
     } // namespace constants

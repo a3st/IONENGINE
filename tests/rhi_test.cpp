@@ -58,7 +58,7 @@ auto TXETextureFormat_to_RHITextureFormat(asset::txe::TextureFormat const format
 
 TEST(RHI, DeviceOnly_Test)
 {
-    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
+    auto RHI = rhi::RHI::create(rhi::RHICreateInfo::Default());
 }
 
 TEST(RHI, RenderQuad_Test)
@@ -427,7 +427,7 @@ TEST(RHI, RenderModel_Test)
         {
             auto const& mipBuffer = textureFile.textureData.buffers[textureFile.textureData.mipLevels[i]];
 
-            auto copyResult = copyContext->updateTexture(
+            copyContext->updateTexture(
                 basicTexture, i, std::span<uint8_t const>(textureFile.blob.data() + mipBuffer.offset, mipBuffer.size));
         }
 
@@ -439,19 +439,23 @@ TEST(RHI, RenderModel_Test)
 
     // Initialize static resources
     {
+        #pragma pack(push, 1)
         struct SamplerData
         {
             uint32_t linearSampler;
         };
+        #pragma pack(pop)
         SamplerData const samplerData{.linearSampler = linearSampler->getDescriptorOffset()};
 
         copyContext->updateBuffer(
             sBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&samplerData), sizeof(samplerData)));
-
+        
+        #pragma pack(push, 1)
         struct EffectData
         {
             uint32_t basicTexture;
         };
+        #pragma pack(pop)
         EffectData const effectData{.basicTexture =
                                         basicTexture->getDescriptorOffset(rhi::TextureUsage::ShaderResource)};
 
@@ -506,10 +510,12 @@ TEST(RHI, RenderModel_Test)
 
         // Update MVP matrix
         {
+            #pragma pack(push, 1)
             struct TransformData
             {
                 core::Mat4f modelViewProj;
             };
+            #pragma pack(pop)
             TransformData const transformData{.modelViewProj = model * view * projection};
 
             copyContext->updateBuffer(

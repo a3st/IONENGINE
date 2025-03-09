@@ -24,7 +24,6 @@ namespace ionengine::shadersys
         winrt::com_ptr<IDxcCompiler3> compiler;
         winrt::com_ptr<IDxcUtils> utils;
         winrt::com_ptr<IDxcIncludeHandler> includeHandler;
-        std::string errors;
         asset::fx::ShaderFormat shaderFormat;
 
         auto getOutputStates(std::unordered_map<std::string, std::string> const& attributes,

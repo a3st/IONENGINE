@@ -117,7 +117,7 @@ namespace ionengine::shadersys
             inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
             inputDataCode += generator.getHLSLStruct<common::PASS_DATA>("PASS_DATA") + "\n";
             inputDataCode +=
-                generator.getHLSLConstBuffer<constants::ScreenShaderData>("SHADER_DATA", "gShaderData", 0, 0) + "\n";
+                generator.getHLSLConstBuffer<constants::ScreenShaderData>("SHADER_DATA", 0, 0) + "\n";
 
             shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
             shaderData.structures.emplace_back(common::PASS_DATA::structureData);
@@ -133,7 +133,7 @@ namespace ionengine::shadersys
             inputDataCode += generator.getHLSLStruct<common::TRANSFORM_DATA>("TRANSFORM_DATA") + "\n";
             inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
             inputDataCode +=
-                generator.getHLSLConstBuffer<constants::SurfaceShaderData>("SHADER_DATA", "gShaderData", 0, 0) + "\n";
+                generator.getHLSLConstBuffer<constants::SurfaceShaderData>("SHADER_DATA", 0, 0) + "\n";
 
             shaderData.structures.emplace_back(common::TRANSFORM_DATA::structureData);
             shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
@@ -190,7 +190,7 @@ namespace ionengine::shadersys
 
             if (errorsBlob && errorsBlob->GetStringLength() > 0)
             {
-                errors =
+                auto errors =
                     std::string(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()), errorsBlob->GetBufferSize());
                 return std::unexpected(core::error(core::error_code::compile, errors));
             }

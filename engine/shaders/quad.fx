@@ -7,11 +7,12 @@ HEADER {
 }
 
 DATA {
-    texture2D_t inputTexture;
+    uint inputTexture;
 }
 
 VS {
-    VS_OUTPUT main(VS_INPUT input) {
+    VS_OUTPUT main(VS_INPUT input) 
+    {
         VS_OUTPUT output;
         output.uv = float2((input.id << 1) & 2, input.id & 2);
         output.position = float4(output.uv * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);
@@ -21,12 +22,13 @@ VS {
 
 [FillMode("SOLID"), CullMode("BACK"), DepthWrite(true), StencilWrite(false)]
 PS {
-    PS_OUTPUT main(VS_OUTPUT input) {
-        cbuffer_t<SAMPLER_DATA> samplerData = gShaderData.samplerData;
-        cbuffer_t<EFFECT_DATA> effectData = gShaderData.effectData;
+    PS_OUTPUT main(VS_OUTPUT input) 
+    {
+        cbuffer_t<SAMPLER_DATA> samplerData = getConstBuffer<SAMPLER_DATA>(gSamplerData);
+        cbuffer_t<EFFECT_DATA> effectData = getConstBuffer<EFFECT_DATA>(gEffectData);
 
         PS_OUTPUT output;
-        output.color = effectData.Get().inputTexture.Get().Sample(samplerData.Get().linearSampler.Get(), input.uv);
+        output.color = GetTexture2D(effectData.Get().inputTexture).Get().Sample(GetSampler(samplerData.Get().linearSampler).Get(), input.uv);
         return output;
     }
 }

@@ -45,10 +45,7 @@ namespace ionengine::asset
             Float,
             Uint,
             Sint,
-            Bool,
-            Texture2D,
-            ConstBuffer,
-            Sampler
+            Bool
         };
 
         auto sizeof_ElementType(ElementType const elementType) -> size_t;
@@ -266,9 +263,6 @@ namespace ionengine::core
             archive.field(asset::fx::ElementType::Uint, "uint");
             archive.field(asset::fx::ElementType::Sint, "int");
             archive.field(asset::fx::ElementType::Bool, "bool");
-            archive.field(asset::fx::ElementType::Texture2D, "texture2D_t");
-            archive.field(asset::fx::ElementType::Sampler, "sampler_t");
-            archive.field(asset::fx::ElementType::ConstBuffer, "cbuffer_t");
         }
     };
 

@@ -8,33 +8,6 @@
 
 namespace ionengine::shadersys
 {
-    template <typename Type>
-    struct cbuffer_t
-    {
-        using element_t = Type;
-    };
-
-    struct sampler_t
-    {
-    };
-
-    struct texture2D_t
-    {
-    };
-
-    namespace internal
-    {
-        template <typename>
-        struct is_cbuffer_t : std::false_type
-        {
-        };
-
-        template <typename T>
-        struct is_cbuffer_t<cbuffer_t<T>> : std::true_type
-        {
-        };
-    } // namespace internal
-
     class HLSLCodeGen
     {
       public:
@@ -64,20 +37,6 @@ namespace ionengine::shadersys
             {
                 dataType = "float4x4";
             }
-            else if constexpr (internal::is_cbuffer_t<Type>::value)
-            {
-                std::string typeName = typeid(Type::element_t).name();
-                this->getClassName(typeName);
-                dataType = "cbuffer_t<" + typeName + ">";
-            }
-            else if constexpr (std::is_same_v<Type, sampler_t>)
-            {
-                dataType = "sampler_t";
-            }
-            else if constexpr (std::is_same_v<Type, texture2D_t>)
-            {
-                dataType = "texture2D_t";
-            }
 
             if (semantic.empty())
             {
@@ -101,26 +60,17 @@ namespace ionengine::shadersys
         }
 
         template <typename Type>
-        auto getHLSLConstBuffer(std::string_view const structureName, std::string_view const variableName,
-                                uint32_t const r, uint32_t const s) -> std::string
+        auto getHLSLConstBuffer(std::string_view const structureName, uint32_t const r, uint32_t const s) -> std::string
         {
             std::stringstream ss;
             this->stream = &ss;
-            ss << "struct " << structureName << " { ";
+            ss << "cbuffer " << structureName << " : register(b" << r << ", space" << s << ") { ";
             Type::toHLSL(*this);
-            ss << "};\nConstantBuffer<" << structureName << "> " << variableName << " : register(b" << r << ", space"
-               << s << ");";
+            ss << "};";
             return ss.str();
         }
 
       private:
         std::stringstream* stream;
-
-        auto getClassName(std::string& source) -> void
-        {
-            source.erase(source.begin(), std::find_if(source.rbegin(), source.rend(), [](unsigned char ch) {
-                                             return ch == ':';
-                                         }).base());
-        }
     };
 } // namespace ionengine::shadersys

@@ -18,11 +18,11 @@ VS {
 [FillMode("SOLID"), CullMode("BACK"), DepthWrite(true), StencilWrite(false)]
 PS {
     PS_OUTPUT main(VS_OUTPUT input) {
-        cbuffer_t<SAMPLER_DATA> samplerData = gShaderData.samplerData;
-        cbuffer_t<PASS_DATA> passData = gShaderData.passData;
+        cbuffer_t<SAMPLER_DATA> samplerData = getConstBuffer<SAMPLER_DATA>(gSamplerData);
+        cbuffer_t<PASS_DATA> passData = getConstBuffer<PASS_DATA>(gPassData);
 
         PS_OUTPUT output;
-        output.color = passData.Get().inputTexture1.Get().Sample(samplerData.Get().linearSampler.Get(), input.uv);
+        output.color = GetTexture(passData.Get().inputTexture1).Get().Sample(GetSampler(samplerData.Get().linearSampler).Get(), input.uv);
         return output;
     }
 }
