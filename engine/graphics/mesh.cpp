@@ -27,7 +27,7 @@ namespace ionengine
         {
             asset::mdl::BufferData const& bufferData = modelFile.modelData.buffers[surfaceData.buffer];
 
-            internal::Surface surface(RHI, vertexBuffer, bufferData.size, surfaceData.indexCount);
+            Surface surface(RHI, vertexBuffer, bufferData.size, surfaceData.indexCount);
 
             internal::UploadBufferInfo const uploadBufferInfo{
                 .buffer = surface.indexBuffer,
@@ -44,7 +44,7 @@ namespace ionengine
         return surfaces.size() + 1 == countUploaded;
     }
 
-    auto Mesh::getSurfaces() const -> std::span<internal::Surface const>
+    auto Mesh::getSurfaces() const -> std::span<Surface const>
     {
         return surfaces;
     }

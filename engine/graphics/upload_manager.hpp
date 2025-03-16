@@ -15,19 +15,17 @@ namespace ionengine::internal
 
     using UploadCompletedCallback = std::function<void()>;
 
-    class UploadManager : public core::ref_counted_object
+    class UploadManager
     {
       public:
-        UploadManager(core::ref_ptr<rhi::RHI> RHI) : RHI(RHI)
-        {
-        }
+        UploadManager(core::ref_ptr<rhi::RHI> RHI);
 
         auto uploadBuffer(UploadBufferInfo const& uploadBufferInfo, UploadCompletedCallback&& completedCallback)
             -> void;
 
         auto uploadTexture() -> void;
 
-        auto onExecuteTask() -> void;
+        auto onExecuteTask(bool const onlyBuffers, bool const waitAfterExecute) -> void;
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
@@ -49,6 +47,6 @@ namespace ionengine::internal
         std::queue<UploadBufferData> bufferUploads;
         std::vector<TrackingBufferData> trackingBufferUploads;
 
-        size_t const UploadManagerDispatchMaxSize = 4 * 1024 * 1024;
+        size_t const UploadManagerTextureDispatchMaxSize = 4 * 1024 * 1024;
     };
 } // namespace ionengine::internal

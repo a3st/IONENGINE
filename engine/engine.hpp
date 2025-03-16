@@ -38,8 +38,6 @@ namespace ionengine
 
         std::chrono::high_resolution_clock::time_point beginFrameTime;
 
-        core::ref_ptr<internal::UploadManager> uploadManager;
-
         std::unique_ptr<Window> window;
         std::unique_ptr<Graphics> graphics;
     };

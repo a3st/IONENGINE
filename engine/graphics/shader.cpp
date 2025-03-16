@@ -128,15 +128,38 @@ namespace ionengine
 
         shader = RHI.createShader(shaderCreateInfo);
 
+        shaderName = shaderFile.shaderData.headerData.name;
+        description = shaderFile.shaderData.headerData.description;
+        domainName = shaderFile.shaderData.headerData.domain;
+        if (shaderFile.shaderData.headerData.blend.compare("Mixed") == 0)
+        {
+            blendColorInfo = rhi::BlendColorInfo::Mixed();
+        }
+        else if (shaderFile.shaderData.headerData.blend.compare("Add") == 0)
+        {
+            blendColorInfo = rhi::BlendColorInfo::Add();
+        }
+        else if (shaderFile.shaderData.headerData.blend.compare("AlphaBlend") == 0)
+        {
+            blendColorInfo = rhi::BlendColorInfo::AlphaBlend();
+        }
+        else
+        {
+            blendColorInfo = rhi::BlendColorInfo::Opaque();
+        }
+
         for (auto const& structure : shaderFile.shaderData.structures)
         {
+            ShaderBindingInfo bindingInfo{.size = structure.size};
+
             uint64_t offset = 0;
             for (auto const& element : structure.elements)
             {
-                std::string const bindingName = structure.name + "." + element.name;
-                bindOffsets[bindingName] = offset;
+                bindingInfo.elements[element.name] = offset;
                 offset += asset::fx::sizeof_ElementType(element.type);
             }
+
+            bindings[structure.name] = std::move(bindingInfo);
         }
     }
 
@@ -145,9 +168,14 @@ namespace ionengine
         return rasterizerStageInfo;
     }
 
-    auto Shader::getBindOffsets() const -> std::unordered_map<std::string, uint64_t> const&
+    auto Shader::getBlendColorInfo() const -> rhi::BlendColorInfo const&
     {
-        return bindOffsets;
+        return blendColorInfo;
+    }
+
+    auto Shader::getBindings() const -> std::unordered_map<std::string, ShaderBindingInfo> const&
+    {
+        return bindings;
     }
 
     auto Shader::getName() const -> std::string_view

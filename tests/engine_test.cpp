@@ -2,6 +2,7 @@
 
 #include "engine.hpp"
 #include "engine/graphics/passes/quad.hpp"
+#include "engine/graphics/passes/geometry.hpp"
 #include "precompiled.h"
 #include <gtest/gtest.h>
 
@@ -32,13 +33,13 @@ class MyEngine : public Engine
 
     auto onConfigureRender() -> void override
     {
+        auto geometryPass = getContext().graphics->addRenderPass<passes::GeometryPass>();
         auto quadPass = getContext().graphics->addRenderPass<passes::QuadPass>(quadShader);
     }
 
     auto onRender() -> void override
     {
-
-        // getContext().graphics->drawMesh(testMesh, testCamera);
+        getContext().graphics->drawMesh(testMesh, testCamera);
     }
 
   private:

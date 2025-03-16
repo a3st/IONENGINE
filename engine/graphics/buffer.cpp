@@ -14,7 +14,7 @@ namespace ionengine
         bool allocatedMemory = true;
         core::weak_ptr<rhi::Buffer> outBuffer;
 
-        auto bucketResult = buckets.upper_bound(size);
+        auto bucketResult = buckets.upper_bound(size - 1);
         if (bucketResult != buckets.end())
         {
             if (bucketResult->second.cur < bucketResult->second.elements.size())
@@ -37,7 +37,6 @@ namespace ionengine
                 .size = size,
                 .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer | rhi::BufferUsage::CopyDest};
             auto buffer = RHI->createBuffer(bufferCreateInfo);
-            buffers.emplace_back(buffer);
 
             if (buckets.upper_bound(size) != buckets.end())
             {

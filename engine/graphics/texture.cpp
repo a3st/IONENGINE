@@ -41,7 +41,6 @@ namespace ionengine
         if (!allocatedMemory)
         {
             auto texture = RHI->createTexture(createInfo);
-            textures.emplace_back(texture);
 
             if (buckets.find(entry) != buckets.end())
             {

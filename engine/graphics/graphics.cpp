@@ -6,9 +6,10 @@
 
 namespace ionengine
 {
-    Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI, core::ref_ptr<internal::UploadManager> uploadManager)
-        : RHI(RHI), uploadManager(uploadManager), renderTargetsAllocator(core::make_ref<TextureAllocator>(RHI)),
-          buffersAllocator(core::make_ref<BufferAllocator>(RHI)), renderPathHash(0)
+    Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI)
+        : RHI(RHI), uploadManager(std::make_unique<internal::UploadManager>(RHI)),
+          renderTargetsAllocator(core::make_ref<TextureAllocator>(RHI)),
+          constBuffersAllocator(core::make_ref<BufferAllocator>(RHI)), renderPathHash(0)
     {
         std::string shaderExt;
         if (RHI->getName().compare("D3D12") == 0)
@@ -21,6 +22,7 @@ namespace ionengine
         }
 
         blitShader = this->loadShaderFromFile("engine/shaders/blit_t1" + shaderExt + ".bin");
+        base3DShader = this->loadShaderFromFile("../../assets/shaders/base3d_test_color" + shaderExt + ".bin");
 
         this->initializeSharedSamplers();
 
@@ -69,10 +71,13 @@ namespace ionengine
     auto Graphics::beginFrame(core::ref_ptr<rhi::Texture> swapchainTexture) -> void
     {
         renderTargetsAllocator->reset();
-        buffersAllocator->reset();
+        constBuffersAllocator->reset();
         renderPasses.clear();
         renderPathHash = 0;
         this->swapchainTexture = swapchainTexture;
+
+        opaqueQueue.clear();
+        translucentQueue.clear();
     }
 
     auto Graphics::endFrame() -> void
@@ -102,8 +107,9 @@ namespace ionengine
                 {
                     if (color.loadOp == rhi::RenderPassLoadOp::Clear || color.loadOp == rhi::RenderPassLoadOp::Load)
                     {
-                        passResources[i].readWriteResources.emplace_back(color.texture,
-                                                                         rhi::ResourceState::RenderTarget);
+                        passResources[i].readWriteResources.emplace_back(
+                            color.texture,
+                            std::make_pair(rhi::ResourceState::Common, rhi::ResourceState::RenderTarget));
                         trackingResources.emplace(color.texture);
                     }
                 }
@@ -119,13 +125,14 @@ namespace ionengine
                     for (auto const& input : renderPasses[i]->getInputs())
                     {
                         uint32_t const bindingOffset =
-                            renderPasses[i]->getShader()->getBindOffsets().at("PASS_DATA." + input.bindingName);
+                            renderPasses[i]->getShader()->getBindings().at("PASS_DATA").elements.at(input.bindingName);
                         uint32_t const descriptor =
                             input.texture->getDescriptorOffset(rhi::TextureUsage::ShaderResource);
 
                         std::memcpy(passDataRawBuffer.data() + bindingOffset, &descriptor, sizeof(uint32_t));
 
-                        passResources[i].readWriteResources.emplace_back(input.texture, rhi::ResourceState::ShaderRead);
+                        passResources[i].readWriteResources.emplace_back(
+                            input.texture, std::make_pair(rhi::ResourceState::Common, rhi::ResourceState::ShaderRead));
                         trackingResources.emplace(input.texture);
                     }
 
@@ -144,15 +151,22 @@ namespace ionengine
             {
                 uint32_t offset = 0, prevOffset = 0;
                 uint32_t distance = 0;
-                std::list<ResourceStateInfo>::const_iterator it;
+                std::list<ResourceStateInfo>::iterator it;
                 rhi::ResourceState state = rhi::ResourceState::Common, prevState = rhi::ResourceState::Common;
 
                 while ((distance =
                             this->findTextureInPassResources(passResources, offset, trackingResource, it, state)) != -1)
                 {
-                    if (prevOffset != offset && state == prevState)
+                    if (prevOffset != offset)
                     {
-                        passResources[offset].readWriteResources.erase(it);
+                        if (state == prevState)
+                        {
+                            passResources[offset].readWriteResources.erase(it);
+                        }
+                        else
+                        {
+                            it->second.first = prevState;
+                        }
                     }
 
                     prevOffset = offset + distance;
@@ -161,7 +175,8 @@ namespace ionengine
                     offset = prevOffset + (distance == 0 ? 1 : distance);
                 }
 
-                passResources[prevOffset].clearResources.emplace_back(trackingResource, prevState);
+                passResources[prevOffset].clearResources.emplace_back(
+                    trackingResource, std::make_pair(prevState, rhi::ResourceState::Common));
             }
 
             passResourcesCache[renderPathHash] = std::move(passResources);
@@ -178,45 +193,69 @@ namespace ionengine
 
             for (auto const& readWriteResource : curPassCache.readWriteResources)
             {
-                graphicsContext->barrier(readWriteResource.first, rhi::ResourceState::Common, readWriteResource.second);
+                graphicsContext->barrier(readWriteResource.first, readWriteResource.second.first,
+                                         readWriteResource.second.second);
             }
 
             graphicsContext->beginRenderPass(renderPasses[i]->getColors(), std::nullopt);
 
-            graphicsContext->setGraphicsPipelineOptions(renderPasses[i]->getShader()->getShader(),
-                                                        renderPasses[i]->getShader()->getRasterizerStageInfo(),
-                                                        rhi::BlendColorInfo::Opaque(), std::nullopt);
-
-            if (curPassCache.passDataBuffer)
+            if (renderPasses[i]->getShader())
             {
-                uint32_t const passDataIndex =
-                    renderPasses[i]->getShader()->getBindOffsets().at("SHADER_DATA.gPassData") / sizeof(uint32_t);
+                graphicsContext->setGraphicsPipelineOptions(renderPasses[i]->getShader()->getShader(),
+                                                            renderPasses[i]->getShader()->getRasterizerStageInfo(),
+                                                            rhi::BlendColorInfo::Opaque(), std::nullopt);
+
+                if (curPassCache.passDataBuffer)
+                {
+                    uint32_t const passDataIndex =
+                        renderPasses[i]->getShader()->getBindings().at("SHADER_DATA").elements.at("gPassData") /
+                        sizeof(uint32_t);
+
+                    graphicsContext->bindDescriptor(passDataIndex, curPassCache.passDataBuffer->getDescriptorOffset(
+                                                                       rhi::BufferUsage::ConstantBuffer));
+                }
+
+                uint32_t const samplerDataIndex =
+                    renderPasses[i]->getShader()->getBindings().at("SHADER_DATA").elements.at("gSamplerData") /
+                    sizeof(uint32_t);
 
                 graphicsContext->bindDescriptor(
-                    passDataIndex, curPassCache.passDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
+                    samplerDataIndex, samplerDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
             }
 
-            uint32_t const samplerDataIndex =
-                renderPasses[i]->getShader()->getBindOffsets().at("SHADER_DATA.gSamplerData") / sizeof(uint32_t);
+            RenderContext const renderContext{.graphics = graphicsContext,
+                                              .uploadManager = uploadManager.get(),
+                                              .constBufferAllocator = constBuffersAllocator.get()};
+            RenderableData const renderableData{.opaqueQueue = &opaqueQueue};
 
-            graphicsContext->bindDescriptor(samplerDataIndex,
-                                            samplerDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
-
-            renderPasses[i]->execute(graphicsContext);
+            renderPasses[i]->execute(renderContext, renderableData);
 
             graphicsContext->endRenderPass();
 
+            uploadManager->onExecuteTask(true, true);
+
             for (auto const& clearResource : curPassCache.clearResources)
             {
-                graphicsContext->barrier(clearResource.first, clearResource.second, rhi::ResourceState::Common);
+                graphicsContext->barrier(clearResource.first, clearResource.second.first, clearResource.second.second);
             }
         }
+
+        uploadManager->onExecuteTask(false, false);
 
         graphicsContext->execute().wait();
     }
 
     auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::ref_ptr<Camera> targetCamera) -> void
     {
+        if (drawableMesh->isUploaded())
+        {
+            for (auto const& surface : drawableMesh->getSurfaces())
+            {
+                DrawableData drawableData{
+                    .surface = surface, .shader = base3DShader, .modelMat = core::Mat4f::identity(), .layerIndex = 0};
+                opaqueQueue.push(std::move(drawableData));
+            }
+        }
     }
 
     auto Graphics::createCamera(CameraViewType const viewType) -> core::ref_ptr<Camera>
@@ -248,7 +287,7 @@ namespace ionengine
                     if (resIt->first == source)
                     {
                         it = resIt;
-                        state = resIt->second;
+                        state = resIt->second.second;
                         return true;
                     }
                 }

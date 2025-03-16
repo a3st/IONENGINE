@@ -13,24 +13,10 @@
 
 namespace ionengine
 {
-    /*enum class RenderLayers
-    {
-        Opaque = 0,
-        Translucent = 1
-    };
-
-    struct RenderData
-    {
-        std::vector<RenderQueue> objectQueues;
-        core::ref_ptr<rhi::Texture> targetTexture;
-        math::Mat4f view;
-        math::Mat4f projection;
-    };*/
-
     class Graphics
     {
       public:
-        Graphics(core::ref_ptr<rhi::RHI> RHI, core::ref_ptr<internal::UploadManager> uploadManager);
+        Graphics(core::ref_ptr<rhi::RHI> RHI);
 
         template <typename Type, typename... Args>
         auto addRenderPass(Args&&... args) -> RenderPass*
@@ -57,14 +43,17 @@ namespace ionengine
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
-        core::ref_ptr<internal::UploadManager> uploadManager;
+        std::unique_ptr<internal::UploadManager> uploadManager;
 
         core::ref_ptr<TextureAllocator> renderTargetsAllocator;
         core::ref_ptr<rhi::Texture> swapchainTexture;
-        core::ref_ptr<BufferAllocator> buffersAllocator;
-        core::ref_ptr<rhi::Texture> cameraTexture;
+        core::ref_ptr<BufferAllocator> constBuffersAllocator;
 
-        using ResourceStateInfo = std::pair<core::ref_ptr<rhi::Texture>, rhi::ResourceState>;
+        core::ref_ptr<rhi::Texture> cameraTexture;
+        core::ref_ptr<Shader> base3DShader;
+
+        using ResourceStateInfo =
+            std::pair<core::ref_ptr<rhi::Texture>, std::pair<rhi::ResourceState, rhi::ResourceState>>;
 
         struct PassResourceData
         {

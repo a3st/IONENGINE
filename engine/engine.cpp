@@ -1,7 +1,6 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "engine.hpp"
-#include "graphics/passes/quad.hpp"
 #include "precompiled.h"
 
 namespace ionengine
@@ -12,8 +11,7 @@ namespace ionengine
         window = std::make_unique<Window>(application);
 
         RHI = rhi::RHI::create(rhi::RHICreateInfo::Default());
-        uploadManager = core::make_ref<internal::UploadManager>(RHI);
-        graphics = std::make_unique<Graphics>(RHI, uploadManager);
+        graphics = std::make_unique<Graphics>(RHI);
 
         rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                            .instance = application->getInstanceHandle()};
@@ -26,8 +24,6 @@ namespace ionengine
                 1000000.0f;
 
             this->onUpdate(deltaTime);
-
-            uploadManager->onExecuteTask();
 
             auto swapchainTexture = swapchain->requestBackBuffer();
 

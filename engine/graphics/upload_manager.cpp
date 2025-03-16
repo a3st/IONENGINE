@@ -5,6 +5,10 @@
 
 namespace ionengine::internal
 {
+    UploadManager::UploadManager(core::ref_ptr<rhi::RHI> RHI) : RHI(RHI)
+    {
+    }
+
     auto UploadManager::uploadBuffer(UploadBufferInfo const& uploadBufferInfo,
                                      UploadCompletedCallback&& completedCallback) -> void
     {
@@ -16,7 +20,7 @@ namespace ionengine::internal
         bufferUploads.emplace(std::move(uploadBufferData));
     }
 
-    auto UploadManager::onExecuteTask() -> void
+    auto UploadManager::onExecuteTask(bool const onlyBuffers, bool const waitAfterExecute) -> void
     {
         bool isUploaded = false;
 
@@ -37,22 +41,12 @@ namespace ionengine::internal
             trackingBufferUploads.clear();
         }
 
-        if (!trackingBufferUploads.empty() || bufferUploads.empty())
-        {
-            return;
-        }
-
         auto copyContext = RHI->getCopyContext();
         size_t dispatchSize = 0;
 
         while (!bufferUploads.empty())
         {
             UploadBufferData uploadBufferData = std::move(bufferUploads.front());
-
-            if (dispatchSize + uploadBufferData.dataBuffer.size() >= UploadManagerDispatchMaxSize)
-            {
-                break;
-            }
 
             bufferUploads.pop();
             dispatchSize += uploadBufferData.dataBuffer.size();
@@ -65,6 +59,13 @@ namespace ionengine::internal
             trackingBufferUploads.emplace_back(std::move(trackingBufferData));
         }
 
-        copyContext->execute();
+        if (!trackingBufferUploads.empty())
+        {
+            rhi::Future<void> executeResult = copyContext->execute();
+            if (waitAfterExecute)
+            {
+                executeResult.wait();
+            }
+        }
     }
 } // namespace ionengine::internal

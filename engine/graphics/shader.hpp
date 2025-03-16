@@ -7,6 +7,12 @@
 
 namespace ionengine
 {
+    struct ShaderBindingInfo
+    {
+        std::unordered_map<std::string, uint64_t> elements;
+        size_t size;
+    };
+
     class Shader : public core::ref_counted_object
     {
       public:
@@ -14,7 +20,11 @@ namespace ionengine
 
         auto getRasterizerStageInfo() const -> rhi::RasterizerStageInfo const&;
 
-        auto getBindOffsets() const -> std::unordered_map<std::string, uint64_t> const&;
+        auto getBlendColorInfo() const -> rhi::BlendColorInfo const&;
+
+        auto getBindingOffsets() const -> std::unordered_map<std::string, uint64_t> const&;
+
+        auto getBindings() const -> std::unordered_map<std::string, ShaderBindingInfo> const&;
 
         auto getName() const -> std::string_view;
 
@@ -27,7 +37,8 @@ namespace ionengine
       private:
         core::ref_ptr<rhi::Shader> shader;
         rhi::RasterizerStageInfo rasterizerStageInfo;
-        std::unordered_map<std::string, uint64_t> bindOffsets;
+        rhi::BlendColorInfo blendColorInfo;
+        std::unordered_map<std::string, ShaderBindingInfo> bindings;
         std::string shaderName;
         std::string description;
         std::string domainName;

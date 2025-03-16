@@ -3,13 +3,14 @@
 #pragma once
 
 #include "core/matrix.hpp"
+#include "mesh.hpp"
 #include "shader.hpp"
 
 namespace ionengine
 {
     struct DrawableData
     {
-        // core::ref_ptr<Surface> surface;
+        Surface surface;
         core::ref_ptr<Shader> shader;
         core::Mat4f modelMat;
         uint16_t layerIndex;
@@ -18,11 +19,33 @@ namespace ionengine
     class RenderQueue
     {
       public:
+        using ConstIterator = std::vector<DrawableData>::const_iterator;
+
+        using Iterator = std::vector<DrawableData>::iterator;
+
         RenderQueue();
 
         auto push(DrawableData&& drawableData) -> void;
 
+        auto clear() -> void;
+
+        ConstIterator begin() const;
+
+        ConstIterator end() const;
+
+        Iterator begin();
+
+        Iterator end();
+
       private:
-        std::vector<DrawableData> rawElements;
+        std::vector<DrawableData> elements;
+    };
+
+    struct RenderableData
+    {
+        RenderQueue* opaqueQueue;
+        RenderQueue* translucentQueue;
+        core::Mat4f view;
+        core::Mat4f projection;
     };
 } // namespace ionengine

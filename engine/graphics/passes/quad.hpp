@@ -33,9 +33,9 @@ namespace ionengine::passes
             this->initializeRenderPass();
         }
 
-        auto execute(rhi::GraphicsContext* context) -> void override
+        auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override
         {
-            context->draw(3, 1);
+            context.graphics->draw(3, 1);
         }
     };
 } // namespace ionengine::passes

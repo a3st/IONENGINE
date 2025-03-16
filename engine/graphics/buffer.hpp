@@ -19,8 +19,6 @@ namespace ionengine
       private:
         core::ref_ptr<rhi::RHI> RHI;
 
-        std::vector<core::ref_ptr<rhi::Buffer>> buffers;
-
         struct Bucket
         {
             std::vector<core::ref_ptr<rhi::Buffer>> elements;

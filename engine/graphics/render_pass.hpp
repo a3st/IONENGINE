@@ -2,9 +2,12 @@
 
 #pragma once
 
+#include "buffer.hpp"
+#include "render_queue.hpp"
 #include "rhi/rhi.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
+#include "upload_manager.hpp"
 
 namespace ionengine
 {
@@ -14,12 +17,19 @@ namespace ionengine
         core::ref_ptr<rhi::Texture> texture;
     };
 
+    struct RenderContext
+    {
+        rhi::GraphicsContext* graphics;
+        internal::UploadManager* uploadManager;
+        BufferAllocator* constBufferAllocator;
+    };
+
     class RenderPass
     {
       public:
         RenderPass(std::string_view const debugName);
 
-        virtual auto execute(rhi::GraphicsContext* context) -> void = 0;
+        virtual auto execute(RenderContext const& context, RenderableData const& renderableData) -> void = 0;
 
         auto getColors() const -> std::span<rhi::RenderPassColorInfo const> const;
 
