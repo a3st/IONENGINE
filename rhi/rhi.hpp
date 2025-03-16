@@ -470,7 +470,7 @@ namespace ionengine::rhi
             return impl->getResult();
         }
 
-        auto wait() -> void
+        auto wait() const -> void
         {
             impl->wait();
         }
