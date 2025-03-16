@@ -19,7 +19,7 @@ namespace ionengine::shadersys
             static inline asset::fx::StructureData structureData{
                 .name = "TRANSFORM_DATA",
                 .elements = {{.name = "modelViewProj", .type = asset::fx::ElementType::Float4x4}},
-                .size = 16};
+                .size = 64};
         };
 
         struct SAMPLER_DATA
