@@ -5,52 +5,44 @@
 
 namespace ionengine
 {
-    Camera::Camera(CameraViewType const viewType) : viewType(viewType)
+    auto Camera::setViewMatrix(core::Mat4f const& viewMatrix) -> void
     {
-        this->updateDirectionVectors();
+        viewMat = viewMatrix;
     }
 
-    auto Camera::setFieldOfView(float const value) -> void
+    auto Camera::getViewMatrix() const -> core::Mat4f const&
     {
-        fovy = value * std::numbers::pi / 180.0f;
+        return viewMat;
     }
 
-    auto Camera::setFarClipPlane(float const value) -> void
+    auto Camera::getProjMatrix() const -> core::Mat4f const&
     {
-        zFar = value;
+        return projMat;
     }
 
-    auto Camera::setNearClipPlane(float const value) -> void
+    auto Camera::getTexture() const -> core::ref_ptr<rhi::Texture>
     {
-        zNear = value;
+        return targetTexture;
     }
 
-    auto Camera::setAspect(float const value) -> void
+    PerspectiveCamera::PerspectiveCamera(rhi::RHI& RHI, float const fovy, float const zNear, float const zFar)
+        : fovy(fovy * std::numbers::pi / 180.0f), aspect(4 / 3), zFar(zFar), zNear(zNear)
     {
-        aspect = value;
+        rhi::TextureCreateInfo const textureCreateInfo{
+            .width = 800,
+            .height = 600,
+            .depth = 1,
+            .mipLevels = 1,
+            .format = rhi::TextureFormat::RGBA8_UNORM,
+            .dimension = rhi::TextureDimension::_2D,
+            .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource |
+                                              rhi::TextureUsage::CopyDest)};
+        this->targetTexture = RHI.createTexture(textureCreateInfo);
+
+        this->projMat = core::Mat4f::perspectiveRH(fovy, aspect, zNear, zFar);
     }
 
-    auto Camera::getViewType() const -> CameraViewType
-    {
-        return viewType;
-    }
-
-    auto Camera::setPosition(core::Vec3f const& position) -> void
-    {
-        this->position = position;
-    }
-
-    auto Camera::calculateProjMatrix() const -> core::Mat4f
-    {
-        return core::Mat4f::perspectiveRH(fovy, aspect, zNear, zFar);
-    }
-
-    auto Camera::calculateViewMatrix() const -> core::Mat4f
-    {
-        return core::Mat4f::lookAtRH(position, position + forward, up);
-    }
-
-    auto Camera::createFrustumPlanes() const -> std::array<core::Planef, 6>
+    auto PerspectiveCamera::createFrustumPlanes() const -> std::array<core::Planef, 6>
     {
         float const halfVSide = zFar * std::tanf(fovy * 0.5f);
         float const halfHSide = halfVSide * aspect;
@@ -59,11 +51,11 @@ namespace ionengine
         return {};
     }
 
-    auto Camera::updateDirectionVectors() -> void
+    /*auto PerspectiveCamera::updateDirectionVectors() -> void
     {
         core::Mat4f const rotMat = rotation.toMat4();
         forward = core::Vec3f(rotMat._00, rotMat._10, rotMat._20).normalize();
         right = forward.cross(core::Vec3f(0.0f, 0.0f, 1.0f)).normalize();
         up = right.cross(forward).normalize();
-    }
+    }*/
 } // namespace ionengine

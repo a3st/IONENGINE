@@ -6,53 +6,40 @@
 #include "core/plane.hpp"
 #include "core/quaternion.hpp"
 #include "core/ref_ptr.hpp"
+#include "rhi/rhi.hpp"
 
 namespace ionengine
 {
-    enum class CameraViewType
-    {
-        Perspective,
-        Orthographic
-    };
-
     class Camera : public core::ref_counted_object
     {
       public:
-        Camera(CameraViewType const viewType);
+        ~Camera() = default;
 
-        auto setFieldOfView(float const value) -> void;
+        virtual auto setViewMatrix(core::Mat4f const& viewMatrix) -> void;
 
-        auto setFarClipPlane(float const value) -> void;
+        virtual auto getViewMatrix() const -> core::Mat4f const&;
 
-        auto setNearClipPlane(float const value) -> void;
+        virtual auto getProjMatrix() const -> core::Mat4f const&;
 
-        auto setAspect(float const value) -> void;
+        virtual auto getTexture() const -> core::ref_ptr<rhi::Texture>;
 
-        auto getViewType() const -> CameraViewType;
+      protected:
+        core::Mat4f viewMat;
+        core::Mat4f projMat;
+        core::ref_ptr<rhi::Texture> targetTexture;
+    };
 
-        auto setPosition(core::Vec3f const& position) -> void;
-
-        auto calculateProjMatrix() const -> core::Mat4f;
-
-        auto calculateViewMatrix() const -> core::Mat4f;
+    class PerspectiveCamera : public Camera
+    {
+      public:
+        PerspectiveCamera(rhi::RHI& RHI, float const fovy, float const zNear, float const zFar);
 
         auto createFrustumPlanes() const -> std::array<core::Planef, 6>;
 
       private:
-        core::Vec3f position;
-        core::Quatf rotation;
-
-        core::Vec3f up;
-        core::Vec3f right;
-        core::Vec3f forward;
-
         float zNear;
         float zFar;
         float fovy;
         float aspect;
-
-        CameraViewType viewType;
-
-        auto updateDirectionVectors() -> void;
     };
 } // namespace ionengine

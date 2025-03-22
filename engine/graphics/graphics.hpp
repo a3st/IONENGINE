@@ -21,8 +21,8 @@ namespace ionengine
         template <typename Type, typename... Args>
         auto addRenderPass(Args&&... args) -> RenderPass*
         {
-            auto renderPass =
-                std::make_unique<Type>(renderTargetsAllocator.get(), cameraTexture, std::forward<Args>(args)...);
+            auto renderPass = std::make_unique<Type>(renderTargetsAllocator.get(), targetCamera->getTexture(),
+                                                     std::forward<Args>(args)...);
             renderPathHash = renderPathHash == 0 ? renderPass->getHash() : renderPathHash ^ renderPass->getHash();
             RenderPass* outPass = renderPass.get();
             renderPasses.emplace_back(std::move(renderPass));
@@ -33,13 +33,17 @@ namespace ionengine
 
         auto endFrame() -> void;
 
-        auto drawMesh(core::ref_ptr<Mesh> drawableMesh, core::ref_ptr<Camera> targetCamera) -> void;
+        auto drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
+                      core::ref_ptr<Camera> targetCamera) -> void;
 
-        auto createCamera(CameraViewType const viewType) -> core::ref_ptr<Camera>;
+        auto createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
+            -> core::ref_ptr<PerspectiveCamera>;
 
         auto loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
 
         auto loadMeshFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>;
+
+        std::function<void()> renderPathUpdated;
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
@@ -48,8 +52,8 @@ namespace ionengine
         core::ref_ptr<TextureAllocator> renderTargetsAllocator;
         core::ref_ptr<rhi::Texture> swapchainTexture;
         core::ref_ptr<BufferAllocator> constBuffersAllocator;
+        core::ref_ptr<Camera> targetCamera;
 
-        core::ref_ptr<rhi::Texture> cameraTexture;
         core::ref_ptr<Shader> base3DShader;
 
         using ResourceStateInfo =
@@ -71,6 +75,7 @@ namespace ionengine
 
         RenderQueue opaqueQueue;
         RenderQueue translucentQueue;
+        std::set<core::ref_ptr<Camera>> targetCameras;
 
         core::ref_ptr<Shader> blitShader;
 

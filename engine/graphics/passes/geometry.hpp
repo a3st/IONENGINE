@@ -37,7 +37,10 @@ namespace ionengine::passes
                         drawableData.shader->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
 
                     std::vector<uint8_t> buffer(transformData.size);
-                    std::memcpy(buffer.data() + modelViewProjOffset, drawableData.modelMat.data(), sizeof(core::Mat4f));
+
+                    core::Mat4f modelViewProjMat =
+                        drawableData.modelMat * renderableData.viewMat * renderableData.projMat;
+                    std::memcpy(buffer.data() + modelViewProjOffset, modelViewProjMat.data(), sizeof(core::Mat4f));
 
                     constBuffer = context.constBufferAllocator->allocate(transformData.size);
 

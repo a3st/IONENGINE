@@ -45,7 +45,7 @@ namespace ionengine
     {
         RenderQueue* opaqueQueue;
         RenderQueue* translucentQueue;
-        core::Mat4f view;
-        core::Mat4f projection;
+        core::Mat4f viewMat;
+        core::Mat4f projMat;
     };
 } // namespace ionengine

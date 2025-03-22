@@ -25,18 +25,6 @@ namespace ionengine
         base3DShader = this->loadShaderFromFile("../../assets/shaders/base3d_test_color" + shaderExt + ".bin");
 
         this->initializeSharedSamplers();
-
-        // For Tests
-        rhi::TextureCreateInfo const textureCreateInfo{
-            .width = 800,
-            .height = 600,
-            .depth = 1,
-            .mipLevels = 1,
-            .format = rhi::TextureFormat::RGBA8_UNORM,
-            .dimension = rhi::TextureDimension::_2D,
-            .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource |
-                                              rhi::TextureUsage::CopyDest)};
-        cameraTexture = RHI->createTexture(textureCreateInfo);
     }
 
     auto Graphics::loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>
@@ -78,10 +66,18 @@ namespace ionengine
 
         opaqueQueue.clear();
         translucentQueue.clear();
+        targetCameras.clear();
     }
 
     auto Graphics::endFrame() -> void
     {
+        for (auto const& targetCamera : targetCameras)
+        {
+            this->targetCamera = targetCamera;
+
+            renderPathUpdated();
+        }
+
         if (renderPasses.empty())
         {
             return;
@@ -226,7 +222,9 @@ namespace ionengine
             RenderContext const renderContext{.graphics = graphicsContext,
                                               .uploadManager = uploadManager.get(),
                                               .constBufferAllocator = constBuffersAllocator.get()};
-            RenderableData const renderableData{.opaqueQueue = &opaqueQueue};
+            RenderableData const renderableData{.opaqueQueue = &opaqueQueue,
+                                                .viewMat = targetCamera->getViewMatrix(),
+                                                .projMat = targetCamera->getProjMatrix()};
 
             renderPasses[i]->execute(renderContext, renderableData);
 
@@ -245,22 +243,26 @@ namespace ionengine
         graphicsContext->execute().wait();
     }
 
-    auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::ref_ptr<Camera> targetCamera) -> void
+    auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
+                            core::ref_ptr<Camera> targetCamera) -> void
     {
         if (drawableMesh->isUploaded())
         {
             for (auto const& surface : drawableMesh->getSurfaces())
             {
                 DrawableData drawableData{
-                    .surface = surface, .shader = base3DShader, .modelMat = core::Mat4f::identity(), .layerIndex = 0};
+                    .surface = surface, .shader = base3DShader, .modelMat = modelMatrix, .layerIndex = 0};
                 opaqueQueue.push(std::move(drawableData));
             }
         }
+
+        targetCameras.emplace(targetCamera);
     }
 
-    auto Graphics::createCamera(CameraViewType const viewType) -> core::ref_ptr<Camera>
+    auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
+        -> core::ref_ptr<PerspectiveCamera>
     {
-        return core::make_ref<Camera>(viewType);
+        return core::make_ref<PerspectiveCamera>(*RHI, fovy, zNear, zFar);
     }
 
     auto Graphics::findTextureInPassResources(std::span<PassResourceData const> const passResources,
