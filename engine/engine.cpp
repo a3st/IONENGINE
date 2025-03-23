@@ -46,9 +46,4 @@ namespace ionengine
         application->run();
         return EXIT_SUCCESS;
     }
-
-    auto Engine::getContext() const -> EngineContext
-    {
-        return EngineContext{.window = window.get(), .graphics = graphics.get()};
-    }
 } // namespace ionengine

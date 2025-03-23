@@ -18,32 +18,9 @@ namespace ionengine
       public:
         Graphics(core::ref_ptr<rhi::RHI> RHI);
 
-        template <typename Type, typename... Args>
-        auto addRenderPass(Args&&... args) -> RenderPass*
-        {
-            auto renderPass = std::make_unique<Type>(renderTargetsAllocator.get(), targetCamera->getTexture(),
-                                                     std::forward<Args>(args)...);
-            renderPathHash = renderPathHash == 0 ? renderPass->getHash() : renderPathHash ^ renderPass->getHash();
-            RenderPass* outPass = renderPass.get();
-            renderPasses.emplace_back(std::move(renderPass));
-            return outPass;
-        }
-
         auto beginFrame(core::ref_ptr<rhi::Texture> swapchainTexture) -> void;
 
         auto endFrame() -> void;
-
-        auto drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
-                      core::ref_ptr<Camera> targetCamera) -> void;
-
-        auto createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
-            -> core::ref_ptr<PerspectiveCamera>;
-
-        auto loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
-
-        auto loadMeshFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>;
-
-        std::function<void()> renderPathUpdated;
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
@@ -70,6 +47,7 @@ namespace ionengine
         core::ref_ptr<rhi::Buffer> samplerDataBuffer;
 
         uint64_t renderPathHash;
+        std::function<void()> renderPathUpdated;
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
         std::unordered_map<uint64_t, std::vector<PassResourceData>> passResourcesCache;
 
@@ -85,5 +63,32 @@ namespace ionengine
             -> int32_t;
 
         auto initializeSharedSamplers() -> void;
+
+        inline static Graphics* instance;
+
+      public:
+        template <typename Type, typename... Args>
+        static auto addRenderPass(Args&&... args) -> RenderPass*
+        {
+            auto renderPass = std::make_unique<Type>(instance->renderTargetsAllocator.get(),
+                                                     instance->targetCamera->getTexture(), std::forward<Args>(args)...);
+            instance->renderPathHash = instance->renderPathHash == 0 ? renderPass->getHash()
+                                                                     : instance->renderPathHash ^ renderPass->getHash();
+            RenderPass* outPass = renderPass.get();
+            instance->renderPasses.emplace_back(std::move(renderPass));
+            return outPass;
+        }
+
+        static auto drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
+                             core::ref_ptr<Camera> targetCamera) -> void;
+
+        static auto createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
+            -> core::ref_ptr<PerspectiveCamera>;
+
+        static auto loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
+
+        static auto loadMeshFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>;
+
+        static auto setRenderPath(std::function<void()>&& func) -> void;
     };
 } // namespace ionengine

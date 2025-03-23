@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.25.1)
 
+find_package(imgui CONFIG REQUIRED)
+
 add_library(engine STATIC
     ../shadersys/fx.cpp
     ../mdl/mdl.cpp
@@ -25,7 +27,8 @@ target_precompile_headers(engine PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)
 target_link_libraries(engine PUBLIC 
     core
     platform
-    rhi)
+    rhi
+    imgui::imgui)
 
 set_target_properties(engine PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}

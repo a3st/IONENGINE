@@ -8,12 +8,6 @@
 
 namespace ionengine
 {
-    struct EngineContext
-    {
-        Window* window;
-        Graphics* graphics;
-    };
-
     class Engine
     {
       public:
@@ -27,8 +21,6 @@ namespace ionengine
         virtual auto onUpdate(float const deltaTime) -> void = 0;
 
         virtual auto onRender() -> void = 0;
-
-        virtual auto getContext() const -> EngineContext;
 
       private:
         core::ref_ptr<platform::App> application;

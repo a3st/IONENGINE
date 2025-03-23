@@ -7,10 +7,11 @@ namespace ionengine
 {
     Window::Window(core::ref_ptr<platform::App> application) : application(application)
     {
+        instance = this;
     }
 
     auto Window::setEnableMouse(bool const isEnable) -> void
     {
-        application->setEnableMouse(isEnable);
+        instance->application->setEnableMouse(isEnable);
     }
 } // namespace ionengine

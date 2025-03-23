@@ -18,17 +18,17 @@ class MyEngine : public Engine
   protected:
     auto onStart() -> void override
     {
-        getContext().window->setEnableMouse(true);
-        testCamera = getContext().graphics->createPerspectiveCamera(68.0f, 0.1f, 100.0f);
+        Window::setEnableMouse(true);
+        testCamera = Graphics::createPerspectiveCamera(68.0f, 0.1f, 100.0f);
         testCamera->setViewMatrix(core::Mat4f::lookAtRH(core::Vec3f(5.0f, 5.0f, 5.0f), core::Vec3f(0.0f, 0.0f, 0.0f),
                                                         core::Vec3f(0.0f, 0.0f, 1.0f)));
-        quadShader = getContext().graphics->loadShaderFromFile("../../assets/shaders/quad_test_color_pc.bin");
-        testMesh = getContext().graphics->loadMeshFromFile("../../assets/models/box.mdl");
+        quadShader = Graphics::loadShaderFromFile("../../assets/shaders/quad_test_color_pc.bin");
+        testMesh = Graphics::loadMeshFromFile("../../assets/models/box.mdl");
 
-        getContext().graphics->renderPathUpdated = [&]() {
-            auto geometryPass = getContext().graphics->addRenderPass<passes::GeometryPass>();
+        Graphics::setRenderPath([&]() {
+            auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>();
             // auto quadPass = getContext().graphics->addRenderPass<passes::QuadPass>(quadShader);
-        };
+        });
     }
 
     auto onUpdate(float const deltaTime) -> void override
@@ -37,7 +37,11 @@ class MyEngine : public Engine
 
     auto onRender() -> void override
     {
-        getContext().graphics->drawMesh(testMesh, core::Mat4f::identity(), testCamera);
+        Graphics::drawMesh(testMesh, core::Mat4f::identity(), testCamera);
+
+        /*
+          GUI::drawText()
+        */
     }
 
   private:

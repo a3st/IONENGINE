@@ -11,6 +11,8 @@ namespace ionengine
           renderTargetsAllocator(core::make_ref<TextureAllocator>(RHI)),
           constBuffersAllocator(core::make_ref<BufferAllocator>(RHI)), renderPathHash(0)
     {
+        instance = this;
+
         std::string shaderExt;
         if (RHI->getName().compare("D3D12") == 0)
         {
@@ -34,7 +36,7 @@ namespace ionengine
                 std::basic_ifstream<uint8_t>(filePath, std::ios::binary));
         if (shaderResult.has_value())
         {
-            return core::make_ref<Shader>(*RHI, shaderResult.value());
+            return core::make_ref<Shader>(*instance->RHI, shaderResult.value());
         }
         else
         {
@@ -48,12 +50,17 @@ namespace ionengine
             std::basic_ifstream<uint8_t>(filePath, std::ios::binary));
         if (meshResult.has_value())
         {
-            return core::make_ref<Mesh>(*RHI, uploadManager.get(), meshResult.value());
+            return core::make_ref<Mesh>(*instance->RHI, instance->uploadManager.get(), meshResult.value());
         }
         else
         {
             return nullptr;
         }
+    }
+
+    auto Graphics::setRenderPath(std::function<void()>&& func) -> void
+    {
+        instance->renderPathUpdated = std::move(func);
     }
 
     auto Graphics::beginFrame(core::ref_ptr<rhi::Texture> swapchainTexture) -> void
@@ -251,18 +258,18 @@ namespace ionengine
             for (auto const& surface : drawableMesh->getSurfaces())
             {
                 DrawableData drawableData{
-                    .surface = surface, .shader = base3DShader, .modelMat = modelMatrix, .layerIndex = 0};
-                opaqueQueue.push(std::move(drawableData));
+                    .surface = surface, .shader = instance->base3DShader, .modelMat = modelMatrix, .layerIndex = 0};
+                instance->opaqueQueue.push(std::move(drawableData));
             }
         }
 
-        targetCameras.emplace(targetCamera);
+        instance->targetCameras.emplace(targetCamera);
     }
 
     auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
         -> core::ref_ptr<PerspectiveCamera>
     {
-        return core::make_ref<PerspectiveCamera>(*RHI, fovy, zNear, zFar);
+        return core::make_ref<PerspectiveCamera>(*instance->RHI, fovy, zNear, zFar);
     }
 
     auto Graphics::findTextureInPassResources(std::span<PassResourceData const> const passResources,
