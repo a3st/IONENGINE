@@ -12,6 +12,7 @@ namespace ionengine
 
         RHI = rhi::RHI::create(rhi::RHICreateInfo::Default());
         graphics = std::make_unique<Graphics>(RHI);
+        gui = std::make_unique<GUI>();
 
         rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                            .instance = application->getInstanceHandle()};

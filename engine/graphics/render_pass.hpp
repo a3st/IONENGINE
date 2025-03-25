@@ -11,6 +11,20 @@
 
 namespace ionengine
 {
+    enum class RenderGroup
+    {
+        Opaque,
+        Translucent,
+        UI
+    };
+
+    struct RenderableData
+    {
+        std::unordered_map<RenderGroup, RenderQueue> renderGroups;
+        core::Mat4f viewMat;
+        core::Mat4f projMat;
+    };
+
     struct RenderPassInputInfo
     {
         std::string bindingName;
@@ -22,6 +36,7 @@ namespace ionengine
         rhi::GraphicsContext* graphics;
         internal::UploadManager* uploadManager;
         BufferAllocator* constBufferAllocator;
+        core::ref_ptr<rhi::Buffer> samplerDataBuffer;
     };
 
     class RenderPass
@@ -35,8 +50,6 @@ namespace ionengine
 
         auto getHash() const -> uint64_t;
 
-        auto getShader() -> core::ref_ptr<Shader>;
-
         auto getInputs() const -> std::span<RenderPassInputInfo const> const;
 
       protected:
@@ -45,7 +58,6 @@ namespace ionengine
         std::vector<rhi::RenderPassColorInfo> colors;
         std::vector<RenderPassInputInfo> inputs;
         std::optional<rhi::RenderPassDepthStencilInfo> depthStencil;
-        core::ref_ptr<Shader> shader;
 
       private:
         std::string debugName;

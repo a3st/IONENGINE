@@ -23,29 +23,30 @@ namespace ionengine::passes
 
         auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override
         {
-            for (auto const& drawableData : *renderableData.opaqueQueue)
+            for (auto const& drawableData : renderableData.renderGroups.at(RenderGroup::Opaque))
             {
                 context.graphics->setGraphicsPipelineOptions(drawableData.shader->getShader(),
                                                              drawableData.shader->getRasterizerStageInfo(),
                                                              drawableData.shader->getBlendColorInfo(), std::nullopt);
 
-                core::weak_ptr<rhi::Buffer> constBuffer;
+                core::weak_ptr<rhi::Buffer> transformDataBuffer;
                 {
                     auto const& transformData = drawableData.shader->getBindings().at("TRANSFORM_DATA");
 
                     uint32_t const modelViewProjOffset =
                         drawableData.shader->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
 
-                    std::vector<uint8_t> buffer(transformData.size);
+                    std::vector<uint8_t> transformDataRawBuffer(transformData.size);
 
                     core::Mat4f modelViewProjMat =
                         drawableData.modelMat * renderableData.viewMat * renderableData.projMat;
-                    std::memcpy(buffer.data() + modelViewProjOffset, modelViewProjMat.data(), sizeof(core::Mat4f));
+                    std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
+                                sizeof(core::Mat4f));
 
-                    constBuffer = context.constBufferAllocator->allocate(transformData.size);
+                    transformDataBuffer = context.constBufferAllocator->allocate(transformData.size);
 
                     internal::UploadBufferInfo const uploadBufferInfo{
-                        .buffer = constBuffer.get(), .offset = 0, .dataBytes = buffer};
+                        .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
                     context.uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
                 }
 
@@ -54,7 +55,7 @@ namespace ionengine::passes
                     sizeof(uint32_t);
 
                 context.graphics->bindDescriptor(
-                    transformDataIndex, constBuffer.get()->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
+                    transformDataIndex, transformDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
 
                 drawableData.surface.draw(context.graphics);
             }

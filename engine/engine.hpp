@@ -4,6 +4,7 @@
 
 #include "graphics/graphics.hpp"
 #include "graphics/upload_manager.hpp"
+#include "gui/gui.hpp"
 #include "window/window.hpp"
 
 namespace ionengine
@@ -30,5 +31,6 @@ namespace ionengine
 
         std::unique_ptr<Window> window;
         std::unique_ptr<Graphics> graphics;
+        std::unique_ptr<GUI> gui;
     };
 } // namespace ionengine

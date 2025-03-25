@@ -10,25 +10,11 @@ namespace ionengine::passes
     {
       public:
         SwapchainPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
-                      core::ref_ptr<Shader> shader, core::ref_ptr<rhi::Texture> swapchainTexture)
-            : RenderPass("Swapchain Pass")
-        {
-            rhi::RenderPassColorInfo const renderPassColorInfo{.texture = swapchainTexture,
-                                                               .loadOp = rhi::RenderPassLoadOp::Clear,
-                                                               .storeOp = rhi::RenderPassStoreOp::Store,
-                                                               .clearColor = core::Color(0.0f, 0.0f, 0.0f, 1.0f)};
-            this->colors.emplace_back(std::move(renderPassColorInfo));
-            this->shader = shader;
+                      core::ref_ptr<Shader> shader, core::ref_ptr<rhi::Texture> swapchainTexture);
 
-            RenderPassInputInfo const renderPassInputInfo{.bindingName = "inputTexture1", .texture = cameraTexture};
-            this->inputs.emplace_back(std::move(renderPassInputInfo));
+        auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override;
 
-            this->initializeRenderPass();
-        }
-
-        auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override
-        {
-            context.graphics->draw(3, 1);
-        }
+      private:
+        core::ref_ptr<Shader> shader;
     };
 } // namespace ionengine::passes

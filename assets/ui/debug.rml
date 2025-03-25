@@ -1,0 +1,10 @@
+<rml>
+	<head>
+		
+	</head>
+	<body data-model="debugModel">
+		<p>IONENGINE Debug</p>
+		<p>{{ fpsCount }}</p>
+		<p></p>
+	</body>
+</rml>

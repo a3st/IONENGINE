@@ -38,10 +38,6 @@ class MyEngine : public Engine
     auto onRender() -> void override
     {
         Graphics::drawMesh(testMesh, core::Mat4f::identity(), testCamera);
-
-        /*
-          GUI::drawText()
-        */
     }
 
   private:

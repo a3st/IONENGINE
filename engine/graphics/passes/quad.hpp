@@ -11,14 +11,13 @@ namespace ionengine::passes
       public:
         QuadPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
                  core::ref_ptr<Shader> shader)
-            : RenderPass("Quad Pass")
+            : RenderPass("Quad Pass"), shader(shader)
         {
             rhi::RenderPassColorInfo const renderPassColorInfo{.texture = cameraTexture,
                                                                .loadOp = rhi::RenderPassLoadOp::Load,
                                                                .storeOp = rhi::RenderPassStoreOp::Store,
                                                                .clearColor = core::Color(0.5f, 0.5f, 0.5f, 1.0f)};
             this->colors.emplace_back(std::move(renderPassColorInfo));
-            this->shader = shader;
 
             this->initializeRenderPass();
         }
@@ -27,5 +26,8 @@ namespace ionengine::passes
         {
             context.graphics->draw(3, 1);
         }
+
+      private:
+        core::ref_ptr<Shader> shader;
     };
 } // namespace ionengine::passes

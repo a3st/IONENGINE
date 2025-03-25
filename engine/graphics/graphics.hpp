@@ -51,8 +51,7 @@ namespace ionengine
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
         std::unordered_map<uint64_t, std::vector<PassResourceData>> passResourcesCache;
 
-        RenderQueue opaqueQueue;
-        RenderQueue translucentQueue;
+        RenderableData renderableData;
         std::set<core::ref_ptr<Camera>> targetCameras;
 
         core::ref_ptr<Shader> blitShader;

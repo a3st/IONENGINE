@@ -22,6 +22,14 @@ namespace ionengine
 
         if (depthStencil.has_value())
         {
+            uintptr_t const texturePtr = (uintptr_t)depthStencil.value().texture.get();
+            ::XXH64_update(hasher, &texturePtr, sizeof(uintptr_t));
+        }
+
+        for (auto const& input : inputs)
+        {
+            uintptr_t const texturePtr = (uintptr_t)input.texture.get();
+            ::XXH64_update(hasher, &texturePtr, sizeof(uintptr_t));
         }
 
         ::XXH64_update(hasher, debugName.data(), debugName.size());
@@ -38,11 +46,6 @@ namespace ionengine
     auto RenderPass::getColors() const -> std::span<rhi::RenderPassColorInfo const> const
     {
         return colors;
-    }
-
-    auto RenderPass::getShader() -> core::ref_ptr<Shader>
-    {
-        return shader;
     }
 
     auto RenderPass::getInputs() const -> std::span<RenderPassInputInfo const> const

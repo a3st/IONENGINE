@@ -1,10 +1,16 @@
 cmake_minimum_required(VERSION 3.25.1)
 
-find_package(imgui CONFIG REQUIRED)
+find_package(RmlUi CONFIG REQUIRED)
 
 add_library(engine STATIC
     ../shadersys/fx.cpp
     ../mdl/mdl.cpp
+
+    gui/gui.cpp
+
+    graphics/passes/internal/swapchain.cpp
+    graphics/passes/ui.cpp
+    graphics/passes/geometry.cpp
 
     graphics/mesh.cpp
     graphics/upload_manager.cpp
@@ -28,7 +34,7 @@ target_link_libraries(engine PUBLIC
     core
     platform
     rhi
-    imgui::imgui)
+    RmlCore RmlDebugger)
 
 set_target_properties(engine PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}

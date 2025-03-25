@@ -40,12 +40,4 @@ namespace ionengine
       private:
         std::vector<DrawableData> elements;
     };
-
-    struct RenderableData
-    {
-        RenderQueue* opaqueQueue;
-        RenderQueue* translucentQueue;
-        core::Mat4f viewMat;
-        core::Mat4f projMat;
-    };
 } // namespace ionengine
