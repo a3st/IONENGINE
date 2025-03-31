@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "material.hpp"
 #include "mdl/mdl.hpp"
 #include "upload_manager.hpp"
 
@@ -58,8 +59,13 @@ namespace ionengine
 
         auto getSurfaces() const -> std::span<Surface const>;
 
+        auto getMaterials() const -> std::span<core::ref_ptr<Material> const>;
+
+        auto setMaterial(uint32_t const index, core::ref_ptr<Material> const& material) -> void;
+
       private:
         std::vector<Surface> surfaces;
         std::atomic<uint32_t> countUploaded;
+        std::vector<core::ref_ptr<Material>> materials;
     };
 } // namespace ionengine

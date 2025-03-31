@@ -36,6 +36,7 @@ namespace ionengine
             uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void { countUploaded++; });
 
             surfaces.emplace_back(std::move(surface));
+            materials.emplace_back(Material::baseSurfaceMaterial);
         }
     }
 
@@ -47,5 +48,15 @@ namespace ionengine
     auto Mesh::getSurfaces() const -> std::span<Surface const>
     {
         return surfaces;
+    }
+
+    auto Mesh::getMaterials() const -> std::span<core::ref_ptr<Material> const>
+    {
+        return materials;
+    }
+
+    auto Mesh::setMaterial(uint32_t const index, core::ref_ptr<Material> const& material) -> void
+    {
+        materials[index] = material;
     }
 } // namespace ionengine

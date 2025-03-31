@@ -23,7 +23,11 @@ class MyEngine : public Engine
         testCamera->setViewMatrix(core::Mat4f::lookAtRH(core::Vec3f(5.0f, 5.0f, 5.0f), core::Vec3f(0.0f, 0.0f, 0.0f),
                                                         core::Vec3f(0.0f, 0.0f, 1.0f)));
         quadShader = Graphics::loadShaderFromFile("../../assets/shaders/quad_test_color_pc.bin");
+        Material::baseSurfaceMaterial =
+            Graphics::createMaterial(Graphics::loadShaderFromFile("../../assets/shaders/base3d_test_color_pc.bin"));
         testMesh = Graphics::loadMeshFromFile("../../assets/models/box.mdl");
+
+        Material::baseSurfaceMaterial->setValue("baseColor", core::Vec4f(0.5f, 0.6f, 0.9f, 1.0f));
 
         Graphics::setRenderPath([&]() {
             auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>();
@@ -44,6 +48,7 @@ class MyEngine : public Engine
     core::ref_ptr<Shader> quadShader;
     core::ref_ptr<Camera> testCamera;
     core::ref_ptr<Mesh> testMesh;
+    core::ref_ptr<Material> material;
 };
 
 TEST(Engine, Instance_Test)

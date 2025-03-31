@@ -6,6 +6,7 @@ add_library(engine STATIC
     ../shadersys/fx.cpp
     ../mdl/mdl.cpp
 
+    gui/rml.cpp
     gui/gui.cpp
 
     graphics/passes/internal/swapchain.cpp
@@ -18,10 +19,13 @@ add_library(engine STATIC
     graphics/camera.cpp
     graphics/buffer.cpp
     graphics/texture.cpp
+    graphics/material.cpp
     graphics/render_pass.cpp
     graphics/shader.cpp
     graphics/graphics.cpp
+
     window/window.cpp
+    
     engine.cpp)
 
 target_include_directories(engine PUBLIC 
@@ -34,7 +38,8 @@ target_link_libraries(engine PUBLIC
     core
     platform
     rhi
-    RmlCore RmlDebugger)
+    RmlCore 
+    RmlDebugger)
 
 set_target_properties(engine PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}

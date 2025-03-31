@@ -8,11 +8,24 @@
 #include "render_pass.hpp"
 #include "render_queue.hpp"
 #include "rhi/rhi.hpp"
-#include "shader.hpp"
+#include "material.hpp"
 #include "texture.hpp"
 
 namespace ionengine
 {
+    enum class DrawType
+    {
+        Triangles
+    };
+
+    struct DrawParameters
+    {
+        DrawType drawType;
+        Surface surface;
+        core::ref_ptr<Material> material;
+        RenderGroup renderGroup;
+    };
+
     class Graphics
     {
       public:
@@ -81,6 +94,9 @@ namespace ionengine
         static auto drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
                              core::ref_ptr<Camera> targetCamera) -> void;
 
+        static auto drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
+                                   core::ref_ptr<Camera> targetCamera) -> void;
+
         static auto createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
             -> core::ref_ptr<PerspectiveCamera>;
 
@@ -89,5 +105,7 @@ namespace ionengine
         static auto loadMeshFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>;
 
         static auto setRenderPath(std::function<void()>&& func) -> void;
+
+        static auto createMaterial(core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>;
     };
 } // namespace ionengine

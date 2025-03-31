@@ -108,38 +108,46 @@ namespace ionengine::shadersys
         HLSLCodeGen generator;
         asset::fx::VertexLayoutData vertexLayout;
 
-        if (parseData.headerData.domain.compare("Screen") == 0)
+        if (parseData.headerData.domain.compare("PostProcess") == 0)
         {
-            HLSLCodeGen generator;
             inputDataCode += generator.getHLSLStruct<inputs::BaseVSInput>("VS_INPUT") + "\n";
             inputDataCode += generator.getHLSLStruct<inputs::BaseVSOutput>("VS_OUTPUT") + "\n";
-            inputDataCode += generator.getHLSLStruct<inputs::BasePSOutput>("PS_OUTPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::ForwardPSOutput>("PS_OUTPUT") + "\n";
             inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
             inputDataCode += generator.getHLSLStruct<common::PASS_DATA>("PASS_DATA") + "\n";
-            inputDataCode +=
-                generator.getHLSLConstBuffer<constants::ScreenShaderData>("SHADER_DATA", 0, 0) + "\n";
+            inputDataCode += generator.getHLSLConstBuffer<constants::PostProcessShaderData>("SHADER_DATA", 0, 0) + "\n";
 
             shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
             shaderData.structures.emplace_back(common::PASS_DATA::structureData);
-            shaderData.structures.emplace_back(constants::ScreenShaderData::structureData);
+            shaderData.structures.emplace_back(constants::PostProcessShaderData::structureData);
 
             vertexLayout = {};
         }
         else if (parseData.headerData.domain.compare("Surface") == 0)
         {
-            inputDataCode += generator.getHLSLStruct<inputs::StaticVSInput>("VS_INPUT") + "\n";
-            inputDataCode += generator.getHLSLStruct<inputs::StaticVSOutput>("VS_OUTPUT") + "\n";
-            inputDataCode += generator.getHLSLStruct<inputs::BasePSOutput>("PS_OUTPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::SurfaceVSInput>("VS_INPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::SurfaceVSOutput>("VS_OUTPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::ForwardPSOutput>("PS_OUTPUT") + "\n";
             inputDataCode += generator.getHLSLStruct<common::TRANSFORM_DATA>("TRANSFORM_DATA") + "\n";
             inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
-            inputDataCode +=
-                generator.getHLSLConstBuffer<constants::SurfaceShaderData>("SHADER_DATA", 0, 0) + "\n";
+            inputDataCode += generator.getHLSLConstBuffer<constants::SurfaceShaderData>("SHADER_DATA", 0, 0) + "\n";
 
             shaderData.structures.emplace_back(common::TRANSFORM_DATA::structureData);
             shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
             shaderData.structures.emplace_back(constants::SurfaceShaderData::structureData);
 
-            vertexLayout = inputs::StaticVSInput::vertexLayout;
+            vertexLayout = inputs::SurfaceVSInput::vertexLayout;
+        }
+        else if (parseData.headerData.domain.compare("UI") == 0)
+        {
+            inputDataCode += generator.getHLSLStruct<inputs::UIVSInput>("VS_INPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::UIVSOutput>("VS_OUTPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<inputs::ForwardPSOutput>("PS_OUTPUT") + "\n";
+            inputDataCode += generator.getHLSLStruct<common::TRANSFORM_DATA>("TRANSFORM_DATA") + "\n";
+            inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
+            inputDataCode += generator.getHLSLConstBuffer<constants::UIShaderData>("SHADER_DATA", 0, 0) + "\n";
+
+            vertexLayout = inputs::UIVSInput::vertexLayout;
         }
 
         for (auto const& [stageType, shaderCode] : parseData.codeData)

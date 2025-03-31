@@ -12,7 +12,7 @@ namespace ionengine
 
         RHI = rhi::RHI::create(rhi::RHICreateInfo::Default());
         graphics = std::make_unique<Graphics>(RHI);
-        gui = std::make_unique<GUI>();
+        gui = std::make_unique<GUI>(RHI);
 
         rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                            .instance = application->getInstanceHandle()};
@@ -30,6 +30,7 @@ namespace ionengine
 
             graphics->beginFrame(swapchainTexture.get());
             this->onRender();
+            gui->onRender();
             graphics->endFrame();
 
             swapchain->presentBackBuffer();

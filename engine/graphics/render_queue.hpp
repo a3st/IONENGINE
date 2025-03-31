@@ -12,7 +12,8 @@ namespace ionengine
     {
         Surface surface;
         core::ref_ptr<Shader> shader;
-        core::Mat4f modelMat;
+        core::ref_ptr<rhi::Buffer> effectDataBuffer;
+        core::ref_ptr<rhi::Buffer> transformDataBuffer;
         uint16_t layerIndex;
     };
 

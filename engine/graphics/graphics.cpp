@@ -23,7 +23,7 @@ namespace ionengine
             shaderExt = "_vk";
         }
 
-        blitShader = this->loadShaderFromFile("engine/shaders/blit_t1" + shaderExt + ".bin");
+        blitShader = this->loadShaderFromFile("../../assets/shaders/blit_t1" + shaderExt + ".bin");
         base3DShader = this->loadShaderFromFile("../../assets/shaders/base3d_test_color" + shaderExt + ".bin");
 
         this->initializeSharedSamplers();
@@ -188,10 +188,8 @@ namespace ionengine
 
             RenderContext const renderContext{.graphics = graphicsContext,
                                               .uploadManager = uploadManager.get(),
-                                              .constBufferAllocator = constBuffersAllocator.get(),
+                                              .constBuffersAllocator = constBuffersAllocator.get(),
                                               .samplerDataBuffer = samplerDataBuffer};
-            renderableData.viewMat = targetCamera->getViewMatrix();
-            renderableData.projMat = targetCamera->getProjMatrix();
 
             renderPasses[i]->execute(renderContext, renderableData);
 
@@ -215,13 +213,43 @@ namespace ionengine
     {
         if (drawableMesh->isUploaded())
         {
-            for (auto const& surface : drawableMesh->getSurfaces())
+            for (uint32_t const i : std::views::iota(0u, drawableMesh->getSurfaces().size()))
             {
-                DrawableData drawableData{
-                    .surface = surface, .shader = instance->base3DShader, .modelMat = modelMatrix, .layerIndex = 0};
+                core::weak_ptr<rhi::Buffer> transformDataBuffer;
+                {
+                    auto const& transformData = instance->base3DShader->getBindings().at("TRANSFORM_DATA");
+
+                    uint32_t const modelViewProjOffset =
+                        instance->base3DShader->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
+
+                    std::vector<uint8_t> transformDataRawBuffer(transformData.size);
+
+                    core::Mat4f const modelViewProjMat =
+                        modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
+                    std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
+                                sizeof(core::Mat4f));
+
+                    transformDataBuffer = instance->constBuffersAllocator->allocate(transformData.size);
+
+                    internal::UploadBufferInfo const uploadBufferInfo{
+                        .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
+                    instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
+                }
+
+                DrawableData drawableData{.surface = drawableMesh->getSurfaces()[i],
+                                          .shader = drawableMesh->getMaterials()[i]->getShader(),
+                                          .transformDataBuffer = transformDataBuffer.get(),
+                                          .layerIndex = 0};
                 instance->renderableData.renderGroups[RenderGroup::Opaque].push(std::move(drawableData));
             }
         }
+
+        instance->targetCameras.emplace(targetCamera);
+    }
+
+    auto Graphics::drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
+                                  core::ref_ptr<Camera> targetCamera) -> void
+    {
 
         instance->targetCameras.emplace(targetCamera);
     }
@@ -230,6 +258,11 @@ namespace ionengine
         -> core::ref_ptr<PerspectiveCamera>
     {
         return core::make_ref<PerspectiveCamera>(*instance->RHI, fovy, zNear, zFar);
+    }
+
+    auto Graphics::createMaterial(core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>
+    {
+        return core::make_ref<Material>(*instance->RHI, shader);
     }
 
     auto Graphics::findTextureInPassResources(std::span<PassResourceData const> const passResources,

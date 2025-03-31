@@ -5,12 +5,12 @@
 
 namespace ionengine
 {
-    GUI::GUI()
+    GUI::GUI(core::ref_ptr<rhi::RHI> RHI)
     {
         instance = this;
     }
 
-    auto GUI::drawText(std::string_view const text) -> void
+    auto GUI::onRender() -> void
     {
     }
 } // namespace ionengine

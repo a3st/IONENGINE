@@ -3,7 +3,7 @@
 HEADER {
     Name = "Blit";
     Description = "Combining incoming textures into one";
-    Domain = "Screen";
+    Domain = "PostProcess";
 }
 
 VS {

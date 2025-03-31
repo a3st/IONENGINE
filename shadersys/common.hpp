@@ -74,7 +74,7 @@ namespace ionengine::shadersys
 
     namespace constants
     {
-        struct ScreenShaderData
+        struct PostProcessShaderData
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
@@ -107,11 +107,28 @@ namespace ionengine::shadersys
                              {.name = "gEffectData", .type = asset::fx::ElementType::Uint}},
                 .size = 12};
         };
+
+        struct UIShaderData
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<uint32_t>("gTransformData", "packoffset(c0)");
+                generator.property<uint32_t>("gSamplerData", "packoffset(c1)");
+                generator.property<uint32_t>("gEffectData", "packoffset(c2)");
+            }
+
+            static inline asset::fx::StructureData structureData{
+                .name = "SHADER_DATA",
+                .elements = {{.name = "gTransformData", .type = asset::fx::ElementType::Uint},
+                             {.name = "gSamplerData", .type = asset::fx::ElementType::Uint},
+                             {.name = "gEffectData", .type = asset::fx::ElementType::Uint}},
+                .size = 12};
+        };
     } // namespace constants
 
     namespace inputs
     {
-        struct StaticVSInput
+        struct SurfaceVSInput
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
@@ -127,7 +144,7 @@ namespace ionengine::shadersys
                 .size = 32};
         };
 
-        struct StaticVSOutput
+        struct SurfaceVSOutput
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
@@ -154,7 +171,33 @@ namespace ionengine::shadersys
             }
         };
 
-        struct BasePSOutput
+        struct UIVSInput
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<core::Vec2f>("position", "POSITION");
+                generator.property<core::Vec2f>("uv", "TEXCOORD");
+                generator.property<core::Vec4f>("color", "COLOR");
+            }
+
+            static inline asset::fx::VertexLayoutData vertexLayout{
+                .elements = {{.format = asset::fx::VertexFormat::RG32_FLOAT, .semantic = "POSITION"},
+                             {.format = asset::fx::VertexFormat::RG32_FLOAT, .semantic = "TEXCOORD"},
+                             {.format = asset::fx::VertexFormat::RGBA32_FLOAT, .semantic = "COLOR"}},
+                .size = 32};
+        };
+
+        struct UIVSOutput
+        {
+            static auto toHLSL(HLSLCodeGen& generator) -> void
+            {
+                generator.property<core::Vec4f>("position", "SV_Position");
+                generator.property<core::Vec2f>("uv", "TEXCOORD");
+                generator.property<core::Vec4f>("color", "COLOR");
+            }
+        };
+
+        struct ForwardPSOutput
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {

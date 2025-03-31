@@ -21,8 +21,6 @@ namespace ionengine
     struct RenderableData
     {
         std::unordered_map<RenderGroup, RenderQueue> renderGroups;
-        core::Mat4f viewMat;
-        core::Mat4f projMat;
     };
 
     struct RenderPassInputInfo
@@ -35,7 +33,7 @@ namespace ionengine
     {
         rhi::GraphicsContext* graphics;
         internal::UploadManager* uploadManager;
-        BufferAllocator* constBufferAllocator;
+        BufferAllocator* constBuffersAllocator;
         core::ref_ptr<rhi::Buffer> samplerDataBuffer;
     };
 

@@ -2,17 +2,21 @@
 
 #pragma once
 
+#include "rhi/rhi.hpp"
+
 namespace ionengine
 {
     class GUI
     {
       public:
-        GUI();
+        GUI(core::ref_ptr<rhi::RHI> RHI);
+
+        auto onRender() -> void;
 
       private:
         inline static GUI* instance;
 
       public:
-        static auto drawText(std::string_view const text) -> void;
+        
     };
 } // namespace ionengine

@@ -40,7 +40,7 @@ namespace ionengine::passes
                 std::memcpy(passDataRawBuffer.data() + bindingOffset, &descriptor, sizeof(uint32_t));
             }
 
-            passDataBuffer = context.constBufferAllocator->allocate(passData.size);
+            passDataBuffer = context.constBuffersAllocator->allocate(passData.size);
 
             internal::UploadBufferInfo const uploadBufferInfo{
                 .buffer = passDataBuffer.get(), .offset = 0, .dataBytes = passDataRawBuffer};

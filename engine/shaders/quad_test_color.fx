@@ -3,7 +3,7 @@
 HEADER {
     Name = "Quad Test Color";
     Description = "Test 1";
-    Domain = "Screen";
+    Domain = "PostProcess";
 }
 
 VS {
