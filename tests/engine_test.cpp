@@ -27,7 +27,7 @@ class MyEngine : public Engine
             Graphics::createMaterial(Graphics::loadShaderFromFile("../../assets/shaders/base3d_test_color_pc.bin"));
         testMesh = Graphics::loadMeshFromFile("../../assets/models/box.mdl");
 
-        Material::baseSurfaceMaterial->setValue("baseColor", core::Vec4f(0.5f, 0.6f, 0.9f, 1.0f));
+        Material::baseSurfaceMaterial->setValue("baseColor", core::Vec4f(0.9f, 0.6f, 0.9f, 1.0f));
 
         Graphics::setRenderPath([&]() {
             auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>();

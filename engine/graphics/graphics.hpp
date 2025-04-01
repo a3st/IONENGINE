@@ -44,8 +44,6 @@ namespace ionengine
         core::ref_ptr<BufferAllocator> constBuffersAllocator;
         core::ref_ptr<Camera> targetCamera;
 
-        core::ref_ptr<Shader> base3DShader;
-
         using ResourceStateInfo =
             std::pair<core::ref_ptr<rhi::Texture>, std::pair<rhi::ResourceState, rhi::ResourceState>>;
 

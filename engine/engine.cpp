@@ -46,6 +46,8 @@ namespace ionengine
         beginFrameTime = std::chrono::high_resolution_clock::now();
 
         application->run();
+
+        Material::baseSurfaceMaterial = nullptr;
         return EXIT_SUCCESS;
     }
 } // namespace ionengine

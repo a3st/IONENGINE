@@ -24,7 +24,6 @@ namespace ionengine
         }
 
         blitShader = this->loadShaderFromFile("../../assets/shaders/blit_t1" + shaderExt + ".bin");
-        base3DShader = this->loadShaderFromFile("../../assets/shaders/base3d_test_color" + shaderExt + ".bin");
 
         this->initializeSharedSamplers();
 
@@ -211,37 +210,37 @@ namespace ionengine
     auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
                             core::ref_ptr<Camera> targetCamera) -> void
     {
-        if (drawableMesh->isUploaded())
+        for (uint32_t const i : std::views::iota(0u, drawableMesh->getSurfaces().size()))
         {
-            for (uint32_t const i : std::views::iota(0u, drawableMesh->getSurfaces().size()))
+            core::ref_ptr<Material> currentMaterial = drawableMesh->getMaterials()[i];
+            currentMaterial->updateEffectDataBuffer(instance->uploadManager.get());
+
+            core::weak_ptr<rhi::Buffer> transformDataBuffer;
             {
-                core::weak_ptr<rhi::Buffer> transformDataBuffer;
-                {
-                    auto const& transformData = instance->base3DShader->getBindings().at("TRANSFORM_DATA");
+                auto const& transformData = currentMaterial->getShader()->getBindings().at("TRANSFORM_DATA");
 
-                    uint32_t const modelViewProjOffset =
-                        instance->base3DShader->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
+                uint32_t const modelViewProjOffset =
+                    currentMaterial->getShader()->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
 
-                    std::vector<uint8_t> transformDataRawBuffer(transformData.size);
+                std::vector<uint8_t> transformDataRawBuffer(transformData.size);
 
-                    core::Mat4f const modelViewProjMat =
-                        modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
-                    std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
-                                sizeof(core::Mat4f));
+                core::Mat4f const modelViewProjMat =
+                    modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
+                std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
+                            sizeof(core::Mat4f));
 
-                    transformDataBuffer = instance->constBuffersAllocator->allocate(transformData.size);
+                transformDataBuffer = instance->constBuffersAllocator->allocate(transformData.size);
 
-                    internal::UploadBufferInfo const uploadBufferInfo{
-                        .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
-                    instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
-                }
-
-                DrawableData drawableData{.surface = drawableMesh->getSurfaces()[i],
-                                          .shader = drawableMesh->getMaterials()[i]->getShader(),
-                                          .transformDataBuffer = transformDataBuffer.get(),
-                                          .layerIndex = 0};
-                instance->renderableData.renderGroups[RenderGroup::Opaque].push(std::move(drawableData));
+                internal::UploadBufferInfo const uploadBufferInfo{
+                    .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
+                instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
             }
+
+            DrawableData drawableData{.surface = drawableMesh->getSurfaces()[i],
+                                      .shader = currentMaterial->getShader(),
+                                      .effectDataBuffer = currentMaterial->getEffectDataBuffer(),
+                                      .transformDataBuffer = transformDataBuffer.get()};
+            instance->renderableData.renderGroups[RenderGroup::Opaque].push(std::move(drawableData));
         }
 
         instance->targetCameras.emplace(targetCamera);
@@ -250,6 +249,34 @@ namespace ionengine
     auto Graphics::drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
                                   core::ref_ptr<Camera> targetCamera) -> void
     {
+        drawParams.material->updateEffectDataBuffer(instance->uploadManager.get());
+
+        core::weak_ptr<rhi::Buffer> transformDataBuffer;
+        {
+            auto const& transformData = drawParams.material->getShader()->getBindings().at("TRANSFORM_DATA");
+
+            uint32_t const modelViewProjOffset =
+                drawParams.material->getShader()->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
+
+            std::vector<uint8_t> transformDataRawBuffer(transformData.size);
+
+            core::Mat4f const modelViewProjMat =
+                modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
+            std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
+                        sizeof(core::Mat4f));
+
+            transformDataBuffer = instance->constBuffersAllocator->allocate(transformData.size);
+
+            internal::UploadBufferInfo const uploadBufferInfo{
+                .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
+            instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
+        }
+
+        DrawableData drawableData{.surface = drawParams.surface,
+                                  .shader = drawParams.material->getShader(),
+                                  .effectDataBuffer = drawParams.material->getEffectDataBuffer(),
+                                  .transformDataBuffer = transformDataBuffer.get()};
+        instance->renderableData.renderGroups[drawParams.renderGroup].push(std::move(drawableData));
 
         instance->targetCameras.emplace(targetCamera);
     }

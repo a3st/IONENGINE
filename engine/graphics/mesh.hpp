@@ -55,8 +55,6 @@ namespace ionengine
       public:
         Mesh(rhi::RHI& RHI, internal::UploadManager* uploadManager, asset::ModelFile const& modelFile);
 
-        auto isUploaded() const -> bool;
-
         auto getSurfaces() const -> std::span<Surface const>;
 
         auto getMaterials() const -> std::span<core::ref_ptr<Material> const>;
@@ -65,7 +63,6 @@ namespace ionengine
 
       private:
         std::vector<Surface> surfaces;
-        std::atomic<uint32_t> countUploaded;
         std::vector<core::ref_ptr<Material>> materials;
     };
 } // namespace ionengine

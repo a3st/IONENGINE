@@ -20,7 +20,7 @@ namespace ionengine
                 .buffer = vertexBuffer,
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};
-            uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void { countUploaded++; });
+            uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void {});
         }
 
         for (auto const& surfaceData : modelFile.modelData.surfaces)
@@ -33,16 +33,11 @@ namespace ionengine
                 .buffer = surface.indexBuffer,
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};
-            uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void { countUploaded++; });
+            uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void {});
 
             surfaces.emplace_back(std::move(surface));
             materials.emplace_back(Material::baseSurfaceMaterial);
         }
-    }
-
-    auto Mesh::isUploaded() const -> bool
-    {
-        return surfaces.size() + 1 == countUploaded;
     }
 
     auto Mesh::getSurfaces() const -> std::span<Surface const>

@@ -27,9 +27,13 @@ namespace ionengine::passes
 
             uint32_t const transformDataIndex =
                 drawableData.shader->getBindings().at("SHADER_DATA").elements.at("gTransformData") / sizeof(uint32_t);
-
             context.graphics->bindDescriptor(transformDataIndex, drawableData.transformDataBuffer->getDescriptorOffset(
                                                                      rhi::BufferUsage::ConstantBuffer));
+
+            uint32_t const effectDataIndex =
+                drawableData.shader->getBindings().at("SHADER_DATA").elements.at("gEffectData") / sizeof(uint32_t);
+            context.graphics->bindDescriptor(
+                effectDataIndex, drawableData.effectDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
 
             drawableData.surface.draw(context.graphics);
         }

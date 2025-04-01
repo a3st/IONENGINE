@@ -7,6 +7,10 @@ HEADER {
     Blend = "Opaque";
 }
 
+DATA {
+    float4 baseColor;
+}
+
 VS {
     VS_OUTPUT main(VS_INPUT input) 
     {
@@ -26,8 +30,10 @@ VS {
 PS {
     PS_OUTPUT main(VS_OUTPUT input) 
     {
+        cbuffer_t<EFFECT_DATA> effectData = make_cbuffer<EFFECT_DATA>(gEffectData);
+
         PS_OUTPUT output;
-        output.color = float4(1.0f, 1.0f, 0.5f, 1.0f);
+        output.color = effectData.Get().baseColor;
         return output;
     }
 }

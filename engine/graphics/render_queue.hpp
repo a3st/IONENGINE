@@ -14,7 +14,6 @@ namespace ionengine
         core::ref_ptr<Shader> shader;
         core::ref_ptr<rhi::Buffer> effectDataBuffer;
         core::ref_ptr<rhi::Buffer> transformDataBuffer;
-        uint16_t layerIndex;
     };
 
     class RenderQueue
