@@ -3,14 +3,13 @@
 #pragma once
 
 #include "rhi/rhi.hpp"
-#include <xxhash.h>
 
 namespace ionengine
 {
     class BufferAllocator : public core::ref_counted_object
     {
       public:
-        BufferAllocator(core::ref_ptr<rhi::RHI> RHI);
+        BufferAllocator(core::ref_ptr<rhi::RHI> RHI, rhi::BufferUsage const usage);
 
         auto allocate(size_t const size) -> core::weak_ptr<rhi::Buffer>;
 
@@ -18,6 +17,7 @@ namespace ionengine
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
+        rhi::BufferUsage usage;
 
         struct Bucket
         {

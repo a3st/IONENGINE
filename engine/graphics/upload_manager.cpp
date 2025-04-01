@@ -3,7 +3,7 @@
 #include "upload_manager.hpp"
 #include "precompiled.h"
 
-namespace ionengine::internal
+namespace ionengine
 {
     UploadManager::UploadManager(core::ref_ptr<rhi::RHI> RHI) : RHI(RHI)
     {

@@ -2,15 +2,14 @@
 
 #pragma once
 
-#include "buffer.hpp"
 #include "render_queue.hpp"
 #include "rhi/rhi.hpp"
-#include "shader.hpp"
-#include "texture.hpp"
-#include "upload_manager.hpp"
 
 namespace ionengine
 {
+    class BufferAllocator;
+    class UploadManager;
+
     enum class RenderGroup
     {
         Opaque,
@@ -32,8 +31,8 @@ namespace ionengine
     struct RenderContext
     {
         rhi::GraphicsContext* graphics;
-        internal::UploadManager* uploadManager;
-        BufferAllocator* constBuffersAllocator;
+        UploadManager* uploadManager;
+        BufferAllocator* constBufferAllocator;
         core::ref_ptr<rhi::Buffer> samplerDataBuffer;
     };
 

@@ -4,7 +4,7 @@
 
 #include "rhi/rhi.hpp"
 
-namespace ionengine::internal
+namespace ionengine
 {
     struct UploadBufferInfo
     {

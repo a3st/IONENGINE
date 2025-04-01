@@ -17,8 +17,8 @@ add_library(engine STATIC
     graphics/upload_manager.cpp
     graphics/render_queue.cpp
     graphics/camera.cpp
-    graphics/buffer.cpp
-    graphics/texture.cpp
+    graphics/buffer_allocator.cpp
+    graphics/texture_allocator.cpp
     graphics/material.cpp
     graphics/render_pass.cpp
     graphics/shader.cpp

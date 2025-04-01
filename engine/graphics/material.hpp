@@ -5,10 +5,11 @@
 #include "core/matrix.hpp"
 #include "core/vector.hpp"
 #include "shader.hpp"
-#include "upload_manager.hpp"
 
 namespace ionengine
 {
+    class UploadManager;
+
     class Material : public core::ref_counted_object
     {
       public:
@@ -18,7 +19,7 @@ namespace ionengine
 
         auto getEffectDataBuffer() const -> core::ref_ptr<rhi::Buffer>;
 
-        auto updateEffectDataBuffer(internal::UploadManager* uploadManager) -> void;
+        auto updateEffectDataBuffer(UploadManager* uploadManager) -> void;
 
         inline static core::ref_ptr<Material> baseSurfaceMaterial;
 

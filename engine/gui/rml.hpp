@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "graphics/buffer_allocator.hpp"
+#include "graphics/shader.hpp"
 #include "rhi/rhi.hpp"
 #include <RmlUi/Core.h>
 
@@ -28,5 +30,11 @@ namespace ionengine::internal
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
+
+        core::ref_ptr<Shader> uiColShader;
+        core::ref_ptr<Shader> uiTexShader;
+
+        core::ref_ptr<BufferAllocator> verticesBufferAllocator;
+        core::ref_ptr<BufferAllocator> indicesBufferAllocator;
     };
 } // namespace ionengine::internal

@@ -2,6 +2,7 @@
 
 #include "render_pass.hpp"
 #include "precompiled.h"
+#include <xxhash.h>
 
 namespace ionengine
 {

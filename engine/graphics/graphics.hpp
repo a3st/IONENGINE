@@ -2,14 +2,14 @@
 
 #pragma once
 
-#include "buffer.hpp"
+#include "buffer_allocator.hpp"
 #include "camera.hpp"
+#include "material.hpp"
 #include "mesh.hpp"
 #include "render_pass.hpp"
 #include "render_queue.hpp"
 #include "rhi/rhi.hpp"
-#include "material.hpp"
-#include "texture.hpp"
+#include "texture_allocator.hpp"
 
 namespace ionengine
 {
@@ -37,11 +37,11 @@ namespace ionengine
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
-        std::unique_ptr<internal::UploadManager> uploadManager;
+        std::unique_ptr<UploadManager> uploadManager;
 
-        core::ref_ptr<TextureAllocator> renderTargetsAllocator;
+        core::ref_ptr<TextureAllocator> renderTargetAllocator;
         core::ref_ptr<rhi::Texture> swapchainTexture;
-        core::ref_ptr<BufferAllocator> constBuffersAllocator;
+        core::ref_ptr<BufferAllocator> constBufferAllocator;
         core::ref_ptr<Camera> targetCamera;
 
         using ResourceStateInfo =
@@ -80,7 +80,7 @@ namespace ionengine
         template <typename Type, typename... Args>
         static auto addRenderPass(Args&&... args) -> RenderPass*
         {
-            auto renderPass = std::make_unique<Type>(instance->renderTargetsAllocator.get(),
+            auto renderPass = std::make_unique<Type>(instance->renderTargetAllocator.get(),
                                                      instance->targetCamera->getTexture(), std::forward<Args>(args)...);
             instance->renderPathHash = instance->renderPathHash == 0 ? renderPass->getHash()
                                                                      : instance->renderPathHash ^ renderPass->getHash();

@@ -7,9 +7,10 @@
 namespace ionengine
 {
     Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI)
-        : RHI(RHI), uploadManager(std::make_unique<internal::UploadManager>(RHI)),
-          renderTargetsAllocator(core::make_ref<TextureAllocator>(RHI)),
-          constBuffersAllocator(core::make_ref<BufferAllocator>(RHI)), renderPathHash(0)
+        : RHI(RHI), uploadManager(std::make_unique<UploadManager>(RHI)),
+          renderTargetAllocator(core::make_ref<TextureAllocator>(RHI)),
+          constBufferAllocator(core::make_ref<BufferAllocator>(RHI, rhi::BufferUsage::ConstantBuffer)),
+          renderPathHash(0)
     {
         instance = this;
 
@@ -68,8 +69,8 @@ namespace ionengine
 
     auto Graphics::beginFrame(core::ref_ptr<rhi::Texture> swapchainTexture) -> void
     {
-        renderTargetsAllocator->reset();
-        constBuffersAllocator->reset();
+        renderTargetAllocator->reset();
+        constBufferAllocator->reset();
         renderPasses.clear();
         renderPathHash = 0;
         this->swapchainTexture = swapchainTexture;
@@ -187,7 +188,7 @@ namespace ionengine
 
             RenderContext const renderContext{.graphics = graphicsContext,
                                               .uploadManager = uploadManager.get(),
-                                              .constBuffersAllocator = constBuffersAllocator.get(),
+                                              .constBufferAllocator = constBufferAllocator.get(),
                                               .samplerDataBuffer = samplerDataBuffer};
 
             renderPasses[i]->execute(renderContext, renderableData);
@@ -229,9 +230,9 @@ namespace ionengine
                 std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
                             sizeof(core::Mat4f));
 
-                transformDataBuffer = instance->constBuffersAllocator->allocate(transformData.size);
+                transformDataBuffer = instance->constBufferAllocator->allocate(transformData.size);
 
-                internal::UploadBufferInfo const uploadBufferInfo{
+                UploadBufferInfo const uploadBufferInfo{
                     .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
                 instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
             }
@@ -265,9 +266,9 @@ namespace ionengine
             std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
                         sizeof(core::Mat4f));
 
-            transformDataBuffer = instance->constBuffersAllocator->allocate(transformData.size);
+            transformDataBuffer = instance->constBufferAllocator->allocate(transformData.size);
 
-            internal::UploadBufferInfo const uploadBufferInfo{
+            UploadBufferInfo const uploadBufferInfo{
                 .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
             instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
         }

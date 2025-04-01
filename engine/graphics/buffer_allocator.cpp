@@ -1,11 +1,11 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
-#include "buffer.hpp"
+#include "buffer_allocator.hpp"
 #include "precompiled.h"
 
 namespace ionengine
 {
-    BufferAllocator::BufferAllocator(core::ref_ptr<rhi::RHI> RHI) : RHI(RHI)
+    BufferAllocator::BufferAllocator(core::ref_ptr<rhi::RHI> RHI, rhi::BufferUsage const usage) : RHI(RHI), usage(usage)
     {
     }
 
@@ -34,8 +34,7 @@ namespace ionengine
         if (!allocatedMemory)
         {
             rhi::BufferCreateInfo const bufferCreateInfo{
-                .size = size,
-                .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer | rhi::BufferUsage::CopyDest};
+                .size = size, .flags = (rhi::BufferUsageFlags)usage | rhi::BufferUsage::CopyDest};
             auto buffer = RHI->createBuffer(bufferCreateInfo);
 
             if (buckets.upper_bound(size) != buckets.end())

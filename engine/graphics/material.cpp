@@ -1,6 +1,7 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "material.hpp"
+#include "upload_manager.hpp"
 #include "precompiled.h"
 
 namespace ionengine
@@ -31,11 +32,11 @@ namespace ionengine
         return effectDataBuffer;
     }
 
-    auto Material::updateEffectDataBuffer(internal::UploadManager* uploadManager) -> void
+    auto Material::updateEffectDataBuffer(UploadManager* uploadManager) -> void
     {
         if (effectDataBuffer && wasChanged)
         {
-            internal::UploadBufferInfo const uploadBufferInfo{
+            UploadBufferInfo const uploadBufferInfo{
                 .buffer = effectDataBuffer, .offset = 0, .dataBytes = effectDataRawBuffer};
             uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void {});
 

@@ -53,7 +53,7 @@ namespace ionengine
     class Mesh : public core::ref_counted_object
     {
       public:
-        Mesh(rhi::RHI& RHI, internal::UploadManager* uploadManager, asset::ModelFile const& modelFile);
+        Mesh(rhi::RHI& RHI, UploadManager* uploadManager, asset::ModelFile const& modelFile);
 
         auto getSurfaces() const -> std::span<Surface const>;
 

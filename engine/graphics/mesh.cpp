@@ -5,7 +5,7 @@
 
 namespace ionengine
 {
-    Mesh::Mesh(rhi::RHI& RHI, internal::UploadManager* uploadManager, asset::ModelFile const& modelFile)
+    Mesh::Mesh(rhi::RHI& RHI, UploadManager* uploadManager, asset::ModelFile const& modelFile)
     {
         core::ref_ptr<rhi::Buffer> vertexBuffer;
         {
@@ -16,7 +16,7 @@ namespace ionengine
                 .flags = (rhi::BufferUsageFlags)(rhi::BufferUsage::Vertex | rhi::BufferUsage::CopyDest)};
             vertexBuffer = RHI.createBuffer(bufferCreateInfo);
 
-            internal::UploadBufferInfo const uploadBufferInfo{
+            UploadBufferInfo const uploadBufferInfo{
                 .buffer = vertexBuffer,
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};
@@ -29,7 +29,7 @@ namespace ionengine
 
             Surface surface(RHI, vertexBuffer, bufferData.size, surfaceData.indexCount);
 
-            internal::UploadBufferInfo const uploadBufferInfo{
+            UploadBufferInfo const uploadBufferInfo{
                 .buffer = surface.indexBuffer,
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};

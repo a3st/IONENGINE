@@ -1,6 +1,7 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "swapchain.hpp"
+#include "engine/graphics/buffer_allocator.hpp"
 #include "precompiled.h"
 
 namespace ionengine::passes
@@ -40,9 +41,9 @@ namespace ionengine::passes
                 std::memcpy(passDataRawBuffer.data() + bindingOffset, &descriptor, sizeof(uint32_t));
             }
 
-            passDataBuffer = context.constBuffersAllocator->allocate(passData.size);
+            passDataBuffer = context.constBufferAllocator->allocate(passData.size);
 
-            internal::UploadBufferInfo const uploadBufferInfo{
+            UploadBufferInfo const uploadBufferInfo{
                 .buffer = passDataBuffer.get(), .offset = 0, .dataBytes = passDataRawBuffer};
             context.uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
         }

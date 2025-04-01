@@ -11,8 +11,6 @@ namespace ionengine
       public:
         GUI(core::ref_ptr<rhi::RHI> RHI);
 
-        auto onRender() -> void;
-
       private:
         inline static GUI* instance;
 

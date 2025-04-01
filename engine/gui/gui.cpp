@@ -9,8 +9,4 @@ namespace ionengine
     {
         instance = this;
     }
-
-    auto GUI::onRender() -> void
-    {
-    }
 } // namespace ionengine

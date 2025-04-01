@@ -193,7 +193,7 @@ namespace ionengine
         return domainName;
     }
 
-    auto Shader::getShader() -> core::ref_ptr<rhi::Shader>
+    auto Shader::getShader() const -> core::ref_ptr<rhi::Shader>
     {
         return shader;
     }
