@@ -647,6 +647,6 @@ namespace ionengine::rhi
 
         virtual auto getCopyContext() -> CopyContext* = 0;
 
-        virtual auto getName() const -> std::string_view = 0;
+        virtual auto getName() const -> std::string const& = 0;
     };
 } // namespace ionengine::rhi

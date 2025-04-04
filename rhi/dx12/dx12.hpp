@@ -183,7 +183,7 @@ namespace ionengine::rhi
       public:
         DX12VertexInput(std::span<VertexDeclarationInfo const> const vertexDeclarations);
 
-        auto getInputElementDesc() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>;
+        auto getInputElementDesc() const -> std::vector<D3D12_INPUT_ELEMENT_DESC> const&;
 
         auto getInputSize() const -> uint32_t;
 
@@ -479,7 +479,7 @@ namespace ionengine::rhi
 
         auto getCopyContext() -> CopyContext* override;
 
-        auto getName() const -> std::string_view override;
+        auto getName() const -> std::string const& override;
 
       private:
 #ifndef NDEBUG

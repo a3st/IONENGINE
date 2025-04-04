@@ -50,7 +50,7 @@ namespace ionengine::shadersys
 
         auto getLexeme() const -> Lexeme;
 
-        auto getContent() const -> std::string_view;
+        auto getContent() const -> std::string const&;
 
         auto getNumLine() const -> uint32_t;
 

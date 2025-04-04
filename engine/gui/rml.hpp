@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "graphics/buffer_allocator.hpp"
 #include "graphics/shader.hpp"
+#include "gui_context.hpp"
 #include "rhi/rhi.hpp"
 #include <RmlUi/Core.h>
 
@@ -28,13 +28,12 @@ namespace ionengine::internal
 
         auto ReleaseTexture(Rml::TextureHandle textureHandle) -> void override;
 
+        std::unordered_map<Rml::Context*, core::ref_ptr<GUIContext>> guiContexts;
+
       private:
         core::ref_ptr<rhi::RHI> RHI;
 
         core::ref_ptr<Shader> uiColShader;
         core::ref_ptr<Shader> uiTexShader;
-
-        core::ref_ptr<BufferAllocator> verticesBufferAllocator;
-        core::ref_ptr<BufferAllocator> indicesBufferAllocator;
     };
 } // namespace ionengine::internal

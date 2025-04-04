@@ -26,11 +26,11 @@ namespace ionengine
 
         auto getBindings() const -> std::unordered_map<std::string, ShaderBindingInfo> const&;
 
-        auto getName() const -> std::string_view;
+        auto getName() const -> std::string const&;
 
-        auto getDescription() const -> std::string_view;
+        auto getDescription() const -> std::string const&;
 
-        auto getDomain() const -> std::string_view;
+        auto getDomain() const -> std::string const&;
 
         auto getShader() const -> core::ref_ptr<rhi::Shader>;
 

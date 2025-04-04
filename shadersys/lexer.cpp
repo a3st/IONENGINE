@@ -42,7 +42,7 @@ namespace ionengine::shadersys
         return lexeme;
     }
 
-    auto Token::getContent() const -> std::string_view
+    auto Token::getContent() const -> std::string const&
     {
         return str;
     }

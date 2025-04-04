@@ -865,7 +865,7 @@ namespace ionengine::rhi
         inputSize = offset;
     }
 
-    auto DX12VertexInput::getInputElementDesc() const -> std::span<D3D12_INPUT_ELEMENT_DESC const>
+    auto DX12VertexInput::getInputElementDesc() const -> std::vector<D3D12_INPUT_ELEMENT_DESC> const&
     {
         return inputElements;
     }
@@ -1981,7 +1981,7 @@ namespace ionengine::rhi
         return copyContext.get();
     }
 
-    auto DX12RHI::getName() const -> std::string_view
+    auto DX12RHI::getName() const -> std::string const&
     {
         return rhiName;
     }

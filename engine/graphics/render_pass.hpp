@@ -43,11 +43,11 @@ namespace ionengine
 
         virtual auto execute(RenderContext const& context, RenderableData const& renderableData) -> void = 0;
 
-        auto getColors() const -> std::span<rhi::RenderPassColorInfo const> const;
+        auto getColors() const -> std::vector<rhi::RenderPassColorInfo> const&;
 
         auto getHash() const -> uint64_t;
 
-        auto getInputs() const -> std::span<RenderPassInputInfo const> const;
+        auto getInputs() const -> std::vector<RenderPassInputInfo> const&;
 
       protected:
         auto initializeRenderPass() -> void;

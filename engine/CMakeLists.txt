@@ -7,12 +7,14 @@ add_library(engine STATIC
     ../mdl/mdl.cpp
 
     gui/rml.cpp
+    gui/gui_context.cpp
     gui/gui.cpp
 
     graphics/passes/internal/swapchain.cpp
     graphics/passes/ui.cpp
     graphics/passes/geometry.cpp
 
+    graphics/surface.cpp
     graphics/mesh.cpp
     graphics/upload_manager.cpp
     graphics/render_queue.cpp

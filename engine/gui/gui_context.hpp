@@ -1,0 +1,19 @@
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
+
+#pragma once
+
+#include "graphics/camera.hpp"
+
+namespace ionengine
+{
+    class GUIContext : public core::ref_counted_object
+    {
+      public:
+        GUIContext(core::ref_ptr<Camera> targetCamera);
+
+        auto getTargetCamera() const -> core::ref_ptr<Camera>;
+
+      private:
+        core::ref_ptr<Camera> targetCamera;
+    };
+} // namespace ionengine

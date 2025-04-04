@@ -35,7 +35,7 @@ namespace ionengine::passes
             context.graphics->bindDescriptor(
                 effectDataIndex, drawableData.effectDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
 
-            drawableData.surface.draw(context.graphics);
+            drawableData.surface->draw(context.graphics);
         }
     }
 } // namespace ionengine::passes

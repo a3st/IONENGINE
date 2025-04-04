@@ -21,7 +21,7 @@ namespace ionengine
     struct DrawParameters
     {
         DrawType drawType;
-        Surface surface;
+        core::ref_ptr<Surface> surface;
         core::ref_ptr<Material> material;
         RenderGroup renderGroup;
     };
@@ -105,5 +105,8 @@ namespace ionengine
         static auto setRenderPath(std::function<void()>&& func) -> void;
 
         static auto createMaterial(core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>;
+
+        static auto createSurface(std::span<uint8_t const> const vertexDataBytes,
+                                  std::span<uint8_t const> const indexDataBytes) -> core::ref_ptr<Surface>;
     };
 } // namespace ionengine

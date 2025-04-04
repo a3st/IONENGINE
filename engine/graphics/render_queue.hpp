@@ -10,7 +10,7 @@ namespace ionengine
 {
     struct DrawableData
     {
-        Surface surface;
+        core::ref_ptr<Surface> surface;
         core::ref_ptr<Shader> shader;
         core::ref_ptr<rhi::Buffer> effectDataBuffer;
         core::ref_ptr<rhi::Buffer> transformDataBuffer;

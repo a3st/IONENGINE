@@ -361,4 +361,10 @@ namespace ionengine
         copyContext->updateBuffer(samplerDataBuffer, 0, samplerDataRawBuffer);
         copyContext->execute().wait();
     }
+
+    auto Graphics::createSurface(std::span<uint8_t const> const vertexDataBytes,
+                                 std::span<uint8_t const> const indexDataBytes) -> core::ref_ptr<Surface>
+    {
+        return nullptr;
+    }
 } // namespace ionengine

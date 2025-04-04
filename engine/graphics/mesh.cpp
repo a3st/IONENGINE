@@ -27,10 +27,10 @@ namespace ionengine
         {
             asset::mdl::BufferData const& bufferData = modelFile.modelData.buffers[surfaceData.buffer];
 
-            Surface surface(RHI, vertexBuffer, bufferData.size, surfaceData.indexCount);
+            auto surface = core::make_ref<Surface>(RHI, vertexBuffer, bufferData.size, surfaceData.indexCount);
 
             UploadBufferInfo const uploadBufferInfo{
-                .buffer = surface.indexBuffer,
+                .buffer = surface->getIndexBuffer(),
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};
             uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void {});
@@ -40,12 +40,12 @@ namespace ionengine
         }
     }
 
-    auto Mesh::getSurfaces() const -> std::span<Surface const>
+    auto Mesh::getSurfaces() const -> std::vector<core::ref_ptr<Surface>> const&
     {
         return surfaces;
     }
 
-    auto Mesh::getMaterials() const -> std::span<core::ref_ptr<Material> const>
+    auto Mesh::getMaterials() const -> std::vector<core::ref_ptr<Material>> const&
     {
         return materials;
     }

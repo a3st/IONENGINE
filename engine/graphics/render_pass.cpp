@@ -44,12 +44,12 @@ namespace ionengine
         return hash;
     }
 
-    auto RenderPass::getColors() const -> std::span<rhi::RenderPassColorInfo const> const
+    auto RenderPass::getColors() const -> std::vector<rhi::RenderPassColorInfo> const&
     {
         return colors;
     }
 
-    auto RenderPass::getInputs() const -> std::span<RenderPassInputInfo const> const
+    auto RenderPass::getInputs() const -> std::vector<RenderPassInputInfo> const&
     {
         return inputs;
     }

@@ -25,8 +25,66 @@ namespace ionengine::internal
     auto RmlRender::RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices,
                                    Rml::TextureHandle textureHandle, const Rml::Vector2f& translation) -> void
     {
-        // DrawParameters drawParams{.drawType = DrawType::Triangles};
+        if (textureHandle)
+        {
+        }
 
-        // Graphics::drawProcedural()
+        struct Vertex
+        {
+            core::Vec2f position;
+            core::Vec2f uv;
+            core::Vec4f color;
+        };
+
+        std::vector<uint8_t> vertexData(sizeof(Vertex) * numVertices);
+        {
+            std::basic_ospanstream<uint8_t> stream(vertexData);
+            for (int32_t const i : std::views::iota(0, numVertices))
+            {
+                Vertex vertex{.position = core::Vec2f(vertices[i].position.x, vertices[i].position.y),
+                              .uv = core::Vec2f(vertices[i].tex_coord.x, vertices[i].tex_coord.y),
+                              .color = core::Vec4f(vertices[i].colour.red, vertices[i].colour.green,
+                                                   vertices[i].colour.red, vertices[i].colour.alpha)};
+                stream.write(reinterpret_cast<uint8_t*>(&vertex), sizeof(Vertex));
+            }
+        }
+
+        std::vector<uint8_t> indexData(sizeof(uint32_t) * numIndices);
+        {
+            std::basic_ospanstream<uint8_t> stream(indexData);
+            for (int32_t const i : std::views::iota(0, numIndices))
+            {
+                stream.write(reinterpret_cast<uint8_t*>(&indices[i]), sizeof(uint32_t));
+            }
+        }
+
+        core::ref_ptr<Surface> surface = Graphics::createSurface(vertexData, indexData);
+        core::ref_ptr<Material> material = Graphics::createMaterial(uiColShader);
+
+        DrawParameters drawParams{
+            .drawType = DrawType::Triangles, .surface = surface, .material = material, .renderGroup = RenderGroup::UI};
+
+        auto guiContext = guiContexts[this->GetContext()];
+
+        Graphics::drawProcedural(drawParams, core::Mat4f::translate(core::Vec3f(translation.x, translation.y, 0.0f)),
+                                 guiContext->getTargetCamera());
+    }
+
+    auto RmlRender::EnableScissorRegion(bool isEnable) -> void
+    {
+    }
+
+    auto RmlRender::SetScissorRegion(int x, int y, int width, int height) -> void
+    {
+    }
+
+    auto RmlRender::LoadTexture(Rml::TextureHandle& textureHandle, Rml::Vector2i& textureDimensions,
+                                const Rml::String& source) -> bool
+    {
+        return false;
+    }
+
+    auto RmlRender::ReleaseTexture(Rml::TextureHandle textureHandle) -> void
+    {
     }
 } // namespace ionengine::internal

@@ -178,17 +178,17 @@ namespace ionengine
         return bindings;
     }
 
-    auto Shader::getName() const -> std::string_view
+    auto Shader::getName() const -> std::string const&
     {
         return shaderName;
     }
 
-    auto Shader::getDescription() const -> std::string_view
+    auto Shader::getDescription() const -> std::string const&
     {
         return description;
     }
 
-    auto Shader::getDomain() const -> std::string_view
+    auto Shader::getDomain() const -> std::string const&
     {
         return domainName;
     }
