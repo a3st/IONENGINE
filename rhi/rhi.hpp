@@ -3,8 +3,8 @@
 #pragma once
 
 #include "core/bit_utils.hpp"
-#include "core/ref_ptr.hpp"
 #include "core/color.hpp"
+#include "core/ref_ptr.hpp"
 
 namespace ionengine::rhi
 {
@@ -230,21 +230,23 @@ namespace ionengine::rhi
         TextureUsageFlags flags;
     };
 
-    struct RHICreateInfo
-    {
-        size_t stagingBufferSize;
-
-        static auto Default() -> RHICreateInfo const&
-        {
-            static const RHICreateInfo instance = {.stagingBufferSize = 8 * 1024 * 1024};
-            return instance;
-        }
-    };
-
     struct SwapchainCreateInfo
     {
         void* window;
         void* instance;
+        uint32_t frameCount;
+    };
+
+    struct RHICreateInfo
+    {
+        size_t stagingBufferSize;
+        uint32_t numBuffering;
+
+        static auto Default() -> RHICreateInfo const&
+        {
+            static const RHICreateInfo instance{.stagingBufferSize = 8 * 1024 * 1024, .numBuffering = 1};
+            return instance;
+        }
     };
 
     struct RenderPassColorInfo
@@ -280,7 +282,7 @@ namespace ionengine::rhi
 
         static auto Default() -> DepthStencilStageInfo const&
         {
-            static const DepthStencilStageInfo instance = {
+            static const DepthStencilStageInfo instance{
                 .depthFunc = CompareOp::Never, .depthWrite = false, .stencilWrite = false};
             return instance;
         }
@@ -306,49 +308,49 @@ namespace ionengine::rhi
 
         static auto Opaque() -> BlendColorInfo const&
         {
-            static const BlendColorInfo instance = {.blendEnable = false,
-                                                    .blendSrc = Blend::Zero,
-                                                    .blendDst = Blend::Zero,
-                                                    .blendOp = BlendOp::Add,
-                                                    .blendSrcAlpha = Blend::Zero,
-                                                    .blendDstAlpha = Blend::Zero,
-                                                    .blendOpAlpha = BlendOp::Add};
+            static const BlendColorInfo instance{.blendEnable = false,
+                                                 .blendSrc = Blend::Zero,
+                                                 .blendDst = Blend::Zero,
+                                                 .blendOp = BlendOp::Add,
+                                                 .blendSrcAlpha = Blend::Zero,
+                                                 .blendDstAlpha = Blend::Zero,
+                                                 .blendOpAlpha = BlendOp::Add};
             return instance;
         }
 
         static auto Add() -> BlendColorInfo const&
         {
-            static const BlendColorInfo instance = {.blendEnable = true,
-                                                    .blendSrc = Blend::One,
-                                                    .blendDst = Blend::One,
-                                                    .blendOp = BlendOp::Add,
-                                                    .blendSrcAlpha = Blend::One,
-                                                    .blendDstAlpha = Blend::Zero,
-                                                    .blendOpAlpha = BlendOp::Add};
+            static const BlendColorInfo instance{.blendEnable = true,
+                                                 .blendSrc = Blend::One,
+                                                 .blendDst = Blend::One,
+                                                 .blendOp = BlendOp::Add,
+                                                 .blendSrcAlpha = Blend::One,
+                                                 .blendDstAlpha = Blend::Zero,
+                                                 .blendOpAlpha = BlendOp::Add};
             return instance;
         }
 
         static auto Mixed() -> BlendColorInfo const&
         {
-            static const BlendColorInfo instance = {.blendEnable = true,
-                                                    .blendSrc = Blend::One,
-                                                    .blendDst = Blend::InvSrcAlpha,
-                                                    .blendOp = BlendOp::Add,
-                                                    .blendSrcAlpha = Blend::One,
-                                                    .blendDstAlpha = Blend::Zero,
-                                                    .blendOpAlpha = BlendOp::Add};
+            static const BlendColorInfo instance{.blendEnable = true,
+                                                 .blendSrc = Blend::One,
+                                                 .blendDst = Blend::InvSrcAlpha,
+                                                 .blendOp = BlendOp::Add,
+                                                 .blendSrcAlpha = Blend::One,
+                                                 .blendDstAlpha = Blend::Zero,
+                                                 .blendOpAlpha = BlendOp::Add};
             return instance;
         }
 
         static auto AlphaBlend() -> BlendColorInfo const&
         {
-            static const BlendColorInfo instance = {.blendEnable = true,
-                                                    .blendSrc = Blend::SrcAlpha,
-                                                    .blendDst = Blend::InvSrcAlpha,
-                                                    .blendOp = BlendOp::Add,
-                                                    .blendSrcAlpha = Blend::One,
-                                                    .blendDstAlpha = Blend::Zero,
-                                                    .blendOpAlpha = BlendOp::Add};
+            static const BlendColorInfo instance{.blendEnable = true,
+                                                 .blendSrc = Blend::SrcAlpha,
+                                                 .blendDst = Blend::InvSrcAlpha,
+                                                 .blendOp = BlendOp::Add,
+                                                 .blendSrcAlpha = Blend::One,
+                                                 .blendDstAlpha = Blend::Zero,
+                                                 .blendOpAlpha = BlendOp::Add};
             return instance;
         }
     };
@@ -484,6 +486,11 @@ namespace ionengine::rhi
             return ptr;
         }
 
+        operator bool() const
+        {
+            return ptr != nullptr && impl != nullptr;
+        }
+
       private:
         core::ref_ptr<Type> ptr;
         std::unique_ptr<FutureImpl> impl;
@@ -540,6 +547,11 @@ namespace ionengine::rhi
             impl->wait();
         }
 
+        operator bool() const
+        {
+            return impl != nullptr;
+        }
+
       private:
         std::unique_ptr<FutureImpl> impl;
     };
@@ -562,7 +574,7 @@ namespace ionengine::rhi
         virtual auto execute() -> Future<void> = 0;
     };
 
-    class GraphicsContext : public core::ref_counted_object, public IDeviceContext
+    class GraphicsContext : public IDeviceContext
     {
       public:
         virtual ~GraphicsContext() = default;
@@ -595,7 +607,7 @@ namespace ionengine::rhi
             -> void = 0;
     };
 
-    class CopyContext : public core::ref_counted_object, public IDeviceContext
+    class CopyContext : public IDeviceContext
     {
       public:
         virtual ~CopyContext() = default;
@@ -614,7 +626,7 @@ namespace ionengine::rhi
         */
     };
 
-    class Swapchain : public core::ref_counted_object
+    class Swapchain
     {
       public:
         virtual ~Swapchain() = default;
@@ -631,7 +643,9 @@ namespace ionengine::rhi
       public:
         virtual ~RHI() = default;
 
-        static auto create(RHICreateInfo const& createInfo) -> core::ref_ptr<RHI>;
+        static auto create(RHICreateInfo const& rhiCreateInfo,
+                           std::optional<SwapchainCreateInfo> const swapchainCreateInfo = std::nullopt)
+            -> core::ref_ptr<RHI>;
 
         virtual auto createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader> = 0;
 
@@ -641,7 +655,7 @@ namespace ionengine::rhi
 
         virtual auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> = 0;
 
-        virtual auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> Swapchain* = 0;
+        virtual auto getSwapchain() -> Swapchain* = 0;
 
         virtual auto getGraphicsContext() -> GraphicsContext* = 0;
 

@@ -2,10 +2,11 @@
 
 #include "mesh.hpp"
 #include "precompiled.h"
+#include "upload_manager.hpp"
 
 namespace ionengine
 {
-    Mesh::Mesh(rhi::RHI& RHI, UploadManager* uploadManager, asset::ModelFile const& modelFile)
+    Mesh::Mesh(rhi::RHI& RHI, UploadManager& uploadManager, asset::ModelFile const& modelFile)
     {
         core::ref_ptr<rhi::Buffer> vertexBuffer;
         {
@@ -20,7 +21,7 @@ namespace ionengine
                 .buffer = vertexBuffer,
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};
-            uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void {});
+            uploadManager.uploadBuffer(uploadBufferInfo, [this]() -> void {});
         }
 
         for (auto const& surfaceData : modelFile.modelData.surfaces)
@@ -33,7 +34,7 @@ namespace ionengine
                 .buffer = surface->getIndexBuffer(),
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};
-            uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void {});
+            uploadManager.uploadBuffer(uploadBufferInfo, [this]() -> void {});
 
             surfaces.emplace_back(std::move(surface));
             materials.emplace_back(Material::baseSurfaceMaterial);

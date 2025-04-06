@@ -68,12 +68,13 @@ TEST(RHI, RenderQuad_Test)
     uint32_t width, height;
 
     // Create device and swapchain using RHI
-    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
-    auto graphicsContext = rhi->getGraphicsContext();
-    auto copyContext = rhi->getCopyContext();
     rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                        .instance = application->getInstanceHandle()};
-    auto swapchain = rhi->tryGetSwapchain(swapchainCreateInfo);
+    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default(), swapchainCreateInfo);
+    auto graphicsContext = rhi->getGraphicsContext();
+    auto copyContext = rhi->getCopyContext();
+
+    auto swapchain = rhi->getSwapchain();
 
     // Compile shaders
     asset::fx::ShaderFormat shaderFormat;
@@ -134,7 +135,7 @@ TEST(RHI, RenderQuad_Test)
             .width = textureFile.textureData.width,
             .height = textureFile.textureData.height,
             .depth = 1,
-            .mipLevels = static_cast<uint32_t>(textureFile.textureData.mipLevels.size()),
+            .mipLevels = textureFile.textureData.mipLevelCount,
             .format = TXETextureFormat_to_RHITextureFormat(textureFile.textureData.format),
             .dimension = rhi::TextureDimension::_2D,
             .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
@@ -142,12 +143,13 @@ TEST(RHI, RenderQuad_Test)
 
         copyContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
 
-        for (uint32_t const i : std::views::iota(0u, textureFile.textureData.mipLevels.size()))
+        for (uint32_t const i : std::views::iota(0u, textureFile.textureData.mipLevelCount))
         {
-            auto const& mipBuffer = textureFile.textureData.buffers[textureFile.textureData.mipLevels[i]];
+            auto const& bufferData = textureFile.textureData.buffers[i];
 
-            auto copyResult = copyContext->updateTexture(
-                basicTexture, i, std::span<uint8_t const>(textureFile.blob.data() + mipBuffer.offset, mipBuffer.size));
+            copyContext->updateTexture(
+                basicTexture, i,
+                std::span<uint8_t const>(textureFile.blob.data() + bufferData.offset, bufferData.size));
         }
 
         copyContext->barrier(basicTexture, rhi::ResourceState::CopyDest, rhi::ResourceState::Common);
@@ -269,12 +271,12 @@ TEST(RHI, RenderModel_Test)
     uint32_t width, height;
 
     // Create device and swapchain using RHI
-    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default());
-    auto graphicsContext = rhi->getGraphicsContext();
-    auto copyContext = rhi->getCopyContext();
     rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                        .instance = application->getInstanceHandle()};
-    auto swapchain = rhi->tryGetSwapchain(swapchainCreateInfo);
+    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default(), swapchainCreateInfo);
+    auto graphicsContext = rhi->getGraphicsContext();
+    auto copyContext = rhi->getCopyContext();
+    auto swapchain = rhi->getSwapchain();
 
     // Compile shaders
     asset::fx::ShaderFormat shaderFormat;
@@ -415,7 +417,7 @@ TEST(RHI, RenderModel_Test)
             .width = textureFile.textureData.width,
             .height = textureFile.textureData.height,
             .depth = 1,
-            .mipLevels = static_cast<uint32_t>(textureFile.textureData.mipLevels.size()),
+            .mipLevels = textureFile.textureData.mipLevelCount,
             .format = TXETextureFormat_to_RHITextureFormat(textureFile.textureData.format),
             .dimension = rhi::TextureDimension::_2D,
             .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
@@ -423,12 +425,13 @@ TEST(RHI, RenderModel_Test)
 
         copyContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
 
-        for (uint32_t const i : std::views::iota(0u, textureFile.textureData.mipLevels.size()))
+        for (uint32_t const i : std::views::iota(0u, textureFile.textureData.mipLevelCount))
         {
-            auto const& mipBuffer = textureFile.textureData.buffers[textureFile.textureData.mipLevels[i]];
+            auto const& bufferData = textureFile.textureData.buffers[i];
 
             copyContext->updateTexture(
-                basicTexture, i, std::span<uint8_t const>(textureFile.blob.data() + mipBuffer.offset, mipBuffer.size));
+                basicTexture, i,
+                std::span<uint8_t const>(textureFile.blob.data() + bufferData.offset, bufferData.size));
         }
 
         copyContext->barrier(basicTexture, rhi::ResourceState::CopyDest, rhi::ResourceState::Common);
@@ -439,23 +442,23 @@ TEST(RHI, RenderModel_Test)
 
     // Initialize static resources
     {
-        #pragma pack(push, 1)
+#pragma pack(push, 1)
         struct SamplerData
         {
             uint32_t linearSampler;
         };
-        #pragma pack(pop)
+#pragma pack(pop)
         SamplerData const samplerData{.linearSampler = linearSampler->getDescriptorOffset()};
 
         copyContext->updateBuffer(
             sBuffer, 0, std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&samplerData), sizeof(samplerData)));
-        
-        #pragma pack(push, 1)
+
+#pragma pack(push, 1)
         struct EffectData
         {
             uint32_t basicTexture;
         };
-        #pragma pack(pop)
+#pragma pack(pop)
         EffectData const effectData{.basicTexture =
                                         basicTexture->getDescriptorOffset(rhi::TextureUsage::ShaderResource)};
 
@@ -510,12 +513,12 @@ TEST(RHI, RenderModel_Test)
 
         // Update MVP matrix
         {
-            #pragma pack(push, 1)
+#pragma pack(push, 1)
             struct TransformData
             {
                 core::Mat4f modelViewProj;
             };
-            #pragma pack(pop)
+#pragma pack(pop)
             TransformData const transformData{.modelViewProj = model * view * projection};
 
             copyContext->updateBuffer(

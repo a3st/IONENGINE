@@ -32,9 +32,9 @@ namespace ionengine::asset
             ::CMP_GenerateMIPLevels(&srcMipSet, minMipSize);
         }
 
-        uint32_t const mipLevels = std::max(1, srcMipSet.m_nMaxMipLevels - 1);
+        textureData.mipLevelCount = std::max(1, srcMipSet.m_nMaxMipLevels - 1);
 
-        for (uint32_t const i : std::views::iota(0u, mipLevels))
+        for (uint32_t const i : std::views::iota(0u, textureData.mipLevelCount))
         {
             CMP_MipLevel* mipLevel;
             ::CMP_GetMipLevel(&mipLevel, &srcMipSet, i, 0);
@@ -48,9 +48,7 @@ namespace ionengine::asset
             uint64_t const offset = textureBlob.tellp();
             textureBlob.write(mipLevel->m_pbData, mipLevel->m_dwLinearSize);
 
-            textureData.mipLevels.emplace_back(static_cast<uint32_t>(textureData.buffers.size()));
-
-            txe::BufferData const bufferData{.offset = offset, .size = mipLevel->m_dwLinearSize};
+            txe::BufferData bufferData{.offset = offset, .size = mipLevel->m_dwLinearSize};
             textureData.buffers.emplace_back(std::move(bufferData));
         }
 

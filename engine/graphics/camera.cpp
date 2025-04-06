@@ -20,24 +20,28 @@ namespace ionengine
         return projMat;
     }
 
-    auto Camera::getTexture() const -> core::ref_ptr<rhi::Texture>
+    auto Camera::getTargetTexture(uint32_t const frameIndex) const -> core::ref_ptr<rhi::Texture>
     {
-        return targetTexture;
+        return targetTextures[frameIndex];
     }
 
-    PerspectiveCamera::PerspectiveCamera(rhi::RHI& RHI, float const fovy, float const zNear, float const zFar)
+    PerspectiveCamera::PerspectiveCamera(rhi::RHI& RHI, uint32_t const frameCount, float const fovy, float const zNear,
+                                         float const zFar)
         : fovy(fovy * std::numbers::pi / 180.0f), aspect(4 / 3), zFar(zFar), zNear(zNear)
     {
-        rhi::TextureCreateInfo const textureCreateInfo{
-            .width = 800,
-            .height = 600,
-            .depth = 1,
-            .mipLevels = 1,
-            .format = rhi::TextureFormat::RGBA8_UNORM,
-            .dimension = rhi::TextureDimension::_2D,
-            .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource |
-                                              rhi::TextureUsage::CopyDest)};
-        this->targetTexture = RHI.createTexture(textureCreateInfo);
+        for (uint32_t const i : std::views::iota(0u, frameCount))
+        {
+            rhi::TextureCreateInfo const textureCreateInfo{
+                .width = 800,
+                .height = 600,
+                .depth = 1,
+                .mipLevels = 1,
+                .format = rhi::TextureFormat::RGBA8_UNORM,
+                .dimension = rhi::TextureDimension::_2D,
+                .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource |
+                                                  rhi::TextureUsage::CopyDest)};
+            targetTextures.emplace_back(RHI.createTexture(textureCreateInfo));
+        }
 
         this->projMat = core::Mat4f::perspectiveRH(fovy, aspect, zNear, zFar);
     }

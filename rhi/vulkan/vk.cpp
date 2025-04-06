@@ -1789,7 +1789,7 @@ namespace ionengine::rhi
         return copyContext.get();
     }
 
-    auto VKRHI::getName() const -> std::string_view
+    auto VKRHI::getName() const -> std::string const&
     {
         return rhiName;
     }

@@ -2,6 +2,7 @@
 
 #include "mdl/obj/obj.hpp"
 #include "precompiled.h"
+#include "txe/cmp/cmp.hpp"
 #include <argh.h>
 
 using namespace ionengine;
@@ -37,7 +38,7 @@ auto main(int32_t argc, char** argv) -> int32_t
         std::string output;
         if (!(commandLine({"-output", "--output"}) >> output))
         {
-            output = (inputPath.parent_path() / inputPath.stem()).string() + ".mdl";
+            output = (inputPath.parent_path() / inputPath.stem()).string();
         }
 
         outputPath = std::filesystem::path(output).make_preferred();
@@ -51,11 +52,29 @@ auto main(int32_t argc, char** argv) -> int32_t
             auto loadResult = objImporter->loadFromFile(inputPath);
             if (loadResult.has_value())
             {
-                std::basic_ofstream<uint8_t> ofs(outputPath, std::ios::binary);
+                std::basic_ofstream<uint8_t> ofs(outputPath.string() + ".mdl", std::ios::binary);
                 auto serializeResult = core::serialize<core::serialize_oarchive>(ofs, loadResult.value());
                 if (serializeResult.has_value())
                 {
-                    std::cout << "Out: " << std::filesystem::absolute(outputPath).generic_string() << std::endl;
+                    std::cout << "Out: " << std::filesystem::absolute(outputPath).generic_string() + ".mdl" << std::endl;
+                }
+            }
+            else
+            {
+                std::cerr << "Compilation error: " << loadResult.error().what() << std::endl;
+            }
+        }
+        else if (inputPath.extension().compare(".png") == 0)
+        {
+            auto cmpImporter = core::make_ref<asset::CMPImporter>(true);
+            auto loadResult = cmpImporter->loadFromFile(inputPath);
+            if (loadResult.has_value())
+            {
+                std::basic_ofstream<uint8_t> ofs(outputPath.string() + ".txe", std::ios::binary);
+                auto serializeResult = core::serialize<core::serialize_oarchive>(ofs, loadResult.value());
+                if (serializeResult.has_value())
+                {
+                    std::cout << "Out: " << std::filesystem::absolute(outputPath).generic_string() + ".txe" << std::endl;
                 }
             }
             else

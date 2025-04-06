@@ -39,7 +39,7 @@ namespace ionengine
     class RenderPass
     {
       public:
-        RenderPass(std::string_view const debugName);
+        RenderPass(std::string_view const passName);
 
         virtual auto execute(RenderContext const& context, RenderableData const& renderableData) -> void = 0;
 
@@ -57,7 +57,7 @@ namespace ionengine
         std::optional<rhi::RenderPassDepthStencilInfo> depthStencil;
 
       private:
-        std::string debugName;
+        std::string passName;
         uint64_t hash;
     };
 } // namespace ionengine

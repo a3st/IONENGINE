@@ -38,7 +38,7 @@ namespace ionengine::rhi
         uint32_t arrayElement;
     };
 
-    class DescriptorAllocator final : public core::ref_counted_object
+    class DescriptorAllocator
     {
       public:
         DescriptorAllocator(VkDevice device);
@@ -138,7 +138,7 @@ namespace ionengine::rhi
         VkPipelineBindPoint pipelineType;
     };
 
-    class PipelineCache final : public core::ref_counted_object
+    class PipelineCache
     {
       public:
         struct Entry
@@ -466,13 +466,13 @@ namespace ionengine::rhi
 
         auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> override;
 
-        auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> Swapchain* override;
+        auto getSwapchain() -> Swapchain* override;
 
         auto getGraphicsContext() -> GraphicsContext* override;
 
         auto getCopyContext() -> CopyContext* override;
 
-        auto getName() const -> std::string_view override;
+        auto getName() const -> std::string const& override;
 
       private:
         VkInstance instance;
@@ -490,12 +490,12 @@ namespace ionengine::rhi
         DeviceQueueData transferQueue;
         DeviceQueueData computeQueue;
 
-        core::ref_ptr<DescriptorAllocator> descriptorAllocator;
-        core::ref_ptr<PipelineCache> pipelineCache;
+        std::unique_ptr<DescriptorAllocator> descriptorAllocator;
+        std::unique_ptr<PipelineCache> pipelineCache;
 
-        core::ref_ptr<VKSwapchain> swapchain;
-        core::ref_ptr<VKGraphicsContext> graphicsContext;
-        core::ref_ptr<VKCopyContext> copyContext;
+        std::unique_ptr<VKSwapchain> swapchain;
+        std::unique_ptr<VKGraphicsContext> graphicsContext;
+        std::unique_ptr<VKCopyContext> copyContext;
 
         std::string const rhiName{"Vulkan"};
 

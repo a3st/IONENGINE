@@ -3,7 +3,7 @@
 #pragma once
 
 #include "graphics/shader.hpp"
-#include "gui_context.hpp"
+#include "gui_widget.hpp"
 #include "rhi/rhi.hpp"
 #include <RmlUi/Core.h>
 
@@ -28,7 +28,7 @@ namespace ionengine::internal
 
         auto ReleaseTexture(Rml::TextureHandle textureHandle) -> void override;
 
-        std::unordered_map<Rml::Context*, core::ref_ptr<GUIContext>> guiContexts;
+        std::unordered_map<Rml::Context*, core::ref_ptr<GUIWidget>> guiContexts;
 
       private:
         core::ref_ptr<rhi::RHI> RHI;

@@ -4,6 +4,7 @@
 
 #include "core/matrix.hpp"
 #include "core/vector.hpp"
+#include "image.hpp"
 #include "shader.hpp"
 
 namespace ionengine
@@ -21,8 +22,6 @@ namespace ionengine
 
         auto updateEffectDataBuffer(UploadManager* uploadManager) -> void;
 
-        inline static core::ref_ptr<Material> baseSurfaceMaterial;
-
       private:
         core::ref_ptr<Shader> shader;
         core::ref_ptr<rhi::Buffer> effectDataBuffer;
@@ -30,6 +29,8 @@ namespace ionengine
         bool wasChanged;
 
       public:
+        auto setValue(std::string_view const paramName, core::ref_ptr<Image> const& value) -> void;
+
         auto setValue(std::string_view const paramName, core::Mat4f const& value) -> void;
 
         auto setValue(std::string_view const paramName, core::Vec4f const& value) -> void;
@@ -43,5 +44,7 @@ namespace ionengine
         auto setValue(std::string_view const paramName, uint32_t const value) -> void;
 
         auto setValue(std::string_view const paramName, bool const value) -> void;
+
+        inline static core::ref_ptr<Material> baseSurfaceMaterial;
     };
 } // namespace ionengine

@@ -6,11 +6,8 @@
 
 namespace ionengine
 {
-    Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI)
-        : RHI(RHI), uploadManager(std::make_unique<UploadManager>(RHI)),
-          renderTargetAllocator(core::make_ref<TextureAllocator>(RHI)),
-          constBufferAllocator(core::make_ref<BufferAllocator>(RHI, rhi::BufferUsage::ConstantBuffer)),
-          renderPathHash(0)
+    Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI, uint32_t const numBuffering)
+        : RHI(RHI), uploadManager(std::make_unique<UploadManager>(RHI)), renderPathHash(0), frameIndex(0)
     {
         instance = this;
 
@@ -31,6 +28,14 @@ namespace ionengine
         renderableData.renderGroups.try_emplace(RenderGroup::Opaque);
         renderableData.renderGroups.try_emplace(RenderGroup::Translucent);
         renderableData.renderGroups.try_emplace(RenderGroup::UI);
+
+        for (uint32_t const i : std::views::iota(0u, numBuffering))
+        {
+            FrameResourceData frameResourceData{
+                .renderTargetAllocator = core::make_ref<TextureAllocator>(RHI),
+                .constBufferAllocator = core::make_ref<BufferAllocator>(RHI, rhi::BufferUsage::ConstantBuffer)};
+            frameResources.emplace_back(std::move(frameResourceData));
+        }
     }
 
     auto Graphics::loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>
@@ -54,7 +59,22 @@ namespace ionengine
             std::basic_ifstream<uint8_t>(filePath, std::ios::binary));
         if (meshResult.has_value())
         {
-            return core::make_ref<Mesh>(*instance->RHI, instance->uploadManager.get(), meshResult.value());
+            return core::make_ref<Mesh>(*instance->RHI, *instance->uploadManager, meshResult.value());
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    auto Graphics::loadImageFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Image>
+    {
+        auto imageResult =
+            core::deserialize<core::serialize_iarchive, asset::TextureFile, std::basic_ifstream<uint8_t>>(
+                std::basic_ifstream<uint8_t>(filePath, std::ios::binary));
+        if (imageResult.has_value())
+        {
+            return core::make_ref<Image>(*instance->RHI, *instance->uploadManager, imageResult.value());
         }
         else
         {
@@ -67,13 +87,15 @@ namespace ionengine
         instance->renderPathUpdated = std::move(func);
     }
 
-    auto Graphics::beginFrame(core::ref_ptr<rhi::Texture> swapchainTexture) -> void
+    auto Graphics::beginFrame() -> void
     {
-        renderTargetAllocator->reset();
-        constBufferAllocator->reset();
+        auto& curFrameResourceData = frameResources[frameIndex];
+        curFrameResourceData.renderTargetAllocator->reset();
+        curFrameResourceData.constBufferAllocator->reset();
+
         renderPasses.clear();
         renderPathHash = 0;
-        this->swapchainTexture = swapchainTexture;
+        this->swapchainTexture = RHI->getSwapchain()->requestBackBuffer().get();
 
         for (auto& [renderGroup, renderQueue] : renderableData.renderGroups)
         {
@@ -98,6 +120,154 @@ namespace ionengine
 
         this->addRenderPass<passes::SwapchainPass>(blitShader, swapchainTexture);
 
+        this->cacheRenderPasses();
+
+        auto graphicsContext = RHI->getGraphicsContext();
+
+        graphicsContext->setViewport(0, 0, swapchainTexture->getWidth(), swapchainTexture->getHeight());
+        graphicsContext->setScissor(0, 0, swapchainTexture->getWidth(), swapchainTexture->getHeight());
+
+        this->executeRenderPasses(graphicsContext);
+
+        // uploadManager->onExecute(true, true);
+
+        graphicsContext->execute().wait();
+
+        // uploadManager->onExecute(false, false);
+
+        RHI->getSwapchain()->presentBackBuffer();
+    }
+
+    auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
+                            core::ref_ptr<Camera> targetCamera) -> void
+    {
+        for (uint32_t const i : std::views::iota(0u, drawableMesh->getSurfaces().size()))
+        {
+            core::ref_ptr<Material> currentMaterial = drawableMesh->getMaterials()[i];
+            currentMaterial->updateEffectDataBuffer(instance->uploadManager.get());
+
+            core::weak_ptr<rhi::Buffer> transformDataBuffer;
+            {
+                auto const& transformData = currentMaterial->getShader()->getBindings().at("TRANSFORM_DATA");
+
+                uint32_t const modelViewProjOffset =
+                    currentMaterial->getShader()->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
+
+                std::vector<uint8_t> transformDataRawBuffer(transformData.size);
+
+                core::Mat4f const modelViewProjMat =
+                    modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
+                std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
+                            sizeof(core::Mat4f));
+
+                transformDataBuffer =
+                    instance->frameResources[instance->frameIndex].constBufferAllocator->allocate(transformData.size);
+
+                UploadBufferInfo const uploadBufferInfo{
+                    .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
+                instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
+            }
+
+            DrawableData drawableData{.surface = drawableMesh->getSurfaces()[i],
+                                      .shader = currentMaterial->getShader(),
+                                      .effectDataBuffer = currentMaterial->getEffectDataBuffer(),
+                                      .transformDataBuffer = transformDataBuffer.get()};
+            instance->renderableData.renderGroups[RenderGroup::Opaque].push(std::move(drawableData));
+        }
+
+        instance->targetCameras.emplace(targetCamera);
+    }
+
+    auto Graphics::drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
+                                  core::ref_ptr<Camera> targetCamera) -> void
+    {
+        drawParams.material->updateEffectDataBuffer(instance->uploadManager.get());
+
+        core::weak_ptr<rhi::Buffer> transformDataBuffer;
+        {
+            auto const& transformData = drawParams.material->getShader()->getBindings().at("TRANSFORM_DATA");
+
+            uint32_t const modelViewProjOffset =
+                drawParams.material->getShader()->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
+
+            std::vector<uint8_t> transformDataRawBuffer(transformData.size);
+
+            core::Mat4f const modelViewProjMat =
+                modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
+            std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
+                        sizeof(core::Mat4f));
+
+            transformDataBuffer =
+                instance->frameResources[instance->frameIndex].constBufferAllocator->allocate(transformData.size);
+
+            UploadBufferInfo const uploadBufferInfo{
+                .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
+            instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
+        }
+
+        DrawableData drawableData{.surface = drawParams.surface,
+                                  .shader = drawParams.material->getShader(),
+                                  .effectDataBuffer = drawParams.material->getEffectDataBuffer(),
+                                  .transformDataBuffer = transformDataBuffer.get()};
+        instance->renderableData.renderGroups[drawParams.renderGroup].push(std::move(drawableData));
+
+        instance->targetCameras.emplace(targetCamera);
+    }
+
+    auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
+        -> core::ref_ptr<PerspectiveCamera>
+    {
+        return core::make_ref<PerspectiveCamera>(*instance->RHI, static_cast<uint32_t>(instance->frameResources.size()),
+                                                 fovy, zNear, zFar);
+    }
+
+    auto Graphics::createMaterial(core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>
+    {
+        return core::make_ref<Material>(*instance->RHI, shader);
+    }
+
+    auto Graphics::findTextureInPassResources(std::span<PassResourceData const> const passResources,
+                                              uint32_t const offset, core::ref_ptr<rhi::Texture> source,
+                                              std::list<ResourceStateInfo>::const_iterator& it,
+                                              rhi::ResourceState& state) -> int32_t
+    {
+        auto findTextureRecursive = [this](std::span<PassResourceData const> const passResources,
+                                           core::ref_ptr<rhi::Texture> source, uint32_t offset, uint32_t& distance,
+                                           std::list<ResourceStateInfo>::const_iterator& it,
+                                           rhi::ResourceState& state) -> bool {
+            auto findTextureRecursiveImpl = [this](std::span<PassResourceData const> const passResources,
+                                                   core::ref_ptr<rhi::Texture> source, uint32_t offset,
+                                                   uint32_t& distance, std::list<ResourceStateInfo>::const_iterator& it,
+                                                   rhi::ResourceState& state, auto& implRef) mutable -> bool {
+                if (offset >= passResources.size())
+                {
+                    return false;
+                }
+
+                for (auto resIt = passResources[offset].readWriteResources.begin();
+                     resIt != passResources[offset].readWriteResources.end(); ++resIt)
+                {
+                    if (resIt->first == source)
+                    {
+                        it = resIt;
+                        state = resIt->second.second;
+                        return true;
+                    }
+                }
+
+                return implRef(passResources, source, ++offset, ++distance, it, state, implRef);
+            };
+
+            return findTextureRecursiveImpl(passResources, source, offset, distance, it, state,
+                                            findTextureRecursiveImpl);
+        };
+
+        uint32_t distance = 0;
+        return findTextureRecursive(passResources, source, offset, distance, it, state) ? distance : -1;
+    }
+
+    auto Graphics::cacheRenderPasses() -> void
+    {
         auto pathResult = passResourcesCache.find(renderPathHash);
         if (pathResult == passResourcesCache.end())
         {
@@ -168,12 +338,10 @@ namespace ionengine
 
             passResourcesCache[renderPathHash] = std::move(passResources);
         }
+    }
 
-        auto graphicsContext = RHI->getGraphicsContext();
-
-        graphicsContext->setViewport(0, 0, swapchainTexture->getWidth(), swapchainTexture->getHeight());
-        graphicsContext->setScissor(0, 0, swapchainTexture->getWidth(), swapchainTexture->getHeight());
-
+    auto Graphics::executeRenderPasses(rhi::GraphicsContext* graphicsContext) -> void
+    {
         for (uint32_t const i : std::views::iota(0u, renderPasses.size()))
         {
             auto& curPassCache = passResourcesCache[renderPathHash][i];
@@ -188,149 +356,18 @@ namespace ionengine
 
             RenderContext const renderContext{.graphics = graphicsContext,
                                               .uploadManager = uploadManager.get(),
-                                              .constBufferAllocator = constBufferAllocator.get(),
+                                              .constBufferAllocator =
+                                                  frameResources[frameIndex].constBufferAllocator.get(),
                                               .samplerDataBuffer = samplerDataBuffer};
-
             renderPasses[i]->execute(renderContext, renderableData);
 
             graphicsContext->endRenderPass();
-
-            uploadManager->onExecuteTask(true, true);
 
             for (auto const& clearResource : curPassCache.clearResources)
             {
                 graphicsContext->barrier(clearResource.first, clearResource.second.first, clearResource.second.second);
             }
         }
-
-        uploadManager->onExecuteTask(false, false);
-
-        graphicsContext->execute().wait();
-    }
-
-    auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
-                            core::ref_ptr<Camera> targetCamera) -> void
-    {
-        for (uint32_t const i : std::views::iota(0u, drawableMesh->getSurfaces().size()))
-        {
-            core::ref_ptr<Material> currentMaterial = drawableMesh->getMaterials()[i];
-            currentMaterial->updateEffectDataBuffer(instance->uploadManager.get());
-
-            core::weak_ptr<rhi::Buffer> transformDataBuffer;
-            {
-                auto const& transformData = currentMaterial->getShader()->getBindings().at("TRANSFORM_DATA");
-
-                uint32_t const modelViewProjOffset =
-                    currentMaterial->getShader()->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
-
-                std::vector<uint8_t> transformDataRawBuffer(transformData.size);
-
-                core::Mat4f const modelViewProjMat =
-                    modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
-                std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
-                            sizeof(core::Mat4f));
-
-                transformDataBuffer = instance->constBufferAllocator->allocate(transformData.size);
-
-                UploadBufferInfo const uploadBufferInfo{
-                    .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
-                instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
-            }
-
-            DrawableData drawableData{.surface = drawableMesh->getSurfaces()[i],
-                                      .shader = currentMaterial->getShader(),
-                                      .effectDataBuffer = currentMaterial->getEffectDataBuffer(),
-                                      .transformDataBuffer = transformDataBuffer.get()};
-            instance->renderableData.renderGroups[RenderGroup::Opaque].push(std::move(drawableData));
-        }
-
-        instance->targetCameras.emplace(targetCamera);
-    }
-
-    auto Graphics::drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
-                                  core::ref_ptr<Camera> targetCamera) -> void
-    {
-        drawParams.material->updateEffectDataBuffer(instance->uploadManager.get());
-
-        core::weak_ptr<rhi::Buffer> transformDataBuffer;
-        {
-            auto const& transformData = drawParams.material->getShader()->getBindings().at("TRANSFORM_DATA");
-
-            uint32_t const modelViewProjOffset =
-                drawParams.material->getShader()->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
-
-            std::vector<uint8_t> transformDataRawBuffer(transformData.size);
-
-            core::Mat4f const modelViewProjMat =
-                modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
-            std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
-                        sizeof(core::Mat4f));
-
-            transformDataBuffer = instance->constBufferAllocator->allocate(transformData.size);
-
-            UploadBufferInfo const uploadBufferInfo{
-                .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
-            instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
-        }
-
-        DrawableData drawableData{.surface = drawParams.surface,
-                                  .shader = drawParams.material->getShader(),
-                                  .effectDataBuffer = drawParams.material->getEffectDataBuffer(),
-                                  .transformDataBuffer = transformDataBuffer.get()};
-        instance->renderableData.renderGroups[drawParams.renderGroup].push(std::move(drawableData));
-
-        instance->targetCameras.emplace(targetCamera);
-    }
-
-    auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
-        -> core::ref_ptr<PerspectiveCamera>
-    {
-        return core::make_ref<PerspectiveCamera>(*instance->RHI, fovy, zNear, zFar);
-    }
-
-    auto Graphics::createMaterial(core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>
-    {
-        return core::make_ref<Material>(*instance->RHI, shader);
-    }
-
-    auto Graphics::findTextureInPassResources(std::span<PassResourceData const> const passResources,
-                                              uint32_t const offset, core::ref_ptr<rhi::Texture> source,
-                                              std::list<ResourceStateInfo>::const_iterator& it,
-                                              rhi::ResourceState& state) -> int32_t
-    {
-        auto findTextureRecursive = [this](std::span<PassResourceData const> const passResources,
-                                           core::ref_ptr<rhi::Texture> source, uint32_t offset, uint32_t& distance,
-                                           std::list<ResourceStateInfo>::const_iterator& it,
-                                           rhi::ResourceState& state) -> bool {
-            auto findTextureRecursiveImpl = [this](std::span<PassResourceData const> const passResources,
-                                                   core::ref_ptr<rhi::Texture> source, uint32_t offset,
-                                                   uint32_t& distance, std::list<ResourceStateInfo>::const_iterator& it,
-                                                   rhi::ResourceState& state, auto& implRef) mutable -> bool {
-                if (offset >= passResources.size())
-                {
-                    return false;
-                }
-
-                for (auto resIt = passResources[offset].readWriteResources.begin();
-                     resIt != passResources[offset].readWriteResources.end(); ++resIt)
-                {
-                    if (resIt->first == source)
-                    {
-                        it = resIt;
-                        state = resIt->second.second;
-                        return true;
-                    }
-                }
-
-                return implRef(passResources, source, ++offset, ++distance, it, state, implRef);
-            };
-
-            return findTextureRecursiveImpl(passResources, source, offset, distance, it, state,
-                                            findTextureRecursiveImpl);
-        };
-
-        uint32_t distance = 0;
-        return findTextureRecursive(passResources, source, offset, distance, it, state) ? distance : -1;
     }
 
     auto Graphics::initializeSharedSamplers() -> void
@@ -357,9 +394,9 @@ namespace ionengine
             std::memcpy(samplerDataRawBuffer.data(), &descriptor, sizeof(uint32_t));
         }
 
-        auto copyContext = RHI->getCopyContext();
-        copyContext->updateBuffer(samplerDataBuffer, 0, samplerDataRawBuffer);
-        copyContext->execute().wait();
+        UploadBufferInfo const uploadBufferInfo{
+            .buffer = samplerDataBuffer, .offset = 0, .dataBytes = samplerDataRawBuffer};
+        uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
     }
 
     auto Graphics::createSurface(std::span<uint8_t const> const vertexDataBytes,

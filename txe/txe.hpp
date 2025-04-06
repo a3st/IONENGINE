@@ -40,7 +40,7 @@ namespace ionengine::asset
             TextureDimension dimension;
             uint32_t width;
             uint32_t height;
-            std::vector<uint32_t> mipLevels;
+            uint32_t mipLevelCount;
             std::vector<BufferData> buffers;
 
             template <typename Archive>
@@ -50,7 +50,7 @@ namespace ionengine::asset
                 archive.property(dimension, "dimension");
                 archive.property(width, "width");
                 archive.property(height, "height");
-                archive.property(mipLevels, "mipLevels");
+                archive.property(mipLevelCount, "mipLevelCount");
                 archive.property(buffers, "buffers");
             }
         };

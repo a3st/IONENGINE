@@ -6,7 +6,7 @@
 
 namespace ionengine
 {
-    RenderPass::RenderPass(std::string_view const debugName) : debugName(debugName)
+    RenderPass::RenderPass(std::string_view const passName) : passName(passName)
     {
     }
 
@@ -33,7 +33,7 @@ namespace ionengine
             ::XXH64_update(hasher, &texturePtr, sizeof(uintptr_t));
         }
 
-        ::XXH64_update(hasher, debugName.data(), debugName.size());
+        ::XXH64_update(hasher, passName.data(), passName.size());
 
         hash = ::XXH64_digest(hasher);
         ::XXH64_freeState(hasher);

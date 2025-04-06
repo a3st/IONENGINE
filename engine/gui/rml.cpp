@@ -64,10 +64,10 @@ namespace ionengine::internal
         DrawParameters drawParams{
             .drawType = DrawType::Triangles, .surface = surface, .material = material, .renderGroup = RenderGroup::UI};
 
-        auto guiContext = guiContexts[this->GetContext()];
+        auto guiWidget = guiContexts[this->GetContext()];
 
         Graphics::drawProcedural(drawParams, core::Mat4f::translate(core::Vec3f(translation.x, translation.y, 0.0f)),
-                                 guiContext->getTargetCamera());
+                                 guiWidget->getTargetCamera());
     }
 
     auto RmlRender::EnableScissorRegion(bool isEnable) -> void

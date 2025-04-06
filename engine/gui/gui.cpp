@@ -10,18 +10,18 @@ namespace ionengine
     {
         instance = this;
 
-        Rml::SetRenderInterface(rmlRender.get());
+        // Rml::SetRenderInterface(rmlRender.get());
 
-        Rml::Initialise();
+        // Rml::Initialise();
     }
 
-    auto GUI::createContext(core::ref_ptr<Camera> targetCamera) -> core::ref_ptr<GUIContext>
+    auto GUI::createWidgetFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<GUIWidget>
     {
-        Rml::Context* rmlContext = Rml::CreateContext(
-            "_", Rml::Vector2i(targetCamera->getTexture()->getWidth(), targetCamera->getTexture()->getHeight()));
+        Rml::Context* rmlContext = Rml::CreateContext("_", Rml::Vector2i(1, 1));
 
-        auto guiContext = core::make_ref<GUIContext>(targetCamera);
-        rmlRender->guiContexts[rmlContext] = guiContext;
-        return guiContext;
+        // auto guiContext = core::make_ref<GUIContext>(targetCamera);
+        // instance->rmlRender->guiContexts[rmlContext] = guiContext;
+        // return guiContext;
+        return nullptr;
     }
 } // namespace ionengine

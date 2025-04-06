@@ -1,8 +1,8 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "material.hpp"
-#include "upload_manager.hpp"
 #include "precompiled.h"
+#include "upload_manager.hpp"
 
 namespace ionengine
 {
@@ -42,6 +42,14 @@ namespace ionengine
 
             wasChanged = false;
         }
+    }
+
+    auto Material::setValue(std::string_view const paramName, core::ref_ptr<Image> const& value) -> void
+    {
+        uint64_t const paramOffset = shader->getBindings().at("EFFECT_DATA").elements.at(std::string(paramName));
+        uint32_t const descriptor = value->getTexture()->getDescriptorOffset(rhi::TextureUsage::ShaderResource);
+        std::memcpy(effectDataRawBuffer.data() + paramOffset, &descriptor, sizeof(uint32_t));
+        wasChanged = true;
     }
 
     auto Material::setValue(std::string_view const paramName, core::Mat4f const& value) -> void

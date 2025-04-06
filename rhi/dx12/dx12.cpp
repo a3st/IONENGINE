@@ -1076,7 +1076,7 @@ namespace ionengine::rhi
         return inputSize;
     }
 
-    PipelineCache::PipelineCache(ID3D12Device4* device, RHICreateInfo const& createInfo) : device(device)
+    PipelineCache::PipelineCache(ID3D12Device4* device, RHICreateInfo const& rhiCreateInfo) : device(device)
     {
         D3D12_ROOT_PARAMETER1 const rootParameter{
             .ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
@@ -1182,9 +1182,10 @@ namespace ionengine::rhi
 
     DX12GraphicsContext::DX12GraphicsContext(ID3D12Device4* device, PipelineCache* pipelineCache,
                                              DescriptorAllocator* descriptorAllocator, DeviceQueueData& deviceQueue,
-                                             HANDLE fenceEvent)
+                                             HANDLE fenceEvent, uint32_t& curGraphicsContext)
         : device(device), pipelineCache(pipelineCache), descriptorAllocator(descriptorAllocator),
-          deviceQueue(&deviceQueue), fenceEvent(fenceEvent), isCommandListOpened(false), currentPipeline(nullptr)
+          deviceQueue(&deviceQueue), fenceEvent(fenceEvent), curGraphicsContext(&curGraphicsContext),
+          isCommandListOpened(false), currentPipeline(nullptr)
     {
         throwIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator),
                                                      commandAllocator.put_void()));
@@ -1428,6 +1429,8 @@ namespace ionengine::rhi
         deviceQueue->fenceValue++;
         throwIfFailed(deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue));
 
+        (*curGraphicsContext)++;
+
         auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
                                                            fenceEvent, deviceQueue->fenceValue);
         return Future<void>(std::move(futureImpl));
@@ -1472,8 +1475,9 @@ namespace ionengine::rhi
 
     DX12CopyContext::DX12CopyContext(ID3D12Device4* device, D3D12MA::Allocator* memoryAllocator,
                                      DeviceQueueData& deviceQueue, HANDLE fenceEvent,
-                                     RHICreateInfo const& rhiCreateInfo)
-        : device(device), deviceQueue(&deviceQueue), fenceEvent(fenceEvent), isCommandListOpened(false)
+                                     RHICreateInfo const& rhiCreateInfo, uint32_t& curCopyContext)
+        : device(device), deviceQueue(&deviceQueue), fenceEvent(fenceEvent), curCopyContext(&curCopyContext),
+          isCommandListOpened(false)
     {
         throwIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_COPY, __uuidof(ID3D12CommandAllocator),
                                                      commandAllocator.put_void()));
@@ -1786,6 +1790,8 @@ namespace ionengine::rhi
         deviceQueue->fenceValue++;
         throwIfFailed(deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue));
 
+        (*curCopyContext)++;
+
         auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
                                                            fenceEvent, deviceQueue->fenceValue);
         return Future<void>(std::move(futureImpl));
@@ -1878,7 +1884,8 @@ namespace ionengine::rhi
         }
     }
 
-    DX12RHI::DX12RHI(RHICreateInfo const& createInfo)
+    DX12RHI::DX12RHI(RHICreateInfo const& rhiCreateInfo, std::optional<SwapchainCreateInfo> const swapchainCreateInfo)
+        : curGraphicsContext(0), curCopyContext(0)
     {
 #ifndef NDEBUG
         throwIfFailed(::D3D12GetDebugInterface(__uuidof(ID3D12Debug1), debug.put_void()));
@@ -1928,17 +1935,29 @@ namespace ionengine::rhi
         this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_COPY, copyQueue);
         this->createDeviceQueue(D3D12_COMMAND_LIST_TYPE_COMPUTE, computeQueue);
 
-        descriptorAllocator = core::make_ref<DescriptorAllocator>(device.get());
+        descriptorAllocator = std::make_unique<DescriptorAllocator>(device.get());
 
         D3D12MA::ALLOCATOR_DESC const memoryAllocatorDesc{.pDevice = device.get(), .pAdapter = adapter.get()};
         throwIfFailed(D3D12MA::CreateAllocator(&memoryAllocatorDesc, memoryAllocator.put()));
 
-        pipelineCache = core::make_ref<PipelineCache>(device.get(), createInfo);
+        pipelineCache = std::make_unique<PipelineCache>(device.get(), rhiCreateInfo);
 
-        graphicsContext = core::make_ref<DX12GraphicsContext>(
-            device.get(), pipelineCache.get(), descriptorAllocator.get(), graphicsQueue, fenceEvent.get());
-        copyContext = core::make_ref<DX12CopyContext>(device.get(), memoryAllocator.get(), copyQueue, fenceEvent.get(),
-                                                      createInfo);
+        for (uint32_t const i : std::views::iota(0u, rhiCreateInfo.numBuffering))
+        {
+            FrameContextData frameContextData{
+                .graphicsContext =
+                    std::make_unique<DX12GraphicsContext>(device.get(), pipelineCache.get(), descriptorAllocator.get(),
+                                                          graphicsQueue, fenceEvent.get(), curGraphicsContext),
+                .copyContext = std::make_unique<DX12CopyContext>(device.get(), memoryAllocator.get(), copyQueue,
+                                                                 fenceEvent.get(), rhiCreateInfo, curCopyContext)};
+            frameContexts.emplace_back(std::move(frameContextData));
+        }
+
+        if (swapchainCreateInfo.has_value())
+        {
+            swapchain = std::make_unique<DX12Swapchain>(factory.get(), device.get(), descriptorAllocator.get(),
+                                                        graphicsQueue, fenceEvent.get(), swapchainCreateInfo.value());
+        }
     }
 
     auto DX12RHI::createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader>
@@ -1961,24 +1980,21 @@ namespace ionengine::rhi
         return core::make_ref<DX12Sampler>(device.get(), descriptorAllocator.get(), createInfo);
     }
 
-    auto DX12RHI::tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> Swapchain*
+    auto DX12RHI::getSwapchain() -> Swapchain*
     {
-        if (!swapchain)
-        {
-            swapchain = core::make_ref<DX12Swapchain>(factory.get(), device.get(), descriptorAllocator.get(),
-                                                      graphicsQueue, fenceEvent.get(), createInfo);
-        }
         return swapchain.get();
     }
 
     auto DX12RHI::getGraphicsContext() -> GraphicsContext*
     {
-        return graphicsContext.get();
+        curGraphicsContext = (curGraphicsContext + 1) % frameContexts.size();
+        return frameContexts[curGraphicsContext].graphicsContext.get();
     }
 
     auto DX12RHI::getCopyContext() -> CopyContext*
     {
-        return copyContext.get();
+        curCopyContext = (curCopyContext + 1) % frameContexts.size();
+        return frameContexts[curCopyContext].copyContext.get();
     }
 
     auto DX12RHI::getName() const -> std::string const&

@@ -44,12 +44,13 @@ namespace ionengine::rhi
         }
     }
 
-    auto RHI::create(RHICreateInfo const& createInfo) -> core::ref_ptr<RHI>
+    auto RHI::create(RHICreateInfo const& rhiCreateInfo, std::optional<SwapchainCreateInfo> const swapchainCreateInfo)
+        -> core::ref_ptr<RHI>
     {
 #ifdef IONENGINE_RHI_DIRECTX12
-        return core::make_ref<DX12RHI>(createInfo);
+        return core::make_ref<DX12RHI>(rhiCreateInfo, swapchainCreateInfo);
 #elif IONENGINE_RHI_VULKAN
-        return core::make_ref<VKRHI>(createInfo);
+        return core::make_ref<VKRHI>(createInfo, swapchainCreateInfo);
 #else
 #error rhi backend is not defined
         return nullptr;

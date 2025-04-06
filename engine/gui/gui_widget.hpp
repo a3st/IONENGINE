@@ -6,12 +6,14 @@
 
 namespace ionengine
 {
-    class GUIContext : public core::ref_counted_object
+    class GUIWidget : public core::ref_counted_object
     {
       public:
-        GUIContext(core::ref_ptr<Camera> targetCamera);
+        GUIWidget(core::ref_ptr<Camera> targetCamera);
 
         auto getTargetCamera() const -> core::ref_ptr<Camera>;
+
+        auto attachToCamera(core::ref_ptr<Camera> targetCamera) -> void;
 
       private:
         core::ref_ptr<Camera> targetCamera;

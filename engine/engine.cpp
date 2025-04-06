@@ -10,15 +10,14 @@ namespace ionengine
         application = platform::App::create("Engine");
         window = std::make_unique<Window>(application);
 
-        RHI = rhi::RHI::create(rhi::RHICreateInfo::Default());
-        graphics = std::make_unique<Graphics>(RHI);
-        gui = std::make_unique<GUI>(RHI);
-
+        rhi::RHICreateInfo const rhiCreateInfo{.stagingBufferSize = 8 * 1024 * 1024, .numBuffering = 2};
         rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                            .instance = application->getInstanceHandle()};
-        auto swapchain = RHI->tryGetSwapchain(swapchainCreateInfo);
+        RHI = rhi::RHI::create(rhiCreateInfo, swapchainCreateInfo);
+        graphics = std::make_unique<Graphics>(RHI, rhiCreateInfo.numBuffering);
+        gui = std::make_unique<GUI>(RHI);
 
-        application->windowUpdated += [this, swapchain]() -> void {
+        application->windowUpdated += [this]() -> void {
             auto endFrameTime = std::chrono::high_resolution_clock::now();
             float deltaTime =
                 std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() /
@@ -26,13 +25,9 @@ namespace ionengine
 
             this->onUpdate(deltaTime);
 
-            auto swapchainTexture = swapchain->requestBackBuffer();
-
-            graphics->beginFrame(swapchainTexture.get());
+            graphics->beginFrame();
             this->onRender();
             graphics->endFrame();
-
-            swapchain->presentBackBuffer();
 
             beginFrameTime = endFrameTime;
         };

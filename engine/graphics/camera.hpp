@@ -21,18 +21,18 @@ namespace ionengine
 
         virtual auto getProjMatrix() const -> core::Mat4f const&;
 
-        virtual auto getTexture() const -> core::ref_ptr<rhi::Texture>;
+        virtual auto getTargetTexture(uint32_t const frameIndex) const -> core::ref_ptr<rhi::Texture>;
 
       protected:
         core::Mat4f viewMat;
         core::Mat4f projMat;
-        core::ref_ptr<rhi::Texture> targetTexture;
+        std::vector<core::ref_ptr<rhi::Texture>> targetTextures;
     };
 
     class PerspectiveCamera : public Camera
     {
       public:
-        PerspectiveCamera(rhi::RHI& RHI, float const fovy, float const zNear, float const zFar);
+        PerspectiveCamera(rhi::RHI& RHI, uint32_t const frameCount, float const fovy, float const zNear, float const zFar);
 
         auto createFrustumPlanes() const -> std::array<core::Planef, 6>;
 

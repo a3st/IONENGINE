@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "gui_context.hpp"
+#include "gui_widget.hpp"
 #include "rml.hpp"
 
 namespace ionengine
@@ -12,13 +12,14 @@ namespace ionengine
       public:
         GUI(core::ref_ptr<rhi::RHI> RHI);
 
-        auto createContext(core::ref_ptr<Camera> targetCamera) -> core::ref_ptr<GUIContext>;
-
       private:
         std::unique_ptr<internal::RmlRender> rmlRender;
 
         inline static GUI* instance;
 
       public:
+        static auto createWidgetFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<GUIWidget>;
+
+        inline static core::ref_ptr<Camera> viewportCamera;
     };
 } // namespace ionengine

@@ -56,7 +56,7 @@ namespace ionengine::rhi
         DSV = 32
     };
 
-    class DescriptorAllocator final : public core::ref_counted_object
+    class DescriptorAllocator
     {
       public:
         DescriptorAllocator(ID3D12Device1* device);
@@ -240,7 +240,7 @@ namespace ionengine::rhi
         uint32_t inputSize;
     };
 
-    class PipelineCache final : public core::ref_counted_object
+    class PipelineCache
     {
       public:
         struct Entry
@@ -285,7 +285,7 @@ namespace ionengine::rhi
             }
         };
 
-        PipelineCache(ID3D12Device4* device, RHICreateInfo const& createInfo);
+        PipelineCache(ID3D12Device4* device, RHICreateInfo const& rhiCreateInfo);
 
         auto get(DX12Shader* shader, RasterizerStageInfo const& rasterizer, BlendColorInfo const& blendColor,
                  std::optional<DepthStencilStageInfo> const depthStencil,
@@ -312,7 +312,8 @@ namespace ionengine::rhi
     {
       public:
         DX12GraphicsContext(ID3D12Device4* device, PipelineCache* pipelineCache,
-                            DescriptorAllocator* descriptorAllocator, DeviceQueueData& deviceQueue, HANDLE fenceEvent);
+                            DescriptorAllocator* descriptorAllocator, DeviceQueueData& deviceQueue, HANDLE fenceEvent,
+                            uint32_t& curGraphicsContext);
 
         auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
                                         BlendColorInfo const& blendColor,
@@ -354,6 +355,7 @@ namespace ionengine::rhi
         DescriptorAllocator* descriptorAllocator;
         DeviceQueueData* deviceQueue;
         HANDLE fenceEvent;
+        uint32_t* curGraphicsContext;
         winrt::com_ptr<ID3D12CommandAllocator> commandAllocator;
         winrt::com_ptr<ID3D12GraphicsCommandList4> commandList;
         bool isCommandListOpened;
@@ -369,7 +371,7 @@ namespace ionengine::rhi
     {
       public:
         DX12CopyContext(ID3D12Device4* device, D3D12MA::Allocator* memoryAllocator, DeviceQueueData& deviceQueue,
-                        HANDLE fenceEvent, RHICreateInfo const& rhiCreateInfo);
+                        HANDLE fenceEvent, RHICreateInfo const& rhiCreateInfo, uint32_t& curCopyContext);
 
         auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset, std::span<uint8_t const> const dataBytes)
             -> Future<Buffer> override;
@@ -389,6 +391,7 @@ namespace ionengine::rhi
         ID3D12Device4* device;
         DeviceQueueData* deviceQueue;
         HANDLE fenceEvent;
+        uint32_t* curCopyContext;
         winrt::com_ptr<ID3D12CommandAllocator> commandAllocator;
         winrt::com_ptr<ID3D12GraphicsCommandList4> commandList;
         bool isCommandListOpened;
@@ -463,7 +466,7 @@ namespace ionengine::rhi
     class DX12RHI final : public RHI
     {
       public:
-        DX12RHI(RHICreateInfo const& createInfo);
+        DX12RHI(RHICreateInfo const& rhiCreateInfo, std::optional<SwapchainCreateInfo> const swapchainCreateInfo);
 
         auto createShader(ShaderCreateInfo const& createInfo) -> core::ref_ptr<Shader> override;
 
@@ -473,7 +476,7 @@ namespace ionengine::rhi
 
         auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> override;
 
-        auto tryGetSwapchain(SwapchainCreateInfo const& createInfo) -> Swapchain* override;
+        auto getSwapchain() -> Swapchain* override;
 
         auto getGraphicsContext() -> GraphicsContext* override;
 
@@ -495,12 +498,20 @@ namespace ionengine::rhi
         DeviceQueueData copyQueue;
         DeviceQueueData computeQueue;
 
-        core::ref_ptr<DescriptorAllocator> descriptorAllocator;
-        core::ref_ptr<PipelineCache> pipelineCache;
+        std::unique_ptr<DescriptorAllocator> descriptorAllocator;
+        std::unique_ptr<PipelineCache> pipelineCache;
 
-        core::ref_ptr<DX12Swapchain> swapchain;
-        core::ref_ptr<DX12GraphicsContext> graphicsContext;
-        core::ref_ptr<DX12CopyContext> copyContext;
+        std::unique_ptr<DX12Swapchain> swapchain;
+
+        struct FrameContextData
+        {
+            std::unique_ptr<DX12GraphicsContext> graphicsContext;
+            std::unique_ptr<DX12CopyContext> copyContext;
+        };
+        std::vector<FrameContextData> frameContexts;
+
+        uint32_t curGraphicsContext;
+        uint32_t curCopyContext;
 
         std::string const rhiName{"D3D12"};
 

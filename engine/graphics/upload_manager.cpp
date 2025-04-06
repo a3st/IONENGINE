@@ -20,7 +20,58 @@ namespace ionengine
         bufferUploads.emplace(std::move(uploadBufferData));
     }
 
-    auto UploadManager::onExecuteTask(bool const onlyBuffers, bool const waitAfterExecute) -> void
+    auto UploadManager::uploadTexture(UploadTextureInfo const& uploadTextureInfo,
+                                      UploadCompletedCallback&& completedCallback) -> void
+    {
+        UploadTextureData uploadTextureData{.texture = uploadTextureInfo.texture,
+                                            .mipLevel = uploadTextureInfo.mipLevel,
+                                            .dataBuffer =
+                                                uploadTextureInfo.dataBytes | std::ranges::to<std::vector<uint8_t>>(),
+                                            .callback = std::move(completedCallback)};
+        textureUploads.emplace(std::move(uploadTextureData));
+    }
+
+    auto UploadManager::onExecuteBuffers(bool const waitAfterExecute) -> void
+    {
+        if (executeResult)
+        {
+            if (!executeResult.getResult())
+            {
+                executeResult.wait();
+            }
+        }
+    }
+
+    auto UploadManager::onExecuteTextures() -> void
+    {
+        if (executeResult)
+        {
+            if (!executeResult.getResult())
+            {
+                return;
+            }
+        }
+
+        auto copyContext = RHI->getCopyContext();
+        size_t dispatchSize = 0;
+
+        while (!textureUploads.empty())
+        {
+            UploadTextureData uploadTextureData = std::move(textureUploads.front());
+
+            bufferUploads.pop();
+            dispatchSize += uploadTextureData.dataBuffer.size();
+
+            rhi::Future<rhi::Texture> future = copyContext->updateTexture(
+                uploadTextureData.texture, uploadTextureData.mipLevel, uploadTextureData.dataBuffer);
+
+            TrackingTextureData trackingTextureData{.future = std::move(future),
+                                                  .callback = std::move(uploadTextureData.callback)};
+            trackingTextureUploads.emplace_back(std::move(trackingTextureData));
+        }
+    }
+
+    /*auto UploadManager::onExecute(bool const onlyBuffers, bool const waitAfterExecute) -> void
     {
         bool isUploaded = false;
 
@@ -67,5 +118,5 @@ namespace ionengine
                 executeResult.wait();
             }
         }
-    }
-} // namespace ionengine::internal
+    }*/
+} // namespace ionengine
