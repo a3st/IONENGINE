@@ -414,6 +414,8 @@ namespace ionengine::rhi
         }
     };
 
+    class IDeviceContext;
+
     class FutureImpl
     {
       public:
@@ -422,6 +424,8 @@ namespace ionengine::rhi
         virtual auto getResult() const -> bool = 0;
 
         virtual auto wait() -> void = 0;
+
+        virtual auto waitOnContext(IDeviceContext* context) -> void = 0;
     };
 
     template <typename Type>
@@ -550,6 +554,11 @@ namespace ionengine::rhi
         operator bool() const
         {
             return impl != nullptr;
+        }
+
+        auto waitOnContext(IDeviceContext* context) -> void
+        {
+            impl->waitOnContext(context);
         }
 
       private:

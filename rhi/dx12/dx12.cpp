@@ -1150,6 +1150,19 @@ namespace ionengine::rhi
         ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
     }
 
+    auto DX12FutureImpl::waitOnContext(IDeviceContext* context) -> void
+    {
+        if (DX12GraphicsContext* graphicsContext = dynamic_cast<DX12GraphicsContext*>(context); graphicsContext)
+        {
+            throwIfFailed(graphicsContext->getCommandQueue()->Wait(fence, fenceValue));
+        }
+
+        if (DX12CopyContext* copyContext = dynamic_cast<DX12CopyContext*>(context); copyContext)
+        {
+            throwIfFailed(copyContext->getCommandQueue()->Wait(fence, fenceValue));
+        }
+    }
+
     auto DX12DeviceContext_barrier(ID3D12GraphicsCommandList4* commandList, core::ref_ptr<Buffer> dest,
                                    ResourceState const before, ResourceState const after) -> void
     {
@@ -1434,6 +1447,11 @@ namespace ionengine::rhi
         auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
                                                            fenceEvent, deviceQueue->fenceValue);
         return Future<void>(std::move(futureImpl));
+    }
+
+    auto DX12GraphicsContext::getCommandQueue() const -> ID3D12CommandQueue*
+    {
+        return deviceQueue->queue.get();
     }
 
     auto DX12CopyContext::getSurfaceData(DXGI_FORMAT const format, uint32_t const width, uint32_t const height,
@@ -1811,6 +1829,11 @@ namespace ionengine::rhi
         this->tryResetCommandList();
 
         DX12DeviceContext_barrier(commandList.get(), dest, before, after);
+    }
+
+    auto DX12CopyContext::getCommandQueue() const -> ID3D12CommandQueue*
+    {
+        return deviceQueue->queue.get();
     }
 
     DX12Swapchain::DX12Swapchain(IDXGIFactory4* factory, ID3D12Device4* device,

@@ -349,6 +349,8 @@ namespace ionengine::rhi
 
         auto execute() -> Future<void> override;
 
+        auto getCommandQueue() const -> ID3D12CommandQueue*;
+
       private:
         ID3D12Device4* device;
         PipelineCache* pipelineCache;
@@ -387,6 +389,8 @@ namespace ionengine::rhi
 
         auto execute() -> Future<void> override;
 
+        auto getCommandQueue() const -> ID3D12CommandQueue*;
+
       private:
         ID3D12Device4* device;
         DeviceQueueData* deviceQueue;
@@ -419,6 +423,8 @@ namespace ionengine::rhi
         auto getResult() const -> bool override;
 
         auto wait() -> void override;
+
+        auto waitOnContext(IDeviceContext* context) -> void override;
 
       private:
         ID3D12CommandQueue* queue;
