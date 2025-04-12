@@ -36,4 +36,15 @@ namespace ionengine::internal
         core::ref_ptr<Shader> uiColShader;
         core::ref_ptr<Shader> uiTexShader;
     };
+
+    class RmlSystem : public Rml::SystemInterface
+    {
+      public:
+        RmlSystem();
+
+        auto GetElapsedTime() -> double override;
+
+      private:
+        std::chrono::high_resolution_clock::time_point beginTime;
+    };
 } // namespace ionengine::internal

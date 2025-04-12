@@ -25,11 +25,11 @@ namespace ionengine
 
             this->onUpdate(deltaTime);
 
+            beginFrameTime = std::chrono::high_resolution_clock::now();
+
             graphics->beginFrame();
             this->onRender();
             graphics->endFrame();
-
-            beginFrameTime = endFrameTime;
         };
     }
 

@@ -22,22 +22,24 @@ class MyEngine : public Engine
         testCamera = Graphics::createPerspectiveCamera(68.0f, 0.1f, 100.0f);
         testCamera->setViewMatrix(core::Mat4f::lookAtRH(core::Vec3f(5.0f, 5.0f, 5.0f), core::Vec3f(0.0f, 0.0f, 0.0f),
                                                         core::Vec3f(0.0f, 0.0f, 1.0f)));
-        quadShader = Graphics::loadShaderFromFile("../../assets/shaders/quad_test_color_pc.bin");
+        // quadShader = Graphics::loadShaderFromFile("../../assets/shaders/quad_test_color_pc.bin");
         Material::baseSurfaceMaterial =
             Graphics::createMaterial(Graphics::loadShaderFromFile("../../assets/shaders/base3d_pc.bin"));
         testMesh = Graphics::loadMeshFromFile("../../assets/models/box.mdl");
 
         testImage = Graphics::loadImageFromFile("../../assets/images/debug-empty.txe");
-
-        Material::baseSurfaceMaterial->setValue("basicTexture", testImage);
+        if (testImage)
+        {
+            Material::baseSurfaceMaterial->setValue("basicTexture", testImage);
+        }
 
         Graphics::setRenderPath([&]() {
             auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>();
             // auto quadPass = getContext().graphics->addRenderPass<passes::QuadPass>(quadShader);
         });
 
-        //debugGUI = GUI::createWidgetFromFile("../assets/ui/debug.rml");
-        //debugGUI->attachToCamera(GUI::viewportCamera);
+        debugGUI = GUI::createWidgetFromFile("../assets/ui/debug.rml");
+        // debugGUI->attachToCamera(GUI::viewportCamera);
     }
 
     auto onUpdate(float const deltaTime) -> void override
@@ -50,7 +52,7 @@ class MyEngine : public Engine
     }
 
   private:
-    core::ref_ptr<Shader> quadShader;
+    // core::ref_ptr<Shader> quadShader;
     core::ref_ptr<Camera> testCamera;
     core::ref_ptr<Mesh> testMesh;
     core::ref_ptr<Material> material;

@@ -14,6 +14,7 @@ namespace ionengine
 
       private:
         std::unique_ptr<internal::RmlRender> rmlRender;
+        std::unique_ptr<internal::RmlSystem> rmlSystem;
 
         inline static GUI* instance;
 

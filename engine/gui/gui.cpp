@@ -6,13 +6,14 @@
 
 namespace ionengine
 {
-    GUI::GUI(core::ref_ptr<rhi::RHI> RHI) : rmlRender(std::make_unique<internal::RmlRender>(RHI))
+    GUI::GUI(core::ref_ptr<rhi::RHI> RHI)
+        : rmlRender(std::make_unique<internal::RmlRender>(RHI)), rmlSystem(std::make_unique<internal::RmlSystem>())
     {
         instance = this;
 
-        // Rml::SetRenderInterface(rmlRender.get());
-
-        // Rml::Initialise();
+        Rml::SetRenderInterface(rmlRender.get());
+        Rml::SetSystemInterface(rmlSystem.get());
+        Rml::Initialise();
     }
 
     auto GUI::createWidgetFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<GUIWidget>

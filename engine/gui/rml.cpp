@@ -87,4 +87,14 @@ namespace ionengine::internal
     auto RmlRender::ReleaseTexture(Rml::TextureHandle textureHandle) -> void
     {
     }
+
+    RmlSystem::RmlSystem() : beginTime(std::chrono::high_resolution_clock::now())
+    {
+    }
+
+    auto RmlSystem::GetElapsedTime() -> double
+    {
+        auto endTime = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::seconds>(endTime - beginTime).count();
+    }
 } // namespace ionengine::internal

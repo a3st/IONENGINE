@@ -1493,7 +1493,7 @@ namespace ionengine::rhi
         ::vkDestroySurfaceKHR(instance, surface, nullptr);
     }
 
-    auto VKSwapchain::requestBackBuffer() -> core::weak_ptr<Texture>
+    auto VKSwapchain::getBackBuffer() -> core::weak_ptr<Texture>
     {
         VkPipelineStageFlags const waitDstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
         auto result = ::vkAcquireNextImageKHR(device, swapchain, std::numeric_limits<uint32_t>::max(), acquireSemaphore,

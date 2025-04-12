@@ -7,7 +7,7 @@
 namespace ionengine
 {
     Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI, uint32_t const numBuffering)
-        : RHI(RHI), uploadManager(std::make_unique<UploadManager>(RHI)), renderPathHash(0), frameIndex(0)
+        : RHI(RHI), uploadManager(std::make_unique<UploadManager>(RHI, numBuffering)), renderPathHash(0), frameIndex(0)
     {
         instance = this;
 
@@ -90,52 +90,53 @@ namespace ionengine
     auto Graphics::beginFrame() -> void
     {
         auto& curFrameResourceData = frameResources[frameIndex];
+        curFrameResourceData.graphicsExecResult.wait();
+
         curFrameResourceData.renderTargetAllocator->reset();
         curFrameResourceData.constBufferAllocator->reset();
 
         renderPasses.clear();
         renderPathHash = 0;
-        this->swapchainTexture = RHI->getSwapchain()->requestBackBuffer().get();
+
+        this->swapchainTexture = RHI->getSwapchain()->getBackBuffer().get();
 
         for (auto& [renderGroup, renderQueue] : renderableData.renderGroups)
         {
             renderQueue.clear();
         }
+
         targetCameras.clear();
+
+        uploadManager->onComplete();
     }
 
     auto Graphics::endFrame() -> void
     {
-        for (auto const& targetCamera : targetCameras)
+        for (auto const& camera : targetCameras)
         {
-            this->targetCamera = targetCamera;
-
+            targetCamera = camera;
             renderPathUpdated();
         }
 
-        if (renderPasses.empty())
+        if (targetCamera)
         {
-            return;
+            this->addRenderPass<passes::SwapchainPass>(blitShader, swapchainTexture);
         }
-
-        this->addRenderPass<passes::SwapchainPass>(blitShader, swapchainTexture);
 
         this->cacheRenderPasses();
 
-        auto graphicsContext = RHI->getGraphicsContext();
-
+        rhi::GraphicsContext* graphicsContext = RHI->getGraphicsContext();
         graphicsContext->setViewport(0, 0, swapchainTexture->getWidth(), swapchainTexture->getHeight());
         graphicsContext->setScissor(0, 0, swapchainTexture->getWidth(), swapchainTexture->getHeight());
 
         this->executeRenderPasses(graphicsContext);
+        uploadManager->onExecute();
 
-        // uploadManager->onExecute(true, true);
-
-        graphicsContext->execute().wait();
-
-        // uploadManager->onExecute(false, false);
-
+        frameResources[frameIndex].graphicsExecResult = graphicsContext->execute();
         RHI->getSwapchain()->presentBackBuffer();
+        frameIndex = (frameIndex + 1) % static_cast<uint32_t>(frameResources.size());
+
+        this->swapchainTexture = nullptr;
     }
 
     auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
@@ -277,8 +278,6 @@ namespace ionengine
             std::cout << "Compiling render path" << std::endl;
 
             std::unordered_set<core::ref_ptr<rhi::Texture>> trackingResources;
-
-            bool isNeedUploadBuffer = false;
 
             for (uint32_t const i : std::views::iota(0u, renderPasses.size()))
             {

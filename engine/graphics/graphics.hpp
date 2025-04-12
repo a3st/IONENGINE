@@ -44,6 +44,7 @@ namespace ionengine
         {
             core::ref_ptr<TextureAllocator> renderTargetAllocator;
             core::ref_ptr<BufferAllocator> constBufferAllocator;
+            rhi::Future<void> graphicsExecResult;
         };
 
         std::vector<FrameResourceData> frameResources;
@@ -92,6 +93,8 @@ namespace ionengine
         template <typename Type, typename... Args>
         static auto addRenderPass(Args&&... args) -> RenderPass*
         {
+            assert(instance->targetCamera);
+
             auto renderPass = std::make_unique<Type>(
                 instance->frameResources[instance->frameIndex].renderTargetAllocator.get(),
                 instance->targetCamera->getTargetTexture(instance->frameIndex), std::forward<Args>(args)...);

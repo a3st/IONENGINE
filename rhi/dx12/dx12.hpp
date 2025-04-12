@@ -315,6 +315,8 @@ namespace ionengine::rhi
                             DescriptorAllocator* descriptorAllocator, DeviceQueueData& deviceQueue, HANDLE fenceEvent,
                             uint32_t& curGraphicsContext);
 
+        ~DX12GraphicsContext();
+
         auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
                                         BlendColorInfo const& blendColor,
                                         std::optional<DepthStencilStageInfo> const depthStencil) -> void override;
@@ -374,6 +376,8 @@ namespace ionengine::rhi
       public:
         DX12CopyContext(ID3D12Device4* device, D3D12MA::Allocator* memoryAllocator, DeviceQueueData& deviceQueue,
                         HANDLE fenceEvent, RHICreateInfo const& rhiCreateInfo, uint32_t& curCopyContext);
+
+        ~DX12CopyContext();
 
         auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset, std::span<uint8_t const> const dataBytes)
             -> Future<Buffer> override;
@@ -452,7 +456,9 @@ namespace ionengine::rhi
         DX12Swapchain(IDXGIFactory4* factory, ID3D12Device4* device, DescriptorAllocator* descriptorAllocator,
                       DeviceQueueData& deviceQueue, HANDLE fenceEvent, SwapchainCreateInfo const& createInfo);
 
-        auto requestBackBuffer() -> core::weak_ptr<Texture> override;
+        ~DX12Swapchain();
+
+        auto getBackBuffer() -> core::weak_ptr<Texture> override;
 
         auto presentBackBuffer() -> void override;
 
@@ -491,6 +497,8 @@ namespace ionengine::rhi
         auto getName() const -> std::string const& override;
 
       private:
+        std::string const rhiName{"D3D12"};
+
 #ifndef NDEBUG
         winrt::com_ptr<ID3D12Debug1> debug;
 #endif
@@ -507,8 +515,6 @@ namespace ionengine::rhi
         std::unique_ptr<DescriptorAllocator> descriptorAllocator;
         std::unique_ptr<PipelineCache> pipelineCache;
 
-        std::unique_ptr<DX12Swapchain> swapchain;
-
         struct FrameContextData
         {
             std::unique_ptr<DX12GraphicsContext> graphicsContext;
@@ -519,7 +525,7 @@ namespace ionengine::rhi
         uint32_t curGraphicsContext;
         uint32_t curCopyContext;
 
-        std::string const rhiName{"D3D12"};
+        std::unique_ptr<DX12Swapchain> swapchain;
 
         auto createDeviceQueue(D3D12_COMMAND_LIST_TYPE const commandListType, DeviceQueueData& deviceQueue) -> void;
     };

@@ -430,7 +430,7 @@ namespace ionengine::rhi
 
         ~VKSwapchain();
 
-        auto requestBackBuffer() -> core::weak_ptr<Texture> override;
+        auto getBackBuffer() -> core::weak_ptr<Texture> override;
 
         auto presentBackBuffer() -> void override;
 

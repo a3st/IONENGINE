@@ -70,11 +70,11 @@ TEST(RHI, RenderQuad_Test)
     // Create device and swapchain using RHI
     rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                        .instance = application->getInstanceHandle()};
-    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default(), swapchainCreateInfo);
-    auto graphicsContext = rhi->getGraphicsContext();
-    auto copyContext = rhi->getCopyContext();
+    auto RHI = rhi::RHI::create(rhi::RHICreateInfo::Default(), swapchainCreateInfo);
+    auto graphicsContext = RHI->getGraphicsContext();
+    auto copyContext = RHI->getCopyContext();
 
-    auto swapchain = rhi->getSwapchain();
+    auto swapchain = RHI->getSwapchain();
 
     // Compile shaders
     asset::fx::ShaderFormat shaderFormat;
@@ -119,7 +119,7 @@ TEST(RHI, RenderQuad_Test)
                          .pixelStage = {.entryPoint = pixelStage.entryPoint,
                                         .shaderCode = std::span<uint8_t const>(
                                             shaderFile.blob.data() + pixelBuffer.offset, pixelBuffer.size)}}};
-        shader = rhi->createShader(shaderCreateInfo);
+        shader = RHI->createShader(shaderCreateInfo);
     }
 
     // Load texture
@@ -139,7 +139,7 @@ TEST(RHI, RenderQuad_Test)
             .format = TXETextureFormat_to_RHITextureFormat(textureFile.textureData.format),
             .dimension = rhi::TextureDimension::_2D,
             .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
-        basicTexture = rhi->createTexture(textureCreateInfo);
+        basicTexture = RHI->createTexture(textureCreateInfo);
 
         copyContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
 
@@ -166,21 +166,21 @@ TEST(RHI, RenderQuad_Test)
                                                        .addressW = rhi::AddressMode::Wrap,
                                                        .compareOp = rhi::CompareOp::LessEqual,
                                                        .maxAnisotropy = 4};
-        linearSampler = rhi->createSampler(samplerCreateInfo);
+        linearSampler = RHI->createSampler(samplerCreateInfo);
     }
 
     core::ref_ptr<rhi::Buffer> sBuffer;
     {
         rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
                                                      .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
-        sBuffer = rhi->createBuffer(bufferCreateInfo);
+        sBuffer = RHI->createBuffer(bufferCreateInfo);
     }
 
     core::ref_ptr<rhi::Buffer> eBuffer;
     {
         rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
                                                      .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
-        eBuffer = rhi->createBuffer(bufferCreateInfo);
+        eBuffer = RHI->createBuffer(bufferCreateInfo);
     }
 
     // Initialize static resources
@@ -217,7 +217,7 @@ TEST(RHI, RenderQuad_Test)
                 width = event.size.width;
                 height = event.size.height;
 
-                if (rhi)
+                if (RHI)
                 {
                     swapchain->resizeBackBuffers(width, height);
                 }
@@ -230,9 +230,10 @@ TEST(RHI, RenderQuad_Test)
     };
 
     std::vector<rhi::RenderPassColorInfo> colors;
+    rhi::Future<void> executeResult;
 
     application->windowUpdated += [&]() -> void {
-        auto backBuffer = swapchain->requestBackBuffer();
+        auto backBuffer = swapchain->getBackBuffer();
 
         colors.emplace_back(rhi::RenderPassColorInfo{.texture = backBuffer.get(),
                                                      .loadOp = rhi::RenderPassLoadOp::Clear,
@@ -255,7 +256,7 @@ TEST(RHI, RenderQuad_Test)
 
         colors.clear();
 
-        auto executeResult = graphicsContext->execute();
+        executeResult = graphicsContext->execute();
         executeResult.wait();
 
         swapchain->presentBackBuffer();
@@ -273,10 +274,10 @@ TEST(RHI, RenderModel_Test)
     // Create device and swapchain using RHI
     rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                        .instance = application->getInstanceHandle()};
-    auto rhi = rhi::RHI::create(rhi::RHICreateInfo::Default(), swapchainCreateInfo);
-    auto graphicsContext = rhi->getGraphicsContext();
-    auto copyContext = rhi->getCopyContext();
-    auto swapchain = rhi->getSwapchain();
+    auto RHI = rhi::RHI::create(rhi::RHICreateInfo::Default(), swapchainCreateInfo);
+    auto graphicsContext = RHI->getGraphicsContext();
+    auto copyContext = RHI->getCopyContext();
+    auto swapchain = RHI->getSwapchain();
 
     // Compile shaders
     asset::fx::ShaderFormat shaderFormat;
@@ -321,7 +322,7 @@ TEST(RHI, RenderModel_Test)
                          .pixelStage = {.entryPoint = pixelStage.entryPoint,
                                         .shaderCode = std::span<uint8_t const>(
                                             shaderFile.blob.data() + pixelBuffer.offset, pixelBuffer.size)}}};
-        shader = rhi->createShader(shaderCreateInfo);
+        shader = RHI->createShader(shaderCreateInfo);
     }
 
     // Allocate resources
@@ -329,35 +330,35 @@ TEST(RHI, RenderModel_Test)
     {
         rhi::BufferCreateInfo const bufferCreateInfo{.size = 1 * 1024 * 1024,
                                                      .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::Vertex};
-        vBuffer = rhi->createBuffer(bufferCreateInfo);
+        vBuffer = RHI->createBuffer(bufferCreateInfo);
     }
 
     core::ref_ptr<rhi::Buffer> iBuffer;
     {
         rhi::BufferCreateInfo const bufferCreateInfo{.size = 1 * 1024 * 1024,
                                                      .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::Index};
-        iBuffer = rhi->createBuffer(bufferCreateInfo);
+        iBuffer = RHI->createBuffer(bufferCreateInfo);
     }
 
     core::ref_ptr<rhi::Buffer> tBuffer;
     {
         rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
                                                      .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
-        tBuffer = rhi->createBuffer(bufferCreateInfo);
+        tBuffer = RHI->createBuffer(bufferCreateInfo);
     }
 
     core::ref_ptr<rhi::Buffer> sBuffer;
     {
         rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
                                                      .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
-        sBuffer = rhi->createBuffer(bufferCreateInfo);
+        sBuffer = RHI->createBuffer(bufferCreateInfo);
     }
 
     core::ref_ptr<rhi::Buffer> eBuffer;
     {
         rhi::BufferCreateInfo const bufferCreateInfo{.size = 65536,
                                                      .flags = (rhi::BufferUsageFlags)rhi::BufferUsage::ConstantBuffer};
-        eBuffer = rhi->createBuffer(bufferCreateInfo);
+        eBuffer = RHI->createBuffer(bufferCreateInfo);
     }
 
     core::ref_ptr<rhi::Sampler> linearSampler;
@@ -368,7 +369,7 @@ TEST(RHI, RenderModel_Test)
                                                        .addressW = rhi::AddressMode::Wrap,
                                                        .compareOp = rhi::CompareOp::LessEqual,
                                                        .maxAnisotropy = 4};
-        linearSampler = rhi->createSampler(samplerCreateInfo);
+        linearSampler = RHI->createSampler(samplerCreateInfo);
     }
 
     uint32_t indexCount = 0;
@@ -421,7 +422,7 @@ TEST(RHI, RenderModel_Test)
             .format = TXETextureFormat_to_RHITextureFormat(textureFile.textureData.format),
             .dimension = rhi::TextureDimension::_2D,
             .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
-        basicTexture = rhi->createTexture(textureCreateInfo);
+        basicTexture = RHI->createTexture(textureCreateInfo);
 
         copyContext->barrier(basicTexture, rhi::ResourceState::Common, rhi::ResourceState::CopyDest);
 
@@ -478,7 +479,7 @@ TEST(RHI, RenderModel_Test)
                 width = event.size.width;
                 height = event.size.height;
 
-                if (rhi)
+                if (RHI)
                 {
                     swapchain->resizeBackBuffers(width, height);
                 }
@@ -494,6 +495,7 @@ TEST(RHI, RenderModel_Test)
     float angle = 0.0f;
     auto beginFrameTime = std::chrono::high_resolution_clock::now();
     std::vector<rhi::RenderPassColorInfo> colors;
+    rhi::Future<void> executeResult;
 
     application->windowUpdated += [&]() -> void {
         auto endFrameTime = std::chrono::high_resolution_clock::now();
@@ -509,7 +511,9 @@ TEST(RHI, RenderModel_Test)
         core::Mat4f model = core::Mat4f::identity() * currentRot.toMat4();
         angle += 100.0f * deltaTime;
 
-        auto backBuffer = swapchain->requestBackBuffer();
+        beginFrameTime = std::chrono::high_resolution_clock::now();
+
+        auto backBuffer = swapchain->getBackBuffer();
 
         // Update MVP matrix
         {
@@ -526,7 +530,7 @@ TEST(RHI, RenderModel_Test)
                 std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(&transformData), sizeof(transformData)));
 
             auto executeResult = copyContext->execute();
-            executeResult.wait();
+            executeResult.waitOnContext(RHI->getGraphicsContext());
         }
 
         colors.emplace_back(rhi::RenderPassColorInfo{.texture = backBuffer.get(),
@@ -553,12 +557,10 @@ TEST(RHI, RenderModel_Test)
 
         colors.clear();
 
-        auto executeResult = graphicsContext->execute();
+        executeResult = graphicsContext->execute();
         executeResult.wait();
 
         swapchain->presentBackBuffer();
-
-        beginFrameTime = endFrameTime;
     };
 
     application->run();

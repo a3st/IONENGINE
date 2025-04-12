@@ -473,12 +473,22 @@ namespace ionengine::rhi
 
         auto getResult() const -> bool
         {
-            return impl->getResult();
+            if (impl)
+            {
+                return impl->getResult();
+            }
+            else
+            {
+                return true;
+            }
         }
 
         auto wait() const -> void
         {
-            impl->wait();
+            if (impl)
+            {
+                impl->wait();
+            }
         }
 
         auto get() -> core::ref_ptr<Type>
@@ -543,12 +553,22 @@ namespace ionengine::rhi
 
         auto getResult() const -> bool
         {
-            return impl->getResult();
+            if (impl)
+            {
+                return impl->getResult();
+            }
+            else
+            {
+                return true;
+            }
         }
 
         auto wait() -> void
         {
-            impl->wait();
+            if (impl)
+            {
+                impl->wait();
+            }
         }
 
         operator bool() const
@@ -558,7 +578,10 @@ namespace ionengine::rhi
 
         auto waitOnContext(IDeviceContext* context) -> void
         {
-            impl->waitOnContext(context);
+            if (impl)
+            {
+                impl->waitOnContext(context);
+            }
         }
 
       private:
@@ -640,7 +663,7 @@ namespace ionengine::rhi
       public:
         virtual ~Swapchain() = default;
 
-        virtual auto requestBackBuffer() -> core::weak_ptr<Texture> = 0;
+        virtual auto getBackBuffer() -> core::weak_ptr<Texture> = 0;
 
         virtual auto presentBackBuffer() -> void = 0;
 

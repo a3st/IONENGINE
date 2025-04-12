@@ -14,6 +14,8 @@ namespace ionengine
       public:
         Engine(uint32_t argc, char** argv);
 
+        virtual ~Engine() = default;
+
         auto run() -> int32_t;
 
       protected:

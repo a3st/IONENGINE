@@ -26,7 +26,7 @@ VS {
     }
 }
 
-[FillMode("SOLID"), CullMode("BACK"), DepthWrite(true), StencilWrite(false)]
+[FillMode("SOLID"), CullMode("FRONT"), DepthWrite(true), StencilWrite(false)]
 PS {
     PS_OUTPUT main(VS_OUTPUT input) 
     {

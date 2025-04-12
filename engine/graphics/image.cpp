@@ -29,7 +29,7 @@ namespace ionengine
             .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
         texture = RHI.createTexture(textureCreateInfo);
 
-        for (uint32_t const i : std::views::iota(0u, textureFile.textureData.mipLevelCount))
+        for (uint32_t const i : std::views::iota(0u, 1u))
         {
             auto const& bufferData = textureFile.textureData.buffers[i];
 

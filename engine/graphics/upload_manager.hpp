@@ -25,7 +25,7 @@ namespace ionengine
     class UploadManager
     {
       public:
-        UploadManager(core::ref_ptr<rhi::RHI> RHI);
+        UploadManager(core::ref_ptr<rhi::RHI> RHI, uint32_t const numBuffering);
 
         auto uploadBuffer(UploadBufferInfo const& uploadBufferInfo, UploadCompletedCallback&& completedCallback)
             -> void;
@@ -33,48 +33,52 @@ namespace ionengine
         auto uploadTexture(UploadTextureInfo const& uploadTextureInfo, UploadCompletedCallback&& completedCallback)
             -> void;
 
-        auto onExecuteBuffers(bool const waitAfterExecute) -> void;
+        auto onExecute() -> void;
 
-        auto onExecuteTextures() -> void;
+        auto onComplete() -> void;
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
 
-        struct UploadBufferData
+        enum class UploadType
         {
-            core::ref_ptr<rhi::Buffer> buffer;
-            uint64_t offset;
+            Buffer,
+            Texture
+        };
+
+        struct UploadElementData
+        {
+            UploadType uploadType;
+
+            struct
+            {
+                core::ref_ptr<rhi::Buffer> buffer;
+                uint64_t offset;
+            } bufferData;
+            struct
+            {
+                core::ref_ptr<rhi::Texture> texture;
+                uint32_t mipLevel;
+            } textureData;
+
             std::vector<uint8_t> dataBuffer;
             UploadCompletedCallback callback;
         };
 
-        struct UploadTextureData
+        struct TrackElementData
         {
-            core::ref_ptr<rhi::Texture> texture;
-            uint32_t mipLevel;
-            std::vector<uint8_t> dataBuffer;
+            UploadType uploadType;
+
+            rhi::Future<rhi::Buffer> bufferFuture;
+            rhi::Future<rhi::Texture> textureFuture;
+
             UploadCompletedCallback callback;
         };
 
-        struct TrackingBufferData
-        {
-            rhi::Future<rhi::Buffer> future;
-            UploadCompletedCallback callback;
-        };
+        std::queue<UploadElementData> uploadElements;
+        std::list<TrackElementData> trackElements;
 
-        struct TrackingTextureData
-        {
-            rhi::Future<rhi::Texture> future;
-            UploadCompletedCallback callback;
-        };
-
-        std::queue<UploadBufferData> bufferUploads;
-        std::vector<TrackingBufferData> trackingBufferUploads;
-        std::queue<UploadTextureData> textureUploads;
-        std::vector<TrackingTextureData> trackingTextureUploads;
-
-        rhi::Future<void> executeResult;
-
-        inline static size_t constexpr kTextureDispatchMaxSize = 4 * 1024 * 1024;
+        std::vector<rhi::Future<void>> executeResults;
+        uint32_t bufferIndex;
     };
 } // namespace ionengine

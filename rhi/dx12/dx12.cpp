@@ -1209,6 +1209,12 @@ namespace ionengine::rhi
         bindingData.resize(sizeof(uint32_t) * 4 * 16);
     }
 
+    DX12GraphicsContext::~DX12GraphicsContext()
+    {
+        deviceQueue->fence->SetEventOnCompletion(deviceQueue->fenceValue, fenceEvent);
+        ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+    }
+
     auto DX12GraphicsContext::tryResetCommandList() -> void
     {
         if (isCommandListOpened)
@@ -1516,6 +1522,12 @@ namespace ionengine::rhi
             readStagingBuffer = {.buffer =
                                      core::make_ref<DX12Buffer>(device, memoryAllocator, nullptr, bufferCreateInfo)};
         }
+    }
+
+    DX12CopyContext::~DX12CopyContext()
+    {
+        deviceQueue->fence->SetEventOnCompletion(deviceQueue->fenceValue, fenceEvent);
+        ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
     }
 
     auto DX12CopyContext::tryResetCommandList() -> void
@@ -1864,26 +1876,28 @@ namespace ionengine::rhi
         this->createSwapchainBuffers(rect.right, rect.bottom);
     }
 
-    auto DX12Swapchain::requestBackBuffer() -> core::weak_ptr<Texture>
+    DX12Swapchain::~DX12Swapchain()
     {
-        if (deviceQueue->fence->GetCompletedValue() < deviceQueue->fenceValue)
-        {
-            throwIfFailed(deviceQueue->fence->SetEventOnCompletion(deviceQueue->fenceValue, fenceEvent));
-            ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
-        }
+        deviceQueue->fenceValue++;
+        deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue);
+        deviceQueue->fence->SetEventOnCompletion(deviceQueue->fenceValue, fenceEvent);
+        ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
+    }
+
+    auto DX12Swapchain::getBackBuffer() -> core::weak_ptr<Texture>
+    {
         return backBuffers[swapchain->GetCurrentBackBufferIndex()];
     }
 
     auto DX12Swapchain::presentBackBuffer() -> void
     {
         throwIfFailed(swapchain->Present(0, 0));
-
-        deviceQueue->fenceValue++;
-        throwIfFailed(deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue));
     }
 
     auto DX12Swapchain::resizeBackBuffers(uint32_t const width, uint32_t const height) -> void
     {
+        deviceQueue->fenceValue++;
+        throwIfFailed(deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue));
         throwIfFailed(deviceQueue->fence->SetEventOnCompletion(deviceQueue->fenceValue, fenceEvent));
         ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
 
@@ -2010,13 +2024,13 @@ namespace ionengine::rhi
 
     auto DX12RHI::getGraphicsContext() -> GraphicsContext*
     {
-        curGraphicsContext = (curGraphicsContext + 1) % frameContexts.size();
+        curGraphicsContext = curGraphicsContext % frameContexts.size();
         return frameContexts[curGraphicsContext].graphicsContext.get();
     }
 
     auto DX12RHI::getCopyContext() -> CopyContext*
     {
-        curCopyContext = (curCopyContext + 1) % frameContexts.size();
+        curCopyContext = curCopyContext % frameContexts.size();
         return frameContexts[curCopyContext].copyContext.get();
     }
 
