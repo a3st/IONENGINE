@@ -9,7 +9,7 @@ namespace ionengine
     class GUIWidget : public core::ref_counted_object
     {
       public:
-        GUIWidget(core::ref_ptr<Camera> targetCamera);
+        GUIWidget();
 
         auto getTargetCamera() const -> core::ref_ptr<Camera>;
 

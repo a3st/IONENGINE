@@ -19,4 +19,16 @@ namespace ionengine
       private:
         core::ref_ptr<rhi::Texture> texture;
     };
+
+    class RTImage : public core::ref_counted_object
+    {
+      public:
+        RTImage(rhi::RHI& RHI, uint32_t const frameCount, uint32_t const width, uint32_t const height,
+                rhi::TextureFormat const format);
+
+        auto getTexture(uint32_t const frameIndex) const -> core::ref_ptr<rhi::Texture>;
+
+      private:
+        std::vector<core::ref_ptr<rhi::Texture>> textures;
+    };
 } // namespace ionengine

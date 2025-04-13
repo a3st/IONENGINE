@@ -23,6 +23,6 @@ namespace ionengine
         // auto guiContext = core::make_ref<GUIContext>(targetCamera);
         // instance->rmlRender->guiContexts[rmlContext] = guiContext;
         // return guiContext;
-        return nullptr;
+        return core::make_ref<GUIWidget>();
     }
 } // namespace ionengine

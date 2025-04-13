@@ -5,16 +5,17 @@
 
 namespace ionengine
 {
-    GUIWidget::GUIWidget(core::ref_ptr<Camera> targetCamera) : targetCamera(targetCamera)
+    GUIWidget::GUIWidget()
     {
     }
 
     auto GUIWidget::getTargetCamera() const -> core::ref_ptr<Camera>
     {
-        return nullptr;
+        return targetCamera;
     }
 
     auto GUIWidget::attachToCamera(core::ref_ptr<Camera> targetCamera) -> void
     {
+        this->targetCamera = targetCamera;
     }
 } // namespace ionengine

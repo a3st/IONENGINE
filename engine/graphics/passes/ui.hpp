@@ -2,16 +2,15 @@
 
 #pragma once
 
-#include "../../render_pass.hpp"
-#include "../../texture_allocator.hpp"
+#include "../render_pass.hpp"
+#include "../texture_allocator.hpp"
 
 namespace ionengine::passes
 {
     class UIPass : public RenderPass
     {
       public:
-        UIPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
-                      core::ref_ptr<Shader> shader, core::ref_ptr<rhi::Texture> swapchainTexture);
+        UIPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture);
 
         auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override;
 

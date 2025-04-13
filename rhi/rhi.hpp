@@ -563,7 +563,7 @@ namespace ionengine::rhi
             }
         }
 
-        auto wait() -> void
+        auto wait() const -> void
         {
             if (impl)
             {
@@ -576,7 +576,7 @@ namespace ionengine::rhi
             return impl != nullptr;
         }
 
-        auto waitOnContext(IDeviceContext* context) -> void
+        auto waitOnContext(IDeviceContext* context) const -> void
         {
             if (impl)
             {
@@ -609,8 +609,6 @@ namespace ionengine::rhi
     class GraphicsContext : public IDeviceContext
     {
       public:
-        virtual ~GraphicsContext() = default;
-
         virtual auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
                                                 BlendColorInfo const& blendColor,
                                                 std::optional<DepthStencilStageInfo> const depthStencil) -> void = 0;
@@ -642,8 +640,6 @@ namespace ionengine::rhi
     class CopyContext : public IDeviceContext
     {
       public:
-        virtual ~CopyContext() = default;
-
         virtual auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset,
                                   std::span<uint8_t const> const dataBytes) -> Future<Buffer> = 0;
 

@@ -47,4 +47,27 @@ namespace ionengine
     {
         return texture;
     }
+
+    RTImage::RTImage(rhi::RHI& RHI, uint32_t const frameCount, uint32_t const width, uint32_t const height,
+                     rhi::TextureFormat const format)
+    {
+        for (uint32_t const i : std::views::iota(0u, frameCount))
+        {
+            rhi::TextureCreateInfo const textureCreateInfo{
+                .width = 800,
+                .height = 600,
+                .depth = 1,
+                .mipLevels = 1,
+                .format = format,
+                .dimension = rhi::TextureDimension::_2D,
+                .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource |
+                                                  rhi::TextureUsage::CopySource)};
+            textures.emplace_back(RHI.createTexture(textureCreateInfo));
+        }
+    }
+
+    auto RTImage::getTexture(uint32_t const frameIndex) const -> core::ref_ptr<rhi::Texture>
+    {
+        return textures[frameIndex];
+    }
 } // namespace ionengine

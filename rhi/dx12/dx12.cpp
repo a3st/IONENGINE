@@ -1152,12 +1152,11 @@ namespace ionengine::rhi
 
     auto DX12FutureImpl::waitOnContext(IDeviceContext* context) -> void
     {
-        if (DX12GraphicsContext* graphicsContext = dynamic_cast<DX12GraphicsContext*>(context); graphicsContext)
+        if (auto graphicsContext = dynamic_cast<DX12GraphicsContext*>(context))
         {
             throwIfFailed(graphicsContext->getCommandQueue()->Wait(fence, fenceValue));
         }
-
-        if (DX12CopyContext* copyContext = dynamic_cast<DX12CopyContext*>(context); copyContext)
+        else if (auto copyContext = dynamic_cast<DX12CopyContext*>(context))
         {
             throwIfFailed(copyContext->getCommandQueue()->Wait(fence, fenceValue));
         }

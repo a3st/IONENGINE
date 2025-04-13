@@ -61,8 +61,12 @@ namespace ionengine::internal
         core::ref_ptr<Surface> surface = Graphics::createSurface(vertexData, indexData);
         core::ref_ptr<Material> material = Graphics::createMaterial(uiColShader);
 
-        DrawParameters drawParams{
-            .drawType = DrawType::Triangles, .surface = surface, .material = material, .renderGroup = RenderGroup::UI};
+        DrawParameters drawParams{.drawType = DrawType::Triangles,
+                                  .surface = surface,
+                                  .material = material,
+                                  .renderGroup = RenderGroup::UI,
+                                  .viewMatrix = core::Mat4f::identity(),
+                                  .projMatrix = core::Mat4f::orthographicRH(0, 1, 0, 1, 0.1, 100.0)};
 
         auto guiWidget = guiContexts[this->GetContext()];
 

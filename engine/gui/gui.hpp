@@ -20,7 +20,5 @@ namespace ionengine
 
       public:
         static auto createWidgetFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<GUIWidget>;
-
-        inline static core::ref_ptr<Camera> viewportCamera;
     };
 } // namespace ionengine

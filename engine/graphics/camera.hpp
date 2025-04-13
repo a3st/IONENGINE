@@ -6,7 +6,7 @@
 #include "core/plane.hpp"
 #include "core/quaternion.hpp"
 #include "core/ref_ptr.hpp"
-#include "rhi/rhi.hpp"
+#include "image.hpp"
 
 namespace ionengine
 {
@@ -21,18 +21,18 @@ namespace ionengine
 
         virtual auto getProjMatrix() const -> core::Mat4f const&;
 
-        virtual auto getTargetTexture(uint32_t const frameIndex) const -> core::ref_ptr<rhi::Texture>;
+        virtual auto getTargetImage() const -> core::ref_ptr<RTImage>;
 
       protected:
-        core::Mat4f viewMat;
-        core::Mat4f projMat;
-        std::vector<core::ref_ptr<rhi::Texture>> targetTextures;
+        core::Mat4f viewMatrix;
+        core::Mat4f projMatrix;
+        core::ref_ptr<RTImage> targetImage;
     };
 
     class PerspectiveCamera : public Camera
     {
       public:
-        PerspectiveCamera(rhi::RHI& RHI, uint32_t const frameCount, float const fovy, float const zNear, float const zFar);
+        PerspectiveCamera(core::ref_ptr<RTImage> targetImage, float const fovy, float const zNear, float const zFar);
 
         auto createFrustumPlanes() const -> std::array<core::Planef, 6>;
 

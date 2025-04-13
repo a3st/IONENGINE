@@ -145,7 +145,7 @@ namespace ionengine
         for (uint32_t const i : std::views::iota(0u, drawableMesh->getSurfaces().size()))
         {
             core::ref_ptr<Material> currentMaterial = drawableMesh->getMaterials()[i];
-            currentMaterial->updateEffectDataBuffer(instance->uploadManager.get());
+            currentMaterial->updateEffectDataBuffer(instance->uploadManager.get(), instance->frameIndex);
 
             core::weak_ptr<rhi::Buffer> transformDataBuffer;
             {
@@ -171,7 +171,7 @@ namespace ionengine
 
             DrawableData drawableData{.surface = drawableMesh->getSurfaces()[i],
                                       .shader = currentMaterial->getShader(),
-                                      .effectDataBuffer = currentMaterial->getEffectDataBuffer(),
+                                      .effectDataBuffer = currentMaterial->getEffectDataBuffer(instance->frameIndex),
                                       .transformDataBuffer = transformDataBuffer.get()};
             instance->renderableData.renderGroups[RenderGroup::Opaque].push(std::move(drawableData));
         }
@@ -182,7 +182,7 @@ namespace ionengine
     auto Graphics::drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
                                   core::ref_ptr<Camera> targetCamera) -> void
     {
-        drawParams.material->updateEffectDataBuffer(instance->uploadManager.get());
+        drawParams.material->updateEffectDataBuffer(instance->uploadManager.get(), instance->frameIndex);
 
         core::weak_ptr<rhi::Buffer> transformDataBuffer;
         {
@@ -193,8 +193,9 @@ namespace ionengine
 
             std::vector<uint8_t> transformDataRawBuffer(transformData.size);
 
-            core::Mat4f const modelViewProjMat =
-                modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
+            core::Mat4f const modelViewProjMat = modelMatrix *
+                                                 drawParams.viewMatrix.value_or(targetCamera->getViewMatrix()) *
+                                                 drawParams.projMatrix.value_or(targetCamera->getProjMatrix());
             std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMat.data(),
                         sizeof(core::Mat4f));
 
@@ -208,7 +209,7 @@ namespace ionengine
 
         DrawableData drawableData{.surface = drawParams.surface,
                                   .shader = drawParams.material->getShader(),
-                                  .effectDataBuffer = drawParams.material->getEffectDataBuffer(),
+                                  .effectDataBuffer = drawParams.material->getEffectDataBuffer(instance->frameIndex),
                                   .transformDataBuffer = transformDataBuffer.get()};
         instance->renderableData.renderGroups[drawParams.renderGroup].push(std::move(drawableData));
 
@@ -216,15 +217,17 @@ namespace ionengine
     }
 
     auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
-        -> core::ref_ptr<PerspectiveCamera>
+        -> core::ref_ptr<Camera>
     {
-        return core::make_ref<PerspectiveCamera>(*instance->RHI, static_cast<uint32_t>(instance->frameResources.size()),
-                                                 fovy, zNear, zFar);
+        auto targetImage =
+            core::make_ref<RTImage>(*instance->RHI, static_cast<uint32_t>(instance->frameResources.size()), 800, 600,
+                                    rhi::TextureFormat::RGBA8_UNORM);
+        return core::make_ref<PerspectiveCamera>(targetImage, fovy, zNear, zFar);
     }
 
     auto Graphics::createMaterial(core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>
     {
-        return core::make_ref<Material>(*instance->RHI, shader);
+        return core::make_ref<Material>(*instance->RHI, static_cast<uint32_t>(instance->frameResources.size()), shader);
     }
 
     auto Graphics::findTextureInPassResources(std::span<PassResourceData const> const passResources,
@@ -401,6 +404,21 @@ namespace ionengine
     auto Graphics::createSurface(std::span<uint8_t const> const vertexDataBytes,
                                  std::span<uint8_t const> const indexDataBytes) -> core::ref_ptr<Surface>
     {
-        return nullptr;
+        auto surface = core::make_ref<Surface>(*instance->RHI, vertexDataBytes.size(), indexDataBytes.size(),
+                                               indexDataBytes.size() / sizeof(uint32_t));
+
+        {
+            UploadBufferInfo const uploadBufferInfo{
+                .buffer = surface->getVertexBuffer(), .offset = 0, .dataBytes = vertexDataBytes};
+            instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
+        }
+
+        {
+            UploadBufferInfo const uploadBufferInfo{
+                .buffer = surface->getIndexBuffer(), .offset = 0, .dataBytes = indexDataBytes};
+            instance->uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
+        }
+
+        return surface;
     }
 } // namespace ionengine

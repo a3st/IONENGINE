@@ -25,6 +25,8 @@ namespace ionengine
         core::ref_ptr<Surface> surface;
         core::ref_ptr<Material> material;
         RenderGroup renderGroup;
+        std::optional<core::Mat4f> viewMatrix;
+        std::optional<core::Mat4f> projMatrix;
     };
 
     class Graphics
@@ -97,7 +99,7 @@ namespace ionengine
 
             auto renderPass = std::make_unique<Type>(
                 instance->frameResources[instance->frameIndex].renderTargetAllocator.get(),
-                instance->targetCamera->getTargetTexture(instance->frameIndex), std::forward<Args>(args)...);
+                instance->targetCamera->getTargetImage()->getTexture(instance->frameIndex), std::forward<Args>(args)...);
             instance->renderPathHash = instance->renderPathHash == 0 ? renderPass->getHash()
                                                                      : instance->renderPathHash ^ renderPass->getHash();
             RenderPass* outPass = renderPass.get();
@@ -112,7 +114,7 @@ namespace ionengine
                                    core::ref_ptr<Camera> targetCamera) -> void;
 
         static auto createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
-            -> core::ref_ptr<PerspectiveCamera>;
+            -> core::ref_ptr<Camera>;
 
         static auto loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
 

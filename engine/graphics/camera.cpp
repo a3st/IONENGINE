@@ -7,43 +7,30 @@ namespace ionengine
 {
     auto Camera::setViewMatrix(core::Mat4f const& viewMatrix) -> void
     {
-        viewMat = viewMatrix;
+        this->viewMatrix = viewMatrix;
     }
 
     auto Camera::getViewMatrix() const -> core::Mat4f const&
     {
-        return viewMat;
+        return viewMatrix;
     }
 
     auto Camera::getProjMatrix() const -> core::Mat4f const&
     {
-        return projMat;
+        return projMatrix;
     }
 
-    auto Camera::getTargetTexture(uint32_t const frameIndex) const -> core::ref_ptr<rhi::Texture>
+    auto Camera::getTargetImage() const -> core::ref_ptr<RTImage>
     {
-        return targetTextures[frameIndex];
+        return targetImage;
     }
 
-    PerspectiveCamera::PerspectiveCamera(rhi::RHI& RHI, uint32_t const frameCount, float const fovy, float const zNear,
+    PerspectiveCamera::PerspectiveCamera(core::ref_ptr<RTImage> targetImage, float const fovy, float const zNear,
                                          float const zFar)
         : fovy(fovy * std::numbers::pi / 180.0f), aspect(4 / 3), zFar(zFar), zNear(zNear)
     {
-        for (uint32_t const i : std::views::iota(0u, frameCount))
-        {
-            rhi::TextureCreateInfo const textureCreateInfo{
-                .width = 800,
-                .height = 600,
-                .depth = 1,
-                .mipLevels = 1,
-                .format = rhi::TextureFormat::RGBA8_UNORM,
-                .dimension = rhi::TextureDimension::_2D,
-                .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource |
-                                                  rhi::TextureUsage::CopyDest)};
-            targetTextures.emplace_back(RHI.createTexture(textureCreateInfo));
-        }
-
-        this->projMat = core::Mat4f::perspectiveRH(fovy, aspect, zNear, zFar);
+        this->targetImage = targetImage;
+        this->projMatrix = core::Mat4f::perspectiveRH(fovy, aspect, zNear, zFar);
     }
 
     auto PerspectiveCamera::createFrustumPlanes() const -> std::array<core::Planef, 6>

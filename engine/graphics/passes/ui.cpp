@@ -5,8 +5,7 @@
 
 namespace ionengine::passes
 {
-    UIPass::UIPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
-                   core::ref_ptr<Shader> shader, core::ref_ptr<rhi::Texture> swapchainTexture)
+    UIPass::UIPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture)
         : RenderPass("UI Pass")
     {
     }

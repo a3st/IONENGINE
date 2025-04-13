@@ -14,19 +14,20 @@ namespace ionengine
     class Material : public core::ref_counted_object
     {
       public:
-        Material(rhi::RHI& RHI, core::ref_ptr<Shader> shader);
+        Material(rhi::RHI& RHI, uint32_t const frameCount, core::ref_ptr<Shader> shader);
 
         auto getShader() const -> core::ref_ptr<Shader>;
 
-        auto getEffectDataBuffer() const -> core::ref_ptr<rhi::Buffer>;
+        auto getEffectDataBuffer(uint32_t const frameIndex) const -> core::ref_ptr<rhi::Buffer>;
 
-        auto updateEffectDataBuffer(UploadManager* uploadManager) -> void;
+        auto updateEffectDataBuffer(UploadManager* uploadManager, uint32_t const frameIndex) -> void;
 
       private:
         core::ref_ptr<Shader> shader;
-        core::ref_ptr<rhi::Buffer> effectDataBuffer;
+        std::vector<core::ref_ptr<rhi::Buffer>> effectDataBuffers;
         std::vector<uint8_t> effectDataRawBuffer;
-        bool wasChanged;
+        uint32_t wasChangedCount;
+        uint32_t frameCount;
 
       public:
         auto setValue(std::string_view const paramName, core::ref_ptr<Image> const& value) -> void;
