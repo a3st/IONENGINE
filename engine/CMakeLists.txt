@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.25.1)
 
 find_package(RmlUi CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 
 add_library(engine STATIC
     ../shadersys/fx.cpp
@@ -33,7 +34,8 @@ add_library(engine STATIC
 
 target_include_directories(engine PUBLIC 
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/engine)
+    ${PROJECT_SOURCE_DIR}/engine
+    ${Stb_INCLUDE_DIR})
 
 target_precompile_headers(engine PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)
 

@@ -421,4 +421,19 @@ namespace ionengine
 
         return surface;
     }
+
+    auto Graphics::createImage(uint32_t const width, uint32_t const height, rhi::TextureFormat const format,
+                               std::span<uint8_t const> const dataBytes) -> core::ref_ptr<Image>
+    {
+        auto image = core::make_ref<Image>(*instance->RHI, width, height, format);
+
+        {
+            UploadTextureInfo const uploadTextureInfo{
+                .texture = image->getTexture(), .mipLevel = 0, .dataBytes = dataBytes};
+            instance->uploadManager->uploadTexture(uploadTextureInfo, [image]() -> void {
+                instance->RHI->getGraphicsContext()->barrier(image->getTexture(), rhi::ResourceState::Common, rhi::ResourceState::ShaderRead);
+            });
+        }
+        return image;
+    }
 } // namespace ionengine

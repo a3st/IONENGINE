@@ -29,7 +29,7 @@ namespace ionengine
             .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
         texture = RHI.createTexture(textureCreateInfo);
 
-        for (uint32_t const i : std::views::iota(0u, 1u))
+        for (uint32_t const i : std::views::iota(0u, textureFile.textureData.mipLevelCount))
         {
             auto const& bufferData = textureFile.textureData.buffers[i];
 
@@ -41,6 +41,19 @@ namespace ionengine
                 RHI.getGraphicsContext()->barrier(texture, rhi::ResourceState::Common, rhi::ResourceState::ShaderRead);
             });
         }
+    }
+
+    Image::Image(rhi::RHI& RHI, uint32_t const width, uint32_t const height, rhi::TextureFormat const format)
+    {
+        rhi::TextureCreateInfo const textureCreateInfo{
+            .width = width,
+            .height = height,
+            .depth = 1,
+            .mipLevels = 1,
+            .format = format,
+            .dimension = rhi::TextureDimension::_2D,
+            .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
+        texture = RHI.createTexture(textureCreateInfo);
     }
 
     auto Image::getTexture() const -> core::ref_ptr<rhi::Texture>

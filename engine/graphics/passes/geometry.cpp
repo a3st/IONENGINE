@@ -35,6 +35,11 @@ namespace ionengine::passes
             context.graphics->bindDescriptor(
                 effectDataIndex, drawableData.effectDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
 
+            uint32_t const samplerDataIndex =
+                drawableData.shader->getBindings().at("SHADER_DATA").elements.at("gSamplerData") / sizeof(uint32_t);
+            context.graphics->bindDescriptor(
+                samplerDataIndex, context.samplerDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
+
             drawableData.surface->draw(context.graphics);
         }
     }

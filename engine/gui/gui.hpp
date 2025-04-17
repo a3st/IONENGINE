@@ -12,9 +12,15 @@ namespace ionengine
       public:
         GUI(core::ref_ptr<rhi::RHI> RHI);
 
+        ~GUI();
+
+        auto onRender() -> void;
+
+        auto onUpdate() -> void;
+
       private:
-        std::unique_ptr<internal::RmlRender> rmlRender;
         std::unique_ptr<internal::RmlSystem> rmlSystem;
+        std::unique_ptr<internal::RmlRender> rmlRender;
 
         inline static GUI* instance;
 

@@ -56,7 +56,6 @@ namespace ionengine::passes
 
         uint32_t const samplerDataIndex =
             shader->getBindings().at("SHADER_DATA").elements.at("gSamplerData") / sizeof(uint32_t);
-
         context.graphics->bindDescriptor(
             samplerDataIndex, context.samplerDataBuffer->getDescriptorOffset(rhi::BufferUsage::ConstantBuffer));
 

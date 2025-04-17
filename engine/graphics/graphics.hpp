@@ -97,9 +97,10 @@ namespace ionengine
         {
             assert(instance->targetCamera);
 
-            auto renderPass = std::make_unique<Type>(
-                instance->frameResources[instance->frameIndex].renderTargetAllocator.get(),
-                instance->targetCamera->getTargetImage()->getTexture(instance->frameIndex), std::forward<Args>(args)...);
+            auto renderPass =
+                std::make_unique<Type>(instance->frameResources[instance->frameIndex].renderTargetAllocator.get(),
+                                       instance->targetCamera->getTargetImage()->getTexture(instance->frameIndex),
+                                       std::forward<Args>(args)...);
             instance->renderPathHash = instance->renderPathHash == 0 ? renderPass->getHash()
                                                                      : instance->renderPathHash ^ renderPass->getHash();
             RenderPass* outPass = renderPass.get();
@@ -128,5 +129,8 @@ namespace ionengine
 
         static auto createSurface(std::span<uint8_t const> const vertexDataBytes,
                                   std::span<uint8_t const> const indexDataBytes) -> core::ref_ptr<Surface>;
+
+        static auto createImage(uint32_t const width, uint32_t const height, rhi::TextureFormat const format,
+                                std::span<uint8_t const> const dataBytes) -> core::ref_ptr<Image>;
     };
 } // namespace ionengine

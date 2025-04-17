@@ -3,6 +3,8 @@
 #include "rml.hpp"
 #include "graphics/graphics.hpp"
 #include "precompiled.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 namespace ionengine::internal
 {
@@ -23,10 +25,17 @@ namespace ionengine::internal
     }
 
     auto RmlRender::RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices,
-                                   Rml::TextureHandle textureHandle, const Rml::Vector2f& translation) -> void
+                                   Rml::TextureHandle texture, const Rml::Vector2f& translation) -> void
     {
-        if (textureHandle)
+        core::ref_ptr<Material> material;
+        if (texture)
         {
+            material = Graphics::createMaterial(uiTexShader);
+            material->setValue("inputTexture", core::ref_ptr<Image>(reinterpret_cast<Image*>(texture)));
+        }
+        else
+        {
+            material = Graphics::createMaterial(uiColShader);
         }
 
         struct Vertex
@@ -59,14 +68,13 @@ namespace ionengine::internal
         }
 
         core::ref_ptr<Surface> surface = Graphics::createSurface(vertexData, indexData);
-        core::ref_ptr<Material> material = Graphics::createMaterial(uiColShader);
 
         DrawParameters drawParams{.drawType = DrawType::Triangles,
                                   .surface = surface,
                                   .material = material,
                                   .renderGroup = RenderGroup::UI,
                                   .viewMatrix = core::Mat4f::identity(),
-                                  .projMatrix = core::Mat4f::orthographicRH(0, 1, 0, 1, 0.1, 100.0)};
+                                  .projMatrix = core::Mat4f::orthographicRH(0, 800, 600, 0, 0.1, 100.0)};
 
         auto guiWidget = guiContexts[this->GetContext()];
 
@@ -82,14 +90,38 @@ namespace ionengine::internal
     {
     }
 
-    auto RmlRender::LoadTexture(Rml::TextureHandle& textureHandle, Rml::Vector2i& textureDimensions,
+    auto RmlRender::LoadTexture(Rml::TextureHandle& texture, Rml::Vector2i& textureDimensions,
                                 const Rml::String& source) -> bool
     {
-        return false;
+        int32_t width = 0;
+        int32_t height = 0;
+        int32_t channels = 0;
+
+        uint8_t* imageDataBytes = ::stbi_load(source.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        if (!imageDataBytes)
+        {
+            return false;
+        }
+
+        auto image = Graphics::createImage(width, height, rhi::TextureFormat::RGBA8_UNORM,
+                                           std::span<uint8_t const>(imageDataBytes, width * height * channels));
+        texture = reinterpret_cast<Rml::TextureHandle>(image.release());
+        return true;
     }
 
-    auto RmlRender::ReleaseTexture(Rml::TextureHandle textureHandle) -> void
+    auto RmlRender::ReleaseTexture(Rml::TextureHandle texture) -> void
     {
+        delete reinterpret_cast<Image*>(texture);
+    }
+
+    auto RmlRender::GenerateTexture(Rml::TextureHandle& texture, const Rml::byte* source,
+                                    const Rml::Vector2i& sourceDimensions) -> bool
+    {
+        auto image =
+            Graphics::createImage(sourceDimensions.x, sourceDimensions.y, rhi::TextureFormat::RGBA8_UNORM,
+                                  std::span<uint8_t const>(source, sourceDimensions.x * sourceDimensions.y * 4));
+        texture = reinterpret_cast<Rml::TextureHandle>(image.release());
+        return true;
     }
 
     RmlSystem::RmlSystem() : beginTime(std::chrono::high_resolution_clock::now())
@@ -100,5 +132,10 @@ namespace ionengine::internal
     {
         auto endTime = std::chrono::high_resolution_clock::now();
         return std::chrono::duration_cast<std::chrono::seconds>(endTime - beginTime).count();
+    }
+
+    auto RmlSystem::LogMessage(Rml::Log::Type type, const Rml::String& message) -> bool
+    {
+        return true;
     }
 } // namespace ionengine::internal

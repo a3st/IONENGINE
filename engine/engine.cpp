@@ -23,11 +23,13 @@ namespace ionengine
                 std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() /
                 1000000.0f;
 
+            gui->onUpdate();
             this->onUpdate(deltaTime);
 
             beginFrameTime = std::chrono::high_resolution_clock::now();
 
             graphics->beginFrame();
+            gui->onRender();
             this->onRender();
             graphics->endFrame();
         };

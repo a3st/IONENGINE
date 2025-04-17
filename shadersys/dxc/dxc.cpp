@@ -147,6 +147,10 @@ namespace ionengine::shadersys
             inputDataCode += generator.getHLSLStruct<common::SAMPLER_DATA>("SAMPLER_DATA") + "\n";
             inputDataCode += generator.getHLSLConstBuffer<constants::UIShaderData>("SHADER_DATA", 0, 0) + "\n";
 
+            shaderData.structures.emplace_back(common::TRANSFORM_DATA::structureData);
+            shaderData.structures.emplace_back(common::SAMPLER_DATA::structureData);
+            shaderData.structures.emplace_back(constants::UIShaderData::structureData);
+
             vertexLayout = inputs::UIVSInput::vertexLayout;
         }
 

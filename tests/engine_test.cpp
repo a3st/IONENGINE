@@ -39,7 +39,7 @@ class MyEngine : public Engine
             auto uiPass = Graphics::addRenderPass<passes::UIPass>();
         });
 
-        debugGUI = GUI::createWidgetFromFile("../assets/ui/debug.rml");
+        debugGUI = GUI::createWidgetFromFile("../../assets/ui/debug.rml");
         debugGUI->attachToCamera(testCamera);
     }
 
@@ -53,7 +53,6 @@ class MyEngine : public Engine
     }
 
   private:
-    // core::ref_ptr<Shader> quadShader;
     core::ref_ptr<Camera> testCamera;
     core::ref_ptr<Mesh> testMesh;
     core::ref_ptr<Material> material;

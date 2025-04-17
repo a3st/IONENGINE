@@ -147,9 +147,7 @@ TEST(RHI, RenderQuad_Test)
         {
             auto const& bufferData = textureFile.textureData.buffers[i];
 
-            copyContext->updateTexture(
-                basicTexture, i,
-                std::span<uint8_t const>(textureFile.blob.data() + bufferData.offset, bufferData.size));
+            copyContext->updateTexture(basicTexture, i, textureFile.blob.data() + bufferData.offset);
         }
 
         copyContext->barrier(basicTexture, rhi::ResourceState::CopyDest, rhi::ResourceState::Common);
@@ -430,9 +428,7 @@ TEST(RHI, RenderModel_Test)
         {
             auto const& bufferData = textureFile.textureData.buffers[i];
 
-            copyContext->updateTexture(
-                basicTexture, i,
-                std::span<uint8_t const>(textureFile.blob.data() + bufferData.offset, bufferData.size));
+            copyContext->updateTexture(basicTexture, i, textureFile.blob.data() + bufferData.offset);
         }
 
         copyContext->barrier(basicTexture, rhi::ResourceState::CopyDest, rhi::ResourceState::Common);

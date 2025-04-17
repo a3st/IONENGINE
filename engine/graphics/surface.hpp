@@ -9,7 +9,7 @@ namespace ionengine
     class Surface : public core::ref_counted_object
     {
       public:
-        Surface(rhi::RHI& RHI, core::ref_ptr<rhi::Buffer> vertexBuffer, size_t const indexSize,
+        Surface(rhi::RHI& RHI, core::ref_ptr<rhi::Buffer> vertexBuffer, core::ref_ptr<rhi::Buffer> indexBuffer,
                 uint32_t const indexCount);
 
         Surface(rhi::RHI& RHI, size_t const vertexSize, size_t const indexSize, uint32_t const indexCount);

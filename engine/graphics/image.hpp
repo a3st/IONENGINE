@@ -14,6 +14,8 @@ namespace ionengine
       public:
         Image(rhi::RHI& RHI, UploadManager& uploadManager, asset::TextureFile const& textureFile);
 
+        Image(rhi::RHI& RHI, uint32_t const width, uint32_t const height, rhi::TextureFormat const format);
+
         auto getTexture() const -> core::ref_ptr<rhi::Texture>;
 
       private:

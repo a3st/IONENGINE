@@ -643,8 +643,7 @@ namespace ionengine::rhi
         virtual auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset,
                                   std::span<uint8_t const> const dataBytes) -> Future<Buffer> = 0;
 
-        virtual auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
-                                   std::span<uint8_t const> const dataBytes) -> Future<Texture> = 0;
+        virtual auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex, uint8_t const* dataBytes) -> Future<Texture> = 0;
 
         /*
         virtual auto readBuffer(core::ref_ptr<Buffer> dest, uint8_t* dataBytes) -> size_t = 0;

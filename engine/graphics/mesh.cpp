@@ -28,7 +28,12 @@ namespace ionengine
         {
             asset::mdl::BufferData const& bufferData = modelFile.modelData.buffers[surfaceData.buffer];
 
-            auto surface = core::make_ref<Surface>(RHI, vertexBuffer, bufferData.size, surfaceData.indexCount);
+            rhi::BufferCreateInfo const bufferCreateInfo{
+                .size = bufferData.size,
+                .flags = (rhi::BufferUsageFlags)(rhi::BufferUsage::Index | rhi::BufferUsage::CopyDest)};
+            core::ref_ptr<rhi::Buffer> indexBuffer = RHI.createBuffer(bufferCreateInfo);
+
+            auto surface = core::make_ref<Surface>(RHI, vertexBuffer, indexBuffer, surfaceData.indexCount);
 
             UploadBufferInfo const uploadBufferInfo{
                 .buffer = surface->getIndexBuffer(),

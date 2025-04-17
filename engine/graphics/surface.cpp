@@ -5,13 +5,10 @@
 
 namespace ionengine
 {
-    Surface::Surface(rhi::RHI& RHI, core::ref_ptr<rhi::Buffer> vertexBuffer, size_t const indexSize,
+    Surface::Surface(rhi::RHI& RHI, core::ref_ptr<rhi::Buffer> vertexBuffer, core::ref_ptr<rhi::Buffer> indexBuffer,
                      uint32_t const indexCount)
-        : vertexBuffer(vertexBuffer), indexCount(indexCount)
+        : vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), indexCount(indexCount)
     {
-        rhi::BufferCreateInfo const bufferCreateInfo{
-            .size = indexSize, .flags = (rhi::BufferUsageFlags)(rhi::BufferUsage::Index | rhi::BufferUsage::CopyDest)};
-        indexBuffer = RHI.createBuffer(bufferCreateInfo);
     }
 
     Surface::Surface(rhi::RHI& RHI, size_t const vertexSize, size_t const indexSize, uint32_t const indexCount)

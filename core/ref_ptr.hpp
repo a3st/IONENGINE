@@ -43,7 +43,7 @@ namespace ionengine::core
             return --ref_count;
         }
 
-        auto use_count() -> uint32_t
+        auto use_count() const -> uint32_t
         {
             return ref_count;
         }
@@ -130,8 +130,9 @@ namespace ionengine::core
 
         auto release() -> Type*
         {
-            release_ref();
-            return ptr;
+            Type* releasePtr = ptr;
+            ptr = nullptr;
+            return releasePtr;
         }
 
         operator bool() const

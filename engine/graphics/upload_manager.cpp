@@ -54,7 +54,7 @@ namespace ionengine
             {
                 rhi::Future<rhi::Texture> future = RHI->getCopyContext()->updateTexture(
                     uploadElementData.textureData.texture, uploadElementData.textureData.mipLevel,
-                    uploadElementData.dataBuffer);
+                    uploadElementData.dataBuffer.data());
 
                 trackElementData.textureFuture = std::move(future);
             }

@@ -1603,7 +1603,7 @@ namespace ionengine::rhi
     }
 
     auto DX12CopyContext::updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
-                                        std::span<uint8_t const> const dataBytes) -> Future<Texture>
+                                        uint8_t const* dataBytes) -> Future<Texture>
     {
         this->tryResetCommandList();
 
@@ -1640,7 +1640,7 @@ namespace ionengine::rhi
 
             for (uint32_t const i : std::views::iota(0u, rowCount))
             {
-                oss.write(dataBytes.data() + rowBytes * i, rowBytes);
+                oss.write(dataBytes + rowBytes * i, rowBytes);
 
                 // Align by row pitch
                 oss.seekp(footprint.Footprint.RowPitch - rowBytes, std::ios::cur);

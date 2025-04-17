@@ -382,8 +382,8 @@ namespace ionengine::rhi
         auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset, std::span<uint8_t const> const dataBytes)
             -> Future<Buffer> override;
 
-        auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
-                           std::span<uint8_t const> const dataBytes) -> Future<Texture> override;
+        auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex, uint8_t const* dataBytes)
+            -> Future<Texture> override;
 
         auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
             -> void override;
