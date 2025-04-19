@@ -10,7 +10,7 @@ namespace ionengine::passes
     class QuadPass : public RenderPass
     {
       public:
-        QuadPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
+        QuadPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
                  core::ref_ptr<Shader> shader)
             : RenderPass("Quad Pass"), shader(shader)
         {

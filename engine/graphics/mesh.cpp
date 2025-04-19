@@ -21,7 +21,7 @@ namespace ionengine
                 .buffer = vertexBuffer,
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};
-            uploadManager.uploadBuffer(uploadBufferInfo, [this]() -> void {});
+            uploadManager.uploadBuffer(uploadBufferInfo);
         }
 
         for (auto const& surfaceData : modelFile.modelData.surfaces)
@@ -33,15 +33,13 @@ namespace ionengine
                 .flags = (rhi::BufferUsageFlags)(rhi::BufferUsage::Index | rhi::BufferUsage::CopyDest)};
             core::ref_ptr<rhi::Buffer> indexBuffer = RHI.createBuffer(bufferCreateInfo);
 
-            auto surface = core::make_ref<Surface>(RHI, vertexBuffer, indexBuffer, surfaceData.indexCount);
-
             UploadBufferInfo const uploadBufferInfo{
-                .buffer = surface->getIndexBuffer(),
+                .buffer = indexBuffer,
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};
-            uploadManager.uploadBuffer(uploadBufferInfo, [this]() -> void {});
+            uploadManager.uploadBuffer(uploadBufferInfo);
 
-            surfaces.emplace_back(std::move(surface));
+            surfaces.emplace_back(core::make_ref<Surface>(RHI, vertexBuffer, indexBuffer, surfaceData.indexCount));
             materials.emplace_back(Material::baseSurfaceMaterial);
         }
     }

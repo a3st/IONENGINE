@@ -10,7 +10,7 @@ namespace ionengine::passes
     class UIPass : public RenderPass
     {
       public:
-        UIPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture);
+        UIPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture);
 
         auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override;
 

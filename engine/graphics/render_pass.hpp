@@ -41,6 +41,8 @@ namespace ionengine
       public:
         RenderPass(std::string_view const passName);
 
+        virtual ~RenderPass() = default;
+
         virtual auto execute(RenderContext const& context, RenderableData const& renderableData) -> void = 0;
 
         auto getColors() const -> std::vector<rhi::RenderPassColorInfo> const&;

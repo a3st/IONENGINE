@@ -37,9 +37,7 @@ namespace ionengine
                 .texture = texture,
                 .mipLevel = i,
                 .dataBytes = std::span<uint8_t const>(textureFile.blob.data() + bufferData.offset, bufferData.size)};
-            uploadManager.uploadTexture(uploadTextureInfo, [this, &RHI]() -> void {
-                RHI.getGraphicsContext()->barrier(texture, rhi::ResourceState::Common, rhi::ResourceState::ShaderRead);
-            });
+            uploadManager.uploadTexture(uploadTextureInfo);
         }
     }
 

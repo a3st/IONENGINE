@@ -15,18 +15,16 @@ VS {
 
         VS_OUTPUT output;
         output.position = mul(transformData.Get().modelViewProj, worldPosition);
-        output.color = input.color;
         output.uv = input.uv;
+        output.color = input.color;
         return output;
     }
 }
 
-[FillMode("SOLID"), CullMode("BACK"), DepthWrite(true), StencilWrite(false)]
+[FillMode("SOLID"), CullMode("FRONT"), DepthWrite(false), StencilWrite(false)]
 PS {
     PS_OUTPUT main(VS_OUTPUT input) 
     {
-        cbuffer_t<SAMPLER_DATA> samplerData = make_cbuffer<SAMPLER_DATA>(gSamplerData);
-
         PS_OUTPUT output;
         output.color = input.color;
         return output;

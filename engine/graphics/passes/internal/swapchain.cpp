@@ -6,7 +6,7 @@
 
 namespace ionengine::passes
 {
-    SwapchainPass::SwapchainPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
+    SwapchainPass::SwapchainPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
                                  core::ref_ptr<Shader> shader, core::ref_ptr<rhi::Texture> swapchainTexture)
         : RenderPass("Swapchain Pass"), shader(shader)
     {
@@ -45,7 +45,7 @@ namespace ionengine::passes
 
             UploadBufferInfo const uploadBufferInfo{
                 .buffer = passDataBuffer.get(), .offset = 0, .dataBytes = passDataRawBuffer};
-            context.uploadManager->uploadBuffer(uploadBufferInfo, []() -> void {});
+            context.uploadManager->uploadBuffer(uploadBufferInfo);
         }
 
         uint32_t const passDataIndex =

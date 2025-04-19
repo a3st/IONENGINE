@@ -19,13 +19,13 @@ VS {
 
         VS_OUTPUT output;
         output.position = mul(transformData.Get().modelViewProj, worldPosition);
-        output.color = input.color;
         output.uv = input.uv;
+        output.color = input.color;
         return output;
     }
 }
 
-[FillMode("SOLID"), CullMode("FRONT"), DepthWrite(true), StencilWrite(false)]
+[FillMode("SOLID"), CullMode("FRONT"), DepthWrite(false), StencilWrite(false)]
 PS {
     PS_OUTPUT main(VS_OUTPUT input) 
     {
@@ -33,7 +33,7 @@ PS {
         cbuffer_t<EFFECT_DATA> effectData = make_cbuffer<EFFECT_DATA>(gEffectData);
 
         PS_OUTPUT output;
-        output.color = make_texture2D(effectData.Get().inputTexture).Get().Sample(make_sampler(samplerData.Get().linearSampler).Get(), input.uv);
+        output.color = input.color * make_texture2D(effectData.Get().inputTexture).Get().Sample(make_sampler(samplerData.Get().linearSampler).Get(), input.uv);
         return output;
     }
 }

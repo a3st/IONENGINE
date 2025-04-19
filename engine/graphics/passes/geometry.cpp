@@ -5,8 +5,8 @@
 
 namespace ionengine::passes
 {
-    GeometryPass::GeometryPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture)
-        : RenderPass("Geometry Pass")
+    GeometryPass::GeometryPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture)
+        : RenderPass("Geometry Pass"), cameraTexture(cameraTexture)
     {
         rhi::RenderPassColorInfo const renderPassColorInfo{.texture = cameraTexture,
                                                            .loadOp = rhi::RenderPassLoadOp::Clear,
@@ -19,6 +19,9 @@ namespace ionengine::passes
 
     auto GeometryPass::execute(RenderContext const& context, RenderableData const& renderableData) -> void
     {
+        context.graphics->setViewport(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight());
+        context.graphics->setScissor(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight());
+
         for (auto const& drawableData : renderableData.renderGroups.at(RenderGroup::Opaque))
         {
             context.graphics->setGraphicsPipelineOptions(drawableData.shader->getShader(),

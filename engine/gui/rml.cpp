@@ -52,8 +52,9 @@ namespace ionengine::internal
             {
                 Vertex vertex{.position = core::Vec2f(vertices[i].position.x, vertices[i].position.y),
                               .uv = core::Vec2f(vertices[i].tex_coord.x, vertices[i].tex_coord.y),
-                              .color = core::Vec4f(vertices[i].colour.red, vertices[i].colour.green,
-                                                   vertices[i].colour.red, vertices[i].colour.alpha)};
+                              .color =
+                                  core::Vec4f(vertices[i].colour.red / 255.0f, vertices[i].colour.green / 255.0f,
+                                              vertices[i].colour.blue / 255.0f, vertices[i].colour.alpha / 255.0f)};
                 stream.write(reinterpret_cast<uint8_t*>(&vertex), sizeof(Vertex));
             }
         }
@@ -67,14 +68,12 @@ namespace ionengine::internal
             }
         }
 
-        core::ref_ptr<Surface> surface = Graphics::createSurface(vertexData, indexData);
-
         DrawParameters drawParams{.drawType = DrawType::Triangles,
-                                  .surface = surface,
+                                  .surface = Graphics::createSurface(vertexData, indexData),
                                   .material = material,
                                   .renderGroup = RenderGroup::UI,
                                   .viewMatrix = core::Mat4f::identity(),
-                                  .projMatrix = core::Mat4f::orthographicRH(0, 800, 600, 0, 0.1, 100.0)};
+                                  .projMatrix = core::Mat4f::orthographicRH(0, 800, 600, 0, 0.0f, 1.0f)};
 
         auto guiWidget = guiContexts[this->GetContext()];
 
@@ -105,6 +104,9 @@ namespace ionengine::internal
 
         auto image = Graphics::createImage(width, height, rhi::TextureFormat::RGBA8_UNORM,
                                            std::span<uint8_t const>(imageDataBytes, width * height * channels));
+
+        ::stbi_image_free(imageDataBytes);
+
         texture = reinterpret_cast<Rml::TextureHandle>(image.release());
         return true;
     }

@@ -11,18 +11,15 @@ namespace ionengine
     {
         auto effectDataResult = shader->getBindings().find("EFFECT_DATA");
 
-        if (effectDataResult != shader->getBindings().end() && effectDataResult->second.size > 0)
+        for (uint32_t const i : std::views::iota(0u, frameCount))
         {
-            for (uint32_t const i : std::views::iota(0u, frameCount))
-            {
-                rhi::BufferCreateInfo const bufferCreateInfo{
-                    .size = effectDataResult->second.size,
-                    .flags = (rhi::BufferUsageFlags)(rhi::BufferUsage::ConstantBuffer | rhi::BufferUsage::CopyDest)};
-                effectDataBuffers.emplace_back(RHI.createBuffer(bufferCreateInfo));
-            }
-
-            effectDataRawBuffer.resize(effectDataResult->second.size);
+            rhi::BufferCreateInfo const bufferCreateInfo{
+                .size = effectDataResult->second.size > 0 ? effectDataResult->second.size : 256,
+                .flags = (rhi::BufferUsageFlags)(rhi::BufferUsage::ConstantBuffer | rhi::BufferUsage::CopyDest)};
+            effectDataBuffers.emplace_back(RHI.createBuffer(bufferCreateInfo));
         }
+
+        effectDataRawBuffer.resize(effectDataResult->second.size);
     }
 
     auto Material::getShader() const -> core::ref_ptr<Shader>
@@ -35,7 +32,7 @@ namespace ionengine
         return effectDataBuffers[frameIndex];
     }
 
-    auto Material::updateEffectDataBuffer(UploadManager* uploadManager, uint32_t const frameIndex) -> void
+    auto Material::updateEffectDataBuffer(UploadManager& uploadManager, uint32_t const frameIndex) -> void
     {
         if (effectDataBuffers.empty())
         {
@@ -46,7 +43,7 @@ namespace ionengine
         {
             UploadBufferInfo const uploadBufferInfo{
                 .buffer = effectDataBuffers[frameIndex], .offset = 0, .dataBytes = effectDataRawBuffer};
-            uploadManager->uploadBuffer(uploadBufferInfo, [this]() -> void {});
+            uploadManager.uploadBuffer(uploadBufferInfo);
 
             wasChangedCount++;
         }

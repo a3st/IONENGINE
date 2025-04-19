@@ -10,8 +10,11 @@ namespace ionengine::passes
     class GeometryPass : public RenderPass
     {
       public:
-        GeometryPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture);
+        GeometryPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture);
 
         auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override;
+
+      private:
+        core::ref_ptr<rhi::Texture> cameraTexture;
     };
 } // namespace ionengine::passes

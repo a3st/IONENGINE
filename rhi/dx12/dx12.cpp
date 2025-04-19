@@ -516,6 +516,7 @@ namespace ionengine::rhi
         throwIfFailed(memoryAllocator->CreateResource(&maAllocationDesc, &resourceDesc, initialState, nullptr,
                                                       memoryAllocation.put(), __uuidof(ID3D12Resource),
                                                       resource.put_void()));
+        resource->SetName(L"Buffer");
 
         if (flags & BufferUsage::ConstantBuffer)
         {
@@ -659,6 +660,7 @@ namespace ionengine::rhi
         throwIfFailed(memoryAllocator->CreateResource(&maAllocationDesc, &resourceDesc, initialState, nullptr,
                                                       memoryAllocation.put(), __uuidof(ID3D12Resource),
                                                       resource.put_void()));
+        resource->SetName(L"Texture");
 
         if (flags & TextureUsage::RenderTarget)
         {
@@ -1877,8 +1879,6 @@ namespace ionengine::rhi
 
     DX12Swapchain::~DX12Swapchain()
     {
-        deviceQueue->fenceValue++;
-        deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue);
         deviceQueue->fence->SetEventOnCompletion(deviceQueue->fenceValue, fenceEvent);
         ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
     }
@@ -1888,15 +1888,20 @@ namespace ionengine::rhi
         return backBuffers[swapchain->GetCurrentBackBufferIndex()];
     }
 
-    auto DX12Swapchain::presentBackBuffer() -> void
+    auto DX12Swapchain::presentBackBuffer() -> Future<void>
     {
         throwIfFailed(swapchain->Present(0, 0));
+
+        deviceQueue->fenceValue++;
+        throwIfFailed(deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue));
+
+        auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
+                                                           fenceEvent, deviceQueue->fenceValue);
+        return Future<void>(std::move(futureImpl));
     }
 
     auto DX12Swapchain::resizeBackBuffers(uint32_t const width, uint32_t const height) -> void
     {
-        deviceQueue->fenceValue++;
-        throwIfFailed(deviceQueue->queue->Signal(deviceQueue->fence.get(), deviceQueue->fenceValue));
         throwIfFailed(deviceQueue->fence->SetEventOnCompletion(deviceQueue->fenceValue, fenceEvent));
         ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
 

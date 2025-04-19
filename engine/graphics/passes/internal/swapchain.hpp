@@ -10,7 +10,7 @@ namespace ionengine::passes
     class SwapchainPass : public RenderPass
     {
       public:
-        SwapchainPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
+        SwapchainPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
                       core::ref_ptr<Shader> shader, core::ref_ptr<rhi::Texture> swapchainTexture);
 
         auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override;

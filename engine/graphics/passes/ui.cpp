@@ -5,7 +5,7 @@
 
 namespace ionengine::passes
 {
-    UIPass::UIPass(TextureAllocator* textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture)
+    UIPass::UIPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture)
         : RenderPass("UI Pass")
     {
         rhi::RenderPassColorInfo const renderPassColorInfo{
@@ -17,11 +17,14 @@ namespace ionengine::passes
 
     auto UIPass::execute(RenderContext const& context, RenderableData const& renderableData) -> void
     {
+        context.graphics->setViewport(0, 0, 800, 600);
+        context.graphics->setScissor(0, 0, 800, 600);
+
         for (auto const& drawableData : renderableData.renderGroups.at(RenderGroup::UI))
         {
             context.graphics->setGraphicsPipelineOptions(drawableData.shader->getShader(),
                                                          drawableData.shader->getRasterizerStageInfo(),
-                                                         drawableData.shader->getBlendColorInfo(), std::nullopt);
+                                                         rhi::BlendColorInfo::AlphaBlend(), std::nullopt);
 
             uint32_t const transformDataIndex =
                 drawableData.shader->getBindings().at("SHADER_DATA").elements.at("gTransformData") / sizeof(uint32_t);

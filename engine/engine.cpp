@@ -17,6 +17,22 @@ namespace ionengine
         graphics = std::make_unique<Graphics>(RHI, rhiCreateInfo.numBuffering);
         gui = std::make_unique<GUI>(RHI);
 
+        application->windowStateChanged += [this](platform::WindowEvent const& event) -> void {
+            switch (event.eventType)
+            {
+                case platform::WindowEventType::Resize: {
+                    uint32_t const width = event.size.width;
+                    uint32_t const height = event.size.height;
+
+                    if (graphics && width > 0 && height > 0)
+                    {
+                        graphics->onResize(width, height);
+                    }
+                    break;
+                }
+            }
+        };
+
         application->windowUpdated += [this]() -> void {
             auto endFrameTime = std::chrono::high_resolution_clock::now();
             float deltaTime =
@@ -29,8 +45,8 @@ namespace ionengine
             beginFrameTime = std::chrono::high_resolution_clock::now();
 
             graphics->beginFrame();
-            gui->onRender();
             this->onRender();
+            gui->onRender();
             graphics->endFrame();
         };
     }

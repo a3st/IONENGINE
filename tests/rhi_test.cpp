@@ -215,7 +215,7 @@ TEST(RHI, RenderQuad_Test)
                 width = event.size.width;
                 height = event.size.height;
 
-                if (RHI)
+                if (RHI && width > 0 && height > 0)
                 {
                     swapchain->resizeBackBuffers(width, height);
                 }

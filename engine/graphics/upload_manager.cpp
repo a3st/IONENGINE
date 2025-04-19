@@ -7,97 +7,53 @@ namespace ionengine
 {
     UploadManager::UploadManager(core::ref_ptr<rhi::RHI> RHI, uint32_t const numBuffering) : RHI(RHI), bufferIndex(0)
     {
-        executeResults.resize(numBuffering);
+        copyResults.resize(numBuffering);
     }
 
-    auto UploadManager::uploadBuffer(UploadBufferInfo const& uploadBufferInfo,
-                                     UploadCompletedCallback&& completedCallback) -> void
+    auto UploadManager::uploadBuffer(UploadBufferInfo const& uploadBufferInfo) -> void
     {
         UploadElementData uploadElementData{
             .uploadType = UploadType::Buffer,
             .bufferData = {.buffer = uploadBufferInfo.buffer, .offset = uploadBufferInfo.offset},
-            .dataBuffer = uploadBufferInfo.dataBytes | std::ranges::to<std::vector<uint8_t>>(),
-            .callback = std::move(completedCallback)};
-        uploadElements.emplace(std::move(uploadElementData));
+            .dataBuffer = uploadBufferInfo.dataBytes | std::ranges::to<std::vector<uint8_t>>()};
+        uploadElements.emplace_back(std::move(uploadElementData));
     }
 
-    auto UploadManager::uploadTexture(UploadTextureInfo const& uploadTextureInfo,
-                                      UploadCompletedCallback&& completedCallback) -> void
+    auto UploadManager::uploadTexture(UploadTextureInfo const& uploadTextureInfo) -> void
     {
         UploadElementData uploadElementData{
             .uploadType = UploadType::Texture,
             .textureData = {.texture = uploadTextureInfo.texture, .mipLevel = uploadTextureInfo.mipLevel},
-            .dataBuffer = uploadTextureInfo.dataBytes | std::ranges::to<std::vector<uint8_t>>(),
-            .callback = std::move(completedCallback)};
-        uploadElements.emplace(std::move(uploadElementData));
+            .dataBuffer = uploadTextureInfo.dataBytes | std::ranges::to<std::vector<uint8_t>>()};
+        uploadElements.emplace_back(std::move(uploadElementData));
     }
 
     auto UploadManager::onExecute() -> void
     {
-        while (!uploadElements.empty())
+        copyResults[bufferIndex].wait();
+
+        for (auto const& uploadElement : uploadElements)
         {
-            UploadElementData uploadElementData = std::move(uploadElements.front());
-            uploadElements.pop();
-
-            TrackElementData trackElementData{.uploadType = uploadElementData.uploadType,
-                                              .callback = std::move(uploadElementData.callback)};
-
-            if (uploadElementData.uploadType == UploadType::Buffer)
+            if (uploadElement.uploadType == UploadType::Buffer)
             {
-                rhi::Future<rhi::Buffer> future = RHI->getCopyContext()->updateBuffer(
-                    uploadElementData.bufferData.buffer, uploadElementData.bufferData.offset,
-                    uploadElementData.dataBuffer);
-
-                trackElementData.bufferFuture = std::move(future);
+                RHI->getCopyContext()->updateBuffer(uploadElement.bufferData.buffer, uploadElement.bufferData.offset,
+                                                    uploadElement.dataBuffer);
             }
             else
             {
-                rhi::Future<rhi::Texture> future = RHI->getCopyContext()->updateTexture(
-                    uploadElementData.textureData.texture, uploadElementData.textureData.mipLevel,
-                    uploadElementData.dataBuffer.data());
-
-                trackElementData.textureFuture = std::move(future);
+                RHI->getCopyContext()->updateTexture(uploadElement.textureData.texture,
+                                                     uploadElement.textureData.mipLevel,
+                                                     uploadElement.dataBuffer.data());
             }
-
-            trackElements.emplace_back(std::move(trackElementData));
         }
 
-        if (!trackElements.empty())
+        if (!uploadElements.empty())
         {
-            auto executeResult = RHI->getCopyContext()->execute();
-            executeResult.waitOnContext(RHI->getGraphicsContext());
-            executeResults[bufferIndex] = std::move(executeResult);
-
-            bufferIndex = (bufferIndex + 1) % static_cast<uint32_t>(executeResults.size());
+            copyResults[bufferIndex] = RHI->getCopyContext()->execute();
+            copyResults[bufferIndex].waitOnContext(RHI->getGraphicsContext());
+            bufferIndex = (bufferIndex + 1) % static_cast<uint32_t>(copyResults.size());
         }
-    }
 
-    auto UploadManager::onComplete() -> void
-    {
-        std::erase_if(trackElements, [](auto& x) {
-            bool isCompleted = false;
-
-            if (x.uploadType == UploadType::Buffer)
-            {
-                if (x.bufferFuture.getResult())
-                {
-                    isCompleted = true;
-                }
-            }
-            else
-            {
-                if (x.textureFuture.getResult())
-                {
-                    isCompleted = true;
-                }
-            }
-
-            if (isCompleted)
-            {
-                x.callback();
-            }
-
-            return isCompleted;
-        });
+        uploadElements.clear();
     }
 } // namespace ionengine

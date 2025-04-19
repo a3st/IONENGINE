@@ -20,22 +20,16 @@ namespace ionengine
         std::span<uint8_t const> dataBytes;
     };
 
-    using UploadCompletedCallback = std::function<void()>;
-
     class UploadManager
     {
       public:
         UploadManager(core::ref_ptr<rhi::RHI> RHI, uint32_t const numBuffering);
 
-        auto uploadBuffer(UploadBufferInfo const& uploadBufferInfo, UploadCompletedCallback&& completedCallback)
-            -> void;
+        auto uploadBuffer(UploadBufferInfo const& uploadBufferInfo) -> void;
 
-        auto uploadTexture(UploadTextureInfo const& uploadTextureInfo, UploadCompletedCallback&& completedCallback)
-            -> void;
+        auto uploadTexture(UploadTextureInfo const& uploadTextureInfo) -> void;
 
         auto onExecute() -> void;
-
-        auto onComplete() -> void;
 
       private:
         core::ref_ptr<rhi::RHI> RHI;
@@ -62,23 +56,11 @@ namespace ionengine
             } textureData;
 
             std::vector<uint8_t> dataBuffer;
-            UploadCompletedCallback callback;
         };
 
-        struct TrackElementData
-        {
-            UploadType uploadType;
+        std::vector<UploadElementData> uploadElements;
 
-            rhi::Future<rhi::Buffer> bufferFuture;
-            rhi::Future<rhi::Texture> textureFuture;
-
-            UploadCompletedCallback callback;
-        };
-
-        std::queue<UploadElementData> uploadElements;
-        std::list<TrackElementData> trackElements;
-
-        std::vector<rhi::Future<void>> executeResults;
+        std::vector<rhi::Future<void>> copyResults;
         uint32_t bufferIndex;
     };
 } // namespace ionengine

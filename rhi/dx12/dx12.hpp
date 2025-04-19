@@ -460,7 +460,7 @@ namespace ionengine::rhi
 
         auto getBackBuffer() -> core::weak_ptr<Texture> override;
 
-        auto presentBackBuffer() -> void override;
+        auto presentBackBuffer() -> Future<void> override;
 
         auto resizeBackBuffers(uint32_t const width, uint32_t const height) -> void override;
 

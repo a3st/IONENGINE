@@ -20,7 +20,7 @@ namespace ionengine
 
         auto getEffectDataBuffer(uint32_t const frameIndex) const -> core::ref_ptr<rhi::Buffer>;
 
-        auto updateEffectDataBuffer(UploadManager* uploadManager, uint32_t const frameIndex) -> void;
+        auto updateEffectDataBuffer(UploadManager& uploadManager, uint32_t const frameIndex) -> void;
 
       private:
         core::ref_ptr<Shader> shader;

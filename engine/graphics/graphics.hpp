@@ -38,6 +38,8 @@ namespace ionengine
 
         auto endFrame() -> void;
 
+        auto onResize(uint32_t const width, uint32_t const height) -> void;
+
       private:
         core::ref_ptr<rhi::RHI> RHI;
         std::unique_ptr<UploadManager> uploadManager;
@@ -46,7 +48,10 @@ namespace ionengine
         {
             core::ref_ptr<TextureAllocator> renderTargetAllocator;
             core::ref_ptr<BufferAllocator> constBufferAllocator;
-            rhi::Future<void> graphicsExecResult;
+            rhi::Future<void> graphicsResult;
+            std::set<core::ref_ptr<Camera>> targetCameras;
+            std::set<core::ref_ptr<Material>> usedMaterials;
+            std::set<core::ref_ptr<Surface>> usedSurfaces;
         };
 
         std::vector<FrameResourceData> frameResources;
@@ -71,12 +76,13 @@ namespace ionengine
         std::unordered_map<uint64_t, std::vector<PassResourceData>> passResourcesCache;
 
         RenderableData renderableData;
-        std::set<core::ref_ptr<Camera>> targetCameras;
 
         core::ref_ptr<rhi::Texture> swapchainTexture;
         core::ref_ptr<Camera> targetCamera;
-
         core::ref_ptr<Shader> blitShader;
+
+        uint32_t outputWidth;
+        uint32_t outputHeight;
 
         auto findTextureInPassResources(std::span<PassResourceData const> const passResources, uint32_t const offset,
                                         core::ref_ptr<rhi::Texture> source,
@@ -85,7 +91,7 @@ namespace ionengine
 
         auto cacheRenderPasses() -> void;
 
-        auto executeRenderPasses(rhi::GraphicsContext* graphicsContext) -> void;
+        auto executeRenderPasses() -> void;
 
         auto initializeSharedSamplers() -> void;
 
@@ -98,7 +104,7 @@ namespace ionengine
             assert(instance->targetCamera);
 
             auto renderPass =
-                std::make_unique<Type>(instance->frameResources[instance->frameIndex].renderTargetAllocator.get(),
+                std::make_unique<Type>(*instance->frameResources[instance->frameIndex].renderTargetAllocator,
                                        instance->targetCamera->getTargetImage()->getTexture(instance->frameIndex),
                                        std::forward<Args>(args)...);
             instance->renderPathHash = instance->renderPathHash == 0 ? renderPass->getHash()
@@ -125,7 +131,7 @@ namespace ionengine
 
         static auto setRenderPath(std::function<void()>&& func) -> void;
 
-        static auto createMaterial(core::ref_ptr<Shader> shader) -> core::ref_ptr<Material>;
+        static auto createMaterial(core::ref_ptr<Shader> const& shader) -> core::ref_ptr<Material>;
 
         static auto createSurface(std::span<uint8_t const> const vertexDataBytes,
                                   std::span<uint8_t const> const indexDataBytes) -> core::ref_ptr<Surface>;

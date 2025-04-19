@@ -34,7 +34,7 @@ class MyEngine : public Engine
             Material::baseSurfaceMaterial->setValue("basicTexture", testImage);
         }
 
-        Graphics::setRenderPath([&]() {
+        Graphics::setRenderPath([]() {
             auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>();
             auto uiPass = Graphics::addRenderPass<passes::UIPass>();
         });
