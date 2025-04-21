@@ -12,7 +12,7 @@ add_library(engine STATIC
     gui/gui.cpp
 
     graphics/passes/internal/swapchain.cpp
-    graphics/passes/ui.cpp
+    graphics/passes/internal/ui.cpp
     graphics/passes/geometry.cpp
 
     graphics/image.cpp

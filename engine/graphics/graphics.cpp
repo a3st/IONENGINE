@@ -2,6 +2,7 @@
 
 #include "graphics.hpp"
 #include "passes/internal/swapchain.hpp"
+#include "passes/internal/ui.hpp"
 #include "precompiled.h"
 
 namespace ionengine
@@ -26,10 +27,12 @@ namespace ionengine
 
         this->initializeSharedSamplers();
 
+        // Initialize Render Groups
         renderableData.renderGroups.try_emplace(RenderGroup::Opaque);
         renderableData.renderGroups.try_emplace(RenderGroup::Translucent);
         renderableData.renderGroups.try_emplace(RenderGroup::UI);
 
+        // Initialize per Frame Resources
         for (uint32_t const i : std::views::iota(0u, numBuffering))
         {
             FrameResourceData frameResourceData{
@@ -93,7 +96,7 @@ namespace ionengine
         auto& curFrameResourceData = frameResources[frameIndex];
         curFrameResourceData.graphicsResult.wait();
 
-        swapchainTexture = RHI->getSwapchain()->getBackBuffer().get();
+        curSwapchainTexture = RHI->getSwapchain()->getBackBuffer().get();
 
         curFrameResourceData.renderTargetAllocator->reset();
         curFrameResourceData.constBufferAllocator->reset();
@@ -101,8 +104,8 @@ namespace ionengine
         curFrameResourceData.usedMaterials.clear();
         curFrameResourceData.usedSurfaces.clear();
 
-        renderPasses.clear();
         renderPathHash = 0;
+        renderPasses.clear();
 
         for (auto& [renderGroup, renderQueue] : renderableData.renderGroups)
         {
@@ -112,32 +115,65 @@ namespace ionengine
 
     auto Graphics::endFrame() -> void
     {
+        core::ref_ptr<rhi::Texture> curMainTargetTexture;
+
         for (auto const& targetCamera : frameResources[frameIndex].targetCameras)
         {
-            this->targetCamera = targetCamera;
-            renderPathUpdated();
+            if (mainCamera != targetCamera && !targetCamera->customTargetImage())
+            {
+                continue;
+            }
+
+            rhi::TextureCreateInfo const textureCreateInfo{
+                .width = outputWidth,
+                .height = outputHeight,
+                .depth = 1,
+                .mipLevels = 1,
+                .format = rhi::TextureFormat::RGBA8_UNORM,
+                .dimension = rhi::TextureDimension::_2D,
+                .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource)};
+            curTargetTexture = frameResources[frameIndex].renderTargetAllocator->allocate(textureCreateInfo).get();
+            this->renderPathUpdated();
+
+            this->addRenderPass<passes::UIPass>();
+
+            // Remember variable for latest output pass (swapchain pass)
+            if (mainCamera == targetCamera)
+            {
+                curMainTargetTexture = curTargetTexture;
+            }
         }
 
-        if (targetCamera)
+        if (mainCamera)
         {
-            this->addRenderPass<passes::SwapchainPass>(blitShader, swapchainTexture);
+            curTargetTexture = curMainTargetTexture;
+            this->addRenderPass<passes::SwapchainPass>(blitShader, curSwapchainTexture);
         }
+
+        // Free variable
+        curTargetTexture = nullptr;
 
         this->cacheRenderPasses();
         this->executeRenderPasses();
-        uploadManager->onExecute();
 
+        uploadManager->onExecute();
         RHI->getGraphicsContext()->execute();
+
         frameResources[frameIndex].graphicsResult = RHI->getSwapchain()->presentBackBuffer();
+
+        // TODO! Fix Double Buffering Bug
         // frameIndex = (frameIndex + 1) % static_cast<uint32_t>(frameResources.size());
 
-        swapchainTexture = nullptr;
+        // Free variable
+        curSwapchainTexture = nullptr;
     }
 
     auto Graphics::onResize(uint32_t const width, uint32_t const height) -> void
     {
         outputWidth = width;
         outputHeight = height;
+
+        passResourcesCache.clear();
     }
 
     auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
@@ -222,10 +258,7 @@ namespace ionengine
     auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
         -> core::ref_ptr<Camera>
     {
-        auto targetImage =
-            core::make_ref<RTImage>(*instance->RHI, static_cast<uint32_t>(instance->frameResources.size()),
-                                    instance->outputWidth, instance->outputHeight, rhi::TextureFormat::RGBA8_UNORM);
-        return core::make_ref<PerspectiveCamera>(targetImage, fovy, zNear, zFar);
+        return core::make_ref<PerspectiveCamera>(fovy, zNear, zFar);
     }
 
     auto Graphics::createMaterial(core::ref_ptr<Shader> const& shader) -> core::ref_ptr<Material>
@@ -442,14 +475,11 @@ namespace ionengine
     auto Graphics::createImage(uint32_t const width, uint32_t const height, rhi::TextureFormat const format,
                                std::span<uint8_t const> const dataBytes) -> core::ref_ptr<Image>
     {
-        auto image = core::make_ref<Image>(*instance->RHI, width, height, format);
+        return core::make_ref<Image>(*instance->RHI, *instance->uploadManager, width, height, format, dataBytes);
+    }
 
-        {
-            UploadTextureInfo const uploadTextureInfo{
-                .texture = image->getTexture(), .mipLevel = 0, .dataBytes = dataBytes};
-            instance->uploadManager->uploadTexture(uploadTextureInfo);
-        }
-
-        return image;
+    auto Graphics::setMainCamera(core::ref_ptr<Camera> const& targetCamera) -> void
+    {
+        instance->mainCamera = targetCamera;
     }
 } // namespace ionengine

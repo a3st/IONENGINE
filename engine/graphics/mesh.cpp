@@ -33,13 +33,15 @@ namespace ionengine
                 .flags = (rhi::BufferUsageFlags)(rhi::BufferUsage::Index | rhi::BufferUsage::CopyDest)};
             core::ref_ptr<rhi::Buffer> indexBuffer = RHI.createBuffer(bufferCreateInfo);
 
+            auto surface = core::make_ref<Surface>(RHI, vertexBuffer, indexBuffer, surfaceData.indexCount);
+
             UploadBufferInfo const uploadBufferInfo{
                 .buffer = indexBuffer,
                 .offset = 0,
                 .dataBytes = std::span<uint8_t const>(modelFile.blob.data() + bufferData.offset, bufferData.size)};
             uploadManager.uploadBuffer(uploadBufferInfo);
 
-            surfaces.emplace_back(core::make_ref<Surface>(RHI, vertexBuffer, indexBuffer, surfaceData.indexCount));
+            surfaces.emplace_back(surface);
             materials.emplace_back(Material::baseSurfaceMaterial);
         }
     }

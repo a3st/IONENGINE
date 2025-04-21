@@ -23,16 +23,21 @@ namespace ionengine
 
         virtual auto getTargetImage() const -> core::ref_ptr<RTImage>;
 
+        virtual auto setTargetImage(core::ref_ptr<RTImage> const& targetImage) -> void;
+
+        virtual auto customTargetImage() const -> bool;
+
       protected:
         core::Mat4f viewMatrix;
         core::Mat4f projMatrix;
         core::ref_ptr<RTImage> targetImage;
+        bool hasRenderTarget;
     };
 
     class PerspectiveCamera : public Camera
     {
       public:
-        PerspectiveCamera(core::ref_ptr<RTImage> targetImage, float const fovy, float const zNear, float const zFar);
+        PerspectiveCamera(float const fovy, float const zNear, float const zFar);
 
         auto createFrustumPlanes() const -> std::array<core::Planef, 6>;
 

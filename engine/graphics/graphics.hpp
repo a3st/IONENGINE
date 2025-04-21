@@ -11,6 +11,7 @@
 #include "render_queue.hpp"
 #include "rhi/rhi.hpp"
 #include "texture_allocator.hpp"
+#include "upload_manager.hpp"
 
 namespace ionengine
 {
@@ -77,9 +78,11 @@ namespace ionengine
 
         RenderableData renderableData;
 
-        core::ref_ptr<rhi::Texture> swapchainTexture;
-        core::ref_ptr<Camera> targetCamera;
+        core::ref_ptr<rhi::Texture> curSwapchainTexture;
+        core::ref_ptr<rhi::Texture> curTargetTexture;
+
         core::ref_ptr<Shader> blitShader;
+        core::ref_ptr<Camera> mainCamera;
 
         uint32_t outputWidth;
         uint32_t outputHeight;
@@ -101,12 +104,11 @@ namespace ionengine
         template <typename Type, typename... Args>
         static auto addRenderPass(Args&&... args) -> RenderPass*
         {
-            assert(instance->targetCamera);
+            assert(instance->curTargetTexture);
 
             auto renderPass =
                 std::make_unique<Type>(*instance->frameResources[instance->frameIndex].renderTargetAllocator,
-                                       instance->targetCamera->getTargetImage()->getTexture(instance->frameIndex),
-                                       std::forward<Args>(args)...);
+                                       instance->curTargetTexture, std::forward<Args>(args)...);
             instance->renderPathHash = instance->renderPathHash == 0 ? renderPass->getHash()
                                                                      : instance->renderPathHash ^ renderPass->getHash();
             RenderPass* outPass = renderPass.get();
@@ -138,5 +140,7 @@ namespace ionengine
 
         static auto createImage(uint32_t const width, uint32_t const height, rhi::TextureFormat const format,
                                 std::span<uint8_t const> const dataBytes) -> core::ref_ptr<Image>;
+
+        static auto setMainCamera(core::ref_ptr<Camera> const& targetCamera) -> void;
     };
 } // namespace ionengine

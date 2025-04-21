@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "../render_pass.hpp"
-#include "../texture_allocator.hpp"
+#include "../../render_pass.hpp"
+#include "../../texture_allocator.hpp"
 
 namespace ionengine::passes
 {

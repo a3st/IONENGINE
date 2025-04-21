@@ -145,6 +145,11 @@ namespace ionengine::core
             return ptr == other.ptr;
         }
 
+        auto operator!=(ref_ptr const& other) const -> bool
+        {
+            return ptr != other.ptr;
+        }
+
       private:
         auto copy_ref(Type* other) -> void
         {
@@ -223,6 +228,11 @@ namespace ionengine::core
         }
 
         auto operator==(weak_ptr const& other) const -> bool
+        {
+            return ptr == other.ptr;
+        }
+
+        auto operator!=(weak_ptr const& other) const -> bool
         {
             return ptr == other.ptr;
         }

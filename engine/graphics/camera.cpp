@@ -25,11 +25,21 @@ namespace ionengine
         return targetImage;
     }
 
-    PerspectiveCamera::PerspectiveCamera(core::ref_ptr<RTImage> targetImage, float const fovy, float const zNear,
-                                         float const zFar)
+    auto Camera::setTargetImage(core::ref_ptr<RTImage> const& targetImage) -> void
+    {
+        hasRenderTarget = true;
+        this->targetImage = targetImage;
+    }
+
+    auto Camera::customTargetImage() const -> bool
+    {
+        return hasRenderTarget;
+    }
+
+    PerspectiveCamera::PerspectiveCamera(float const fovy, float const zNear, float const zFar)
         : fovy(fovy * std::numbers::pi / 180.0f), aspect(4 / 3), zFar(zFar), zNear(zNear)
     {
-        this->targetImage = targetImage;
+        this->hasRenderTarget = false;
         this->projMatrix = core::Mat4f::perspectiveRH(fovy, aspect, zNear, zFar);
     }
 

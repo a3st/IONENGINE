@@ -41,7 +41,8 @@ namespace ionengine
         }
     }
 
-    Image::Image(rhi::RHI& RHI, uint32_t const width, uint32_t const height, rhi::TextureFormat const format)
+    Image::Image(rhi::RHI& RHI, UploadManager& uploadManager, uint32_t const width, uint32_t const height,
+                 rhi::TextureFormat const format, std::span<uint8_t const> const dataBytes)
     {
         rhi::TextureCreateInfo const textureCreateInfo{
             .width = width,
@@ -52,6 +53,9 @@ namespace ionengine
             .dimension = rhi::TextureDimension::_2D,
             .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::ShaderResource | rhi::TextureUsage::CopyDest)};
         texture = RHI.createTexture(textureCreateInfo);
+
+        UploadTextureInfo const uploadTextureInfo{.texture = texture, .mipLevel = 0, .dataBytes = dataBytes};
+        uploadManager.uploadTexture(uploadTextureInfo);
     }
 
     auto Image::getTexture() const -> core::ref_ptr<rhi::Texture>

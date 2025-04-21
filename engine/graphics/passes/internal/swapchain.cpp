@@ -1,7 +1,8 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "swapchain.hpp"
-#include "engine/graphics/buffer_allocator.hpp"
+#include "../../buffer_allocator.hpp"
+#include "../../upload_manager.hpp"
 #include "precompiled.h"
 
 namespace ionengine::passes
