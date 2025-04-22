@@ -36,8 +36,8 @@ namespace ionengine
         return hasRenderTarget;
     }
 
-    PerspectiveCamera::PerspectiveCamera(float const fovy, float const zNear, float const zFar)
-        : fovy(fovy * std::numbers::pi / 180.0f), aspect(4 / 3), zFar(zFar), zNear(zNear)
+    PerspectiveCamera::PerspectiveCamera(float const fovy, float const aspect, float const zNear, float const zFar)
+        : fovy(fovy * std::numbers::pi / 180.0f), aspect(aspect), zFar(zFar), zNear(zNear)
     {
         this->hasRenderTarget = false;
         this->projMatrix = core::Mat4f::perspectiveRH(fovy, aspect, zNear, zFar);

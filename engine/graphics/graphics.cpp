@@ -266,7 +266,7 @@ namespace ionengine
     auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
         -> core::ref_ptr<Camera>
     {
-        return core::make_ref<PerspectiveCamera>(fovy, zNear, zFar);
+        return core::make_ref<PerspectiveCamera>(fovy, instance->outputWidth / instance->outputHeight, zNear, zFar);
     }
 
     auto Graphics::createMaterial(core::ref_ptr<Shader> const& shader) -> core::ref_ptr<Material>

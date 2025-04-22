@@ -37,7 +37,7 @@ namespace ionengine
     class PerspectiveCamera : public Camera
     {
       public:
-        PerspectiveCamera(float const fovy, float const zNear, float const zFar);
+        PerspectiveCamera(float const fovy, float const aspect, float const zNear, float const zFar);
 
         auto createFrustumPlanes() const -> std::array<core::Planef, 6>;
 
