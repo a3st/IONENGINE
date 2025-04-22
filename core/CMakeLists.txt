@@ -10,6 +10,6 @@ add_library(core STATIC
 
 target_include_directories(core PUBLIC ${PROJECT_SOURCE_DIR})
 
-target_link_libraries(core PUBLIC simdjson)
+target_link_libraries(core PUBLIC simdjson::simdjson)
 
 target_precompile_headers(core PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)

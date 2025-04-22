@@ -15,7 +15,7 @@ auto main(int32_t argc, char** argv) -> int32_t
 
     if (commandLine[{"-help", "--help"}])
     {
-        std::cout << "usage: shaderc <command> [arguments] inputFile\n\n";
+        std::cout << "usage: shaderc <inputFile> [arguments]\n\n";
         std::cout << "-target (--target)" << "\t\t\t" << "Compilation target\n";
         std::cout << "\t\t\t\t\t" << "Available parameters: SPIRV, DXIL\n\n";
         std::cout << "-output (--output)" << "\t\t\t" << "Compilation output path (Optional)" << std::endl;

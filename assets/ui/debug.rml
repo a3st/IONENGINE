@@ -1,8 +1,9 @@
 <rml>
 	<head>
-		
+		<link type="text/rcss" href="rml.rcss"/>
 	</head>
-	<body data-model="debugModel">
+	<body>
+		<!--data-model="debugModel"-->
 		<p>IONENGINE Debug</p>
 		<p>{{ fpsCount }}</p>
 		<p></p>
