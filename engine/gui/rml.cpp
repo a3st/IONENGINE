@@ -68,17 +68,20 @@ namespace ionengine::internal
             }
         }
 
-        DrawParameters drawParams{.drawType = DrawType::Triangles,
-                                  .surface = Graphics::createSurface(vertexData, indexData),
-                                  .material = material,
-                                  .renderGroup = RenderGroup::UI,
-                                  .viewMatrix = core::Mat4f::identity(),
-                                  .projMatrix = core::Mat4f::orthographicRH(0, 800, 600, 0, 0.0f, 1.0f)};
+        Rml::Vector2i const contextDimensions = this->GetContext()->GetDimensions();
+
+        DrawParameters drawParams{
+            .drawType = DrawType::Triangles,
+            .surface = Graphics::createSurface(vertexData, indexData),
+            .material = material,
+            .renderGroup = RenderGroup::UI,
+            .viewMatrix = core::Mat4f::identity(),
+            .projMatrix = core::Mat4f::orthographicRH(0, contextDimensions.x, contextDimensions.y, 0, 0.0f, 1.0f)};
 
         auto guiWidget = guiContexts[this->GetContext()];
 
         Graphics::drawProcedural(drawParams, core::Mat4f::translate(core::Vec3f(translation.x, translation.y, 0.0f)),
-                                 guiWidget->getTargetCamera());
+                                 guiWidget.get()->getTargetCamera());
     }
 
     auto RmlRender::EnableScissorRegion(bool isEnable) -> void

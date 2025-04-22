@@ -170,10 +170,18 @@ namespace ionengine
 
     auto Graphics::onResize(uint32_t const width, uint32_t const height) -> void
     {
+        renderPasses.clear();
+        passResourcesCache.clear();
+
+        RHI->getSwapchain()->resizeBackBuffers(width, height);
+
+        for (auto const& frameResource : frameResources)
+        {
+            frameResource.renderTargetAllocator->flush();
+        }
+
         outputWidth = width;
         outputHeight = height;
-
-        passResourcesCache.clear();
     }
 
     auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,

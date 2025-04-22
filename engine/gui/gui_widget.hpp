@@ -15,17 +15,17 @@ namespace ionengine
     class GUIWidget : public core::ref_counted_object
     {
       public:
-        GUIWidget(internal::RmlRender& rmlRender, Rml::Context* context, std::filesystem::path const& filePath);
+        GUIWidget(internal::RmlRender& rmlRender, Rml::Context* rmlContext, std::filesystem::path const& filePath);
 
         ~GUIWidget();
 
         auto getTargetCamera() const -> core::ref_ptr<Camera>;
 
-        auto attachToCamera(core::ref_ptr<Camera> targetCamera) -> void;
+        auto attachToCamera(core::ref_ptr<Camera> const& targetCamera) -> void;
 
       private:
         internal::RmlRender* rmlRender;
-        Rml::Context* context;
+        Rml::Context* rmlContext;
         Rml::ElementDocument* document;
         core::ref_ptr<Camera> targetCamera;
         std::filesystem::path filePath;

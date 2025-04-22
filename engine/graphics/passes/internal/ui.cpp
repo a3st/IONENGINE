@@ -6,7 +6,7 @@
 namespace ionengine::passes
 {
     UIPass::UIPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture)
-        : RenderPass("UI Pass")
+        : RenderPass("UI Pass"), cameraTexture(cameraTexture)
     {
         rhi::RenderPassColorInfo const renderPassColorInfo{
             .texture = cameraTexture, .loadOp = rhi::RenderPassLoadOp::Load, .storeOp = rhi::RenderPassStoreOp::Store};
@@ -17,8 +17,8 @@ namespace ionengine::passes
 
     auto UIPass::execute(RenderContext const& context, RenderableData const& renderableData) -> void
     {
-        context.graphics->setViewport(0, 0, 800, 600);
-        context.graphics->setScissor(0, 0, 800, 600);
+        context.graphics->setViewport(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight());
+        context.graphics->setScissor(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight());
 
         for (auto const& drawableData : renderableData.renderGroups.at(RenderGroup::UI))
         {

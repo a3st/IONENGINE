@@ -45,6 +45,8 @@ namespace ionengine
 
         auto reset() -> void;
 
+        auto flush() -> void;
+
       private:
         core::ref_ptr<rhi::RHI> RHI;
 

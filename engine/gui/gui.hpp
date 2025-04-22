@@ -18,9 +18,14 @@ namespace ionengine
 
         auto onUpdate() -> void;
 
+        auto onResize(uint32_t const width, uint32_t const height) -> void;
+
       private:
         std::unique_ptr<internal::RmlSystem> rmlSystem;
         std::unique_ptr<internal::RmlRender> rmlRender;
+
+        uint32_t outputWidth;
+        uint32_t outputHeight;
 
         inline static GUI* instance;
 

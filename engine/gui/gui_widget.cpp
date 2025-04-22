@@ -6,17 +6,16 @@
 
 namespace ionengine
 {
-    GUIWidget::GUIWidget(internal::RmlRender& rmlRender, Rml::Context* context, std::filesystem::path const& filePath)
-        : rmlRender(&rmlRender), context(context), filePath(filePath)
+    GUIWidget::GUIWidget(internal::RmlRender& rmlRender, Rml::Context* rmlContext,
+                         std::filesystem::path const& filePath)
+        : rmlRender(&rmlRender), rmlContext(rmlContext), filePath(filePath)
     {
-        rmlRender.guiContexts[context] = this;
-
-        document = context->LoadDocument(Rml::String(filePath.generic_string()));
+        document = rmlContext->LoadDocument(Rml::String(filePath.generic_string()));
     }
 
     GUIWidget::~GUIWidget()
     {
-        // rmlRender->guiContexts.erase(context);
+        rmlRender->guiContexts.erase(rmlContext);
 
         // Rml::RemoveContext(Rml::String(filePath.generic_string()));
     }
@@ -26,7 +25,7 @@ namespace ionengine
         return targetCamera;
     }
 
-    auto GUIWidget::attachToCamera(core::ref_ptr<Camera> targetCamera) -> void
+    auto GUIWidget::attachToCamera(core::ref_ptr<Camera> const& targetCamera) -> void
     {
         this->targetCamera = targetCamera;
         document->Show();

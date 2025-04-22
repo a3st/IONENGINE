@@ -31,7 +31,7 @@ namespace ionengine::internal
         auto GenerateTexture(Rml::TextureHandle& texture, const Rml::byte* source,
                              const Rml::Vector2i& sourceDimensions) -> bool override;
 
-        std::unordered_map<Rml::Context*, core::ref_ptr<GUIWidget>> guiContexts;
+        std::unordered_map<Rml::Context*, core::weak_ptr<GUIWidget>> guiContexts;
 
       private:
         core::ref_ptr<rhi::RHI> RHI;

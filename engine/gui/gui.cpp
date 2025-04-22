@@ -7,7 +7,8 @@
 namespace ionengine
 {
     GUI::GUI(core::ref_ptr<rhi::RHI> RHI)
-        : rmlSystem(std::make_unique<internal::RmlSystem>()), rmlRender(std::make_unique<internal::RmlRender>(RHI))
+        : rmlSystem(std::make_unique<internal::RmlSystem>()), rmlRender(std::make_unique<internal::RmlRender>(RHI)),
+          outputWidth(800), outputHeight(600)
     {
         instance = this;
 
@@ -39,9 +40,21 @@ namespace ionengine
         }
     }
 
+    auto GUI::onResize(uint32_t const width, uint32_t const height) -> void
+    {
+        for (auto& [rmlContext, guiContext] : rmlRender->guiContexts)
+        {
+            // TODO! Render To Texture UI should not change self dimensions
+            rmlContext->SetDimensions(Rml::Vector2i(width, height));
+        }
+    }
+
     auto GUI::createWidgetFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<GUIWidget>
     {
-        Rml::Context* rmlContext = Rml::CreateContext(Rml::String(filePath.generic_string()), Rml::Vector2i(800, 600));
-        return core::make_ref<GUIWidget>(*instance->rmlRender, rmlContext, filePath);
+        Rml::Context* rmlContext = Rml::CreateContext(Rml::String(filePath.generic_string()),
+                                                      Rml::Vector2i(instance->outputWidth, instance->outputHeight));
+        auto guiWidget = core::make_ref<GUIWidget>(*instance->rmlRender, rmlContext, filePath);
+        instance->rmlRender->guiContexts[rmlContext] = guiWidget;
+        return guiWidget;
     }
 } // namespace ionengine

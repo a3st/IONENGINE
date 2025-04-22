@@ -1,10 +1,19 @@
 build
+
+# Visual Studio config folders
+.vscode
+.vs
+
+# Exclude precompiled Assets folders
+assets/shaders
+assets/models
+assets/images
+
+# Other stuff
 .gradle
 *.egg-info
 __cache__
 __pycache__
 node_modules
-.vscode
-.vs
 dist
 CMakeSettings.json

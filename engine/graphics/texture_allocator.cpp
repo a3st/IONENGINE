@@ -69,4 +69,9 @@ namespace ionengine
             bucketData.cur = 0;
         }
     }
+
+    auto TextureAllocator::flush() -> void
+    {
+        buckets.clear();
+    }
 } // namespace ionengine

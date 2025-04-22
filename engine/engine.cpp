@@ -28,6 +28,11 @@ namespace ionengine
                     {
                         graphics->onResize(width, height);
                     }
+
+                    if (gui && width > 0 && height > 0)
+                    {
+                        gui->onResize(width, height);
+                    }
                     break;
                 }
             }

@@ -16,5 +16,6 @@ namespace ionengine::passes
 
       private:
         core::ref_ptr<Shader> shader;
+        core::ref_ptr<rhi::Texture> cameraTexture;
     };
 } // namespace ionengine::passes
