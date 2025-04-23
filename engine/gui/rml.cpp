@@ -76,7 +76,8 @@ namespace ionengine::internal
             .material = material,
             .renderGroup = RenderGroup::UI,
             .viewMatrix = core::Mat4f::identity(),
-            .projMatrix = core::Mat4f::orthographicRH(0, contextDimensions.x, contextDimensions.y, 0, 0.0f, 1.0f)};
+            .projMatrix = core::Mat4f::orthographicRH(0, contextDimensions.x, contextDimensions.y, 0, 0.0f, 1.0f),
+            .scissorRect = scissorRect};
 
         auto guiWidget = guiContexts[this->GetContext()];
 
@@ -86,10 +87,15 @@ namespace ionengine::internal
 
     auto RmlRender::EnableScissorRegion(bool isEnable) -> void
     {
+        if (!isEnable)
+        {
+            scissorRect = std::nullopt;
+        }
     }
 
     auto RmlRender::SetScissorRegion(int x, int y, int width, int height) -> void
     {
+        scissorRect.emplace(x, y, width, height);
     }
 
     auto RmlRender::LoadTexture(Rml::TextureHandle& texture, Rml::Vector2i& textureDimensions,
@@ -141,6 +147,7 @@ namespace ionengine::internal
 
     auto RmlSystem::LogMessage(Rml::Log::Type type, const Rml::String& message) -> bool
     {
+        std::cout << message.c_str() << std::endl;
         return true;
     }
 } // namespace ionengine::internal

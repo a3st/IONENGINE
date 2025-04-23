@@ -15,8 +15,12 @@ namespace ionengine
         return viewMatrix;
     }
 
-    auto Camera::getProjMatrix() const -> core::Mat4f const&
+    auto Camera::getProjMatrix() -> core::Mat4f const&
     {
+        if (isNeedUpdate)
+        {
+            this->updateMatrices();
+        }
         return projMatrix;
     }
 
@@ -39,8 +43,8 @@ namespace ionengine
     PerspectiveCamera::PerspectiveCamera(float const fovy, float const aspect, float const zNear, float const zFar)
         : fovy(fovy * std::numbers::pi / 180.0f), aspect(aspect), zFar(zFar), zNear(zNear)
     {
+        this->isNeedUpdate = true;
         this->hasRenderTarget = false;
-        this->projMatrix = core::Mat4f::perspectiveRH(fovy, aspect, zNear, zFar);
     }
 
     auto PerspectiveCamera::createFrustumPlanes() const -> std::array<core::Planef, 6>
@@ -50,6 +54,18 @@ namespace ionengine
 
         // core::Planef
         return {};
+    }
+
+    auto PerspectiveCamera::setAspect(float const aspect) -> void
+    {
+        this->aspect = aspect;
+        isNeedUpdate = true;
+    }
+
+    auto PerspectiveCamera::updateMatrices() -> void
+    {
+        projMatrix = core::Mat4f::perspectiveRH(fovy, aspect, zNear, zFar);
+        isNeedUpdate = false;
     }
 
     /*auto PerspectiveCamera::updateDirectionVectors() -> void

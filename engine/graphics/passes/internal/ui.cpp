@@ -18,10 +18,14 @@ namespace ionengine::passes
     auto UIPass::execute(RenderContext const& context, RenderableData const& renderableData) -> void
     {
         context.graphics->setViewport(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight());
-        context.graphics->setScissor(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight());
 
         for (auto const& drawableData : renderableData.renderGroups.at(RenderGroup::UI))
         {
+            core::Recti const scissorRect = drawableData.scissorRect.value_or(
+                core::Recti(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight()));
+
+            context.graphics->setScissor(scissorRect.x, scissorRect.y, scissorRect.width, scissorRect.height);
+
             context.graphics->setGraphicsPipelineOptions(drawableData.shader->getShader(),
                                                          drawableData.shader->getRasterizerStageInfo(),
                                                          rhi::BlendColorInfo::AlphaBlend(), std::nullopt);

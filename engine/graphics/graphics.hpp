@@ -28,6 +28,7 @@ namespace ionengine
         RenderGroup renderGroup;
         std::optional<core::Mat4f> viewMatrix;
         std::optional<core::Mat4f> projMatrix;
+        std::optional<core::Recti> scissorRect;
     };
 
     class Graphics

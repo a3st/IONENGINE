@@ -3,6 +3,7 @@
 #pragma once
 
 #include "core/matrix.hpp"
+#include "core/rect.hpp"
 #include "mesh.hpp"
 #include "shader.hpp"
 
@@ -14,6 +15,7 @@ namespace ionengine
         core::ref_ptr<Shader> shader;
         core::ref_ptr<rhi::Buffer> effectDataBuffer;
         core::ref_ptr<rhi::Buffer> transformDataBuffer;
+        std::optional<core::Recti> scissorRect;
     };
 
     class RenderQueue

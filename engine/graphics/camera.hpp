@@ -19,7 +19,7 @@ namespace ionengine
 
         virtual auto getViewMatrix() const -> core::Mat4f const&;
 
-        virtual auto getProjMatrix() const -> core::Mat4f const&;
+        virtual auto getProjMatrix() -> core::Mat4f const&;
 
         virtual auto getTargetImage() const -> core::ref_ptr<RTImage>;
 
@@ -32,6 +32,9 @@ namespace ionengine
         core::Mat4f projMatrix;
         core::ref_ptr<RTImage> targetImage;
         bool hasRenderTarget;
+        bool isNeedUpdate;
+
+        virtual auto updateMatrices() -> void = 0;
     };
 
     class PerspectiveCamera : public Camera
@@ -41,10 +44,15 @@ namespace ionengine
 
         auto createFrustumPlanes() const -> std::array<core::Planef, 6>;
 
+        auto setAspect(float const aspect) -> void;
+
       private:
         float zNear;
         float zFar;
         float fovy;
         float aspect;
+
+      protected:
+        auto updateMatrices() -> void override;
     };
 } // namespace ionengine

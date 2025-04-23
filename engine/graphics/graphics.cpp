@@ -182,6 +182,11 @@ namespace ionengine
 
         outputWidth = width;
         outputHeight = height;
+
+        if (auto perspectiveCamera = dynamic_cast<PerspectiveCamera*>(mainCamera.get()))
+        {
+            perspectiveCamera->setAspect((float)outputWidth / outputHeight);
+        }
     }
 
     auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
@@ -259,14 +264,16 @@ namespace ionengine
         DrawableData drawableData{.surface = drawParams.surface,
                                   .shader = drawParams.material->getShader(),
                                   .effectDataBuffer = drawParams.material->getEffectDataBuffer(instance->frameIndex),
-                                  .transformDataBuffer = transformDataBuffer.get()};
+                                  .transformDataBuffer = transformDataBuffer.get(),
+                                  .scissorRect = drawParams.scissorRect};
         instance->renderableData.renderGroups[drawParams.renderGroup].push(std::move(drawableData));
     }
 
     auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
         -> core::ref_ptr<Camera>
     {
-        return core::make_ref<PerspectiveCamera>(fovy, instance->outputWidth / instance->outputHeight, zNear, zFar);
+        return core::make_ref<PerspectiveCamera>(fovy, (float)instance->outputWidth / instance->outputHeight, zNear,
+                                                 zFar);
     }
 
     auto Graphics::createMaterial(core::ref_ptr<Shader> const& shader) -> core::ref_ptr<Material>
@@ -489,5 +496,11 @@ namespace ionengine
     auto Graphics::setMainCamera(core::ref_ptr<Camera> const& targetCamera) -> void
     {
         instance->mainCamera = targetCamera;
+
+        // Trying to fix aspect ratio on new main camera
+        if (auto perspectiveCamera = dynamic_cast<PerspectiveCamera*>(instance->mainCamera.get()))
+        {
+            perspectiveCamera->setAspect((float)instance->outputWidth / instance->outputHeight);
+        }
     }
 } // namespace ionengine

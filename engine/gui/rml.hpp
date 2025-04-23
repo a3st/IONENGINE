@@ -5,6 +5,7 @@
 #include "graphics/shader.hpp"
 #include "gui_widget.hpp"
 #include "rhi/rhi.hpp"
+#include "core/rect.hpp"
 #include <RmlUi/Core.h>
 
 namespace ionengine::internal
@@ -38,6 +39,8 @@ namespace ionengine::internal
 
         core::ref_ptr<Shader> uiColShader;
         core::ref_ptr<Shader> uiTexShader;
+
+        std::optional<core::Recti> scissorRect;
     };
 
     class RmlSystem : public Rml::SystemInterface
