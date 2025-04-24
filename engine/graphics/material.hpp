@@ -14,7 +14,7 @@ namespace ionengine
     class Material : public core::ref_counted_object
     {
       public:
-        Material(rhi::RHI& RHI, uint32_t const frameCount, core::ref_ptr<Shader> shader);
+        Material(rhi::RHI& RHI, uint32_t const frameCount, core::ref_ptr<Shader> const& shader);
 
         auto getShader() const -> core::ref_ptr<Shader>;
 
@@ -26,7 +26,7 @@ namespace ionengine
         core::ref_ptr<Shader> shader;
         std::vector<core::ref_ptr<rhi::Buffer>> effectDataBuffers;
         std::vector<uint8_t> effectDataRawBuffer;
-        uint32_t wasChangedCount;
+        std::vector<bool> isNeedUpdates;
         uint32_t frameCount;
 
       public:

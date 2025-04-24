@@ -117,8 +117,8 @@ namespace ionengine
             return outPass;
         }
 
-        static auto drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
-                             core::ref_ptr<Camera> targetCamera) -> void;
+        static auto drawMesh(core::ref_ptr<Mesh> const& drawableMesh, core::Mat4f const& modelMatrix,
+                             core::ref_ptr<Camera> const& targetCamera) -> void;
 
         static auto drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
                                    core::ref_ptr<Camera> targetCamera) -> void;

@@ -189,12 +189,20 @@ namespace ionengine
         }
     }
 
-    auto Graphics::drawMesh(core::ref_ptr<Mesh> drawableMesh, core::Mat4f const& modelMatrix,
-                            core::ref_ptr<Camera> targetCamera) -> void
+    auto Graphics::drawMesh(core::ref_ptr<Mesh> const& drawableMesh, core::Mat4f const& modelMatrix,
+                            core::ref_ptr<Camera> const& targetCamera) -> void
     {
+        auto& curFrameResourceData = instance->frameResources[instance->frameIndex];
+        curFrameResourceData.targetCameras.emplace(targetCamera);
+
         for (uint32_t const i : std::views::iota(0u, drawableMesh->getSurfaces().size()))
         {
             core::ref_ptr<Material> currentMaterial = drawableMesh->getMaterials()[i];
+            core::ref_ptr<Surface> currentSurface = drawableMesh->getSurfaces()[i];
+
+            curFrameResourceData.usedMaterials.emplace(currentMaterial);
+            curFrameResourceData.usedSurfaces.emplace(currentSurface);
+
             currentMaterial->updateEffectDataBuffer(*instance->uploadManager, instance->frameIndex);
 
             core::weak_ptr<rhi::Buffer> transformDataBuffer;
@@ -219,14 +227,12 @@ namespace ionengine
                 instance->uploadManager->uploadBuffer(uploadBufferInfo);
             }
 
-            DrawableData drawableData{.surface = drawableMesh->getSurfaces()[i],
+            DrawableData drawableData{.surface = currentSurface,
                                       .shader = currentMaterial->getShader(),
                                       .effectDataBuffer = currentMaterial->getEffectDataBuffer(instance->frameIndex),
                                       .transformDataBuffer = transformDataBuffer.get()};
             instance->renderableData.renderGroups[RenderGroup::Opaque].push(std::move(drawableData));
         }
-
-        instance->frameResources[instance->frameIndex].targetCameras.emplace(targetCamera);
     }
 
     auto Graphics::drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
@@ -236,6 +242,8 @@ namespace ionengine
         curFrameResourceData.targetCameras.emplace(targetCamera);
         curFrameResourceData.usedMaterials.emplace(drawParams.material);
         curFrameResourceData.usedSurfaces.emplace(drawParams.surface);
+
+        drawParams.material->updateEffectDataBuffer(*instance->uploadManager, instance->frameIndex);
 
         core::weak_ptr<rhi::Buffer> transformDataBuffer;
         {
@@ -258,8 +266,6 @@ namespace ionengine
                 .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
             instance->uploadManager->uploadBuffer(uploadBufferInfo);
         }
-
-        drawParams.material->updateEffectDataBuffer(*instance->uploadManager, instance->frameIndex);
 
         DrawableData drawableData{.surface = drawParams.surface,
                                   .shader = drawParams.material->getShader(),
