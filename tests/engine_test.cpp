@@ -25,10 +25,10 @@ class MyEngine : public Engine
         Graphics::setMainCamera(testCamera);
 
         Material::baseSurfaceMaterial =
-            Graphics::createMaterial(Graphics::loadShaderFromFile("../../assets/shaders/base3d_pc.bin"));
-        testMesh = Graphics::loadMeshFromFile("../../assets/models/box.mdl");
+            Graphics::createMaterial(Graphics::createShader("../../assets/shaders/base3d_pc.bin"));
+        testMesh = Graphics::createMesh("../../assets/models/box.mdl");
 
-        testImage = Graphics::loadImageFromFile("../../assets/images/debug-empty.txe");
+        testImage = Graphics::createImage("../../assets/images/debug-empty.txe");
         if (testImage)
         {
             Material::baseSurfaceMaterial->setValue("basicTexture", testImage);
@@ -38,8 +38,8 @@ class MyEngine : public Engine
             auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>();
         });
 
-        debugGUI = GUI::createWidgetFromFile("../../assets/ui/debug.rml");
-        debugGUI->attachToCamera(testCamera);
+        debugGUI = GUI::createWidget("../../assets/ui/debug.rml");
+        debugGUI->attachTo(testCamera);
     }
 
     auto onUpdate(float const deltaTime) -> void override

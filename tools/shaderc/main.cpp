@@ -69,7 +69,7 @@ auto main(int32_t argc, char** argv) -> int32_t
             return EXIT_SUCCESS;
         }
 
-        auto compileResult = shaderCompiler->compileFromFile(inputPath);
+        auto compileResult = shaderCompiler->compile(inputPath);
         if (compileResult.has_value())
         {
             std::basic_ofstream<uint8_t> ofs(outputPath, std::ios::binary);

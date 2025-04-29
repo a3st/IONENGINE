@@ -84,7 +84,7 @@ TEST(RHI, RenderQuad_Test)
     shaderFormat = asset::fx::ShaderFormat::SPIRV;
 #endif
     auto shaderCompiler = shadersys::ShaderCompiler::create(shaderFormat);
-    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx");
+    auto compileResult = shaderCompiler->compile("../../engine/shaders/quad.fx");
     if (!compileResult.has_value())
     {
         std::cerr << compileResult.error().what() << std::endl;
@@ -285,7 +285,7 @@ TEST(RHI, RenderModel_Test)
     shaderFormat = asset::fx::ShaderFormat::SPIRV;
 #endif
     auto shaderCompiler = shadersys::ShaderCompiler::create(shaderFormat);
-    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/base3d.fx");
+    auto compileResult = shaderCompiler->compile("../../engine/shaders/base3d.fx");
     if (!compileResult.has_value())
     {
         std::cerr << compileResult.error().what() << std::endl;

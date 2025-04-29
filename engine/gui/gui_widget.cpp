@@ -16,8 +16,7 @@ namespace ionengine
     GUIWidget::~GUIWidget()
     {
         rmlRender->guiContexts.erase(rmlContext);
-
-        // Rml::RemoveContext(Rml::String(filePath.generic_string()));
+        Rml::RemoveContext(Rml::String(filePath.generic_string()));
     }
 
     auto GUIWidget::getTargetCamera() const -> core::ref_ptr<Camera>
@@ -25,7 +24,7 @@ namespace ionengine
         return targetCamera;
     }
 
-    auto GUIWidget::attachToCamera(core::ref_ptr<Camera> const& targetCamera) -> void
+    auto GUIWidget::attachTo(core::ref_ptr<Camera> const& targetCamera) -> void
     {
         this->targetCamera = targetCamera;
         document->Show();

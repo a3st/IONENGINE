@@ -126,11 +126,11 @@ namespace ionengine
         static auto createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
             -> core::ref_ptr<Camera>;
 
-        static auto loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
+        static auto createShader(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
 
-        static auto loadMeshFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>;
+        static auto createMesh(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>;
 
-        static auto loadImageFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Image>;
+        static auto createImage(std::filesystem::path const& filePath) -> core::ref_ptr<Image>;
 
         static auto setRenderPath(std::function<void()>&& func) -> void;
 

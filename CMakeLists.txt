@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-option(BUILD_TESTING "Build engine tests" TRUE)
+option(BUILD_TESTING "Build unit-tests" TRUE)
 
 add_subdirectory(core)
 add_subdirectory(platform)

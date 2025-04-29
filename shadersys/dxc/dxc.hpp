@@ -17,8 +17,7 @@ namespace ionengine::shadersys
       public:
         DXCCompiler(asset::fx::ShaderFormat const shaderFormat);
 
-        auto compileFromFile(std::filesystem::path const& filePath)
-            -> std::expected<asset::ShaderFile, core::error> override;
+        auto compile(std::filesystem::path const& filePath) -> std::expected<asset::ShaderFile, core::error> override;
 
       private:
         winrt::com_ptr<IDxcCompiler3> compiler;

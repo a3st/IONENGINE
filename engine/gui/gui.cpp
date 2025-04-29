@@ -49,7 +49,7 @@ namespace ionengine
         }
     }
 
-    auto GUI::createWidgetFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<GUIWidget>
+    auto GUI::createWidget(std::filesystem::path const& filePath) -> core::ref_ptr<GUIWidget>
     {
         Rml::Context* rmlContext = Rml::CreateContext(Rml::String(filePath.generic_string()),
                                                       Rml::Vector2i(instance->outputWidth, instance->outputHeight));

@@ -30,6 +30,6 @@ namespace ionengine
         inline static GUI* instance;
 
       public:
-        static auto createWidgetFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<GUIWidget>;
+        static auto createWidget(std::filesystem::path const& filePath) -> core::ref_ptr<GUIWidget>;
     };
 } // namespace ionengine

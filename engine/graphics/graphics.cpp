@@ -23,7 +23,7 @@ namespace ionengine
             shaderExt = "_vk";
         }
 
-        blitShader = this->loadShaderFromFile("../../assets/shaders/blit_t1" + shaderExt + ".bin");
+        blitShader = this->createShader("../../assets/shaders/blit_t1" + shaderExt + ".bin");
 
         this->initializeSharedSamplers();
 
@@ -42,7 +42,7 @@ namespace ionengine
         }
     }
 
-    auto Graphics::loadShaderFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>
+    auto Graphics::createShader(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>
     {
         auto shaderResult =
             core::deserialize<core::serialize_iarchive, asset::ShaderFile, std::basic_ifstream<uint8_t>>(
@@ -57,7 +57,7 @@ namespace ionengine
         }
     }
 
-    auto Graphics::loadMeshFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>
+    auto Graphics::createMesh(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>
     {
         auto meshResult = core::deserialize<core::serialize_iarchive, asset::ModelFile, std::basic_ifstream<uint8_t>>(
             std::basic_ifstream<uint8_t>(filePath, std::ios::binary));
@@ -71,7 +71,7 @@ namespace ionengine
         }
     }
 
-    auto Graphics::loadImageFromFile(std::filesystem::path const& filePath) -> core::ref_ptr<Image>
+    auto Graphics::createImage(std::filesystem::path const& filePath) -> core::ref_ptr<Image>
     {
         auto imageResult =
             core::deserialize<core::serialize_iarchive, asset::TextureFile, std::basic_ifstream<uint8_t>>(

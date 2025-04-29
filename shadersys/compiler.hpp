@@ -15,7 +15,7 @@ namespace ionengine::shadersys
 
         static auto create(asset::fx::ShaderFormat const shaderFormat) -> core::ref_ptr<ShaderCompiler>;
 
-        virtual auto compileFromFile(std::filesystem::path const& filePath)
+        virtual auto compile(std::filesystem::path const& filePath)
             -> std::expected<asset::ShaderFile, core::error> = 0;
     };
 } // namespace ionengine::shadersys

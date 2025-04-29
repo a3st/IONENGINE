@@ -20,8 +20,8 @@ namespace ionengine::internal
             shaderExt = "_vk";
         }
 
-        uiColShader = Graphics::loadShaderFromFile("../../assets/shaders/ui_color" + shaderExt + ".bin");
-        uiTexShader = Graphics::loadShaderFromFile("../../assets/shaders/ui_texture" + shaderExt + ".bin");
+        uiColShader = Graphics::createShader("../../assets/shaders/ui_color" + shaderExt + ".bin");
+        uiTexShader = Graphics::createShader("../../assets/shaders/ui_texture" + shaderExt + ".bin");
     }
 
     auto RmlRender::RenderGeometry(Rml::Vertex* vertices, int numVertices, int* indices, int numIndices,

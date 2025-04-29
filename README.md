@@ -1,6 +1,6 @@
 # IONENGINE - Image Open Next Engine
 
-IONENGINE - is a only graphics engine written in modern C++23. The engine relies on the standard library and custom wrappers around the graphical APIs and window management.
+IONENGINE - is a only graphics engine that written in modern C++23. The engine relies on the standard library (STL) and wrappers around the graphical APIs and window management.
 
 The engine contains several small modules:
 
@@ -22,7 +22,13 @@ The engine contains several small modules:
 
 ## Roadmap
 
+- [x] Cube with TextureSampler Preview
+
 ![media-2](media/Roadmap-1.png)
+
+- [ ] UI Preview
+- [ ] PBR Render Passes
+- [ ] Skeletal Meshes
 
 ## Media
 

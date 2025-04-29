@@ -27,7 +27,7 @@ TEST(ShaderSystem, Parser_Test)
 TEST(ShaderSystem, Compiler_DXIL_Test)
 {
     auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
-    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx");
+    auto compileResult = shaderCompiler->compile("../../engine/shaders/quad.fx");
     if (!compileResult.has_value())
     {
         std::cerr << compileResult.error().what() << std::endl;
@@ -38,7 +38,7 @@ TEST(ShaderSystem, Compiler_DXIL_Test)
 TEST(ShaderSystem, Compiler_SPIRV_Test)
 {
     auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::SPIRV);
-    auto compileResult = shaderCompiler->compileFromFile("../../engine/shaders/quad.fx");
+    auto compileResult = shaderCompiler->compile("../../engine/shaders/quad.fx");
     if (!compileResult.has_value())
     {
         std::cerr << compileResult.error().what() << std::endl;

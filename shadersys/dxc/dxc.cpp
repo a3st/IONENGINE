@@ -77,8 +77,7 @@ namespace ionengine::shadersys
         return oss.str();
     }
 
-    auto DXCCompiler::compileFromFile(std::filesystem::path const& filePath)
-        -> std::expected<asset::ShaderFile, core::error>
+    auto DXCCompiler::compile(std::filesystem::path const& filePath) -> std::expected<asset::ShaderFile, core::error>
     {
         Lexer lexer;
         auto lexerResult = lexer.parse(filePath);

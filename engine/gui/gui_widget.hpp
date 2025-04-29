@@ -21,7 +21,7 @@ namespace ionengine
 
         auto getTargetCamera() const -> core::ref_ptr<Camera>;
 
-        auto attachToCamera(core::ref_ptr<Camera> const& targetCamera) -> void;
+        auto attachTo(core::ref_ptr<Camera> const& targetCamera) -> void;
 
       private:
         internal::RmlRender* rmlRender;
