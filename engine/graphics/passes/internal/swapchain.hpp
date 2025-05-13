@@ -13,7 +13,7 @@ namespace ionengine::passes
         SwapchainPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture,
                       core::ref_ptr<Shader> shader, core::ref_ptr<rhi::Texture> swapchainTexture);
 
-        auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override;
+        auto execute(RenderContext const& context) -> void override;
 
       private:
         core::ref_ptr<Shader> shader;

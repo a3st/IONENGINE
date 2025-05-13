@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "shadersys/compiler.hpp"
+#include "../compiler.hpp"
 #define NOMINMAX
 #include <d3d12shader.h>
 #include <dxcapi.h>

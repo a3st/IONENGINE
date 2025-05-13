@@ -10,18 +10,6 @@ namespace ionengine
     class BufferAllocator;
     class UploadManager;
 
-    enum class RenderGroup
-    {
-        Opaque,
-        Translucent,
-        UI
-    };
-
-    struct RenderableData
-    {
-        std::unordered_map<RenderGroup, RenderQueue> renderGroups;
-    };
-
     struct RenderPassInputInfo
     {
         std::string bindingName;
@@ -43,13 +31,15 @@ namespace ionengine
 
         virtual ~RenderPass() = default;
 
-        virtual auto execute(RenderContext const& context, RenderableData const& renderableData) -> void = 0;
+        virtual auto execute(RenderContext const& context) -> void = 0;
 
         auto getColors() const -> std::vector<rhi::RenderPassColorInfo> const&;
 
         auto getHash() const -> uint64_t;
 
         auto getInputs() const -> std::vector<RenderPassInputInfo> const&;
+
+        std::unordered_map<RenderGroup, RenderQueue>* renderGroups;
 
       protected:
         auto initializeRenderPass() -> void;

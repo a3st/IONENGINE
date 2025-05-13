@@ -17,12 +17,12 @@ namespace ionengine::passes
         this->initializeRenderPass();
     }
 
-    auto GeometryPass::execute(RenderContext const& context, RenderableData const& renderableData) -> void
+    auto GeometryPass::execute(RenderContext const& context) -> void
     {
         context.graphics->setViewport(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight());
         context.graphics->setScissor(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight());
 
-        for (auto const& drawableData : renderableData.renderGroups.at(RenderGroup::Opaque))
+        for (auto const& drawableData : renderGroups->at(RenderGroup::Opaque))
         {
             context.graphics->setGraphicsPipelineOptions(drawableData.shader->getShader(),
                                                          drawableData.shader->getRasterizerStageInfo(),

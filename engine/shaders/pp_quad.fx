@@ -2,7 +2,7 @@
 
 HEADER {
     Name = "Quad";
-    Description = "Output texture as a quad";
+    Description = "Output texture as quad";
     Domain = "PostProcess";
 }
 
@@ -20,7 +20,7 @@ VS {
     }
 }
 
-[FillMode("SOLID"), CullMode("BACK"), DepthWrite(true), StencilWrite(false)]
+[FillMode("SOLID"), CullMode("BACK"), DepthWrite(false), StencilWrite(false)]
 PS {
     PS_OUTPUT main(VS_OUTPUT input) 
     {

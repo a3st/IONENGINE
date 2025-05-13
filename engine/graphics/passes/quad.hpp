@@ -23,7 +23,7 @@ namespace ionengine::passes
             this->initializeRenderPass();
         }
 
-        auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override
+        auto execute(RenderContext const& context) -> void override
         {
             context.graphics->draw(3, 1);
         }

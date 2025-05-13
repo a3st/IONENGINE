@@ -5,6 +5,14 @@
 
 namespace ionengine
 {
+    Camera::Camera()
+    {
+        // Initialize Render Groups
+        renderGroups.try_emplace(RenderGroup::Opaque);
+        renderGroups.try_emplace(RenderGroup::Translucent);
+        renderGroups.try_emplace(RenderGroup::UI);
+    }
+
     auto Camera::setViewMatrix(core::Mat4f const& viewMatrix) -> void
     {
         this->viewMatrix = viewMatrix;

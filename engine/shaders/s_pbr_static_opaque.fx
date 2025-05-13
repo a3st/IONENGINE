@@ -4,12 +4,12 @@ HEADER {
     Name = "PBR";
     Description = "PBR Standard";
     Domain = "Surface";
+    Blend = "Opaque";
 }
 
 VS {
-    #include "shared/common.hlsli"
-
-    VS_OUTPUT main(VS_INPUT input) {
+    VS_OUTPUT main(VS_INPUT input) 
+    {
         VS_OUTPUT output;
         
         return output;

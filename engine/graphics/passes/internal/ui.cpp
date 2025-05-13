@@ -15,11 +15,11 @@ namespace ionengine::passes
         this->initializeRenderPass();
     }
 
-    auto UIPass::execute(RenderContext const& context, RenderableData const& renderableData) -> void
+    auto UIPass::execute(RenderContext const& context) -> void
     {
         context.graphics->setViewport(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight());
 
-        for (auto const& drawableData : renderableData.renderGroups.at(RenderGroup::UI))
+        for (auto const& drawableData : renderGroups->at(RenderGroup::UI))
         {
             core::Recti const scissorRect = drawableData.scissorRect.value_or(
                 core::Recti(0, 0, cameraTexture->getWidth(), cameraTexture->getHeight()));

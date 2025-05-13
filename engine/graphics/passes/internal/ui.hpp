@@ -12,7 +12,7 @@ namespace ionengine::passes
       public:
         UIPass(TextureAllocator& textureAllocator, core::ref_ptr<rhi::Texture> cameraTexture);
 
-        auto execute(RenderContext const& context, RenderableData const& renderableData) -> void override;
+        auto execute(RenderContext const& context) -> void override;
 
       private:
         core::ref_ptr<Shader> shader;

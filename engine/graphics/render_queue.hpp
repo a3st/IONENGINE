@@ -9,6 +9,13 @@
 
 namespace ionengine
 {
+    enum class RenderGroup
+    {
+        Opaque,
+        Translucent,
+        UI
+    };
+
     struct DrawableData
     {
         core::ref_ptr<Surface> surface;

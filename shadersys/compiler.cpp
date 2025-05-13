@@ -3,7 +3,7 @@
 #include "compiler.hpp"
 #include "precompiled.h"
 #ifdef IONENGINE_SHADERSYS_DXC
-#include "shadersys/dxc/dxc.hpp"
+#include "dxc/dxc.hpp"
 #endif
 
 namespace ionengine::shadersys

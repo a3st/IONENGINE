@@ -31,6 +31,34 @@ namespace ionengine
         std::optional<core::Recti> scissorRect;
     };
 
+    enum class LightType
+    {
+        Directional,
+        Point,
+        Spot
+    };
+
+    struct LightCreateInfo
+    {
+        LightType lightType;
+        union {
+            struct
+            {
+                core::Vec3f direction;
+            } dirLight;
+
+            struct
+            {
+                core::Vec3f position;
+            } pointLight;
+
+            struct
+            {
+
+            } spotLight;
+        };
+    };
+
     class Graphics
     {
       public:
@@ -51,7 +79,6 @@ namespace ionengine
             core::ref_ptr<TextureAllocator> renderTargetAllocator;
             core::ref_ptr<BufferAllocator> constBufferAllocator;
             rhi::Future<void> graphicsResult;
-            std::set<core::ref_ptr<Camera>> targetCameras;
             std::set<core::ref_ptr<Material>> usedMaterials;
             std::set<core::ref_ptr<Surface>> usedSurfaces;
         };
@@ -77,10 +104,11 @@ namespace ionengine
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
         std::unordered_map<uint64_t, std::vector<PassResourceData>> passResourcesCache;
 
-        RenderableData renderableData;
-
         core::ref_ptr<rhi::Texture> curSwapchainTexture;
         core::ref_ptr<rhi::Texture> curTargetTexture;
+        std::unordered_map<RenderGroup, RenderQueue>* curRenderGroups;
+
+        std::set<core::ref_ptr<Camera>> targetCameras;
 
         core::ref_ptr<Shader> blitShader;
         core::ref_ptr<Camera> mainCamera;
@@ -110,6 +138,7 @@ namespace ionengine
             auto renderPass =
                 std::make_unique<Type>(*instance->frameResources[instance->frameIndex].renderTargetAllocator,
                                        instance->curTargetTexture, std::forward<Args>(args)...);
+            renderPass->renderGroups = instance->curRenderGroups;
             instance->renderPathHash = instance->renderPathHash == 0 ? renderPass->getHash()
                                                                      : instance->renderPathHash ^ renderPass->getHash();
             RenderPass* outPass = renderPass.get();
@@ -118,10 +147,12 @@ namespace ionengine
         }
 
         static auto drawMesh(core::ref_ptr<Mesh> const& drawableMesh, core::Mat4f const& modelMatrix,
-                             core::ref_ptr<Camera> const& targetCamera) -> void;
+                             uint32_t const layerIndex) -> void;
 
         static auto drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
-                                   core::ref_ptr<Camera> targetCamera) -> void;
+                                   uint32_t const layerIndex) -> void;
+
+        static auto addLight(LightCreateInfo const& createInfo) -> void;
 
         static auto createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
             -> core::ref_ptr<Camera>;
@@ -132,7 +163,11 @@ namespace ionengine
 
         static auto createImage(std::filesystem::path const& filePath) -> core::ref_ptr<Image>;
 
-        static auto setRenderPath(std::function<void()>&& func) -> void;
+        template <typename Func>
+        static auto setRenderPath(Func&& function) -> void
+        {
+            instance->renderPathUpdated = function;
+        }
 
         static auto createMaterial(core::ref_ptr<Shader> const& shader) -> core::ref_ptr<Material>;
 

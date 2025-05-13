@@ -34,9 +34,7 @@ class MyEngine : public Engine
             Material::baseSurfaceMaterial->setValue("basicTexture", testImage);
         }
 
-        Graphics::setRenderPath([]() {
-            auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>();
-        });
+        Graphics::setRenderPath([]() { auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>(); });
 
         debugGUI = GUI::createWidget("../../assets/ui/debug.rml");
         debugGUI->attachTo(testCamera);
@@ -48,7 +46,11 @@ class MyEngine : public Engine
 
     auto onRender() -> void override
     {
-        Graphics::drawMesh(testMesh, core::Mat4f::identity(), testCamera);
+        LightCreateInfo lightCreateInfo = {.lightType = LightType::Directional,
+                                           .dirLight = {.direction = core::Vec3f(0.0f, 0.0f, 0.0f)}};
+        Graphics::addLight(lightCreateInfo);
+
+        Graphics::drawMesh(testMesh, core::Mat4f::identity(), 0);
     }
 
   private:

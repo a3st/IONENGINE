@@ -43,7 +43,7 @@ target_link_libraries(engine PUBLIC
     core
     platform
     rhi
-    RmlCore 
+    RmlCore
     RmlDebugger)
 
 set_target_properties(engine PROPERTIES

@@ -3,6 +3,7 @@
 #include "gui.hpp"
 #include "precompiled.h"
 #include <RmlUi/Core.h>
+#include <RmlUi/Lua.h>
 
 namespace ionengine
 {

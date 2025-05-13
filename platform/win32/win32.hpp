@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "platform/platform.hpp"
+#include "../platform.hpp"
 #define NOMINMAX
 #define UNICODE
 #include <windows.h>

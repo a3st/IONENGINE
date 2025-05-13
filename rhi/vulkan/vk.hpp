@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "rhi/rhi.hpp"
+#include "../rhi.hpp"
 #include <xxhash.h>
 #ifdef IONENGINE_PLATFORM_WIN32
 #define VK_USE_PLATFORM_WIN32_KHR

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "rhi/rhi.hpp"
+#include "../rhi.hpp"
 #include <xxhash.h>
 #define NOMINMAX
 #include <D3D12MemAlloc.h>

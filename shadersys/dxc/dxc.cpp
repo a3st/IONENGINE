@@ -1,12 +1,12 @@
 // Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
 
 #include "dxc.hpp"
+#include "../common.hpp"
+#include "../hlslgen.hpp"
+#include "../lexer.hpp"
+#include "../parser.hpp"
 #include "core/string_utils.hpp"
 #include "precompiled.h"
-#include "shadersys/common.hpp"
-#include "shadersys/hlslgen.hpp"
-#include "shadersys/lexer.hpp"
-#include "shadersys/parser.hpp"
 
 namespace ionengine::shadersys
 {

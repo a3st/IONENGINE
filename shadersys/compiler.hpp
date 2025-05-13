@@ -4,7 +4,7 @@
 
 #include "core/error.hpp"
 #include "core/ref_ptr.hpp"
-#include "shadersys/fx.hpp"
+#include "fx.hpp"
 
 namespace ionengine::shadersys
 {

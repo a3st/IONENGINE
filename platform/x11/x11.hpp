@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "platform/platform.hpp"
+#include "../platform.hpp"
 #include <X11/Xlib.h>
 
 namespace ionengine::platform

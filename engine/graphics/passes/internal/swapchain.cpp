@@ -23,7 +23,7 @@ namespace ionengine::passes
         this->initializeRenderPass();
     }
 
-    auto SwapchainPass::execute(RenderContext const& context, RenderableData const& renderableData) -> void
+    auto SwapchainPass::execute(RenderContext const& context) -> void
     {
         context.graphics->setGraphicsPipelineOptions(shader->getShader(), shader->getRasterizerStageInfo(),
                                                      shader->getBlendColorInfo(), std::nullopt);
