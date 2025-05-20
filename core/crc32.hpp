@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -9,7 +9,7 @@ namespace ionengine::core
       public:
         CRC32() = default;
 
-        static auto encode(std::string_view const source) -> uint32_t;
+        auto encode(std::string_view const source) -> uint32_t;
 
       private:
         // https://stackoverflow.com/questions/2111667/compile-time-string-hashing

@@ -20,19 +20,4 @@ namespace ionengine::core::string_utils
                 source.end());
         }
     }
-
-    auto stob(std::string_view const source) -> std::expected<bool, error>
-    {
-        int32_t output;
-        auto result = std::from_chars(source.data(), source.data() + source.size(), output);
-
-        if (result.ec == std::errc::invalid_argument)
-        {
-            return std::unexpected(error(error_code::invalid_argument));
-        }
-        else
-        {
-            return output;
-        }
-    }
 } // namespace ionengine::core

@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "core/base64.hpp"
 #include "core/event.hpp"
@@ -29,162 +29,178 @@ struct core::serializable_enum<TestEnum>
 
 struct InternalData
 {
-    std::string name;
-    uint32_t materialIndex;
+    std::string testString;
+    uint32_t testInt;
 
     template <typename Archive>
     auto operator()(Archive& archive)
     {
-        archive.property(name, "name");
-        archive.property(materialIndex, "materialIndex");
+        archive.property(testString, "testString");
+        archive.property(testInt, "testInt");
     }
 };
 
-struct ShaderData
+struct Data
 {
-    uint32_t shaderInt;
-    float shaderFloat;
-    std::string name;
-    std::vector<std::string> names;
-    std::unordered_map<std::string, std::string> mapNames;
-    bool shaderBool;
+    uint32_t testInt;
+    float testFloat;
+    std::string testString;
+    std::vector<std::string> testStrings;
+    std::unordered_map<std::string, std::string> testMapStrings;
+    bool testBool;
     InternalData internalData;
     TestEnum testEnum;
-    std::unique_ptr<InternalData> internalData2;
-    std::array<int32_t, 2> positions;
-    std::unordered_map<TestEnum, std::string> enumNames;
-    std::unordered_map<uint32_t, std::string> valueNames;
-    std::optional<uint32_t> optionalInt;
-    std::optional<float> optionalFloat;
+    std::unique_ptr<InternalData> internalDataPtr;
+    std::array<int32_t, 2> testInts;
+    std::unordered_map<TestEnum, std::string> testMapEnums;
+    std::unordered_map<uint32_t, std::string> testMapInts;
+    std::optional<uint32_t> testOptInt;
+    std::optional<float> testOptFloat;
 
     template <typename Archive>
     auto operator()(Archive& archive)
     {
-        archive.property(shaderInt, "shaderInt");
-        archive.property(shaderFloat, "shaderFloat");
-        archive.property(name, "name");
-        archive.property(names, "names");
-        archive.property(mapNames, "mapNames");
-        archive.property(shaderBool, "shaderBool");
-        archive.property(internalData, "internal");
+        archive.property(testInt, "testInt");
+        archive.property(testFloat, "testFloat");
+        archive.property(testString, "testString");
+        archive.property(testStrings, "testStrings");
+        archive.property(testMapStrings, "testMapStrings");
+        archive.property(testBool, "testBool");
+        archive.property(internalData, "internalData");
         archive.property(testEnum, "testEnum");
-        archive.property(internalData2, "internal2");
-        archive.property(positions, "positions");
-        archive.property(enumNames, "enumNames");
-        archive.property(valueNames, "enumNames");
-        archive.property(optionalInt, "optionalInt");
-        archive.property(optionalFloat, "optionalFloat");
+        archive.property(internalDataPtr, "internalDataPtr");
+        archive.property(testInts, "testInts");
+        archive.property(testMapEnums, "testMapEnums");
+        archive.property(testMapInts, "testMapInts");
+        archive.property(testOptInt, "testOptInt");
+        archive.property(testOptFloat, "testOptFloat");
     }
 };
 
-struct ShaderFile
+struct DataFile
 {
     uint32_t magic;
-    float shaderFloat;
-    std::string name;
-    std::vector<std::string> names;
-    std::array<uint32_t, 3> numArray;
-    ShaderData shaderData;
+    float testFloat;
+    std::string testString;
+    std::vector<std::string> testStrings;
+    std::array<uint32_t, 3> testInts;
+    Data data;
 
     template <typename Archive>
     auto operator()(Archive& archive)
     {
         archive.property(magic);
-        archive.property(shaderFloat);
-        archive.property(name);
-        archive.property(names);
-        archive.property(numArray);
-        archive.template with<core::serialize_ojson, core::serialize_ijson>(shaderData);
+        archive.property(testFloat);
+        archive.property(testString);
+        archive.property(testStrings);
+        archive.property(testInts);
+        archive.template with<core::serialize_ojson, core::serialize_ijson>(data);
     }
 };
 
 TEST(Core, Serialize_JSON_Test)
 {
     auto internalData = std::make_unique<InternalData>();
-    internalData->name = "bye!";
-    internalData->materialIndex = 3;
+    internalData->testString = "Hello world!";
+    internalData->testInt = 3;
 
-    ShaderData shaderData{.shaderInt = 4,
-                          .shaderFloat = 1.1f,
-                          .name = "Hello world!",
-                          .names = {"name1", "name2"},
-                          .mapNames = {{"keyName1", "keyValue1"}, {"keyName2", "keyValue2"}},
-                          .shaderBool = true,
-                          .internalData = {"hello!", 2},
-                          .testEnum = TestEnum::Second,
-                          .internalData2 = std::move(internalData),
-                          .positions = {20, 30},
-                          .enumNames = {{TestEnum::First, "firstValue"}, {TestEnum::Second, "secondValue"}},
-                          .valueNames = {{32, "firstValue"}, {33, "secondValue"}},
-                          .optionalInt = 2};
+    Data data{.testInt = 4,
+              .testFloat = 1.1f,
+              .testString = "Hello world!",
+              .testStrings = {"string1", "string2"},
+              .testMapStrings = {{"key1", "value1"}, {"key2", "value2"}},
+              .testBool = true,
+              .internalData = {"Hello world!", 2},
+              .testEnum = TestEnum::Second,
+              .internalDataPtr = std::move(internalData),
+              .testInts = {20, 30},
+              .testMapEnums = {{TestEnum::First, "first"}, {TestEnum::Second, "second"}},
+              .testMapInts = {{32, "first"}, {33, "second"}},
+              .testOptInt = 2};
 
-    auto buffer = core::serialize<core::serialize_ojson, std::basic_stringstream<uint8_t>>(shaderData).value();
-    auto object = core::deserialize<core::serialize_ijson, ShaderData>(buffer).value();
+    auto bufferObject = core::serialize<core::serialize_ojson, std::basic_stringstream<uint8_t>>(data).value();
+    auto deserializedObject = core::deserialize<core::serialize_ijson, Data>(bufferObject).value();
 
-    ASSERT_EQ(object.shaderInt, shaderData.shaderInt);
-    ASSERT_EQ(object.shaderFloat, shaderData.shaderFloat);
-    ASSERT_EQ(object.name, shaderData.name);
-    ASSERT_EQ(object.names, shaderData.names);
-    ASSERT_EQ(object.mapNames, shaderData.mapNames);
-    ASSERT_EQ(object.shaderBool, shaderData.shaderBool);
-    ASSERT_EQ(object.internalData.name, shaderData.internalData.name);
-    ASSERT_EQ(object.internalData.materialIndex, shaderData.internalData.materialIndex);
-    ASSERT_EQ(object.testEnum, shaderData.testEnum);
-    ASSERT_EQ(object.internalData2->name, shaderData.internalData2->name);
-    ASSERT_EQ(object.internalData2->materialIndex, shaderData.internalData2->materialIndex);
-    ASSERT_EQ(object.positions, shaderData.positions);
-    ASSERT_EQ(object.enumNames, shaderData.enumNames);
-    ASSERT_EQ(object.valueNames, shaderData.valueNames);
-    ASSERT_EQ(object.optionalInt, shaderData.optionalInt);
-    ASSERT_EQ(object.optionalFloat, shaderData.optionalFloat);
+    ASSERT_EQ(deserializedObject.testInt, data.testInt);
+    ASSERT_EQ(deserializedObject.testFloat, data.testFloat);
+    ASSERT_STREQ(deserializedObject.testString.c_str(), data.testString.c_str());
+    ASSERT_EQ(deserializedObject.testStrings, data.testStrings);
+    ASSERT_EQ(deserializedObject.testMapStrings, data.testMapStrings);
+    ASSERT_EQ(deserializedObject.testBool, data.testBool);
+
+    ASSERT_EQ(deserializedObject.internalData.testString, data.internalData.testString);
+    ASSERT_EQ(deserializedObject.internalData.testInt, data.internalData.testInt);
+
+    ASSERT_EQ(deserializedObject.testEnum, data.testEnum);
+
+    ASSERT_STREQ(deserializedObject.internalDataPtr->testString.c_str(), data.internalDataPtr->testString.c_str());
+    ASSERT_EQ(deserializedObject.internalDataPtr->testInt, data.internalDataPtr->testInt);
+
+    ASSERT_EQ(deserializedObject.testInts, data.testInts);
+    ASSERT_EQ(deserializedObject.testMapEnums, data.testMapEnums);
+    ASSERT_EQ(deserializedObject.testMapInts, data.testMapInts);
+    ASSERT_EQ(deserializedObject.testOptInt, data.testOptInt);
+    ASSERT_EQ(deserializedObject.testOptFloat, data.testOptFloat);
 }
 
 TEST(Core, Serialize_Archive_Test)
 {
     auto internalData = std::make_unique<InternalData>();
-    internalData->name = "bye!";
-    internalData->materialIndex = 3;
+    internalData->testString = "Hello world!";
+    internalData->testInt = 3;
 
-    ShaderData shaderData{4,
-                          1.1f,
-                          "Hello world!",
-                          {"name1", "name2"},
-                          {{"keyName1", "keyValue1"}, {"keyName2", "keyValue2"}},
-                          true,
-                          {"hello!", 2},
-                          TestEnum::Second,
-                          std::move(internalData),
-                          {20, 30}};
+    Data data{.testInt = 4,
+              .testFloat = 1.1f,
+              .testString = "Hello world!",
+              .testStrings = {"string1", "string2"},
+              .testMapStrings = {{"key1", "value1"}, {"key2", "value2"}},
+              .testBool = true,
+              .internalData = {"Hello world!", 2},
+              .testEnum = TestEnum::Second,
+              .internalDataPtr = std::move(internalData),
+              .testInts = {20, 30},
+              .testMapEnums = {{TestEnum::First, "first"}, {TestEnum::Second, "second"}},
+              .testMapInts = {{32, "first"}, {33, "second"}},
+              .testOptInt = 2};
 
-    ShaderFile shaderFile{.magic = 2,
-                          .shaderFloat = 1.2f,
-                          .name = "Hello world!",
-                          .names = {"name1", "name2"},
-                          .numArray = {5, 3, 4},
-                          .shaderData = std::move(shaderData)};
+    DataFile dataFile{.magic = 2,
+                      .testFloat = 1.2f,
+                      .testString = "Hello world!",
+                      .testStrings = {"string1", "string2"},
+                      .testInts = {5, 3, 4},
+                      .data = std::move(data)};
 
-    auto buffer = core::serialize<core::serialize_oarchive, std::basic_stringstream<uint8_t>>(shaderFile).value();
-    auto object = core::deserialize<core::serialize_iarchive, ShaderFile>(buffer).value();
+    auto bufferObject = core::serialize<core::serialize_oarchive, std::basic_stringstream<uint8_t>>(dataFile).value();
+    auto deserializedObject = core::deserialize<core::serialize_iarchive, DataFile>(bufferObject).value();
 
-    ASSERT_EQ(object.magic, shaderFile.magic);
-    ASSERT_EQ(object.shaderFloat, shaderFile.shaderFloat);
-    ASSERT_EQ(object.name, shaderFile.name);
-    ASSERT_EQ(object.names, shaderFile.names);
-    ASSERT_EQ(object.numArray, shaderFile.numArray);
+    ASSERT_EQ(deserializedObject.magic, dataFile.magic);
+    ASSERT_EQ(deserializedObject.testFloat, dataFile.testFloat);
+    ASSERT_EQ(deserializedObject.testString, dataFile.testString);
+    ASSERT_EQ(deserializedObject.testStrings, dataFile.testStrings);
+    ASSERT_EQ(deserializedObject.testInts, dataFile.testInts);
 
     // with object
-    ASSERT_EQ(object.shaderData.shaderInt, shaderFile.shaderData.shaderInt);
-    ASSERT_EQ(object.shaderData.shaderFloat, shaderFile.shaderData.shaderFloat);
-    ASSERT_EQ(object.shaderData.name, shaderFile.shaderData.name);
-    ASSERT_EQ(object.shaderData.names, shaderFile.shaderData.names);
-    ASSERT_EQ(object.shaderData.mapNames, shaderFile.shaderData.mapNames);
-    ASSERT_EQ(object.shaderData.shaderBool, shaderFile.shaderData.shaderBool);
-    ASSERT_EQ(object.shaderData.internalData.name, shaderFile.shaderData.internalData.name);
-    ASSERT_EQ(object.shaderData.internalData.materialIndex, shaderFile.shaderData.internalData.materialIndex);
-    ASSERT_EQ(object.shaderData.testEnum, shaderFile.shaderData.testEnum);
-    ASSERT_EQ(object.shaderData.internalData2->name, shaderFile.shaderData.internalData2->name);
-    ASSERT_EQ(object.shaderData.internalData2->materialIndex, shaderFile.shaderData.internalData2->materialIndex);
-    ASSERT_EQ(object.shaderData.positions, shaderFile.shaderData.positions);
+    ASSERT_EQ(deserializedObject.data.testInt, dataFile.data.testInt);
+    ASSERT_EQ(deserializedObject.data.testFloat, dataFile.data.testFloat);
+    ASSERT_STREQ(deserializedObject.testString.c_str(), dataFile.data.testString.c_str());
+    ASSERT_EQ(deserializedObject.data.testStrings, dataFile.data.testStrings);
+    ASSERT_EQ(deserializedObject.data.testMapStrings, dataFile.data.testMapStrings);
+    ASSERT_EQ(deserializedObject.data.testBool, dataFile.data.testBool);
+
+    ASSERT_EQ(deserializedObject.data.internalData.testString, dataFile.data.internalData.testString);
+    ASSERT_EQ(deserializedObject.data.internalData.testInt, dataFile.data.internalData.testInt);
+
+    ASSERT_EQ(deserializedObject.data.testEnum, dataFile.data.testEnum);
+
+    ASSERT_STREQ(deserializedObject.data.internalDataPtr->testString.c_str(),
+                 dataFile.data.internalDataPtr->testString.c_str());
+    ASSERT_EQ(deserializedObject.data.internalDataPtr->testInt, dataFile.data.internalDataPtr->testInt);
+
+    ASSERT_EQ(deserializedObject.data.testInts, dataFile.data.testInts);
+    ASSERT_EQ(deserializedObject.data.testMapEnums, dataFile.data.testMapEnums);
+    ASSERT_EQ(deserializedObject.data.testMapInts, dataFile.data.testMapInts);
+    ASSERT_EQ(deserializedObject.data.testOptInt, dataFile.data.testOptInt);
+    ASSERT_EQ(deserializedObject.data.testOptFloat, dataFile.data.testOptFloat);
 }
 
 TEST(Core, Serialize_Enum_Test)
@@ -195,37 +211,30 @@ TEST(Core, Serialize_Enum_Test)
 
 TEST(Core, Base64_Encode_Test)
 {
-    std::string test = "Hello world!";
-    std::string encodedString = core::base64_encode(std::span<uint8_t const>((uint8_t const*)test.data(), test.size()));
-    ASSERT_EQ(encodedString, "SGVsbG8gd29ybGQh");
+    std::string testString = "Hello world!";
+    std::string encodedString = core::Base64().encode(
+        std::span<uint8_t const>(reinterpret_cast<uint8_t const*>(testString.data()), testString.size()));
+    ASSERT_STREQ(encodedString.c_str(), "SGVsbG8gd29ybGQh");
 }
 
 TEST(Core, Base64_Decode_Test)
 {
-    std::string test = "SGVsbG8gd29ybGQh";
-    auto buffer = core::base64_decode(test).value();
-    ASSERT_EQ(std::string(reinterpret_cast<char*>(buffer.data()), buffer.size()), "Hello world!");
+    std::string testString = "SGVsbG8gd29ybGQh";
+    auto decodedBuffer = core::Base64().decode(testString).value();
+    std::string decodedString(reinterpret_cast<char const*>(decodedBuffer.data()), decodedBuffer.size());
+    ASSERT_STREQ(decodedString.c_str(), "Hello world!");
 }
 
 TEST(Core, Event_Test)
 {
-    int32_t const testedValue = 5;
+    int32_t const testValue = 5;
+    core::event<void(int32_t)> testEvent;
 
-    core::event<void(int32_t)> eventInt;
-    eventInt += [&](int32_t a) -> void {
-        std::cout << a << std::endl;
-        ASSERT_EQ(a, testedValue);
-    };
-    eventInt += [&](int32_t a) -> void {
-        std::cout << a + 2 << std::endl;
-        ASSERT_EQ(a + 2, testedValue + 2);
-    };
-    eventInt += [&](int32_t a) -> void {
-        std::cout << a + 3 << std::endl;
-        ASSERT_EQ(a + 3, testedValue + 3);
-    };
+    testEvent += [&](int32_t a) -> void { ASSERT_EQ(a, testValue); };
+    testEvent += [&](int32_t a) -> void { ASSERT_EQ(a + 2, testValue + 2); };
+    testEvent += [&](int32_t a) -> void { ASSERT_EQ(a + 3, testValue + 3); };
 
-    eventInt(testedValue);
+    testEvent(testValue);
 }
 
 auto main(int32_t argc, char** argv) -> int32_t

@@ -335,7 +335,7 @@ namespace ionengine::shadersys
         bool successful = this->parseToken(tokens.begin(), parseData);
         if (!successful)
         {
-            return std::unexpected(core::error(core::error_code::parse_token, errors));
+            return std::unexpected(core::error(errors));
         }
         else
         {

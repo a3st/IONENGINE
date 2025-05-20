@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -23,13 +23,9 @@ namespace ionengine::core
             archive(object);
             return object;
         }
-        catch (std::invalid_argument e)
+        catch (std::exception e)
         {
-            return std::unexpected(error(error_code::invalid_argument));
-        }
-        catch (std::out_of_range e)
-        {
-            return std::unexpected(error(error_code::out_of_range));
+            return std::unexpected(error(e.what()));
         }
     }
 
@@ -45,54 +41,12 @@ namespace ionengine::core
         {
             Target target{};
             Archive archive(target);
-            if (archive(object) > 0)
-            {
-                return target;
-            }
-            else
-            {
-                return std::unexpected(error(error_code::eof));
-            }
+            archive(object);
+            return target;
         }
-        catch (std::invalid_argument e)
+        catch (std::exception e)
         {
-            return std::unexpected(error(error_code::invalid_argument));
-        }
-        catch (std::out_of_range e)
-        {
-            return std::unexpected(error(error_code::out_of_range));
-        }
-    }
-
-    /*!
-        \brief Serialize object with class
-        \param[in] target Target where will output serialized data
-        \param[in] object Object that will serialized
-        \return Serialized size or error
-    */
-    template <typename Archive, typename Target, typename Type>
-    auto serialize(Target& target, Type const& object) -> std::expected<size_t, error>
-    {
-        try
-        {
-            Archive archive(target);
-            size_t const sizeInBytes = archive(object);
-            if (sizeInBytes > 0)
-            {
-                return sizeInBytes;
-            }
-            else
-            {
-                return std::unexpected(error(error_code::eof));
-            }
-        }
-        catch (std::invalid_argument e)
-        {
-            return std::unexpected(error(error_code::invalid_argument));
-        }
-        catch (std::out_of_range e)
-        {
-            return std::unexpected(error(error_code::out_of_range));
+            return std::unexpected(error(e.what()));
         }
     }
 

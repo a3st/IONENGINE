@@ -66,8 +66,7 @@ namespace ionengine::shadersys
         std::ifstream stream(filePath);
         if (!stream.is_open())
         {
-            return std::unexpected(core::error(
-                core::error_code::eof, "the input file is in a different format, is corrupted, or was not found"));
+            return std::unexpected(core::error("the input stream is eof"));
         }
 
         std::string const buffer = {std::istreambuf_iterator<char>(stream.rdbuf()), {}};

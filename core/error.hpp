@@ -1,37 +1,28 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
 namespace ionengine::core
 {
-    enum class error_code
-    {
-        invalid_argument,
-        out_of_range,
-        eof,
-        parse_token,
-        compile
-    };
-
     class error
     {
       public:
-        error(error_code const errc, std::string_view const message = "") : errc(errc), message(message)
+        error(std::string_view const message) : message(message), stack_trace(std::stacktrace::current())
         {
         }
 
-        auto what() const noexcept -> std::string_view
+        auto what() const noexcept -> std::string const&
         {
             return message;
         }
 
-        auto code() const noexcept -> error_code
+        auto trace() const noexcept -> std::stacktrace const&
         {
-            return errc;
+            return stack_trace;
         }
 
       private:
         std::string message;
-        error_code errc;
+        std::stacktrace stack_trace;
     };
 } // namespace ionengine::core

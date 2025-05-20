@@ -48,11 +48,11 @@ namespace ionengine::shadersys
         }
         if ((it = attributes.find("DepthWrite")) != attributes.end())
         {
-            outputData.depthWrite = core::string_utils::stob(it->second).value_or(false);
+            outputData.depthWrite = core::string_utils::lexical_cast<bool>(it->second).value_or(false);
         }
         if ((it = attributes.find("StencilWrite")) != attributes.end())
         {
-            outputData.stencilWrite = core::string_utils::stob(it->second).value_or(false);
+            outputData.stencilWrite = core::string_utils::lexical_cast<bool>(it->second).value_or(false);
         }
     }
 
@@ -203,7 +203,7 @@ namespace ionengine::shadersys
             {
                 auto errors =
                     std::string(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()), errorsBlob->GetBufferSize());
-                return std::unexpected(core::error(core::error_code::compile, errors));
+                return std::unexpected(core::error(errors));
             }
 
             winrt::com_ptr<IDxcBlob> outBlob;

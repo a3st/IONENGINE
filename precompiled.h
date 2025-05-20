@@ -36,3 +36,4 @@
 #include <stack>
 #include <expected>
 #include <future>
+#include <stacktrace>

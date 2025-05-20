@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -9,9 +9,9 @@ namespace ionengine::core
       public:
         Base64() = default;
 
-        static auto encode(std::span<uint8_t const> const source) -> std::string;
+        auto encode(std::span<uint8_t const> const source) -> std::string;
 
-        static auto decode(std::string_view const source) -> std::optional<std::vector<std::uint8_t>>;
+        auto decode(std::string_view const source) -> std::optional<std::vector<std::uint8_t>>;
 
       private:
         inline static std::array<char, 64> constexpr encode_table{
@@ -37,12 +37,12 @@ namespace ionengine::core
             0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64,
             0x64, 0x64, 0x64, 0x64};
 
-        static auto encode_tripplet(uint8_t const a, uint8_t const b, uint8_t const c) -> std::array<char, 4>;
+        auto encode_triplet(uint8_t const a, uint8_t const b, uint8_t const c) const -> std::array<char, 4>;
 
-        static auto is_valid_base64_char(char c) -> bool;
+        auto is_valid_base64_char(char const c) const -> bool;
 
-        static auto is_valid_base64_str(std::string_view const encoded_str) -> bool;
+        auto is_valid_base64_str(std::string_view const encoded_str) const -> bool;
 
-        static auto decode_quad(char const a, char const b, char const c, char const d) -> std::array<uint8_t, 3>;
+        auto decode_quad(char const a, char const b, char const c, char const d) const -> std::array<uint8_t, 3>;
     };
 } // namespace ionengine::core

@@ -1,11 +1,11 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "base64.hpp"
 #include "precompiled.h"
 
 namespace ionengine::core
 {
-    auto Base64::encode_tripplet(uint8_t const a, uint8_t const b, uint8_t const c) -> std::array<char, 4>
+    auto Base64::encode_triplet(uint8_t const a, uint8_t const b, uint8_t const c) const -> std::array<char, 4>
     {
         uint32_t const concat_bits = (a << 16) | (b << 8) | c;
 
@@ -17,13 +17,13 @@ namespace ionengine::core
         return {b64_char1, b64_char2, b64_char3, b64_char4};
     }
 
-    auto Base64::is_valid_base64_char(char c) -> bool
+    auto Base64::is_valid_base64_char(char const c) const -> bool
     {
         auto const decode_byte = decode_table[c];
         return decode_byte != 0x64;
     }
 
-    auto Base64::is_valid_base64_str(std::string_view const encoded_str) -> bool
+    auto Base64::is_valid_base64_str(std::string_view const encoded_str) const -> bool
     {
         if ((encoded_str.size() % 4) == 1)
         {
@@ -31,7 +31,7 @@ namespace ionengine::core
         }
 
         if (!std::all_of(std::begin(encoded_str), std::end(encoded_str) - 2,
-                         [](char c) { return is_valid_base64_char(c); }))
+                         [this](char c) { return this->is_valid_base64_char(c); }))
         {
             return false;
         }
@@ -45,7 +45,7 @@ namespace ionengine::core
         return is_valid_base64_char(*last) || (*last == '=');
     }
 
-    auto Base64::decode_quad(char const a, char const b, char const c, char const d) -> std::array<uint8_t, 3>
+    auto Base64::decode_quad(char const a, char const b, char const c, char const d) const -> std::array<uint8_t, 3>
     {
         uint32_t const concat_bytes =
             (decode_table[a] << 18) | (decode_table[b] << 12) | (decode_table[c] << 6) | decode_table[d];
@@ -67,14 +67,14 @@ namespace ionengine::core
         for (size_t const i : std::views::iota(0u, full_tripples))
         {
             auto const tripplet = source.subspan(i * 3, 3);
-            auto const base64_chars = Base64::encode_tripplet(tripplet[0], tripplet[1], tripplet[2]);
+            auto const base64_chars = this->encode_triplet(tripplet[0], tripplet[1], tripplet[2]);
             std::copy(std::begin(base64_chars), std::end(base64_chars), std::back_inserter(output));
         }
 
         if (auto const remaining_chars = size - full_tripples * 3; remaining_chars == 2)
         {
             auto const last_two = source.last(2);
-            auto const base64_chars = Base64::encode_tripplet(last_two[0], last_two[1], 0x00);
+            auto const base64_chars = this->encode_triplet(last_two[0], last_two[1], 0x00);
 
             output.push_back(base64_chars[0]);
             output.push_back(base64_chars[1]);
@@ -83,7 +83,7 @@ namespace ionengine::core
         }
         else if (remaining_chars == 1)
         {
-            auto const base64_chars = Base64::encode_tripplet(source.back(), 0x00, 0x00);
+            auto const base64_chars = this->encode_triplet(source.back(), 0x00, 0x00);
 
             output.push_back(base64_chars[0]);
             output.push_back(base64_chars[1]);
@@ -100,7 +100,7 @@ namespace ionengine::core
             return std::nullopt;
         }
 
-        if (!Base64::is_valid_base64_str(source))
+        if (!this->is_valid_base64_str(source))
         {
             return std::nullopt;
         }

@@ -9,6 +9,7 @@ add_executable(core_test core_test.cpp)
 target_include_directories(core_test PRIVATE ${PROJECT_SOURCE_DIR})
 
 target_link_libraries(core_test PRIVATE
+    core
     simdjson::simdjson
     GTest::gtest)
 

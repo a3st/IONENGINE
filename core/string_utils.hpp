@@ -29,25 +29,27 @@ namespace ionengine::core::string_utils
         \return Number or error
     */
     template <typename Type>
-    inline auto ston(std::string_view const source) -> std::expected<Type, error>
+    inline auto lexical_cast(std::string_view const source) -> std::expected<Type, error>
     {
-        Type output;
-        auto result = std::from_chars(source.data(), source.data() + source.size(), output);
-
-        if (result.ec == std::errc::invalid_argument)
+        if constexpr (std::is_integral_v<Type> && std::is_same_v<Type, bool>)
         {
-            return std::unexpected(error(error_code::invalid_argument));
+            bool output;
+            std::istringstream(std::string(source)) >> std::boolalpha >> output;
+            return output;
         }
         else
         {
-            return output;
+            Type output;
+            auto result = std::from_chars(source.data(), source.data() + source.size(), output);
+
+            if (result.ec == std::errc::invalid_argument)
+            {
+                return std::unexpected(error("the result of the conversion is an invalid argument"));
+            }
+            else
+            {
+                return output;
+            }
         }
     }
-
-    /*!
-        \brief Convert string_view to boolean
-        \param[in] source Input string_view that will converted to boolean
-        \return Boolean or error
-    */
-    auto stob(std::string_view const source) -> std::expected<bool, error>;
-} // namespace ionengine::core
+} // namespace ionengine::core::string_utils

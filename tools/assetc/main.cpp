@@ -16,7 +16,7 @@ auto main(int32_t argc, char** argv) -> int32_t
 
     if (commandLine[{"-help", "--help"}])
     {
-        std::cout << "usage: assetc <command> [arguments] inputFile\n\n";
+        std::cout << "usage: assetc <inputFile> [arguments]\n\n";
         std::cout << "-output (--output)" << "\t\t\t" << "Compilation output path (Optional)" << std::endl;
         return EXIT_SUCCESS;
     }
