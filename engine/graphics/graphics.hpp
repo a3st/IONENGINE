@@ -146,11 +146,9 @@ namespace ionengine
             return outPass;
         }
 
-        static auto drawMesh(core::ref_ptr<Mesh> const& drawableMesh, core::Mat4f const& modelMatrix,
-                             uint32_t const layerIndex) -> void;
+        static auto drawMesh(core::ref_ptr<Mesh> const& drawableMesh, core::Mat4f const& modelMatrix) -> void;
 
-        static auto drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
-                                   uint32_t const layerIndex) -> void;
+        static auto drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix) -> void;
 
         static auto addLight(LightCreateInfo const& createInfo) -> void;
 

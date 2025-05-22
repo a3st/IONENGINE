@@ -81,8 +81,7 @@ namespace ionengine::internal
 
         auto guiWidget = guiContexts[this->GetContext()];
 
-        Graphics::drawProcedural(drawParams, core::Mat4f::translate(core::Vec3f(translation.x, translation.y, 0.0f)),
-                                 0);
+        Graphics::drawProcedural(drawParams, core::Mat4f::translate(core::Vec3f(translation.x, translation.y, 0.0f)));
     }
 
     auto RmlRender::EnableScissorRegion(bool isEnable) -> void

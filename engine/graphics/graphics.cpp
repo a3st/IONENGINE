@@ -176,23 +176,22 @@ namespace ionengine
         outputWidth = width;
         outputHeight = height;
 
-        if (auto perspectiveCamera = dynamic_cast<PerspectiveCamera*>(mainCamera.get()))
+        if (mainCamera)
         {
-            perspectiveCamera->setAspect((float)outputWidth / outputHeight);
+            if (auto perspectiveCamera = dynamic_cast<PerspectiveCamera*>(mainCamera.get()))
+            {
+                perspectiveCamera->setAspect((float)outputWidth / outputHeight);
+            }
         }
     }
 
-    auto Graphics::drawMesh(core::ref_ptr<Mesh> const& drawableMesh, core::Mat4f const& modelMatrix,
-                            uint32_t const layerIndex) -> void
+    auto Graphics::drawMesh(core::ref_ptr<Mesh> const& drawableMesh, core::Mat4f const& modelMatrix) -> void
     {
         auto& curFrameResourceData = instance->frameResources[instance->frameIndex];
 
         // Iterate over all target cameras
         for (auto const& targetCamera : instance->targetCameras)
         {
-            // TODO! Check for Layer Index
-            // IF Camera hasn't (layerIndex & targetCamera->layerMask) continue
-
             for (uint32_t const i : std::views::iota(0u, drawableMesh->getSurfaces().size()))
             {
                 core::ref_ptr<Material> currentMaterial = drawableMesh->getMaterials()[i];
@@ -237,8 +236,7 @@ namespace ionengine
         }
     }
 
-    auto Graphics::drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix,
-                                  uint32_t const layerIndex) -> void
+    auto Graphics::drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix) -> void
     {
         auto& curFrameResourceData = instance->frameResources[instance->frameIndex];
         curFrameResourceData.usedMaterials.emplace(drawParams.material);

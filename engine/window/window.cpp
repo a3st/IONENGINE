@@ -5,7 +5,7 @@
 
 namespace ionengine
 {
-    Window::Window(core::ref_ptr<platform::App> application) : application(application)
+    Window::Window(core::ref_ptr<platform::App> const& application) : application(application)
     {
         instance = this;
     }

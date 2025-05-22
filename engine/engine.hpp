@@ -12,7 +12,7 @@ namespace ionengine
     class Engine
     {
       public:
-        Engine(uint32_t argc, char** argv);
+        Engine(uint32_t argc, char** argv, std::string_view const appName);
 
         virtual ~Engine() = default;
 

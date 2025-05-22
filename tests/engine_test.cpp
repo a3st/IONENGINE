@@ -11,7 +11,7 @@ using namespace ionengine;
 class MyEngine : public Engine
 {
   public:
-    MyEngine(uint32_t const argc, char** argv) : Engine(argc, argv)
+    MyEngine(uint32_t const argc, char** argv) : Engine(argc, argv, "Engine Test")
     {
     }
 
@@ -50,7 +50,7 @@ class MyEngine : public Engine
                                            .dirLight = {.direction = core::Vec3f(0.0f, 0.0f, 0.0f)}};
         Graphics::addLight(lightCreateInfo);
 
-        Graphics::drawMesh(testMesh, core::Mat4f::identity(), 0);
+        Graphics::drawMesh(testMesh, core::Mat4f::identity());
     }
 
   private:

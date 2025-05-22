@@ -9,7 +9,7 @@ namespace ionengine
     class Window
     {
       public:
-        Window(core::ref_ptr<platform::App> application);
+        Window(core::ref_ptr<platform::App> const& application);
 
       private:
         core::ref_ptr<platform::App> application;

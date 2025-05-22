@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "color.hpp"
 #include "precompiled.h"

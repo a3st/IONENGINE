@@ -1,4 +1,4 @@
-// Copyright © 2020-2021 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -59,7 +59,7 @@ namespace ionengine::core
 
         auto operator==(Color const& other) const -> bool
         {
-            return std::tie(r, g, b, a) == std::tie(other.r, other.g, other.b, other.a);
+            return std::make_tuple(r, g, b, a) == std::make_tuple(other.r, other.g, other.b, other.a);
         }
     };
 } // namespace ionengine::core
