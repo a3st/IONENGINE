@@ -9,8 +9,8 @@ namespace ionengine
     class Surface : public core::ref_counted_object
     {
       public:
-        Surface(rhi::RHI& RHI, core::ref_ptr<rhi::Buffer> const& vertexBuffer,
-                core::ref_ptr<rhi::Buffer> const& indexBuffer, uint32_t const indexCount);
+        Surface(core::ref_ptr<rhi::Buffer> const& vertexBuffer, core::ref_ptr<rhi::Buffer> const& indexBuffer,
+                uint32_t const indexCount);
 
         auto draw(rhi::GraphicsContext* context) const -> void;
 

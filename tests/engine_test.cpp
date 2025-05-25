@@ -19,14 +19,21 @@ class MyEngine : public Engine
     auto onStart() -> void override
     {
         Window::setEnableMouse(true);
+
         testCamera = Graphics::createPerspectiveCamera(68.0f, 0.1f, 100.0f);
         testCamera->setViewMatrix(core::Mat4f::lookAtRH(core::Vec3f(5.0f, 5.0f, 5.0f), core::Vec3f(0.0f, 0.0f, 0.0f),
                                                         core::Vec3f(0.0f, 0.0f, 1.0f)));
-        Graphics::setMainCamera(testCamera);
+
+        testWorld = Graphics::createWorld();
 
         Material::baseSurfaceMaterial =
             Graphics::createMaterial(Graphics::createShader("../../assets/shaders/base3d_pc.bin"));
+
         testMesh = Graphics::createMesh("../../assets/models/box.mdl");
+        testMesh->scale = core::Vec3f(2.0f, 2.0f, 2.0f);
+
+        testWorld->addEntity(testMesh);
+        testWorld->addEntity(testCamera);
 
         testImage = Graphics::createImage("../../assets/images/debug-empty.txe");
         if (testImage)
@@ -36,8 +43,8 @@ class MyEngine : public Engine
 
         Graphics::setRenderPath([]() { auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>(); });
 
-        debugGUI = GUI::createWidget("../../assets/ui/debug.rml");
-        debugGUI->attachTo(testCamera);
+        // debugGUI = GUI::createWidget("../../assets/ui/debug.rml");
+        // debugGUI->attachTo(testCamera);
     }
 
     auto onUpdate(float const deltaTime) -> void override
@@ -46,11 +53,7 @@ class MyEngine : public Engine
 
     auto onRender() -> void override
     {
-        LightCreateInfo lightCreateInfo = {.lightType = LightType::Directional,
-                                           .dirLight = {.direction = core::Vec3f(0.0f, 0.0f, 0.0f)}};
-        Graphics::addLight(lightCreateInfo);
-
-        Graphics::drawMesh(testMesh, core::Mat4f::identity());
+        Graphics::drawWorld(testWorld);
     }
 
   private:
@@ -59,6 +62,7 @@ class MyEngine : public Engine
     core::ref_ptr<Material> material;
     core::ref_ptr<GUIWidget> debugGUI;
     core::ref_ptr<Image> testImage;
+    core::ref_ptr<World> testWorld;
 };
 
 TEST(Engine, Instance_Test)

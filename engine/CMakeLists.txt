@@ -26,6 +26,8 @@ add_library(engine STATIC
     graphics/material.cpp
     graphics/render_pass.cpp
     graphics/shader.cpp
+    graphics/entity.cpp
+    graphics/world.cpp
     graphics/graphics.cpp
 
     window/window.cpp

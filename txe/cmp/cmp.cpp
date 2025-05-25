@@ -17,8 +17,7 @@ namespace ionengine::asset
         CMP_ERROR error = ::CMP_LoadTexture(filePath.string().c_str(), &srcMipSet);
         if (error != CMP_OK)
         {
-            return std::unexpected(core::error(
-                core::error_code::eof, "the input file is in a different format, is corrupted, or was not found"));
+            return std::unexpected(core::error(""));
         }
 
         txe::TextureData textureData{.format = txe::TextureFormat::RGBA8_UNORM,

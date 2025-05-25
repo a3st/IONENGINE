@@ -12,6 +12,7 @@
 #include "rhi/rhi.hpp"
 #include "texture_allocator.hpp"
 #include "upload_manager.hpp"
+#include "world.hpp"
 
 namespace ionengine
 {
@@ -26,37 +27,10 @@ namespace ionengine
         core::ref_ptr<Surface> surface;
         core::ref_ptr<Material> material;
         RenderGroup renderGroup;
+        core::Mat4f modelMatrix;
         std::optional<core::Mat4f> viewMatrix;
         std::optional<core::Mat4f> projMatrix;
         std::optional<core::Recti> scissorRect;
-    };
-
-    enum class LightType
-    {
-        Directional,
-        Point,
-        Spot
-    };
-
-    struct LightCreateInfo
-    {
-        LightType lightType;
-        union {
-            struct
-            {
-                core::Vec3f direction;
-            } dirLight;
-
-            struct
-            {
-                core::Vec3f position;
-            } pointLight;
-
-            struct
-            {
-
-            } spotLight;
-        };
     };
 
     class Graphics
@@ -81,6 +55,7 @@ namespace ionengine
             rhi::Future<void> graphicsResult;
             std::set<core::ref_ptr<Material>> usedMaterials;
             std::set<core::ref_ptr<Surface>> usedSurfaces;
+            std::set<core::ref_ptr<Camera>> usedCameras;
         };
 
         std::vector<FrameResourceData> frameResources;
@@ -104,17 +79,17 @@ namespace ionengine
         std::vector<std::unique_ptr<RenderPass>> renderPasses;
         std::unordered_map<uint64_t, std::vector<PassResourceData>> passResourcesCache;
 
+        std::unordered_map<uint64_t, core::ref_ptr<Surface>> surfacesCache;
+
         core::ref_ptr<rhi::Texture> curSwapchainTexture;
         core::ref_ptr<rhi::Texture> curTargetTexture;
         std::unordered_map<RenderGroup, RenderQueue>* curRenderGroups;
 
-        std::set<core::ref_ptr<Camera>> targetCameras;
-
-        core::ref_ptr<Shader> blitShader;
-        core::ref_ptr<Camera> mainCamera;
-
         uint32_t outputWidth;
         uint32_t outputHeight;
+        bool isOutputResized;
+
+        core::ref_ptr<Shader> blitShader;
 
         auto findTextureInPassResources(std::span<PassResourceData const> const passResources, uint32_t const offset,
                                         core::ref_ptr<rhi::Texture> source,
@@ -146,11 +121,16 @@ namespace ionengine
             return outPass;
         }
 
-        static auto drawMesh(core::ref_ptr<Mesh> const& drawableMesh, core::Mat4f const& modelMatrix) -> void;
+        template <typename Func>
+        static auto setRenderPath(Func&& function) -> void
+        {
+            instance->renderPathUpdated = function;
+        }
 
-        static auto drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix) -> void;
+        static auto drawGeometry(DrawParameters const& drawParams,
+                                 std::span<core::ref_ptr<Camera> const> const drawCameras) -> void;
 
-        static auto addLight(LightCreateInfo const& createInfo) -> void;
+        static auto drawWorld(core::ref_ptr<World> const& world) -> void;
 
         static auto createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
             -> core::ref_ptr<Camera>;
@@ -161,20 +141,14 @@ namespace ionengine
 
         static auto createImage(std::filesystem::path const& filePath) -> core::ref_ptr<Image>;
 
-        template <typename Func>
-        static auto setRenderPath(Func&& function) -> void
-        {
-            instance->renderPathUpdated = function;
-        }
+        static auto createImage(uint32_t const width, uint32_t const height, rhi::TextureFormat const format,
+                                std::span<uint8_t const> const dataBytes) -> core::ref_ptr<Image>;
 
         static auto createMaterial(core::ref_ptr<Shader> const& shader) -> core::ref_ptr<Material>;
 
         static auto createSurface(std::span<uint8_t const> const vertexDataBytes,
                                   std::span<uint8_t const> const indexDataBytes) -> core::ref_ptr<Surface>;
 
-        static auto createImage(uint32_t const width, uint32_t const height, rhi::TextureFormat const format,
-                                std::span<uint8_t const> const dataBytes) -> core::ref_ptr<Image>;
-
-        static auto setMainCamera(core::ref_ptr<Camera> const& targetCamera) -> void;
+        static auto createWorld() -> core::ref_ptr<World>;
     };
 } // namespace ionengine

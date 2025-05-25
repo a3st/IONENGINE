@@ -75,13 +75,15 @@ namespace ionengine::internal
             .surface = Graphics::createSurface(vertexData, indexData),
             .material = material,
             .renderGroup = RenderGroup::UI,
+            .modelMatrix = core::Mat4f::translate(core::Vec3f(translation.x, translation.y, 0.0f)),
             .viewMatrix = core::Mat4f::identity(),
             .projMatrix = core::Mat4f::orthographicRH(0, contextDimensions.x, contextDimensions.y, 0, 0.0f, 1.0f),
             .scissorRect = scissorRect};
 
         auto guiWidget = guiContexts[this->GetContext()];
 
-        Graphics::drawProcedural(drawParams, core::Mat4f::translate(core::Vec3f(translation.x, translation.y, 0.0f)));
+        std::array<core::ref_ptr<Camera>, 1> const drawCameras{guiWidget->getTargetCamera()};
+        Graphics::drawGeometry(drawParams, drawCameras);
     }
 
     auto RmlRender::EnableScissorRegion(bool isEnable) -> void

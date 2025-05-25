@@ -5,8 +5,8 @@
 
 namespace ionengine
 {
-    Surface::Surface(rhi::RHI& RHI, core::ref_ptr<rhi::Buffer> const& vertexBuffer,
-                     core::ref_ptr<rhi::Buffer> const& indexBuffer, uint32_t const indexCount)
+    Surface::Surface(core::ref_ptr<rhi::Buffer> const& vertexBuffer, core::ref_ptr<rhi::Buffer> const& indexBuffer,
+                     uint32_t const indexCount)
         : vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), indexCount(indexCount)
     {
     }

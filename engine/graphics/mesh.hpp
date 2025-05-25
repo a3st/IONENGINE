@@ -2,18 +2,20 @@
 
 #pragma once
 
+#include "entity.hpp"
 #include "material.hpp"
-#include "surface.hpp"
 #include "mdl/mdl.hpp"
+#include "surface.hpp"
 
 namespace ionengine
 {
     class UploadManager;
 
-    class Mesh : public core::ref_counted_object
+    class Mesh : public Entity
     {
       public:
-        Mesh(rhi::RHI& RHI, UploadManager& uploadManager, asset::ModelFile const& modelFile);
+        Mesh(rhi::RHI& RHI, UploadManager& uploadManager,
+             std::unordered_map<uint64_t, core::ref_ptr<Surface>>& surfacesCache, asset::ModelFile const& modelFile);
 
         auto getSurfaces() const -> std::vector<core::ref_ptr<Surface>> const&;
 

@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "obj.hpp"
 #include "precompiled.h"
@@ -13,14 +13,14 @@ namespace ionengine::asset
         tinyobj::ObjReaderConfig const config{};
         if (!reader.ParseFromFile(filePath.string(), config))
         {
-            return std::unexpected(core::error(core::error_code::eof, reader.Error()));
+            return std::unexpected(core::error(reader.Error()));
         }
 
         tinyobj::attrib_t const& attrib = reader.GetAttrib();
         std::vector<tinyobj::shape_t> const& shapes = reader.GetShapes();
 
         uint32_t materialIndex = 0;
-        std::unordered_map<Vertex, uint32_t, VertexHasher> uniqueVertices{};
+        std::unordered_map<Vertex, uint32_t, VertexHasher> uniqueVertices;
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
 

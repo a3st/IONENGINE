@@ -9,7 +9,7 @@ namespace ionengine
 {
     Graphics::Graphics(core::ref_ptr<rhi::RHI> RHI, uint32_t const numBuffering)
         : RHI(RHI), uploadManager(std::make_unique<UploadManager>(RHI, numBuffering)), renderPathHash(0), frameIndex(0),
-          outputWidth(800), outputHeight(600)
+          outputWidth(800), outputHeight(600), isOutputResized(false)
     {
         instance = this;
 
@@ -54,11 +54,13 @@ namespace ionengine
 
     auto Graphics::createMesh(std::filesystem::path const& filePath) -> core::ref_ptr<Mesh>
     {
-        auto meshResult = core::deserialize<core::serialize_iarchive, asset::ModelFile, std::basic_ifstream<uint8_t>>(
+        auto modelResult = core::deserialize<core::serialize_iarchive, asset::ModelFile>(
             std::basic_ifstream<uint8_t>(filePath, std::ios::binary));
-        if (meshResult.has_value())
+
+        if (modelResult.has_value())
         {
-            return core::make_ref<Mesh>(*instance->RHI, *instance->uploadManager, meshResult.value());
+            return core::make_ref<Mesh>(*instance->RHI, *instance->uploadManager, instance->surfacesCache,
+                                        modelResult.value());
         }
         else
         {
@@ -93,55 +95,54 @@ namespace ionengine
         curFrameResourceData.usedMaterials.clear();
         curFrameResourceData.usedSurfaces.clear();
 
-        renderPathHash = 0;
-        renderPasses.clear();
-
-        for (auto& targetCamera : targetCameras)
+        for (auto& camera : curFrameResourceData.usedCameras)
         {
-            for (auto& [renderGroup, renderQueue] : targetCamera->renderGroups)
+            for (auto& [renderGroup, renderQueue] : camera->renderGroups)
             {
                 renderQueue.clear();
             }
         }
+        curFrameResourceData.usedCameras.clear();
+
+        renderPathHash = 0;
+        renderPasses.clear();
     }
 
     auto Graphics::endFrame() -> void
     {
+        auto& curFrameResourceData = frameResources[frameIndex];
+
         core::ref_ptr<rhi::Texture> curMainTargetTexture;
 
-        for (auto const& targetCamera : targetCameras)
+        for (auto const& camera : curFrameResourceData.usedCameras)
         {
-            if (mainCamera != targetCamera && !targetCamera->customTargetImage())
+            if (camera->getTargetImage())
             {
-                continue;
+                curTargetTexture = camera->getTargetImage()->getTexture(frameIndex);
             }
-
-            rhi::TextureCreateInfo const textureCreateInfo{
-                .width = outputWidth,
-                .height = outputHeight,
-                .depth = 1,
-                .mipLevels = 1,
-                .format = rhi::TextureFormat::RGBA8_UNORM,
-                .dimension = rhi::TextureDimension::_2D,
-                .flags = (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource)};
-            curTargetTexture = frameResources[frameIndex].renderTargetAllocator->allocate(textureCreateInfo).get();
-            curRenderGroups = &targetCamera->renderGroups;
-            this->renderPathUpdated();
-
-            this->addRenderPass<passes::UIPass>();
-
-            // Remember variable for latest output pass (swapchain pass)
-            if (mainCamera == targetCamera)
+            else
             {
+                rhi::TextureCreateInfo const textureCreateInfo{
+                    .width = outputWidth,
+                    .height = outputHeight,
+                    .depth = 1,
+                    .mipLevels = 1,
+                    .format = rhi::TextureFormat::RGBA8_UNORM,
+                    .dimension = rhi::TextureDimension::_2D,
+                    .flags =
+                        (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource)};
+                curTargetTexture = frameResources[frameIndex].renderTargetAllocator->allocate(textureCreateInfo).get();
+
                 curMainTargetTexture = curTargetTexture;
             }
+
+            curRenderGroups = &camera->renderGroups;
+
+            this->renderPathUpdated();
         }
 
-        if (mainCamera)
-        {
-            curTargetTexture = curMainTargetTexture;
-            this->addRenderPass<passes::SwapchainPass>(blitShader, curSwapchainTexture);
-        }
+        curTargetTexture = curMainTargetTexture;
+        this->addRenderPass<passes::SwapchainPass>(blitShader, curSwapchainTexture);
 
         // Free variable
         curTargetTexture = nullptr;
@@ -176,67 +177,11 @@ namespace ionengine
         outputWidth = width;
         outputHeight = height;
 
-        if (mainCamera)
-        {
-            if (auto perspectiveCamera = dynamic_cast<PerspectiveCamera*>(mainCamera.get()))
-            {
-                perspectiveCamera->setAspect((float)outputWidth / outputHeight);
-            }
-        }
+        isOutputResized = true;
     }
 
-    auto Graphics::drawMesh(core::ref_ptr<Mesh> const& drawableMesh, core::Mat4f const& modelMatrix) -> void
-    {
-        auto& curFrameResourceData = instance->frameResources[instance->frameIndex];
-
-        // Iterate over all target cameras
-        for (auto const& targetCamera : instance->targetCameras)
-        {
-            for (uint32_t const i : std::views::iota(0u, drawableMesh->getSurfaces().size()))
-            {
-                core::ref_ptr<Material> currentMaterial = drawableMesh->getMaterials()[i];
-                core::ref_ptr<Surface> currentSurface = drawableMesh->getSurfaces()[i];
-
-                curFrameResourceData.usedMaterials.emplace(currentMaterial);
-                curFrameResourceData.usedSurfaces.emplace(currentSurface);
-
-                // Update Shader's EffectData
-                currentMaterial->updateEffectDataBuffer(*instance->uploadManager, instance->frameIndex);
-
-                // Update Shader's TransformData
-                core::weak_ptr<rhi::Buffer> transformDataBuffer;
-                {
-                    auto const& transformData = currentMaterial->getShader()->getBindings().at("TRANSFORM_DATA");
-
-                    uint32_t const modelViewProjOffset =
-                        currentMaterial->getShader()->getBindings().at("TRANSFORM_DATA").elements.at("modelViewProj");
-
-                    std::vector<uint8_t> transformDataRawBuffer(transformData.size);
-
-                    core::Mat4f const modelViewProjMatrix =
-                        modelMatrix * targetCamera->getViewMatrix() * targetCamera->getProjMatrix();
-                    std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMatrix.data(),
-                                sizeof(core::Mat4f));
-
-                    transformDataBuffer = instance->frameResources[instance->frameIndex].constBufferAllocator->allocate(
-                        transformData.size);
-
-                    UploadBufferInfo const uploadBufferInfo{
-                        .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
-                    instance->uploadManager->uploadBuffer(uploadBufferInfo);
-                }
-
-                DrawableData drawableData{.surface = currentSurface,
-                                          .shader = currentMaterial->getShader(),
-                                          .effectDataBuffer =
-                                              currentMaterial->getEffectDataBuffer(instance->frameIndex),
-                                          .transformDataBuffer = transformDataBuffer.get()};
-                targetCamera->renderGroups[RenderGroup::Opaque].push(std::move(drawableData));
-            }
-        }
-    }
-
-    auto Graphics::drawProcedural(DrawParameters const& drawParams, core::Mat4f const& modelMatrix) -> void
+    auto Graphics::drawGeometry(DrawParameters const& drawParams,
+                                std::span<core::ref_ptr<Camera> const> const drawCameras) -> void
     {
         auto& curFrameResourceData = instance->frameResources[instance->frameIndex];
         curFrameResourceData.usedMaterials.emplace(drawParams.material);
@@ -244,9 +189,10 @@ namespace ionengine
 
         drawParams.material->updateEffectDataBuffer(*instance->uploadManager, instance->frameIndex);
 
-        // Iterate over all target cameras
-        for (auto const& targetCamera : instance->targetCameras)
+        for (auto const& camera : drawCameras)
         {
+            curFrameResourceData.usedCameras.emplace(camera);
+
             core::weak_ptr<rhi::Buffer> transformDataBuffer;
             {
                 auto const& transformData = drawParams.material->getShader()->getBindings().at("TRANSFORM_DATA");
@@ -256,9 +202,9 @@ namespace ionengine
 
                 std::vector<uint8_t> transformDataRawBuffer(transformData.size);
 
-                core::Mat4f const modelViewProjMatrix = modelMatrix *
-                                                        drawParams.viewMatrix.value_or(targetCamera->getViewMatrix()) *
-                                                        drawParams.projMatrix.value_or(targetCamera->getProjMatrix());
+                core::Mat4f const modelViewProjMatrix = drawParams.modelMatrix *
+                                                        drawParams.viewMatrix.value_or(camera->getViewMatrix()) *
+                                                        drawParams.projMatrix.value_or(camera->getProjMatrix());
                 std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMatrix.data(),
                             sizeof(core::Mat4f));
 
@@ -275,12 +221,86 @@ namespace ionengine
                                           drawParams.material->getEffectDataBuffer(instance->frameIndex),
                                       .transformDataBuffer = transformDataBuffer.get(),
                                       .scissorRect = drawParams.scissorRect};
-            targetCamera->renderGroups[drawParams.renderGroup].push(std::move(drawableData));
+            camera->renderGroups[drawParams.renderGroup].push(std::move(drawableData));
         }
     }
 
-    auto Graphics::addLight(LightCreateInfo const& createInfo) -> void
+    auto Graphics::drawWorld(core::ref_ptr<World> const& world) -> void
     {
+        auto& curFrameResourceData = instance->frameResources[instance->frameIndex];
+
+        // world->sortMeshes();
+
+        for (auto const& [_, camera] : world->getCameras())
+        {
+            if (instance->isOutputResized)
+            {
+                if (auto perspectiveCamera = dynamic_cast<PerspectiveCamera*>(camera.get()))
+                {
+                    perspectiveCamera->setAspect((float)instance->outputWidth / instance->outputHeight);
+                }
+            }
+
+            curFrameResourceData.usedCameras.emplace(camera);
+
+            for (auto const& [_, mesh] : world->getMeshes())
+            {
+                // Frustum
+                if (true)
+                {
+                    for (uint32_t const i : std::views::iota(0u, mesh->getSurfaces().size()))
+                    {
+                        core::ref_ptr<Material> currentMaterial = mesh->getMaterials()[i];
+                        core::ref_ptr<Surface> currentSurface = mesh->getSurfaces()[i];
+
+                        curFrameResourceData.usedMaterials.emplace(currentMaterial);
+                        curFrameResourceData.usedSurfaces.emplace(currentSurface);
+
+                        currentMaterial->updateEffectDataBuffer(*instance->uploadManager, instance->frameIndex);
+
+                        core::weak_ptr<rhi::Buffer> transformDataBuffer;
+                        {
+                            auto const& transformData =
+                                currentMaterial->getShader()->getBindings().at("TRANSFORM_DATA");
+
+                            uint32_t const modelViewProjOffset = currentMaterial->getShader()
+                                                                     ->getBindings()
+                                                                     .at("TRANSFORM_DATA")
+                                                                     .elements.at("modelViewProj");
+
+                            std::vector<uint8_t> transformDataRawBuffer(transformData.size);
+
+                            core::Mat4f const modelMatrix =
+                                core::Mat4f::translate(mesh->position) * core::Mat4f::scale(mesh->scale);
+                            core::Mat4f const modelViewProjMatrix =
+                                modelMatrix * camera->getViewMatrix() * camera->getProjMatrix();
+                            std::memcpy(transformDataRawBuffer.data() + modelViewProjOffset, modelViewProjMatrix.data(),
+                                        sizeof(core::Mat4f));
+
+                            transformDataBuffer =
+                                instance->frameResources[instance->frameIndex].constBufferAllocator->allocate(
+                                    transformData.size);
+
+                            UploadBufferInfo const uploadBufferInfo{
+                                .buffer = transformDataBuffer.get(), .offset = 0, .dataBytes = transformDataRawBuffer};
+                            instance->uploadManager->uploadBuffer(uploadBufferInfo);
+                        }
+
+                        DrawableData drawableData{.surface = currentSurface,
+                                                  .shader = currentMaterial->getShader(),
+                                                  .effectDataBuffer =
+                                                      currentMaterial->getEffectDataBuffer(instance->frameIndex),
+                                                  .transformDataBuffer = transformDataBuffer.get()};
+                        camera->renderGroups[RenderGroup::Opaque].push(std::move(drawableData));
+                    }
+                }
+            }
+        }
+
+        if (instance->isOutputResized)
+        {
+            instance->isOutputResized = false;
+        }
     }
 
     auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
@@ -485,8 +505,7 @@ namespace ionengine
             indexBuffer = instance->RHI->createBuffer(bufferCreateInfo);
         }
 
-        auto surface = core::make_ref<Surface>(*instance->RHI, vertexBuffer, indexBuffer,
-                                               indexDataBytes.size() / sizeof(uint32_t));
+        auto surface = core::make_ref<Surface>(vertexBuffer, indexBuffer, indexDataBytes.size() / sizeof(uint32_t));
 
         {
             UploadBufferInfo const uploadBufferInfo{.buffer = vertexBuffer, .offset = 0, .dataBytes = vertexDataBytes};
@@ -507,17 +526,8 @@ namespace ionengine
         return core::make_ref<Image>(*instance->RHI, *instance->uploadManager, width, height, format, dataBytes);
     }
 
-    auto Graphics::setMainCamera(core::ref_ptr<Camera> const& targetCamera) -> void
+    auto Graphics::createWorld() -> core::ref_ptr<World>
     {
-        instance->targetCameras.emplace(targetCamera);
-
-        // Remember targetCamera as mainCamera
-        instance->mainCamera = targetCamera;
-
-        // Trying to fix aspect ratio on new main camera
-        if (auto perspectiveCamera = dynamic_cast<PerspectiveCamera*>(instance->mainCamera.get()))
-        {
-            perspectiveCamera->setAspect((float)instance->outputWidth / instance->outputHeight);
-        }
+        return core::make_ref<World>();
     }
 } // namespace ionengine
