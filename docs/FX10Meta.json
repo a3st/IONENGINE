@@ -2,10 +2,15 @@
     "header": {
         "name": "Basic",
         "description": "Basic description",
-        "domain": "Screen"
+        "domain": "UI",
+        "features": [ "Default", "TextureOnly" ]
     },
-    "stages": {
-        "VS": {
+    "permutations": {
+      "0": [ 0, 1 ]
+    },
+    "stages": [
+        {
+            "stageType": "VS",
             "buffer": 0,
             "entryPoint": "main",
             "vertexLayout": {
@@ -26,7 +31,8 @@
                 "sizeInBytes": 32
             }
         },
-        "PS": {
+        {
+            "stageType": "PS",
             "buffer": 1,
             "entryPoint": "main",
             "output": {
@@ -36,7 +42,7 @@
                 "fillMode": "FRONT"
             }
         }
-    },
+    ],
     "structures": [
         {
             "name": "MATERIAL_DATA",
