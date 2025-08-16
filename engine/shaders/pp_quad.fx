@@ -11,24 +11,26 @@ DATA {
 }
 
 VS {
-    VS_OUTPUT main(VS_INPUT input) 
+    #include "shared/ionengine.hlsli"
+
+    VSOutput main(VSInput input) 
     {
-        VS_OUTPUT output;
-        output.uv = float2((input.id << 1) & 2, input.id & 2);
-        output.position = float4(output.uv * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);
-        return output;
+        return QuadFromNullInput(input);
     }
 }
 
 [FillMode("SOLID"), CullMode("BACK"), DepthWrite(false), StencilWrite(false)]
 PS {
-    PS_OUTPUT main(VS_OUTPUT input) 
-    {
-        cbuffer_t<SAMPLER_DATA> samplerData = make_cbuffer<SAMPLER_DATA>(gSamplerData);
-        cbuffer_t<EFFECT_DATA> effectData = make_cbuffer<EFFECT_DATA>(gEffectData);
+    #include "shared/ionengine.hlsli"
 
-        PS_OUTPUT output;
-        output.color = make_texture2D(effectData.Get().inputTexture).Get().Sample(make_sampler(samplerData.Get().linearSampler).Get(), input.uv);
+    PSOutput main(VSOutput input)
+    {
+        cbuffer_t<SamplerData> samplerData = CreateResource< cbuffer_t<SamplerData> >(gSamplerData);
+        cbuffer_t<EffectData> effectData = CreateResource< cbuffer_t<EffectData> >(gEffectData);
+
+        PSOutput output;
+        output.color = CreateResource<texture2D_t>(effectData.Get().inputTexture).Get().Sample(
+            CreateResource<sampler_t>(samplerData.Get().linearSampler).Get(), input.uv);
         return output;
     }
 }

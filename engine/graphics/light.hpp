@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "core/color.hpp"
 #include "entity.hpp"
 
 namespace ionengine
@@ -9,6 +10,18 @@ namespace ionengine
     class Light : public Entity
     {
       public:
-        Light() = default;
+        Light();
+
+        virtual ~Light() = default;
+
+        core::Color color;
+    };
+
+    class DirectionalLight : public Entity
+    {
+      public:
+        DirectionalLight();
+
+        core::Vec3f direction;
     };
 } // namespace ionengine

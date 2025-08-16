@@ -331,7 +331,7 @@ namespace ionengine::shadersys
     {
         this->tokens = tokens;
 
-        ShaderParseData parseData{.effectData = {.name = "EFFECT_DATA"}};
+        ShaderParseData parseData{};
         bool successful = this->parseToken(tokens.begin(), parseData);
         if (!successful)
         {

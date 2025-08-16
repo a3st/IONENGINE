@@ -35,13 +35,18 @@ namespace ionengine
         return cameras;
     }
 
+    auto World::getLights() const -> std::unordered_map<size_t, core::ref_ptr<Light>> const&
+    {
+        return lights;
+    }
+
     auto World::sortMeshes() -> std::vector<size_t>
     {
         auto meshKeys = std::views::keys(meshes);
         std::vector<size_t> sortedIndices{meshKeys.begin(), meshKeys.end()};
 
         /*std::sort(sortedIndices.begin(), sortedIndices.end(),
-                  [this](auto const left, auto const right) -> bool { 
+                  [this](auto const left, auto const right) -> bool {
                     meshes[left]->
                     return true; });*/
 

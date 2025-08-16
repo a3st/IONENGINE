@@ -26,20 +26,8 @@ struct texture2D_t {
 };
 
 template<typename Type>
-cbuffer_t<Type> make_cbuffer(uint ptr) {
-    cbuffer_t<Type> output;
-    output.ptr = ptr;
-    return output;
-}
-
-sampler_t make_sampler(uint ptr) {
-    sampler_t output;
-    output.ptr = ptr;
-    return output;
-}
-
-texture2D_t make_texture2D(uint ptr) {
-    texture2D_t output;
+Type CreateResource(uint ptr) {
+    Type output;
     output.ptr = ptr;
     return output;
 }

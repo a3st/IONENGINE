@@ -19,6 +19,8 @@ namespace ionengine
 
         auto getCameras() const -> std::unordered_map<size_t, core::ref_ptr<Camera>> const&;
 
+        auto getLights() const -> std::unordered_map<size_t, core::ref_ptr<Light>> const&;
+
         auto sortMeshes() -> std::vector<size_t>;
 
       private:

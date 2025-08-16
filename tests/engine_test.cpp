@@ -1,7 +1,8 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "engine.hpp"
 #include "engine/graphics/passes/geometry.hpp"
+#include "engine/graphics/passes/internal/ui.hpp"
 #include "engine/graphics/passes/quad.hpp"
 #include "precompiled.h"
 #include <gtest/gtest.h>
@@ -35,16 +36,28 @@ class MyEngine : public Engine
         testWorld->addEntity(testMesh);
         testWorld->addEntity(testCamera);
 
+        testMesh2 = Graphics::createMesh("../../assets/models/box.mdl");
+        testMesh->scale = core::Vec3f(1.0f, 1.0f, 1.0f);
+        testMesh->position = core::Vec3f(5.0f, 0.0f, 0.0f);
+
+        testWorld->addEntity(testMesh2);
+
+        auto light = Graphics::createDirectionalLight(core::Vec3f(0.0f, 0.0f, 0.0f));
+        testWorld->addEntity(light);
+
         testImage = Graphics::createImage("../../assets/images/debug-empty.txe");
         if (testImage)
         {
             Material::baseSurfaceMaterial->setValue("basicTexture", testImage);
         }
 
-        Graphics::setRenderPath([]() { auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>(); });
+        Graphics::setRenderPath([]() {
+            auto geometryPass = Graphics::addRenderPass<passes::GeometryPass>();
+            auto uiPass = Graphics::addRenderPass<passes::UIPass>();
+        });
 
-        // debugGUI = GUI::createWidget("../../assets/ui/debug.rml");
-        // debugGUI->attachTo(testCamera);
+        debugGUI = GUI::createWidget("../../assets/ui/debug.rml");
+        debugGUI->attachTo(testCamera);
     }
 
     auto onUpdate(float const deltaTime) -> void override
@@ -59,6 +72,7 @@ class MyEngine : public Engine
   private:
     core::ref_ptr<Camera> testCamera;
     core::ref_ptr<Mesh> testMesh;
+    core::ref_ptr<Mesh> testMesh2;
     core::ref_ptr<Material> material;
     core::ref_ptr<GUIWidget> debugGUI;
     core::ref_ptr<Image> testImage;

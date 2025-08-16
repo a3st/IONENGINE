@@ -9,7 +9,7 @@ namespace ionengine::shadersys
 {
     namespace common
     {
-        struct TRANSFORM_DATA
+        struct TransformData
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
@@ -17,12 +17,12 @@ namespace ionengine::shadersys
             }
 
             static inline asset::fx::StructureData structureData{
-                .name = "TRANSFORM_DATA",
+                .name = "TransformData",
                 .elements = {{.name = "modelViewProj", .type = asset::fx::ElementType::Float4x4}},
                 .size = 64};
         };
 
-        struct SAMPLER_DATA
+        struct SamplerData
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
@@ -30,21 +30,21 @@ namespace ionengine::shadersys
             }
 
             static inline asset::fx::StructureData structureData{
-                .name = "SAMPLER_DATA",
+                .name = "SamplerData",
                 .elements = {{.name = "linearSampler", .type = asset::fx::ElementType::Uint}},
                 .size = 4};
         };
 
-        struct LIGHTING_DATA
+        struct LightingData
         {
             uint32_t reserved;
         };
 
-        struct EFFECT_DATA
+        struct EffectData
         {
         };
 
-        struct PASS_DATA
+        struct PassData
         {
             static auto toHLSL(HLSLCodeGen& generator) -> void
             {
@@ -59,7 +59,7 @@ namespace ionengine::shadersys
             }
 
             static inline asset::fx::StructureData structureData{
-                .name = "PASS_DATA",
+                .name = "PassData",
                 .elements = {{.name = "inputTexture1", .type = asset::fx::ElementType::Uint},
                              {.name = "inputTexture2", .type = asset::fx::ElementType::Uint},
                              {.name = "inputTexture3", .type = asset::fx::ElementType::Uint},
@@ -84,7 +84,7 @@ namespace ionengine::shadersys
             }
 
             static inline asset::fx::StructureData structureData{
-                .name = "SHADER_DATA",
+                .name = "ShaderData",
                 .elements = {{.name = "gSamplerData", .type = asset::fx::ElementType::Uint},
                              {.name = "gEffectData", .type = asset::fx::ElementType::Uint},
                              {.name = "gPassData", .type = asset::fx::ElementType::Uint}},
@@ -101,7 +101,7 @@ namespace ionengine::shadersys
             }
 
             static inline asset::fx::StructureData structureData{
-                .name = "SHADER_DATA",
+                .name = "ShaderData",
                 .elements = {{.name = "gTransformData", .type = asset::fx::ElementType::Uint},
                              {.name = "gSamplerData", .type = asset::fx::ElementType::Uint},
                              {.name = "gEffectData", .type = asset::fx::ElementType::Uint}},
@@ -118,7 +118,7 @@ namespace ionengine::shadersys
             }
 
             static inline asset::fx::StructureData structureData{
-                .name = "SHADER_DATA",
+                .name = "ShaderData",
                 .elements = {{.name = "gTransformData", .type = asset::fx::ElementType::Uint},
                              {.name = "gSamplerData", .type = asset::fx::ElementType::Uint},
                              {.name = "gEffectData", .type = asset::fx::ElementType::Uint}},

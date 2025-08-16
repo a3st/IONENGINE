@@ -304,7 +304,7 @@ namespace ionengine
     }
 
     auto Graphics::createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
-        -> core::ref_ptr<Camera>
+        -> core::ref_ptr<PerspectiveCamera>
     {
         return core::make_ref<PerspectiveCamera>(fovy, (float)instance->outputWidth / instance->outputHeight, zNear,
                                                  zFar);
@@ -524,6 +524,11 @@ namespace ionengine
                                std::span<uint8_t const> const dataBytes) -> core::ref_ptr<Image>
     {
         return core::make_ref<Image>(*instance->RHI, *instance->uploadManager, width, height, format, dataBytes);
+    }
+
+    auto Graphics::createDirectionalLight(core::Vec3f const& direction) -> core::ref_ptr<DirectionalLight>
+    {
+        return core::make_ref<DirectionalLight>();
     }
 
     auto Graphics::createWorld() -> core::ref_ptr<World>

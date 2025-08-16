@@ -15,7 +15,7 @@ namespace ionengine
                                                            .instance = application->getInstanceHandle()};
         RHI = rhi::RHI::create(rhiCreateInfo, swapchainCreateInfo);
         graphics = std::make_unique<Graphics>(RHI, rhiCreateInfo.numBuffering);
-        // gui = std::make_unique<GUI>(RHI);
+        gui = std::make_unique<GUI>(RHI);
 
         application->windowStateChanged += [this](platform::WindowEvent const& event) -> void {
             switch (event.eventType)
@@ -44,14 +44,14 @@ namespace ionengine
                 std::chrono::duration_cast<std::chrono::microseconds>(endFrameTime - beginFrameTime).count() /
                 1000000.0f;
 
-            // gui->onUpdate();
+            gui->onUpdate();
             this->onUpdate(deltaTime);
 
             beginFrameTime = std::chrono::high_resolution_clock::now();
 
             graphics->beginFrame();
             this->onRender();
-            // gui->onRender();
+            gui->onRender();
             graphics->endFrame();
         };
     }

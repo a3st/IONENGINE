@@ -133,7 +133,7 @@ namespace ionengine
         static auto drawWorld(core::ref_ptr<World> const& world) -> void;
 
         static auto createPerspectiveCamera(float const fovy, float const zNear, float const zFar)
-            -> core::ref_ptr<Camera>;
+            -> core::ref_ptr<PerspectiveCamera>;
 
         static auto createShader(std::filesystem::path const& filePath) -> core::ref_ptr<Shader>;
 
@@ -148,6 +148,8 @@ namespace ionengine
 
         static auto createSurface(std::span<uint8_t const> const vertexDataBytes,
                                   std::span<uint8_t const> const indexDataBytes) -> core::ref_ptr<Surface>;
+
+        static auto createDirectionalLight(core::Vec3f const& direction) -> core::ref_ptr<DirectionalLight>;
 
         static auto createWorld() -> core::ref_ptr<World>;
     };
