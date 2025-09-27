@@ -11,7 +11,7 @@ using namespace ionengine;
 TEST(ShaderSystem, Lexer_Test)
 {
     shadersys::Lexer lexer;
-    auto lexerResult = lexer.parse("../../engine/shaders/pp_quad.fx");
+    auto lexerResult = lexer.parse("../../engine/shaders/ui_base.fx");
 
     ASSERT_TRUE(lexerResult.has_value());
 }
@@ -19,10 +19,15 @@ TEST(ShaderSystem, Lexer_Test)
 TEST(ShaderSystem, Parser_Test)
 {
     shadersys::Lexer lexer;
-    auto lexerResult = lexer.parse("../../engine/shaders/pp_quad.fx");
+    auto lexerResult = lexer.parse("../../engine/shaders/ui_base.fx");
 
     shadersys::Parser parser;
     auto parserResult = parser.parse(lexerResult.value());
+
+    if (!parserResult.has_value())
+    {
+        std::cerr << parserResult.error().what() << std::endl;
+    }
 
     ASSERT_TRUE(parserResult.has_value());
 }
@@ -30,7 +35,7 @@ TEST(ShaderSystem, Parser_Test)
 TEST(ShaderSystem, Compiler_DXIL_Test)
 {
     auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
-    auto compileResult = shaderCompiler->compile("../../engine/shaders/pp_quad.fx");
+    auto compileResult = shaderCompiler->compile("../../engine/shaders/ui_base.fx");
 
     if (!compileResult.has_value())
     {
@@ -43,7 +48,7 @@ TEST(ShaderSystem, Compiler_DXIL_Test)
 TEST(ShaderSystem, Compiler_SPIRV_Test)
 {
     auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::SPIRV);
-    auto compileResult = shaderCompiler->compile("../../engine/shaders/pp_quad.fx");
+    auto compileResult = shaderCompiler->compile("../../engine/shaders/ui_base.fx");
 
     if (!compileResult.has_value())
     {

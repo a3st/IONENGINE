@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "dxc.hpp"
 #include "../common.hpp"
@@ -73,7 +73,6 @@ namespace ionengine::shadersys
         }
 
         oss << "};";
-
         return oss.str();
     }
 
@@ -153,7 +152,11 @@ namespace ionengine::shadersys
             vertexLayout = inputs::UIVSInput::vertexLayout;
         }
 
-        for (auto const& [stageType, shaderCode] : parseData.codeData)
+        std::vector<uint32_t> permutations;
+
+
+
+        for (auto const& [stageType, shaderCode] : parseData.shaderData)
         {
             asset::fx::StageData stageData{.buffer = static_cast<uint32_t>(shaderData.buffers.size()),
                                            .entryPoint = "main"};
@@ -186,7 +189,7 @@ namespace ionengine::shadersys
             std::string const stageShaderCode =
                 "#include \"shared/internal.hlsli\"\n\n" + effectDataCode + "\n" + inputDataCode + "\n" + shaderCode;
 
-            // std::cout << stageShaderCode << std::endl;
+            std::cout << stageShaderCode << std::endl;
 
             DxcBuffer const codeBuffer{
                 .Ptr = stageShaderCode.data(), .Size = stageShaderCode.size(), .Encoding = DXC_CP_UTF8};
@@ -209,8 +212,8 @@ namespace ionengine::shadersys
             winrt::com_ptr<IDxcBlob> outBlob;
             throwIfFailed(compileResult->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), outBlob.put_void(), nullptr));
 
-            asset::fx::BufferData const bufferData{.offset = static_cast<uint64_t>(shaderBlob.tellp()),
-                                                   .size = outBlob->GetBufferSize()};
+            asset::fx::BufferData bufferData{.offset = static_cast<uint64_t>(shaderBlob.tellp()),
+                                             .size = outBlob->GetBufferSize()};
             shaderData.buffers.emplace_back(std::move(bufferData));
 
             shaderBlob.write(reinterpret_cast<uint8_t const*>(outBlob->GetBufferPointer()), outBlob->GetBufferSize());

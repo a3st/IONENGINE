@@ -143,6 +143,7 @@ namespace ionengine::asset
 
         struct StageData
         {
+            StageType type;
             uint32_t buffer;
             std::string entryPoint;
             std::optional<VertexLayoutData> vertexLayout;
@@ -164,6 +165,7 @@ namespace ionengine::asset
             std::string description;
             std::string domain;
             std::string blend;
+            std::vector<std::string> features;
 
             template <typename Archive>
             auto operator()(Archive& archive)
@@ -172,6 +174,7 @@ namespace ionengine::asset
                 archive.property(description, "description");
                 archive.property(domain, "domain");
                 archive.property(blend, "blend");
+                archive.property(features, "features");
             }
         };
 
@@ -192,6 +195,7 @@ namespace ionengine::asset
         {
             HeaderData headerData;
             std::unordered_map<StageType, StageData> stages;
+            std::unordered_map<uint32_t, std::vector<uint32_t>> permutations;
             std::vector<StructureData> structures;
             std::vector<BufferData> buffers;
 
@@ -199,6 +203,7 @@ namespace ionengine::asset
             auto operator()(Archive& archive)
             {
                 archive.property(headerData, "header");
+                archive.property(permutations, "permutations");
                 archive.property(stages, "stages");
                 archive.property(structures, "structures");
                 archive.property(buffers, "buffers");

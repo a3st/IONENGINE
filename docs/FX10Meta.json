@@ -10,7 +10,7 @@
     },
     "stages": [
         {
-            "stageType": "VS",
+            "type": "VS",
             "buffer": 0,
             "entryPoint": "main",
             "vertexLayout": {
@@ -32,48 +32,48 @@
             }
         },
         {
-            "stageType": "PS",
+            "type": "PS",
             "buffer": 1,
             "entryPoint": "main",
             "output": {
                 "depthWrite": false,
                 "stencilWrite": false,
                 "cullSide": "BACK",
-                "fillMode": "FRONT"
+                "fillMode": "SOLID"
             }
         }
     ],
     "structures": [
         {
-            "name": "MATERIAL_DATA",
+            "name": "MaterialData",
             "elements": [
                 {
                     "name": "model",
-                    "type": "FLOAT4x4"
+                    "type": "float4x4"
                 },
                 {
                     "name": "view",
-                    "type": "FLOAT4x4"
+                    "type": "float4x4"
                 },
                 {
                     "name": "projection",
-                    "type": "FLOAT4x4"
+                    "type": "float4x4"
                 }
             ],
             "sizeInBytes": 192
         },
         {
-            "name": "TRANSFORM_DATA",
+            "name": "TransformData",
             "elements": [
                 {
                     "name": "modelViewProj",
-                    "type": "FLOAT4x4"
+                    "type": "float4x4"
                 }
             ],
             "sizeInBytes": 16
         },
         {
-            "name": "SHADER_DATA",
+            "name": "ShaderData",
             "elements": [
                 {
                     "name": "transformBuffer",

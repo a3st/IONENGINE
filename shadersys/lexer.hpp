@@ -6,9 +6,6 @@
 
 namespace ionengine::shadersys
 {
-    /*!
-      \brief Lexemes that can parsed from source
-    */
     enum class Lexeme : uint8_t
     {
         Unknown,
@@ -63,9 +60,6 @@ namespace ionengine::shadersys
         uint32_t numLine;
     };
 
-    /*!
-      \brief Lexer that can divide source into lexems
-    */
     class Lexer
     {
       public:

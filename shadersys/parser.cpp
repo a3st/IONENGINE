@@ -62,9 +62,6 @@ namespace ionengine::shadersys
             }
         }
 
-        auto retIt = it;
-        it++;
-
         if (it->getContent().compare("VS") == 0)
         {
         }
@@ -76,7 +73,7 @@ namespace ionengine::shadersys
         {
             parseData.csAttributes = std::move(attributes);
         }
-        return ++retIt;
+        return ++it;
     }
 
     auto Parser::parseDataGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
@@ -162,20 +159,32 @@ namespace ionengine::shadersys
 
         while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
         {
-            std::string outVariable, outValue;
-            it = parseOptionValue(it, successful, outVariable, outValue);
+            std::string outVariable;
+            it = this->parseOptionKey(it, successful, outVariable);
 
             if (outVariable.compare("Name") == 0)
             {
+                std::string outValue;
+                it = this->parseOptionValue(it, successful, outValue);
                 parseData.headerData.name = outValue;
             }
             else if (outVariable.compare("Description") == 0)
             {
+                std::string outValue;
+                it = this->parseOptionValue(it, successful, outValue);
                 parseData.headerData.description = outValue;
             }
             else if (outVariable.compare("Domain") == 0)
             {
+                std::string outValue;
+                it = this->parseOptionValue(it, successful, outValue);
                 parseData.headerData.domain = outValue;
+            }
+            else if (outVariable.compare("Features") == 0)
+            {
+                std::vector<std::string> outValues;
+                it = this->parseOptionValue(it, successful, outValues);
+                parseData.headerData.features = std::move(outValues);
             }
         }
         return ++it;
@@ -218,7 +227,7 @@ namespace ionengine::shadersys
             successful = false;
         }
 
-        parseData.codeData[stageType] = std::string(it->getContent());
+        parseData.shaderData[stageType] = std::string(it->getContent());
 
         it++;
 
@@ -232,8 +241,8 @@ namespace ionengine::shadersys
         return ++it;
     }
 
-    auto Parser::parseOptionValue(std::span<Token const>::iterator it, bool& successful, std::string& outName,
-                                  std::string& outValue) -> std::span<Token const>::iterator
+    auto Parser::parseOptionKey(std::span<Token const>::iterator it, bool& successful, std::string& outKey)
+        -> std::span<Token const>::iterator
     {
         if (it->getLexeme() != Lexeme::Identifier)
         {
@@ -243,34 +252,14 @@ namespace ionengine::shadersys
         }
 
         auto variable = it;
+        outKey = variable->getContent();
+
         it++;
 
         if (it->getLexeme() != Lexeme::Assignment)
         {
             errors = std::format("line:{}: error: identifier '{}' missing assignment (=) operator",
                                  variable->getNumLine(), variable->getContent());
-            successful = false;
-        }
-
-        it++;
-
-        if (it->getLexeme() != Lexeme::FloatLiteral && it->getLexeme() != Lexeme::BoolLiteral &&
-            it->getLexeme() != Lexeme::StringLiteral)
-        {
-            errors = std::format("line:{}: error: identifier '{}' has invalid value type", variable->getNumLine(),
-                                 variable->getContent());
-            successful = false;
-        }
-
-        outName = std::string(variable->getContent());
-        outValue = std::string(it->getContent());
-
-        it++;
-
-        if (it->getLexeme() != Lexeme::Semicolon)
-        {
-            errors = std::format("line:{}: error: identifier '{}' missing ending (;) character", variable->getNumLine(),
-                                 variable->getContent());
             successful = false;
         }
 
@@ -332,8 +321,7 @@ namespace ionengine::shadersys
         this->tokens = tokens;
 
         ShaderParseData parseData{};
-        bool successful = this->parseToken(tokens.begin(), parseData);
-        if (!successful)
+        if (!this->parseToken(tokens.begin(), parseData))
         {
             return std::unexpected(core::error(errors));
         }
