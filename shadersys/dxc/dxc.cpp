@@ -23,11 +23,12 @@ namespace ionengine::shadersys
         return semantic.find("SV_") != std::string_view::npos;
     }
 
-    DXCCompiler::DXCCompiler(asset::fx::ShaderFormat const shaderFormat) : shaderFormat(shaderFormat)
+    DXCCompiler::DXCCompiler(asset::fx::ShaderFormat const shaderFormat, std::filesystem::path const& includeBasePath)
+        : _shaderFormat(shaderFormat), _includeBasePath(includeBasePath)
     {
-        throwIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), compiler.put_void()));
-        throwIfFailed(::DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), utils.put_void()));
-        throwIfFailed(utils->CreateDefaultIncludeHandler(includeHandler.put()));
+        throwIfFailed(::DxcCreateInstance(CLSID_DxcCompiler, __uuidof(IDxcCompiler3), _compiler.put_void()));
+        throwIfFailed(::DxcCreateInstance(CLSID_DxcUtils, __uuidof(IDxcUtils), _utils.put_void()));
+        throwIfFailed(_utils->CreateDefaultIncludeHandler(_includeHandler.put()));
     }
 
     auto DXCCompiler::getOutputStates(std::unordered_map<std::string, std::string> const& attributes,
@@ -97,7 +98,7 @@ namespace ionengine::shadersys
         asset::fx::ShaderData shaderData{.headerData = parseData.headerData, .structures = {parseData.effectData}};
         std::basic_stringstream<uint8_t> shaderBlob;
 
-        std::wstring const defaultIncludePath = L"-I " + filePath.parent_path().wstring();
+        std::wstring const includeFilePath = L"-I " + filePath.parent_path().wstring();
         std::vector<LPCWSTR> arguments;
 
         std::string const effectDataCode = this->getEffectDataCode(parseData.effectData);
@@ -152,9 +153,45 @@ namespace ionengine::shadersys
             vertexLayout = inputs::UIVSInput::vertexLayout;
         }
 
-        std::vector<uint32_t> permutations;
+        std::unordered_map<uint32_t, std::string> permutationNames;
+        permutationNames[0] = "Default";
 
+        for (uint32_t const i : std::views::iota(0u, parseData.headerData.features.size()))
+        {
+            permutationNames[i + 1] = parseData.headerData.features[i];
+        }
 
+        std::unordered_set<uint32_t> permutationMasks;
+
+        for (uint32_t const mask : std::views::iota(0u, 1u << parseData.headerData.features.size()))
+        {
+            uint32_t currentPermutation;
+            if (mask == 0)
+            {
+                currentPermutation = 1 << 0;
+                std::cout << permutationNames[0];
+            }
+            else
+            {
+                currentPermutation = 1 << 0;
+                std::cout << permutationNames[0];
+
+                for (uint32_t const j : std::views::iota(0u, parseData.headerData.features.size()))
+                {
+                    if (mask & (1u << j))
+                    {
+                        currentPermutation |= 1 << (j + 1);
+                        std::cout << " " << permutationNames[j + 1];
+                    }
+                }
+            }
+
+            std::cout << std::endl;
+
+            permutationMasks.emplace(currentPermutation);
+        }
+
+        std::cout << "Permutation count: " << permutationMasks.size() << std::endl;
 
         for (auto const& [stageType, shaderCode] : parseData.shaderData)
         {
@@ -162,11 +199,11 @@ namespace ionengine::shadersys
                                            .entryPoint = "main"};
 
             arguments.clear();
-            arguments.emplace_back(L"-Wno-ignored-attributes");
             arguments.emplace_back(L"-E main");
-            arguments.emplace_back(defaultIncludePath.c_str());
+            arguments.emplace_back(includeFilePath.c_str());
+            arguments.emplace_back(_includeBasePath.c_str());
             arguments.emplace_back(L"-HV 2021");
-            if (shaderFormat == asset::fx::ShaderFormat::SPIRV)
+            if (_shaderFormat == asset::fx::ShaderFormat::SPIRV)
             {
                 arguments.emplace_back(L"-spirv");
             }
@@ -186,6 +223,15 @@ namespace ionengine::shadersys
                 }
             }
 
+            // arguments.emplace_back(L"");
+            std::wstring defineName;
+
+            for (uint32_t const mask : permutationMasks)
+            {
+                // defineName = std::format(L"-D USE_{0}", core::string_utils::to_upper_underscore(permutationNames[0]));
+                // arguments.back() = defineName.c_str();    
+            }
+
             std::string const stageShaderCode =
                 "#include \"shared/internal.hlsli\"\n\n" + effectDataCode + "\n" + inputDataCode + "\n" + shaderCode;
 
@@ -195,8 +241,8 @@ namespace ionengine::shadersys
                 .Ptr = stageShaderCode.data(), .Size = stageShaderCode.size(), .Encoding = DXC_CP_UTF8};
 
             winrt::com_ptr<IDxcResult> compileResult;
-            throwIfFailed(compiler->Compile(&codeBuffer, arguments.data(), static_cast<uint32_t>(arguments.size()),
-                                            includeHandler.get(), __uuidof(IDxcResult), compileResult.put_void()));
+            throwIfFailed(_compiler->Compile(&codeBuffer, arguments.data(), static_cast<uint32_t>(arguments.size()),
+                                            _includeHandler.get(), __uuidof(IDxcResult), compileResult.put_void()));
 
             winrt::com_ptr<IDxcBlobUtf8> errorsBlob;
             throwIfFailed(
@@ -233,7 +279,7 @@ namespace ionengine::shadersys
         }
 
         return asset::ShaderFile{.magic = asset::fx::Magic,
-                                 .shaderFormat = shaderFormat,
+                                 .shaderFormat = _shaderFormat,
                                  .shaderData = std::move(shaderData),
                                  .blob = {std::istreambuf_iterator<uint8_t>(shaderBlob.rdbuf()), {}}};
     }

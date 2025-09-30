@@ -13,7 +13,8 @@ namespace ionengine::shadersys
       public:
         virtual ~ShaderCompiler() = default;
 
-        static auto create(asset::fx::ShaderFormat const shaderFormat) -> core::ref_ptr<ShaderCompiler>;
+        static auto create(asset::fx::ShaderFormat const shaderFormat, std::filesystem::path const& includeBasePath)
+            -> core::ref_ptr<ShaderCompiler>;
 
         virtual auto compile(std::filesystem::path const& filePath)
             -> std::expected<asset::ShaderFile, core::error> = 0;

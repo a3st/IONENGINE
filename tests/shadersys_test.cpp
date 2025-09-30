@@ -11,7 +11,7 @@ using namespace ionengine;
 TEST(ShaderSystem, Lexer_Test)
 {
     shadersys::Lexer lexer;
-    auto lexerResult = lexer.parse("../../engine/shaders/ui_base.fx");
+    auto lexerResult = lexer.parse("ui_base.fx");
 
     ASSERT_TRUE(lexerResult.has_value());
 }
@@ -19,7 +19,7 @@ TEST(ShaderSystem, Lexer_Test)
 TEST(ShaderSystem, Parser_Test)
 {
     shadersys::Lexer lexer;
-    auto lexerResult = lexer.parse("../../engine/shaders/ui_base.fx");
+    auto lexerResult = lexer.parse("ui_base.fx");
 
     shadersys::Parser parser;
     auto parserResult = parser.parse(lexerResult.value());
@@ -34,8 +34,9 @@ TEST(ShaderSystem, Parser_Test)
 
 TEST(ShaderSystem, Compiler_DXIL_Test)
 {
-    auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
-    auto compileResult = shaderCompiler->compile("../../engine/shaders/ui_base.fx");
+    auto shaderCompiler =
+        shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL, std::filesystem::current_path() / "include");
+    auto compileResult = shaderCompiler->compile("ui_base.fx");
 
     if (!compileResult.has_value())
     {
@@ -47,8 +48,9 @@ TEST(ShaderSystem, Compiler_DXIL_Test)
 
 TEST(ShaderSystem, Compiler_SPIRV_Test)
 {
-    auto shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::SPIRV);
-    auto compileResult = shaderCompiler->compile("../../engine/shaders/ui_base.fx");
+    auto shaderCompiler =
+        shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::SPIRV, std::filesystem::current_path() / "include");
+    auto compileResult = shaderCompiler->compile("ui_base.fx");
 
     if (!compileResult.has_value())
     {

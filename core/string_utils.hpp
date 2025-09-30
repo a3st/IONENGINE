@@ -52,4 +52,6 @@ namespace ionengine::core::string_utils
             }
         }
     }
+
+    auto to_upper_underscore(const std::string& source) -> std::string;
 } // namespace ionengine::core::string_utils

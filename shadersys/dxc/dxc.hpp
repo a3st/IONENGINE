@@ -15,15 +15,16 @@ namespace ionengine::shadersys
     class DXCCompiler : public ShaderCompiler
     {
       public:
-        DXCCompiler(asset::fx::ShaderFormat const shaderFormat);
+        DXCCompiler(asset::fx::ShaderFormat const shaderFormat, std::filesystem::path const& includeBasePath);
 
         auto compile(std::filesystem::path const& filePath) -> std::expected<asset::ShaderFile, core::error> override;
 
       private:
-        winrt::com_ptr<IDxcCompiler3> compiler;
-        winrt::com_ptr<IDxcUtils> utils;
-        winrt::com_ptr<IDxcIncludeHandler> includeHandler;
-        asset::fx::ShaderFormat shaderFormat;
+        winrt::com_ptr<IDxcCompiler3> _compiler;
+        winrt::com_ptr<IDxcUtils> _utils;
+        winrt::com_ptr<IDxcIncludeHandler> _includeHandler;
+        asset::fx::ShaderFormat _shaderFormat;
+        std::filesystem::path _includeBasePath;
 
         auto getOutputStates(std::unordered_map<std::string, std::string> const& attributes,
                              asset::fx::OutputData& outputData) -> void;

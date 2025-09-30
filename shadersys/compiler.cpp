@@ -8,10 +8,11 @@
 
 namespace ionengine::shadersys
 {
-    auto ShaderCompiler::create(asset::fx::ShaderFormat const shaderFormat) -> core::ref_ptr<ShaderCompiler>
+    auto ShaderCompiler::create(asset::fx::ShaderFormat const shaderFormat,
+                                std::filesystem::path const& includeBasePath) -> core::ref_ptr<ShaderCompiler>
     {
 #ifdef IONENGINE_SHADERSYS_DXC
-        return core::make_ref<DXCCompiler>(shaderFormat);
+        return core::make_ref<DXCCompiler>(shaderFormat, includeBasePath);
 #else
 #error shader system backend is not defined
 #endif

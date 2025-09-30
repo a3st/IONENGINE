@@ -20,4 +20,25 @@ namespace ionengine::core::string_utils
                 source.end());
         }
     }
+
+    auto to_upper_underscore(const std::string& source) -> std::string
+    {
+        std::string result;
+        bool last_was_upper = false;
+
+        for (size_t i = 0; i < source.length(); ++i)
+        {
+            char c = source[i];
+
+            if (std::isupper(c) && i > 0 && !last_was_upper)
+            {
+                result += '_';
+            }
+
+            result += std::toupper(c);
+            last_was_upper = std::isupper(c);
+        }
+
+        return result;
+    }
 } // namespace ionengine::core
