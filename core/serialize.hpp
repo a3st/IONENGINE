@@ -50,6 +50,20 @@ namespace ionengine::core
         }
     }
 
+    template <typename Archive, typename Target, typename Type>
+    auto serialize(Target& target, Type const& object) -> std::expected<size_t, error>
+    {
+        try
+        {
+            Archive archive(target);
+            return archive(object);
+        }
+        catch (std::exception e)
+        {
+            return std::unexpected(error(e.what()));
+        }
+    }
+
     template <typename Type>
     struct serializable_enum
     {

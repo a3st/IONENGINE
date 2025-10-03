@@ -6,7 +6,7 @@
 
 namespace ionengine::shadersys
 {
-    auto Parser::parseAttributes(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+    auto Parser::parseAttributes(std::span<Token const>::iterator it, bool& successful, ShaderParseData& output)
         -> std::span<Token const>::iterator
     {
         it++;
@@ -62,21 +62,21 @@ namespace ionengine::shadersys
             }
         }
 
-        if (it->getContent().compare("VS") == 0)
+        it++;
+
+        if (it->getContent().compare("PS") == 0)
         {
-        }
-        else if (it->getContent().compare("PS") == 0)
-        {
-            parseData.psAttributes = std::move(attributes);
+            output.psAttributes = std::move(attributes);
         }
         else if (it->getContent().compare("CS") == 0)
         {
-            parseData.csAttributes = std::move(attributes);
+            output.csAttributes = std::move(attributes);
         }
-        return ++it;
+
+        return it;
     }
 
-    auto Parser::parseDataGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+    auto Parser::parseDataGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& output)
         -> std::span<Token const>::iterator
     {
         auto region = it;
@@ -91,19 +91,21 @@ namespace ionengine::shadersys
 
         it++;
 
+        output.effectStructure.name = "EffectData";
+
         while (it != tokens.end() && it->getLexeme() != Lexeme::RightBrace)
         {
-            asset::fx::StructureElementData outVariable;
+            asset::fx::StructureElementData outVariable{};
             it = parseStructVariable(it, successful, outVariable);
-            parseData.effectData.size += asset::fx::sizeof_ElementType(outVariable.type);
-            parseData.effectData.elements.emplace_back(outVariable);
+            output.effectStructure.size += asset::fx::sizeof_ElementType(outVariable.type);
+            output.effectStructure.elements.emplace_back(outVariable);
         }
 
         return ++it;
     }
 
     auto Parser::parseStructVariable(std::span<Token const>::iterator it, bool& successful,
-                                     asset::fx::StructureElementData& outVariable) -> std::span<Token const>::iterator
+                                     asset::fx::StructureElementData& output) -> std::span<Token const>::iterator
     {
         if (it->getLexeme() != Lexeme::FixedType)
         {
@@ -115,7 +117,7 @@ namespace ionengine::shadersys
             std::istringstream(std::string(it->getContent())));
         assert(typeResult.has_value() && "missing field in serializable_enum<asset::fx::ElementType>");
 
-        outVariable.type = typeResult.value();
+        output.type = typeResult.value();
 
         it++;
 
@@ -128,7 +130,7 @@ namespace ionengine::shadersys
 
         auto variable = it;
 
-        outVariable.name = std::string(it->getContent());
+        output.name = std::string(it->getContent());
 
         it++;
 
@@ -142,7 +144,7 @@ namespace ionengine::shadersys
         return ++it;
     }
 
-    auto Parser::parseHeaderGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+    auto Parser::parseHeaderGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& output)
         -> std::span<Token const>::iterator
     {
         auto region = it;
@@ -166,31 +168,32 @@ namespace ionengine::shadersys
             {
                 std::string outValue;
                 it = this->parseOptionValue(it, successful, outValue);
-                parseData.headerData.name = outValue;
+                output.header.name = outValue;
             }
             else if (outVariable.compare("Description") == 0)
             {
                 std::string outValue;
                 it = this->parseOptionValue(it, successful, outValue);
-                parseData.headerData.description = outValue;
+                output.header.description = outValue;
             }
             else if (outVariable.compare("Domain") == 0)
             {
                 std::string outValue;
                 it = this->parseOptionValue(it, successful, outValue);
-                parseData.headerData.domain = outValue;
+                output.header.domain = outValue;
             }
             else if (outVariable.compare("Features") == 0)
             {
                 std::vector<std::string> outValues;
                 it = this->parseOptionValue(it, successful, outValues);
-                parseData.headerData.features = std::move(outValues);
+                output.header.features = std::move(outValues);
             }
         }
+
         return ++it;
     }
 
-    auto Parser::parseShaderCode(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+    auto Parser::parseShaderCode(std::span<Token const>::iterator it, bool& successful, ShaderParseData& output)
         -> std::span<Token const>::iterator
     {
         auto region = it;
@@ -207,6 +210,12 @@ namespace ionengine::shadersys
         else if (region->getContent().compare("CS") == 0)
         {
             stageType = asset::fx::StageType::Compute;
+        }
+        else
+        {
+            errors = std::format("line:{}: error: unknown shader stage '{}'", region->getNumLine(),
+                                 region->getContent());
+            successful = false;
         }
 
         it++;
@@ -227,7 +236,7 @@ namespace ionengine::shadersys
             successful = false;
         }
 
-        parseData.shaderData[stageType] = std::string(it->getContent());
+        output.shaderCodes[stageType] = std::string(it->getContent());
 
         it++;
 
@@ -241,7 +250,7 @@ namespace ionengine::shadersys
         return ++it;
     }
 
-    auto Parser::parseOptionKey(std::span<Token const>::iterator it, bool& successful, std::string& outKey)
+    auto Parser::parseOptionKey(std::span<Token const>::iterator it, bool& successful, std::string& output)
         -> std::span<Token const>::iterator
     {
         if (it->getLexeme() != Lexeme::Identifier)
@@ -252,7 +261,7 @@ namespace ionengine::shadersys
         }
 
         auto variable = it;
-        outKey = variable->getContent();
+        output = variable->getContent();
 
         it++;
 
@@ -266,7 +275,7 @@ namespace ionengine::shadersys
         return ++it;
     }
 
-    auto Parser::parseToken(std::span<Token const>::iterator it, ShaderParseData& parseData) -> bool
+    auto Parser::parseToken(std::span<Token const>::iterator it, ShaderParseData& output) -> bool
     {
         bool successful = true;
 
@@ -274,16 +283,16 @@ namespace ionengine::shadersys
         {
             if (it->getContent().compare("HEADER") == 0)
             {
-                it = this->parseHeaderGroup(it, successful, parseData);
+                it = this->parseHeaderGroup(it, successful, output);
             }
             else if (it->getContent().compare("DATA") == 0)
             {
-                it = this->parseDataGroup(it, successful, parseData);
+                it = this->parseDataGroup(it, successful, output);
             }
             else if (it->getContent().compare("VS") == 0 || it->getContent().compare("PS") == 0 ||
                      it->getContent().compare("CS") == 0)
             {
-                it = this->parseShaderCode(it, successful, parseData);
+                it = this->parseShaderCode(it, successful, output);
             }
             else
             {
@@ -293,7 +302,7 @@ namespace ionengine::shadersys
         }
         else if (it->getLexeme() == Lexeme::LeftBracket)
         {
-            it = this->parseAttributes(it, successful, parseData);
+            it = this->parseAttributes(it, successful, output);
         }
         else
         {
@@ -308,7 +317,7 @@ namespace ionengine::shadersys
 
         if (it != tokens.end())
         {
-            return this->parseToken(it, parseData);
+            return this->parseToken(it, output);
         }
         else
         {
@@ -320,14 +329,14 @@ namespace ionengine::shadersys
     {
         this->tokens = tokens;
 
-        ShaderParseData parseData{};
-        if (!this->parseToken(tokens.begin(), parseData))
+        ShaderParseData shaderParseData{};
+        if (!this->parseToken(tokens.begin(), shaderParseData))
         {
             return std::unexpected(core::error(errors));
         }
         else
         {
-            return parseData;
+            return shaderParseData;
         }
     }
 } // namespace ionengine::shadersys

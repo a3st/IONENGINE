@@ -6,8 +6,8 @@
 
 namespace ionengine::shadersys
 {
-    std::set<std::string> const types{"uint",   "bool",     "float",    "float2",  "float3",
-                                      "float4", "float2x2", "float3x3", "float4x4"};
+    std::set<std::string> const lexerTypes{"uint",   "bool",     "float",    "float2",  "float3",
+                                           "float4", "float2x2", "float3x3", "float4x4"};
 
     Token::Token(std::string_view const str, Lexeme const lexeme, std::filesystem::path const& filePath,
                  uint32_t const numLine)
@@ -66,7 +66,7 @@ namespace ionengine::shadersys
         std::ifstream stream(filePath);
         if (!stream.is_open())
         {
-            return std::unexpected(core::error("the input stream is eof"));
+            return std::unexpected(core::error("Failed to open file"));
         }
 
         std::string const buffer = {std::istreambuf_iterator<char>(stream.rdbuf()), {}};
@@ -301,7 +301,7 @@ namespace ionengine::shadersys
 
     auto Lexer::isType(std::string_view const str) const -> bool
     {
-        return types.find(std::string(str)) != types.end();
+        return lexerTypes.find(std::string(str)) != lexerTypes.end();
     }
 
     auto Lexer::isShaderCode(std::string_view const str) const -> bool

@@ -34,11 +34,11 @@ auto main(int32_t argc, char** argv) -> int32_t
         std::string input;
         if (!(commandLine(1) >> input))
         {
-            std::cerr << "ERROR: Missing the input file" << std::endl;
+            std::cerr << "ERROR: Missing input file" << std::endl;
             return EXIT_SUCCESS;
         }
 
-        inputPath = std::filesystem::path(input).make_preferred();
+        inputPath = std::filesystem::path(input);
     }
 
     std::filesystem::path outputPath;
@@ -49,19 +49,20 @@ auto main(int32_t argc, char** argv) -> int32_t
             output = (inputPath.parent_path() / inputPath.stem()).string() + ".bin";
         }
 
-        outputPath = std::filesystem::path(output).make_preferred();
+        outputPath = std::filesystem::path(output);
     }
 
     try
     {
         core::ref_ptr<shadersys::ShaderCompiler> shaderCompiler;
+        std::filesystem::path const includeBasePath = inputPath.parent_path() / "include";
         if (target.compare("DXIL") == 0)
         {
-            shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL);
+            shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::DXIL, includeBasePath);
         }
         else if (target.compare("SPIRV") == 0)
         {
-            shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::SPIRV);
+            shaderCompiler = shadersys::ShaderCompiler::create(asset::fx::ShaderFormat::SPIRV, includeBasePath);
         }
         else
         {
@@ -81,7 +82,7 @@ auto main(int32_t argc, char** argv) -> int32_t
         }
         else
         {
-            std::cerr << "Compilation error: " << compileResult.error().what() << std::endl;
+            std::cerr << "Error: " << compileResult.error().what() << std::endl;
         }
         return EXIT_SUCCESS;
     }

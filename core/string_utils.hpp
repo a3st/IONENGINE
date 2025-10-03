@@ -6,9 +6,6 @@
 
 namespace ionengine::core::string_utils
 {
-    /*!
-        \brief Modes that will used when trim
-    */
     enum class trim_mode
     {
         both,
@@ -44,7 +41,7 @@ namespace ionengine::core::string_utils
 
             if (result.ec == std::errc::invalid_argument)
             {
-                return std::unexpected(error("the result of the conversion is an invalid argument"));
+                return std::unexpected(error("Result of the conversion is an invalid argument"));
             }
             else
             {
@@ -53,5 +50,7 @@ namespace ionengine::core::string_utils
         }
     }
 
-    auto to_upper_underscore(const std::string& source) -> std::string;
+    auto to_upper_underscore(std::string_view const source) -> std::string;
+
+    auto to_wstring(std::string_view const source) -> std::wstring;
 } // namespace ionengine::core::string_utils

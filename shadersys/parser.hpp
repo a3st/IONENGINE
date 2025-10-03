@@ -24,9 +24,9 @@ namespace ionengine::shadersys
 
     struct ShaderParseData
     {
-        asset::fx::HeaderData headerData;
-        asset::fx::StructureData effectData;
-        std::unordered_map<asset::fx::StageType, std::string> shaderData;
+        asset::fx::HeaderData header;
+        asset::fx::StructureData effectStructure;
+        std::unordered_map<asset::fx::StageType, std::string> shaderCodes;
         std::unordered_map<std::string, std::string> csAttributes;
         std::unordered_map<std::string, std::string> psAttributes;
     };
@@ -42,25 +42,25 @@ namespace ionengine::shadersys
         std::string errors;
         std::span<Token const> tokens;
 
-        auto parseToken(std::span<Token const>::iterator it, ShaderParseData& parseData) -> bool;
+        auto parseToken(std::span<Token const>::iterator it, ShaderParseData& output) -> bool;
 
-        auto parseHeaderGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+        auto parseHeaderGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& output)
             -> std::span<Token const>::iterator;
 
-        auto parseDataGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+        auto parseDataGroup(std::span<Token const>::iterator it, bool& successful, ShaderParseData& output)
             -> std::span<Token const>::iterator;
 
-        auto parseAttributes(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+        auto parseAttributes(std::span<Token const>::iterator it, bool& successful, ShaderParseData& output)
             -> std::span<Token const>::iterator;
 
-        auto parseShaderCode(std::span<Token const>::iterator it, bool& successful, ShaderParseData& parseData)
+        auto parseShaderCode(std::span<Token const>::iterator it, bool& successful, ShaderParseData& output)
             -> std::span<Token const>::iterator;
 
-        auto parseOptionKey(std::span<Token const>::iterator it, bool& successful, std::string& outKey)
+        auto parseOptionKey(std::span<Token const>::iterator it, bool& successful, std::string& output)
             -> std::span<Token const>::iterator;
 
         template <typename Type>
-        auto parseOptionValue(std::span<Token const>::iterator it, bool& successful, Type& outValue)
+        auto parseOptionValue(std::span<Token const>::iterator it, bool& successful, Type& output)
             -> std::span<Token const>::iterator
         {
             if (it->getLexeme() == Lexeme::FloatLiteral || it->getLexeme() == Lexeme::BoolLiteral ||
@@ -75,12 +75,12 @@ namespace ionengine::shadersys
                         successful = false;
                     }
 
-                    outValue = result.value();
+                    output = result.value();
                 }
                 else if constexpr (std::is_same_v<
                                        Type, std::basic_string<char, std::char_traits<char>, std::allocator<char>>>)
                 {
-                    outValue = it->getContent();
+                    output = it->getContent();
                 }
             }
             else if (it->getLexeme() == Lexeme::LeftBracket)
@@ -93,7 +93,7 @@ namespace ionengine::shadersys
                     {
                         if constexpr (internal::is_std_vector<Type>::value)
                         {
-                            outValue.emplace_back(it->getContent());
+                            output.emplace_back(it->getContent());
                         }
                     }
 
@@ -125,6 +125,6 @@ namespace ionengine::shadersys
         }
 
         auto parseStructVariable(std::span<Token const>::iterator it, bool& successful,
-                                 asset::fx::StructureElementData& outVariable) -> std::span<Token const>::iterator;
+                                 asset::fx::StructureElementData& output) -> std::span<Token const>::iterator;
     };
 } // namespace ionengine::shadersys

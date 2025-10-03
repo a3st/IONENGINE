@@ -252,7 +252,7 @@ namespace ionengine::rhi
 
         auto getMipLevels() const -> uint32_t override;
 
-        auto getFormat() const -> TextureFormat override;
+        auto getFormat() const -> Format override;
 
         auto getFlags() const -> TextureUsageFlags override;
 
@@ -277,7 +277,7 @@ namespace ionengine::rhi
         uint32_t height;
         uint32_t depth;
         uint32_t mipLevels;
-        TextureFormat format;
+        Format format;
         TextureDimension dimension;
         TextureUsageFlags flags;
     };
@@ -342,7 +342,7 @@ namespace ionengine::rhi
         auto bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void override;
 
         auto bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
-                             IndexFormat const format) -> void override;
+                             Format const format) -> void override;
 
         auto drawIndexed(uint32_t const indexCount, uint32_t const instanceCount) -> void override;
 

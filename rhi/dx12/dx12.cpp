@@ -43,63 +43,89 @@ namespace ionengine::rhi
         }
     }
 
-    auto DXGI_FORMAT_to_TextureFormat(DXGI_FORMAT const format) -> TextureFormat
+    auto DXGI_FORMAT_to_Format(DXGI_FORMAT const format) -> Format
     {
         switch (format)
         {
             case DXGI_FORMAT_UNKNOWN:
-                return TextureFormat::Unknown;
+                return Format::Unknown;
             case DXGI_FORMAT_R8G8B8A8_UNORM:
-                return TextureFormat::RGBA8_UNORM;
+                return Format::RGBA8_UNORM;
             case DXGI_FORMAT_B8G8R8A8_UNORM:
-                return TextureFormat::BGRA8_UNORM;
+                return Format::BGRA8_UNORM;
             case DXGI_FORMAT_B8G8R8X8_UNORM:
-                return TextureFormat::BGR8_UNORM;
+                return Format::BGR8_UNORM;
             case DXGI_FORMAT_R8_UNORM:
-                return TextureFormat::R8_UNORM;
+                return Format::R8_UNORM;
             case DXGI_FORMAT_BC1_UNORM:
-                return TextureFormat::BC1;
+                return Format::BC1;
             case DXGI_FORMAT_BC3_UNORM:
-                return TextureFormat::BC3;
+                return Format::BC3;
             case DXGI_FORMAT_BC4_UNORM:
-                return TextureFormat::BC4;
+                return Format::BC4;
             case DXGI_FORMAT_BC5_UNORM:
-                return TextureFormat::BC5;
+                return Format::BC5;
             case DXGI_FORMAT_D32_FLOAT:
-                return TextureFormat::D32_FLOAT;
+                return Format::D32_FLOAT;
             case DXGI_FORMAT_R16G16B16A16_FLOAT:
-                return TextureFormat::RGBA16_FLOAT;
+                return Format::RGBA16_FLOAT;
             default:
-                return TextureFormat::Unknown;
+                return Format::Unknown;
         }
     }
 
-    auto TextureFormat_to_DXGI_FORMAT(TextureFormat const format) -> DXGI_FORMAT
+    auto Format_to_DXGI_FORMAT(Format const format) -> DXGI_FORMAT
     {
         switch (format)
         {
-            case TextureFormat::Unknown:
+            case Format::Unknown:
                 return DXGI_FORMAT_UNKNOWN;
-            case TextureFormat::RGBA8_UNORM:
+            case Format::RGBA8_UNORM:
                 return DXGI_FORMAT_R8G8B8A8_UNORM;
-            case TextureFormat::BGRA8_UNORM:
+            case Format::BGRA8_UNORM:
                 return DXGI_FORMAT_B8G8R8A8_UNORM;
-            case TextureFormat::BGR8_UNORM:
+            case Format::BGR8_UNORM:
                 return DXGI_FORMAT_B8G8R8X8_UNORM;
-            case TextureFormat::R8_UNORM:
+            case Format::R8_UNORM:
                 return DXGI_FORMAT_R8_UNORM;
-            case TextureFormat::BC1:
+            case Format::BC1:
                 return DXGI_FORMAT_BC1_UNORM;
-            case TextureFormat::BC3:
+            case Format::BC3:
                 return DXGI_FORMAT_BC3_UNORM;
-            case TextureFormat::BC4:
+            case Format::BC4:
                 return DXGI_FORMAT_BC4_UNORM;
-            case TextureFormat::BC5:
+            case Format::BC5:
                 return DXGI_FORMAT_BC5_UNORM;
-            case TextureFormat::D32_FLOAT:
+            case Format::D32_FLOAT:
                 return DXGI_FORMAT_D32_FLOAT;
-            case TextureFormat::RGBA16_FLOAT:
+            case Format::RGBA16_FLOAT:
                 return DXGI_FORMAT_R16G16B16A16_FLOAT;
+            case Format::RGBA32_FLOAT:
+                return DXGI_FORMAT_R32G32B32A32_FLOAT;
+            case Format::RGBA32_SINT:
+                return DXGI_FORMAT_R32G32B32A32_SINT;
+            case Format::RGBA32_UINT:
+                return DXGI_FORMAT_R32G32B32A32_UINT;
+            case Format::RGB32_FLOAT:
+                return DXGI_FORMAT_R32G32B32_FLOAT;
+            case Format::RGB32_SINT:
+                return DXGI_FORMAT_R32G32B32_SINT;
+            case Format::RGB32_UINT:
+                return DXGI_FORMAT_R32G32B32_UINT;
+            case Format::RG32_FLOAT:
+                return DXGI_FORMAT_R32G32_FLOAT;
+            case Format::RG32_SINT:
+                return DXGI_FORMAT_R32G32_SINT;
+            case Format::RG32_UINT:
+                return DXGI_FORMAT_R32G32_UINT;
+            case Format::R32_FLOAT:
+                return DXGI_FORMAT_R32_FLOAT;
+            case Format::R32_SINT:
+                return DXGI_FORMAT_R32_SINT;
+            case Format::R32_UINT:
+                return DXGI_FORMAT_R32_UINT;
+            case Format::R16_UINT:
+                return DXGI_FORMAT_R16_UINT;
             default:
                 return DXGI_FORMAT_UNKNOWN;
         }
@@ -296,39 +322,6 @@ namespace ionengine::rhi
                 return D3D12_RESOURCE_STATE_COPY_DEST;
             default:
                 throw std::invalid_argument("unknown D3D12_RESOURCE_STATES for passed argument");
-        }
-    }
-
-    auto VertexFormat_to_DXGI_FORMAT(VertexFormat const format) -> DXGI_FORMAT
-    {
-        switch (format)
-        {
-            case VertexFormat::RGBA32_FLOAT:
-                return DXGI_FORMAT_R32G32B32A32_FLOAT;
-            case VertexFormat::RGBA32_SINT:
-                return DXGI_FORMAT_R32G32B32A32_SINT;
-            case VertexFormat::RGBA32_UINT:
-                return DXGI_FORMAT_R32G32B32A32_UINT;
-            case VertexFormat::RGB32_FLOAT:
-                return DXGI_FORMAT_R32G32B32_FLOAT;
-            case VertexFormat::RGB32_SINT:
-                return DXGI_FORMAT_R32G32B32_SINT;
-            case VertexFormat::RGB32_UINT:
-                return DXGI_FORMAT_R32G32B32_UINT;
-            case VertexFormat::RG32_FLOAT:
-                return DXGI_FORMAT_R32G32_FLOAT;
-            case VertexFormat::RG32_SINT:
-                return DXGI_FORMAT_R32G32_SINT;
-            case VertexFormat::RG32_UINT:
-                return DXGI_FORMAT_R32G32_UINT;
-            case VertexFormat::R32_FLOAT:
-                return DXGI_FORMAT_R32_FLOAT;
-            case VertexFormat::R32_SINT:
-                return DXGI_FORMAT_R32_SINT;
-            case VertexFormat::R32_UINT:
-                return DXGI_FORMAT_R32_UINT;
-            default:
-                return DXGI_FORMAT_UNKNOWN;
         }
     }
 
@@ -635,7 +628,7 @@ namespace ionengine::rhi
                                          .Height = height,
                                          .DepthOrArraySize = static_cast<uint16_t>(depth),
                                          .MipLevels = static_cast<uint16_t>(mipLevels),
-                                         .Format = TextureFormat_to_DXGI_FORMAT(format),
+                                         .Format = Format_to_DXGI_FORMAT(format),
                                          .SampleDesc = {.Count = 1},
                                          .Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN};
 
@@ -747,7 +740,7 @@ namespace ionengine::rhi
         height = resourceDesc.Height;
         depth = resourceDesc.DepthOrArraySize;
         mipLevels = resourceDesc.MipLevels;
-        format = DXGI_FORMAT_to_TextureFormat(resourceDesc.Format);
+        format = DXGI_FORMAT_to_Format(resourceDesc.Format);
 
         if (flags & TextureUsage::RenderTarget)
         {
@@ -783,7 +776,7 @@ namespace ionengine::rhi
         return mipLevels;
     }
 
-    auto DX12Texture::getFormat() const -> TextureFormat
+    auto DX12Texture::getFormat() const -> Format
     {
         return format;
     }
@@ -846,22 +839,21 @@ namespace ionengine::rhi
             }
             else
             {
-                std::string const semanticName =
-                    vertexDeclaration.semantic.substr(0, vertexDeclaration.semantic.size() - 1);
+                std::string semanticName = vertexDeclaration.semantic.substr(0, vertexDeclaration.semantic.size() - 1);
                 semanticNames.emplace_back(std::move(semanticName));
                 semanticIndex = static_cast<int32_t>(vertexDeclaration.semantic.back()) - 48;
             }
 
             inputElementDesc.SemanticName = semanticNames.back().c_str();
             inputElementDesc.SemanticIndex = semanticIndex;
-            inputElementDesc.Format = VertexFormat_to_DXGI_FORMAT(vertexDeclaration.format);
+            inputElementDesc.Format = Format_to_DXGI_FORMAT(vertexDeclaration.format);
             inputElementDesc.InputSlot = 0;
             inputElementDesc.AlignedByteOffset = offset;
             inputElementDesc.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
             inputElementDesc.InstanceDataStepRate = 0;
 
             inputElements.emplace_back(std::move(inputElementDesc));
-            offset += sizeof_VertexFormat(vertexDeclaration.format);
+            offset += sizeof_Format(vertexDeclaration.format);
         }
 
         inputSize = offset;
@@ -1277,7 +1269,7 @@ namespace ionengine::rhi
         for (uint32_t const i : std::views::iota(0u, colors.size()))
         {
             auto dxTargetTexture = dynamic_cast<DX12Texture*>(colors[i].texture.get());
-            renderTargetFormats[i] = TextureFormat_to_DXGI_FORMAT(colors[i].texture->getFormat());
+            renderTargetFormats[i] = Format_to_DXGI_FORMAT(colors[i].texture->getFormat());
 
             D3D12_RENDER_PASS_BEGINNING_ACCESS const begin{
                 .Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(colors[i].loadOp),
@@ -1298,7 +1290,7 @@ namespace ionengine::rhi
             auto value = depthStencil.value();
 
             auto dxTargetTexture = dynamic_cast<DX12Texture*>(value.texture.get());
-            depthStencilFormat = TextureFormat_to_DXGI_FORMAT(dxTargetTexture->getFormat());
+            depthStencilFormat = Format_to_DXGI_FORMAT(dxTargetTexture->getFormat());
 
             D3D12_RENDER_PASS_DEPTH_STENCIL_DESC renderPassDepthStencil{};
 
@@ -1360,27 +1352,16 @@ namespace ionengine::rhi
     }
 
     auto DX12GraphicsContext::bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
-                                              IndexFormat const format) -> void
+                                              Format const format) -> void
     {
         this->tryResetCommandList();
 
         auto dxBuffer = dynamic_cast<DX12Buffer*>(buffer.get());
 
-        D3D12_INDEX_BUFFER_VIEW indexBufferView{.BufferLocation =
-                                                    dxBuffer->getResource()->GetGPUVirtualAddress() + offset};
-        switch (format)
-        {
-            case IndexFormat::Uint32: {
-                indexBufferView.Format = DXGI_FORMAT_R32_UINT;
-                break;
-            }
-            case IndexFormat::Uint16: {
-                indexBufferView.Format = DXGI_FORMAT_R16_UINT;
-                break;
-            }
-        }
-        indexBufferView.SizeInBytes = size;
-
+        D3D12_INDEX_BUFFER_VIEW const indexBufferView{.BufferLocation =
+                                                          dxBuffer->getResource()->GetGPUVirtualAddress() + offset,
+                                                      .SizeInBytes = size,
+                                                      .Format = Format_to_DXGI_FORMAT(format)};
         commandList->IASetIndexBuffer(&indexBufferView);
     }
 

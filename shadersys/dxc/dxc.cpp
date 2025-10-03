@@ -7,6 +7,7 @@
 #include "../parser.hpp"
 #include "core/string_utils.hpp"
 #include "precompiled.h"
+#include <xxhash.h>
 
 namespace ionengine::shadersys
 {
@@ -14,13 +15,22 @@ namespace ionengine::shadersys
     {
         if (FAILED(hr))
         {
-            throw std::runtime_error(std::format("the program closed with an error {:04x}", hr));
-        }
-    }
+            LPSTR messageText = nullptr;
 
-    auto DXCCompiler::isDefaultSemantic(std::string_view const semantic) -> bool
-    {
-        return semantic.find("SV_") != std::string_view::npos;
+            ::FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+                                 FORMAT_MESSAGE_IGNORE_INSERTS,
+                             nullptr, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageText, 0, nullptr);
+
+            std::string errorMessage = std::format("The program closed with an error: 0x{:08X} - {}", hr, messageText);
+
+            if (messageText != nullptr)
+            {
+                errorMessage += std::format("- {}", messageText);
+                ::LocalFree(messageText);
+            }
+
+            throw std::runtime_error(errorMessage);
+        }
     }
 
     DXCCompiler::DXCCompiler(asset::fx::ShaderFormat const shaderFormat, std::filesystem::path const& includeBasePath)
@@ -32,255 +42,356 @@ namespace ionengine::shadersys
     }
 
     auto DXCCompiler::getOutputStates(std::unordered_map<std::string, std::string> const& attributes,
-                                      asset::fx::OutputData& outputData) -> void
+                                      asset::fx::OutputData& output) const -> void
     {
         std::unordered_map<std::string, std::string>::const_iterator it;
         if ((it = attributes.find("FillMode")) != attributes.end())
         {
-            outputData.fillMode =
+            output.fillMode =
                 core::deserialize<core::serialize_ienum, asset::fx::FillMode>(std::istringstream(it->second))
                     .value_or(asset::fx::FillMode::Solid);
         }
         if ((it = attributes.find("CullMode")) != attributes.end())
         {
-            outputData.cullMode =
+            output.cullMode =
                 core::deserialize<core::serialize_ienum, asset::fx::CullMode>(std::istringstream(it->second))
                     .value_or(asset::fx::CullMode::Back);
         }
         if ((it = attributes.find("DepthWrite")) != attributes.end())
         {
-            outputData.depthWrite = core::string_utils::lexical_cast<bool>(it->second).value_or(false);
+            output.depthWrite = core::string_utils::lexical_cast<bool>(it->second).value_or(false);
         }
         if ((it = attributes.find("StencilWrite")) != attributes.end())
         {
-            outputData.stencilWrite = core::string_utils::lexical_cast<bool>(it->second).value_or(false);
+            output.stencilWrite = core::string_utils::lexical_cast<bool>(it->second).value_or(false);
         }
     }
 
-    auto DXCCompiler::getEffectDataCode(asset::fx::StructureData const& structureData) -> std::string
+    auto DXCCompiler::getDomainStructures(asset::fx::HeaderData const& header,
+                                          asset::fx::StructureData const& effectStructure,
+                                          std::span<std::string const> const permutationNames, std::string& shaderCode,
+                                          std::vector<asset::fx::StructureData>& structures) const -> bool
     {
+        std::unordered_map<std::string, int32_t> defineValues;
+        for (auto const& permutationName : permutationNames)
+        {
+            defineValues[permutationName] = 1;
+        }
+
+        HLSLCodeGenerator generator(defineValues);
+
+        std::string structShaderCode;
+        asset::fx::StructureData structure;
         std::ostringstream oss;
-        oss << "struct EffectData { ";
 
-        for (auto const& element : structureData.elements)
+        generator.getHLSLStruct(effectStructure, structShaderCode);
+        oss << structShaderCode << "\n";
+        structures.emplace_back(effectStructure);
+
+        if (header.domain.compare("PostProcess") == 0)
         {
-            auto typeResult = core::serialize<core::serialize_oenum, std::ostringstream>(element.type);
-            if (!typeResult.has_value())
-            {
-                continue;
-            }
+            /* shaderCode += generator.getHLSLStruct<inputs::BaseVSInput>("VSInput") + "\n";
+            shaderCode += generator.getHLSLStruct<inputs::BaseVSOutput>("VSOutput") + "\n";
+            shaderCode += generator.getHLSLStruct<inputs::ForwardPSOutput>("PSOutput") + "\n";
+            shaderCode += generator.getHLSLStruct<common::SamplerData>("SamplerData") + "\n";
+            shaderCode += generator.getHLSLStruct<common::PassData>("PassData") + "\n";
+            shaderCode += generator.getHLSLConstBuffer<constants::PostProcessShaderData>("ShaderData", 0, 0) + "\n";
 
-            oss << typeResult.value().str() << " " << element.name << "; ";
-        }
-
-        oss << "};";
-        return oss.str();
-    }
-
-    auto DXCCompiler::compile(std::filesystem::path const& filePath) -> std::expected<asset::ShaderFile, core::error>
-    {
-        Lexer lexer;
-        auto lexerResult = lexer.parse(filePath);
-        if (!lexerResult.has_value())
-        {
-            return std::unexpected(lexerResult.error());
-        }
-
-        Parser parser;
-        auto parserResult = parser.parse(lexerResult.value());
-        if (!parserResult.has_value())
-        {
-            return std::unexpected(parserResult.error());
-        }
-
-        ShaderParseData const parseData = std::move(parserResult.value());
-
-        asset::fx::ShaderData shaderData{.headerData = parseData.headerData, .structures = {parseData.effectData}};
-        std::basic_stringstream<uint8_t> shaderBlob;
-
-        std::wstring const includeFilePath = L"-I " + filePath.parent_path().wstring();
-        std::vector<LPCWSTR> arguments;
-
-        std::string const effectDataCode = this->getEffectDataCode(parseData.effectData);
-
-        std::string inputDataCode;
-        HLSLCodeGen generator;
-        asset::fx::VertexLayoutData vertexLayout;
-
-        if (parseData.headerData.domain.compare("PostProcess") == 0)
-        {
-            inputDataCode += generator.getHLSLStruct<inputs::BaseVSInput>("VSInput") + "\n";
-            inputDataCode += generator.getHLSLStruct<inputs::BaseVSOutput>("VSOutput") + "\n";
-            inputDataCode += generator.getHLSLStruct<inputs::ForwardPSOutput>("PSOutput") + "\n";
-            inputDataCode += generator.getHLSLStruct<common::SamplerData>("SamplerData") + "\n";
-            inputDataCode += generator.getHLSLStruct<common::PassData>("PassData") + "\n";
-            inputDataCode += generator.getHLSLConstBuffer<constants::PostProcessShaderData>("ShaderData", 0, 0) + "\n";
-
-            shaderData.structures.emplace_back(common::SamplerData::structureData);
-            shaderData.structures.emplace_back(common::PassData::structureData);
-            shaderData.structures.emplace_back(constants::PostProcessShaderData::structureData);
+            structures.emplace_back(common::SamplerData::structureData);
+            structures.emplace_back(common::PassData::structureData);
+            structures.emplace_back(constants::PostProcessShaderData::structureData);
 
             vertexLayout = {};
+            */
         }
-        else if (parseData.headerData.domain.compare("Surface") == 0)
+        else if (header.domain.compare("Surface") == 0)
         {
-            inputDataCode += generator.getHLSLStruct<inputs::SurfaceVSInput>("VSInput") + "\n";
-            inputDataCode += generator.getHLSLStruct<inputs::SurfaceVSOutput>("VSOutput") + "\n";
-            inputDataCode += generator.getHLSLStruct<inputs::ForwardPSOutput>("PSOutput") + "\n";
-            inputDataCode += generator.getHLSLStruct<common::TransformData>("TransformData") + "\n";
-            inputDataCode += generator.getHLSLStruct<common::SamplerData>("SamplerData") + "\n";
-            inputDataCode += generator.getHLSLConstBuffer<constants::SurfaceShaderData>("ShaderData", 0, 0) + "\n";
+            generator.getHLSLStruct<inputs::SurfaceVSInput>("VSInput", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
 
-            shaderData.structures.emplace_back(common::TransformData::structureData);
-            shaderData.structures.emplace_back(common::SamplerData::structureData);
-            shaderData.structures.emplace_back(constants::SurfaceShaderData::structureData);
+            generator.getHLSLStruct<inputs::SurfaceVSOutput>("VSOutput", structShaderCode, structure);
+            oss << structShaderCode << "\n";
 
-            vertexLayout = inputs::SurfaceVSInput::vertexLayout;
+            generator.getHLSLStruct<inputs::ForwardPSOutput>("PSOutput", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+
+            generator.getHLSLStruct<common::TransformData>("TransformData", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
+
+            generator.getHLSLStruct<common::SamplerData>("SamplerData", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
+
+            generator.getHLSLConstBuffer<constants::SurfaceShaderData>("ShaderData", 0, 0, structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
         }
-        else if (parseData.headerData.domain.compare("UI") == 0)
+        else if (header.domain.compare("UI") == 0)
         {
-            inputDataCode += generator.getHLSLStruct<inputs::UIVSInput>("VSInput") + "\n";
-            inputDataCode += generator.getHLSLStruct<inputs::UIVSOutput>("VSOutput") + "\n";
-            inputDataCode += generator.getHLSLStruct<inputs::ForwardPSOutput>("PSOutput") + "\n";
-            inputDataCode += generator.getHLSLStruct<common::TransformData>("TransformData") + "\n";
-            inputDataCode += generator.getHLSLStruct<common::SamplerData>("SamplerData") + "\n";
-            inputDataCode += generator.getHLSLConstBuffer<constants::UIShaderData>("ShaderData", 0, 0) + "\n";
+            generator.getHLSLStruct<inputs::UIVSInput>("VSInput", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
 
-            shaderData.structures.emplace_back(common::TransformData::structureData);
-            shaderData.structures.emplace_back(common::SamplerData::structureData);
-            shaderData.structures.emplace_back(constants::UIShaderData::structureData);
+            generator.getHLSLStruct<inputs::UIVSOutput>("VSOutput", structShaderCode, structure);
+            oss << structShaderCode << "\n";
 
-            vertexLayout = inputs::UIVSInput::vertexLayout;
+            generator.getHLSLStruct<inputs::ForwardPSOutput>("PSOutput", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+
+            generator.getHLSLStruct<common::TransformData>("TransformData", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
+
+            generator.getHLSLStruct<common::SamplerData>("SamplerData", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
+
+            generator.getHLSLConstBuffer<constants::UIShaderData>("ShaderData", 0, 0, structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
+        }
+        else
+        {
+            return false;
         }
 
-        std::unordered_map<uint32_t, std::string> permutationNames;
+        shaderCode = oss.str();
+        return true;
+    }
+
+    auto DXCCompiler::getPermutations(asset::fx::HeaderData const& header,
+                                      std::unordered_map<uint32_t, std::string>& permutationNames,
+                                      std::unordered_set<uint32_t>& permutationMasks) const -> void
+    {
         permutationNames[0] = "Default";
 
-        for (uint32_t const i : std::views::iota(0u, parseData.headerData.features.size()))
+        for (uint32_t const i : std::views::iota(0u, header.features.size()))
         {
-            permutationNames[i + 1] = parseData.headerData.features[i];
+            permutationNames[i + 1] = header.features[i];
         }
 
-        std::unordered_set<uint32_t> permutationMasks;
-
-        for (uint32_t const mask : std::views::iota(0u, 1u << parseData.headerData.features.size()))
+        for (uint32_t const mask : std::views::iota(0u, 1u << header.features.size()))
         {
             uint32_t currentPermutation;
             if (mask == 0)
             {
                 currentPermutation = 1 << 0;
-                std::cout << permutationNames[0];
             }
             else
             {
                 currentPermutation = 1 << 0;
-                std::cout << permutationNames[0];
 
-                for (uint32_t const j : std::views::iota(0u, parseData.headerData.features.size()))
+                for (uint32_t const j : std::views::iota(0u, header.features.size()))
                 {
                     if (mask & (1u << j))
                     {
                         currentPermutation |= 1 << (j + 1);
-                        std::cout << " " << permutationNames[j + 1];
                     }
                 }
             }
 
-            std::cout << std::endl;
-
             permutationMasks.emplace(currentPermutation);
         }
+    }
 
-        std::cout << "Permutation count: " << permutationMasks.size() << std::endl;
-
-        for (auto const& [stageType, shaderCode] : parseData.shaderData)
+    auto DXCCompiler::getPermutationNamesByMask(std::unordered_map<uint32_t, std::string> const& permutationNames,
+                                                uint32_t const mask, std::vector<std::string>& outputNames) const
+        -> void
+    {
+        if (mask == 0)
         {
-            asset::fx::StageData stageData{.buffer = static_cast<uint32_t>(shaderData.buffers.size()),
-                                           .entryPoint = "main"};
-
-            arguments.clear();
-            arguments.emplace_back(L"-E main");
-            arguments.emplace_back(includeFilePath.c_str());
-            arguments.emplace_back(_includeBasePath.c_str());
-            arguments.emplace_back(L"-HV 2021");
-            if (_shaderFormat == asset::fx::ShaderFormat::SPIRV)
+            outputNames.emplace_back(permutationNames.at(0));
+        }
+        else
+        {
+            outputNames.emplace_back(permutationNames.at(0));
+            for (uint32_t const i : std::views::iota(1u, permutationNames.size()))
             {
-                arguments.emplace_back(L"-spirv");
-            }
-            switch (stageType)
-            {
-                case asset::fx::StageType::Vertex: {
-                    arguments.emplace_back(L"-T vs_6_6");
-                    break;
-                }
-                case asset::fx::StageType::Pixel: {
-                    arguments.emplace_back(L"-T ps_6_6");
-                    break;
-                }
-                case asset::fx::StageType::Compute: {
-                    arguments.emplace_back(L"-T cs_6_6");
-                    break;
+                if (mask & (1u << i))
+                {
+                    outputNames.emplace_back(permutationNames.at(i));
                 }
             }
+        }
+    }
 
-            // arguments.emplace_back(L"");
-            std::wstring defineName;
+    auto DXCCompiler::compile(std::filesystem::path const& filePath) -> std::expected<asset::ShaderFile, core::error>
+    {
+        _cacheShaderStages.clear();
 
-            for (uint32_t const mask : permutationMasks)
-            {
-                // defineName = std::format(L"-D USE_{0}", core::string_utils::to_upper_underscore(permutationNames[0]));
-                // arguments.back() = defineName.c_str();    
-            }
-
-            std::string const stageShaderCode =
-                "#include \"shared/internal.hlsli\"\n\n" + effectDataCode + "\n" + inputDataCode + "\n" + shaderCode;
-
-            std::cout << stageShaderCode << std::endl;
-
-            DxcBuffer const codeBuffer{
-                .Ptr = stageShaderCode.data(), .Size = stageShaderCode.size(), .Encoding = DXC_CP_UTF8};
-
-            winrt::com_ptr<IDxcResult> compileResult;
-            throwIfFailed(_compiler->Compile(&codeBuffer, arguments.data(), static_cast<uint32_t>(arguments.size()),
-                                            _includeHandler.get(), __uuidof(IDxcResult), compileResult.put_void()));
-
-            winrt::com_ptr<IDxcBlobUtf8> errorsBlob;
-            throwIfFailed(
-                compileResult->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), errorsBlob.put_void(), nullptr));
-
-            if (errorsBlob && errorsBlob->GetStringLength() > 0)
-            {
-                auto errors =
-                    std::string(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()), errorsBlob->GetBufferSize());
-                return std::unexpected(core::error(errors));
-            }
-
-            winrt::com_ptr<IDxcBlob> outBlob;
-            throwIfFailed(compileResult->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), outBlob.put_void(), nullptr));
-
-            asset::fx::BufferData bufferData{.offset = static_cast<uint64_t>(shaderBlob.tellp()),
-                                             .size = outBlob->GetBufferSize()};
-            shaderData.buffers.emplace_back(std::move(bufferData));
-
-            shaderBlob.write(reinterpret_cast<uint8_t const*>(outBlob->GetBufferPointer()), outBlob->GetBufferSize());
-
-            if (stageType == asset::fx::StageType::Vertex)
-            {
-                stageData.vertexLayout = std::move(vertexLayout);
-            }
-            else if (stageType == asset::fx::StageType::Pixel)
-            {
-                asset::fx::OutputData outputData{};
-                this->getOutputStates(parseData.psAttributes, outputData);
-                stageData.output = std::move(outputData);
-            }
-
-            shaderData.stages[stageType] = std::move(stageData);
+        Lexer shaderLexer;
+        auto lexerResult = shaderLexer.parse(filePath);
+        if (!lexerResult.has_value())
+        {
+            return std::unexpected(lexerResult.error());
         }
 
+        Parser shaderParser;
+        auto parserResult = shaderParser.parse(lexerResult.value());
+        if (!parserResult.has_value())
+        {
+            return std::unexpected(parserResult.error());
+        }
+
+        ShaderParseData const shaderParseData = std::move(parserResult.value());
+
+        std::unordered_map<uint32_t, asset::fx::PermutationData> shaderPermutations;
+        std::vector<asset::fx::StageData> shaderStages;
+        std::vector<asset::fx::BufferData> shaderBuffers;
+        std::basic_stringstream<uint8_t> shaderBlob;
+
+        std::unordered_map<uint32_t, std::string> permutationNames;
+        std::unordered_set<uint32_t> permutationMasks;
+        this->getPermutations(shaderParseData.header, permutationNames, permutationMasks);
+
+        std::wstring const includeFilePath = L"-I " + filePath.parent_path().wstring();
+        std::vector<std::wstring> arguments;
+
+        for (uint32_t const permutationMask : permutationMasks)
+        {
+            std::vector<std::string> stagePermutationNames;
+            this->getPermutationNamesByMask(permutationNames, permutationMask, stagePermutationNames);
+
+            std::vector<uint32_t> shaderPermutationStages;
+            std::vector<asset::fx::StructureData> shaderPermutationStructures;
+
+            for (auto const& [stageType, shaderCode] : shaderParseData.shaderCodes)
+            {
+                arguments.clear();
+
+                arguments.emplace_back(L"-E main");
+                arguments.emplace_back(includeFilePath.c_str());
+                arguments.emplace_back(_includeBasePath.c_str());
+                arguments.emplace_back(L"-HV 2021");
+
+                if (_shaderFormat == asset::fx::ShaderFormat::SPIRV)
+                {
+                    arguments.emplace_back(L"-spirv");
+                }
+
+                switch (stageType)
+                {
+                    case asset::fx::StageType::Vertex: {
+                        arguments.emplace_back(L"-T vs_6_6");
+                        break;
+                    }
+                    case asset::fx::StageType::Pixel: {
+                        arguments.emplace_back(L"-T ps_6_6");
+                        break;
+                    }
+                    case asset::fx::StageType::Compute: {
+                        arguments.emplace_back(L"-T cs_6_6");
+                        break;
+                    }
+                }
+
+                for (auto const& permutationName : stagePermutationNames)
+                {
+                    arguments.emplace_back(core::string_utils::to_wstring(
+                        std::format("-D USE_{0}", core::string_utils::to_upper_underscore(permutationName))));
+                }
+
+                std::string inputShaderCode;
+                if (!this->getDomainStructures(shaderParseData.header, shaderParseData.effectStructure,
+                                               stagePermutationNames, inputShaderCode, shaderPermutationStructures))
+                {
+                    return std::unexpected(core::error("Invalid Domain value in HEADER section"));
+                }
+
+                std::string const stageShaderCode =
+                    "#include \"shared/internal.hlsli\"\n\n" + inputShaderCode + "\n" + shaderCode;
+
+#ifdef _DEBUG
+                std::cout << stageShaderCode << std::endl;
+#endif
+
+                DxcBuffer const dxcBuffer{
+                    .Ptr = stageShaderCode.data(), .Size = stageShaderCode.size(), .Encoding = DXC_CP_UTF8};
+
+                auto pArguments = arguments | std::views::transform([](const std::wstring& x) { return x.c_str(); }) |
+                                  std::ranges::to<std::vector<LPCWSTR>>();
+
+                winrt::com_ptr<IDxcResult> compileResult;
+                throwIfFailed(_compiler->Compile(&dxcBuffer, pArguments.data(),
+                                                 static_cast<uint32_t>(pArguments.size()), _includeHandler.get(),
+                                                 __uuidof(IDxcResult), compileResult.put_void()));
+
+                winrt::com_ptr<IDxcBlobUtf8> errorsBlob;
+                throwIfFailed(
+                    compileResult->GetOutput(DXC_OUT_ERRORS, __uuidof(IDxcBlobUtf8), errorsBlob.put_void(), nullptr));
+
+                if (errorsBlob && errorsBlob->GetStringLength() > 0)
+                {
+                    std::string const errors(reinterpret_cast<char*>(errorsBlob->GetBufferPointer()),
+                                             errorsBlob->GetBufferSize());
+                    return std::unexpected(core::error(errors));
+                }
+
+                winrt::com_ptr<IDxcBlob> outBlob;
+                throwIfFailed(
+                    compileResult->GetOutput(DXC_OUT_OBJECT, __uuidof(IDxcBlob), outBlob.put_void(), nullptr));
+
+                // Calculate stage hash for cache shader stages
+                uint64_t const stageHash = ::XXH64(outBlob->GetBufferPointer(), outBlob->GetBufferSize(), 0);
+
+                uint32_t stageIndex = 0;
+
+                auto cacheResult = _cacheShaderStages.find(stageHash);
+                if (cacheResult != _cacheShaderStages.end())
+                {
+                    stageIndex = cacheResult->second;
+                }
+                else
+                {
+                    // Create a new shader stage
+                    asset::fx::BufferData shaderBufferData{.offset = static_cast<uint64_t>(shaderBlob.tellp()),
+                                                           .size = outBlob->GetBufferSize()};
+                    shaderBuffers.emplace_back(std::move(shaderBufferData));
+
+                    // Write a new shader into big chunk
+                    shaderBlob.write(reinterpret_cast<uint8_t const*>(outBlob->GetBufferPointer()),
+                                     outBlob->GetBufferSize());
+
+                    if (stageType == asset::fx::StageType::Vertex)
+                    {
+                        asset::fx::StageData shaderStageData{.buffer = static_cast<uint32_t>(shaderBuffers.size() - 1),
+                                                             .entryPoint = "main",
+                                                             .inputStructure = 0};
+                        shaderStages.emplace_back(std::move(shaderStageData));
+                    }
+                    else if (stageType == asset::fx::StageType::Pixel)
+                    {
+                        asset::fx::OutputData shaderOutputData{};
+                        this->getOutputStates(shaderParseData.psAttributes, shaderOutputData);
+
+                        asset::fx::StageData shaderStageData{.buffer = static_cast<uint32_t>(shaderBuffers.size() - 1),
+                                                             .entryPoint = "main",
+                                                             .output = std::move(shaderOutputData)};
+                        shaderStages.emplace_back(std::move(shaderStageData));
+                    }
+
+                    _cacheShaderStages[stageHash] = shaderStages.size() - 1;
+
+                    stageIndex = shaderStages.size() - 1;
+                }
+
+                shaderPermutationStages.emplace_back(stageIndex);
+            }
+
+            asset::fx::PermutationData shaderPermutationData{.stages = std::move(shaderPermutationStages),
+                                                             .structures = std::move(shaderPermutationStructures)};
+            shaderPermutations[permutationMask] = std::move(shaderPermutationData);
+        }
+
+        asset::fx::ShaderData shaderData{.header = shaderParseData.header,
+                                         .permutations = std::move(shaderPermutations),
+                                         .stages = std::move(shaderStages),
+                                         .buffers = std::move(shaderBuffers)};
         return asset::ShaderFile{.magic = asset::fx::Magic,
                                  .shaderFormat = _shaderFormat,
                                  .shaderData = std::move(shaderData),
-                                 .blob = {std::istreambuf_iterator<uint8_t>(shaderBlob.rdbuf()), {}}};
+                                 .shaderBlob = {std::istreambuf_iterator<uint8_t>(shaderBlob.rdbuf()), {}}};
     }
 } // namespace ionengine::shadersys

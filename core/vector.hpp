@@ -338,6 +338,7 @@ namespace ionengine::core
 
     using Vec4f = Vec4<float>;
     using Vec4d = Vec4<double>;
+    using Vec4u = Vec4<uint32_t>;
 } // namespace ionengine::core
 
 template <typename Type>

@@ -2,6 +2,9 @@
 
 #include "string_utils.hpp"
 #include "precompiled.h"
+#define NOMINMAX
+#define UNICODE
+#include <windows.h>
 
 namespace ionengine::core::string_utils
 {
@@ -21,7 +24,7 @@ namespace ionengine::core::string_utils
         }
     }
 
-    auto to_upper_underscore(const std::string& source) -> std::string
+    auto to_upper_underscore(std::string_view const source) -> std::string
     {
         std::string result;
         bool last_was_upper = false;
@@ -40,5 +43,14 @@ namespace ionengine::core::string_utils
         }
 
         return result;
+    }
+
+    auto to_wstring(std::string_view const source) -> std::wstring
+    {
+        int32_t const length =
+            ::MultiByteToWideChar(CP_UTF8, 0, source.data(), static_cast<int32_t>(source.size()), nullptr, 0);
+        std::wstring dest(length, '\0');
+        ::MultiByteToWideChar(CP_UTF8, 0, source.data(), static_cast<int32_t>(source.size()), dest.data(), length);
+        return dest;
     }
 } // namespace ionengine::core

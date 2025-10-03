@@ -16,24 +16,6 @@ namespace ionengine::asset
             SPIRV
         };
 
-        enum class VertexFormat
-        {
-            R32_UINT,
-            R32_SINT,
-            R32_FLOAT,
-            RG32_UINT,
-            RG32_SINT,
-            RG32_FLOAT,
-            RGB32_UINT,
-            RGB32_SINT,
-            RGB32_FLOAT,
-            RGBA32_UINT,
-            RGBA32_SINT,
-            RGBA32_FLOAT
-        };
-
-        auto sizeof_VertexFormat(VertexFormat const format) -> size_t;
-
         enum class ElementType
         {
             Float4x4,
@@ -43,6 +25,7 @@ namespace ionengine::asset
             Float3,
             Float2,
             Float,
+            Uint4,
             Uint,
             Sint,
             Bool
@@ -65,47 +48,23 @@ namespace ionengine::asset
 
         enum class CullMode
         {
+            None,
             Back,
-            Front,
-            None
-        };
-
-        struct VertexLayoutElementData
-        {
-            VertexFormat format;
-            std::string semantic;
-
-            template <typename Archive>
-            auto operator()(Archive& archive)
-            {
-                archive.property(format, "format");
-                archive.property(semantic, "semantic");
-            }
+            Front
         };
 
         struct StructureElementData
         {
             std::string name;
             ElementType type;
+            std::optional<std::string> semantic;
 
             template <typename Archive>
             auto operator()(Archive& archive)
             {
                 archive.property(name, "name");
                 archive.property(type, "type");
-            }
-        };
-
-        struct VertexLayoutData
-        {
-            std::vector<VertexLayoutElementData> elements;
-            uint32_t size;
-
-            template <typename Archive>
-            auto operator()(Archive& archive)
-            {
-                archive.property(elements, "elements");
-                archive.property(size, "sizeInBytes");
+                archive.property(semantic, "semantic");
             }
         };
 
@@ -146,7 +105,7 @@ namespace ionengine::asset
             StageType type;
             uint32_t buffer;
             std::string entryPoint;
-            std::optional<VertexLayoutData> vertexLayout;
+            std::optional<uint32_t> inputStructure;
             std::optional<OutputData> output;
 
             template <typename Archive>
@@ -154,7 +113,7 @@ namespace ionengine::asset
             {
                 archive.property(buffer, "buffer");
                 archive.property(entryPoint, "entryPoint");
-                archive.property(vertexLayout, "vertexLayout");
+                archive.property(inputStructure, "inputStructure");
                 archive.property(output, "output");
             }
         };
@@ -191,21 +150,32 @@ namespace ionengine::asset
             }
         };
 
+        struct PermutationData
+        {
+            std::vector<uint32_t> stages;
+            std::vector<StructureData> structures;
+
+            template <typename Archive>
+            auto operator()(Archive& archive)
+            {
+                archive.property(stages, "stages");
+                archive.property(structures, "structures");
+            }
+        };
+
         struct ShaderData
         {
-            HeaderData headerData;
-            std::unordered_map<StageType, StageData> stages;
-            std::unordered_map<uint32_t, std::vector<uint32_t>> permutations;
-            std::vector<StructureData> structures;
+            HeaderData header;
+            std::unordered_map<uint32_t, PermutationData> permutations;
+            std::vector<StageData> stages;
             std::vector<BufferData> buffers;
 
             template <typename Archive>
             auto operator()(Archive& archive)
             {
-                archive.property(headerData, "header");
+                archive.property(header, "header");
                 archive.property(permutations, "permutations");
                 archive.property(stages, "stages");
-                archive.property(structures, "structures");
                 archive.property(buffers, "buffers");
             }
         };
@@ -216,7 +186,7 @@ namespace ionengine::asset
         std::array<uint8_t, fx::Magic.size()> magic;
         fx::ShaderFormat shaderFormat;
         fx::ShaderData shaderData;
-        std::vector<uint8_t> blob;
+        std::vector<uint8_t> shaderBlob;
 
         template <typename Archive>
         auto operator()(Archive& archive)
@@ -224,34 +194,13 @@ namespace ionengine::asset
             archive.property(magic);
             archive.property(shaderFormat);
             archive.template with<core::serialize_ojson, core::serialize_ijson>(shaderData);
-            archive.property(blob);
+            archive.property(shaderBlob);
         }
     };
 } // namespace ionengine::asset
 
 namespace ionengine::core
 {
-    template <>
-    struct serializable_enum<asset::fx::VertexFormat>
-    {
-        template <typename Archive>
-        auto operator()(Archive& archive)
-        {
-            archive.field(asset::fx::VertexFormat::RGBA32_FLOAT, "RGBA32_FLOAT");
-            archive.field(asset::fx::VertexFormat::RGBA32_SINT, "RGBA32_SINT");
-            archive.field(asset::fx::VertexFormat::RGBA32_UINT, "RGBA32_UINT");
-            archive.field(asset::fx::VertexFormat::RGB32_FLOAT, "RGB32_FLOAT");
-            archive.field(asset::fx::VertexFormat::RGB32_SINT, "RGB32_SINT");
-            archive.field(asset::fx::VertexFormat::RGB32_UINT, "RGB32_UINT");
-            archive.field(asset::fx::VertexFormat::RG32_FLOAT, "RG32_FLOAT");
-            archive.field(asset::fx::VertexFormat::RG32_SINT, "RG32_SINT");
-            archive.field(asset::fx::VertexFormat::RG32_UINT, "RG32_UINT");
-            archive.field(asset::fx::VertexFormat::R32_FLOAT, "R32_FLOAT");
-            archive.field(asset::fx::VertexFormat::R32_SINT, "R32_SINT");
-            archive.field(asset::fx::VertexFormat::R32_UINT, "R32_UINT");
-        }
-    };
-
     template <>
     struct serializable_enum<asset::fx::ElementType>
     {
@@ -265,6 +214,7 @@ namespace ionengine::core
             archive.field(asset::fx::ElementType::Float3, "float3");
             archive.field(asset::fx::ElementType::Float2, "float2");
             archive.field(asset::fx::ElementType::Float, "float");
+            archive.field(asset::fx::ElementType::Uint4, "uint4");
             archive.field(asset::fx::ElementType::Uint, "uint");
             archive.field(asset::fx::ElementType::Sint, "int");
             archive.field(asset::fx::ElementType::Bool, "bool");

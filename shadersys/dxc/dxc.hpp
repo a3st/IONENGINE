@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -25,12 +25,20 @@ namespace ionengine::shadersys
         winrt::com_ptr<IDxcIncludeHandler> _includeHandler;
         asset::fx::ShaderFormat _shaderFormat;
         std::filesystem::path _includeBasePath;
+        std::unordered_map<uint64_t, uint32_t> _cacheShaderStages;
 
         auto getOutputStates(std::unordered_map<std::string, std::string> const& attributes,
-                             asset::fx::OutputData& outputData) -> void;
+                             asset::fx::OutputData& output) const -> void;
 
-        auto getEffectDataCode(asset::fx::StructureData const& structureData) -> std::string;
+        auto getDomainStructures(asset::fx::HeaderData const& header, asset::fx::StructureData const& effectStructure,
+                                 std::span<std::string const> const permutationNames, std::string& shaderCode,
+                                 std::vector<asset::fx::StructureData>& structures) const -> bool;
 
-        auto isDefaultSemantic(std::string_view const semantic) -> bool;
+        auto getPermutations(asset::fx::HeaderData const& header,
+                             std::unordered_map<uint32_t, std::string>& permutationNames,
+                             std::unordered_set<uint32_t>& permutationMasks) const -> void;
+
+        auto getPermutationNamesByMask(std::unordered_map<uint32_t, std::string> const& permutationNames,
+                                       uint32_t const mask, std::vector<std::string>& outputNames) const -> void;
     };
 } // namespace ionengine::shadersys

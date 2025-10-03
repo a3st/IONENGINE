@@ -1,100 +1,95 @@
 {
-    "header": {
-        "name": "Basic",
-        "description": "Basic description",
-        "domain": "UI",
-        "features": [ "Default", "TextureOnly" ]
-    },
-    "permutations": {
-      "0": [ 0, 1 ]
-    },
-    "stages": [
-        {
-            "type": "VS",
-            "buffer": 0,
-            "entryPoint": "main",
-            "vertexLayout": {
-                "elements": [
-                    {
-                        "format": "RGB32_FLOAT",
-                        "semantic": "POSITION"
-                    },
-                    {
-                        "format": "RGB32_FLOAT",
-                        "semantic": "NORMAL"
-                    },
-                    {
-                        "format": "RG32_FLOAT",
-                        "semantic": "TEXCOORD0"
-                    }
-                ],
-                "sizeInBytes": 32
-            }
-        },
-        {
-            "type": "PS",
-            "buffer": 1,
-            "entryPoint": "main",
-            "output": {
-                "depthWrite": false,
-                "stencilWrite": false,
-                "cullSide": "BACK",
-                "fillMode": "SOLID"
-            }
-        }
-    ],
-    "structures": [
-        {
+  "header": {
+    "name": "Basic",
+    "description": "Basic description",
+    "domain": "UI",
+    "features": [ "Default", "TextureOnly" ]
+  },
+  "permutations": {
+    "0": [
+      {
+        "stages": [ 0, 1 ],
+        "structures": [
+          {
             "name": "MaterialData",
             "elements": [
-                {
-                    "name": "model",
-                    "type": "float4x4"
-                },
-                {
-                    "name": "view",
-                    "type": "float4x4"
-                },
-                {
-                    "name": "projection",
-                    "type": "float4x4"
-                }
+              {
+                "name": "model",
+                "type": "float4x4",
+                "semantic": null
+              },
+              {
+                "name": "view",
+                "type": "float4x4",
+                "semantic": null
+              },
+              {
+                "name": "projection",
+                "type": "float4x4",
+                "semantic": null
+              }
             ],
             "sizeInBytes": 192
-        },
-        {
+          },
+          {
             "name": "TransformData",
             "elements": [
-                {
-                    "name": "modelViewProj",
-                    "type": "float4x4"
-                }
+              {
+                "name": "modelViewProj",
+                "type": "float4x4",
+                "semantic": null
+              }
             ],
             "sizeInBytes": 16
-        },
-        {
+          },
+          {
             "name": "ShaderData",
             "elements": [
-                {
-                    "name": "transformBuffer",
-                    "type": "cbuffer_t"
-                },
-                {
-                    "name": "samplerBuffer",
-                    "type": "cbuffer_t"
-                },
-                {
-                    "name": "materialBuffer",
-                    "type": "cbuffer_t"
-                }
+              {
+                "name": "transformBuffer",
+                "type": "cbuffer_t",
+                "semantic": "packoffset(c0)"
+              },
+              {
+                "name": "samplerBuffer",
+                "type": "cbuffer_t",
+                "semantic": "packoffset(c1)"
+              },
+              {
+                "name": "materialBuffer",
+                "type": "cbuffer_t",
+                "semantic": "packoffset(c2)"
+              }
             ],
             "sizeInBytes": 16
-        }
-    ],
-    "buffers": [
-        {
-            "offset": 2000,
-            "sizeInBytes": 1000
-        }
+          }
+        ]
+      }
     ]
+  },
+  "stages": [
+    {
+      "type": "VS",
+      "buffer": 0,
+      "entryPoint": "main",
+      "inputStructure": 0
+    },
+    {
+      "type": "PS",
+      "buffer": 1,
+      "entryPoint": "main",
+      "output": {
+        "depthWrite": false,
+        "stencilWrite": false,
+        "cullSide": "BACK",
+        "fillMode": "SOLID"
+      }
+    }
+  ],
+  "buffers": [
+    {
+      "offset": 2000,
+      "sizeInBytes": 1000
+    }
+  ]
 }

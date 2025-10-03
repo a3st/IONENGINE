@@ -35,7 +35,7 @@ namespace ionengine::rhi
         virtual auto getDescriptorOffset(BufferUsage const usage) const -> uint32_t = 0;
     };
 
-    enum class TextureFormat
+    enum class Format
     {
         Unknown,
         BGRA8_UNORM,
@@ -47,8 +47,23 @@ namespace ionengine::rhi
         BC4,
         BC5,
         D32_FLOAT,
-        RGBA16_FLOAT
+        RGBA16_FLOAT,
+        R16_UINT,
+        R32_UINT,
+        R32_SINT,
+        R32_FLOAT,
+        RG32_UINT,
+        RG32_SINT,
+        RG32_FLOAT,
+        RGB32_UINT,
+        RGB32_SINT,
+        RGB32_FLOAT,
+        RGBA32_UINT,
+        RGBA32_SINT,
+        RGBA32_FLOAT
     };
+
+    auto sizeof_Format(Format const format) -> size_t;
 
     enum class TextureDimension
     {
@@ -85,7 +100,7 @@ namespace ionengine::rhi
 
         virtual auto getMipLevels() const -> uint32_t = 0;
 
-        virtual auto getFormat() const -> TextureFormat = 0;
+        virtual auto getFormat() const -> Format = 0;
 
         virtual auto getFlags() const -> TextureUsageFlags = 0;
 
@@ -117,12 +132,6 @@ namespace ionengine::rhi
     {
         Store,
         DontCare
-    };
-
-    enum class IndexFormat
-    {
-        Uint16,
-        Uint32
     };
 
     enum class FillMode
@@ -225,7 +234,7 @@ namespace ionengine::rhi
         uint32_t height;
         uint32_t depth;
         uint32_t mipLevels;
-        TextureFormat format;
+        Format format;
         TextureDimension dimension;
         TextureUsageFlags flags;
     };
@@ -355,28 +364,10 @@ namespace ionengine::rhi
         }
     };
 
-    enum class VertexFormat
-    {
-        R32_UINT,
-        R32_SINT,
-        R32_FLOAT,
-        RG32_UINT,
-        RG32_SINT,
-        RG32_FLOAT,
-        RGB32_UINT,
-        RGB32_SINT,
-        RGB32_FLOAT,
-        RGBA32_UINT,
-        RGBA32_SINT,
-        RGBA32_FLOAT
-    };
-
-    auto sizeof_VertexFormat(VertexFormat const format) -> size_t;
-
     struct VertexDeclarationInfo
     {
         std::string semantic;
-        VertexFormat format;
+        Format format;
     };
 
     struct ShaderStageCreateInfo
@@ -624,7 +615,7 @@ namespace ionengine::rhi
             -> void = 0;
 
         virtual auto bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
-                                     IndexFormat const format) -> void = 0;
+                                     Format const format) -> void = 0;
 
         virtual auto drawIndexed(uint32_t const indexCount, uint32_t const instanceCount) -> void = 0;
 
