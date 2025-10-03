@@ -9,17 +9,17 @@ namespace ionengine::core
     {
         uint32_t const concat_bits = (a << 16) | (b << 8) | c;
 
-        auto const b64_char1 = encode_table[(concat_bits >> 18) & 0b0011'1111];
-        auto const b64_char2 = encode_table[(concat_bits >> 12) & 0b0011'1111];
-        auto const b64_char3 = encode_table[(concat_bits >> 6) & 0b0011'1111];
-        auto const b64_char4 = encode_table[concat_bits & 0b0011'1111];
+        auto const b64_char1 = _encode_table[(concat_bits >> 18) & 0b0011'1111];
+        auto const b64_char2 = _encode_table[(concat_bits >> 12) & 0b0011'1111];
+        auto const b64_char3 = _encode_table[(concat_bits >> 6) & 0b0011'1111];
+        auto const b64_char4 = _encode_table[concat_bits & 0b0011'1111];
 
         return {b64_char1, b64_char2, b64_char3, b64_char4};
     }
 
     auto Base64::is_valid_base64_char(char const c) const -> bool
     {
-        auto const decode_byte = decode_table[c];
+        auto const decode_byte = _decode_table[c];
         return decode_byte != 0x64;
     }
 
@@ -48,7 +48,7 @@ namespace ionengine::core
     auto Base64::decode_quad(char const a, char const b, char const c, char const d) const -> std::array<uint8_t, 3>
     {
         uint32_t const concat_bytes =
-            (decode_table[a] << 18) | (decode_table[b] << 12) | (decode_table[c] << 6) | decode_table[d];
+            (_decode_table[a] << 18) | (_decode_table[b] << 12) | (_decode_table[c] << 6) | _decode_table[d];
 
         uint8_t const byte1 = (concat_bytes >> 16) & 0b1111'1111;
         uint8_t const byte2 = (concat_bytes >> 8) & 0b1111'1111;

@@ -127,7 +127,7 @@ namespace ionengine
                     .height = outputHeight,
                     .depth = 1,
                     .mipLevels = 1,
-                    .format = rhi::TextureFormat::RGBA8_UNORM,
+                    .format = rhi::Format::RGBA8_UNORM,
                     .dimension = rhi::TextureDimension::_2D,
                     .flags =
                         (rhi::TextureUsageFlags)(rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource)};

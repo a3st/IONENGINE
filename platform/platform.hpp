@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -16,7 +16,7 @@ namespace ionengine::platform
 
     struct WindowEvent
     {
-        WindowEventType eventType;
+        WindowEventType type;
         union {
             struct
             {
@@ -43,7 +43,7 @@ namespace ionengine::platform
 
     struct InputEvent
     {
-        InputDeviceType deviceType;
+        InputDeviceType type;
         InputState state;
         KeyCode keyCode;
         union {
@@ -71,7 +71,9 @@ namespace ionengine::platform
 
         virtual auto run() -> void = 0;
 
-        virtual auto setEnableMouse(bool const isEnable) -> void = 0;
+        virtual auto setMouseEnabled(bool const enable) -> void = 0;
+
+        virtual auto isMouseEnabled() const -> bool = 0;
 
         core::event<void(InputEvent const&)> inputStateChanged;
 

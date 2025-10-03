@@ -1,11 +1,12 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "win32.hpp"
+#include "core/string_utils.hpp"
 #include "precompiled.h"
 
 namespace ionengine::platform
 {
-    std::unordered_map<uint32_t, KeyCode> keyCodes = {
+    std::unordered_map<uint32_t, KeyCode> const keyCodes{
         {81, KeyCode::Q},        {87, KeyCode::W},      {69, KeyCode::E},      {82, KeyCode::R},
         {84, KeyCode::T},        {89, KeyCode::Y},      {85, KeyCode::U},      {73, KeyCode::I},
         {73, KeyCode::O},        {80, KeyCode::P},      {65, KeyCode::A},      {83, KeyCode::S},
@@ -24,18 +25,6 @@ namespace ionengine::platform
         {121, KeyCode::F10},     {122, KeyCode::F11},   {123, KeyCode::F12},   {46, KeyCode::Delete},
         {36, KeyCode::Home},     {35, KeyCode::End},    {33, KeyCode::PageUp}, {34, KeyCode::PageDown}};
 
-    namespace internal
-    {
-        auto toWString(std::string_view const source) -> std::wstring
-        {
-            int32_t const length =
-                ::MultiByteToWideChar(CP_UTF8, 0, source.data(), static_cast<int32_t>(source.size()), nullptr, 0);
-            std::wstring dest(length, '\0');
-            ::MultiByteToWideChar(CP_UTF8, 0, source.data(), static_cast<int32_t>(source.size()), dest.data(), length);
-            return dest;
-        }
-    } // namespace internal
-
     auto Win32App::wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT
     {
         auto platformInstance = reinterpret_cast<Win32App*>(::GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -49,7 +38,7 @@ namespace ionengine::platform
             case WM_CLOSE: {
                 ::PostQuitMessage(0);
 
-                WindowEvent const windowEvent{.eventType = WindowEventType::Close};
+                WindowEvent const windowEvent{.type = WindowEventType::Close};
                 platformInstance->windowStateChanged.invoke(windowEvent);
                 break;
             }
@@ -58,7 +47,7 @@ namespace ionengine::platform
                 uint32_t const height = HIWORD(lParam);
 
                 WindowEvent const windowEvent{
-                    .eventType = WindowEventType::Resize,
+                    .type = WindowEventType::Resize,
                     .size = {.width = static_cast<uint32_t>(width), .height = static_cast<uint32_t>(height)}};
                 platformInstance->windowStateChanged.invoke(windowEvent);
                 break;
@@ -70,9 +59,8 @@ namespace ionengine::platform
                 auto result = keyCodes.find(virtualKey);
                 if (result != keyCodes.end())
                 {
-                    InputEvent const inputEvent{.deviceType = InputDeviceType::Keyboard,
-                                                .state = InputState::Pressed,
-                                                .keyCode = result->second};
+                    InputEvent const inputEvent{
+                        .type = InputDeviceType::Keyboard, .state = InputState::Pressed, .keyCode = result->second};
                     platformInstance->inputStateChanged.invoke(inputEvent);
                 }
                 break;
@@ -84,9 +72,8 @@ namespace ionengine::platform
                 auto result = keyCodes.find(virtualKey);
                 if (result != keyCodes.end())
                 {
-                    InputEvent const inputEvent{.deviceType = InputDeviceType::Keyboard,
-                                                .state = InputState::Released,
-                                                .keyCode = result->second};
+                    InputEvent const inputEvent{
+                        .type = InputDeviceType::Keyboard, .state = InputState::Released, .keyCode = result->second};
                     platformInstance->inputStateChanged.invoke(inputEvent);
                 }
                 break;
@@ -98,9 +85,8 @@ namespace ionengine::platform
                 auto result = keyCodes.find(virtualKey);
                 if (result != keyCodes.end())
                 {
-                    InputEvent const inputEvent{.deviceType = InputDeviceType::Keyboard,
-                                                .state = InputState::Pressed,
-                                                .keyCode = result->second};
+                    InputEvent const inputEvent{
+                        .type = InputDeviceType::Keyboard, .state = InputState::Pressed, .keyCode = result->second};
                     platformInstance->inputStateChanged.invoke(inputEvent);
                 }
                 break;
@@ -112,9 +98,8 @@ namespace ionengine::platform
                 auto result = keyCodes.find(virtualKey);
                 if (result != keyCodes.end())
                 {
-                    InputEvent const inputEvent{.deviceType = InputDeviceType::Keyboard,
-                                                .state = InputState::Released,
-                                                .keyCode = result->second};
+                    InputEvent const inputEvent{
+                        .type = InputDeviceType::Keyboard, .state = InputState::Released, .keyCode = result->second};
                     platformInstance->inputStateChanged.invoke(inputEvent);
                 }
                 break;
@@ -123,7 +108,7 @@ namespace ionengine::platform
         return ::DefWindowProc(hWnd, msg, wParam, lParam);
     }
 
-    Win32App::Win32App(std::string_view const title)
+    Win32App::Win32App(std::string_view const title) : _cursorEnabled(false)
     {
         WNDCLASS const wndClass{.lpfnWndProc = reinterpret_cast<WNDPROC>(wndProc),
                                 .hInstance = ::GetModuleHandle(nullptr),
@@ -132,7 +117,7 @@ namespace ionengine::platform
 
         if (!::RegisterClass(&wndClass))
         {
-            throw std::runtime_error("an error occurred while registering the window");
+            throw std::runtime_error("An error occurred while registering the window");
         }
 
         uint32_t const windowStyle =
@@ -141,20 +126,20 @@ namespace ionengine::platform
         RECT rect{.right = 800, .bottom = 600};
         ::AdjustWindowRect(&rect, windowStyle, false);
 
-        window = UniqueHWND(::CreateWindow(wndClass.lpszClassName, internal::toWString(title).c_str(), windowStyle,
-                                           CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top,
-                                           nullptr, nullptr, wndClass.hInstance, nullptr));
-        if (!window)
+        _window = UniqueHWND(::CreateWindow(wndClass.lpszClassName, core::string_utils::to_wstring(title).c_str(),
+                                            windowStyle, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left,
+                                            rect.bottom - rect.top, nullptr, nullptr, wndClass.hInstance, nullptr));
+        if (!_window)
         {
-            throw std::runtime_error("an error occurred while creating the window");
+            throw std::runtime_error("An error occurred while creating the window");
         }
 
-        ::SetWindowLongPtr(window.get(), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        ::SetWindowLongPtr(_window.get(), GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
     }
 
     auto Win32App::getWindowHandle() -> void*
     {
-        return reinterpret_cast<void*>(window.get());
+        return reinterpret_cast<void*>(_window.get());
     }
 
     auto Win32App::getInstanceHandle() -> void*
@@ -162,14 +147,20 @@ namespace ionengine::platform
         return ::GetModuleHandle(nullptr);
     }
 
-    auto Win32App::setEnableMouse(bool const isEnable) -> void
+    auto Win32App::setMouseEnabled(bool const enable) -> void
     {
-        ::ShowCursor(isEnable);
+        ::ShowCursor(enable);
+        _cursorEnabled = enable;
+    }
+
+    auto Win32App::isMouseEnabled() const -> bool
+    {
+        return _cursorEnabled;
     }
 
     auto Win32App::run() -> void
     {
-        ::ShowWindow(window.get(), SW_SHOWDEFAULT);
+        ::ShowWindow(_window.get(), SW_SHOWDEFAULT);
 
         MSG msg;
         bool running = true;

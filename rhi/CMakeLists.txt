@@ -6,7 +6,8 @@ add_library(rhi STATIC rhi.cpp)
 
 target_include_directories(rhi PUBLIC 
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/rhi)
+    ${PROJECT_SOURCE_DIR}/rhi
+)
 
 target_precompile_headers(rhi PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)
 
@@ -21,11 +22,13 @@ if(RHI_TARGET_BACKEND STREQUAL "DX12")
             xxHash::xxhash
             unofficial::D3D12MemoryAllocator
             d3d12
-            dxgi)
+            dxgi
+        )
 
         target_compile_definitions(rhi PUBLIC 
             IONENGINE_PLATFORM_WIN32
-            IONENGINE_RHI_DIRECTX12)
+            IONENGINE_RHI_DIRECTX12
+        )
     else()
         message(FATAL_ERROR "DirectX12 is available only on Windows")
     endif()
@@ -40,11 +43,13 @@ elseif(RHI_TARGET_BACKEND STREQUAL "VK")
         target_link_libraries(rhi PUBLIC 
             xxHash::xxhash
             Vulkan::Vulkan 
-            GPUOpen::VulkanMemoryAllocator)
+            GPUOpen::VulkanMemoryAllocator
+        )
 
         target_compile_definitions(rhi PUBLIC 
             IONENGINE_PLATFORM_WIN32
-            IONENGINE_RHI_VULKAN)
+            IONENGINE_RHI_VULKAN
+        )
     elseif(UNIX)
         target_sources(rhi PRIVATE vulkan/vk.cpp)
 
@@ -52,17 +57,21 @@ elseif(RHI_TARGET_BACKEND STREQUAL "VK")
         pkg_check_modules(VK REQUIRED vulkan)
         
         target_include_directories(rhi PUBLIC
-            ${VK_INCLUDE_DIRS})
+            ${VK_INCLUDE_DIRS}
+        )
         
         target_link_directories(rhi PUBLIC
-            ${VK_LIBRARY_DIRS})
+            ${VK_LIBRARY_DIRS}
+        )
         
         target_link_libraries(rhi PUBLIC
-            ${VK_LIBRARIES})
+            ${VK_LIBRARIES}
+        )
         
         target_compile_definitions(rhi PUBLIC
             IONENGINE_PLATFORM_X11
-            IONENGINE_RHI_VULKAN)
+            IONENGINE_RHI_VULKAN
+        )
     else()
         message(FATAL_ERROR "Vulkan is not available on this platform")
     endif()

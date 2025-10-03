@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "platform/platform.hpp"
 #include "precompiled.h"
@@ -10,7 +10,7 @@ TEST(Platform, App_Launch_Test)
 {
     auto application = platform::App::create("TestProject");
     application->inputStateChanged += [](platform::InputEvent const& event) -> void {
-        if (event.deviceType == platform::InputDeviceType::Keyboard)
+        if (event.type == platform::InputDeviceType::Keyboard)
         {
             if (event.state == platform::InputState::Pressed)
             {
@@ -23,7 +23,7 @@ TEST(Platform, App_Launch_Test)
         }
     };
     application->windowStateChanged += [](platform::WindowEvent const& event) -> void {
-        if (event.eventType == platform::WindowEventType::Close)
+        if (event.type == platform::WindowEventType::Close)
         {
             std::cout << "Closed" << std::endl;
         }

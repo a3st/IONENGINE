@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "x11.hpp"
 #include "core/error.hpp"
@@ -6,7 +6,7 @@
 
 namespace ionengine::platform
 {
-    std::unordered_map<uint32_t, KeyCode> keyCodes = {
+    std::unordered_map<uint32_t, KeyCode> const keyCodes{
         {24, KeyCode::Q},         {25, KeyCode::W},      {26, KeyCode::E},       {27, KeyCode::R},
         {28, KeyCode::T},         {29, KeyCode::Y},      {30, KeyCode::U},       {31, KeyCode::I},
         {32, KeyCode::O},         {33, KeyCode::P},      {38, KeyCode::A},       {39, KeyCode::S},
@@ -75,7 +75,7 @@ namespace ionengine::platform
                 switch (event.type)
                 {
                     case ConfigureNotify: {
-                        WindowEvent windowEvent{.eventType = WindowEventType::Resize,
+                        WindowEvent windowEvent{.type = WindowEventType::Resize,
                                                 .size = {.width = static_cast<uint32_t>(event.xconfigure.width),
                                                          .height = static_cast<uint32_t>(event.xconfigure.height)}};
                         platformInstance->context->onWindowEvent(windowEvent);
@@ -84,7 +84,7 @@ namespace ionengine::platform
                     case ClientMessage: {
                         if (event.xclient.data.l[0] == WM_DELETE_WINDOW)
                         {
-                            WindowEvent windowEvent{.eventType = WindowEventType::Close};
+                            WindowEvent windowEvent{.type = WindowEventType::Close};
                             platformInstance->context->onWindowEvent(windowEvent);
 
                             running = false;
@@ -95,9 +95,9 @@ namespace ionengine::platform
                         auto result = keyCodes.find(event.xkey.keycode);
                         if (result != keyCodes.end())
                         {
-                            InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
-                                             .state = InputState::Pressed,
-                                             .keyCode = result->second};
+                            InputEvent inputEvent{.type = InputDeviceType::Keyboard,
+                                                  .state = InputState::Pressed,
+                                                  .keyCode = result->second};
                             platformInstance->context->onInputEvent(inputEvent);
                         }
                         break;
@@ -106,9 +106,9 @@ namespace ionengine::platform
                         auto result = keyCodes.find(event.xkey.keycode);
                         if (result != keyCodes.end())
                         {
-                            InputEvent inputEvent{.deviceType = InputDeviceType::Keyboard,
-                                             .state = InputState::Released,
-                                             .keyCode = result->second};
+                            InputEvent inputEvent{.type = InputDeviceType::Keyboard,
+                                                  .state = InputState::Released,
+                                                  .keyCode = result->second};
                             platformInstance->context->onInputEvent(inputEvent);
                         }
                         break;

@@ -10,7 +10,7 @@ namespace ionengine::core
         uint32_t crc = 0xffffffff;
         for (auto c : source)
         {
-            crc = (crc >> 8) ^ CRC32::crc_table[(crc ^ c) & 0xff];
+            crc = (crc >> 8) ^ _crc_table[(crc ^ c) & 0xff];
         }
         return crc ^ 0xffffffff;
     }

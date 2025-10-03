@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #pragma once
 
@@ -34,10 +34,13 @@ namespace ionengine::platform
 
         auto run() -> void override;
 
-        auto setEnableMouse(bool const isEnable) -> void override;
+        auto setMouseEnabled(bool const enable) -> void override;
+
+        auto isMouseEnabled() const -> bool override;
 
       private:
-        UniqueHWND window;
+        UniqueHWND _window;
+        bool _cursorEnabled;
 
         static auto wndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT;
     };
