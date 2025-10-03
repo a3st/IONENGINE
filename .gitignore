@@ -16,4 +16,3 @@ __cache__
 __pycache__
 node_modules
 dist
-CMakeSettings.json

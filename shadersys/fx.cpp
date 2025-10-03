@@ -25,6 +25,8 @@ namespace ionengine::asset::fx
                 return sizeof(float) * 4;
             case ElementType::Float:
                 return sizeof(float);
+            case ElementType::Uint4:
+                return sizeof(uint32_t) * 4;
             case ElementType::Bool:
             case ElementType::Uint:
                 return sizeof(uint32_t);

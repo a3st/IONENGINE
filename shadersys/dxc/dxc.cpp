@@ -90,19 +90,28 @@ namespace ionengine::shadersys
 
         if (header.domain.compare("PostProcess") == 0)
         {
-            /* shaderCode += generator.getHLSLStruct<inputs::BaseVSInput>("VSInput") + "\n";
-            shaderCode += generator.getHLSLStruct<inputs::BaseVSOutput>("VSOutput") + "\n";
-            shaderCode += generator.getHLSLStruct<inputs::ForwardPSOutput>("PSOutput") + "\n";
-            shaderCode += generator.getHLSLStruct<common::SamplerData>("SamplerData") + "\n";
-            shaderCode += generator.getHLSLStruct<common::PassData>("PassData") + "\n";
-            shaderCode += generator.getHLSLConstBuffer<constants::PostProcessShaderData>("ShaderData", 0, 0) + "\n";
+            generator.getHLSLStruct<inputs::BaseVSInput>("VSInput", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
 
-            structures.emplace_back(common::SamplerData::structureData);
-            structures.emplace_back(common::PassData::structureData);
-            structures.emplace_back(constants::PostProcessShaderData::structureData);
+            generator.getHLSLStruct<inputs::BaseVSOutput>("VSOutput", structShaderCode, structure);
+            oss << structShaderCode << "\n";
 
-            vertexLayout = {};
-            */
+            generator.getHLSLStruct<inputs::ForwardPSOutput>("PSOutput", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+
+            generator.getHLSLStruct<common::SamplerData>("SamplerData", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
+
+            generator.getHLSLStruct<common::PassData>("PassData", structShaderCode, structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
+
+            generator.getHLSLConstBuffer<constants::PostProcessShaderData>("ShaderData", 0, 0, structShaderCode,
+                                                                           structure);
+            oss << structShaderCode << "\n";
+            structures.emplace_back(structure);
         }
         else if (header.domain.compare("Surface") == 0)
         {
@@ -246,7 +255,9 @@ namespace ionengine::shadersys
         std::unordered_set<uint32_t> permutationMasks;
         this->getPermutations(shaderParseData.header, permutationNames, permutationMasks);
 
-        std::wstring const includeFilePath = L"-I " + filePath.parent_path().wstring();
+        std::wstring const includeFileArgument = L"-I " + filePath.parent_path().wstring();
+        std::wstring const includeBaseArgument = L"-I " + _includeBasePath.wstring();
+
         std::vector<std::wstring> arguments;
 
         for (uint32_t const permutationMask : permutationMasks)
@@ -262,8 +273,8 @@ namespace ionengine::shadersys
                 arguments.clear();
 
                 arguments.emplace_back(L"-E main");
-                arguments.emplace_back(includeFilePath.c_str());
-                arguments.emplace_back(_includeBasePath.c_str());
+                arguments.emplace_back(includeFileArgument.c_str());
+                arguments.emplace_back(includeBaseArgument.c_str());
                 arguments.emplace_back(L"-HV 2021");
 
                 if (_shaderFormat == asset::fx::ShaderFormat::SPIRV)

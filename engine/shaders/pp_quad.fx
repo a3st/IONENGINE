@@ -2,7 +2,7 @@
 
 HEADER {
     Name = "Quad";
-    Description = "Output texture as quad";
+    Description = "Output texture as Quad";
     Domain = "PostProcess";
 }
 
@@ -11,18 +11,17 @@ DATA {
 }
 
 VS {
-    #include "shared/ionengine.hlsli"
-
     VSOutput main(VSInput input) 
     {
-        return QuadFromNullInput(input);
+        VSOutput output;
+        output.uv = float2((input.id << 1) & 2, input.id & 2);
+        output.position = float4(output.uv * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);
+        return output;
     }
 }
 
 [FillMode("SOLID"), CullMode("BACK"), DepthWrite(false), StencilWrite(false)]
 PS {
-    #include "shared/ionengine.hlsli"
-
     PSOutput main(VSOutput input)
     {
         cbuffer_t<SamplerData> samplerData = CreateResource< cbuffer_t<SamplerData> >(gSamplerData);

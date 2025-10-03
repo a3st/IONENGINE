@@ -29,6 +29,12 @@ endif()
 
 option(BUILD_TESTING "Build unit-tests" TRUE)
 
+if(BUILD_TESTING)
+    enable_testing()
+    find_package(GTest REQUIRED)
+    include(GoogleTest)
+endif()
+
 add_subdirectory(core)
 add_subdirectory(platform)
 add_subdirectory(rhi)
@@ -37,7 +43,3 @@ add_subdirectory(txe)
 add_subdirectory(shadersys)
 add_subdirectory(engine)
 add_subdirectory(tools)
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()

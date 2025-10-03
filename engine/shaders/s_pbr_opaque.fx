@@ -13,14 +13,20 @@ DATA {
 }
 
 VS {
-    #include "shared/ionengine.hlsli"
-
-    VsOutput main(VSInput input) 
+    VSOutput main(VSInput input) 
     {
         #ifdef USE_SKINNING
-        return SkeletalSurfaceFromInput(input);
+        VSOutput output;
+        output.position = float4(1.0f, 1.0f, 1.0f, 1.0f);
+        output.normal = float3(1.0f, 1.0f, 1.0f);
+        output.uv = input.uv;
+        return output;
         #else
-        return StaticSurfaceFromInput(input);
+        VSOutput output;
+        output.position = float4(1.0f, 1.0f, 1.0f, 1.0f);
+        output.normal = float3(1.0f, 1.0f, 1.0f);
+        output.uv = input.uv;
+        return output;
         #endif
     }
 }
@@ -30,6 +36,7 @@ PS {
     PSOutput main(VSOutput input)
     {
         PSOutput output;
+        output.color = float4(1.0f, 1.0f, 1.0f, 1.0f);
         return output;
     }
 }

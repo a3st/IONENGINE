@@ -182,11 +182,22 @@ namespace ionengine::shadersys
                 it = this->parseOptionValue(it, successful, outValue);
                 output.header.domain = outValue;
             }
+            else if (outVariable.compare("Blend") == 0)
+            {
+                std::string outValue;
+                it = this->parseOptionValue(it, successful, outValue);
+                output.header.blend = outValue;
+            }
             else if (outVariable.compare("Features") == 0)
             {
                 std::vector<std::string> outValues;
                 it = this->parseOptionValue(it, successful, outValues);
                 output.header.features = std::move(outValues);
+            }
+            else
+            {
+                errors = std::format("line:{}: error: unknown option '{}'", region->getNumLine(), outVariable);
+                successful = false;
             }
         }
 
@@ -213,8 +224,8 @@ namespace ionengine::shadersys
         }
         else
         {
-            errors = std::format("line:{}: error: unknown shader stage '{}'", region->getNumLine(),
-                                 region->getContent());
+            errors =
+                std::format("line:{}: error: unknown shader stage '{}'", region->getNumLine(), region->getContent());
             successful = false;
         }
 
