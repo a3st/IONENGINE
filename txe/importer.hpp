@@ -13,6 +13,8 @@ namespace ionengine::asset
       public:
         virtual ~TXEImporter() = default;
 
+        static auto create() -> core::ref_ptr<TXEImporter>;
+
         virtual auto loadFromFile(std::filesystem::path const& filePath) -> std::expected<TextureFile, core::error> = 0;
     };
 } // namespace ionengine::asset

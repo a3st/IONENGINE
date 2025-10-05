@@ -1,0 +1,75 @@
+{
+    "version": 4,
+    "configurePresets": [
+        {
+            "name": "Base",
+            "hidden": true,
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT_PATH}/scripts/buildsystems/vcpkg.cmake"
+            }
+        },
+        {
+            "inherits": "Base",
+            "name": "x64-Debug",
+            "displayName": "x64 Debug",
+            "architecture": "x64",
+            "cacheVariables": {
+                "TARGET_ARCH": "x64"
+            },
+            "binaryDir": "${sourceDir}/build/x64-Debug"
+        },
+        {
+            "inherits": "Base",
+            "name": "arm64-Debug",
+            "displayName": "ARM64 Debug",
+            "architecture": "ARM64",
+            "cacheVariables": {
+                "TARGET_ARCH": "arm64"
+            },
+            "binaryDir": "${sourceDir}/build/arm64-Debug"
+        },
+        {
+            "inherits": "Base",
+            "name": "x64-Release",
+            "displayName": "x64 Release",
+            "architecture": "x64",
+            "cacheVariables": {
+                "TARGET_ARCH": "x64"
+            },
+            "binaryDir": "${sourceDir}/build/x64-Release"
+        },
+        {
+            "inherits": "Base",
+            "name": "arm64-Release",
+            "displayName": "ARM64 Release",
+            "architecture": "ARM64",
+            "cacheVariables": {
+                "TARGET_ARCH": "arm64"
+            },
+            "binaryDir": "${sourceDir}/build/arm64-Release"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "x64-Debug",
+            "configurePreset": "x64-Debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "arm64-Debug",
+            "configurePreset": "arm64-Debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "x64-Release",
+            "configurePreset": "x64-Release",
+            "configuration": "Release"
+        },
+        {
+            "name": "arm64-Release",
+            "configurePreset": "arm64-Release",
+            "configuration": "Release"
+        }
+    ]
+}

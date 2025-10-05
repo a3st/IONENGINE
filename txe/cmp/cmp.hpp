@@ -14,6 +14,6 @@ namespace ionengine::asset
         auto loadFromFile(std::filesystem::path const& filePath) -> std::expected<TextureFile, core::error> override;
 
       private:
-        bool generateMipMaps;
+        bool _generateMipMaps;
     };
 } // namespace ionengine::asset

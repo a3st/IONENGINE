@@ -60,14 +60,14 @@ namespace ionengine::asset
     {
         std::array<uint8_t, txe::Magic.size()> magic;
         txe::TextureData textureData;
-        std::vector<uint8_t> blob;
+        std::vector<uint8_t> textureBlob;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
             archive.property(magic);
             archive.template with<core::serialize_ojson, core::serialize_ijson>(textureData);
-            archive.property(blob);
+            archive.property(textureBlob);
         }
     };
 } // namespace ionengine::asset
