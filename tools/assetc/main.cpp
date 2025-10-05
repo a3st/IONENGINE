@@ -1,4 +1,4 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "mdl/obj/obj.hpp"
 #include "precompiled.h"
@@ -30,7 +30,7 @@ auto main(int32_t argc, char** argv) -> int32_t
             return EXIT_SUCCESS;
         }
 
-        inputPath = std::filesystem::path(input).make_preferred();
+        inputPath = std::filesystem::path(input);
     }
 
     std::filesystem::path outputPath;
@@ -41,7 +41,7 @@ auto main(int32_t argc, char** argv) -> int32_t
             output = (inputPath.parent_path() / inputPath.stem()).string();
         }
 
-        outputPath = std::filesystem::path(output).make_preferred();
+        outputPath = std::filesystem::path(output);
     }
 
     try
@@ -61,7 +61,7 @@ auto main(int32_t argc, char** argv) -> int32_t
             }
             else
             {
-                std::cerr << "Compilation error: " << loadResult.error().what() << std::endl;
+                std::cerr << "Error: " << loadResult.error().what() << std::endl;
             }
         }
         else if (inputPath.extension().compare(".png") == 0)
@@ -79,7 +79,7 @@ auto main(int32_t argc, char** argv) -> int32_t
             }
             else
             {
-                std::cerr << "Compilation error: " << loadResult.error().what() << std::endl;
+                std::cerr << "Error: " << loadResult.error().what() << std::endl;
             }
         }
         return EXIT_SUCCESS;
