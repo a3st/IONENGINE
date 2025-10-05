@@ -1360,7 +1360,7 @@ namespace ionengine::rhi
 
         D3D12_INDEX_BUFFER_VIEW const indexBufferView{.BufferLocation =
                                                           dxBuffer->getResource()->GetGPUVirtualAddress() + offset,
-                                                      .SizeInBytes = size,
+                                                      .SizeInBytes = static_cast<uint32_t>(size),
                                                       .Format = Format_to_DXGI_FORMAT(format)};
         commandList->IASetIndexBuffer(&indexBufferView);
     }

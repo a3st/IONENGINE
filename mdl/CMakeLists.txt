@@ -1,25 +1,50 @@
 cmake_minimum_required(VERSION 3.25.1)
 
-include(FetchContent)
+find_package(tinyobjloader CONFIG REQUIRED)
 
-FetchContent_Declare(tinyobjloader
-    GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
-    GIT_TAG 4464aa5b401f26330583fd995f7ba6df3592653a
-    BINARY_DIR ${CMAKE_BINARY_DIR}/thirdparty/tinyobjloader)
+set(SUB_MODULE_NAME mdl)
 
-FetchContent_MakeAvailable(
-    tinyobjloader)
-
-add_library(mdl STATIC
+add_library(${SUB_MODULE_NAME} STATIC
     obj/obj.cpp
-    mdl.cpp)
+    importer.cpp
+    mdl.cpp
+)
 
-target_include_directories(mdl PUBLIC 
+target_include_directories(${SUB_MODULE_NAME} PUBLIC 
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/mdl)
+    ${PROJECT_SOURCE_DIR}/mdl
+)
 
-target_link_libraries(mdl PUBLIC 
+target_link_libraries(${SUB_MODULE_NAME} PUBLIC 
     core
-    tinyobjloader)
+    tinyobjloader::tinyobjloader
+)
 
-target_precompile_headers(mdl PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)
+target_precompile_headers(${SUB_MODULE_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/precompiled.h)
+
+if(BUILD_TESTING)
+    add_executable(${SUB_MODULE_NAME}_test mdl_test.cpp)
+
+    target_link_libraries(${SUB_MODULE_NAME}_test PRIVATE 
+        mdl
+        GTest::gtest
+    )
+
+    foreach(CONFIG_TYPE DEBUG RELEASE MINSIZEREL RELWITHDEBINFO)
+        set_target_properties(${SUB_MODULE_NAME}_test PROPERTIES
+            ARCHIVE_OUTPUT_DIRECTORY_${CONFIG_TYPE} ${CMAKE_BINARY_DIR}/${SUB_MODULE_NAME}/lib
+            LIBRARY_OUTPUT_DIRECTORY_${CONFIG_TYPE} ${CMAKE_BINARY_DIR}/${SUB_MODULE_NAME}/lib
+            RUNTIME_OUTPUT_DIRECTORY_${CONFIG_TYPE} ${CMAKE_BINARY_DIR}/${SUB_MODULE_NAME}/bin
+        )
+    endforeach()
+
+    target_precompile_headers(${SUB_MODULE_NAME}_test PRIVATE ${PROJECT_SOURCE_DIR}/precompiled.h)
+
+    add_custom_command(TARGET ${SUB_MODULE_NAME}_test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/assets/objects/box.obj ${CMAKE_BINARY_DIR}/${SUB_MODULE_NAME}/bin/objects/box.obj
+    )
+
+    gtest_discover_tests(${SUB_MODULE_NAME}_test 
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/${SUB_MODULE_NAME}/bin
+    )
+endif()

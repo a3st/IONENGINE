@@ -1,6 +1,6 @@
-// Copyright © 2020-2024 Dmitriy Lukovenko. All rights reserved.
+// Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
-#include "mdl/obj/obj.hpp"
+#include "importer.hpp"
 #include "precompiled.h"
 #include <gtest/gtest.h>
 
@@ -8,8 +8,8 @@ using namespace ionengine;
 
 TEST(MDL, LoadOBJ_Test)
 {
-    auto objImporter = core::make_ref<asset::OBJImporter>();
-    auto modelFile = objImporter->loadFromFile("../../assets/objects/box.obj");
+    auto mdlImporter = asset::MDLImporter::create();
+    auto modelFile = mdlImporter->loadFromFile("objects/box.obj");
     ASSERT_TRUE(modelFile.has_value());
 }
 

@@ -13,6 +13,8 @@ namespace ionengine::asset
       public:
         virtual ~MDLImporter() = default;
 
+        static auto create() -> core::ref_ptr<MDLImporter>;
+
         virtual auto loadFromFile(std::filesystem::path const& filePath) -> std::expected<ModelFile, core::error> = 0;
     };
 } // namespace ionengine::asset

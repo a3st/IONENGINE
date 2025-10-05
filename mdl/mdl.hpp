@@ -106,14 +106,14 @@ namespace ionengine::asset
     {
         std::array<uint8_t, mdl::Magic.size()> magic;
         mdl::ModelData modelData;
-        std::vector<uint8_t> blob;
+        std::vector<uint8_t> modelBlob;
 
         template <typename Archive>
         auto operator()(Archive& archive)
         {
             archive.property(magic);
             archive.template with<core::serialize_ojson, core::serialize_ijson>(modelData);
-            archive.property(blob);
+            archive.property(modelBlob);
         }
     };
 } // namespace ionengine::asset

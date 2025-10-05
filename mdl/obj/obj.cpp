@@ -9,7 +9,6 @@ namespace ionengine::asset
     auto OBJImporter::loadFromFile(std::filesystem::path const& filePath) -> std::expected<ModelFile, core::error>
     {
         tinyobj::ObjReader reader;
-
         tinyobj::ObjReaderConfig const config{};
         if (!reader.ParseFromFile(filePath.string(), config))
         {
@@ -24,26 +23,19 @@ namespace ionengine::asset
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
 
-        mdl::ModelData modelData{
-            .vertexLayout = {
-                .elements =
-                    {mdl::VertexLayoutElementData{.format = mdl::VertexFormat::RGB32_FLOAT, .semantic = "POSITION"},
-                     mdl::VertexLayoutElementData{.format = mdl::VertexFormat::RGB32_FLOAT, .semantic = "NORMAL"},
-                     mdl::VertexLayoutElementData{.format = mdl::VertexFormat::RG32_FLOAT, .semantic = "TEXCOORD"}},
-                .size = 32}};
+        std::vector<mdl::SurfaceData> modelSurfaces;
+        std::vector<mdl::BufferData> modelBuffers;
         std::basic_stringstream<uint8_t> modelBlob;
 
         for (auto const& shape : shapes)
         {
             indices.clear();
 
-            // std::cout << "shape v " << shape.mesh.num_face_vertices.size() << std::endl;
-
             size_t offset = 0;
-            for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); ++f)
+            for (uint32_t const f : std::views::iota(0u, shape.mesh.num_face_vertices.size()))
             {
                 size_t const fv = static_cast<size_t>(shape.mesh.num_face_vertices[f]);
-                for (size_t v = 0; v < fv; ++v)
+                for (uint32_t const v : std::views::iota(0u, fv))
                 {
                     tinyobj::index_t const index = shape.mesh.indices[offset + v];
                     Vertex vertex{};
@@ -86,31 +78,43 @@ namespace ionengine::asset
                 offset += fv;
             }
 
-            mdl::SurfaceData const surfaceData{.buffer = static_cast<uint32_t>(modelData.buffers.size()),
-                                               .material = materialIndex,
-                                               .indexCount = static_cast<uint32_t>(indices.size())};
-            modelData.surfaces.emplace_back(std::move(surfaceData));
+            mdl::SurfaceData surfaceData{.buffer = static_cast<uint32_t>(modelSurfaces.size()),
+                                         .material = materialIndex,
+                                         .indexCount = static_cast<uint32_t>(indices.size())};
+            modelSurfaces.emplace_back(std::move(surfaceData));
 
-            mdl::BufferData const bufferData{.offset = static_cast<uint64_t>(modelBlob.tellp()),
-                                             .size = indices.size() * sizeof(uint32_t)};
-            modelData.buffers.emplace_back(std::move(bufferData));
+            mdl::BufferData bufferData{.offset = static_cast<uint64_t>(modelBlob.tellp()),
+                                       .size = indices.size() * sizeof(uint32_t)};
+            modelBuffers.emplace_back(std::move(bufferData));
 
             modelBlob.write(reinterpret_cast<uint8_t const*>(indices.data()), indices.size() * sizeof(uint32_t));
 
             materialIndex++;
         }
 
-        modelData.materialCount = materialIndex;
-        modelData.buffer = static_cast<uint32_t>(modelData.buffers.size());
+        uint32_t const materialCount = materialIndex;
+        uint32_t const bufferIndex = static_cast<uint32_t>(modelBuffers.size());
 
-        mdl::BufferData const bufferData{.offset = static_cast<uint64_t>(modelBlob.tellp()),
-                                         .size = vertices.size() * sizeof(Vertex)};
-        modelData.buffers.emplace_back(std::move(bufferData));
+        mdl::BufferData bufferData{.offset = static_cast<uint64_t>(modelBlob.tellp()),
+                                   .size = vertices.size() * sizeof(Vertex)};
+        modelBuffers.emplace_back(std::move(bufferData));
 
         modelBlob.write(reinterpret_cast<uint8_t const*>(vertices.data()), vertices.size() * sizeof(Vertex));
 
+        mdl::ModelData modelData{
+            .materialCount = materialCount,
+            .buffer = bufferIndex,
+            .vertexLayout = {.elements = {mdl::VertexLayoutElementData{.format = mdl::VertexFormat::RGB32_FLOAT,
+                                                                       .semantic = "POSITION"},
+                                          mdl::VertexLayoutElementData{.format = mdl::VertexFormat::RGB32_FLOAT,
+                                                                       .semantic = "NORMAL"},
+                                          mdl::VertexLayoutElementData{.format = mdl::VertexFormat::RG32_FLOAT,
+                                                                       .semantic = "TEXCOORD"}},
+                             .size = 32},
+            .surfaces = std::move(modelSurfaces),
+            .buffers = std::move(modelBuffers)};
         return ModelFile{.magic = mdl::Magic,
                          .modelData = std::move(modelData),
-                         .blob = {std::istreambuf_iterator<uint8_t>(modelBlob.rdbuf()), {}}};
+                         .modelBlob = {std::istreambuf_iterator<uint8_t>(modelBlob.rdbuf()), {}}};
     }
 } // namespace ionengine::asset
