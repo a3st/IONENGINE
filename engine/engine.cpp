@@ -1,15 +1,47 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
 #include "engine.hpp"
+#include "graphics/graphics.hpp"
 #include "precompiled.h"
+#include "window/window.hpp"
 
 namespace ionengine
 {
-    Engine::Engine(uint32_t argc, char** argv, std::string_view const appName)
+    auto EngineBuilder::withArgs(uint32_t argc, char** argv) -> EngineBuilder&
     {
-        application = platform::App::create(appName);
-        window = std::make_unique<Window>(application);
+        return *this;
+    }
 
+    auto EngineBuilder::withAppName(std::string_view const appName) -> EngineBuilder&
+    {
+        return *this;
+    }
+
+    auto EngineBuilder::build() -> core::ref_ptr<Engine>
+    {
+        return core::make_ref<Engine>();
+    }
+
+    auto Engine::getEnvironment() -> EngineEnvironment&
+    {
+        return _environment;
+    }
+
+    Engine::Engine()
+    {
+        _app = platform::App::create("Test");
+
+        if (!_environment.registerModule<Window>(_app))
+        {
+            throw std::runtime_error("An error occurred while registering engine module");
+        }
+
+        if (!_environment.registerModule<Graphics>(_app))
+        {
+            throw std::runtime_error("An error occurred while registering engine module");
+        }
+
+        /*
         rhi::RHICreateInfo const rhiCreateInfo{.stagingBufferSize = 8 * 1024 * 1024, .numBuffering = 2};
         rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
                                                            .instance = application->getInstanceHandle()};
@@ -18,7 +50,7 @@ namespace ionengine
         gui = std::make_unique<GUI>(RHI);
 
         application->windowStateChanged += [this](platform::WindowEvent const& event) -> void {
-            switch (event.eventType)
+            switch (event.type)
             {
                 case platform::WindowEventType::Resize: {
                     uint32_t const width = event.size.width;
@@ -53,18 +85,18 @@ namespace ionengine
             this->onRender();
             gui->onRender();
             graphics->endFrame();
-        };
+        };*/
     }
 
     auto Engine::run() -> int32_t
     {
-        this->onStart();
+        /*this->onStart();
 
         beginFrameTime = std::chrono::high_resolution_clock::now();
 
-        application->run();
-
-        Material::baseSurfaceMaterial = nullptr;
+        Material::baseSurfaceMaterial = nullptr;*/
+        
+        _app->run();
         return EXIT_SUCCESS;
     }
 } // namespace ionengine

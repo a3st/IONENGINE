@@ -37,3 +37,4 @@
 #include <expected>
 #include <future>
 #include <stacktrace>
+#include <typeindex>

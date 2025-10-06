@@ -2,21 +2,23 @@
 
 #pragma once
 
+#include "iengine_module.hpp"
 #include "platform/platform.hpp"
 
 namespace ionengine
 {
-    class Window
+    class Window : public IEngineModule
     {
       public:
-        Window(core::ref_ptr<platform::App> const& application);
+        struct ModuleOptions
+        {
+        };
+
+        Window(core::ref_ptr<platform::App> app);
+
+        auto setMouseEnabled(bool const enabled) -> void;
 
       private:
-        core::ref_ptr<platform::App> application;
-
-        inline static Window* instance;
-
-      public:
-        static auto setEnableMouse(bool const isEnable) -> void;
+        core::ref_ptr<platform::App> _app;
     };
 } // namespace ionengine

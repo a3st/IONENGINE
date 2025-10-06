@@ -5,13 +5,14 @@
 
 namespace ionengine
 {
-    Window::Window(core::ref_ptr<platform::App> const& application) : application(application)
+    Window::Window(core::ref_ptr<platform::App> app)
     {
-        instance = this;
+        assert(app && "core::ref_ptr<platform::App> is nullptr");
+        _app = app;
     }
 
-    auto Window::setEnableMouse(bool const isEnable) -> void
+    auto Window::setMouseEnabled(bool const enabled) -> void
     {
-        instance->application->setEnableMouse(isEnable);
+        _app->setMouseEnabled(enabled);
     }
 } // namespace ionengine
