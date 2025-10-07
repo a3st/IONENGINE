@@ -5,7 +5,14 @@
 
 namespace ionengine
 {
-    Window::Window(core::ref_ptr<platform::App> app)
+    Window::Window(core::ref_ptr<platform::App> app, EngineEnvironment& environment) : _environment(environment)
+    {
+        assert(app && "core::ref_ptr<platform::App> is nullptr");
+        _app = app;
+    }
+
+    Window::Window(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options)
+        : _environment(environment)
     {
         assert(app && "core::ref_ptr<platform::App> is nullptr");
         _app = app;

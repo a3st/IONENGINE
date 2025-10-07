@@ -2,6 +2,7 @@
 
 #include "engine.hpp"
 #include "graphics/graphics.hpp"
+#include "logger.hpp"
 #include "precompiled.h"
 #include "window/window.hpp"
 
@@ -19,7 +20,19 @@ namespace ionengine
 
     auto EngineBuilder::build() -> core::ref_ptr<Engine>
     {
-        return core::make_ref<Engine>();
+        auto engine = core::make_ref<Engine>();
+
+        for (auto const& configureFunction : _configureFunctions)
+        {
+            configureFunction(engine->getApp(), engine->getEnvironment());
+        }
+
+        // Try always to register standard modules
+        engine->getEnvironment().registerModule<Logger>(engine->getApp(), engine->getEnvironment());
+        engine->getEnvironment().registerModule<Window>(engine->getApp(), engine->getEnvironment());
+        engine->getEnvironment().registerModule<Graphics>(engine->getApp(), engine->getEnvironment());
+
+        return engine;
     }
 
     auto Engine::getEnvironment() -> EngineEnvironment&
@@ -27,25 +40,17 @@ namespace ionengine
         return _environment;
     }
 
+    auto Engine::getApp() -> core::ref_ptr<platform::App>
+    {
+        return _app;
+    }
+
     Engine::Engine()
     {
         _app = platform::App::create("Test");
 
-        if (!_environment.registerModule<Window>(_app))
-        {
-            throw std::runtime_error("An error occurred while registering engine module");
-        }
-
-        if (!_environment.registerModule<Graphics>(_app))
-        {
-            throw std::runtime_error("An error occurred while registering engine module");
-        }
-
         /*
-        rhi::RHICreateInfo const rhiCreateInfo{.stagingBufferSize = 8 * 1024 * 1024, .numBuffering = 2};
-        rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = application->getWindowHandle(),
-                                                           .instance = application->getInstanceHandle()};
-        RHI = rhi::RHI::create(rhiCreateInfo, swapchainCreateInfo);
+
         graphics = std::make_unique<Graphics>(RHI, rhiCreateInfo.numBuffering);
         gui = std::make_unique<GUI>(RHI);
 
@@ -90,13 +95,17 @@ namespace ionengine
 
     auto Engine::run() -> int32_t
     {
+        _environment.initializeModules();
+
         /*this->onStart();
 
         beginFrameTime = std::chrono::high_resolution_clock::now();
 
         Material::baseSurfaceMaterial = nullptr;*/
-        
+
         _app->run();
+
+        _environment.shutdownModules();
         return EXIT_SUCCESS;
     }
 } // namespace ionengine

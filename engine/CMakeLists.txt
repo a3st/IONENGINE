@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.25.1)
 
 find_package(RmlUi CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 set(SUB_MODULE_NAME engine)
 
@@ -33,7 +34,10 @@ add_library(${SUB_MODULE_NAME} STATIC
     graphics/graphics.cpp
 
     window/window.cpp
+
+    logger.cpp
     
+    engine_environment.cpp
     engine.cpp
 )
 
@@ -47,7 +51,9 @@ target_link_libraries(${SUB_MODULE_NAME} PUBLIC
     platform
     rhi
     RmlCore
-    RmlDebugger)
+    RmlDebugger
+    spdlog::spdlog
+)
 
 foreach(CONFIG_TYPE DEBUG RELEASE MINSIZEREL RELWITHDEBINFO)
     set_target_properties(${SUB_MODULE_NAME} PROPERTIES
