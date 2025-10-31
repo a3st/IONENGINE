@@ -41,7 +41,12 @@ namespace ionengine
         EngineEnvironment& _environment;
         core::ref_ptr<platform::App> _app;
         core::ref_ptr<rhi::RHI> _rhi;
+        core::ref_ptr<GraphicsPipeline> _curGraphicsPipeline;
+
+        
 
         auto onWindowResized(platform::WindowEvent const& event) -> void;
+
+        auto onWindowUpdated() -> void;
     };
 } // namespace ionengine

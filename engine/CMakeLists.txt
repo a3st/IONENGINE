@@ -31,6 +31,8 @@ add_library(${SUB_MODULE_NAME} STATIC
     #graphics/entity.cpp
     #graphics/light.cpp
     #graphics/world.cpp
+    graphics/subpass.cpp
+    graphics/graphics_pipeline.cpp
     graphics/graphics.cpp
 
     window/window.cpp

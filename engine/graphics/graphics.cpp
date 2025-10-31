@@ -27,11 +27,14 @@ namespace ionengine
                 this->onWindowResized(event);
             }
         };
+        _app->windowUpdated += [this]() -> void { this->onWindowUpdated(); };
 
         rhi::RHICreateInfo const rhiCreateInfo{.stagingBufferSize = options.stagingBufferSize, .numBuffering = 2};
         rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = app->getWindowHandle(),
                                                            .instance = app->getInstanceHandle()};
         _rhi = rhi::RHI::create(rhiCreateInfo, swapchainCreateInfo);
+
+        _curGraphicsPipeline = options.graphicsPipeline;
     }
 
     auto Graphics::onWindowResized(platform::WindowEvent const& event) -> void
@@ -42,5 +45,16 @@ namespace ionengine
         }
 
         _rhi->getSwapchain()->resizeBackBuffers(event.size.width, event.size.height);
+    }
+
+    auto Graphics::onWindowUpdated() -> void
+    {
+        auto curSwapchainTexture = _rhi->getSwapchain()->getBackBuffer().get();
+
+        _curGraphicsPipeline->bindInput("Swapchain", curSwapchainTexture);
+
+        _curGraphicsPipeline->execute(_rhi);
+
+        _rhi->getSwapchain()->presentBackBuffer();
     }
 } // namespace ionengine
