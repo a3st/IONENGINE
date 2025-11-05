@@ -7,7 +7,7 @@
 
 namespace ionengine
 {
-    struct GraphicsPipelineResourceInfo
+    struct SubpassResourceInfo
     {
         core::ref_ptr<Subpass> subpass;
         int32_t colorIndex;
@@ -23,6 +23,7 @@ namespace ionengine
         auto execute(core::ref_ptr<rhi::RHI> rhi) -> void;
 
       private:
+        std::vector<core::ref_ptr<Subpass>> _subpasses;
     };
 
     class GraphicsPipelineBuilder
@@ -36,6 +37,7 @@ namespace ionengine
 
       private:
         std::vector<core::ref_ptr<Subpass>> _subpasses;
-        std::unordered_map<std::string, std::vector<GraphicsPipelineResourceInfo>> _resources;
+        std::unordered_set<std::string> _subpassNames;
+        std::unordered_map<std::string, std::vector<SubpassResourceInfo>> _resources;
     };
 } // namespace ionengine

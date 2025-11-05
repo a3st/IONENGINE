@@ -17,11 +17,16 @@ namespace ionengine
 
     auto GraphicsPipelineBuilder::addSubpass(SubpassCreateInfo const& createInfo) -> GraphicsPipelineBuilder&
     {
+        if (_subpassNames.count(createInfo.name))
+        {
+            return *this;
+        }
+
         auto subpass = core::make_ref<Subpass>(createInfo);
 
         for (uint32_t const i : std::views::iota(0u, createInfo.colors.size()))
         {
-            GraphicsPipelineResourceInfo resourceInfo{.subpass = subpass, .colorIndex = i};
+            SubpassResourceInfo resourceInfo{.subpass = subpass, .colorIndex = static_cast<int32_t>(i)};
 
             _resources.try_emplace(createInfo.colors[i].name);
             _resources[createInfo.colors[i].name].emplace_back(std::move(resourceInfo));
@@ -31,7 +36,7 @@ namespace ionengine
         {
             auto depthStencilValue = createInfo.depthStencil.value();
 
-            GraphicsPipelineResourceInfo resourceInfo{.subpass = subpass, .colorIndex = -1};
+            SubpassResourceInfo resourceInfo{.subpass = subpass, .colorIndex = -1};
 
             _resources.try_emplace(depthStencilValue.name);
             _resources[depthStencilValue.name].emplace_back(std::move(resourceInfo));
@@ -39,7 +44,7 @@ namespace ionengine
 
         for (auto const& input : createInfo.inputs)
         {
-            GraphicsPipelineResourceInfo resourceInfo{.subpass = subpass, .colorIndex = -2};
+            SubpassResourceInfo resourceInfo{.subpass = subpass, .colorIndex = -2};
 
             _resources.try_emplace(input.name);
             _resources[input.name].emplace_back(std::move(resourceInfo));
