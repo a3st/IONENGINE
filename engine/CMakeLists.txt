@@ -23,22 +23,24 @@ add_library(${SUB_MODULE_NAME} STATIC
     #graphics/upload_manager.cpp
     #graphics/render_queue.cpp
     #graphics/camera.cpp
-    #graphics/buffer_allocator.cpp
-    #graphics/texture_allocator.cpp
     #graphics/material.cpp
     #graphics/render_pass.cpp
     #graphics/shader.cpp
     #graphics/entity.cpp
     #graphics/light.cpp
     #graphics/world.cpp
+
+    graphics/shader.cpp
+    graphics/buffer_pool.cpp
+    graphics/texture_pool.cpp
     graphics/subpass.cpp
+    graphics/attachment.cpp
     graphics/graphics_pipeline.cpp
     graphics/graphics.cpp
 
     window/window.cpp
 
     logger.cpp
-    
     engine_environment.cpp
     engine.cpp
 )

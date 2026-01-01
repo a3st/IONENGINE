@@ -5,7 +5,7 @@
 
 namespace ionengine
 {
-    auto FXVertexFormat_to_RHIVertexFormat(asset::fx::VertexFormat const format) -> rhi::VertexFormat
+    /*auto FXVertexFormat_to_RHIVertexFormat(asset::fx::VertexFormat const format) -> rhi::VertexFormat
     {
         switch (format)
         {
@@ -196,5 +196,5 @@ namespace ionengine
     auto Shader::getShader() const -> core::ref_ptr<rhi::Shader>
     {
         return shader;
-    }
+    }*/
 } // namespace ionengine

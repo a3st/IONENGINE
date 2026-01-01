@@ -49,7 +49,7 @@ namespace ionengine
             }
         };
 
-        TexturePool(core::ref_ptr<rhi::RHI> rhi);
+        explicit TexturePool(core::ref_ptr<rhi::RHI> rhi);
 
         auto allocate(rhi::TextureCreateInfo const& createInfo) -> core::weak_ptr<rhi::Texture>;
 

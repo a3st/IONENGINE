@@ -40,4 +40,14 @@ namespace ionengine
     {
         context.endRenderPass();
     }
+
+    auto Subpass::getColors() const -> std::span<rhi::RenderPassColorInfo const>
+    {
+        return _colors;
+    }
+
+    auto Subpass::getDepthStencil() const -> std::optional<rhi::RenderPassDepthStencilInfo> const&
+    {
+        return _depthStencil;
+    }
 } // namespace ionengine

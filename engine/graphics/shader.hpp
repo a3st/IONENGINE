@@ -13,12 +13,22 @@ namespace ionengine
         size_t size;
     };
 
+    class ShaderVariant : public core::ref_counted_object
+    {
+      public:
+        ShaderVariant() = default;
+
+        
+    };
+
     class Shader : public core::ref_counted_object
     {
       public:
-        Shader(rhi::RHI& RHI, asset::ShaderFile const& shaderFile);
+        // Shader();
 
-        auto getRasterizerStageInfo() const -> rhi::RasterizerStageInfo const&;
+        // auto loadFile(std::filesystem::path const& filePath) -> bool;
+
+        /*auto getRasterizerStageInfo() const -> rhi::RasterizerStageInfo const&;
 
         auto getBlendColorInfo() const -> rhi::BlendColorInfo const&;
 
@@ -32,15 +42,15 @@ namespace ionengine
 
         auto getDomain() const -> std::string const&;
 
-        auto getShader() const -> core::ref_ptr<rhi::Shader>;
+        auto getShader() const -> core::ref_ptr<rhi::Shader>;*/
 
       private:
-        core::ref_ptr<rhi::Shader> shader;
+        /*core::ref_ptr<rhi::Shader> shader;
         rhi::RasterizerStageInfo rasterizerStageInfo;
         rhi::BlendColorInfo blendColorInfo;
         std::unordered_map<std::string, ShaderBindingInfo> bindings;
         std::string shaderName;
         std::string description;
-        std::string domainName;
+        std::string domainName;*/
     };
 } // namespace ionengine

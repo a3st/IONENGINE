@@ -7,11 +7,18 @@
 #include "iengine_module.hpp"
 #include "platform/platform.hpp"
 #include "rhi/rhi.hpp"
+#include "shader.hpp"
+#include "texture_pool.hpp"
 
 namespace ionengine
 {
     class Graphics : public IEngineModule
     {
+        struct FrameData
+        {
+            core::ref_ptr<TexturePool> frameBufferPool;
+        };
+
       public:
         struct ModuleOptions
         {
@@ -24,9 +31,7 @@ namespace ionengine
 
         Graphics(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options);
 
-        auto initialize() -> void override
-        {
-        }
+        auto initialize() -> void override;
 
         auto shutdown() -> void override
         {
@@ -42,8 +47,8 @@ namespace ionengine
         core::ref_ptr<platform::App> _app;
         core::ref_ptr<rhi::RHI> _rhi;
         core::ref_ptr<GraphicsPipeline> _curGraphicsPipeline;
-
-        
+        std::filesystem::path _shadersPath;
+        std::vector<FrameData> _frames;
 
         auto onWindowResized(platform::WindowEvent const& event) -> void;
 

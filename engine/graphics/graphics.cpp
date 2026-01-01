@@ -17,7 +17,7 @@ namespace ionengine
     }
 
     Graphics::Graphics(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options)
-        : _environment(environment)
+        : _environment(environment), _shadersPath(options.shadersPath)
     {
         assert(app && "core::ref_ptr<platform::App> is nullptr");
         _app = app;
@@ -34,6 +34,12 @@ namespace ionengine
                                                            .instance = app->getInstanceHandle()};
         _rhi = rhi::RHI::create(rhiCreateInfo, swapchainCreateInfo);
 
+        for (uint32_t const i : std::views::iota(0u, 2u))
+        {
+            FrameData frameData{.frameBufferPool = core::make_ref<TexturePool>(_rhi)};
+            _frames.emplace_back(std::move(frameData));
+        }
+
         _curGraphicsPipeline = options.graphicsPipeline;
     }
 
@@ -49,12 +55,20 @@ namespace ionengine
 
     auto Graphics::onWindowUpdated() -> void
     {
-        auto curSwapchainTexture = _rhi->getSwapchain()->getBackBuffer().get();
+        auto currentSwapchainTexture = _rhi->getSwapchain()->getBackBuffer().get();
 
-        _curGraphicsPipeline->bindInput("Swapchain", curSwapchainTexture);
+        _curGraphicsPipeline->bindAttachment("Ext_Swapchain", currentSwapchainTexture);
 
-        _curGraphicsPipeline->execute(_rhi);
+        // _curGraphicsPipeline->execute(_rhi);
 
-        _rhi->getSwapchain()->presentBackBuffer();
+        //_rhi->getSwapchain()->presentBackBuffer();
+    }
+
+    auto Graphics::initialize() -> void
+    {
+        // for (auto const& entry : std::filesystem::directory_iterator(_shadersPath))
+        {
+            // auto shader = core::make_ref<Shader>();
+        }
     }
 } // namespace ionengine

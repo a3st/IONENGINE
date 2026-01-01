@@ -49,6 +49,10 @@ namespace ionengine
 
         auto endPass(rhi::GraphicsContext& context) -> void;
 
+        auto getColors() const -> std::span<rhi::RenderPassColorInfo const>;
+
+        auto getDepthStencil() const -> std::optional<rhi::RenderPassDepthStencilInfo> const&;
+
       private:
         std::vector<rhi::RenderPassColorInfo> _colors;
         std::optional<rhi::RenderPassDepthStencilInfo> _depthStencil;
