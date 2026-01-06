@@ -15,9 +15,9 @@ namespace ionengine
         {
         };
 
-        Window(core::ref_ptr<platform::App> app, EngineEnvironment& environment);
-
         Window(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options);
+
+        Window(core::ref_ptr<platform::App> app, EngineEnvironment& environment);
 
         auto setMouseEnabled(bool const enabled) -> void;
 

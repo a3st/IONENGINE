@@ -9,10 +9,11 @@ namespace ionengine
     {
     }
 
-    auto TexturePool::allocate(rhi::TextureCreateInfo const& createInfo) -> core::weak_ptr<rhi::Texture>
+    auto TexturePool::allocate(rhi::TextureCreateInfo const& createInfo) -> std::optional<Allocation>
     {
-        bool allocTexture = true;
-        core::weak_ptr<rhi::Texture> outTexture;
+        std::lock_guard lock(_mutex);
+
+        std::optional<Allocation> textureAllocation;
 
         Entry const entry{.width = createInfo.width,
                           .height = createInfo.height,
@@ -24,55 +25,116 @@ namespace ionengine
         auto bucketResult = _buckets.find(entry);
         if (bucketResult != _buckets.end())
         {
-            if (bucketResult->second.current < bucketResult->second.textures.size())
+            Bucket& bucket = bucketResult->second;
+
+            textureAllocation = getTextureInBucket(bucket, entry);
+            if (!textureAllocation.has_value())
             {
-                outTexture = bucketResult->second.textures[bucketResult->second.current++];
-            }
-            else
-            {
-                allocTexture = false;
+                textureAllocation = createTextureInBucket(bucket, entry);
             }
         }
         else
         {
-            allocTexture = false;
-        }
-
-        if (!allocTexture)
-        {
-            auto texture = _rhi->createTexture(createInfo);
-
-            if (_buckets.find(entry) != _buckets.end())
+            Bucket newBucket{};
+            auto insertResult = _buckets.emplace(entry, std::move(newBucket));
+            if (insertResult.second)
             {
-                auto& bucket = _buckets[entry];
-
-                bucket.textures.emplace_back(texture);
-                ++bucket.current;
+                textureAllocation = createTextureInBucket(insertResult.first->second, entry);
             }
-            else
-            {
-                std::vector<core::ref_ptr<rhi::Texture>> textures;
-                textures.emplace_back(texture);
-
-                Bucket bucket{.textures = std::move(textures), .current = 1};
-                _buckets[entry] = std::move(bucket);
-            }
-
-            outTexture = texture;
         }
-        return outTexture;
+        return textureAllocation;
     }
 
-    auto TexturePool::reset() -> void
+    auto TexturePool::createTextureInBucket(Bucket& bucket, Entry const& entry) -> Allocation
     {
-        for (auto& [_, bucket] : _buckets)
+        rhi::TextureCreateInfo const textureCreateInfo{.width = entry.width,
+                                                       .height = entry.height,
+                                                       .depth = entry.depth,
+                                                       .mipLevels = entry.mipLevels,
+                                                       .format = entry.format,
+                                                       .dimension = entry.dimension,
+                                                       .flags = entry.flags};
+        core::ref_ptr<rhi::Texture> newTexture = _rhi->createTexture(textureCreateInfo);
+
+        Bucket::Entry bucketEntry{.texture = newTexture, .used = true, .initialState = rhi::ResourceState::Common};
+        bucket.entries.emplace_back(std::move(bucketEntry));
+        return Allocation(entry, bucket.current++, newTexture.get(), rhi::ResourceState::Common);
+    }
+
+    auto TexturePool::getTextureInBucket(Bucket& bucket, Entry const& entry) -> std::optional<Allocation>
+    {
+        for (uint32_t const i : std::views::iota(bucket.current, bucket.entries.size()))
         {
-            bucket.current = 0;
+            Bucket::Entry& bucketEntry = bucket.entries[i];
+
+            if (!bucketEntry.used)
+            {
+                bucketEntry.used = true;
+                bucket.current = i + 1;
+
+                if (bucketEntry.initialState != rhi::ResourceState::Common)
+                {
+                    bucket.compactCandidates.erase(i);
+                }
+
+                return std::make_optional<Allocation>(entry, i, bucketEntry.texture.get(), bucketEntry.initialState);
+            }
+        }
+        return std::nullopt;
+    }
+
+    auto TexturePool::deallocate(Allocation const& allocation, rhi::ResourceState const initialState) -> void
+    {
+        std::lock_guard lock(_mutex);
+
+        auto bucketResult = _buckets.find(allocation._entry);
+        if (bucketResult != _buckets.end())
+        {
+            Bucket& bucket = bucketResult->second;
+
+            if (allocation._current < bucket.entries.size())
+            {
+                Bucket::Entry& bucketEntry = bucket.entries[allocation._current];
+
+                bucketEntry.used = false;
+                bucketEntry.initialState = initialState;
+
+                if (allocation._current < bucket.current)
+                {
+                    bucket.current = allocation._current;
+                }
+
+                if (initialState != rhi::ResourceState::Common)
+                {
+                    _dirtyEntries.emplace(allocation._entry);
+                    bucket.compactCandidates.emplace(allocation._current);
+                }
+            }
         }
     }
 
-    auto TexturePool::clear() -> void
+    auto TexturePool::compact() -> void
     {
-        _buckets.clear();
+        for (auto const& entry : _dirtyEntries)
+        {
+            auto bucketResult = _buckets.find(entry);
+            if (bucketResult != _buckets.end())
+            {
+                Bucket& bucket = bucketResult->second;
+
+                for (auto const index : bucket.compactCandidates)
+                {
+                    if (index < bucket.entries.size())
+                    {
+                        Bucket::Entry& bucketEntry = bucket.entries[index];
+
+                        rhi::ResourceState const afterState = rhi::ResourceState::Common;
+                        _rhi->getGraphicsContext()->barrier(bucketEntry.texture.get(), bucketEntry.initialState,
+                                                            afterState);
+                        bucketEntry.initialState = afterState;
+                    }
+                }
+            }
+        }
     }
 } // namespace ionengine

@@ -6,15 +6,6 @@
 
 namespace ionengine
 {
-    Logger::Logger(core::ref_ptr<platform::App> app, EngineEnvironment& environment) : _environment(environment)
-    {
-        assert(app && "core::ref_ptr<platform::App> is nullptr");
-        _app = app;
-
-        _logger =
-            std::make_unique<spdlog::logger>("IONENGINE", std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-    }
-
     Logger::Logger(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options)
         : _environment(environment)
     {
@@ -23,5 +14,9 @@ namespace ionengine
 
         _logger =
             std::make_unique<spdlog::logger>("IONENGINE", std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+    }
+
+    Logger::Logger(core::ref_ptr<platform::App> app, EngineEnvironment& environment) : Logger(app, environment, {})
+    {
     }
 } // namespace ionengine

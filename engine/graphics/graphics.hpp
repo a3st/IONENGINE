@@ -27,9 +27,9 @@ namespace ionengine
             core::ref_ptr<GraphicsPipeline> graphicsPipeline;
         };
 
-        Graphics(core::ref_ptr<platform::App> app, EngineEnvironment& environment);
-
         Graphics(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options);
+
+        Graphics(core::ref_ptr<platform::App> app, EngineEnvironment& environment);
 
         auto initialize() -> void override;
 
@@ -49,6 +49,7 @@ namespace ionengine
         core::ref_ptr<GraphicsPipeline> _curGraphicsPipeline;
         std::filesystem::path _shadersPath;
         std::vector<FrameData> _frames;
+        uint32_t frameIndex;
 
         auto onWindowResized(platform::WindowEvent const& event) -> void;
 

@@ -9,7 +9,20 @@ namespace ionengine
 {
     class TexturePool : public core::ref_counted_object
     {
-      public:
+        struct Bucket
+        {
+            struct Entry
+            {
+                core::ref_ptr<rhi::Texture> texture;
+                bool used;
+                rhi::ResourceState initialState;
+            };
+
+            std::vector<Entry> entries;
+            uint32_t current;
+            std::unordered_set<uint32_t> compactCandidates;
+        };
+
         struct Entry
         {
             uint32_t width;
@@ -49,24 +62,51 @@ namespace ionengine
             }
         };
 
+      public:
+        class Allocation
+        {
+            friend class TexturePool;
+
+          public:
+            Allocation(Entry const& entry, uint32_t const current, rhi::Texture* const texture,
+                       rhi::ResourceState const initialState)
+                : _entry(entry), _current(current), _texture(texture), _initialState(initialState)
+            {
+            }
+
+            auto getTexture() const -> rhi::Texture*
+            {
+                return _texture;
+            }
+
+            auto getInitialState() const -> rhi::ResourceState
+            {
+                return _initialState;
+            }
+
+          private:
+            Entry _entry;
+            uint32_t _current;
+            rhi::Texture* _texture;
+            rhi::ResourceState _initialState;
+        };
+
         explicit TexturePool(core::ref_ptr<rhi::RHI> rhi);
 
-        auto allocate(rhi::TextureCreateInfo const& createInfo) -> core::weak_ptr<rhi::Texture>;
+        auto allocate(rhi::TextureCreateInfo const& createInfo) -> std::optional<Allocation>;
 
-        auto reset() -> void;
+        auto deallocate(Allocation const& allocation, rhi::ResourceState const initialState) -> void;
 
-        auto clear() -> void;
+        auto compact() -> void;
 
       private:
         core::ref_ptr<rhi::RHI> _rhi;
-
-        struct Bucket
-        {
-            std::vector<core::ref_ptr<rhi::Texture>> textures;
-            std::vector<uint8_t> available;
-            uint32_t current;
-        };
-
+        std::mutex _mutex;
         std::unordered_map<Entry, Bucket, EntryHasher> _buckets;
+        std::unordered_set<Entry, EntryHasher> _dirtyEntries;
+
+        auto createTextureInBucket(Bucket& bucket, Entry const& entry) -> Allocation;
+
+        auto getTextureInBucket(Bucket& bucket, Entry const& entry) -> std::optional<Allocation>;
     };
 } // namespace ionengine

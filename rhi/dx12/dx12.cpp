@@ -1156,33 +1156,35 @@ namespace ionengine::rhi
         }
     }
 
-    auto DX12DeviceContext_barrier(ID3D12GraphicsCommandList4* commandList, core::ref_ptr<Buffer> dest,
-                                   ResourceState const before, ResourceState const after) -> void
+    auto DX12DeviceContext_barrier(ID3D12GraphicsCommandList4* commandList, Buffer* destBuffer,
+                                   ResourceState const beforeState, ResourceState const afterState) -> void
     {
-        auto dxDestBuffer = dynamic_cast<DX12Buffer*>(dest.get());
+        auto dxDestBuffer = dynamic_cast<DX12Buffer*>(destBuffer);
 
-        D3D12_RESOURCE_BARRIER const resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                                                     .Transition = {
-                                                         .pResource = dxDestBuffer->getResource(),
-                                                         .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                         .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before),
-                                                         .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after),
-                                                     }};
+        D3D12_RESOURCE_BARRIER const resourceBarrier{
+            .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+            .Transition = {
+                .pResource = dxDestBuffer->getResource(),
+                .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(beforeState),
+                .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(afterState),
+            }};
         commandList->ResourceBarrier(1, &resourceBarrier);
     }
 
-    auto DX12DeviceContext_barrier(ID3D12GraphicsCommandList4* commandList, core::ref_ptr<Texture> dest,
-                                   ResourceState const before, ResourceState const after) -> void
+    auto DX12DeviceContext_barrier(ID3D12GraphicsCommandList4* commandList, Texture* destTexture,
+                                   ResourceState const beforeState, ResourceState const afterState) -> void
     {
-        auto dxDestTexture = dynamic_cast<DX12Texture*>(dest.get());
+        auto dxDestTexture = dynamic_cast<DX12Texture*>(destTexture);
 
-        D3D12_RESOURCE_BARRIER const resourceBarrier{.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                                                     .Transition = {
-                                                         .pResource = dxDestTexture->getResource(),
-                                                         .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                         .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(before),
-                                                         .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(after),
-                                                     }};
+        D3D12_RESOURCE_BARRIER const resourceBarrier{
+            .Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+            .Transition = {
+                .pResource = dxDestTexture->getResource(),
+                .Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                .StateBefore = ResourceState_to_D3D12_RESOURCE_STATES(beforeState),
+                .StateAfter = ResourceState_to_D3D12_RESOURCE_STATES(afterState),
+            }};
         commandList->ResourceBarrier(1, &resourceBarrier);
     }
 
@@ -1227,15 +1229,14 @@ namespace ionengine::rhi
         currentPipeline = nullptr;
     }
 
-    auto DX12GraphicsContext::setGraphicsPipelineOptions(core::ref_ptr<Shader> shader,
-                                                         RasterizerStageInfo const& rasterizer,
+    auto DX12GraphicsContext::setGraphicsPipelineOptions(Shader* shader, RasterizerStageInfo const& rasterizer,
                                                          BlendColorInfo const& blendColor,
                                                          std::optional<DepthStencilStageInfo> const depthStencil)
         -> void
     {
         this->tryResetCommandList();
 
-        auto dxShader = dynamic_cast<DX12Shader*>(shader.get());
+        auto dxShader = dynamic_cast<DX12Shader*>(shader);
 
         auto pipeline =
             pipelineCache->get(dxShader, rasterizer, blendColor, depthStencil, renderTargetFormats, depthStencilFormat);
@@ -1268,7 +1269,7 @@ namespace ionengine::rhi
             renderPassRenderTargets;
         for (uint32_t const i : std::views::iota(0u, colors.size()))
         {
-            auto dxTargetTexture = dynamic_cast<DX12Texture*>(colors[i].texture.get());
+            auto dxTargetTexture = dynamic_cast<DX12Texture*>(colors[i].texture);
             renderTargetFormats[i] = Format_to_DXGI_FORMAT(colors[i].texture->getFormat());
 
             D3D12_RENDER_PASS_BEGINNING_ACCESS const begin{
@@ -1287,21 +1288,21 @@ namespace ionengine::rhi
 
         if (depthStencil.has_value())
         {
-            auto value = depthStencil.value();
+            auto depthStencilValue = depthStencil.value();
 
-            auto dxTargetTexture = dynamic_cast<DX12Texture*>(value.texture.get());
+            auto dxTargetTexture = dynamic_cast<DX12Texture*>(depthStencilValue.texture);
             depthStencilFormat = Format_to_DXGI_FORMAT(dxTargetTexture->getFormat());
 
             D3D12_RENDER_PASS_DEPTH_STENCIL_DESC renderPassDepthStencil{};
 
             {
                 D3D12_RENDER_PASS_BEGINNING_ACCESS const begin{
-                    .Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(value.depthLoadOp),
+                    .Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(depthStencilValue.depthLoadOp),
                     .Clear = {
-                        .ClearValue = {.Format = depthStencilFormat, .DepthStencil = {.Depth = value.clearDepth}}}};
+                        .ClearValue = {.Format = depthStencilFormat, .DepthStencil = {.Depth = depthStencilValue.clearDepth}}}};
 
                 D3D12_RENDER_PASS_ENDING_ACCESS const end{
-                    .Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(value.depthStoreOp)};
+                    .Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(depthStencilValue.depthStoreOp)};
 
                 renderPassDepthStencil.DepthBeginningAccess = begin;
                 renderPassDepthStencil.DepthEndingAccess = end;
@@ -1309,12 +1310,11 @@ namespace ionengine::rhi
 
             {
                 D3D12_RENDER_PASS_BEGINNING_ACCESS const begin{
-                    .Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(value.stencilLoadOp),
+                    .Type = RenderPassLoadOp_to_D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE(depthStencilValue.stencilLoadOp),
                     .Clear = {
-                        .ClearValue = {.Format = depthStencilFormat, .DepthStencil = {.Stencil = value.clearStencil}}}};
+                        .ClearValue = {.Format = depthStencilFormat, .DepthStencil = {.Stencil = depthStencilValue.clearStencil}}}};
                 D3D12_RENDER_PASS_ENDING_ACCESS const end{
-                    .Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(value.stencilStoreOp)};
-
+                    .Type = RenderPassStoreOp_to_D3D12_RENDER_PASS_ENDING_ACCESS_TYPE(depthStencilValue.stencilStoreOp)};
                 renderPassDepthStencil.StencilBeginningAccess = begin;
                 renderPassDepthStencil.StencilEndingAccess = end;
             }
@@ -1337,12 +1337,11 @@ namespace ionengine::rhi
         commandList->EndRenderPass();
     }
 
-    auto DX12GraphicsContext::bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
-        -> void
+    auto DX12GraphicsContext::bindVertexBuffer(Buffer* buffer, uint64_t const offset, size_t const size) -> void
     {
         this->tryResetCommandList();
 
-        auto dxBuffer = dynamic_cast<DX12Buffer*>(buffer.get());
+        auto dxBuffer = dynamic_cast<DX12Buffer*>(buffer);
 
         D3D12_VERTEX_BUFFER_VIEW const vertexBufferView{.BufferLocation =
                                                             dxBuffer->getResource()->GetGPUVirtualAddress() + offset,
@@ -1351,12 +1350,12 @@ namespace ionengine::rhi
         commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
     }
 
-    auto DX12GraphicsContext::bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
+    auto DX12GraphicsContext::bindIndexBuffer(Buffer* buffer, uint64_t const offset, size_t const size,
                                               Format const format) -> void
     {
         this->tryResetCommandList();
 
-        auto dxBuffer = dynamic_cast<DX12Buffer*>(buffer.get());
+        auto dxBuffer = dynamic_cast<DX12Buffer*>(buffer);
 
         D3D12_INDEX_BUFFER_VIEW const indexBufferView{.BufferLocation =
                                                           dxBuffer->getResource()->GetGPUVirtualAddress() + offset,
@@ -1403,20 +1402,20 @@ namespace ionengine::rhi
         commandList->RSSetScissorRects(1, &rect);
     }
 
-    auto DX12GraphicsContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
-        -> void
+    auto DX12GraphicsContext::barrier(Buffer* destBuffer, ResourceState const beforeState,
+                                      ResourceState const afterState) -> void
     {
         this->tryResetCommandList();
 
-        DX12DeviceContext_barrier(commandList.get(), dest, before, after);
+        DX12DeviceContext_barrier(commandList.get(), destBuffer, beforeState, afterState);
     }
 
-    auto DX12GraphicsContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before,
-                                      ResourceState const after) -> void
+    auto DX12GraphicsContext::barrier(Texture* destTexture, ResourceState const beforeState,
+                                      ResourceState const afterState) -> void
     {
         this->tryResetCommandList();
 
-        DX12DeviceContext_barrier(commandList.get(), dest, before, after);
+        DX12DeviceContext_barrier(commandList.get(), destTexture, beforeState, afterState);
     }
 
     auto DX12GraphicsContext::execute() -> Future<void>
@@ -1525,10 +1524,10 @@ namespace ionengine::rhi
         isCommandListOpened = true;
     }
 
-    auto DX12CopyContext::updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset,
+    auto DX12CopyContext::updateBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
                                        std::span<uint8_t const> const dataBytes) -> Future<Buffer>
     {
-        auto dxDestBuffer = dynamic_cast<DX12Buffer*>(dest.get());
+        auto dxDestBuffer = dynamic_cast<DX12Buffer*>(buffer.get());
         if (dxDestBuffer->getFlags() & rhi::BufferUsage::MapWrite)
         {
             // Check for overflow destination buffer
@@ -1546,7 +1545,7 @@ namespace ionengine::rhi
 
             auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
                                                                fenceEvent, deviceQueue->fenceValue);
-            return Future<Buffer>(dest, std::move(futureImpl));
+            return Future<Buffer>(std::move(buffer), std::move(futureImpl));
         }
         else
         {
@@ -1581,16 +1580,16 @@ namespace ionengine::rhi
 
             auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
                                                                fenceEvent, deviceQueue->fenceValue + 1);
-            return Future<Buffer>(dest, std::move(futureImpl));
+            return Future<Buffer>(std::move(buffer), std::move(futureImpl));
         }
     }
 
-    auto DX12CopyContext::updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex,
-                                        uint8_t const* dataBytes) -> Future<Texture>
+    auto DX12CopyContext::updateTexture(core::ref_ptr<Texture> texture, uint32_t const resourceIndex,
+                                        std::span<uint8_t const> const dataBytes) -> Future<Texture>
     {
         this->tryResetCommandList();
 
-        auto dxDestTexture = dynamic_cast<DX12Texture*>(dest.get());
+        auto dxDestTexture = dynamic_cast<DX12Texture*>(texture.get());
         D3D12_RESOURCE_DESC resourceDesc = dxDestTexture->getResource()->GetDesc();
 
         size_t totalBytes = 0;
@@ -1623,7 +1622,7 @@ namespace ionengine::rhi
 
             for (uint32_t const i : std::views::iota(0u, rowCount))
             {
-                oss.write(dataBytes + rowBytes * i, rowBytes);
+                oss.write(dataBytes.data() + rowBytes * i, rowBytes);
 
                 // Align by row pitch
                 oss.seekp(footprint.Footprint.RowPitch - rowBytes, std::ios::cur);
@@ -1644,7 +1643,7 @@ namespace ionengine::rhi
 
         auto futureImpl = std::make_unique<DX12FutureImpl>(deviceQueue->queue.get(), deviceQueue->fence.get(),
                                                            fenceEvent, deviceQueue->fenceValue + 1);
-        return Future<Texture>(dest, std::move(futureImpl));
+        return Future<Texture>(std::move(texture), std::move(futureImpl));
     }
 
     /*
@@ -1809,20 +1808,20 @@ namespace ionengine::rhi
         return Future<void>(std::move(futureImpl));
     }
 
-    auto DX12CopyContext::barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+    auto DX12CopyContext::barrier(Buffer* destBuffer, ResourceState const beforeState, ResourceState const afterState)
         -> void
     {
         this->tryResetCommandList();
 
-        DX12DeviceContext_barrier(commandList.get(), dest, before, after);
+        DX12DeviceContext_barrier(commandList.get(), destBuffer, beforeState, afterState);
     }
 
-    auto DX12CopyContext::barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+    auto DX12CopyContext::barrier(Texture* destTexture, ResourceState const beforeState, ResourceState const afterState)
         -> void
     {
         this->tryResetCommandList();
 
-        DX12DeviceContext_barrier(commandList.get(), dest, before, after);
+        DX12DeviceContext_barrier(commandList.get(), destTexture, beforeState, afterState);
     }
 
     auto DX12CopyContext::getCommandQueue() const -> ID3D12CommandQueue*
@@ -1864,9 +1863,9 @@ namespace ionengine::rhi
         ::WaitForSingleObjectEx(fenceEvent, INFINITE, FALSE);
     }
 
-    auto DX12Swapchain::getBackBuffer() -> core::weak_ptr<Texture>
+    auto DX12Swapchain::getBackBuffer() -> Texture*
     {
-        return backBuffers[swapchain->GetCurrentBackBufferIndex()];
+        return backBuffers[swapchain->GetCurrentBackBufferIndex()].get();
     }
 
     auto DX12Swapchain::presentBackBuffer() -> Future<void>

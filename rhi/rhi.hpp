@@ -260,7 +260,7 @@ namespace ionengine::rhi
 
     struct RenderPassColorInfo
     {
-        core::ref_ptr<Texture> texture;
+        Texture* texture;
         RenderPassLoadOp loadOp;
         RenderPassStoreOp storeOp;
         core::Color clearColor;
@@ -268,7 +268,7 @@ namespace ionengine::rhi
 
     struct RenderPassDepthStencilInfo
     {
-        core::ref_ptr<Texture> texture;
+        Texture* texture;
         RenderPassLoadOp depthLoadOp;
         RenderPassStoreOp depthStoreOp;
         RenderPassLoadOp stencilLoadOp;
@@ -588,10 +588,10 @@ namespace ionengine::rhi
       public:
         virtual ~IDeviceContext() = default;
 
-        virtual auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+        virtual auto barrier(Buffer* destBuffer, ResourceState const beforeState, ResourceState const afterState)
             -> void = 0;
 
-        virtual auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+        virtual auto barrier(Texture* destTexture, ResourceState const beforeState, ResourceState const afterState)
             -> void = 0;
 
         virtual auto execute() -> Future<void> = 0;
@@ -600,7 +600,7 @@ namespace ionengine::rhi
     class GraphicsContext : public IDeviceContext
     {
       public:
-        virtual auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
+        virtual auto setGraphicsPipelineOptions(Shader* shader, RasterizerStageInfo const& rasterizer,
                                                 BlendColorInfo const& blendColor,
                                                 std::optional<DepthStencilStageInfo> const depthStencil) -> void = 0;
 
@@ -611,11 +611,10 @@ namespace ionengine::rhi
 
         virtual auto endRenderPass() -> void = 0;
 
-        virtual auto bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size)
-            -> void = 0;
+        virtual auto bindVertexBuffer(Buffer* buffer, uint64_t const offset, size_t const size) -> void = 0;
 
-        virtual auto bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
-                                     Format const format) -> void = 0;
+        virtual auto bindIndexBuffer(Buffer* buffer, uint64_t const offset, size_t const size, Format const format)
+            -> void = 0;
 
         virtual auto drawIndexed(uint32_t const indexCount, uint32_t const instanceCount) -> void = 0;
 
@@ -631,11 +630,11 @@ namespace ionengine::rhi
     class CopyContext : public IDeviceContext
     {
       public:
-        virtual auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset,
+        virtual auto updateBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset,
                                   std::span<uint8_t const> const dataBytes) -> Future<Buffer> = 0;
 
-        virtual auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex, uint8_t const* dataBytes)
-            -> Future<Texture> = 0;
+        virtual auto updateTexture(core::ref_ptr<Texture> texture, uint32_t const resourceIndex,
+                                   std::span<uint8_t const> const dataBytes) -> Future<Texture> = 0;
 
         /*
         virtual auto readBuffer(core::ref_ptr<Buffer> dest, uint8_t* dataBytes) -> size_t = 0;
@@ -650,7 +649,7 @@ namespace ionengine::rhi
       public:
         virtual ~Swapchain() = default;
 
-        virtual auto getBackBuffer() -> core::weak_ptr<Texture> = 0;
+        virtual auto getBackBuffer() -> Texture* = 0;
 
         virtual auto presentBackBuffer() -> Future<void> = 0;
 

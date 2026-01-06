@@ -43,18 +43,24 @@ namespace ionengine
     class Subpass : public core::ref_counted_object
     {
       public:
-        Subpass(SubpassCreateInfo const& createInfo);
+        explicit Subpass(SubpassCreateInfo const& createInfo);
 
-        auto beginPass(rhi::GraphicsContext& context) -> void;
+        auto beginPass(rhi::GraphicsContext& context, std::span<rhi::Texture* const> const colorTextures,
+                       rhi::Texture* const depthStencilTexture) -> void;
 
         auto endPass(rhi::GraphicsContext& context) -> void;
 
-        auto getColors() const -> std::span<rhi::RenderPassColorInfo const>;
+        auto getInputs() const -> std::span<SubpassInputInfo const>;
 
-        auto getDepthStencil() const -> std::optional<rhi::RenderPassDepthStencilInfo> const&;
+        auto getColors() const -> std::span<SubpassColorInfo const>;
+
+        auto getDepthStencil() const -> std::optional<SubpassDepthStencilInfo> const&;
 
       private:
-        std::vector<rhi::RenderPassColorInfo> _colors;
-        std::optional<rhi::RenderPassDepthStencilInfo> _depthStencil;
+        std::vector<SubpassInputInfo> _inputs;
+        std::vector<SubpassColorInfo> _colors;
+        std::optional<SubpassDepthStencilInfo> _depthStencil;
+        std::vector<rhi::RenderPassColorInfo> _rhiColors;
+        std::optional<rhi::RenderPassDepthStencilInfo> _rhiDepthStencil;
     };
 } // namespace ionengine

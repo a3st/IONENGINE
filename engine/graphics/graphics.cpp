@@ -5,17 +5,6 @@
 
 namespace ionengine
 {
-    Graphics::Graphics(core::ref_ptr<platform::App> app, EngineEnvironment& environment) : _environment(environment)
-    {
-        assert(app && "core::ref_ptr<platform::App> is nullptr");
-        _app = app;
-
-        rhi::RHICreateInfo const rhiCreateInfo{.stagingBufferSize = 8 * 1024 * 1024, .numBuffering = 2};
-        rhi::SwapchainCreateInfo const swapchainCreateInfo{.window = app->getWindowHandle(),
-                                                           .instance = app->getInstanceHandle()};
-        _rhi = rhi::RHI::create(rhiCreateInfo, swapchainCreateInfo);
-    }
-
     Graphics::Graphics(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options)
         : _environment(environment), _shadersPath(options.shadersPath)
     {
@@ -43,6 +32,11 @@ namespace ionengine
         _curGraphicsPipeline = options.graphicsPipeline;
     }
 
+    Graphics::Graphics(core::ref_ptr<platform::App> app, EngineEnvironment& environment)
+        : Graphics(app, environment, {})
+    {
+    }
+
     auto Graphics::onWindowResized(platform::WindowEvent const& event) -> void
     {
         if (!(event.size.width > 0 && event.size.height > 0))
@@ -55,11 +49,11 @@ namespace ionengine
 
     auto Graphics::onWindowUpdated() -> void
     {
-        auto currentSwapchainTexture = _rhi->getSwapchain()->getBackBuffer().get();
+        auto currentSwapchainTexture = _rhi->getSwapchain()->getBackBuffer();
 
         _curGraphicsPipeline->bindAttachment("Ext_Swapchain", currentSwapchainTexture);
 
-        // _curGraphicsPipeline->execute(_rhi);
+        _curGraphicsPipeline->execute(_rhi, *_frames[frameIndex].frameBufferPool);
 
         //_rhi->getSwapchain()->presentBackBuffer();
     }

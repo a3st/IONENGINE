@@ -317,7 +317,7 @@ namespace ionengine::rhi
 
         ~DX12GraphicsContext();
 
-        auto setGraphicsPipelineOptions(core::ref_ptr<Shader> shader, RasterizerStageInfo const& rasterizer,
+        auto setGraphicsPipelineOptions(Shader* shader, RasterizerStageInfo const& rasterizer,
                                         BlendColorInfo const& blendColor,
                                         std::optional<DepthStencilStageInfo> const depthStencil) -> void override;
 
@@ -328,10 +328,10 @@ namespace ionengine::rhi
 
         auto endRenderPass() -> void override;
 
-        auto bindVertexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size) -> void override;
+        auto bindVertexBuffer(Buffer* buffer, uint64_t const offset, size_t const size) -> void override;
 
-        auto bindIndexBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, size_t const size,
-                             Format const format) -> void override;
+        auto bindIndexBuffer(Buffer* buffer, uint64_t const offset, size_t const size, Format const format)
+            -> void override;
 
         auto drawIndexed(uint32_t const indexCount, uint32_t const instanceCount) -> void override;
 
@@ -343,10 +343,10 @@ namespace ionengine::rhi
         auto setScissor(int32_t const left, int32_t const top, int32_t const right, int32_t const bottom)
             -> void override;
 
-        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+        auto barrier(Buffer* destBuffer, ResourceState const beforeState, ResourceState const afterState)
             -> void override;
 
-        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+        auto barrier(Texture* destTexture, ResourceState const beforeState, ResourceState const afterState)
             -> void override;
 
         auto execute() -> Future<void> override;
@@ -379,16 +379,16 @@ namespace ionengine::rhi
 
         ~DX12CopyContext();
 
-        auto updateBuffer(core::ref_ptr<Buffer> dest, uint64_t const offset, std::span<uint8_t const> const dataBytes)
+        auto updateBuffer(core::ref_ptr<Buffer> buffer, uint64_t const offset, std::span<uint8_t const> const dataBytes)
             -> Future<Buffer> override;
 
-        auto updateTexture(core::ref_ptr<Texture> dest, uint32_t const resourceIndex, uint8_t const* dataBytes)
-            -> Future<Texture> override;
+        auto updateTexture(core::ref_ptr<Texture> texture, uint32_t const resourceIndex,
+                           std::span<uint8_t const> const dataBytes) -> Future<Texture> override;
 
-        auto barrier(core::ref_ptr<Buffer> dest, ResourceState const before, ResourceState const after)
+        auto barrier(Buffer* destBuffer, ResourceState const beforeState, ResourceState const afterState)
             -> void override;
 
-        auto barrier(core::ref_ptr<Texture> dest, ResourceState const before, ResourceState const after)
+        auto barrier(Texture* destTexture, ResourceState const beforeState, ResourceState const afterState)
             -> void override;
 
         auto execute() -> Future<void> override;
@@ -458,7 +458,7 @@ namespace ionengine::rhi
 
         ~DX12Swapchain();
 
-        auto getBackBuffer() -> core::weak_ptr<Texture> override;
+        [[nodiscard]] auto getBackBuffer() -> Texture* override;
 
         auto presentBackBuffer() -> Future<void> override;
 
@@ -488,11 +488,11 @@ namespace ionengine::rhi
 
         auto createSampler(SamplerCreateInfo const& createInfo) -> core::ref_ptr<Sampler> override;
 
-        auto getSwapchain() -> Swapchain* override;
+        [[nodiscard]] auto getSwapchain() -> Swapchain* override;
 
-        auto getGraphicsContext() -> GraphicsContext* override;
+        [[nodiscard]] auto getGraphicsContext() -> GraphicsContext* override;
 
-        auto getCopyContext() -> CopyContext* override;
+        [[nodiscard]] auto getCopyContext() -> CopyContext* override;
 
         auto getName() const -> std::string const& override;
 

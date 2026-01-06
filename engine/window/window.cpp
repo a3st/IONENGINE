@@ -5,17 +5,15 @@
 
 namespace ionengine
 {
-    Window::Window(core::ref_ptr<platform::App> app, EngineEnvironment& environment) : _environment(environment)
-    {
-        assert(app && "core::ref_ptr<platform::App> is nullptr");
-        _app = app;
-    }
-
     Window::Window(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options)
         : _environment(environment)
     {
         assert(app && "core::ref_ptr<platform::App> is nullptr");
         _app = app;
+    }
+
+    Window::Window(core::ref_ptr<platform::App> app, EngineEnvironment& environment) : Window(app, environment, {})
+    {
     }
 
     auto Window::setMouseEnabled(bool const enabled) -> void

@@ -6,13 +6,14 @@
 namespace ionengine
 {
     Subpass::Subpass(SubpassCreateInfo const& createInfo)
+        : _inputs(createInfo.inputs), _colors(createInfo.colors), _depthStencil(createInfo.depthStencil)
     {
         for (auto const& color : createInfo.colors)
         {
             rhi::RenderPassColorInfo renderPassColorInfo{
                 .loadOp = color.loadOp, .storeOp = color.storeOp, .clearColor = color.clearColor};
 
-            _colors.emplace_back(std::move(renderPassColorInfo));
+            _rhiColors.emplace_back(std::move(renderPassColorInfo));
         }
 
         if (createInfo.depthStencil.has_value())
@@ -27,13 +28,26 @@ namespace ionengine
                                                                        .clearDepth = depthStencilValue.clearDepth,
                                                                        .clearStencil = depthStencilValue.clearStencil};
 
-            _depthStencil.emplace(std::move(renderPassDepthStencilInfo));
+            _rhiDepthStencil.emplace(std::move(renderPassDepthStencilInfo));
         }
     }
 
-    auto Subpass::beginPass(rhi::GraphicsContext& context) -> void
+    auto Subpass::beginPass(rhi::GraphicsContext& context, std::span<rhi::Texture* const> const colorTextures,
+                            rhi::Texture* const depthStencilTexture) -> void
     {
-        context.beginRenderPass(_colors, _depthStencil);
+        assert(colorTextures.size() == _colors.size() && "colorTextures should be equal to _colors size");
+
+        for (uint32_t const i : std::views::iota(0u, _colors.size()))
+        {
+            _rhiColors[i].texture = colorTextures[i];
+        }
+
+        if (_depthStencil.has_value())
+        {
+            _rhiDepthStencil.value().texture = depthStencilTexture;
+        }
+
+        context.beginRenderPass(_rhiColors, _rhiDepthStencil);
     }
 
     auto Subpass::endPass(rhi::GraphicsContext& context) -> void
@@ -41,12 +55,12 @@ namespace ionengine
         context.endRenderPass();
     }
 
-    auto Subpass::getColors() const -> std::span<rhi::RenderPassColorInfo const>
+    auto Subpass::getColors() const -> std::span<SubpassColorInfo const>
     {
         return _colors;
     }
 
-    auto Subpass::getDepthStencil() const -> std::optional<rhi::RenderPassDepthStencilInfo> const&
+    auto Subpass::getDepthStencil() const -> std::optional<SubpassDepthStencilInfo> const&
     {
         return _depthStencil;
     }

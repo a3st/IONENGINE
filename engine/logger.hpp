@@ -25,9 +25,9 @@ namespace ionengine
         {
         };
 
-        Logger(core::ref_ptr<platform::App> app, EngineEnvironment& environment);
-
         Logger(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options);
+
+        Logger(core::ref_ptr<platform::App> app, EngineEnvironment& environment);
 
         template <typename... Args>
         auto log(LogLevel const level, std::string_view const format, Args&&... args) -> void
