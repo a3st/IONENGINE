@@ -7,7 +7,7 @@
 
 namespace ionengine
 {
-    GraphicsContext::GraphicsContext(core::ref_ptr<Subpass> const& subpass,
+    GraphicsContext::GraphicsContext(core::ref_ptr<Subpass> subpass,
                                      std::unordered_map<std::string, rhi::Texture*>& boundAttachments)
         : _subpass(subpass), _boundAttachments(boundAttachments)
     {
@@ -35,7 +35,8 @@ namespace ionengine
         std::vector<core::ref_ptr<Subpass>> const& subpasses,
         std::unordered_map<std::string, core::ref_ptr<Attachment>> const& attachments,
         std::unordered_map<std::string, std::vector<rhi::ResourceState>> const& attachmentTransitions)
-        : _subpasses(subpasses), _attachments(attachments), _attachmentTransitions(attachmentTransitions)
+        : _subpasses(subpasses), _attachments(attachments), _attachmentTransitions(attachmentTransitions),
+          _renderWidth(800), _renderHeight(600)
     {
     }
 
@@ -47,31 +48,27 @@ namespace ionengine
             if (foundAttachment->second->isExternal())
             {
                 _boundAttachments[foundAttachment->first] = texture;
+                _externalAttachments.emplace(foundAttachment->first);
             }
         }
     }
 
-    auto GraphicsPipeline::execute(core::ref_ptr<rhi::RHI> rhi, TexturePool& texturePool) -> rhi::Future<void>
+    auto GraphicsPipeline::execute(rhi::RHI& rhi, TexturePool& texturePool) -> rhi::Future<void>
     {
         for (uint32_t const i : std::views::iota(0u, _subpasses.size()))
         {
-            auto const& subpass = _subpasses[i];
-
-            std::vector<rhi::Texture*> colorTextures;
+            _colorTextures.clear();
             rhi::Texture* depthStencilTexture = nullptr;
+
+            auto const& subpass = _subpasses[i];
 
             for (auto const& input : subpass->getInputs())
             {
-                rhi::Texture* inputTexture = nullptr;
+                auto& attachment = _attachments[input.name];
 
                 auto boundResult = _boundAttachments.find(input.name);
-                if (boundResult != _boundAttachments.end())
+                if (boundResult == _boundAttachments.end())
                 {
-                    inputTexture = boundResult->second;
-                }
-                else
-                {
-                    auto& attachment = _attachments[input.name];
                     assert(attachment->isExternal() && "Input attachment is not bound");
 
                     // Input attachments shouldn't be created here, they must be bound externally or from previous
@@ -79,26 +76,19 @@ namespace ionengine
                     throw std::runtime_error("Input attachment is not bound: " + input.name);
                 }
 
-                rhi::ResourceState beforeState;
-                rhi::ResourceState afterState = _attachmentTransitions[input.name][i];
-                if (i == 0)
-                {
-                    beforeState = rhi::ResourceState::Common;
-                }
-                else
-                {
-                    beforeState = _attachmentTransitions[input.name][i - 1];
-                }
-
-                if (beforeState != afterState)
-                {
-                    rhi->getGraphicsContext()->barrier(inputTexture, beforeState, afterState);
-                }
+                tryAttachmentSubpassBarrier(rhi, *attachment, input.name, i, boundResult->second);
 
                 // Try GC texture to pool if next subpasses doesn't use it
-                if(i + 1 < _subpasses.size())
+                if (i + 1 < _subpasses.size() && !attachment->isExternal())
                 {
-                    
+                    rhi::ResourceState const beforeState = _attachmentTransitions[input.name][i];
+                    rhi::ResourceState const afterState = _attachmentTransitions[input.name][i + 1];
+
+                    if (beforeState != afterState)
+                    {
+                        texturePool.deallocate(_attachmentAllocations[input.name], afterState);
+                        boundResult->second = nullptr; // Set as null to avoid using deallocated texture
+                    }
                 }
             }
 
@@ -106,29 +96,46 @@ namespace ionengine
             {
                 rhi::Texture* colorTexture = nullptr;
 
+                auto& attachment = _attachments[color.name];
+
                 auto boundResult = _boundAttachments.find(color.name);
                 if (boundResult != _boundAttachments.end())
                 {
                     colorTexture = boundResult->second;
                 }
-                else
-                {
-                    auto& attachment = _attachments[color.name];
-                    assert(attachment->isExternal() && "Color attachment is not bound");
 
-                    rhi::TextureCreateInfo const textureCreateInfo{.width = attachment->getWidth(),
-                                                                   .height = attachment->getHeight(),
+                if (!colorTexture)
+                {
+                    uint32_t width = _renderWidth;
+                    uint32_t height = _renderHeight;
+
+                    if (std::holds_alternative<AttachmentRelativeSize>(attachment->getSize()))
+                    {
+                        auto& attachmentRelativeSize = std::get<AttachmentRelativeSize>(attachment->getSize());
+                        width *= attachmentRelativeSize.widthFactor;
+                        height *= attachmentRelativeSize.heightFactor;
+                    }
+                    else if (std::holds_alternative<AttachmentAbsoluteSize>(attachment->getSize()))
+                    {
+                        auto& attachmentAbsoluteSize = std::get<AttachmentAbsoluteSize>(attachment->getSize());
+                        width = attachmentAbsoluteSize.width;
+                        height = attachmentAbsoluteSize.height;
+                    }
+
+                    rhi::TextureCreateInfo const textureCreateInfo{.width = width,
+                                                                   .height = height,
                                                                    .depth = 1,
                                                                    .mipLevels = 1,
                                                                    .format = attachment->getFormat(),
                                                                    .dimension = attachment->getDimension(),
                                                                    .flags = attachment->getFlags()};
-
                     auto allocationResult = texturePool.allocate(textureCreateInfo);
                     if (allocationResult.has_value())
                     {
-                        colorTexture = allocationResult->getTexture();
+                        TexturePool::Allocation textureAllocation = allocationResult.value();
+                        colorTexture = textureAllocation.getTexture();
                         _boundAttachments[color.name] = colorTexture;
+                        _attachmentAllocations[color.name] = std::move(textureAllocation);
                     }
                     else
                     {
@@ -136,28 +143,54 @@ namespace ionengine
                     }
                 }
 
-                rhi::ResourceState beforeState;
-                rhi::ResourceState afterState = _attachmentTransitions[color.name][i];
-                if (i == 0)
-                {
-                    beforeState = rhi::ResourceState::Common;
-                }
-                else
-                {
-                    beforeState = _attachmentTransitions[color.name][i - 1];
-                }
+                tryAttachmentSubpassBarrier(rhi, *attachment, color.name, i, colorTexture);
+
+                _colorTextures.emplace_back(colorTexture);
+            }
+
+            subpass->beginPass(rhi.getGraphicsContext(), _colorTextures, depthStencilTexture);
+
+            // Execture Handler
+
+            subpass->endPass(rhi.getGraphicsContext());
+        }
+
+        uint32_t const lastSubpassIndex = static_cast<uint32_t>(_subpasses.size() - 1);
+
+        // Deallocate TexturePool textures for non-external attachments
+        for (auto const& [attachmentName, textureAllocation] : _attachmentAllocations)
+        {
+            texturePool.deallocate(_attachmentAllocations[attachmentName],
+                                   _attachmentTransitions[attachmentName][lastSubpassIndex]);
+        }
+
+        texturePool.compact();
+
+        // Transition external attachments to their initial states
+        for (auto const& attachmentName : _externalAttachments)
+        {
+            auto& attachment = _attachments[attachmentName];
+
+            auto boundResult = _boundAttachments.find(attachmentName);
+            if (boundResult != _boundAttachments.end())
+            {
+                rhi::ResourceState const beforeState = _attachmentTransitions[attachmentName][lastSubpassIndex];
+                rhi::ResourceState const afterState = attachment->getInitialState();
 
                 if (beforeState != afterState)
                 {
-                    rhi->getGraphicsContext()->barrier(colorTexture, beforeState, afterState);
+                    rhi.getGraphicsContext()->barrier(boundResult->second, beforeState, afterState);
                 }
             }
         }
 
-        // Clear bound attachments at end execute
-        _boundAttachments.clear();
+        auto executeResult = rhi.getGraphicsContext()->execute();
 
-        return rhi::Future<void>();
+        _boundAttachments.clear();
+        _attachmentAllocations.clear();
+        _externalAttachments.clear();
+
+        return executeResult;
     }
 
     auto GraphicsPipelineBuilder::addSubpass(SubpassCreateInfo const& createInfo, ExecutePassHandler&& executeHandler)
@@ -241,11 +274,17 @@ namespace ionengine
                     }
                 }
 
-                for (uint32_t const i : std::views::iota(previousSubpassIndex, resourceInfo.subpassIndex + 1))
+                if (resourceInfo.subpassIndex > 0)
                 {
-                    attachmentTransitions[attachmentName].emplace_back(newState);
+                    rhi::ResourceState const previousState = attachmentTransitions[attachmentName].back();
+
+                    for (uint32_t const i : std::views::iota(previousSubpassIndex, resourceInfo.subpassIndex))
+                    {
+                        attachmentTransitions[attachmentName].emplace_back(previousState);
+                    }
                 }
 
+                attachmentTransitions[attachmentName].emplace_back(newState);
                 previousSubpassIndex = resourceInfo.subpassIndex;
             }
         }
@@ -279,5 +318,28 @@ namespace ionengine
                                  core::make_ref<Attachment>(externalAttachmentCreateInfo));
         }
         return *this;
+    }
+
+    auto GraphicsPipeline::tryAttachmentSubpassBarrier(rhi::RHI& rhi, Attachment& attachment,
+                                                       std::string_view const attachmentName,
+                                                       uint32_t const subpassIndex, rhi::Texture* texture) -> uint32_t
+    {
+        uint32_t barrierCount = 0;
+
+        rhi::ResourceState const beforeState =
+            subpassIndex == 0 ? attachment.getInitialState()
+                              : _attachmentTransitions[std::string(attachmentName)][subpassIndex - 1];
+        rhi::ResourceState const afterState = _attachmentTransitions[std::string(attachmentName)][subpassIndex];
+
+        if (beforeState != afterState)
+        {
+            rhi.getGraphicsContext()->barrier(texture, beforeState, afterState);
+            barrierCount++;
+        }
+        return barrierCount;
+    }
+
+    auto GraphicsPipeline::setRenderSize(uint32_t const width, uint32_t const height) -> void
+    {
     }
 } // namespace ionengine

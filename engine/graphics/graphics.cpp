@@ -6,10 +6,8 @@
 namespace ionengine
 {
     Graphics::Graphics(core::ref_ptr<platform::App> app, EngineEnvironment& environment, ModuleOptions const& options)
-        : _environment(environment), _shadersPath(options.shadersPath)
+        : _environment(environment), _shadersPath(options.shadersPath), frameIndex(0), _app(app)
     {
-        assert(app && "core::ref_ptr<platform::App> is nullptr");
-        _app = app;
         _app->windowStateChanged += [this](platform::WindowEvent const& event) -> void {
             if (event.type == platform::WindowEventType::Resize)
             {
@@ -49,13 +47,13 @@ namespace ionengine
 
     auto Graphics::onWindowUpdated() -> void
     {
-        auto currentSwapchainTexture = _rhi->getSwapchain()->getBackBuffer();
+        _curGraphicsPipeline->bindAttachment("Ext_Swapchain", _rhi->getSwapchain()->getBackBuffer());
 
-        _curGraphicsPipeline->bindAttachment("Ext_Swapchain", currentSwapchainTexture);
+        _curGraphicsPipeline->execute(*_rhi, *_frames[frameIndex].frameBufferPool);
 
-        _curGraphicsPipeline->execute(_rhi, *_frames[frameIndex].frameBufferPool);
+        auto presentResult = _rhi->getSwapchain()->presentBackBuffer();
 
-        //_rhi->getSwapchain()->presentBackBuffer();
+        presentResult.wait();
     }
 
     auto Graphics::initialize() -> void

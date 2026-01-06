@@ -45,10 +45,10 @@ namespace ionengine
       public:
         explicit Subpass(SubpassCreateInfo const& createInfo);
 
-        auto beginPass(rhi::GraphicsContext& context, std::span<rhi::Texture* const> const colorTextures,
+        auto beginPass(rhi::GraphicsContext* context, std::span<rhi::Texture* const> const colorTextures,
                        rhi::Texture* const depthStencilTexture) -> void;
 
-        auto endPass(rhi::GraphicsContext& context) -> void;
+        auto endPass(rhi::GraphicsContext* context) -> void;
 
         auto getInputs() const -> std::span<SubpassInputInfo const>;
 

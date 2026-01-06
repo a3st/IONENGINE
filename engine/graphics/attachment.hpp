@@ -6,6 +6,20 @@
 
 namespace ionengine
 {
+    struct AttachmentAbsoluteSize
+    {
+        uint32_t width;
+        uint32_t height;
+    };
+
+    struct AttachmentRelativeSize
+    {
+        float widthFactor;
+        float heightFactor;
+    };
+
+    using AttachmentSize = std::variant<AttachmentAbsoluteSize, AttachmentRelativeSize>;
+
     struct ExternalAttachmentCreateInfo
     {
         std::string name;
@@ -15,30 +29,27 @@ namespace ionengine
     struct InternalAttachmentCreateInfo
     {
         std::string name;
-        uint32_t width;
-        uint32_t height;
+        AttachmentSize size;
         rhi::Format format;
         rhi::TextureDimension dimension;
         rhi::TextureUsageFlags flags;
 
-        static auto RenderTarget2D(std::string_view const name, uint32_t const width, uint32_t const height,
-                                   rhi::Format const format) -> InternalAttachmentCreateInfo
+        static auto RenderTarget2D(std::string_view const name, AttachmentSize const& size, rhi::Format const format)
+            -> InternalAttachmentCreateInfo
         {
             return {.name = std::string(name),
-                    .width = width,
-                    .height = height,
+                    .size = size,
                     .format = format,
                     .dimension = rhi::TextureDimension::_2D,
                     .flags = rhi::TextureUsage::RenderTarget | rhi::TextureUsage::ShaderResource |
                              rhi::TextureUsage::CopySource};
         }
 
-        static auto DepthStencil(std::string_view const name, uint32_t const width, uint32_t const height,
-                                 rhi::Format const format) -> InternalAttachmentCreateInfo
+        static auto DepthStencil(std::string_view const name, AttachmentSize const& size, rhi::Format const format)
+            -> InternalAttachmentCreateInfo
         {
             return {.name = std::string(name),
-                    .width = width,
-                    .height = height,
+                    .size = size,
                     .format = format,
                     .dimension = rhi::TextureDimension::_2D,
                     .flags = rhi::TextureUsage::DepthStencil | rhi::TextureUsage::ShaderResource |
@@ -55,9 +66,7 @@ namespace ionengine
 
         explicit Attachment(ExternalAttachmentCreateInfo const& createInfo);
 
-        auto getWidth() const -> uint32_t;
-
-        auto getHeight() const -> uint32_t;
+        auto getSize() const -> AttachmentSize const&;
 
         auto getFormat() const -> rhi::Format;
 
@@ -65,11 +74,12 @@ namespace ionengine
 
         auto getFlags() const -> rhi::TextureUsageFlags;
 
+        auto getInitialState() const -> rhi::ResourceState;
+
         auto isExternal() const -> bool;
 
       private:
-        uint32_t _width;
-        uint32_t _height;
+        AttachmentSize _size;
         rhi::Format _format;
         rhi::TextureDimension _dimension;
         rhi::TextureUsageFlags _flags;

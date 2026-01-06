@@ -32,7 +32,7 @@ namespace ionengine
         }
     }
 
-    auto Subpass::beginPass(rhi::GraphicsContext& context, std::span<rhi::Texture* const> const colorTextures,
+    auto Subpass::beginPass(rhi::GraphicsContext* context, std::span<rhi::Texture* const> const colorTextures,
                             rhi::Texture* const depthStencilTexture) -> void
     {
         assert(colorTextures.size() == _colors.size() && "colorTextures should be equal to _colors size");
@@ -47,12 +47,17 @@ namespace ionengine
             _rhiDepthStencil.value().texture = depthStencilTexture;
         }
 
-        context.beginRenderPass(_rhiColors, _rhiDepthStencil);
+        context->beginRenderPass(_rhiColors, _rhiDepthStencil);
     }
 
-    auto Subpass::endPass(rhi::GraphicsContext& context) -> void
+    auto Subpass::endPass(rhi::GraphicsContext* context) -> void
     {
-        context.endRenderPass();
+        context->endRenderPass();
+    }
+
+    auto Subpass::getInputs() const -> std::span<SubpassInputInfo const>
+    {
+        return _inputs;
     }
 
     auto Subpass::getColors() const -> std::span<SubpassColorInfo const>

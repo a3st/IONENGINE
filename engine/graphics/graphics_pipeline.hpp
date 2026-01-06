@@ -12,7 +12,7 @@ namespace ionengine
     class GraphicsContext
     {
       public:
-        GraphicsContext(core::ref_ptr<Subpass> const& subpass,
+        GraphicsContext(core::ref_ptr<Subpass> subpass,
                         std::unordered_map<std::string, rhi::Texture*>& boundAttachments);
 
         auto getTextureByName(std::string_view const attachmentName) const -> rhi::Texture*;
@@ -35,13 +35,24 @@ namespace ionengine
 
         auto bindAttachment(std::string_view const attachmentName, rhi::Texture* texture) -> void;
 
-        auto execute(core::ref_ptr<rhi::RHI> rhi, TexturePool& texturePool) -> rhi::Future<void>;
+        auto execute(rhi::RHI& rhi, TexturePool& texturePool) -> rhi::Future<void>;
+
+        auto setRenderSize(uint32_t const width, uint32_t const height) -> void;
 
       private:
         std::vector<core::ref_ptr<Subpass>> _subpasses;
         std::unordered_map<std::string, core::ref_ptr<Attachment>> _attachments;
         std::unordered_map<std::string, rhi::Texture*> _boundAttachments;
         std::unordered_map<std::string, std::vector<rhi::ResourceState>> _attachmentTransitions;
+        std::unordered_map<std::string, TexturePool::Allocation> _attachmentAllocations;
+        std::unordered_set<std::string> _externalAttachments;
+        uint32_t _renderWidth;
+        uint32_t _renderHeight;
+
+        std::vector<rhi::Texture*> _colorTextures;
+
+        auto tryAttachmentSubpassBarrier(rhi::RHI& rhi, Attachment& attachment, std::string_view const attachmentName,
+                                         uint32_t const subpassIndex, rhi::Texture* texture) -> uint32_t;
     };
 
     class GraphicsPipelineBuilder

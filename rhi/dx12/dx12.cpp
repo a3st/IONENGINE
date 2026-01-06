@@ -309,7 +309,7 @@ namespace ionengine::rhi
             case ResourceState::DepthStencilRead:
                 return D3D12_RESOURCE_STATE_DEPTH_READ;
             case ResourceState::DepthStencilWrite:
-                return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+                return D3D12_RESOURCE_STATE_DEPTH_WRITE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
             case ResourceState::RenderTarget:
                 return D3D12_RESOURCE_STATE_RENDER_TARGET;
             case ResourceState::UnorderedAccess:

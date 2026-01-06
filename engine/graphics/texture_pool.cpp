@@ -137,4 +137,10 @@ namespace ionengine
             }
         }
     }
+
+    auto TexturePool::reset() -> void
+    {
+        _buckets.clear();
+        _dirtyEntries.clear();
+    }
 } // namespace ionengine

@@ -68,11 +68,21 @@ namespace ionengine
             friend class TexturePool;
 
           public:
+            Allocation() = default;
+
             Allocation(Entry const& entry, uint32_t const current, rhi::Texture* const texture,
                        rhi::ResourceState const initialState)
                 : _entry(entry), _current(current), _texture(texture), _initialState(initialState)
             {
             }
+
+            Allocation(Allocation&& other) = default;
+
+            Allocation(Allocation const& other) = default;
+
+            auto operator=(Allocation&& other) -> Allocation& = default;
+
+            auto operator=(Allocation const& other) -> Allocation& = default;
 
             auto getTexture() const -> rhi::Texture*
             {
@@ -98,6 +108,8 @@ namespace ionengine
         auto deallocate(Allocation const& allocation, rhi::ResourceState const initialState) -> void;
 
         auto compact() -> void;
+
+        auto reset() -> void;
 
       private:
         core::ref_ptr<rhi::RHI> _rhi;
