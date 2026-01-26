@@ -123,15 +123,15 @@ namespace ionengine::rhi
 
     enum class RenderPassLoadOp
     {
-        Load,
+        DontCare,
         Clear,
-        DontCare
+        Load
     };
 
     enum class RenderPassStoreOp
     {
-        Store,
-        DontCare
+        DontCare,
+        Store
     };
 
     enum class FillMode

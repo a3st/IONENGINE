@@ -15,16 +15,16 @@ namespace ionengine
         GraphicsContext(core::ref_ptr<Subpass> subpass,
                         std::unordered_map<std::string, rhi::Texture*>& boundAttachments);
 
-        auto getTextureByName(std::string_view const attachmentName) const -> rhi::Texture*;
-
         auto getTextureFromColors(uint32_t const colorIndex) const -> rhi::Texture*;
+
+        auto getTextureFromDepthStencil() const -> rhi::Texture*;
 
       private:
         core::ref_ptr<Subpass> _subpass;
         std::unordered_map<std::string, rhi::Texture*>& _boundAttachments;
-    };
 
-    using ExecutePassHandler = std::function<void()>;
+        auto getTextureByName(std::string_view const attachmentName) const -> rhi::Texture*;
+    };
 
     class GraphicsPipeline : public core::ref_counted_object
     {

@@ -5,8 +5,9 @@
 
 namespace ionengine
 {
-    Subpass::Subpass(SubpassCreateInfo const& createInfo)
-        : _inputs(createInfo.inputs), _colors(createInfo.colors), _depthStencil(createInfo.depthStencil)
+    Subpass::Subpass(SubpassCreateInfo const& createInfo, ExecutePassHandler&& executeHandler)
+        : _inputs(createInfo.inputs), _colors(createInfo.colors), _depthStencil(createInfo.depthStencil),
+          _executeHandler(executeHandler)
     {
         for (auto const& color : createInfo.colors)
         {

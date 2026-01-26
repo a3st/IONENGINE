@@ -28,7 +28,27 @@ namespace ionengine
 
     auto GraphicsContext::getTextureFromColors(uint32_t const colorIndex) const -> rhi::Texture*
     {
-        return nullptr;
+        if (colorIndex < _subpass->getColors().size())
+        {
+            return getTextureByName(_subpass->getColors()[colorIndex].name);
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    auto GraphicsContext::getTextureFromDepthStencil() const -> rhi::Texture*
+    {
+        if (_subpass->getDepthStencil().has_value())
+        {
+            auto depthStencilValue = _subpass->getDepthStencil().value();
+            return getTextureByName(depthStencilValue.name);
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     GraphicsPipeline::GraphicsPipeline(
@@ -151,6 +171,7 @@ namespace ionengine
             subpass->beginPass(rhi.getGraphicsContext(), _colorTextures, depthStencilTexture);
 
             // Execture Handler
+            
 
             subpass->endPass(rhi.getGraphicsContext());
         }

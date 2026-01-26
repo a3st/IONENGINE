@@ -40,10 +40,12 @@ namespace ionengine
         std::optional<SubpassDepthStencilInfo> depthStencil;
     };
 
+    using ExecutePassHandler = std::function<void(GraphicsContext&)>;
+
     class Subpass : public core::ref_counted_object
     {
       public:
-        explicit Subpass(SubpassCreateInfo const& createInfo);
+        Subpass(SubpassCreateInfo const& createInfo, ExecutePassHandler&& executeHandler);
 
         auto beginPass(rhi::GraphicsContext* context, std::span<rhi::Texture* const> const colorTextures,
                        rhi::Texture* const depthStencilTexture) -> void;
@@ -62,5 +64,6 @@ namespace ionengine
         std::optional<SubpassDepthStencilInfo> _depthStencil;
         std::vector<rhi::RenderPassColorInfo> _rhiColors;
         std::optional<rhi::RenderPassDepthStencilInfo> _rhiDepthStencil;
+        ExecutePassHandler _executeHandler;
     };
 } // namespace ionengine
