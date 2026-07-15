@@ -1,56 +1,10 @@
 // Copyright © 2020-2025 Dmitriy Lukovenko. All rights reserved.
 
-#pragma once
-
 #include "graphics_pipeline.hpp"
 #include "precompiled.h"
 
 namespace ionengine
 {
-    GraphicsContext::GraphicsContext(core::ref_ptr<Subpass> subpass,
-                                     std::unordered_map<std::string, rhi::Texture*>& boundAttachments)
-        : _subpass(subpass), _boundAttachments(boundAttachments)
-    {
-    }
-
-    auto GraphicsContext::getTextureByName(std::string_view const attachmentName) const -> rhi::Texture*
-    {
-        auto foundTexture = _boundAttachments.find(std::string(attachmentName));
-        if (foundTexture != _boundAttachments.end())
-        {
-            return foundTexture->second;
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-
-    auto GraphicsContext::getTextureFromColors(uint32_t const colorIndex) const -> rhi::Texture*
-    {
-        if (colorIndex < _subpass->getColors().size())
-        {
-            return getTextureByName(_subpass->getColors()[colorIndex].name);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-
-    auto GraphicsContext::getTextureFromDepthStencil() const -> rhi::Texture*
-    {
-        if (_subpass->getDepthStencil().has_value())
-        {
-            auto depthStencilValue = _subpass->getDepthStencil().value();
-            return getTextureByName(depthStencilValue.name);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-
     GraphicsPipeline::GraphicsPipeline(
         std::vector<core::ref_ptr<Subpass>> const& subpasses,
         std::unordered_map<std::string, core::ref_ptr<Attachment>> const& attachments,
@@ -222,7 +176,7 @@ namespace ionengine
             return *this;
         }
 
-        auto subpass = core::make_ref<Subpass>(createInfo);
+        auto subpass = core::make_ref<Subpass>(createInfo, std::move(executeHandler));
 
         uint32_t const subpassIndex = static_cast<uint32_t>(_subpasses.size());
 

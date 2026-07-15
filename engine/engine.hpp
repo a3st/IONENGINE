@@ -64,6 +64,16 @@ namespace ionengine
             return *this;
         }
 
+        template <typename Type>
+        auto registerModule()
+        {
+            auto newFunction = [](core::ref_ptr<platform::App> app, EngineEnvironment& environment) -> void {
+                environment.registerModule<Type>(app, environment);
+            };
+            _configureFunctions.emplace_back(std::move(newFunction));
+            return *this;
+        }
+
       private:
         std::vector<std::function<void(core::ref_ptr<platform::App>, EngineEnvironment&)>> _configureFunctions;
     };

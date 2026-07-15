@@ -35,8 +35,11 @@ add_library(${SUB_MODULE_NAME} STATIC
     graphics/texture_pool.cpp
     graphics/subpass.cpp
     graphics/attachment.cpp
+    graphics/graphics_context.cpp
     graphics/graphics_pipeline.cpp
     graphics/graphics.cpp
+
+    scene/scene_node.cpp
 
     window/window.cpp
 

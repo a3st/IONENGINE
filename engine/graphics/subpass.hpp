@@ -4,6 +4,7 @@
 
 #include "core/color.hpp"
 #include "core/ref_ptr.hpp"
+#include "graphics_context.hpp"
 #include "rhi/rhi.hpp"
 
 namespace ionengine
